@@ -3,5 +3,5 @@
   "version": "Alpha 8",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 8 — démonstration du cycle de mise à jour automatique"
+  "notes": "Fix UI HUD : regroupe Réparer Île / Port / Recherche dans une colonne à droite (fin du chevauchement)"
 }
