@@ -329,6 +329,22 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 .opt-toggle.dev.on{background:rgba(255,59,48,.22);border-color:var(--red);}
 .opt-toggle.dev.on::after{background:#ff8079;}
 .opt-fullbtn{width:100%;}
+/* ── Notification de production hors-ligne ── */
+.offline-panel{width:min(420px,94vw);}
+.offline-body{padding:14px;display:flex;flex-direction:column;gap:11px;}
+.offline-sub{font-family:'Barlow Condensed',sans-serif;font-size:.9rem;color:var(--ink);line-height:1.3;}
+.offline-sub b{color:#7fd98a;}
+.offline-gains{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.offline-gain{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:6px;
+  padding:6px 9px;background:var(--panel-2);min-width:0;}
+.offline-ico{width:18px;height:18px;image-rendering:pixelated;flex-shrink:0;}
+.offline-dot{width:11px;height:11px;border-radius:3px;background:#7fd98a;flex-shrink:0;}
+.offline-amt{font-family:'DM Mono',monospace;font-size:.78rem;color:#7fd98a;font-weight:700;flex-shrink:0;}
+.offline-name{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;color:var(--ink-dim);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.offline-ok{margin:0 14px 14px;border-style:solid;border-color:#4CAF50;color:#7fd98a;}
+.offline-ok:hover{background:rgba(76,175,80,.16);}
+@media (max-width:420px){.offline-gains{grid-template-columns:1fr;}}
 
 /* ── Scène (canvas + overlays) ── */
 .stage{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--bg);}
@@ -5891,6 +5907,56 @@ function OptionsModal({
     onClick: onOpenSaves
   }, uiIcon('sauvegarde', "💾"), " Emplacements de sauvegarde"))));
 }
+function OfflineModal({
+  report,
+  onClose
+}) {
+  const gains = report.gains || [];
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "slot-backdrop",
+    onClick: onClose
+  }), React.createElement("div", {
+    className: "slot-panel offline-panel"
+  }, React.createElement("div", {
+    className: "slot-head"
+  }, React.createElement("span", {
+    className: "slot-title"
+  }, "🌙 Bon retour !"), React.createElement("button", {
+    className: "slot-close",
+    onClick: onClose,
+    title: "Fermer"
+  }, "\xD7")), React.createElement("div", {
+    className: "offline-body"
+  }, React.createElement("div", {
+    className: "offline-sub"
+  }, "Absence : ", React.createElement("b", null, report.timeLabel), gains.length ? " — production r\xE9cup\xE9r\xE9e :" : " — rien \xE0 produire."), gains.length > 0 && React.createElement("div", {
+    className: "offline-gains"
+  }, gains.map(({
+    res,
+    amount
+  }) => {
+    const ikey = itemSpriteKey(res);
+    const src = ikey && SPRITE_DATA[ikey];
+    return React.createElement("div", {
+      className: "offline-gain",
+      key: res
+    }, src ? React.createElement("img", {
+      className: "offline-ico",
+      src: src,
+      alt: "",
+      draggable: false
+    }) : React.createElement("span", {
+      className: "offline-dot"
+    }), React.createElement("span", {
+      className: "offline-amt"
+    }, "+", fmtInt(amount)), React.createElement("span", {
+      className: "offline-name"
+    }, RES_SHORT[res] || res));
+  }))), React.createElement("button", {
+    className: "slot-new offline-ok",
+    onClick: onClose
+  }, "Continuer")));
+}
 function App() {
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
@@ -6086,6 +6152,7 @@ function App() {
   const [buildOpen, setBuildOpen] = useState(false);
   const [netOpen, setNetOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [offlineReport, setOfflineReport] = useState(null);
   const [researchPending, setResearchPending] = useState(false);
   const [info, setInfo] = useState(null);
   const [upgrade, setUpgrade] = useState(null);
@@ -6213,6 +6280,7 @@ function App() {
     };
     return {
       version: SAVE_VERSION,
+      savedAt: Date.now(),
       currentIsland: g.currentIsland,
       port,
       energy,
@@ -6552,7 +6620,64 @@ function App() {
         if (net && p.lvl >= 1 && p.lvl <= NETWORK_MAX_LEVEL) net.level = p.lvl;
       }
     }
+    g.lastSave = data.savedAt || 0;
     return true;
+  }
+  // Rejoue la production manquée pendant une absence (production hors-ligne / idle).
+  // Déclenché AU CHARGEMENT (temps depuis la dernière sauvegarde) ET AU RETOUR
+  // D'ARRIÈRE-PLAN (onglet masqué / écran verrouillé — la boucle d'anim est gelée).
+  // Plafonné à 8 h et à un budget de calcul pour ne pas figer l'UI. 1 tick = 1 s.
+  const OFFLINE_MAX_TICKS = 8 * 3600;
+  function runCatchUp(elapsedSec) {
+    const g = gameRef.current;
+    if (!(elapsedSec >= 60)) return;
+    const ticks = Math.min(Math.floor(elapsedSec), OFFLINE_MAX_TICKS);
+    const sumPort = () => {
+      const acc = {};
+      for (const isl in g.port) for (const k in g.port[isl]) acc[k] = (acc[k] || 0) + (g.port[isl][k] || 0);
+      return acc;
+    };
+    const before = sumPort();
+    const t0 = performance.now();
+    let done = 0;
+    for (; done < ticks; done++) {
+      onTick(g);
+      tickShips(g);
+      // Budget de calcul : on s'arrête si le rattrapage dépasse ~2,5 s.
+      if ((done & 511) === 0 && performance.now() - t0 > 2500) {
+        done++;
+        break;
+      }
+    }
+    // Évite une avalanche de pop-ups/recherches accumulées pendant l'absence.
+    g.researchReady = [];
+    g.researchNotify = [];
+    g.lastSave = Date.now();
+    g.lastActiveTs = Date.now();
+    const after = sumPort();
+    const gains = [];
+    for (const k in after) {
+      const d = (after[k] || 0) - (before[k] || 0);
+      if (d > 0.5) gains.push([k, d]);
+    }
+    gains.sort((a, b) => b[1] - a[1]);
+    const mins = Math.max(1, Math.round(done / 60));
+    const timeLabel = mins >= 60 ? Math.floor(mins / 60) + ' h ' + (mins % 60 < 10 ? '0' : '') + mins % 60 + ' min' : mins + ' min';
+    setOfflineReport({
+      timeLabel,
+      gains: gains.slice(0, 12).map(([k, d]) => ({
+        res: k,
+        amount: d
+      }))
+    });
+    bumpHud();
+    markDirty();
+    flushSave();
+  }
+  function applyOfflineProgress() {
+    const g = gameRef.current;
+    if (!g.lastSave) return;
+    runCatchUp((Date.now() - g.lastSave) / 1000);
   }
   function missingFor(cost) {
     const res = portPool(gameRef.current);
@@ -7792,6 +7917,8 @@ function App() {
     gameRef.current.researchNotify = [];
     layout();
     if (gameRef.current.lastSave === 0) gameRef.current.lastSave = Date.now();
+    // Rattrapage de la production hors-ligne (uniquement si une partie a été chargée).
+    if (loaded) applyOfflineProgress();
     let raw = null;
     try {
       const aid = getActiveSlotId();
@@ -7813,6 +7940,9 @@ function App() {
       const now = performance.now();
       const prev = g.lastFrameTs || now;
       g.lastFrameTs = now;
+      // Horloge murale de la dernière frame « vivante » : sert à mesurer le temps
+      // passé en arrière-plan (la boucle est gelée quand l'onglet est masqué).
+      g.lastActiveTs = Date.now();
       g.tickAcc += Math.min((now - prev) / 1000, 1.0);
       let guard = 0;
       while (g.tickAcc >= 1 && guard < 5) {
@@ -7867,9 +7997,13 @@ function App() {
     start();
     const onResume = () => {
       if (document.visibilityState !== 'visible') return;
+      // Rattrape la production manquée pendant que l'onglet était en arrière-plan.
+      const gg = gameRef.current;
+      if (gg.lastActiveTs) runCatchUp((Date.now() - gg.lastActiveTs) / 1000);
       requestAnimationFrame(() => {
         const g = gameRef.current;
         g.lastFrameTs = performance.now();
+        g.lastActiveTs = Date.now();
         layout();
         if (ctxValid()) {
           g.dirty = true;
@@ -8116,6 +8250,9 @@ function App() {
       setSlotOpen(true);
     },
     onClose: () => setOptionsOpen(false)
+  }), offlineReport && React.createElement(OfflineModal, {
+    report: offlineReport,
+    onClose: () => setOfflineReport(null)
   }), portOpen && React.createElement(PortPanel, {
     game: game,
     currentIsland: game.currentIsland,
