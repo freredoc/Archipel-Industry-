@@ -6213,6 +6213,7 @@ function App() {
     };
     return {
       version: SAVE_VERSION,
+      savedAt: Date.now(),
       currentIsland: g.currentIsland,
       port,
       energy,
@@ -6552,7 +6553,57 @@ function App() {
         if (net && p.lvl >= 1 && p.lvl <= NETWORK_MAX_LEVEL) net.level = p.lvl;
       }
     }
+    g.lastSave = data.savedAt || 0;
     return true;
+  }
+  // Rejoue la production manquée pendant l'absence (production hors-ligne / idle).
+  // Plafonné à OFFLINE_MAX_TICKS (8 h) et à un budget de calcul pour ne pas figer
+  // l'UI au chargement. Un tick = 1 seconde de jeu (cf. boucle frame()).
+  function applyOfflineProgress() {
+    const g = gameRef.current;
+    if (!g.lastSave) return;
+    const OFFLINE_MAX_TICKS = 8 * 3600;
+    const elapsed = Math.floor((Date.now() - g.lastSave) / 1000);
+    if (elapsed < 10) return;
+    const ticks = Math.min(elapsed, OFFLINE_MAX_TICKS);
+    const sumPort = () => {
+      const acc = {};
+      for (const isl in g.port) for (const k in g.port[isl]) acc[k] = (acc[k] || 0) + (g.port[isl][k] || 0);
+      return acc;
+    };
+    const before = sumPort();
+    const t0 = performance.now();
+    let done = 0;
+    for (; done < ticks; done++) {
+      onTick(g);
+      tickShips(g);
+      // Budget de calcul : on s'arrête si le rattrapage dépasse ~2,5 s.
+      if ((done & 511) === 0 && performance.now() - t0 > 2500) {
+        done++;
+        break;
+      }
+    }
+    // Évite une avalanche de pop-ups/recherches accumulées pendant l'absence.
+    g.researchReady = [];
+    g.researchNotify = [];
+    g.lastSave = Date.now();
+    const after = sumPort();
+    const gains = [];
+    for (const k in after) {
+      const d = (after[k] || 0) - (before[k] || 0);
+      if (d > 0.5) gains.push([k, d]);
+    }
+    gains.sort((a, b) => b[1] - a[1]);
+    const mins = Math.max(1, Math.round(done / 60));
+    const timeLabel = mins >= 60 ? Math.floor(mins / 60) + ' h ' + (mins % 60 < 10 ? '0' : '') + mins % 60 : mins + ' min';
+    if (gains.length) {
+      const top = gains.slice(0, 3).map(([k, d]) => '+' + fmtInt(d) + ' ' + (RES_SHORT[k] || k)).join(' · ');
+      showToast('🌙 Hors-ligne ' + timeLabel + ' : ' + top, 'var(--green)');
+    } else if (done > 0) {
+      showToast('🌙 Hors-ligne ' + timeLabel + ' — rien à produire', 'var(--ink-dim)');
+    }
+    bumpHud();
+    markDirty();
   }
   function missingFor(cost) {
     const res = portPool(gameRef.current);
@@ -7792,6 +7843,8 @@ function App() {
     gameRef.current.researchNotify = [];
     layout();
     if (gameRef.current.lastSave === 0) gameRef.current.lastSave = Date.now();
+    // Rattrapage de la production hors-ligne (uniquement si une partie a été chargée).
+    if (loaded) applyOfflineProgress();
     let raw = null;
     try {
       const aid = getActiveSlotId();
