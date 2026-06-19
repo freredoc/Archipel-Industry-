@@ -2,6 +2,11 @@ plugins {
     id 'com.android.application'
 }
 
+// Clé de signature FIXE : présente uniquement si la CI a décodé le secret GitHub
+// SIGNING_KEYSTORE_B64 vers app/keystore.jks. Sinon (build local sans secret),
+// on retombe sur la signature debug par défaut.
+def ksFile = file('keystore.jks')
+
 android {
     namespace 'fr.archipel.industry'
     compileSdk 34
@@ -10,16 +15,29 @@ android {
         applicationId 'fr.archipel.industry'
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName '1.0'
+        // versionCode/versionName injectés par la CI (-Pvcode/-Pvname) depuis
+        // GAME_BUILD / GAME_VERSION ; valeurs par défaut pour un build local.
+        versionCode (project.findProperty('vcode') ?: '1').toString().toInteger()
+        versionName (project.findProperty('vname') ?: '1.0').toString()
+    }
+
+    signingConfigs {
+        archipel {
+            if (ksFile.exists()) {
+                storeFile ksFile
+                storePassword System.getenv('SIGNING_STORE_PASSWORD') ?: 'archipelapp'
+                keyAlias System.getenv('SIGNING_KEY_ALIAS') ?: 'archipel'
+                keyPassword System.getenv('SIGNING_KEY_PASSWORD') ?: 'archipelapp'
+            }
+        }
     }
 
     buildTypes {
         debug {
-            // APK de debug : signé automatiquement avec le keystore de debug,
-            // installable directement sur le téléphone (sideload).
+            if (ksFile.exists()) signingConfig signingConfigs.archipel
         }
         release {
+            if (ksFile.exists()) signingConfig signingConfigs.archipel
             minifyEnabled false
         }
     }

@@ -9,3 +9,7 @@ captures/
 .cxx/
 # L'asset est généré (copié depuis le HTML racine) par le workflow CI.
 app/src/main/assets/index.html
+# La clé de signature ne doit JAMAIS être committée (décodée en CI depuis un secret).
+app/keystore.jks
+*.jks
+*.keystore

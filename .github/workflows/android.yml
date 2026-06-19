@@ -44,11 +44,26 @@ jobs:
           mkdir -p android/app/src/main/assets
           cp Archipel_industry_alpha-7.html android/app/src/main/assets/index.html
 
+      - name: Decode signing keystore (if secret is set)
+        env:
+          KS: ${{ secrets.SIGNING_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > android/app/keystore.jks
+            echo "Signing keystore decoded — APK will use the stable key."
+          else
+            echo "No SIGNING_KEYSTORE_B64 secret — building with the default debug key."
+          fi
+
       - name: Build debug APK
         working-directory: android
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
+          VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
+          echo "versionCode=$BUILD versionName=$VERSION"
+          ./gradlew assembleDebug --no-daemon --stacktrace \
+            -Pvcode="${BUILD:-1}" -Pvname="${VERSION:-1.0}"
 
       - name: Rename APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk ArchipelIndustry.apk
