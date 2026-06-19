@@ -2593,9 +2593,11 @@ const isNetworkId = id => !!BUILDINGS[id] && (BUILDINGS[id].kind === 'infra' || 
 // Déblocage gameplay des réseaux : le tuyau apparaît une fois pompe à eau OU puits
 // de pétrole débloqués ; le câble une fois une éolienne débloquée ; la route est
 // toujours disponible. Les jonctions suivent le déblocage de leurs deux réseaux.
-function networkUnlocked(id, unlockedSet) {
+function networkUnlocked(id, unlockedSet, currentIsland) {
   const has = k => !!(unlockedSet && unlockedSet.has(k));
-  const pipeOk = has('pompe_eau') || has('puits_petrole');
+  // Le réseau d'eau (tuyaux) n'apparaît qu'à partir de l'île 3 : avant, aucun
+  // besoin de transport d'eau. Le câble suit le déblocage d'une éolienne.
+  const pipeOk = currentIsland >= 3;
   const wireOk = has('eolienne') || has('eolienne_offshore');
   switch (id) {
     case 'road':
@@ -4759,7 +4761,7 @@ function Toolbar({
     className: "build-panel"
   }, renderGroups(BUILD_GROUPS)), netOpen && React.createElement("div", {
     className: "build-panel"
-  }, renderGroups(NETWORK_GROUPS, id => networkUnlocked(id, unlockedSet))), React.createElement("div", {
+  }, renderGroups(NETWORK_GROUPS, id => networkUnlocked(id, unlockedSet, currentIsland))), React.createElement("div", {
     className: "toolbar"
   }, React.createElement("div", {
     className: "tool-group tabs"
@@ -7114,7 +7116,11 @@ function App() {
   }
   function selectTool(id) {
     const cur = gameRef.current.ui.tool;
-    const next = id === cur ? null : id;
+    // Re-toucher un bâtiment/réseau déjà sélectionné ne le désélectionne PAS
+    // (évitait de « quitter » la construction par un second clic). Seuls les outils
+    // d'action (copier/démolir/améliorer) se désactivent en les re-touchant.
+    const toggles = id === COPY || id === DEMOLISH || id === UPGRADE;
+    const next = id === cur && toggles ? null : id;
     gameRef.current.ui.tool = next;
     setToolState(next);
     setInfo(null);
