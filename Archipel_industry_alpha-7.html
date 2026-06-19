@@ -1137,6 +1137,11 @@ const NET_PREFIX = {
   pipe: 'tuyau',
   wire: 'cable'
 };
+// Échelle de rendu des réseaux (route/tuyau/câble) : <1 les dessine plus fins
+// que la case. Pour rester raccordés aux voisins, chaque case est étirée jusqu'au
+// bord dans les directions connectées et n'est rétrécie que sur les côtés libres
+// (voir le rendu des réseaux dans draw()).
+const NET_SPRITE_SCALE = 0.70;
 // 4-dir bitmask order matching delivered sprites: N=1, E=2, S=4, O(W)=8.
 // Suffix letters use N/E/S/O. Build the lookup from mask value -> "NN_LETTERS".
 const NET_MASK_SUFFIX = (() => {
@@ -7285,7 +7290,16 @@ function App() {
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
         const key = NET_PREFIX[bid] + '_v' + lvl + '_' + NET_MASK_SUFFIX[mask];
-        if (drawSprite(ctx, key, x, y, tile, tile)) continue;
+        // Rendu plus fin : on insère une marge sur les côtés NON connectés et on
+        // garde les côtés connectés collés au bord (bits N=1, E=2, S=4, O=8) pour
+        // que les segments voisins restent raccordés. Une intersection complète
+        // (NESO) reste donc pleine, un tronçon droit/coin est aminci.
+        const m = tile * (1 - NET_SPRITE_SCALE) / 2;
+        const nx = x + (mask & 8 ? 0 : m);
+        const ny = y + (mask & 1 ? 0 : m);
+        const nw = tile - (mask & 8 ? 0 : m) - (mask & 2 ? 0 : m);
+        const nh = tile - (mask & 1 ? 0 : m) - (mask & 4 ? 0 : m);
+        if (drawSprite(ctx, key, nx, ny, nw, nh)) continue;
       }
       // Junction sprites: jonction_<a>_<b>_v<level>.
       if (SPRITES_ENABLED && bdef && bdef.kind === 'junction') {
