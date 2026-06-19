@@ -6630,8 +6630,9 @@ function App() {
   const OFFLINE_MAX_TICKS = 8 * 3600;
   function runCatchUp(elapsedSec) {
     const g = gameRef.current;
-    if (!(elapsedSec >= 60)) return;
+    // La production est toujours rattrapée, quel que soit le temps écoulé (>= 1 tick).
     const ticks = Math.min(Math.floor(elapsedSec), OFFLINE_MAX_TICKS);
+    if (ticks < 1) return;
     const sumPort = () => {
       const acc = {};
       for (const isl in g.port) for (const k in g.port[isl]) acc[k] = (acc[k] || 0) + (g.port[isl][k] || 0);
@@ -6654,22 +6655,26 @@ function App() {
     g.researchNotify = [];
     g.lastSave = Date.now();
     g.lastActiveTs = Date.now();
-    const after = sumPort();
-    const gains = [];
-    for (const k in after) {
-      const d = (after[k] || 0) - (before[k] || 0);
-      if (d > 0.5) gains.push([k, d]);
+    // Notification « Bon retour » seulement après >= 1 min d'absence ; en deçà, la
+    // production est appliquée silencieusement (pas de pop-up à chaque va-et-vient).
+    if (elapsedSec >= 60) {
+      const after = sumPort();
+      const gains = [];
+      for (const k in after) {
+        const d = (after[k] || 0) - (before[k] || 0);
+        if (d > 0.5) gains.push([k, d]);
+      }
+      gains.sort((a, b) => b[1] - a[1]);
+      const mins = Math.max(1, Math.round(done / 60));
+      const timeLabel = mins >= 60 ? Math.floor(mins / 60) + ' h ' + (mins % 60 < 10 ? '0' : '') + mins % 60 + ' min' : mins + ' min';
+      setOfflineReport({
+        timeLabel,
+        gains: gains.slice(0, 12).map(([k, d]) => ({
+          res: k,
+          amount: d
+        }))
+      });
     }
-    gains.sort((a, b) => b[1] - a[1]);
-    const mins = Math.max(1, Math.round(done / 60));
-    const timeLabel = mins >= 60 ? Math.floor(mins / 60) + ' h ' + (mins % 60 < 10 ? '0' : '') + mins % 60 + ' min' : mins + ' min';
-    setOfflineReport({
-      timeLabel,
-      gains: gains.slice(0, 12).map(([k, d]) => ({
-        res: k,
-        amount: d
-      }))
-    });
     bumpHud();
     markDirty();
     flushSave();
