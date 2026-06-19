@@ -150,13 +150,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .hud-right-stack .research-btn{width:100%;}
 /* Bouton Réparer (déblocage île suivante) */
 .repair-btn{display:flex;flex-direction:column;align-items:flex-start;gap:0;background:rgba(76,175,80,.14);
-  border:1px solid #4CAF50;color:#7fd98a;border-radius:4px;padding:3px 10px;cursor:pointer;flex-shrink:0;
-  font-family:'Barlow Condensed',sans-serif;transition:background .1s;line-height:1.15;}
+  border:1px solid #4CAF50;color:#7fd98a;border-radius:4px;padding:2px 8px;cursor:pointer;flex-shrink:0;
+  font-family:'Barlow Condensed',sans-serif;transition:background .1s;line-height:1.1;}
 .repair-btn:hover{background:rgba(76,175,80,.24);}
 .repair-btn:active{transform:translateY(1px);}
 .repair-btn:disabled{background:#2a2a3e;border-color:var(--line);color:var(--ink-faint);cursor:not-allowed;}
-.repair-btn .rep-txt{font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
-.repair-btn .rep-cost{font-family:'DM Mono',monospace;font-size:.56rem;color:var(--ink-dim);}
+.repair-btn .ui-ico{width:12px;height:12px;}
+.repair-btn .rep-txt{font-size:.62rem;text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
+.repair-btn .rep-cost{font-family:'DM Mono',monospace;font-size:.5rem;color:var(--ink-dim);}
 
 /* ── Panneau Port ── */
 .port-panel{width:min(540px,95vw);}
@@ -436,7 +437,8 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .tabs-row .tab-btn .tb-top{justify-content:center;gap:4px;}
 .tabs-row .tab-btn .tab-ico{font-size:.82rem;}
 .tabs-row .tab-btn .tab-ico .ui-ico,.tabs-row .tab-btn .tab-ico.ui-ico{width:13px;height:13px;}
-.tabs-row .tab-btn .tb-name,.tabs-row .tab-btn .tb-sub{max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+.tabs-row .tab-btn .tb-name,.tabs-row .tab-btn .tb-sub{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tabs-row .tab-btn .tb-name{font-size:.72rem;letter-spacing:0;}
 .tab-btn.tab-dem.active{border-color:var(--red);background:rgba(255,59,48,.16);box-shadow:0 0 0 1px var(--red) inset;}
 .tab-btn.tab-dem.active .tb-name{color:#ff7a72;}
 .tab-btn.tab-upg.active{border-color:#4CAF50;background:rgba(76,175,80,.16);box-shadow:0 0 0 1px #4CAF50 inset;}
@@ -539,14 +541,15 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   .tool-group.tabs{padding:6px;width:100%;}
   .tabs-row{flex-wrap:nowrap;gap:3px;}
   .tabs-row .tab-btn{padding:5px 2px;}
-  .tabs-row .tab-btn .tb-name{font-size:.72rem;}
-  .tabs-row .tab-btn .tb-sub{font-size:.5rem;}
+  .tabs-row .tab-btn .tb-top{gap:3px;}
+  .tabs-row .tab-btn .tb-name{font-size:.62rem;}
+  .tabs-row .tab-btn .tb-sub{font-size:.48rem;}
   .tabs-row .tab-btn .tab-ico{font-size:.72rem;}
   .tabs-row .tab-btn .tab-ico .ui-ico,.tabs-row .tab-btn .tab-ico.ui-ico{width:12px;height:12px;}
 }
 @media (max-width:380px){
   .tabs-row .tab-btn .tb-sub{display:none;}
-  .tabs-row .tab-btn .tb-name{font-size:.68rem;}
+  .tabs-row .tab-btn .tb-name{font-size:.56rem;}
 }
 /* ── Very narrow phones: tighter still ── */
 @media (max-width:420px){
