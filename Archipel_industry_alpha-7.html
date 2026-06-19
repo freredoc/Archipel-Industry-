@@ -329,6 +329,22 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 .opt-toggle.dev.on{background:rgba(255,59,48,.22);border-color:var(--red);}
 .opt-toggle.dev.on::after{background:#ff8079;}
 .opt-fullbtn{width:100%;}
+/* ── Notification de production hors-ligne ── */
+.offline-panel{width:min(420px,94vw);}
+.offline-body{padding:14px;display:flex;flex-direction:column;gap:11px;}
+.offline-sub{font-family:'Barlow Condensed',sans-serif;font-size:.9rem;color:var(--ink);line-height:1.3;}
+.offline-sub b{color:#7fd98a;}
+.offline-gains{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.offline-gain{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:6px;
+  padding:6px 9px;background:var(--panel-2);min-width:0;}
+.offline-ico{width:18px;height:18px;image-rendering:pixelated;flex-shrink:0;}
+.offline-dot{width:11px;height:11px;border-radius:3px;background:#7fd98a;flex-shrink:0;}
+.offline-amt{font-family:'DM Mono',monospace;font-size:.78rem;color:#7fd98a;font-weight:700;flex-shrink:0;}
+.offline-name{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;color:var(--ink-dim);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.offline-ok{margin:0 14px 14px;border-style:solid;border-color:#4CAF50;color:#7fd98a;}
+.offline-ok:hover{background:rgba(76,175,80,.16);}
+@media (max-width:420px){.offline-gains{grid-template-columns:1fr;}}
 
 /* ── Scène (canvas + overlays) ── */
 .stage{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--bg);}
@@ -5891,6 +5907,56 @@ function OptionsModal({
     onClick: onOpenSaves
   }, uiIcon('sauvegarde', "💾"), " Emplacements de sauvegarde"))));
 }
+function OfflineModal({
+  report,
+  onClose
+}) {
+  const gains = report.gains || [];
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "slot-backdrop",
+    onClick: onClose
+  }), React.createElement("div", {
+    className: "slot-panel offline-panel"
+  }, React.createElement("div", {
+    className: "slot-head"
+  }, React.createElement("span", {
+    className: "slot-title"
+  }, "🌙 Bon retour !"), React.createElement("button", {
+    className: "slot-close",
+    onClick: onClose,
+    title: "Fermer"
+  }, "\xD7")), React.createElement("div", {
+    className: "offline-body"
+  }, React.createElement("div", {
+    className: "offline-sub"
+  }, "Absence : ", React.createElement("b", null, report.timeLabel), gains.length ? " — production r\xE9cup\xE9r\xE9e :" : " — rien \xE0 produire."), gains.length > 0 && React.createElement("div", {
+    className: "offline-gains"
+  }, gains.map(({
+    res,
+    amount
+  }) => {
+    const ikey = itemSpriteKey(res);
+    const src = ikey && SPRITE_DATA[ikey];
+    return React.createElement("div", {
+      className: "offline-gain",
+      key: res
+    }, src ? React.createElement("img", {
+      className: "offline-ico",
+      src: src,
+      alt: "",
+      draggable: false
+    }) : React.createElement("span", {
+      className: "offline-dot"
+    }), React.createElement("span", {
+      className: "offline-amt"
+    }, "+", fmtInt(amount)), React.createElement("span", {
+      className: "offline-name"
+    }, RES_SHORT[res] || res));
+  }))), React.createElement("button", {
+    className: "slot-new offline-ok",
+    onClick: onClose
+  }, "Continuer")));
+}
 function App() {
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
@@ -6086,6 +6152,7 @@ function App() {
   const [buildOpen, setBuildOpen] = useState(false);
   const [netOpen, setNetOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [offlineReport, setOfflineReport] = useState(null);
   const [researchPending, setResearchPending] = useState(false);
   const [info, setInfo] = useState(null);
   const [upgrade, setUpgrade] = useState(null);
@@ -6564,7 +6631,7 @@ function App() {
     if (!g.lastSave) return;
     const OFFLINE_MAX_TICKS = 8 * 3600;
     const elapsed = Math.floor((Date.now() - g.lastSave) / 1000);
-    if (elapsed < 10) return;
+    if (elapsed < 60) return;
     const ticks = Math.min(elapsed, OFFLINE_MAX_TICKS);
     const sumPort = () => {
       const acc = {};
@@ -6595,13 +6662,14 @@ function App() {
     }
     gains.sort((a, b) => b[1] - a[1]);
     const mins = Math.max(1, Math.round(done / 60));
-    const timeLabel = mins >= 60 ? Math.floor(mins / 60) + ' h ' + (mins % 60 < 10 ? '0' : '') + mins % 60 : mins + ' min';
-    if (gains.length) {
-      const top = gains.slice(0, 3).map(([k, d]) => '+' + fmtInt(d) + ' ' + (RES_SHORT[k] || k)).join(' · ');
-      showToast('🌙 Hors-ligne ' + timeLabel + ' : ' + top, 'var(--green)');
-    } else if (done > 0) {
-      showToast('🌙 Hors-ligne ' + timeLabel + ' — rien à produire', 'var(--ink-dim)');
-    }
+    const timeLabel = mins >= 60 ? Math.floor(mins / 60) + ' h ' + (mins % 60 < 10 ? '0' : '') + mins % 60 + ' min' : mins + ' min';
+    setOfflineReport({
+      timeLabel,
+      gains: gains.slice(0, 12).map(([k, d]) => ({
+        res: k,
+        amount: d
+      }))
+    });
     bumpHud();
     markDirty();
   }
@@ -8169,6 +8237,9 @@ function App() {
       setSlotOpen(true);
     },
     onClose: () => setOptionsOpen(false)
+  }), offlineReport && React.createElement(OfflineModal, {
+    report: offlineReport,
+    onClose: () => setOfflineReport(null)
   }), portOpen && React.createElement(PortPanel, {
     game: game,
     currentIsland: game.currentIsland,
