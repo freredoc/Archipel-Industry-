@@ -559,11 +559,12 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   background:var(--yellow);border:1px solid var(--panel);animation:notifpulse 1.2s ease-in-out infinite;}
 @keyframes notifpulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.35);opacity:.6;}}
 /* Tappable quit button in the status bar (mobile-friendly replacement for "Échap") */
-.status-quit{margin-left:10px;flex-shrink:0;background:rgba(255,59,48,.16);color:#ff8079;
-  border:1px solid rgba(255,59,48,.5);border-radius:5px;padding:3px 12px;cursor:pointer;
-  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;
+.status-quit{margin-left:10px;flex-shrink:0;background:rgba(255,59,48,.9);color:#fff;
+  border:1px solid rgba(255,99,90,.95);border-radius:6px;padding:6px 18px;cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.98rem;
+  letter-spacing:.4px;text-transform:uppercase;box-shadow:0 2px 8px rgba(255,59,48,.4);
   pointer-events:auto;touch-action:manipulation;}
-.status-quit:hover{background:rgba(255,59,48,.28);}
+.status-quit:hover{background:rgba(255,59,48,1);}
 .status{display:flex;align-items:center;}
 /* ── Mobile: show everything (wrap, no horizontal scroll), drop the game title ── */
 @media (max-width:760px){
@@ -2808,8 +2809,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 10;
-const GAME_VERSION = 'Alpha 8.2';
+const GAME_BUILD = 11;
+const GAME_VERSION = 'Alpha 8.3';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -7961,6 +7962,9 @@ function App() {
   }
   function drawNetworkDebug(ctx, ox, oy, tile) {
     const g = gameRef.current;
+    // Libellé « N<id> » = aide de débogage (identifiant du réseau). Masqué en jeu
+    // normal ; visible uniquement en Mode développeur.
+    if (!g.ui.dev) return;
     const h = g.hover;
     if (!h) return;
     const t = curTiles()[h.r] && curTiles()[h.r][h.c];
@@ -8420,7 +8424,11 @@ function App() {
     return `il y a ${m}min`;
   }
   function statusHint() {
-    if (tool === null) return 'Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos';
+    if (tool === null) {
+      if (buildOpen) return 'Menu construction — choisissez un bâtiment, ou « Quitter » pour fermer';
+      if (netOpen) return 'Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer';
+      return 'Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos';
+    }
     if (tool === DEMOLISH) return React.createElement("span", null, React.createElement("b", null, "D\xE9molir"), " \u2014 touchez un b\xE2timent (remboursement 100%)");
     if (tool === UPGRADE) return React.createElement("span", null, React.createElement("b", null, "Am\xE9liorer"), " \u2014 touchez un b\xE2timent de production");
     if (tool === COPY) return React.createElement("span", null, React.createElement("b", null, "Copier"), " \u2014 touchez un b\xE2timent pour le s\xE9lectionner");
@@ -8518,10 +8526,14 @@ function App() {
     }
   }), React.createElement("div", {
     className: "status"
-  }, statusHint(), tool !== null && React.createElement("button", {
+  }, statusHint(), (tool !== null || buildOpen || netOpen) && React.createElement("button", {
     className: "status-quit",
-    onClick: deselectAll,
-    title: "Quitter l'outil"
+    onClick: () => {
+      deselectAll();
+      setBuildOpen(false);
+      setNetOpen(false);
+    },
+    title: "Quitter le mode construction"
   }, "\u2715 Quitter")), dev && React.createElement("div", {
     className: "dev-banner"
   }, "\u26A0 MODE DEV \u2014 construction gratuite"), (() => {
