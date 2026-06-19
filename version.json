@@ -1,7 +1,7 @@
 {
-  "build": 8,
-  "version": "Alpha 8",
+  "build": 9,
+  "version": "Alpha 8.1",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Fix desync niveau : le panneau Améliorer affichait le niveau (upgrade) au lieu de upgrade+1 — aligné sur l'info-panel et le badge carte"
+  "notes": "Alpha 8.1 — HUD aligné (Réparer/Port/Recherche), menu construction se referme à la sélection, niveaux synchronisés entre panneaux"
 }
