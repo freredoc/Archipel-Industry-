@@ -1,7 +1,7 @@
 {
-  "build": 9,
-  "version": "Alpha 8.1",
+  "build": 10,
+  "version": "Alpha 8.2",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 8.1 — HUD aligné (Réparer/Port/Recherche), menu construction se referme à la sélection, niveaux synchronisés entre panneaux"
+  "notes": "Alpha 8.2 — pan en mode construction, teinte inventaire (monte/descend), confirmation niveau réseau, coût d'extension des réseaux V2+, étiquette réseau ne reste plus collée au tap"
 }
