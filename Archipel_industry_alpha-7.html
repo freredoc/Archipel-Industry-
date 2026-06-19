@@ -375,6 +375,13 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-up:disabled,.ip-down:disabled{opacity:.4;cursor:not-allowed;}
 .ip-up .ip-sub,.ip-down .ip-sub{font-family:'DM Mono',monospace;font-size:.62rem;font-weight:400;opacity:.85;}
 .ip-up:active:not(:disabled),.ip-down:active:not(:disabled){transform:translateY(1px);}
+.ip-up.armed{background:rgba(76,175,80,.3);border-color:#4CAF50;color:#9ee29f;
+  box-shadow:0 0 0 1px #4CAF50 inset;}
+/* Aperçu d'amélioration (affiché après le 1er clic sur « Monter ») */
+.ip-up-preview{margin-bottom:9px;padding:8px 0 2px;border-top:1px solid var(--line);}
+.ip-up-ptitle{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;
+  text-transform:uppercase;letter-spacing:.04em;color:#7fd98a;margin-bottom:6px;}
+.ip-up-preview .up-rows{margin-bottom:6px;}
 .ip-close{background:none;border:none;color:var(--ink-faint);font-size:1.1rem;cursor:pointer;
   line-height:1;padding:0 2px;}
 .ip-close:hover{color:var(--ink);}
@@ -4756,6 +4763,13 @@ function InfoPanel({
     top: info.y,
     ready: false
   });
+  // Amélioration en deux temps : le 1er clic « Monter » arme l'aperçu (entrées/
+  // sorties du niveau suivant + coût), les clics suivants appliquent l'amélioration
+  // tant qu'on peut payer. L'aperçu reste affiché tant que le panneau est ouvert.
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    setArmed(false);
+  }, [info.r, info.c]);
   const tilesRow = game.islands[currentIsland] && game.islands[currentIsland][info.r];
   const live = tilesRow && tilesRow[info.c];
   const bld = live && live.building;
@@ -4853,6 +4867,20 @@ function InfoPanel({
   const upCost = upgradable ? upgradeCost(b.cost, upg + 1, info.id) : null;
   const canUp = !!upCost && (dev || Object.keys(upCost).every(k => (port[k] || 0) >= upCost[k]));
   const downRefund = upgradable && upg > 0 ? upgradeCost(b.cost, upg, info.id) : null;
+  // Lignes d'aperçu d'amélioration (valeur actuelle → niveau suivant).
+  const nextMult = upgradeMult(upg + 1);
+  const previewRow = (label, rec) => rec && Object.keys(rec).length ? React.createElement("div", {
+    className: "up-row",
+    key: label
+  }, React.createElement("span", {
+    className: "lbl"
+  }, label), React.createElement("span", {
+    className: "cur"
+  }, formatRecipe(scaledRecipe(rec, upgradeMult(upg)))), React.createElement("span", {
+    className: "arr"
+  }, "→"), React.createElement("span", {
+    className: "nxt"
+  }, formatRecipe(scaledRecipe(rec, nextMult)))) : null;
   // Capped output display: any throughput-limited output (road or pipe) whose
   // connected network is saturated shows its real (reduced) rate.
   const cappedOut = {};
@@ -4994,14 +5022,35 @@ function InfoPanel({
     className: "lbl"
   }, "Effet"), React.createElement("span", {
     className: "val io"
-  }, "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)"))), upgradable && React.createElement("div", {
+  }, "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)"))), armed && upgradable && React.createElement("div", {
+    className: "ip-up-preview"
+  }, React.createElement("div", {
+    className: "ip-up-ptitle"
+  }, "Amélioration → Nv.", upg + 2), React.createElement("div", {
+    className: "up-rows"
+  }, previewRow("Entrées", b.inputs), previewRow("Sortie", b.outputs)), React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "Coût"), React.createElement("span", {
+    className: "val",
+    style: {
+      color: canUp ? 'var(--yellow)' : '#ff8079'
+    }
+  }, formatCost(upCost) || 'gratuit'))), upgradable && React.createElement("div", {
     className: "ip-actions"
   }, React.createElement("button", {
-    className: "ip-up",
-    disabled: !canUp,
-    onClick: () => onUpgrade(info.r, info.c),
-    title: 'Coût : ' + (formatCost(upCost) || 'gratuit')
-  }, uiIcon('monter', "\u2B06"), " Monter ", React.createElement("span", {
+    className: "ip-up" + (armed ? ' armed' : ''),
+    disabled: armed && !canUp,
+    onClick: () => {
+      if (!armed) {
+        setArmed(true);
+        return;
+      }
+      onUpgrade(info.r, info.c);
+    },
+    title: armed ? 'Confirmer · Coût : ' + (formatCost(upCost) || 'gratuit') : 'Voir l\'amélioration (Nv.' + (upg + 2) + ')'
+  }, uiIcon('monter', "\u2B06"), armed ? " Confirmer " : " Monter ", React.createElement("span", {
     className: "ip-sub"
   }, "Nv.", upg + 2)), React.createElement("button", {
     className: "ip-down",
