@@ -341,6 +341,24 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 .opt-toggle.dev.on{background:rgba(255,59,48,.22);border-color:var(--red);}
 .opt-toggle.dev.on::after{background:#ff8079;}
 .opt-fullbtn{width:100%;}
+/* ── Version & mise à jour ── */
+.opt-version-row{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-top:4px;padding-top:10px;border-top:1px solid var(--line);}
+.opt-upd-btn{flex-shrink:0;background:var(--panel);border:1px solid var(--line);color:var(--ink);
+  border-radius:6px;padding:6px 12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;
+  font-weight:600;font-size:.82rem;}
+.opt-upd-btn:hover{border-color:var(--accent,#4CAF50);}
+.opt-upd-btn:disabled{opacity:.5;cursor:default;}
+.opt-upd-status{font-family:'Barlow Condensed',sans-serif;font-size:.9rem;color:var(--ink-dim);
+  padding:2px 2px 0;}
+.opt-upd-status.ok{color:#7fd98a;}
+.opt-upd-status.err{color:#ff8079;}
+.opt-upd-status.new{color:var(--ink);display:flex;flex-direction:column;gap:6px;}
+.opt-upd-notes{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--ink-dim);}
+.opt-upd-dl{align-self:flex-start;background:rgba(76,175,80,.2);border:1px solid #4CAF50;color:#9ee29f;
+  border-radius:6px;padding:6px 13px;text-decoration:none;font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:.85rem;}
+.opt-upd-dl:hover{background:rgba(76,175,80,.32);}
 /* ── Notification de production hors-ligne ── */
 .offline-panel{width:min(420px,94vw);}
 .offline-body{padding:14px;display:flex;flex-direction:column;gap:11px;}
@@ -2782,6 +2800,12 @@ function ensureSlotsInitialized() {
   return active;
 }
 const SAVE_VERSION = 10;
+// Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
+// GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
+// en même temps que version.json à la racine du dépôt.
+const GAME_BUILD = 7;
+const GAME_VERSION = 'Alpha 7';
+const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
 const MAX_ZOOM = 4,
@@ -5986,6 +6010,54 @@ function OptionsModal({
     onClick: onClick,
     title: on ? 'Activé' : 'Désactivé'
   }));
+  const [upd, setUpd] = useState({
+    state: 'idle'
+  });
+  const checkUpdate = () => {
+    setUpd({
+      state: 'checking'
+    });
+    fetch(VERSION_URL + '?t=' + Date.now(), {
+      cache: 'no-store'
+    }).then(r => {
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json();
+    }).then(d => {
+      const build = +d.build || 0;
+      if (build > GAME_BUILD) setUpd({
+        state: 'available',
+        label: d.version || ('build ' + build),
+        apk: d.apk || d.url || '',
+        notes: d.notes || ''
+      });else setUpd({
+        state: 'uptodate'
+      });
+    }).catch(() => setUpd({
+      state: 'error'
+    }));
+  };
+  const updStatus = () => {
+    if (upd.state === 'checking') return React.createElement("div", {
+      className: "opt-upd-status"
+    }, "Vérification…");
+    if (upd.state === 'uptodate') return React.createElement("div", {
+      className: "opt-upd-status ok"
+    }, "✓ Le jeu est à jour.");
+    if (upd.state === 'error') return React.createElement("div", {
+      className: "opt-upd-status err"
+    }, "Impossible de vérifier (hors-ligne ?).");
+    if (upd.state === 'available') return React.createElement("div", {
+      className: "opt-upd-status new"
+    }, React.createElement("div", null, "⬆ Mise à jour disponible : ", React.createElement("b", null, upd.label)), upd.notes && React.createElement("div", {
+      className: "opt-upd-notes"
+    }, upd.notes), upd.apk && React.createElement("a", {
+      className: "opt-upd-dl",
+      href: upd.apk,
+      target: "_blank",
+      rel: "noopener"
+    }, "Télécharger la mise à jour"));
+    return null;
+  };
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "slot-backdrop",
     onClick: onClose
@@ -6004,7 +6076,19 @@ function OptionsModal({
   }, toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Mode d\xE9veloppeur", "Construction et am\xE9liorations gratuites", dev, onToggleDev, 'dev'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onOpenSaves
-  }, uiIcon('sauvegarde', "💾"), " Emplacements de sauvegarde"))));
+  }, uiIcon('sauvegarde', "💾"), " Emplacements de sauvegarde"), React.createElement("div", {
+    className: "opt-version-row"
+  }, React.createElement("div", {
+    className: "opt-lbl"
+  }, React.createElement("span", {
+    className: "opt-name"
+  }, "Version"), React.createElement("span", {
+    className: "opt-desc"
+  }, GAME_VERSION, " · build ", GAME_BUILD)), React.createElement("button", {
+    className: "opt-upd-btn",
+    onClick: checkUpdate,
+    disabled: upd.state === 'checking'
+  }, "Vérifier les mises à jour")), updStatus())));
 }
 function TutorialBanner({
   step,

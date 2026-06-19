@@ -40,8 +40,22 @@ cd android
 | minSdk         | 26 (Android 8.0)                |
 | targetSdk / compileSdk | 34                      |
 | AGP / Gradle   | 8.5.2 / 8.7                     |
-| Permissions    | aucune (hors-ligne)             |
+| Permissions    | INTERNET (uniquement pour la vérif. de mise à jour) |
 | Orientation    | portrait                        |
+
+## Version & mises à jour
+
+Le jeu affiche sa version dans **Options** (ex. « Alpha 7 · build 7 ») avec un bouton
+**Vérifier les mises à jour**. Ce bouton lit `version.json` à la racine du dépôt
+(`raw.githubusercontent.com/.../main/version.json`) et compare le champ `build` à celui
+embarqué dans le jeu (`GAME_BUILD`). Si la version en ligne est plus récente, un lien de
+téléchargement de l'APK s'affiche (ouvert dans le navigateur système).
+
+`version.json` est **régénéré automatiquement par la CI** à partir de `GAME_BUILD` /
+`GAME_VERSION` du HTML — il suffit donc, pour publier une mise à jour, d'incrémenter
+`GAME_BUILD` (et `GAME_VERSION`) dans `Archipel_industry_alpha-7.html` et de pousser sur
+`main`. La CI reconstruit l'APK, met à jour la release `apk-latest`, et synchronise
+`version.json`.
 
 L'APK publié est un build **debug** (signé avec le keystore de debug), suffisant pour
 une installation perso par sideload. Pour une distribution sur le Play Store, il faudrait

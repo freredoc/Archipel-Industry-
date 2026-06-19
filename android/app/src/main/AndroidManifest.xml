@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Aucune permission : le jeu est 100% hors-ligne (asset local). -->
+    <!-- Le jeu tourne hors-ligne (asset local). INTERNET sert uniquement à la
+         vérification de mise à jour et à l'ouverture du lien de téléchargement. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"

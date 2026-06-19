@@ -60,6 +60,31 @@ jobs:
           path: ArchipelIndustry.apk
           if-no-files-found: error
 
+      - name: Sync version.json from the game's GAME_BUILD
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" Archipel_industry_alpha-7.html | head -1)
+          VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" Archipel_industry_alpha-7.html | head -1)
+          NOTES=$(git log -1 --pretty=%s)
+          echo "Game build=$BUILD version=$VERSION"
+          jq -n \
+            --argjson build "${BUILD:-0}" \
+            --arg version "${VERSION:-?}" \
+            --arg url "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest" \
+            --arg apk "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk" \
+            --arg notes "$NOTES" \
+            '{build:$build, version:$version, url:$url, apk:$apk, notes:$notes}' > version.json
+          if ! git diff --quiet version.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add version.json
+            git commit -m "chore: sync version.json (build $BUILD) [skip ci]"
+            git push origin HEAD:main || echo "push skipped (main advanced)"
+          else
+            echo "version.json already up to date."
+          fi
+
       - name: Publish to "apk-latest" release
         env:
           GH_TOKEN: ${{ github.token }}

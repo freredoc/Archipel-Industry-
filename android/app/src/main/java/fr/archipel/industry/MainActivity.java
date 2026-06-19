@@ -1,9 +1,12 @@
 package fr.archipel.industry;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -29,11 +32,37 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setTextZoom(100);                           // ignore le zoom système, garde la mise en page
-        web.setWebViewClient(new WebViewClient());    // garde la navigation dans la WebView
+
+        // Le jeu reste dans la WebView ; les liens http(s) externes (ex. lien de
+        // téléchargement d'une mise à jour) s'ouvrent dans le navigateur système.
+        web.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                return openExternally(request.getUrl());
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return openExternally(Uri.parse(url));
+            }
+        });
         web.setBackgroundColor(0xFF0E1726);           // fond sombre pendant le chargement
 
         setContentView(web);
         web.loadUrl("file:///android_asset/index.html");
+    }
+
+    /** Ouvre les URLs http/https dans le navigateur système ; garde le reste dans la WebView. */
+    private boolean openExternally(Uri uri) {
+        String scheme = uri != null ? uri.getScheme() : null;
+        if ("http".equals(scheme) || "https".equals(scheme)) {
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                return true;
+            } catch (Exception ignored) {
+            }
+        }
+        return false;
     }
 
     @Override
