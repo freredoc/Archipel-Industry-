@@ -6623,16 +6623,15 @@ function App() {
     g.lastSave = data.savedAt || 0;
     return true;
   }
-  // Rejoue la production manquée pendant l'absence (production hors-ligne / idle).
-  // Plafonné à OFFLINE_MAX_TICKS (8 h) et à un budget de calcul pour ne pas figer
-  // l'UI au chargement. Un tick = 1 seconde de jeu (cf. boucle frame()).
-  function applyOfflineProgress() {
+  // Rejoue la production manquée pendant une absence (production hors-ligne / idle).
+  // Déclenché AU CHARGEMENT (temps depuis la dernière sauvegarde) ET AU RETOUR
+  // D'ARRIÈRE-PLAN (onglet masqué / écran verrouillé — la boucle d'anim est gelée).
+  // Plafonné à 8 h et à un budget de calcul pour ne pas figer l'UI. 1 tick = 1 s.
+  const OFFLINE_MAX_TICKS = 8 * 3600;
+  function runCatchUp(elapsedSec) {
     const g = gameRef.current;
-    if (!g.lastSave) return;
-    const OFFLINE_MAX_TICKS = 8 * 3600;
-    const elapsed = Math.floor((Date.now() - g.lastSave) / 1000);
-    if (elapsed < 60) return;
-    const ticks = Math.min(elapsed, OFFLINE_MAX_TICKS);
+    if (!(elapsedSec >= 60)) return;
+    const ticks = Math.min(Math.floor(elapsedSec), OFFLINE_MAX_TICKS);
     const sumPort = () => {
       const acc = {};
       for (const isl in g.port) for (const k in g.port[isl]) acc[k] = (acc[k] || 0) + (g.port[isl][k] || 0);
@@ -6654,6 +6653,7 @@ function App() {
     g.researchReady = [];
     g.researchNotify = [];
     g.lastSave = Date.now();
+    g.lastActiveTs = Date.now();
     const after = sumPort();
     const gains = [];
     for (const k in after) {
@@ -6672,6 +6672,12 @@ function App() {
     });
     bumpHud();
     markDirty();
+    flushSave();
+  }
+  function applyOfflineProgress() {
+    const g = gameRef.current;
+    if (!g.lastSave) return;
+    runCatchUp((Date.now() - g.lastSave) / 1000);
   }
   function missingFor(cost) {
     const res = portPool(gameRef.current);
@@ -7934,6 +7940,9 @@ function App() {
       const now = performance.now();
       const prev = g.lastFrameTs || now;
       g.lastFrameTs = now;
+      // Horloge murale de la dernière frame « vivante » : sert à mesurer le temps
+      // passé en arrière-plan (la boucle est gelée quand l'onglet est masqué).
+      g.lastActiveTs = Date.now();
       g.tickAcc += Math.min((now - prev) / 1000, 1.0);
       let guard = 0;
       while (g.tickAcc >= 1 && guard < 5) {
@@ -7988,9 +7997,13 @@ function App() {
     start();
     const onResume = () => {
       if (document.visibilityState !== 'visible') return;
+      // Rattrape la production manquée pendant que l'onglet était en arrière-plan.
+      const gg = gameRef.current;
+      if (gg.lastActiveTs) runCatchUp((Date.now() - gg.lastActiveTs) / 1000);
       requestAnimationFrame(() => {
         const g = gameRef.current;
         g.lastFrameTs = performance.now();
+        g.lastActiveTs = Date.now();
         layout();
         if (ctxValid()) {
           g.dirty = true;
