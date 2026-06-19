@@ -145,6 +145,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .research-btn:hover{background:#23234a;border-color:var(--yellow);}
 .research-btn:active{transform:translateY(1px);}
 .research-btn .rlabel{text-transform:uppercase;letter-spacing:.05em;}
+/* Pile verticale à droite du HUD : Recherche placée sous le Port */
+.hud-right-stack{display:flex;flex-direction:column;gap:6px;margin-left:auto;align-items:stretch;flex-shrink:0;}
+.hud-right-stack .research-btn{width:100%;}
 /* Bouton Réparer (déblocage île suivante) */
 .repair-btn{display:flex;flex-direction:column;align-items:flex-start;gap:0;background:rgba(76,175,80,.14);
   border:1px solid #4CAF50;color:#7fd98a;border-radius:4px;padding:3px 10px;cursor:pointer;flex-shrink:0;
@@ -431,6 +434,8 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .tabs-row{display:flex;flex-wrap:nowrap;gap:4px;width:100%;}
 .tabs-row .tab-btn{flex:1 1 0;min-width:0;align-items:center;text-align:center;padding:6px 4px;}
 .tabs-row .tab-btn .tb-top{justify-content:center;gap:4px;}
+.tabs-row .tab-btn .tab-ico{font-size:.82rem;}
+.tabs-row .tab-btn .tab-ico .ui-ico,.tabs-row .tab-btn .tab-ico.ui-ico{width:13px;height:13px;}
 .tabs-row .tab-btn .tb-name,.tabs-row .tab-btn .tb-sub{max-width:100%;overflow:hidden;text-overflow:ellipsis;}
 .tab-btn.tab-dem.active{border-color:var(--red);background:rgba(255,59,48,.16);box-shadow:0 0 0 1px var(--red) inset;}
 .tab-btn.tab-dem.active .tb-name{color:#ff7a72;}
@@ -536,7 +541,8 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   .tabs-row .tab-btn{padding:5px 2px;}
   .tabs-row .tab-btn .tb-name{font-size:.72rem;}
   .tabs-row .tab-btn .tb-sub{font-size:.5rem;}
-  .tabs-row .tab-btn .tab-ico{font-size:.85rem;}
+  .tabs-row .tab-btn .tab-ico{font-size:.72rem;}
+  .tabs-row .tab-btn .tab-ico .ui-ico,.tabs-row .tab-btn .tab-ico.ui-ico{width:12px;height:12px;}
 }
 @media (max-width:380px){
   .tabs-row .tab-btn .tb-sub{display:none;}
@@ -4581,7 +4587,9 @@ function Hud({
     className: "rep-txt"
   }, "R\xE9parer \xCEle ", repairInfo.island), React.createElement("span", {
     className: "rep-cost"
-  }, formatCost(repairInfo.cost))), React.createElement("button", {
+  }, formatCost(repairInfo.cost))), React.createElement("div", {
+    className: "hud-right-stack"
+  }, React.createElement("button", {
     className: "research-btn",
     onClick: onOpenPort,
     title: "Configuration du port (commerce)"
@@ -4595,7 +4603,7 @@ function Hud({
     className: "rlabel"
   }, "Recherche"), researchPending && React.createElement("span", {
     className: "notif-dot"
-  }))), (() => {
+  })))), (() => {
     // Two states only: collapsed = just the INVENTAIRE button; expanded = all items.
     // The "INVENTAIRE" label itself is the toggle (no separate arrow).
     if (!invOpen) {
