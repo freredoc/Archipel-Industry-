@@ -3,5 +3,5 @@
   "version": "Alpha 8",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Fix UI HUD : regroupe Réparer Île / Port / Recherche dans une colonne à droite (fin du chevauchement)"
+  "notes": "HUD: Réparer Île à gauche (label + coût), Port/Recherche à droite, hauts alignés"
 }
