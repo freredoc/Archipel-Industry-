@@ -1137,11 +1137,6 @@ const NET_PREFIX = {
   pipe: 'tuyau',
   wire: 'cable'
 };
-// Échelle de rendu des réseaux (route/tuyau/câble) : <1 les dessine plus fins
-// que la case. Pour rester raccordés aux voisins, chaque case est étirée jusqu'au
-// bord dans les directions connectées et n'est rétrécie que sur les côtés libres
-// (voir le rendu des réseaux dans draw()).
-const NET_SPRITE_SCALE = 0.70;
 // 4-dir bitmask order matching delivered sprites: N=1, E=2, S=4, O(W)=8.
 // Suffix letters use N/E/S/O. Build the lookup from mask value -> "NN_LETTERS".
 const NET_MASK_SUFFIX = (() => {
@@ -1274,17 +1269,6 @@ function netConnectMask(tiles, r, c, carriers) {
     if (connects) mask |= bit;
   }
   return mask;
-}
-// Rectangle de dessin aminci (échelle NET_SPRITE_SCALE) d'une case réseau/jonction :
-// chaque côté connecté (cf. mask) reste collé au bord, les côtés libres sont rentrés.
-function netDrawRect(x, y, tile, mask) {
-  const m = tile * (1 - NET_SPRITE_SCALE) / 2;
-  return {
-    x: x + (mask & 8 ? 0 : m),
-    y: y + (mask & 1 ? 0 : m),
-    w: tile - (mask & 8 ? 0 : m) - (mask & 2 ? 0 : m),
-    h: tile - (mask & 1 ? 0 : m) - (mask & 4 ? 0 : m)
-  };
 }
 // Non-storable resources: never accumulate in pipe pools. Produced and consumed
 // within the same tick; any leftover is purged from all pools at end of tick.
@@ -7306,26 +7290,19 @@ function App() {
       // Network sprites (route/tuyau/cable): connection-aware tile by bitmask + level.
       if (SPRITES_ENABLED && bdef && bdef.kind === 'infra' && NET_PREFIX[bid]) {
         const carrier = bid === 'road' ? 'road' : bid === 'pipe' ? 'pipe' : 'wire';
-        // Côtés connectés (route/tuyau/câble portent un seul carrier).
+        // Côtés connectés (route/tuyau/câble portent un seul carrier) -> variante.
         const mask = netConnectMask(tiles, r, c, [carrier]);
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
         const key = NET_PREFIX[bid] + '_v' + lvl + '_' + NET_MASK_SUFFIX[mask];
-        // Rendu plus fin : marge sur les côtés NON connectés, côtés connectés
-        // laissés au bord pour rester raccordés (intersection NESO = pleine).
-        const rr = netDrawRect(x, y, tile, mask);
-        if (drawSprite(ctx, key, rr.x, rr.y, rr.w, rr.h)) continue;
+        if (drawSprite(ctx, key, x, y, tile, tile)) continue;
       }
-      // Junction sprites: jonction_<a>_<b>_v<level>. Aminci comme les réseaux ;
-      // une jonction couple deux carriers, donc un côté connecté à l'un OU l'autre
-      // reste collé au bord pour ne casser aucun raccordement.
+      // Junction sprites: jonction_<a>_<b>_v<level>.
       if (SPRITES_ENABLED && bdef && bdef.kind === 'junction') {
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
         const jk = bid + '_v' + lvl;
-        const mask = netConnectMask(tiles, r, c, bdef.junction || []);
-        const rr = netDrawRect(x, y, tile, mask);
-        if (drawSprite(ctx, jk, rr.x, rr.y, rr.w, rr.h)) continue;
+        if (drawSprite(ctx, jk, x, y, tile, tile)) continue;
       }
       const sz = buildingSize(bid);
       drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h);
