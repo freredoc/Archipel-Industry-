@@ -3,5 +3,5 @@
   "version": "Alpha 7",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Tutoriel de l'île 1, tuyaux dès l'île 3, et corrections diverses."
+  "notes": "Ajout version du jeu (Alpha 7) et détection de mise à jour dans Options; APK: permission INTERNET + liens externes vers le navigateur; CI synchronise version.json"
 }
