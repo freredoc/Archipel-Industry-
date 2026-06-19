@@ -73,13 +73,12 @@ public class MainActivity extends Activity {
 
     private void hideSystemBars() {
         View d = getWindow().getDecorView();
+        // On masque seulement la barre de statut (en haut). La barre de navigation
+        // (les 3 boutons Android, en bas) reste visible et son espace est réservé :
+        // le jeu se place AU-DESSUS, donc les boutons ne recouvrent plus l'UI du bas.
         d.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
     }
 
     @Override

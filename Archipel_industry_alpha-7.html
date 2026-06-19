@@ -559,11 +559,12 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   background:var(--yellow);border:1px solid var(--panel);animation:notifpulse 1.2s ease-in-out infinite;}
 @keyframes notifpulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.35);opacity:.6;}}
 /* Tappable quit button in the status bar (mobile-friendly replacement for "Échap") */
-.status-quit{margin-left:10px;flex-shrink:0;background:rgba(255,59,48,.16);color:#ff8079;
-  border:1px solid rgba(255,59,48,.5);border-radius:5px;padding:3px 12px;cursor:pointer;
-  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;
+.status-quit{margin-left:10px;flex-shrink:0;background:rgba(255,59,48,.9);color:#fff;
+  border:1px solid rgba(255,99,90,.95);border-radius:6px;padding:6px 18px;cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.98rem;
+  letter-spacing:.4px;text-transform:uppercase;box-shadow:0 2px 8px rgba(255,59,48,.4);
   pointer-events:auto;touch-action:manipulation;}
-.status-quit:hover{background:rgba(255,59,48,.28);}
+.status-quit:hover{background:rgba(255,59,48,1);}
 .status{display:flex;align-items:center;}
 /* ── Mobile: show everything (wrap, no horizontal scroll), drop the game title ── */
 @media (max-width:760px){
@@ -2680,9 +2681,9 @@ const PORTS = {
 const portPosFor = islandId => PORTS[islandId] || null;
 const SOLID_THROUGHPUT_V1 = 32;
 const NETWORK_THROUGHPUT = {
-  1: 32,
-  2: 128,
-  3: 512,
+  1: 64,
+  2: 512,
+  3: 4096,
   4: Infinity
 };
 const networkThroughput = level => NETWORK_THROUGHPUT[level] || NETWORK_THROUGHPUT[1];
@@ -2808,8 +2809,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 10;
-const GAME_VERSION = 'Alpha 8.2';
+const GAME_BUILD = 12;
+const GAME_VERSION = 'Alpha 8.4';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -4363,9 +4364,32 @@ const TECH_BY_ID = {};
 for (const n of TECH_NODES) TECH_BY_ID[n.id] = n;
 const BUILDING_NODE = {};
 for (const n of TECH_NODES) for (const b of n.unlocks && n.unlocks.buildings || []) BUILDING_NODE[b] = n.id;
+// Stock de démarrage déposé dans le port d'une île la première fois qu'elle est
+// débloquée (îles 2 à 5). Amorce la chaîne de production sans repartir de zéro.
+const ISLAND_KICKSTART_BASE = {
+  minerai_fer: 1000,
+  pierre: 1000,
+  lingot_fer: 500,
+  ciment: 500
+};
+const ISLAND_KICKSTART = {
+  2: ISLAND_KICKSTART_BASE,
+  3: ISLAND_KICKSTART_BASE,
+  4: ISLAND_KICKSTART_BASE,
+  5: ISLAND_KICKSTART_BASE
+};
 function applyUnlocks(game, def) {
   const u = def.unlocks || {};
-  for (const isl of u.islands || []) if (typeof isl === 'number') game.islandUnlocked[isl] = true;
+  for (const isl of u.islands || []) if (typeof isl === 'number') {
+    const wasUnlocked = game.islandUnlocked[isl];
+    game.islandUnlocked[isl] = true;
+    // Coup de pouce de démarrage : à la 1re ouverture des îles 2 à 5, on dépose
+    // un stock initial dans le port de l'île pour amorcer la production.
+    if (!wasUnlocked && ISLAND_KICKSTART[isl]) {
+      const port = game.port[isl] || (game.port[isl] = {});
+      for (const k in ISLAND_KICKSTART[isl]) port[k] = (port[k] || 0) + ISLAND_KICKSTART[isl][k];
+    }
+  }
   if (u.boats) game.boats = (game.boats || 0) + u.boats;
 }
 function unlockedBuildingSet(game) {
@@ -7961,6 +7985,9 @@ function App() {
   }
   function drawNetworkDebug(ctx, ox, oy, tile) {
     const g = gameRef.current;
+    // Libellé « N<id> » = aide de débogage (identifiant du réseau). Masqué en jeu
+    // normal ; visible uniquement en Mode développeur.
+    if (!g.ui.dev) return;
     const h = g.hover;
     if (!h) return;
     const t = curTiles()[h.r] && curTiles()[h.r][h.c];
@@ -8032,8 +8059,10 @@ function App() {
       drag.mode = 'demolish';
       if (tile) tryDemolish(tile.r, tile.c, true);
     } else if (tool === UPGRADE) {
+      // Comme la pose : un tap ouvre l'amélioration, un glissé déplace la carte
+      // (on peut donc naviguer même en mode amélioration).
       drag.mode = 'upgrade';
-      if (tile) openUpgrade(tile.r, tile.c);
+      drag.panned = false;
     } else {
       // Bâtiments ET réseaux : pose au relâchement (tap). Un glissé déplace la
       // carte au lieu de poser → on peut naviguer même en mode construction.
@@ -8087,8 +8116,9 @@ function App() {
         if (tile) tryDemolish(tile.r, tile.c, false);
         drag.last = tile;
       }
-    } else if (drag.mode === 'place') {
-      // En mode construction, un glissé (au-delà du seuil de tap) déplace la carte.
+    } else if (drag.mode === 'place' || drag.mode === 'upgrade') {
+      // En mode construction ou amélioration, un glissé (au-delà du seuil de tap)
+      // déplace la carte au lieu d'agir sur la tuile.
       if (drag.dist > TAP_THRESHOLD) {
         drag.panned = true;
         g.cam.x -= dx;
@@ -8122,6 +8152,9 @@ function App() {
     } else if (drag.mode === 'place' && !drag.panned && drag.dist < TAP_THRESHOLD && tile) {
       // Tap franc en mode construction = pose sur la tuile.
       tryPlace(tile.r, tile.c, g.ui.tool, true);
+    } else if (drag.mode === 'upgrade' && !drag.panned && drag.dist < TAP_THRESHOLD && tile) {
+      // Tap franc en mode amélioration = ouvre le panneau d'amélioration.
+      openUpgrade(tile.r, tile.c);
     }
     drag.active = false;
     drag.mode = null;
@@ -8420,7 +8453,11 @@ function App() {
     return `il y a ${m}min`;
   }
   function statusHint() {
-    if (tool === null) return 'Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos';
+    if (tool === null) {
+      if (buildOpen) return 'Menu construction — choisissez un bâtiment, ou « Quitter » pour fermer';
+      if (netOpen) return 'Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer';
+      return 'Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos';
+    }
     if (tool === DEMOLISH) return React.createElement("span", null, React.createElement("b", null, "D\xE9molir"), " \u2014 touchez un b\xE2timent (remboursement 100%)");
     if (tool === UPGRADE) return React.createElement("span", null, React.createElement("b", null, "Am\xE9liorer"), " \u2014 touchez un b\xE2timent de production");
     if (tool === COPY) return React.createElement("span", null, React.createElement("b", null, "Copier"), " \u2014 touchez un b\xE2timent pour le s\xE9lectionner");
@@ -8518,10 +8555,14 @@ function App() {
     }
   }), React.createElement("div", {
     className: "status"
-  }, statusHint(), tool !== null && React.createElement("button", {
+  }, statusHint(), (tool !== null || buildOpen || netOpen) && React.createElement("button", {
     className: "status-quit",
-    onClick: deselectAll,
-    title: "Quitter l'outil"
+    onClick: () => {
+      deselectAll();
+      setBuildOpen(false);
+      setNetOpen(false);
+    },
+    title: "Quitter le mode construction"
   }, "\u2715 Quitter")), dev && React.createElement("div", {
     className: "dev-banner"
   }, "\u26A0 MODE DEV \u2014 construction gratuite"), (() => {
