@@ -5300,7 +5300,7 @@ function UpgradePanel({
     title: "Fermer"
   }, "\xD7")), React.createElement("div", {
     className: "up-level"
-  }, React.createElement("span", null, "Niveau ", React.createElement("b", null, lvl)), React.createElement("span", {
+  }, React.createElement("span", null, "Niveau ", React.createElement("b", null, lvl + 1)), React.createElement("span", {
     className: "up-mult"
   }, "\xD7", mult, " actuel")), React.createElement("div", {
     className: "up-rows"
@@ -5314,7 +5314,7 @@ function UpgradePanel({
     className: "arr"
   }), React.createElement("span", {
     className: "nxt"
-  }, "Niv. ", lvl + 1)), statLine('Entrées', b.inputs), statLine('Sortie', b.outputs), React.createElement("div", {
+  }, "Niv. ", lvl + 2)), statLine('Entrées', b.inputs), statLine('Sortie', b.outputs), React.createElement("div", {
     className: "up-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -5328,7 +5328,7 @@ function UpgradePanel({
     className: "up-cost"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Co\xFBt niv. ", lvl + 1), React.createElement("span", {
+  }, "Co\xFBt niv. ", lvl + 2), React.createElement("span", {
     className: "val"
   }, formatCost(cost) || 'gratuit')), React.createElement("button", {
     className: "up-btn",
