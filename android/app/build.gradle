@@ -1,0 +1,31 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'fr.archipel.industry'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'fr.archipel.industry'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    buildTypes {
+        debug {
+            // APK de debug : signé automatiquement avec le keystore de debug,
+            // installable directement sur le téléphone (sideload).
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

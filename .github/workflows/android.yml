@@ -1,0 +1,77 @@
+name: Build Android APK
+
+# Construit l'APK Android (coquille WebView autour du jeu HTML) et le publie
+# dans une Release "apk-latest", facile à installer depuis le téléphone.
+on:
+  workflow_dispatch:            # bouton "Run workflow" dans l'onglet Actions
+  push:
+    branches: [main]
+    paths:
+      - 'Archipel_industry_alpha-7.html'
+      - 'android/**'
+      - '.github/workflows/android.yml'
+
+permissions:
+  contents: write               # nécessaire pour créer la Release
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Bundle game into app assets
+        run: |
+          mkdir -p android/app/src/main/assets
+          cp Archipel_industry_alpha-7.html android/app/src/main/assets/index.html
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk ArchipelIndustry.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArchipelIndustry-APK
+          path: ArchipelIndustry.apk
+          if-no-files-found: error
+
+      - name: Publish to "apk-latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete apk-latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create apk-latest ArchipelIndustry.apk \
+            --title "APK Android — dernière version" \
+            --notes "Application Android **Archipel Industry** (hors-ligne).
+
+          Installation sur le téléphone :
+          1. Téléchargez \`ArchipelIndustry.apk\` ci-dessous.
+          2. Ouvrez le fichier ; autorisez l'installation depuis cette source si demandé.
+          3. Lancez **Archipel Industry**.
+
+          Construit automatiquement depuis \`Archipel_industry_alpha-7.html\`."

@@ -1,0 +1,11 @@
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+# L'asset est généré (copié depuis le HTML racine) par le workflow CI.
+app/src/main/assets/index.html

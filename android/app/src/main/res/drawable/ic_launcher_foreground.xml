@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Île (terre) -->
+    <path
+        android:fillColor="#6FAE3D"
+        android:pathData="M54,85 C35,85 25,77 25,67 C25,59 33,54 44,53 C46,46 52,43 57,46 C63,42 73,46 73,54 C81,55 85,60 85,67 C85,77 73,85 54,85 Z" />
+
+    <!-- Usine (corps avec toit en dents de scie) -->
+    <path
+        android:fillColor="#F4F1E8"
+        android:pathData="M40,67 L40,53 L48,58 L48,53 L56,58 L56,53 L64,58 L64,67 Z" />
+
+    <!-- Cheminée -->
+    <path
+        android:fillColor="#F4F1E8"
+        android:pathData="M60,54 L60,40 L66,40 L66,58 Z" />
+
+    <!-- Fumée -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M63,35 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0" />
+</vector>
