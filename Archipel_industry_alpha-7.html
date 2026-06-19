@@ -2719,7 +2719,7 @@ function upgradeCost(baseCost, level, buildingId) {
 function cumulativeUpgradeCost(baseCost, level, buildingId) {
   const out = {};
   for (let l = 0; l < (level || 0); l++) {
-    const c = upgradeCost(baseCost, l, buildingId);
+    const c = upgradeCost(baseCost, l + 1, buildingId);
     for (const k in c) out[k] = (out[k] || 0) + c[k];
   }
   return out;
@@ -4827,9 +4827,9 @@ function InfoPanel({
   const upgradable = isUpgradable(info.id);
   const dev = game.ui && game.ui.dev;
   const port = game.port[currentIsland] || {};
-  const upCost = upgradable ? upgradeCost(b.cost, upg, info.id) : null;
+  const upCost = upgradable ? upgradeCost(b.cost, upg + 1, info.id) : null;
   const canUp = !!upCost && (dev || Object.keys(upCost).every(k => (port[k] || 0) >= upCost[k]));
-  const downRefund = upgradable && upg > 0 ? upgradeCost(b.cost, upg - 1, info.id) : null;
+  const downRefund = upgradable && upg > 0 ? upgradeCost(b.cost, upg, info.id) : null;
   // Capped output display: any throughput-limited output (road or pipe) whose
   // connected network is saturated shows its real (reduced) rate.
   const cappedOut = {};
@@ -5035,7 +5035,7 @@ function UpgradePanel({
   const lvl = bld.upgrade || 0;
   const mult = upgradeMult(lvl),
     nextMult = upgradeMult(lvl + 1);
-  const cost = upgradeCost(b.cost, lvl, bld.id);
+  const cost = upgradeCost(b.cost, lvl + 1, bld.id);
   const port = game.port[currentIsland] || {};
   let canAfford = true;
   for (const k in cost) if ((port[k] || 0) < cost[k]) canAfford = false;
@@ -6698,7 +6698,9 @@ function App() {
     const b = BUILDINGS[t.building.id];
     if (!isUpgradable(t.building.id)) return false;
     const lvl = t.building.upgrade || 0;
-    const cost = upgradeCost(b.cost, lvl, t.building.id);
+    // Coût du palier lvl→lvl+1 : on applique la multiplication dès le 1er upgrade
+    // (Nv.1→Nv.2 = coût de base × UPGRADE_SCALE, pas le coût de construction brut).
+    const cost = upgradeCost(b.cost, lvl + 1, t.building.id);
     if (!gameRef.current.ui.dev) {
       const miss = missingFor(cost);
       if (miss.length) {
@@ -6720,7 +6722,7 @@ function App() {
     const lvl = t.building.upgrade || 0;
     if (lvl <= 0) return false;
     const b = BUILDINGS[t.building.id];
-    if (!gameRef.current.ui.dev) refund(upgradeCost(b.cost, lvl - 1, t.building.id));
+    if (!gameRef.current.ui.dev) refund(upgradeCost(b.cost, lvl, t.building.id));
     t.building.upgrade = lvl - 1;
     bumpHud();
     markDirty();
@@ -6859,8 +6861,8 @@ function App() {
     setToolState(next);
     setInfo(null);
     setUpgrade(null);
-    // Picking an actual building from the panel collapses it; keep it open otherwise.
-    if (next && next !== DEMOLISH && next !== UPGRADE && next !== COPY) setBuildOpen(false);
+    // On garde le menu de construction ouvert après avoir choisi un bâtiment/réseau
+    // (on peut en poser plusieurs et changer de sélection sans rouvrir le menu).
     if (next === COPY) showToast('📋 Mode copie : touchez un bâtiment à copier', 'var(--ink-dim)');
     markDirty();
   }
@@ -7452,10 +7454,10 @@ function App() {
     } else if (tool === UPGRADE) {
       drag.mode = 'upgrade';
       if (tile) openUpgrade(tile.r, tile.c);
-    } else if (BUILDINGS[tool].kind === 'infra') {
-      drag.mode = 'paint';
-      if (tile) tryPlace(tile.r, tile.c, tool, true);
     } else {
+      // Réseaux (infra) ET bâtiments : pose au tap, pas de construction au glissé.
+      // Chaque tuile nécessite un clic distinct (cf. mode 'place' qui n'agit pas
+      // dans onPointerMove).
       drag.mode = 'place';
       if (tile) tryPlace(tile.r, tile.c, tool, true);
     }
