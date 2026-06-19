@@ -145,15 +145,19 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .research-btn:hover{background:#23234a;border-color:var(--yellow);}
 .research-btn:active{transform:translateY(1px);}
 .research-btn .rlabel{text-transform:uppercase;letter-spacing:.05em;}
+/* Pile verticale à droite du HUD : Recherche placée sous le Port */
+.hud-right-stack{display:flex;flex-direction:column;gap:6px;margin-left:auto;align-items:stretch;flex-shrink:0;}
+.hud-right-stack .research-btn{width:100%;}
 /* Bouton Réparer (déblocage île suivante) */
 .repair-btn{display:flex;flex-direction:column;align-items:flex-start;gap:0;background:rgba(76,175,80,.14);
-  border:1px solid #4CAF50;color:#7fd98a;border-radius:4px;padding:3px 10px;cursor:pointer;flex-shrink:0;
-  font-family:'Barlow Condensed',sans-serif;transition:background .1s;line-height:1.15;}
+  border:1px solid #4CAF50;color:#7fd98a;border-radius:4px;padding:2px 8px;cursor:pointer;flex-shrink:0;
+  font-family:'Barlow Condensed',sans-serif;transition:background .1s;line-height:1.1;}
 .repair-btn:hover{background:rgba(76,175,80,.24);}
 .repair-btn:active{transform:translateY(1px);}
 .repair-btn:disabled{background:#2a2a3e;border-color:var(--line);color:var(--ink-faint);cursor:not-allowed;}
-.repair-btn .rep-txt{font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;font-weight:600;}
-.repair-btn .rep-cost{font-family:'DM Mono',monospace;font-size:.56rem;color:var(--ink-dim);}
+.repair-btn .ui-ico{width:12px;height:12px;}
+.repair-btn .rep-txt{font-size:.62rem;text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
+.repair-btn .rep-cost{font-family:'DM Mono',monospace;font-size:.5rem;color:var(--ink-dim);}
 
 /* ── Panneau Port ── */
 .port-panel{width:min(540px,95vw);}
@@ -304,6 +308,27 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
   padding:8px;cursor:pointer;}
 .slot-new:hover{border-color:var(--yellow);color:var(--yellow);}
 .slot-confirm{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:#ff8079;align-self:center;}
+/* ── Panneau Options ── */
+.options-btn{flex-shrink:0;display:flex;align-items:center;gap:5px;background:var(--panel-2);
+  border:1px solid var(--line);border-radius:6px;color:var(--ink-dim);cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.03em;
+  padding:5px 11px;}
+.options-btn:hover{border-color:#3a3a6a;color:var(--ink);}
+.options-btn .gear{font-size:1rem;line-height:1;}
+.opt-row{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  border:1px solid var(--line);border-radius:7px;padding:11px 12px;background:var(--panel-2);}
+.opt-lbl{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.opt-name{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.95rem;color:var(--ink);}
+.opt-desc{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--ink-dim);}
+.opt-toggle{flex-shrink:0;width:46px;height:25px;border-radius:13px;border:1px solid var(--line);
+  background:var(--panel);position:relative;cursor:pointer;transition:background .12s,border-color .12s;}
+.opt-toggle::after{content:'';position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;
+  background:var(--ink-dim);transition:transform .12s,background .12s;}
+.opt-toggle.on{background:rgba(76,175,80,.25);border-color:#4CAF50;}
+.opt-toggle.on::after{transform:translateX(21px);background:#7fd98a;}
+.opt-toggle.dev.on{background:rgba(255,59,48,.22);border-color:var(--red);}
+.opt-toggle.dev.on::after{background:#ff8079;}
+.opt-fullbtn{width:100%;}
 
 /* ── Scène (canvas + overlays) ── */
 .stage{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--bg);}
@@ -354,6 +379,13 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-up:disabled,.ip-down:disabled{opacity:.4;cursor:not-allowed;}
 .ip-up .ip-sub,.ip-down .ip-sub{font-family:'DM Mono',monospace;font-size:.62rem;font-weight:400;opacity:.85;}
 .ip-up:active:not(:disabled),.ip-down:active:not(:disabled){transform:translateY(1px);}
+.ip-up.armed{background:rgba(76,175,80,.3);border-color:#4CAF50;color:#9ee29f;
+  box-shadow:0 0 0 1px #4CAF50 inset;}
+/* Aperçu d'amélioration (affiché après le 1er clic sur « Monter ») */
+.ip-up-preview{margin-bottom:9px;padding:8px 0 2px;border-top:1px solid var(--line);}
+.ip-up-ptitle{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;
+  text-transform:uppercase;letter-spacing:.04em;color:#7fd98a;margin-bottom:6px;}
+.ip-up-preview .up-rows{margin-bottom:6px;}
 .ip-close{background:none;border:none;color:var(--ink-faint);font-size:1.1rem;cursor:pointer;
   line-height:1;padding:0 2px;}
 .ip-close:hover{color:var(--ink);}
@@ -397,6 +429,20 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .tab-btn.active .tb-name{color:var(--yellow);}
 .tab-btn.has-sel{border-color:var(--green);}
 .tab-btn.has-sel .tb-sub{color:#7fd98a;}
+/* Barre d'onglets du bas : 5 onglets répartis sur toute la largeur, jamais coupés. */
+.tool-group.tabs{flex:1 1 auto;margin-left:0;border-left:none;}
+.tool-group.tabs .tool-group-inner{width:100%;}
+.tabs-row{display:flex;flex-wrap:nowrap;gap:4px;width:100%;}
+.tabs-row .tab-btn{flex:1 1 0;min-width:0;align-items:center;text-align:center;padding:6px 4px;}
+.tabs-row .tab-btn .tb-top{justify-content:center;gap:4px;}
+.tabs-row .tab-btn .tab-ico{font-size:.82rem;}
+.tabs-row .tab-btn .tab-ico .ui-ico,.tabs-row .tab-btn .tab-ico.ui-ico{width:13px;height:13px;}
+.tabs-row .tab-btn .tb-name,.tabs-row .tab-btn .tb-sub{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tabs-row .tab-btn .tb-name{font-size:.72rem;letter-spacing:0;}
+.tab-btn.tab-dem.active{border-color:var(--red);background:rgba(255,59,48,.16);box-shadow:0 0 0 1px var(--red) inset;}
+.tab-btn.tab-dem.active .tb-name{color:#ff7a72;}
+.tab-btn.tab-upg.active{border-color:#4CAF50;background:rgba(76,175,80,.16);box-shadow:0 0 0 1px #4CAF50 inset;}
+.tab-btn.tab-upg.active .tb-name{color:#7fd98a;}
 .toolbar::-webkit-scrollbar{height:6px;}
 .toolbar::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
 .tool-group{display:flex;align-items:stretch;gap:6px;padding:8px 10px;flex-shrink:0;
@@ -491,6 +537,19 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   .tab-btn .tb-name{font-size:.8rem;}
   .tab-btn .tb-sub{font-size:.55rem;}
   .tool-group-label{font-size:.52rem;}
+  /* Onglets du bas : restent sur une seule ligne et se partagent la largeur. */
+  .tool-group.tabs{padding:6px;width:100%;}
+  .tabs-row{flex-wrap:nowrap;gap:3px;}
+  .tabs-row .tab-btn{padding:5px 2px;}
+  .tabs-row .tab-btn .tb-top{gap:3px;}
+  .tabs-row .tab-btn .tb-name{font-size:.62rem;}
+  .tabs-row .tab-btn .tb-sub{font-size:.48rem;}
+  .tabs-row .tab-btn .tab-ico{font-size:.72rem;}
+  .tabs-row .tab-btn .tab-ico .ui-ico,.tabs-row .tab-btn .tab-ico.ui-ico{width:12px;height:12px;}
+}
+@media (max-width:380px){
+  .tabs-row .tab-btn .tb-sub{display:none;}
+  .tabs-row .tab-btn .tb-name{font-size:.56rem;}
 }
 /* ── Very narrow phones: tighter still ── */
 @media (max-width:420px){
@@ -2511,6 +2570,34 @@ const TOOLBAR_GROUPS = [{
   label: 'Nucléaire',
   ids: ['broyeur_uranium', 'centrale_enrichissement', 'refroidisseur', 'centrale_nucleaire', 'usine_moteur_nuc', 'antenne']
 }];
+// Onglet « Réseau » (infra + jonctions) séparé de l'onglet « Bâtiment ».
+const NETWORK_GROUPS = TOOLBAR_GROUPS.filter(g => g.label === 'Infrastructure' || g.label === 'Jonctions');
+const BUILD_GROUPS = TOOLBAR_GROUPS.filter(g => g.label !== 'Infrastructure' && g.label !== 'Jonctions');
+const isNetworkId = id => !!BUILDINGS[id] && (BUILDINGS[id].kind === 'infra' || BUILDINGS[id].kind === 'junction');
+// Déblocage gameplay des réseaux : le tuyau apparaît une fois pompe à eau OU puits
+// de pétrole débloqués ; le câble une fois une éolienne débloquée ; la route est
+// toujours disponible. Les jonctions suivent le déblocage de leurs deux réseaux.
+function networkUnlocked(id, unlockedSet) {
+  const has = k => !!(unlockedSet && unlockedSet.has(k));
+  const pipeOk = has('pompe_eau') || has('puits_petrole');
+  const wireOk = has('eolienne') || has('eolienne_offshore');
+  switch (id) {
+    case 'road':
+      return true;
+    case 'pipe':
+      return pipeOk;
+    case 'wire':
+      return wireOk;
+    case 'jonction_route_cable':
+      return wireOk;
+    case 'jonction_route_tuyau':
+      return pipeOk;
+    case 'jonction_cable_tuyau':
+      return pipeOk && wireOk;
+    default:
+      return true;
+  }
+}
 const DEMOLISH = '__demolish';
 const UPGRADE = '__upgrade';
 const COPY = '__copy';
@@ -2719,7 +2806,7 @@ function upgradeCost(baseCost, level, buildingId) {
 function cumulativeUpgradeCost(baseCost, level, buildingId) {
   const out = {};
   for (let l = 0; l < (level || 0); l++) {
-    const c = upgradeCost(baseCost, l, buildingId);
+    const c = upgradeCost(baseCost, l + 1, buildingId);
     for (const k in c) out[k] = (out[k] || 0) + c[k];
   }
   return out;
@@ -4456,7 +4543,8 @@ function Hud({
   saveLabel,
   onSave,
   invOpen,
-  onToggleInv
+  onToggleInv,
+  onOpenOptions
 }) {
   const bal = energy && energy.balance || 0;
   const deficit = bal < 0;
@@ -4473,7 +4561,13 @@ function Hud({
     className: "hud"
   }, React.createElement("div", {
     className: "hud-brand"
-  }, "ARCHIPEL ", React.createElement("b", null, "INDUSTRY")), React.createElement(IslandSelector, {
+  }, "ARCHIPEL ", React.createElement("b", null, "INDUSTRY")), React.createElement("button", {
+    className: "options-btn",
+    onClick: onOpenOptions,
+    title: "Options"
+  }, React.createElement("span", {
+    className: "gear"
+  }, "⚙"), React.createElement("span", null, "Options")), React.createElement(IslandSelector, {
     current: currentIsland,
     onSelect: onSelectIsland,
     unlocked: islandUnlocked
@@ -4496,11 +4590,9 @@ function Hud({
     className: "rep-txt"
   }, "R\xE9parer \xCEle ", repairInfo.island), React.createElement("span", {
     className: "rep-cost"
-  }, formatCost(repairInfo.cost))), React.createElement("button", {
-    className: 'dev-btn' + (dev ? ' on' : ''),
-    onClick: onToggleDev,
-    title: "Mode dev : construction gratuite"
-  }, "DEV ", dev ? 'ON' : 'OFF'), React.createElement("button", {
+  }, formatCost(repairInfo.cost))), React.createElement("div", {
+    className: "hud-right-stack"
+  }, React.createElement("button", {
     className: "research-btn",
     onClick: onOpenPort,
     title: "Configuration du port (commerce)"
@@ -4514,13 +4606,7 @@ function Hud({
     className: "rlabel"
   }, "Recherche"), researchPending && React.createElement("span", {
     className: "notif-dot"
-  })), React.createElement("button", {
-    className: "save-btn",
-    onClick: onSave,
-    title: "Sauvegarder maintenant"
-  }, uiIcon('sauvegarde', "\uD83D\uDCBE"), React.createElement("span", {
-    className: "ago"
-  }, saveLabel))), (() => {
+  })))), (() => {
     // Two states only: collapsed = just the INVENTAIRE button; expanded = all items.
     // The "INVENTAIRE" label itself is the toggle (no separate arrow).
     if (!invOpen) {
@@ -4607,26 +4693,23 @@ function Toolbar({
   unlockedSet,
   onSelect,
   buildOpen,
-  onToggleBuild
+  onToggleBuild,
+  netOpen,
+  onToggleNet
 }) {
   const visibleOn = id => {
     const ex = BUILDINGS[id].exclusiveIsland;
     if (!(ex == null || ex === currentIsland)) return false;
     return BUILDING_NODE[id] == null || unlockedSet && unlockedSet.has(id);
   };
-  const isBuildingTool = tool && tool !== DEMOLISH && tool !== UPGRADE && tool !== COPY && BUILDINGS[tool];
-  return React.createElement("div", {
-    className: "toolbar-wrap"
-  },
-  // Rising building panel (shown above the tab bar)
-  buildOpen && React.createElement("div", {
-    className: "build-panel"
-  }, TOOLBAR_GROUPS.map((g, gi) => {
-    const ids = g.ids.filter(visibleOn);
+  const isBuildingTool = tool && tool !== DEMOLISH && tool !== UPGRADE && tool !== COPY && BUILDINGS[tool] && !isNetworkId(tool);
+  const isNetworkTool = !!(tool && BUILDINGS[tool] && isNetworkId(tool));
+  const renderGroups = (groups, gate) => groups.map(g => {
+    const ids = g.ids.filter(id => visibleOn(id) && (!gate || gate(id)));
     if (!ids.length) return null;
     return React.createElement("div", {
       className: "tool-group",
-      key: gi
+      key: g.label
     }, React.createElement("div", {
       className: "tool-group-inner"
     }, React.createElement("span", {
@@ -4640,79 +4723,37 @@ function Toolbar({
       accent: TIER_ACCENT[BUILDINGS[id].tier],
       onSelect: onSelect
     })))));
-  })),
-  // Bottom tab bar
-  React.createElement("div", {
+  });
+  const tab = (key, extraCls, iconName, emoji, name, sub, active, onClick) => React.createElement("button", {
+    key: key,
+    className: 'tab-btn ' + extraCls + (active ? ' active' : ''),
+    onClick: onClick
+  }, React.createElement("div", {
+    className: "tb-top"
+  }, React.createElement("span", {
+    className: "tab-ico"
+  }, uiIcon(iconName, emoji)), React.createElement("span", {
+    className: "tb-name"
+  }, name)), React.createElement("span", {
+    className: "tb-sub"
+  }, sub));
+  return React.createElement("div", {
+    className: "toolbar-wrap"
+  }, buildOpen && React.createElement("div", {
+    className: "build-panel"
+  }, renderGroups(BUILD_GROUPS)), netOpen && React.createElement("div", {
+    className: "build-panel"
+  }, renderGroups(NETWORK_GROUPS, id => networkUnlocked(id, unlockedSet))), React.createElement("div", {
     className: "toolbar"
   }, React.createElement("div", {
-    className: "tool-group demolish"
-  }, React.createElement("div", {
-    className: "tool-group-inner"
-  }, React.createElement("span", {
-    className: "tool-group-label"
-  }, "Outil"), React.createElement("div", {
-    className: "tool-row"
-  }, React.createElement("button", {
-    className: 'tool-btn demolish-btn' + (tool === DEMOLISH ? ' active' : ''),
-    onClick: () => onSelect(DEMOLISH)
-  }, React.createElement("div", {
-    className: "tb-top"
-  }, uiIcon('demolir', React.createElement("span", {
-    className: "tb-swatch",
-    style: {
-      background: '#FF3B30'
-    }
-  })), React.createElement("span", {
-    className: "tb-name"
-  }, "D\xE9molir")), React.createElement("span", {
-    className: "tb-sub"
-  }, "remb. 100%")), React.createElement("button", {
-    className: 'tool-btn upgrade-btn' + (tool === UPGRADE ? ' active' : ''),
-    onClick: () => onSelect(UPGRADE)
-  }, React.createElement("div", {
-    className: "tb-top"
-  }, uiIcon('monter', React.createElement("span", {
-    className: "tb-swatch",
-    style: {
-      background: '#4CAF50'
-    }
-  })), React.createElement("span", {
-    className: "tb-name"
-  }, "Am\xE9liorer")), React.createElement("span", {
-    className: "tb-sub"
-  }, "\xD72 / niveau")))),
-  // Tabs group
-  React.createElement("div", {
     className: "tool-group tabs"
   }, React.createElement("div", {
     className: "tool-group-inner"
   }, React.createElement("span", {
     className: "tool-group-label"
-  }, "Construire"), React.createElement("div", {
-    className: "tool-row"
-  }, React.createElement("button", {
-    className: 'tab-btn' + (buildOpen ? ' active' : '') + (isBuildingTool ? ' has-sel' : ''),
-    onClick: onToggleBuild
-  }, React.createElement("div", {
-    className: "tb-top"
-  }, React.createElement("span", {
-    className: "tab-ico"
-  }, uiIcon('batiment', "\uD83C\uDFED")), React.createElement("span", {
-    className: "tb-name"
-  }, "B\xE2timent")), React.createElement("span", {
-    className: "tb-sub"
-  }, isBuildingTool ? BUILDINGS[tool].name : buildOpen ? 'fermer ▾' : 'ouvrir ▴')), React.createElement("button", {
-    className: 'tab-btn' + (tool === COPY ? ' active' : ''),
-    onClick: () => onSelect(COPY)
-  }, React.createElement("div", {
-    className: "tb-top"
-  }, React.createElement("span", {
-    className: "tab-ico"
-  }, uiIcon('copier', "\u29C9")), React.createElement("span", {
-    className: "tb-name"
-  }, "Copier")), React.createElement("span", {
-    className: "tb-sub"
-  }, tool === COPY ? 'choisir un bâtiment' : 'copier un bâtiment'))))))));
+  }, "Actions"), React.createElement("div", {
+    className: "tool-row tabs-row"
+  }, [tab('bat', 'tab-build' + (isBuildingTool ? ' has-sel' : ''), 'batiment', "🏭", "B\xE2timent", isBuildingTool ? BUILDINGS[tool].name : buildOpen ? 'fermer ▾' : 'ouvrir ▴', buildOpen, onToggleBuild), tab('net', 'tab-net' + (isNetworkTool ? ' has-sel' : ''), 'route', "🛣️", "R\xE9seau", isNetworkTool ? BUILDINGS[tool].name : netOpen ? 'fermer ▾' : 'ouvrir ▴', netOpen, onToggleNet), tab('copy', 'tab-copy', 'copier', "⧉", "Copier", tool === COPY ? 'choisir' : 'copier', tool === COPY, () => onSelect(COPY)), tab('dem', 'tab-dem', 'demolir', "♻", "D\xE9molir", 'remb. 100%', tool === DEMOLISH, () => onSelect(DEMOLISH)), tab('upg', 'tab-upg', 'monter', "⬆", "Am\xE9liorer", 'niveau +1', tool === UPGRADE, () => onSelect(UPGRADE))])))));
 }
 function InfoPanel({
   info,
@@ -4733,6 +4774,13 @@ function InfoPanel({
     top: info.y,
     ready: false
   });
+  // Amélioration en deux temps : le 1er clic « Monter » arme l'aperçu (entrées/
+  // sorties du niveau suivant + coût), les clics suivants appliquent l'amélioration
+  // tant qu'on peut payer. L'aperçu reste affiché tant que le panneau est ouvert.
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    setArmed(false);
+  }, [info.r, info.c]);
   const tilesRow = game.islands[currentIsland] && game.islands[currentIsland][info.r];
   const live = tilesRow && tilesRow[info.c];
   const bld = live && live.building;
@@ -4827,9 +4875,23 @@ function InfoPanel({
   const upgradable = isUpgradable(info.id);
   const dev = game.ui && game.ui.dev;
   const port = game.port[currentIsland] || {};
-  const upCost = upgradable ? upgradeCost(b.cost, upg, info.id) : null;
+  const upCost = upgradable ? upgradeCost(b.cost, upg + 1, info.id) : null;
   const canUp = !!upCost && (dev || Object.keys(upCost).every(k => (port[k] || 0) >= upCost[k]));
-  const downRefund = upgradable && upg > 0 ? upgradeCost(b.cost, upg - 1, info.id) : null;
+  const downRefund = upgradable && upg > 0 ? upgradeCost(b.cost, upg, info.id) : null;
+  // Lignes d'aperçu d'amélioration (valeur actuelle → niveau suivant).
+  const nextMult = upgradeMult(upg + 1);
+  const previewRow = (label, rec) => rec && Object.keys(rec).length ? React.createElement("div", {
+    className: "up-row",
+    key: label
+  }, React.createElement("span", {
+    className: "lbl"
+  }, label), React.createElement("span", {
+    className: "cur"
+  }, formatRecipe(scaledRecipe(rec, upgradeMult(upg)))), React.createElement("span", {
+    className: "arr"
+  }, "→"), React.createElement("span", {
+    className: "nxt"
+  }, formatRecipe(scaledRecipe(rec, nextMult)))) : null;
   // Capped output display: any throughput-limited output (road or pipe) whose
   // connected network is saturated shows its real (reduced) rate.
   const cappedOut = {};
@@ -4971,14 +5033,35 @@ function InfoPanel({
     className: "lbl"
   }, "Effet"), React.createElement("span", {
     className: "val io"
-  }, "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)"))), upgradable && React.createElement("div", {
+  }, "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)"))), armed && upgradable && React.createElement("div", {
+    className: "ip-up-preview"
+  }, React.createElement("div", {
+    className: "ip-up-ptitle"
+  }, "Amélioration → Nv.", upg + 2), React.createElement("div", {
+    className: "up-rows"
+  }, previewRow("Entrées", b.inputs), previewRow("Sortie", b.outputs)), React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "Coût"), React.createElement("span", {
+    className: "val",
+    style: {
+      color: canUp ? 'var(--yellow)' : '#ff8079'
+    }
+  }, formatCost(upCost) || 'gratuit'))), upgradable && React.createElement("div", {
     className: "ip-actions"
   }, React.createElement("button", {
-    className: "ip-up",
-    disabled: !canUp,
-    onClick: () => onUpgrade(info.r, info.c),
-    title: 'Coût : ' + (formatCost(upCost) || 'gratuit')
-  }, uiIcon('monter', "\u2B06"), " Monter ", React.createElement("span", {
+    className: "ip-up" + (armed ? ' armed' : ''),
+    disabled: armed && !canUp,
+    onClick: () => {
+      if (!armed) {
+        setArmed(true);
+        return;
+      }
+      onUpgrade(info.r, info.c);
+    },
+    title: armed ? 'Confirmer · Coût : ' + (formatCost(upCost) || 'gratuit') : 'Voir l\'amélioration (Nv.' + (upg + 2) + ')'
+  }, uiIcon('monter', "\u2B06"), armed ? " Confirmer " : " Monter ", React.createElement("span", {
     className: "ip-sub"
   }, "Nv.", upg + 2)), React.createElement("button", {
     className: "ip-down",
@@ -5035,7 +5118,7 @@ function UpgradePanel({
   const lvl = bld.upgrade || 0;
   const mult = upgradeMult(lvl),
     nextMult = upgradeMult(lvl + 1);
-  const cost = upgradeCost(b.cost, lvl, bld.id);
+  const cost = upgradeCost(b.cost, lvl + 1, bld.id);
   const port = game.port[currentIsland] || {};
   let canAfford = true;
   for (const k in cost) if ((port[k] || 0) < cost[k]) canAfford = false;
@@ -5767,6 +5850,47 @@ function SlotPanel({
     onClick: () => onCreate()
   }, "+ Nouvelle partie"))));
 }
+function OptionsModal({
+  dev,
+  showLevels,
+  onToggleDev,
+  onToggleLevels,
+  onOpenSaves,
+  onClose
+}) {
+  const toggleRow = (name, desc, on, onClick, extraCls) => React.createElement("div", {
+    className: "opt-row"
+  }, React.createElement("div", {
+    className: "opt-lbl"
+  }, React.createElement("span", {
+    className: "opt-name"
+  }, name), React.createElement("span", {
+    className: "opt-desc"
+  }, desc)), React.createElement("button", {
+    className: 'opt-toggle' + (extraCls ? ' ' + extraCls : '') + (on ? ' on' : ''),
+    onClick: onClick,
+    title: on ? 'Activé' : 'Désactivé'
+  }));
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "slot-backdrop",
+    onClick: onClose
+  }), React.createElement("div", {
+    className: "slot-panel"
+  }, React.createElement("div", {
+    className: "slot-head"
+  }, React.createElement("span", {
+    className: "slot-title"
+  }, "⚙ Options"), React.createElement("button", {
+    className: "slot-close",
+    onClick: onClose,
+    title: "Fermer"
+  }, "\xD7")), React.createElement("div", {
+    className: "slot-list"
+  }, toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Mode d\xE9veloppeur", "Construction et am\xE9liorations gratuites", dev, onToggleDev, 'dev'), React.createElement("button", {
+    className: "slot-new opt-fullbtn",
+    onClick: onOpenSaves
+  }, uiIcon('sauvegarde', "💾"), " Emplacements de sauvegarde"))));
+}
 function App() {
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
@@ -5937,7 +6061,8 @@ function App() {
       hover: null,
       ui: {
         tool: null,
-        dev: false
+        dev: false,
+        showLevels: true
       },
       drag: {
         active: false,
@@ -5959,6 +6084,8 @@ function App() {
   const [tool, setToolState] = useState(null);
   const [invOpen, setInvOpen] = useState(false);
   const [buildOpen, setBuildOpen] = useState(false);
+  const [netOpen, setNetOpen] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const [researchPending, setResearchPending] = useState(false);
   const [info, setInfo] = useState(null);
   const [upgrade, setUpgrade] = useState(null);
@@ -5971,6 +6098,7 @@ function App() {
   const [network, setNetwork] = useState(null);
   const [researchPopup, setResearchPopup] = useState(null);
   const [dev, setDev] = useState(false);
+  const [showLevels, setShowLevels] = useState(true);
   const [canvasKey, setCanvasKey] = useState(0);
   const rafRef = useRef(null);
   const [, bumpHud] = useReducer(c => c + 1, 0);
@@ -6698,7 +6826,9 @@ function App() {
     const b = BUILDINGS[t.building.id];
     if (!isUpgradable(t.building.id)) return false;
     const lvl = t.building.upgrade || 0;
-    const cost = upgradeCost(b.cost, lvl, t.building.id);
+    // Coût du palier lvl→lvl+1 : on applique la multiplication dès le 1er upgrade
+    // (Nv.1→Nv.2 = coût de base × UPGRADE_SCALE, pas le coût de construction brut).
+    const cost = upgradeCost(b.cost, lvl + 1, t.building.id);
     if (!gameRef.current.ui.dev) {
       const miss = missingFor(cost);
       if (miss.length) {
@@ -6720,7 +6850,7 @@ function App() {
     const lvl = t.building.upgrade || 0;
     if (lvl <= 0) return false;
     const b = BUILDINGS[t.building.id];
-    if (!gameRef.current.ui.dev) refund(upgradeCost(b.cost, lvl - 1, t.building.id));
+    if (!gameRef.current.ui.dev) refund(upgradeCost(b.cost, lvl, t.building.id));
     t.building.upgrade = lvl - 1;
     bumpHud();
     markDirty();
@@ -6859,8 +6989,8 @@ function App() {
     setToolState(next);
     setInfo(null);
     setUpgrade(null);
-    // Picking an actual building from the panel collapses it; keep it open otherwise.
-    if (next && next !== DEMOLISH && next !== UPGRADE && next !== COPY) setBuildOpen(false);
+    // On garde le menu de construction ouvert après avoir choisi un bâtiment/réseau
+    // (on peut en poser plusieurs et changer de sélection sans rouvrir le menu).
     if (next === COPY) showToast('📋 Mode copie : touchez un bâtiment à copier', 'var(--ink-dim)');
     markDirty();
   }
@@ -7015,6 +7145,13 @@ function App() {
     setDev(g.ui.dev);
     showToast(g.ui.dev ? '🛠 MODE DEV activé — construction gratuite' : 'Mode dev désactivé', g.ui.dev ? 'var(--red)' : 'var(--ink-dim)');
   }
+  function toggleLevels() {
+    const g = gameRef.current;
+    g.ui.showLevels = g.ui.showLevels === false;
+    setShowLevels(g.ui.showLevels);
+    markDirty();
+    scheduleSave();
+  }
   function clampPan() {
     const cam = gameRef.current.cam;
     const def = curDef();
@@ -7094,6 +7231,28 @@ function App() {
       c
     };
   }
+  // Petit numéro de niveau (2, 3, …) en bas à gauche de la case. Désactivable via
+  // les Options (g.ui.showLevels). Le niveau 1 (upg 0) n'affiche rien.
+  function drawLevelBadge(ctx, x, y, W, H, tile, upg) {
+    if (upg <= 0 || tile < 16) return;
+    if (gameRef.current.ui.showLevels === false) return;
+    const txt = String(upg + 1);
+    const fs = Math.max(7, Math.round(tile * 0.30));
+    ctx.font = `700 ${fs}px "DM Mono",monospace`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    const pad = Math.max(1, tile * 0.05);
+    const tw = ctx.measureText(txt).width;
+    const bw = tw + pad * 2,
+      bh = fs + pad * 2;
+    const bx = x + Math.max(1, tile * 0.04),
+      by = y + H - bh - Math.max(1, tile * 0.04);
+    roundRectPath(ctx, bx, by, bw, bh, Math.max(1, tile * 0.06));
+    ctx.fillStyle = 'rgba(13,13,26,.66)';
+    ctx.fill();
+    ctx.fillStyle = '#9ee29f';
+    ctx.fillText(txt, bx + pad, by + pad);
+  }
   function drawBuildingStateOverlay(ctx, x, y, W, H, tile, inactive, disconnected, upg) {
     if (inactive) {
       ctx.fillStyle = 'rgba(13,13,26,.6)';
@@ -7107,23 +7266,7 @@ function App() {
         ctx.strokeRect(x + lw / 2, y + lw / 2, W - lw, H - lw);
       }
     }
-    if (upg > 0 && tile >= 22) {
-      const txt = 'Nv.' + (upg + 1);
-      const fs = Math.max(8, Math.round(tile * 0.22));
-      ctx.font = `700 ${fs}px "DM Mono",monospace`;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      const padX = Math.max(2, tile * 0.05),
-        padY = Math.max(1, tile * 0.03);
-      const tw = ctx.measureText(txt).width;
-      const bw = tw + padX * 2,
-        bh = fs + padY * 2;
-      roundRectPath(ctx, x + 2, y + 2, bw, bh, Math.max(2, tile * 0.05));
-      ctx.fillStyle = 'rgba(76,175,80,.95)';
-      ctx.fill();
-      ctx.fillStyle = '#0d0d1a';
-      ctx.fillText(txt, x + 2 + padX, y + 2 + padY);
-    }
+    drawLevelBadge(ctx, x, y, W, H, tile, upg);
   }
   function drawBuilding(ctx, x, y, tile, id, inactive, disconnected, upg, wTiles, hTiles) {
     const b = BUILDINGS[id];
@@ -7203,23 +7346,7 @@ function App() {
         } else ctx.strokeRect(ix + lw / 2, iy + lw / 2, iw - lw, ih - lw);
       }
     }
-    if (upg > 0 && tile >= 22) {
-      const txt = 'Nv.' + (upg + 1);
-      const fs = Math.max(8, Math.round(tile * 0.22));
-      ctx.font = `700 ${fs}px "DM Mono",monospace`;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      const padX = Math.max(2, tile * 0.05),
-        padY = Math.max(1, tile * 0.03);
-      const tw = ctx.measureText(txt).width;
-      const bw = tw + padX * 2,
-        bh = fs + padY * 2;
-      roundRectPath(ctx, ix + 1, iy + 1, bw, bh, Math.max(2, tile * 0.05));
-      ctx.fillStyle = 'rgba(76,175,80,.95)';
-      ctx.fill();
-      ctx.fillStyle = '#0d0d1a';
-      ctx.fillText(txt, ix + 1 + padX, iy + 1 + padY);
-    }
+    drawLevelBadge(ctx, x, y, W, H, tile, upg);
   }
   function drawHover(ctx, ox, oy, tile) {
     const g = gameRef.current;
@@ -7452,10 +7579,10 @@ function App() {
     } else if (tool === UPGRADE) {
       drag.mode = 'upgrade';
       if (tile) openUpgrade(tile.r, tile.c);
-    } else if (BUILDINGS[tool].kind === 'infra') {
-      drag.mode = 'paint';
-      if (tile) tryPlace(tile.r, tile.c, tool, true);
     } else {
+      // Réseaux (infra) ET bâtiments : pose au tap, pas de construction au glissé.
+      // Chaque tuile nécessite un clic distinct (cf. mode 'place' qui n'agit pas
+      // dans onPointerMove).
       drag.mode = 'place';
       if (tile) tryPlace(tile.r, tile.c, tool, true);
     }
@@ -7873,7 +8000,13 @@ function App() {
     saveLabel: saveLabel(),
     onSave: () => setSlotOpen(true),
     invOpen: invOpen,
-    onToggleInv: () => setInvOpen(o => !o)
+    onToggleInv: () => setInvOpen(o => !o),
+    onOpenOptions: () => {
+      const g = gameRef.current;
+      setShowLevels(g.ui.showLevels !== false);
+      setDev(g.ui.dev);
+      setOptionsOpen(true);
+    }
   }), React.createElement("div", {
     ref: stageRef,
     className: 'stage' + (selMode ? ' sel' : '') + (dragging ? ' dragging' : '')
@@ -7946,7 +8079,15 @@ function App() {
     unlockedSet: unlockedSet,
     onSelect: selectTool,
     buildOpen: buildOpen,
-    onToggleBuild: () => setBuildOpen(o => !o)
+    onToggleBuild: () => {
+      setNetOpen(false);
+      setBuildOpen(o => !o);
+    },
+    netOpen: netOpen,
+    onToggleNet: () => {
+      setBuildOpen(false);
+      setNetOpen(o => !o);
+    }
   }), researchOpen && React.createElement(ResearchPanel, {
     game: game,
     currentIsland: game.currentIsland,
@@ -7965,6 +8106,16 @@ function App() {
       showToast('💾 Sauvegardé', 'var(--green)');
       setSlotOpen(false);
     }
+  }), optionsOpen && React.createElement(OptionsModal, {
+    dev: dev,
+    showLevels: showLevels,
+    onToggleDev: toggleDev,
+    onToggleLevels: toggleLevels,
+    onOpenSaves: () => {
+      setOptionsOpen(false);
+      setSlotOpen(true);
+    },
+    onClose: () => setOptionsOpen(false)
   }), portOpen && React.createElement(PortPanel, {
     game: game,
     currentIsland: game.currentIsland,
