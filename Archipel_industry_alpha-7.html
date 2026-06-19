@@ -146,8 +146,11 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .research-btn:active{transform:translateY(1px);}
 .research-btn .rlabel{text-transform:uppercase;letter-spacing:.05em;}
 /* Pile verticale à droite du HUD : Recherche placée sous le Port */
-.hud-right-stack{display:flex;flex-direction:column;gap:6px;margin-left:auto;align-items:stretch;flex-shrink:0;}
+.hud-right-stack{display:flex;flex-direction:column;gap:6px;margin-left:auto;align-items:stretch;flex-shrink:0;max-width:46%;}
 .hud-right-stack .research-btn{width:100%;}
+/* Bouton Réparer regroupé dans la colonne de droite (Réparer / Port / Recherche) */
+.hud-right-stack .repair-btn{width:100%;box-sizing:border-box;}
+.hud-right-stack .repair-btn .rep-cost{white-space:normal;word-break:break-word;}
 /* ── Bandeau tutoriel (sous le HUD) ── */
 .tuto-banner{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:7px 12px;
   background:linear-gradient(90deg,rgba(76,175,80,.2),var(--panel-2));border-bottom:1px solid var(--line);}
@@ -4717,7 +4720,9 @@ function Hud({
     className: "k"
   }, "\u26A1 \xC9nergie"), React.createElement("span", {
     className: "v"
-  }, bal >= 0 ? '+' : '', fmtInt(bal), " kW"))), repairInfo && React.createElement("button", {
+  }, bal >= 0 ? '+' : '', fmtInt(bal), " kW"))), React.createElement("div", {
+    className: "hud-right-stack"
+  }, repairInfo && React.createElement("button", {
     className: "repair-btn",
     disabled: !canRepair,
     onClick: () => onRepair(repairInfo.node),
@@ -4726,9 +4731,7 @@ function Hud({
     className: "rep-txt"
   }, "R\xE9parer \xCEle ", repairInfo.island), React.createElement("span", {
     className: "rep-cost"
-  }, formatCost(repairInfo.cost))), React.createElement("div", {
-    className: "hud-right-stack"
-  }, React.createElement("button", {
+  }, formatCost(repairInfo.cost))), React.createElement("button", {
     className: "research-btn",
     onClick: onOpenPort,
     title: "Configuration du port (commerce)"
