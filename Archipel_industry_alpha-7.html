@@ -7375,8 +7375,12 @@ function App() {
     setToolState(next);
     setInfo(null);
     setUpgrade(null);
-    // On garde le menu de construction ouvert après avoir choisi un bâtiment/réseau
-    // (on peut en poser plusieurs et changer de sélection sans rouvrir le menu).
+    // Dès qu'un outil est choisi, on referme le menu construction/réseau pour dégager
+    // la carte. La sélection reste active : on peut poser plusieurs exemplaires d'affilée.
+    if (next !== null) {
+      setBuildOpen(false);
+      setNetOpen(false);
+    }
     if (next === COPY) showToast('📋 Mode copie : touchez un bâtiment à copier', 'var(--ink-dim)');
     markDirty();
   }
