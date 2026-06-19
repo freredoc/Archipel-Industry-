@@ -99,7 +99,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .inv-item .ik{font-family:'Barlow Condensed',sans-serif;font-size:.66rem;color:var(--ink-dim);
   text-transform:capitalize;}
 .inv-item .iv{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--ink);
-  min-width:3.2em;text-align:right;}
+  min-width:3.2em;text-align:right;transition:color .4s;}
+.inv-item .iv.up{color:#5fd96a;}
+.inv-item .iv.down{color:#ff7a6e;}
 .inv-item.clickable{cursor:pointer;}
 .inv-item.clickable:hover{border-color:var(--yellow);}
 .inv-ico{width:14px;height:14px;image-rendering:pixelated;flex-shrink:0;vertical-align:middle;}
@@ -424,6 +426,8 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-down{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--ink-dim);}
 .ip-down:hover:not(:disabled){background:rgba(255,255,255,.1);}
 .ip-up:disabled,.ip-down:disabled{opacity:.4;cursor:not-allowed;}
+.ip-up.armed,.ip-down.armed{box-shadow:0 0 0 2px var(--yellow) inset;color:var(--yellow);
+  border-color:var(--yellow);animation:notifpulse 1s ease-in-out infinite;}
 .ip-up .ip-sub,.ip-down .ip-sub{font-family:'DM Mono',monospace;font-size:.62rem;font-weight:400;opacity:.85;}
 .ip-up:active:not(:disabled),.ip-down:active:not(:disabled){transform:translateY(1px);}
 .ip-up.armed{background:rgba(76,175,80,.3);border-color:#4CAF50;color:#9ee29f;
@@ -2804,8 +2808,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 9;
-const GAME_VERSION = 'Alpha 8.1';
+const GAME_BUILD = 10;
+const GAME_VERSION = 'Alpha 8.2';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -4664,6 +4668,7 @@ function IslandSelector({
 }
 function Hud({
   resources,
+  invTrends,
   energy,
   currentIsland,
   islandUnlocked,
@@ -4782,7 +4787,7 @@ function Hud({
       }), React.createElement("span", {
         className: "ik"
       }, RES_SHORT[k] || k), React.createElement("span", {
-        className: "iv"
+        className: "iv" + (invTrends && invTrends[k] === 'up' ? ' up' : invTrends && invTrends[k] === 'down' ? ' down' : '')
       }, fmtInt(resources[k]))));
     }
     return React.createElement("div", {
@@ -5743,6 +5748,11 @@ function NetworkPanel({
     top: net.y,
     ready: false
   });
+  // Confirmation en 2 temps avant de monter/baisser le niveau du réseau.
+  const [armed, setArmed] = useState(null); // 'up' | 'down' | null
+  useEffect(() => {
+    setArmed(null);
+  }, [net.networkId]);
   const nets = game.networks[currentIsland] || {};
   const netObj = nets[net.networkId];
   useLayoutEffect(() => {
@@ -5832,18 +5842,28 @@ function NetworkPanel({
   }, "jonction (", (upInfo.ids || downInfo.ids).length, " réseaux)"))), React.createElement("div", {
     className: "ip-actions"
   }, React.createElement("button", {
-    className: "ip-up",
+    className: "ip-up" + (armed === 'up' ? ' armed' : ''),
     disabled: !canUp,
-    onClick: () => onUpgrade(net.r, net.c),
+    onClick: () => {
+      if (armed === 'up') {
+        setArmed(null);
+        onUpgrade(net.r, net.c);
+      } else setArmed('up');
+    },
     title: upInfo.blocked ? upInfo.reason : 'Coût : ' + (formatCost(upInfo.cost) || 'gratuit')
-  }, uiIcon('monter', "\u2B06"), upLabel, React.createElement("span", {
+  }, uiIcon('monter', "\u2B06"), armed === 'up' ? ' Confirmer ?' : upLabel, React.createElement("span", {
     className: "ip-sub"
   }, upInfo.blocked ? upInfo.reason : 'V' + (lvl + 1) + ' · ' + (formatCost(upInfo.cost) || 'gratuit'))), React.createElement("button", {
-    className: "ip-down",
+    className: "ip-down" + (armed === 'down' ? ' armed' : ''),
     disabled: downInfo.blocked,
-    onClick: () => onDowngrade(net.r, net.c),
+    onClick: () => {
+      if (armed === 'down') {
+        setArmed(null);
+        onDowngrade(net.r, net.c);
+      } else setArmed('down');
+    },
     title: downInfo.blocked ? downInfo.reason : 'Remb. : ' + (formatCost(downInfo.cost) || '—')
-  }, uiIcon('baisser', "\u2B07"), downLabel, React.createElement("span", {
+  }, uiIcon('baisser', "\u2B07"), armed === 'down' ? ' Confirmer ?' : downLabel, React.createElement("span", {
     className: "ip-sub"
   }, downInfo.blocked ? '—' : 'V' + (lvl - 1)))));
 }
@@ -6357,6 +6377,28 @@ function App() {
   const game = gameRef.current;
   const [tool, setToolState] = useState(null);
   const [invOpen, setInvOpen] = useState(false);
+  // Tendance de chaque ressource (monte/descend) sur ~1,2 s, pour teinter l'inventaire.
+  const [invTrends, setInvTrends] = useState({});
+  useEffect(() => {
+    const snap = {};
+    let first = true;
+    const iv = setInterval(() => {
+      const g = gameRef.current;
+      const port = g.port[g.currentIsland] || {};
+      const tr = {};
+      for (const k in port) {
+        const cur = port[k] || 0;
+        const prev = snap[k];
+        if (!first && prev != null) {
+          if (cur > prev + 0.01) tr[k] = 'up';else if (cur < prev - 0.01) tr[k] = 'down';
+        }
+        snap[k] = cur;
+      }
+      first = false;
+      setInvTrends(tr);
+    }, 1200);
+    return () => clearInterval(iv);
+  }, []);
   const [buildOpen, setBuildOpen] = useState(false);
   const [netOpen, setNetOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
@@ -7094,14 +7136,36 @@ function App() {
         return false;
       }
     }
+    // Extension d'un réseau déjà amélioré : la nouvelle tuile paie le rattrapage
+    // de niveau (coût d'upgrade cumulé par tuile) pour rejoindre un réseau V2+.
+    // La pose de base (réseau V1) reste gratuite.
+    let extCost = null,
+      joinLvl = 1;
+    if (b.kind === 'infra') {
+      const g = gameRef.current,
+        isl = g.currentIsland;
+      const nets = g.networks[isl] || {};
+      for (const nid of adjacentNetworks(g, isl, r, c, id)) {
+        const lv = nets[nid] && nets[nid].level || 1;
+        if (lv > joinLvl) joinLvl = lv;
+      }
+      if (joinLvl >= 2 && NETWORK_UPGRADE_COST[id]) {
+        extCost = {};
+        for (let k = 1; k < joinLvl; k++) {
+          const c2 = NETWORK_UPGRADE_COST[id][k];
+          if (c2) for (const res in c2) extCost[res] = (extCost[res] || 0) + c2[res];
+        }
+      }
+    }
     const dev = gameRef.current.ui.dev;
+    const costToPay = extCost || b.cost;
     if (!dev) {
-      const miss = missingFor(b.cost);
+      const miss = missingFor(costToPay);
       if (miss.length) {
-        if (verbose) showToast('❌ Manque ' + miss.join(', '), 'var(--red)');
+        if (verbose) showToast('❌ Extension V' + joinLvl + ' : manque ' + miss.join(', '), 'var(--red)');
         return false;
       }
-      pay(b.cost);
+      pay(costToPay);
     }
     t.building = {
       id,
@@ -7121,6 +7185,7 @@ function App() {
     markDirty();
     scheduleSave();
     if (verbose && b.kind !== 'infra') showToast(`✓ ${b.name}`, 'var(--green)');
+    else if (verbose && extCost) showToast(`✓ ${b.name} V${joinLvl} — ${formatCost(extCost)}`, 'var(--green)');
     return true;
   }
   function tryDemolish(r, c, verbose) {
@@ -7970,11 +8035,10 @@ function App() {
       drag.mode = 'upgrade';
       if (tile) openUpgrade(tile.r, tile.c);
     } else {
-      // Réseaux (infra) ET bâtiments : pose au tap, pas de construction au glissé.
-      // Chaque tuile nécessite un clic distinct (cf. mode 'place' qui n'agit pas
-      // dans onPointerMove).
+      // Bâtiments ET réseaux : pose au relâchement (tap). Un glissé déplace la
+      // carte au lieu de poser → on peut naviguer même en mode construction.
       drag.mode = 'place';
-      if (tile) tryPlace(tile.r, tile.c, tool, true);
+      drag.panned = false;
     }
   }
   function onPointerMove(e) {
@@ -8023,6 +8087,15 @@ function App() {
         if (tile) tryDemolish(tile.r, tile.c, false);
         drag.last = tile;
       }
+    } else if (drag.mode === 'place') {
+      // En mode construction, un glissé (au-delà du seuil de tap) déplace la carte.
+      if (drag.dist > TAP_THRESHOLD) {
+        drag.panned = true;
+        g.cam.x -= dx;
+        g.cam.y -= dy;
+        clampPan();
+        markDirty();
+      }
     }
   }
   function onPointerUp(e) {
@@ -8046,10 +8119,17 @@ function App() {
     const tile = pointerToTile(e);
     if (drag.mode === 'select' && drag.dist < TAP_THRESHOLD) {
       handleTap(tile, e);
+    } else if (drag.mode === 'place' && !drag.panned && drag.dist < TAP_THRESHOLD && tile) {
+      // Tap franc en mode construction = pose sur la tuile.
+      tryPlace(tile.r, tile.c, g.ui.tool, true);
     }
     drag.active = false;
     drag.mode = null;
     drag.last = null;
+    // Sur écran tactile, on efface le survol au relâchement (sinon l'étiquette
+    // « N… » du réseau et l'aperçu de pose restent collés sur la dernière tuile).
+    if (e.pointerType === 'touch' && g.hover) g.hover = null;
+    markDirty();
     flushSave();
     try {
       canvasRef.current.releasePointerCapture(e.pointerId);
@@ -8381,6 +8461,7 @@ function App() {
     className: "app"
   }, React.createElement(Hud, {
     resources: game.port[game.currentIsland] || {},
+    invTrends: invTrends,
     energy: game.energy[game.currentIsland],
     currentIsland: game.currentIsland,
     islandUnlocked: game.islandUnlocked,
