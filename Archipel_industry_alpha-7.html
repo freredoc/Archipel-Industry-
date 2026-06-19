@@ -148,6 +148,18 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 /* Pile verticale à droite du HUD : Recherche placée sous le Port */
 .hud-right-stack{display:flex;flex-direction:column;gap:6px;margin-left:auto;align-items:stretch;flex-shrink:0;}
 .hud-right-stack .research-btn{width:100%;}
+/* ── Bandeau tutoriel (sous le HUD) ── */
+.tuto-banner{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:7px 12px;
+  background:linear-gradient(90deg,rgba(76,175,80,.2),var(--panel-2));border-bottom:1px solid var(--line);}
+.tuto-main{display:flex;align-items:center;gap:9px;min-width:0;flex:1;}
+.tuto-step{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.05em;color:#9ee29f;
+  background:rgba(76,175,80,.18);border:1px solid #4CAF50;border-radius:4px;padding:1px 8px;flex-shrink:0;white-space:nowrap;}
+.tuto-goal{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.94rem;color:var(--ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tuto-skip{flex-shrink:0;background:var(--panel);border:1px solid var(--line);color:var(--ink-dim);
+  border-radius:5px;padding:4px 11px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.78rem;}
+.tuto-skip:hover{border-color:var(--red);color:#ff8079;}
+@media (max-width:480px){.tuto-banner{padding:6px 9px;gap:7px;}.tuto-goal{font-size:.82rem;white-space:normal;}}
 /* Bouton Réparer (déblocage île suivante) */
 .repair-btn{display:flex;flex-direction:column;align-items:flex-start;gap:0;background:rgba(76,175,80,.14);
   border:1px solid #4CAF50;color:#7fd98a;border-radius:4px;padding:2px 8px;cursor:pointer;flex-shrink:0;
@@ -526,7 +538,8 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 /* Tappable quit button in the status bar (mobile-friendly replacement for "Échap") */
 .status-quit{margin-left:10px;flex-shrink:0;background:rgba(255,59,48,.16);color:#ff8079;
   border:1px solid rgba(255,59,48,.5);border-radius:5px;padding:3px 12px;cursor:pointer;
-  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;}
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;
+  pointer-events:auto;touch-action:manipulation;}
 .status-quit:hover{background:rgba(255,59,48,.28);}
 .status{display:flex;align-items:center;}
 /* ── Mobile: show everything (wrap, no horizontal scroll), drop the game title ── */
@@ -3620,6 +3633,87 @@ function countBuildings(game, id) {
   }
   return n;
 }
+// ====== TUTORIEL (île 1) ======
+// Au lieu de tout débloquer au départ, on révèle les bâtiments un par un au fil
+// des actions. Chaque étape a un objectif et révèle un bâtiment.
+function tutIsland(game, isl) {
+  const def = defById(isl);
+  return def && game.islands[isl] ? {
+    def,
+    tiles: game.islands[isl]
+  } : null;
+}
+function tutCount(game, isl, id) {
+  const t = tutIsland(game, isl);
+  if (!t) return 0;
+  let n = 0;
+  for (let r = 0; r < t.def.rows; r++) for (let c = 0; c < t.def.cols; c++) {
+    const b = t.tiles[r][c].building;
+    if (b && b.id === id) n++;
+  }
+  return n;
+}
+// Tous les bâtiments dont l'id est dans `ids` sont au niveau >= (minUpg+1).
+function tutAllUpgraded(game, isl, ids, minUpg) {
+  const t = tutIsland(game, isl);
+  if (!t) return false;
+  let count = 0;
+  for (let r = 0; r < t.def.rows; r++) for (let c = 0; c < t.def.cols; c++) {
+    const b = t.tiles[r][c].building;
+    if (b && ids.indexOf(b.id) !== -1) {
+      count++;
+      if ((b.upgrade || 0) < minUpg) return false;
+    }
+  }
+  return count > 0;
+}
+// Au moins un bâtiment `id` est relié au port par la route.
+function tutConnected(game, isl, id) {
+  const t = tutIsland(game, isl);
+  if (!t) return false;
+  for (let r = 0; r < t.def.rows; r++) for (let c = 0; c < t.def.cols; c++) {
+    const b = t.tiles[r][c].building;
+    if (!b || b.id !== id) continue;
+    const sz = BUILDINGS[id] && BUILDINGS[id].size || [1, 1];
+    if (roadReachesPortFootprint(game, isl, r, c, sz[1] || 1, sz[0] || 1)) return true;
+  }
+  return false;
+}
+const TUTORIAL_STEPS = [{
+  reveal: ['mine_fer'],
+  goal: 'Posez une mine de fer sur un gisement de fer.',
+  done: g => tutCount(g, 1, 'mine_fer') >= 1
+}, {
+  reveal: ['carriere'],
+  goal: 'Posez une carrière sur une tuile.',
+  done: g => tutCount(g, 1, 'carriere') >= 1
+}, {
+  reveal: ['road'],
+  goal: 'Reliez la mine et la carrière au port avec des routes.',
+  done: g => tutConnected(g, 1, 'mine_fer') && tutConnected(g, 1, 'carriere')
+}, {
+  reveal: [],
+  goal: 'Améliorez la mine et la carrière au niveau 2.',
+  done: g => tutAllUpgraded(g, 1, ['mine_fer', 'carriere'], 1)
+}, {
+  reveal: ['mine_charbon'],
+  goal: 'Posez une mine de charbon et reliez-la au port.',
+  done: g => tutConnected(g, 1, 'mine_charbon')
+}, {
+  reveal: ['four_fer'],
+  goal: 'Posez un four à fer et reliez-le au port.',
+  done: g => tutConnected(g, 1, 'four_fer')
+}, {
+  reveal: ['cimenterie'],
+  goal: 'Posez une cimenterie et reliez-la au port.',
+  done: g => tutConnected(g, 1, 'cimenterie')
+}];
+// Bâtiments révélés jusqu'à l'étape `step` incluse.
+function tutorialRevealedSet(step) {
+  const s = new Set();
+  for (let i = 0; i <= step && i < TUTORIAL_STEPS.length; i++) for (const id of TUTORIAL_STEPS[i].reveal) s.add(id);
+  return s;
+}
 function maxEnergyBalance(game) {
   let m = 0;
   for (const k in game.energy || {}) {
@@ -4713,11 +4807,14 @@ function Toolbar({
   buildOpen,
   onToggleBuild,
   netOpen,
-  onToggleNet
+  onToggleNet,
+  tutorialRevealed
 }) {
   const visibleOn = id => {
     const ex = BUILDINGS[id].exclusiveIsland;
     if (!(ex == null || ex === currentIsland)) return false;
+    // Pendant le tutoriel (île 1), on ne montre que les bâtiments déjà révélés.
+    if (tutorialRevealed && !tutorialRevealed.has(id)) return false;
     return BUILDING_NODE[id] == null || unlockedSet && unlockedSet.has(id);
   };
   const isBuildingTool = tool && tool !== DEMOLISH && tool !== UPGRADE && tool !== COPY && BUILDINGS[tool] && !isNetworkId(tool);
@@ -5909,6 +6006,26 @@ function OptionsModal({
     onClick: onOpenSaves
   }, uiIcon('sauvegarde', "💾"), " Emplacements de sauvegarde"))));
 }
+function TutorialBanner({
+  step,
+  total,
+  goal,
+  onSkip
+}) {
+  return React.createElement("div", {
+    className: "tuto-banner"
+  }, React.createElement("div", {
+    className: "tuto-main"
+  }, React.createElement("span", {
+    className: "tuto-step"
+  }, "Tuto ", step + 1, "/", total), React.createElement("span", {
+    className: "tuto-goal"
+  }, goal)), React.createElement("button", {
+    className: "tuto-skip",
+    onClick: onSkip,
+    title: "Passer le tutoriel et tout débloquer"
+  }, "Passer"));
+}
 function OfflineModal({
   report,
   onClose
@@ -6145,6 +6262,10 @@ function App() {
       tickAcc: 0,
       lastFrameTs: 0,
       lastSave: 0,
+      tutorial: {
+        active: true,
+        step: 0
+      },
       saveTimer: null
     };
   }
@@ -6155,6 +6276,7 @@ function App() {
   const [netOpen, setNetOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [offlineReport, setOfflineReport] = useState(null);
+  const [tutorialStep, setTutorialStep] = useState(-1);
   const [researchPending, setResearchPending] = useState(false);
   const [info, setInfo] = useState(null);
   const [upgrade, setUpgrade] = useState(null);
@@ -6283,6 +6405,10 @@ function App() {
     return {
       version: SAVE_VERSION,
       savedAt: Date.now(),
+      tutorial: g.tutorial ? {
+        active: !!g.tutorial.active,
+        step: g.tutorial.step || 0
+      } : null,
       currentIsland: g.currentIsland,
       port,
       energy,
@@ -6623,6 +6749,15 @@ function App() {
       }
     }
     g.lastSave = data.savedAt || 0;
+    // Tutoriel : sauvegardes existantes (sans champ) -> inactif ; nouvelles parties
+    // tutoriel sauvegardent leur progression.
+    g.tutorial = data.tutorial && typeof data.tutorial === 'object' ? {
+      active: !!data.tutorial.active,
+      step: data.tutorial.step || 0
+    } : {
+      active: false,
+      step: 0
+    };
     return true;
   }
   // Rejoue la production manquée pendant une absence (production hors-ligne / idle).
@@ -6685,6 +6820,36 @@ function App() {
     const g = gameRef.current;
     if (!g.lastSave) return;
     runCatchUp((Date.now() - g.lastSave) / 1000);
+  }
+  // Fait avancer le tutoriel tant que l'étape courante est validée, et révèle le
+  // bâtiment suivant. Appelé chaque frame (no-op si le tutoriel est inactif).
+  function checkTutorial() {
+    const g = gameRef.current;
+    if (!g.tutorial || !g.tutorial.active) return;
+    let changed = false;
+    while (g.tutorial.step < TUTORIAL_STEPS.length && TUTORIAL_STEPS[g.tutorial.step].done(g)) {
+      g.tutorial.step++;
+      changed = true;
+      const st = TUTORIAL_STEPS[g.tutorial.step];
+      if (st) for (const id of st.reveal) showToast('🔓 ' + (BUILDINGS[id] ? BUILDINGS[id].name : id) + ' débloqué !', 'var(--green)');
+    }
+    if (g.tutorial.step >= TUTORIAL_STEPS.length) {
+      g.tutorial.active = false;
+      showToast('🎓 Tutoriel terminé — bonne partie !', 'var(--green)');
+    }
+    if (changed) {
+      setTutorialStep(g.tutorial.active ? g.tutorial.step : -1);
+      markDirty();
+      scheduleSave();
+    }
+  }
+  function skipTutorial() {
+    const g = gameRef.current;
+    if (g.tutorial) g.tutorial.active = false;
+    setTutorialStep(-1);
+    showToast('Tutoriel passé — bâtiments débloqués', 'var(--ink-dim)');
+    markDirty();
+    scheduleSave();
   }
   function missingFor(cost) {
     const res = portPool(gameRef.current);
@@ -7930,6 +8095,8 @@ function App() {
     if (gameRef.current.lastSave === 0) gameRef.current.lastSave = Date.now();
     // Rattrapage de la production hors-ligne (uniquement si une partie a été chargée).
     if (loaded) applyOfflineProgress();
+    const tut = gameRef.current.tutorial;
+    setTutorialStep(tut && tut.active ? tut.step : -1);
     let raw = null;
     try {
       const aid = getActiveSlotId();
@@ -7938,6 +8105,11 @@ function App() {
     if (!raw) showToast('Sélectionnez un outil en bas pour construire', 'var(--ink)');
     bumpClock();
   }, []);
+  // Le bandeau tutoriel apparaît/disparaît -> la hauteur du canvas change : relayout.
+  useEffect(() => {
+    layout();
+    gameRef.current.dirty = true;
+  }, [tutorialStep >= 0]);
   useEffect(() => {
     const canvasEl = canvasRef.current;
     const ctxValid = () => {
@@ -7985,6 +8157,7 @@ function App() {
         guard++;
       }
       g.animClock = (g.animClock || 0) + 1;
+      checkTutorial();
       // Keep redrawing smoothly while a cargo boat is animating near the current port.
       if (boatActiveNearPort(g)) g.dirty = true;
       if (g.dirty && ctxValid()) {
@@ -8152,6 +8325,11 @@ function App() {
       setDev(g.ui.dev);
       setOptionsOpen(true);
     }
+  }), tutorialStep >= 0 && React.createElement(TutorialBanner, {
+    step: tutorialStep,
+    total: TUTORIAL_STEPS.length,
+    goal: TUTORIAL_STEPS[tutorialStep] ? TUTORIAL_STEPS[tutorialStep].goal : '',
+    onSkip: skipTutorial
   }), React.createElement("div", {
     ref: stageRef,
     className: 'stage' + (selMode ? ' sel' : '') + (dragging ? ' dragging' : '')
@@ -8232,7 +8410,8 @@ function App() {
     onToggleNet: () => {
       setBuildOpen(false);
       setNetOpen(o => !o);
-    }
+    },
+    tutorialRevealed: game.tutorial && game.tutorial.active && game.currentIsland === 1 ? tutorialRevealedSet(game.tutorial.step) : null
   }), researchOpen && React.createElement(ResearchPanel, {
     game: game,
     currentIsland: game.currentIsland,
