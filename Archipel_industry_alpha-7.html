@@ -538,7 +538,8 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 /* Tappable quit button in the status bar (mobile-friendly replacement for "Échap") */
 .status-quit{margin-left:10px;flex-shrink:0;background:rgba(255,59,48,.16);color:#ff8079;
   border:1px solid rgba(255,59,48,.5);border-radius:5px;padding:3px 12px;cursor:pointer;
-  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;}
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;
+  pointer-events:auto;touch-action:manipulation;}
 .status-quit:hover{background:rgba(255,59,48,.28);}
 .status{display:flex;align-items:center;}
 /* ── Mobile: show everything (wrap, no horizontal scroll), drop the game title ── */
