@@ -3,5 +3,5 @@
   "version": "Alpha 8",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "HUD: Réparer Île à gauche (label + coût), Port/Recherche à droite, hauts alignés"
+  "notes": "Construction: refermer le menu Bâtiment/Réseau dès qu'un bâtiment est choisi (dégage la carte)"
 }
