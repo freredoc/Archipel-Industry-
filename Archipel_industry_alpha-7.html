@@ -454,6 +454,14 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   transition:background .1s;}
 .ip-demolish:hover{background:rgba(255,59,48,.22);}
 .ip-demolish:active{transform:translateY(1px);}
+.ip-align{width:100%;background:rgba(76,175,80,.12);border:1px solid rgba(76,175,80,.5);
+  color:#86d98a;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;
+  letter-spacing:.04em;text-transform:uppercase;border-radius:5px;padding:8px;cursor:pointer;
+  margin-bottom:8px;transition:background .1s;display:flex;justify-content:center;gap:8px;align-items:baseline;}
+.ip-align:hover:not(:disabled){background:rgba(76,175,80,.22);}
+.ip-align:disabled{opacity:.4;cursor:not-allowed;}
+.ip-align:active:not(:disabled){transform:translateY(1px);}
+.ip-align .ip-sub{font-family:'DM Mono',monospace;font-size:.62rem;font-weight:400;opacity:.85;text-transform:none;}
 
 /* ── Barre d'outils ── */
 .toolbar{flex-shrink:0;background:var(--panel);border-top:1px solid var(--line);
@@ -2809,8 +2817,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 14;
-const GAME_VERSION = 'Alpha 8.4.2';
+const GAME_BUILD = 15;
+const GAME_VERSION = 'Alpha 8.5';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3943,8 +3951,8 @@ const TECH_NODES = [{
   mode: 'delivery',
   reqs: [],
   delivery: {
-    lingot_fer: 100000,
-    ciment: 100000
+    lingot_fer: 10000,
+    ciment: 10000
   },
   unlocks: {
     buildings: ['mine_cuivre'],
@@ -4932,6 +4940,7 @@ function InfoPanel({
   onClose,
   onDemolish,
   onUpgrade,
+  onUpgradeAll,
   onDowngrade,
   onSetNuclear,
   onRepair,
@@ -5047,6 +5056,26 @@ function InfoPanel({
   const upCost = upgradable ? upgradeCost(b.cost, upg + 1, info.id) : null;
   const canUp = !!upCost && (dev || Object.keys(upCost).every(k => (port[k] || 0) >= upCost[k]));
   const downRefund = upgradable && upg > 0 ? upgradeCost(b.cost, upg, info.id) : null;
+  // « Aligner tous » : monte tous les bâtiments du même type (sur cette île) qui sont
+  // en-dessous du niveau de CE bâtiment, jusqu'à ce niveau. On calcule le nombre
+  // concerné + le coût total cumulé pour l'afficher et tester si on peut payer.
+  let alignCount = 0;
+  const alignCost = {};
+  if (upgradable && upg > 0) {
+    const tls = game.islands[currentIsland] || [];
+    for (let rr = 0; rr < tls.length; rr++) for (let cc = 0; cc < (tls[rr] ? tls[rr].length : 0); cc++) {
+      const bb = tls[rr][cc].building;
+      if (!bb || bb.id !== info.id) continue;
+      const lv = bb.upgrade || 0;
+      if (lv >= upg) continue;
+      alignCount++;
+      for (let l = lv; l < upg; l++) {
+        const c1 = upgradeCost(b.cost, l + 1, info.id);
+        for (const k in c1) alignCost[k] = (alignCost[k] || 0) + c1[k];
+      }
+    }
+  }
+  const canAlign = dev || Object.keys(alignCost).every(k => (port[k] || 0) >= alignCost[k]);
   // Lignes d'aperçu d'amélioration (valeur actuelle → niveau suivant).
   const nextMult = upgradeMult(upg + 1);
   const previewRow = (label, rec) => rec && Object.keys(rec).length ? React.createElement("div", {
@@ -5239,7 +5268,14 @@ function InfoPanel({
     title: downRefund ? 'Remb. : ' + (formatCost(downRefund) || '—') : 'Déjà au niveau de base'
   }, uiIcon('baisser', "\u2B07"), " Baisser ", React.createElement("span", {
     className: "ip-sub"
-  }, upg > 0 ? 'Nv.' + upg : '—'))), React.createElement("button", {
+  }, upg > 0 ? 'Nv.' + upg : '—'))), upgradable && upg > 0 && alignCount > 0 && React.createElement("button", {
+    className: "ip-align",
+    disabled: !canAlign,
+    onClick: () => onUpgradeAll(info.r, info.c),
+    title: 'Aligner ' + alignCount + ' autre(s) ' + b.name + ' sur Nv.' + (upg + 1) + ' · Coût : ' + (formatCost(alignCost) || 'gratuit')
+  }, uiIcon('monter', "⬆"), " Aligner les " + b.name + " (Nv." + (upg + 1) + ") ", React.createElement("span", {
+    className: "ip-sub"
+  }, "×", alignCount, " · ", formatCost(alignCost) || 'gratuit')), React.createElement("button", {
     className: "ip-demolish",
     onClick: onDemolish
   }, uiIcon('demolir', "\u267B"), " D\xE9molir (remb. 100%)"));
@@ -7315,6 +7351,50 @@ function App() {
     showToast(`⬆ ${b.name} → Nv.${lvl + 2}`, 'var(--green)');
     return true;
   }
+  // Aligne tous les bâtiments du même type (sur l'île courante) qui sont en-dessous
+  // du niveau du bâtiment (r,c), jusqu'à ce niveau. Coût = somme des paliers manquants.
+  function upgradeAllSameType(r, c) {
+    const tiles = curTiles();
+    const t = tiles[r] && tiles[r][c];
+    if (!t || !t.building) return false;
+    const id = t.building.id;
+    if (!isUpgradable(id)) return false;
+    const b = BUILDINGS[id];
+    const target = t.building.upgrade || 0;
+    if (target <= 0) return false;
+    const def = curDef();
+    const targets = [];
+    const totalCost = {};
+    for (let rr = 0; rr < def.rows; rr++) for (let cc = 0; cc < def.cols; cc++) {
+      const bb = tiles[rr][cc].building;
+      if (!bb || bb.id !== id) continue;
+      const lv = bb.upgrade || 0;
+      if (lv >= target) continue;
+      for (let l = lv; l < target; l++) {
+        const c1 = upgradeCost(b.cost, l + 1, id);
+        for (const k in c1) totalCost[k] = (totalCost[k] || 0) + c1[k];
+      }
+      targets.push(tiles[rr][cc]);
+    }
+    if (!targets.length) {
+      showToast(`Tous les ${b.name} sont déjà au Nv.${target + 1}`, 'var(--ink-dim)');
+      return false;
+    }
+    if (!gameRef.current.ui.dev) {
+      const miss = missingFor(totalCost);
+      if (miss.length) {
+        showToast('❌ Manque ' + miss.join(', '), 'var(--red)');
+        return false;
+      }
+      pay(totalCost);
+    }
+    for (const tt of targets) tt.building.upgrade = target;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+    showToast(`⬆ ${targets.length} × ${b.name} alignés au Nv.${target + 1}`, 'var(--green)');
+    return true;
+  }
   function tryDowngrade(r, c) {
     const t = curTiles()[r] && curTiles()[r][c];
     if (!t || !t.building) return false;
@@ -8584,6 +8664,7 @@ function App() {
     onClose: () => setInfo(null),
     onDemolish: () => tryDemolish(info.r, info.c, true),
     onUpgrade: (r, c) => tryUpgrade(r, c),
+    onUpgradeAll: (r, c) => upgradeAllSameType(r, c),
     onDowngrade: (r, c) => tryDowngrade(r, c),
     onSetNuclear: setNuclearConfig,
     onRepair: (r, c) => tryRepair(r, c),
@@ -8614,13 +8695,19 @@ function App() {
     onSelect: selectTool,
     buildOpen: buildOpen,
     onToggleBuild: () => {
+      const opening = !buildOpen;
       setNetOpen(false);
-      setBuildOpen(o => !o);
+      setBuildOpen(opening);
+      // Ouvrir un panneau désactive l'outil d'action en cours (Démolir/Améliorer/
+      // Copier) pour éviter d'avoir deux boutons sélectionnés en même temps.
+      if (opening) deselectAll();
     },
     netOpen: netOpen,
     onToggleNet: () => {
+      const opening = !netOpen;
       setBuildOpen(false);
-      setNetOpen(o => !o);
+      setNetOpen(opening);
+      if (opening) deselectAll();
     },
     tutorialRevealed: game.tutorial && game.tutorial.active && game.currentIsland === 1 ? tutorialRevealedSet(game.tutorial.step) : null
   }), researchOpen && React.createElement(ResearchPanel, {
