@@ -69,9 +69,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .stock .k{font-family:'Barlow Condensed',sans-serif;font-size:.62rem;letter-spacing:.04em;
   color:var(--ink-dim);text-transform:uppercase;}
 .stock .v{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--ink);}
-.stock.energy.ok .v{color:var(--green);}
-.stock.energy.deficit .v{color:var(--red);}
-.stock.energy.deficit{border-color:rgba(255,59,48,.5);}
+.stock.energy.ok .v,.stock.battery.ok .v{color:var(--green);}
+.stock.energy.deficit .v,.stock.battery.deficit .v{color:var(--red);}
+.stock.energy.deficit,.stock.battery.deficit{border-color:rgba(255,59,48,.5);}
 /* Bouton mode dev */
 .dev-btn{flex-shrink:0;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-dim);
   border-radius:4px;padding:4px 10px;cursor:pointer;font-family:'Bebas Neue',sans-serif;
@@ -231,7 +231,7 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 .ep-name{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.82rem;color:var(--ink);}
 .ep-pos{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--ink-faint);}
 .ep-pow{font-family:'DM Mono',monospace;font-size:.68rem;color:#8fd0ff;text-align:right;}
-.stock.energy{cursor:pointer;}
+.stock.energy,.stock.battery{cursor:pointer;}
 
 /* ── Panneau Recherche (overlay) ── */
 .research-backdrop{position:fixed;inset:0;z-index:120;background:rgba(5,5,15,.55);}
@@ -2821,8 +2821,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 21;
-const GAME_VERSION = 'Alpha 9.1';
+const GAME_BUILD = 22;
+const GAME_VERSION = 'Alpha 9.2';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -5787,6 +5787,8 @@ function EnergyPanel({
   const supply = e.produced || 0;
   const battery = supply - gross;
   const dem = e.demand || 0;
+  const served = e.consumed || 0;
+  const cut = Math.max(0, dem - served);
   const netE = supply - dem;
   const accCap = e.accCap || 0;
   const accStored = e.accStored || 0;
@@ -5824,7 +5826,7 @@ function EnergyPanel({
     className: "rp-list"
   }, React.createElement("div", {
     className: "ep-stats"
-  }, statRow("Production (g\xE9n\xE9rateurs)", fmtInt(gross) + " kW"), battery > 0.5 && statRow("Batterie (d\xE9charge)", "+" + fmtInt(battery) + " kW", "var(--green)"), statRow("Demande totale", fmtInt(dem) + " kW"), statRow("Bilan r\xE9el", (netE >= 0 ? '+' : '') + fmtInt(netE) + " kW", netE < -1e-6 ? '#ff8079' : 'var(--green)'), accPct != null && statRow("Accumulateurs", fmtInt(accStored) + " / " + fmtInt(accCap) + " kWh \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
+  }, statRow("Production (g\xE9n\xE9rateurs)", fmtInt(gross) + " kW"), battery > 0.5 && statRow("Batterie (d\xE9charge)", "+" + fmtInt(battery) + " kW", "var(--green)"), statRow("Demande totale", fmtInt(dem) + " kW"), cut > 0.5 && statRow("Demande non servie", "-" + fmtInt(cut) + " kW", '#ff8079'), statRow("Bilan r\xE9el", (netE >= 0 ? '+' : '') + fmtInt(netE) + " kW", netE < -1e-6 ? '#ff8079' : 'var(--green)'), accPct != null && statRow("Accumulateurs", fmtInt(accStored) + " / " + fmtInt(accCap) + " kWh \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
     className: "ep-bar",
     key: "bar"
   }, React.createElement("i", {
