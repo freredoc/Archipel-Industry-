@@ -452,6 +452,8 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;transition:background .1s,opacity .1s;}
 .ip-up{background:rgba(76,175,80,.14);border:1px solid rgba(76,175,80,.5);color:#86d98a;}
 .ip-up:hover:not(:disabled){background:rgba(76,175,80,.24);}
+.ip-unl{flex:none;flex-direction:row;gap:6px;background:rgba(126,87,194,.18);border:1px solid rgba(126,87,194,.6);color:#c4a7f0;font-weight:700;}
+.ip-unl:hover:not(:disabled){background:rgba(126,87,194,.3);}
 .ip-down{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--ink-dim);}
 .ip-down:hover:not(:disabled){background:rgba(255,255,255,.1);}
 .ip-up:disabled,.ip-down:disabled{opacity:.4;cursor:not-allowed;}
@@ -2753,11 +2755,12 @@ const SOLID_THROUGHPUT_V1 = 32;
 const NETWORK_THROUGHPUT = {
   1: 128,
   2: 1024,
-  3: 8192,
-  4: Infinity
+  3: 8192
 };
-const networkThroughput = level => NETWORK_THROUGHPUT[level] || NETWORK_THROUGHPUT[1];
-const NETWORK_MAX_LEVEL = 4;
+// Débit max d'un réseau de niveau N : 128 × 8^(N-1). Croît ×8 à chaque niveau, sans plafond
+// (amélioration « infinie »). N=1:128, 2:1024, 3:8192, 4:65536, 5:524288, 6:4194304, …
+const networkThroughput = level => 128 * Math.pow(8, (level || 1) - 1);
+const NETWORK_MAX_LEVEL = 99;
 // Per-tile upgrade cost for going from (level) to (level+1), by infra type.
 const NETWORK_UPGRADE_COST = {
   road: {
@@ -2794,6 +2797,46 @@ const NETWORK_UPGRADE_COST = {
     }
   }
 };
+// Matériaux des paliers élevés (niveau 3 → 4 et au-delà), par type de réseau.
+//  - cheap   : matériau « volume » (toujours dispo), base 800.
+//  - premium : matériau raffiné (base 100) — nécessite de l'avoir débloqué.
+//  - irradie : matériau irradié pour rendre le réseau ILLIMITÉ (coût forfaitaire).
+// Le câble n'a pas d'option premium (un seul matériau).
+const NETWORK_HI_MATS = {
+  road: {
+    cheap: 'ciment',
+    premium: 'beton_arme',
+    irradie: 'beton_arme_irradie'
+  },
+  pipe: {
+    cheap: 'lingot_fer',
+    premium: 'acier',
+    irradie: 'acier_irradie'
+  },
+  wire: {
+    cheap: 'cable',
+    premium: null,
+    irradie: 'cable_irradie'
+  }
+};
+const NETWORK_HI_CHEAP_BASE = 800;
+const NETWORK_HI_PREMIUM_BASE = 100;
+const NETWORK_UNLIMITED_COST = 10000;
+// Coût unitaire (par tuile) pour passer du niveau `level` au niveau `level+1`.
+// Niveaux 1-2 : tables ci-dessus (matériau de base). Niveaux 3+ : choix du matériau
+// (cheap/premium), coût ×2 par niveau — toujours croissant, sans fin.
+function networkUnitCost(type, level, payMat) {
+  const tbl = NETWORK_UPGRADE_COST[type] || {};
+  if (level < 3) return tbl[level] || {};
+  const m = NETWORK_HI_MATS[type];
+  if (!m) return tbl[level] || {};
+  const usePrem = payMat === 'premium' && m.premium;
+  const mat = usePrem ? m.premium : m.cheap;
+  const base = usePrem ? NETWORK_HI_PREMIUM_BASE : NETWORK_HI_CHEAP_BASE;
+  return {
+    [mat]: base * Math.pow(2, level - 3)
+  };
+}
 const SAVE_KEY = 'archipel_save_v1';
 const SLOTS_INDEX_KEY = 'archipel_slots';
 const ACTIVE_SLOT_KEY = 'archipel_active';
@@ -2879,8 +2922,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 24;
-const GAME_VERSION = 'Alpha 10.0';
+const GAME_BUILD = 26;
+const GAME_VERSION = 'Alpha 10.1';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3165,7 +3208,7 @@ function networkTileCount(game, islandId, networkId) {
 // Combined upgrade cost (going from current level to current+1) for a network and
 // all networks coupled to it via junctions. dir = +1 (upgrade) or -1 (downgrade).
 // Returns { cost, ids, fromLevel, blocked, reason } where cost is the total resources.
-function networkLevelChange(game, islandId, networkId, dir) {
+function networkLevelChange(game, islandId, networkId, dir, payMat) {
   const nets = game.networks[islandId] || {};
   const net = nets[networkId];
   if (!net) return {
@@ -3174,6 +3217,7 @@ function networkLevelChange(game, islandId, networkId, dir) {
   };
   const ids = Array.from(coupledNetworkIds(game, islandId, networkId));
   const fromLevel = net.level;
+  const anyUnlimited = ids.some(id => nets[id] && nets[id].unlimited);
   // all coupled networks must share the same level to move together
   for (const id of ids) {
     if ((nets[id] && nets[id].level || 1) !== fromLevel) return {
@@ -3181,20 +3225,27 @@ function networkLevelChange(game, islandId, networkId, dir) {
       reason: 'Réseaux couplés à des niveaux différents'
     };
   }
+  if (dir > 0 && anyUnlimited) return {
+    blocked: true,
+    reason: 'Déjà illimité'
+  };
   if (dir > 0 && fromLevel >= NETWORK_MAX_LEVEL) return {
     blocked: true,
     reason: 'Niveau maximum atteint'
   };
-  if (dir < 0 && fromLevel <= 1) return {
+  if (dir < 0 && fromLevel <= 1 && !anyUnlimited) return {
     blocked: true,
     reason: 'Niveau minimum atteint'
   };
   const stepLevel = dir > 0 ? fromLevel : fromLevel - 1; // the V→V+1 step whose cost applies
   const cost = {};
-  for (const id of ids) {
+  // Pas de remboursement pour les paliers à choix de matériau (niveau ≥ 3) : on ne sait
+  // pas lequel a été payé, on évite ainsi tout exploit de conversion de matière.
+  const refundable = !(dir < 0 && stepLevel >= 3);
+  if (refundable) for (const id of ids) {
     const n = nets[id];
     if (!n) continue;
-    const per = (NETWORK_UPGRADE_COST[n.type] || {})[stepLevel] || {};
+    const per = networkUnitCost(n.type, stepLevel, payMat);
     const tiles = networkTileCount(game, islandId, id);
     for (const k in per) cost[k] = (cost[k] || 0) + per[k] * tiles;
   }
@@ -3203,6 +3254,35 @@ function networkLevelChange(game, islandId, networkId, dir) {
     ids,
     fromLevel,
     toLevel: fromLevel + dir,
+    unlimited: anyUnlimited,
+    blocked: false
+  };
+}
+// Coût pour rendre un réseau ILLIMITÉ (débit infini) via le matériau irradié.
+// Forfait NETWORK_UNLIMITED_COST par réseau (et par réseau couplé).
+function networkUnlimitedInfo(game, islandId, networkId) {
+  const nets = game.networks[islandId] || {};
+  const net = nets[networkId];
+  if (!net) return {
+    blocked: true,
+    reason: 'Réseau introuvable'
+  };
+  const ids = Array.from(coupledNetworkIds(game, islandId, networkId));
+  if (ids.some(id => nets[id] && nets[id].unlimited)) return {
+    blocked: true,
+    reason: 'Déjà illimité'
+  };
+  const irr = (NETWORK_HI_MATS[net.type] || {}).irradie;
+  if (!irr) return {
+    blocked: true,
+    reason: 'Indisponible'
+  };
+  const cost = {};
+  for (const id of ids) cost[irr] = (cost[irr] || 0) + NETWORK_UNLIMITED_COST;
+  return {
+    cost,
+    ids,
+    mat: irr,
     blocked: false
   };
 }
@@ -3426,7 +3506,7 @@ function tickIsland(game, isl) {
   const saturated = [];
   for (const nid in netDemand) {
     const net = nets[nid];
-    const cap = net ? networkThroughput(net.level) : NETWORK_THROUGHPUT[1];
+    const cap = net ? net.unlimited ? Infinity : networkThroughput(net.level) : NETWORK_THROUGHPUT[1];
     const demand = netDemand[nid];
     const fct = demand > cap ? cap / demand : 1;
     netFactor[nid] = fct;
@@ -3444,7 +3524,7 @@ function tickIsland(game, isl) {
   const tierFactor = {};
   for (const nid in netDemand) {
     const net = nets[nid];
-    const cap = net ? networkThroughput(net.level) : NETWORK_THROUGHPUT[1];
+    const cap = net ? net.unlimited ? Infinity : networkThroughput(net.level) : NETWORK_THROUGHPUT[1];
     if (!(netDemand[nid] > cap)) continue;
     const td = netTierDemand[nid] || {};
     let remaining = cap;
@@ -6048,7 +6128,8 @@ function NetworkPanel({
   stageRef,
   onClose,
   onUpgrade,
-  onDowngrade
+  onDowngrade,
+  onMakeUnlimited
 }) {
   const ref = useRef(null);
   const [pos, setPos] = useState({
@@ -6057,7 +6138,9 @@ function NetworkPanel({
     ready: false
   });
   // Confirmation en 2 temps avant de monter/baisser le niveau du réseau.
-  const [armed, setArmed] = useState(null); // 'up' | 'down' | null
+  const [armed, setArmed] = useState(null); // 'up' | 'down' | 'unl' | null
+  // Choix du matériau de paiement pour les paliers V3+ (route/tuyau) : 'cheap' | 'premium'.
+  const [payMat, setPayMat] = useState('cheap');
   useEffect(() => {
     setArmed(null);
   }, [net.networkId]);
@@ -6094,20 +6177,30 @@ function NetworkPanel({
     wire: '#F5A623'
   };
   const lvl = netObj.level;
-  const cap = networkThroughput(lvl);
+  const unlimited = !!netObj.unlimited;
+  const cap = unlimited ? Infinity : networkThroughput(lvl);
   const tiles = networkTileCount(game, currentIsland, net.networkId);
   const dev = game.ui && game.ui.dev;
   const port = game.port[currentIsland] || {};
-  const upInfo = networkLevelChange(game, currentIsland, net.networkId, +1);
+  // Paliers à choix de matériau : à partir du niveau 3 (vers V4+).
+  const hiMats = NETWORK_HI_MATS[netObj.type] || {};
+  const matChoice = lvl >= 3 && !unlimited;
+  const hasPremium = !!hiMats.premium;
+  const effPay = matChoice && hasPremium ? payMat : 'cheap';
+  const upInfo = networkLevelChange(game, currentIsland, net.networkId, +1, effPay);
   const downInfo = networkLevelChange(game, currentIsland, net.networkId, -1);
+  const unlInfo = networkUnlimitedInfo(game, currentIsland, net.networkId);
   // Flux demandé sur ce réseau vs débit max (saturation).
   const demand = game.netDemand && game.netDemand[currentIsland] && game.netDemand[currentIsland][net.networkId] || 0;
   const saturatedNet = cap !== Infinity && demand > cap + 0.001;
   const servedPct = saturatedNet ? Math.max(0, Math.round(cap / demand * 100)) : 100;
   const coupled = upInfo.ids && upInfo.ids.length > 1 || downInfo.ids && downInfo.ids.length > 1;
   const canUp = !upInfo.blocked && (dev || Object.keys(upInfo.cost || {}).every(k => (port[k] || 0) >= upInfo.cost[k]));
+  const canUnl = !unlInfo.blocked && (dev || Object.keys(unlInfo.cost || {}).every(k => (port[k] || 0) >= unlInfo.cost[k]));
   const upLabel = coupled ? ' Monter A + B' : ' Monter';
   const downLabel = coupled ? ' Baisser A + B' : ' Baisser';
+  const matLabel = k => RES_SHORT[k] || k;
+  const showUnlBtn = lvl >= 3 && !unlimited && hiMats.irradie;
   return React.createElement("div", {
     ref: ref,
     className: "info-panel",
@@ -6170,7 +6263,20 @@ function NetworkPanel({
     className: "lbl"
   }, "Couplage"), React.createElement("span", {
     className: "val"
-  }, "jonction (", (upInfo.ids || downInfo.ids).length, " réseaux)"))), React.createElement("div", {
+  }, "jonction (", (upInfo.ids || downInfo.ids).length, " réseaux)"))), React.createElement(React.Fragment, null, matChoice && hasPremium && React.createElement("div", {
+    className: "ip-fluxpri"
+  }, React.createElement("div", {
+    className: "ip-fluxpri-lbl"
+  }, "Matériau d'amélioration (V", lvl + 1, ")"), React.createElement("div", {
+    className: "ip-fluxpri-btns",
+    style: {
+      gridTemplateColumns: '1fr 1fr'
+    }
+  }, [['cheap', matLabel(hiMats.cheap)], ['premium', matLabel(hiMats.premium)]].map(([m, label]) => React.createElement("button", {
+    key: m,
+    className: 'ip-fluxpri-btn' + (effPay === m ? ' on' : ''),
+    onClick: () => setPayMat(m)
+  }, label)))), React.createElement("div", {
     className: "ip-actions"
   }, React.createElement("button", {
     className: "ip-up" + (armed === 'up' ? ' armed' : ''),
@@ -6178,7 +6284,7 @@ function NetworkPanel({
     onClick: () => {
       if (armed === 'up') {
         setArmed(null);
-        onUpgrade(net.r, net.c);
+        onUpgrade(net.r, net.c, effPay);
       } else setArmed('up');
     },
     title: upInfo.blocked ? upInfo.reason : 'Coût : ' + (formatCost(upInfo.cost) || 'gratuit')
@@ -6186,17 +6292,33 @@ function NetworkPanel({
     className: "ip-sub"
   }, upInfo.blocked ? upInfo.reason : 'V' + (lvl + 1) + ' · ' + (formatCost(upInfo.cost) || 'gratuit'))), React.createElement("button", {
     className: "ip-down" + (armed === 'down' ? ' armed' : ''),
-    disabled: downInfo.blocked,
+    disabled: downInfo.blocked && !unlimited,
     onClick: () => {
       if (armed === 'down') {
         setArmed(null);
         onDowngrade(net.r, net.c);
       } else setArmed('down');
     },
-    title: downInfo.blocked ? downInfo.reason : 'Remb. : ' + (formatCost(downInfo.cost) || '—')
+    title: unlimited ? 'Retirer le débit illimité' : downInfo.blocked ? downInfo.reason : 'Remb. : ' + (formatCost(downInfo.cost) || '—')
   }, uiIcon('baisser', "\u2B07"), armed === 'down' ? ' Confirmer ?' : downLabel, React.createElement("span", {
     className: "ip-sub"
-  }, downInfo.blocked ? '—' : 'V' + (lvl - 1)))));
+  }, unlimited ? 'limiter' : downInfo.blocked ? '—' : 'V' + (lvl - 1)))), showUnlBtn && React.createElement("button", {
+    className: "ip-up ip-unl" + (armed === 'unl' ? ' armed' : ''),
+    disabled: !canUnl,
+    style: {
+      width: '100%',
+      marginTop: '6px'
+    },
+    onClick: () => {
+      if (armed === 'unl') {
+        setArmed(null);
+        onMakeUnlimited(net.r, net.c);
+      } else setArmed('unl');
+    },
+    title: unlInfo.blocked ? unlInfo.reason : 'Coût : ' + (formatCost(unlInfo.cost) || '—') + ' — débit illimité'
+  }, "∞ ", armed === 'unl' ? 'Confirmer ?' : 'Rendre illimité', React.createElement("span", {
+    className: "ip-sub"
+  }, formatCost(unlInfo.cost) || '—'))));
 }
 function ResearchDonePopup({
   info,
@@ -6848,11 +6970,14 @@ function App() {
       }
       const levels = [];
       for (const nid in nets) {
-        const lvl = nets[nid] && nets[nid].level || 1;
-        if (lvl > 1 && repByNid[nid]) levels.push({
+        const n = nets[nid];
+        const lvl = n && n.level || 1;
+        const unl = !!(n && n.unlimited);
+        if ((lvl > 1 || unl) && repByNid[nid]) levels.push({
           r: repByNid[nid].r,
           c: repByNid[nid].c,
-          lvl
+          lvl,
+          unl: unl ? 1 : 0
         });
       }
       return {
@@ -7255,6 +7380,7 @@ function App() {
         if (!t || t.networkId == null) continue;
         const net = g.networks[isl.id][t.networkId];
         if (net && p.lvl >= 1 && p.lvl <= NETWORK_MAX_LEVEL) net.level = p.lvl;
+        if (net && p.unl) net.unlimited = true;
       }
     }
     g.lastSave = data.savedAt || 0;
@@ -7821,17 +7947,26 @@ function App() {
       y
     });
   }
-  function changeNetworkLevel(r, c, dir) {
+  function changeNetworkLevel(r, c, dir, payMat) {
     const g = gameRef.current,
       isl = g.currentIsland;
     const t = curTiles()[r] && curTiles()[r][c];
     if (!t || t.networkId == null) return false;
-    const info = networkLevelChange(g, isl, t.networkId, dir);
+    const info = networkLevelChange(g, isl, t.networkId, dir, payMat);
     if (info.blocked) {
       showToast('❌ ' + info.reason, 'var(--red)');
       return false;
     }
     const nets = g.networks[isl] || {};
+    // Baisser un réseau illimité = retirer le statut illimité (retour au débit fini).
+    if (dir < 0 && info.unlimited) {
+      for (const id of info.ids) if (nets[id]) nets[id].unlimited = false;
+      bumpHud();
+      markDirty();
+      scheduleSave();
+      showToast('⬇ Réseau → débit limité (V' + info.fromLevel + ')', 'var(--ink-dim)');
+      return true;
+    }
     if (dir > 0) {
       if (!g.ui.dev) {
         const miss = missingFor(info.cost);
@@ -7853,6 +7988,32 @@ function App() {
     scheduleSave();
     const label = info.ids.length > 1 ? 'Réseaux couplés' : 'Réseau';
     showToast(`${dir > 0 ? '⬆' : '⬇'} ${label} → V${info.toLevel}`, dir > 0 ? 'var(--green)' : 'var(--ink-dim)');
+    return true;
+  }
+  function makeNetworkUnlimited(r, c) {
+    const g = gameRef.current,
+      isl = g.currentIsland;
+    const t = curTiles()[r] && curTiles()[r][c];
+    if (!t || t.networkId == null) return false;
+    const info = networkUnlimitedInfo(g, isl, t.networkId);
+    if (info.blocked) {
+      showToast('❌ ' + info.reason, 'var(--red)');
+      return false;
+    }
+    const nets = g.networks[isl] || {};
+    if (!g.ui.dev) {
+      const miss = missingFor(info.cost);
+      if (miss.length) {
+        showToast('❌ Manque ' + miss.join(', '), 'var(--red)');
+        return false;
+      }
+      pay(info.cost);
+    }
+    for (const id of info.ids) if (nets[id]) nets[id].unlimited = true;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+    showToast('∞ Réseau → débit ILLIMITÉ', 'var(--green)');
     return true;
   }
   function selectTool(id) {
@@ -9066,11 +9227,14 @@ function App() {
     currentIsland: game.currentIsland,
     stageRef: stageRef,
     onClose: () => setNetwork(null),
-    onUpgrade: (r, c) => {
-      if (changeNetworkLevel(r, c, +1)) openNetwork(r, c);
+    onUpgrade: (r, c, payMat) => {
+      if (changeNetworkLevel(r, c, +1, payMat)) openNetwork(r, c);
     },
     onDowngrade: (r, c) => {
       if (changeNetworkLevel(r, c, -1)) openNetwork(r, c);
+    },
+    onMakeUnlimited: (r, c) => {
+      if (makeNetworkUnlimited(r, c)) openNetwork(r, c);
     }
   })), React.createElement(Toolbar, {
     tool: tool,
