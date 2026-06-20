@@ -403,9 +403,16 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .toast.show{opacity:1;transform:translateX(-50%) scale(1);}
 
 /* ── Panneau d'info bâtiment ── */
-.info-panel{position:absolute;z-index:50;width:230px;background:var(--panel);
+/* Panneaux bâtiment / amélioration / réseau : DOCKÉS en bas (au-dessus des onglets),
+   plutôt qu'en mini-fenêtre flottante qui sortait de l'écran. !important écrase le
+   positionnement inline (left/top) calculé en JS. Défilement interne si trop haut. */
+.info-panel{position:absolute;z-index:50;width:230px;left:50%!important;right:auto;
+  top:auto!important;bottom:8px;transform:translateX(-50%);max-height:60vh;overflow-y:auto;
+  overscroll-behavior:contain;background:var(--panel);
   border:1px solid var(--line);border-radius:8px;padding:13px 14px;
   box-shadow:0 10px 30px rgba(0,0,0,.5);transition:opacity .08s;}
+.info-panel::-webkit-scrollbar{width:6px;}
+.info-panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
 .ip-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
 .ip-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0;border:1px solid rgba(255,255,255,.15);}
 .ip-name{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.04em;
@@ -1283,7 +1290,6 @@ const NET_MASK_SUFFIX = (() => {
 const BLD_SPRITE_OVERRIDE = {
   four_arc_piece: 'four_arc_meca',
   usine_moteur_nuc: 'bat_usine_moteur_nucleaire',
-  cimenterie_v2: 'cimenterie',
   pompe_eau_v2: 'bat_pompe_eau',
   carriere: 'carriere_v1',
   carriere_v2: 'carriere_v2',
@@ -1603,7 +1609,7 @@ const BUILDINGS = {
       charbon: 8
     },
     outputs: {
-      energie_kw: 16
+      energie_kw: 32
     }
   },
   four_fer: {
@@ -1712,29 +1718,6 @@ const BUILDINGS = {
     },
     outputs: {
       lingot_cuivre: 1
-    }
-  },
-  cimenterie_v2: {
-    name: 'Cimenterie V2',
-    color: '#607D8B',
-    label: 'CIM2',
-    kind: 'build',
-    tier: 't1',
-    terrains: ['land', 'resource'],
-    needRoad: true,
-    size: [1, 1],
-    cost: {
-      acier: 20,
-      ciment: 50
-    },
-    power: 8,
-    inputs: {
-      pierre: 4,
-      minerai_fer: 1,
-      eau: 4
-    },
-    outputs: {
-      ciment: 1
     }
   },
   cablerie: {
@@ -2635,7 +2618,7 @@ const TOOLBAR_GROUPS = [{
   ids: ['eolienne', 'centrale_charbon', 'centrale_diesel', 'eolienne_offshore', 'accumulateur']
 }, {
   label: 'Traitement',
-  ids: ['four_fer', 'cimenterie', 'four_cuivre', 'four_fer_v2', 'four_cuivre_v2', 'cimenterie_v2', 'cablerie', 'acierie', 'raffinerie', 'betonniere', 'atelier_meca', 'usine_polymere', 'circuit', 'broyeur', 'distillerie', 'fonderie_or', 'raffineur_silicium', 'fab_processeur', 'four_arc_acier', 'four_arc_cable', 'four_arc_piece']
+  ids: ['four_fer', 'cimenterie', 'four_cuivre', 'four_fer_v2', 'four_cuivre_v2', 'cablerie', 'acierie', 'raffinerie', 'betonniere', 'atelier_meca', 'usine_polymere', 'circuit', 'broyeur', 'distillerie', 'fonderie_or', 'raffineur_silicium', 'fab_processeur', 'four_arc_acier', 'four_arc_cable', 'four_arc_piece']
 }, {
   label: 'Nucléaire',
   ids: ['broyeur_uranium', 'centrale_enrichissement', 'refroidisseur', 'centrale_nucleaire', 'usine_moteur_nuc', 'antenne']
@@ -2698,9 +2681,9 @@ const PORTS = {
 const portPosFor = islandId => PORTS[islandId] || null;
 const SOLID_THROUGHPUT_V1 = 32;
 const NETWORK_THROUGHPUT = {
-  1: 64,
-  2: 512,
-  3: 4096,
+  1: 128,
+  2: 1024,
+  3: 8192,
   4: Infinity
 };
 const networkThroughput = level => NETWORK_THROUGHPUT[level] || NETWORK_THROUGHPUT[1];
@@ -2826,8 +2809,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 17;
-const GAME_VERSION = 'Alpha 8.7';
+const GAME_BUILD = 18;
+const GAME_VERSION = 'Alpha 8.8';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3950,7 +3933,7 @@ const TECH_NODES = [{
   mode: 'start',
   reqs: [],
   unlocks: {
-    buildings: ['mine_fer', 'mine_charbon', 'carriere', 'pompe_eau', 'four_fer', 'cimenterie', 'road', 'pipe', 'wire'],
+    buildings: ['mine_fer', 'mine_charbon', 'carriere', 'four_fer', 'cimenterie', 'road', 'pipe', 'wire'],
     islands: [1]
   }
 }, {
@@ -4047,7 +4030,7 @@ const TECH_NODES = [{
     n: 10000
   }],
   unlocks: {
-    buildings: ['four_fer_v2', 'four_cuivre_v2', 'cimenterie_v2', 'pompe_eau_v2']
+    buildings: ['four_fer_v2', 'four_cuivre_v2', 'pompe_eau_v2']
   }
 }, {
   id: 8,
@@ -4081,7 +4064,7 @@ const TECH_NODES = [{
     n: 100
   }],
   unlocks: {
-    buildings: ['usine_polymere']
+    buildings: ['usine_polymere', 'pompe_eau']
   }
 }, {
   id: 10,
