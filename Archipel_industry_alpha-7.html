@@ -1084,7 +1084,7 @@ const ISLAND_TERRAINS_BASE = [{
   id: 3,
   cols: 14,
   rows: 14,
-  grid: ["WWWWWWWWWWWWWW", "WWTTTTTTWWWWWW", "WTTTTMMTTWWWWW", "WTTTTOTTTTWWWW", "WWTTTTTTTTTWWW", "WWWWTTTTTTTTWW", "WWWWWWTTOTTTWW", "WWWWWWTTTTMTWW", "WWWWWWTTOTMTWW", "WWWWWWTTTTTTWW", "WWWWWWWTTTTTWW", "WWWWWWWTTTTTWW", "WWWWWWWWTTWWWW", "WWWWWWWWWWWWWW"]
+  grid: ["WWWWWWWWWWWWWW", "WWTTTTTTWWWWWW", "WTTPTMMTTWWWWW", "WTTTTOTTTTWWWW", "WWTTTTTPTTTWWW", "WWWWTTTTTTTTWW", "WWWWWWTTOTTTWW", "WWWWWWTTPTMTWW", "WWWWWWTTOTMTWW", "WWWWWWTTTTTTWW", "WWWWWWWTTPTTWW", "WWWWWWWTTTTTWW", "WWWWWWWWTTWWWW", "WWWWWWWWWWWWWW"]
 }, {
   id: 4,
   cols: 16,
@@ -1374,6 +1374,19 @@ function drawSprite(ctx, fileKey, x, y, w, h) {
   if (!img) return false;
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(img, x, y, w, h);
+  return true;
+}
+// Comme drawSprite mais avec une rotation (radians) autour du centre de la tuile.
+function drawSpriteRot(ctx, fileKey, x, y, w, h, angle) {
+  if (!SPRITES_ENABLED || !fileKey) return false;
+  const img = spriteImg(fileKey);
+  if (!img) return false;
+  ctx.imageSmoothingEnabled = false;
+  ctx.save();
+  ctx.translate(x + w / 2, y + h / 2);
+  ctx.rotate(angle);
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+  ctx.restore();
   return true;
 }
 // Does a (non-infra) building connect to a network of the given carrier type?
@@ -2922,8 +2935,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 26;
-const GAME_VERSION = 'Alpha 10.1';
+const GAME_BUILD = 27;
+const GAME_VERSION = 'Alpha 10.2';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -8519,14 +8532,17 @@ function App() {
         const mask = netConnectMask(tiles, r, c, [carrier]);
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
-        const key = NET_PREFIX[bid] + '_v' + lvl + '_' + NET_MASK_SUFFIX[mask];
+        // Les niveaux peuvent dépasser V4 (amélioration infinie) mais les sprites
+        // s'arrêtent à V4 : on bloque le visuel sur le sprite de l'amélioration finale.
+        const slvl = Math.min(lvl, 4);
+        const key = NET_PREFIX[bid] + '_v' + slvl + '_' + NET_MASK_SUFFIX[mask];
         if (drawSprite(ctx, key, x, y, tile, tile)) continue;
       }
       // Junction sprites: jonction_<a>_<b>_v<level>.
       if (SPRITES_ENABLED && bdef && bdef.kind === 'junction') {
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
-        const jk = bid + '_v' + lvl;
+        const jk = bid + '_v' + Math.min(lvl, 4);
         if (drawSprite(ctx, jk, x, y, tile, tile)) continue;
       }
       const sz = buildingSize(bid);
@@ -8560,8 +8576,9 @@ function App() {
     const t = Math.max(0, (ship.timer || 0) - (g.tickAcc || 0));
     return Math.max(0, Math.min(1, t / SHIP_TRAVEL_TICKS));
   }
-  function dockProximity(g, isl) {
-    let best = -1;
+  function dockState(g, isl) {
+    let best = -1,
+      arriving = false;
     for (const {
       ship,
       a,
@@ -8572,12 +8589,24 @@ function App() {
       const travellingTo = ship.position === 'A' ? a : b;
       const frac = shipFrac(g, ship);
       const prox = travellingTo === isl ? 1 - frac : frac;
-      if (prox > best) best = prox;
+      if (prox > best) {
+        best = prox;
+        arriving = travellingTo === isl;
+      }
     }
-    return best;
+    return {
+      prox: best,
+      arriving
+    };
   }
+  function dockProximity(g, isl) {
+    return dockState(g, isl).prox;
+  }
+  // Le bateau n'est visible que dans les ~10 s proches du quai (départ/arrivée) ; il
+  // reste hors écran le reste du trajet. On garde le redraw fluide pendant ces fenêtres.
+  const BOAT_PROX_THRESH = 1 - 10 / SHIP_TRAVEL_TICKS;
   function boatActiveNearPort(g) {
-    return dockProximity(g, g.currentIsland) > 0.02;
+    return dockProximity(g, g.currentIsland) >= BOAT_PROX_THRESH;
   }
   function drawPortExtras(ctx, ox, oy, tile) {
     if (!SPRITES_ENABLED) return;
@@ -8590,17 +8619,24 @@ function App() {
     const px = ox + pontonC * tile,
       py = oy + pp.r * tile;
     drawSprite(ctx, 'tile_port_mer', px, py, tile, tile);
-    const prox = dockProximity(g, isl);
-    if (prox < 0.02) return; // no boat near this dock
-    // Path: boat moves horizontally from sea (further left) to just left of the pontoon.
-    const seaC = pontonC - 1.6;
+    const {
+      prox,
+      arriving
+    } = dockState(g, isl);
+    // Hors écran pendant la majeure partie du trajet : on ne dessine le bateau que
+    // dans la fenêtre proche du quai (10 s au départ, 10 s à l'arrivée).
+    if (prox < BOAT_PROX_THRESH) return;
+    const local = (prox - BOAT_PROX_THRESH) / (1 - BOAT_PROX_THRESH); // 0 (au large) .. 1 (à quai)
     const dockC = pontonC - 0.55;
-    const eased = prox * prox * (3 - 2 * prox); // smoothstep
-    const boatC = seaC + (dockC - seaC) * eased;
+    const farC = pontonC - 6; // au large, sur le point de disparaître hors écran
+    const eased = local * local * (3 - 2 * local); // smoothstep
+    const boatC = farC + (dockC - farC) * eased;
     const bx = ox + boatC * tile,
       by = oy + pp.r * tile;
     const bob = Math.sin((g.animClock || 0) * 0.12) * tile * 0.04;
-    drawSprite(ctx, 'bateau_cargo', bx, by + bob, tile, tile);
+    // Rotation 90° pour orienter le cargo dans son sens de navigation horizontal :
+    // proue à droite quand il rentre au port, à gauche quand il repart.
+    drawSpriteRot(ctx, 'bateau_cargo', bx, by + bob, tile, tile, arriving ? Math.PI / 2 : -Math.PI / 2);
   }
   function drawNetworkDebug(ctx, ox, oy, tile) {
     const g = gameRef.current;
@@ -8819,9 +8855,11 @@ function App() {
         const tiles = curTiles();
         const DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
         let mode = null;
+        // Ne pas proposer répare/remblai tant que la recherche correspondante n'est
+        // pas débloquée (sinon on ouvre un panneau inutile sur chaque tuile).
         if (t.terrain === 'obstacle') {
-          mode = 'repair';
-        } else if (t.terrain === 'water') {
+          if (isTerrainRepairUnlocked(gameRef.current)) mode = 'repair';
+        } else if (t.terrain === 'water' && isTerrainExtendUnlocked(gameRef.current)) {
           // Eligible only if adjacent (4-dir) to an existing land or coast tile.
           let adj = false;
           for (const [dr, dc] of DIRS) {
