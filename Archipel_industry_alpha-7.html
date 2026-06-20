@@ -426,6 +426,12 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-nuc-mat{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:5px 6px;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;}
 .ip-nuc-mat.on{background:#7E57C2;color:#fff;border-color:#7E57C2;}
 .ip-nuc-mat:hover{border-color:#7E57C2;}
+.ip-fluxpri{margin-bottom:8px;}
+.ip-fluxpri-lbl{font-size:.72rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
+.ip-fluxpri-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;}
+.ip-fluxpri-btn{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:5px 4px;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;}
+.ip-fluxpri-btn.on{background:#0277BD;color:#fff;border-color:#0277BD;}
+.ip-fluxpri-btn:hover{border-color:#0277BD;}
 .ip-up,.ip-down{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;border-radius:5px;
   padding:6px 4px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;
   font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;transition:background .1s,opacity .1s;}
@@ -2809,8 +2815,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 19;
-const GAME_VERSION = 'Alpha 8.9';
+const GAME_BUILD = 20;
+const GAME_VERSION = 'Alpha 9.0';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3153,6 +3159,13 @@ function tickIsland(game, isl) {
     resChanged = false;
   const actives = [];
   const netDemand = {};
+  // Demande ventilée par niveau de priorité de flux (haute/normale/basse) pour chaque réseau,
+  // afin de servir les bâtiments prioritaires d'abord quand le réseau est saturé.
+  const netTierDemand = {};
+  const addTier = (nid, tier, amt) => {
+    const t = netTierDemand[nid] || (netTierDemand[nid] = {});
+    t[tier] = (t[tier] || 0) + amt;
+  };
   let energyProduced = 0;
   const energyConsumers = [];
   const accList = [];
@@ -3307,11 +3320,24 @@ function tickIsland(game, isl) {
       if (bld.active !== prevA || bld.disc !== prevD) activeChanged = true;
       continue;
     }
+    const pri = bld.fluxPri === 'haute' || bld.fluxPri === 'basse' ? bld.fluxPri : 'normale';
     if (inByType.road) for (const k in inByType.road) workPort[k] = (workPort[k] || 0) - inByType.road[k];
-    if (inByType.road && routeIn.road != null) for (const k in inByType.road) netDemand[routeIn.road] = (netDemand[routeIn.road] || 0) + inByType.road[k];
-    if (outByType.road && routeOut.road != null) for (const k in outByType.road) netDemand[routeOut.road] = (netDemand[routeOut.road] || 0) + outByType.road[k];
-    if (inByType.pipe && routeIn.pipe != null) for (const k in inByType.pipe) netDemand[routeIn.pipe] = (netDemand[routeIn.pipe] || 0) + inByType.pipe[k];
-    if (outByType.pipe && routeOut.pipe != null) for (const k in outByType.pipe) netDemand[routeOut.pipe] = (netDemand[routeOut.pipe] || 0) + outByType.pipe[k];
+    if (inByType.road && routeIn.road != null) for (const k in inByType.road) {
+      netDemand[routeIn.road] = (netDemand[routeIn.road] || 0) + inByType.road[k];
+      addTier(routeIn.road, pri, inByType.road[k]);
+    }
+    if (outByType.road && routeOut.road != null) for (const k in outByType.road) {
+      netDemand[routeOut.road] = (netDemand[routeOut.road] || 0) + outByType.road[k];
+      addTier(routeOut.road, pri, outByType.road[k]);
+    }
+    if (inByType.pipe && routeIn.pipe != null) for (const k in inByType.pipe) {
+      netDemand[routeIn.pipe] = (netDemand[routeIn.pipe] || 0) + inByType.pipe[k];
+      addTier(routeIn.pipe, pri, inByType.pipe[k]);
+    }
+    if (outByType.pipe && routeOut.pipe != null) for (const k in outByType.pipe) {
+      netDemand[routeOut.pipe] = (netDemand[routeOut.pipe] || 0) + outByType.pipe[k];
+      addTier(routeOut.pipe, pri, outByType.pipe[k]);
+    }
     if (energyOut > 0) energyProduced += energyOut;
     if (power > 0) energyConsumers.push({
       idx: r * def.cols + c,
@@ -3327,7 +3353,8 @@ function tickIsland(game, isl) {
       inByType,
       outByType,
       routeIn,
-      routeOut
+      routeOut,
+      pri
     });
   }
   // Per-network throughput factor based on each network's level cap.
@@ -3344,10 +3371,37 @@ function tickIsland(game, isl) {
       level: net.level
     });
   }
+  // Allocation prioritaire sur les réseaux saturés : on sert d'abord la priorité « haute »,
+  // puis « normale », puis « basse ». Chaque niveau reçoit son débit en entier tant qu'il en
+  // reste ; le niveau « frontière » est servi partiellement, les suivants reçoivent 0.
+  // Quand tous les bâtiments ont la priorité par défaut (normale), le facteur du niveau vaut
+  // cap/demande — identique à l'ancien comportement proportionnel.
+  const PRI_ORDER = ['haute', 'normale', 'basse'];
+  const tierFactor = {};
+  for (const nid in netDemand) {
+    const net = nets[nid];
+    const cap = net ? networkThroughput(net.level) : NETWORK_THROUGHPUT[1];
+    if (!(netDemand[nid] > cap)) continue;
+    const td = netTierDemand[nid] || {};
+    let remaining = cap;
+    const tf = tierFactor[nid] = {};
+    for (const tier of PRI_ORDER) {
+      const d = td[tier] || 0;
+      if (d <= 0) {
+        tf[tier] = 1;
+        continue;
+      }
+      const give = Math.min(remaining, d);
+      tf[tier] = give / d;
+      remaining -= give;
+    }
+  }
   if (!game.netSaturated) game.netSaturated = {};
   game.netSaturated[isl] = saturated;
   if (!game.netFactor) game.netFactor = {};
   game.netFactor[isl] = netFactor;
+  if (!game.netTierFactor) game.netTierFactor = {};
+  game.netTierFactor[isl] = tierFactor;
   // Demande de flux par réseau (pour l'affichage « demandé vs limite » dans le panneau réseau).
   if (!game.netDemand) game.netDemand = {};
   game.netDemand[isl] = netDemand;
@@ -3358,14 +3412,20 @@ function tickIsland(game, isl) {
   }
   if (!game.solidFactor) game.solidFactor = {};
   game.solidFactor[isl] = solidF;
-  const facOf = (route, ty) => route[ty] != null && netFactor[route[ty]] != null ? netFactor[route[ty]] : 1;
+  const facOf = (route, ty, pri) => {
+    const nid = route[ty];
+    if (nid == null) return 1;
+    const tf = tierFactor[nid];
+    if (tf) return tf[pri] != null ? tf[pri] : 1;
+    return netFactor[nid] != null ? netFactor[nid] : 1;
+  };
   for (const a of actives) {
     if (a.inByType.road) {
-      const fc = facOf(a.routeIn, 'road');
+      const fc = facOf(a.routeIn, 'road', a.pri);
       for (const k in a.inByType.road) port[k] = (port[k] || 0) - fc * a.inByType.road[k];
     }
     if (a.inByType.pipe) {
-      const fc = facOf(a.routeIn, 'pipe');
+      const fc = facOf(a.routeIn, 'pipe', a.pri);
       const pool = nets[a.routeIn.pipe].pool;
       for (const k in a.inByType.pipe) pool[k] = (pool[k] || 0) - fc * a.inByType.pipe[k];
     }
@@ -3373,7 +3433,7 @@ function tickIsland(game, isl) {
   const prod = game.techTree && game.techTree.produced;
   for (const a of actives) {
     if (a.outByType.road) {
-      const fc = facOf(a.routeOut, 'road');
+      const fc = facOf(a.routeOut, 'road', a.pri);
       for (const k in a.outByType.road) {
         const amt = fc * a.outByType.road[k];
         port[k] = (port[k] || 0) + amt;
@@ -3381,7 +3441,7 @@ function tickIsland(game, isl) {
       }
     }
     if (a.outByType.pipe) {
-      const fc = facOf(a.routeOut, 'pipe');
+      const fc = facOf(a.routeOut, 'pipe', a.pri);
       const pool = nets[a.routeOut.pipe].pool;
       for (const k in a.outByType.pipe) {
         const amt = fc * a.outByType.pipe[k];
@@ -4938,6 +4998,7 @@ function InfoPanel({
   onUpgradeAll,
   onDowngrade,
   onSetNuclear,
+  onSetFluxPri,
   onRepair,
   onExtend
 }) {
@@ -5097,14 +5158,23 @@ function InfoPanel({
       cappedCarrier = ty;
     }
   }
+  const bldPri = bld.fluxPri === 'haute' || bld.fluxPri === 'basse' ? bld.fluxPri : 'normale';
   let f = 1;
   if (cappedCarrier) {
     const nets = game.networks[currentIsland] || {};
     const facs = game.netFactor && game.netFactor[currentIsland] || {};
+    const tfs = game.netTierFactor && game.netTierFactor[currentIsland] || {};
     for (const nid of adjacentNetworks(game, currentIsland, info.r, info.c, cappedCarrier)) {
       // road must reach the port; pipe just needs the adjacent network
       const okNet = cappedCarrier === 'road' ? nets[nid] && nets[nid].connected : !!nets[nid];
-      if (okNet && facs[nid] != null) {
+      if (!okNet) continue;
+      // Le facteur réel de CE bâtiment dépend de sa priorité de flux sur ce réseau.
+      const tf = tfs[nid];
+      if (tf) {
+        f = tf[bldPri] != null ? tf[bldPri] : 1;
+        break;
+      }
+      if (facs[nid] != null) {
         f = facs[nid];
         break;
       }
@@ -5112,6 +5182,17 @@ function InfoPanel({
   }
   const solidOut = cappedOut;
   const capped = cappedCarrier && bld.active !== false && f < 0.999;
+  // Priorité de flux : pertinent seulement pour les bâtiments raccordés à un réseau
+  // route/tuyau (entrée ou sortie de matière). Sert à arbitrer en cas de saturation.
+  let usesNet = false;
+  for (const k in b.inputs || {}) {
+    const ty = k !== 'energie_kw' && carrierOf(k);
+    if (ty === 'road' || ty === 'pipe') usesNet = true;
+  }
+  for (const k in b.outputs || {}) {
+    const ty = k !== 'energie_kw' && carrierOf(k);
+    if (ty === 'road' || ty === 'pipe') usesNet = true;
+  }
   return React.createElement("div", {
     ref: ref,
     className: "info-panel",
@@ -5226,7 +5307,18 @@ function InfoPanel({
     className: "lbl"
   }, "Effet"), React.createElement("span", {
     className: "val io"
-  }, "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)"))), armed && upgradable && React.createElement("div", {
+  }, "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)"))), usesNet && React.createElement("div", {
+    className: "ip-fluxpri"
+  }, React.createElement("div", {
+    className: "ip-fluxpri-lbl"
+  }, "Priorit\xE9 de flux (r\xE9seau satur\xE9)"), React.createElement("div", {
+    className: "ip-fluxpri-btns"
+  }, [['haute', 'Haute'], ['normale', 'Normale'], ['basse', 'Basse']].map(([k, label]) => React.createElement("button", {
+    key: k,
+    className: 'ip-fluxpri-btn' + (bldPri === k ? ' on' : ''),
+    onClick: () => onSetFluxPri && onSetFluxPri(info.r, info.c, k),
+    title: k === 'haute' ? "Servi en premier quand le r\xE9seau sature" : k === 'basse' ? "Servi en dernier quand le r\xE9seau sature" : "Servi normalement (r\xE9partition proportionnelle)"
+  }, label)))), armed && upgradable && React.createElement("div", {
     className: "ip-up-preview"
   }, React.createElement("div", {
     className: "ip-up-ptitle"
@@ -6542,6 +6634,7 @@ function App() {
             pl.ns = b.nucState || 'off';
             pl.nt = b.nucTimer || 0;
           }
+          if (b.fluxPri === 'haute' || b.fluxPri === 'basse') pl.fp = b.fluxPri;
           placements.push(pl);
         }
         if (t.networkId != null && repByNid[t.networkId] === undefined) repByNid[t.networkId] = {
@@ -6847,6 +6940,7 @@ function App() {
             t.building.nucState = p.ns || 'off';
             t.building.nucTimer = p.nt || 0;
           }
+          if (p.fp === 'haute' || p.fp === 'basse') t.building.fluxPri = p.fp;
           // Re-create occupancy refs for multi-tile buildings.
           const sz = BUILDINGS[p.b].size || [1, 1];
           const hh = sz[0] || 1,
@@ -7686,6 +7780,17 @@ function App() {
     const NUC_MATS = ['ciment', 'acier', 'beton_arme', 'cable'];
     if (NUC_MATS.indexOf(mat) === -1) return;
     g.nuclearConfig[islandId] = mat;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  function setFluxPri(r, c, pri) {
+    const g = gameRef.current;
+    if (['haute', 'normale', 'basse'].indexOf(pri) === -1) return;
+    const tiles = g.islands[g.currentIsland];
+    const bld = tiles && tiles[r] && tiles[r][c] && tiles[r][c].building;
+    if (!bld) return;
+    if (pri === 'normale') delete bld.fluxPri;else bld.fluxPri = pri;
     bumpHud();
     markDirty();
     scheduleSave();
@@ -8710,6 +8815,7 @@ function App() {
     onUpgradeAll: (r, c) => upgradeAllSameType(r, c),
     onDowngrade: (r, c) => tryDowngrade(r, c),
     onSetNuclear: setNuclearConfig,
+    onSetFluxPri: setFluxPri,
     onRepair: (r, c) => tryRepair(r, c),
     onExtend: (r, c) => tryExtend(r, c)
   }), upgrade && React.createElement(UpgradePanel, {
