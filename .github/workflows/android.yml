@@ -68,6 +68,22 @@ jobs:
       - name: Rename APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk ArchipelIndustry.apk
 
+      - name: Show signing certificate (vérifie la clé stable)
+        run: |
+          echo "=== Certificat de signature de l'APK ==="
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
+          if [ -n "$APKSIGNER" ]; then
+            "$APKSIGNER" verify --print-certs ArchipelIndustry.apk | grep -Ei "certificate DN|SHA-256" || true
+          else
+            echo "(apksigner introuvable)"
+          fi
+          echo "Empreinte SHA-256 attendue (clé stable) : A259F77798C2B99C567EA70D6B3E94490E32FE924C3FDCEFD83332619A3962A3"
+          if [ -f android/app/keystore.jks ]; then
+            echo "✅ keystore.jks présent — signature stable."
+          else
+            echo "::warning::keystore.jks ABSENT — APK signé avec la clé debug (NON stable entre builds)."
+          fi
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
