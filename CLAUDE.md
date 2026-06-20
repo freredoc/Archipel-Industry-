@@ -17,6 +17,37 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
+- **État au dernier passage : `GAME_BUILD = 30`, `GAME_VERSION = 'Alpha 10.5'`.** Le `SAVE_VERSION`
+  est à **11** (rétro-compat gérée au chargement pour les versions 3→11).
+
+## Systèmes du jeu (repères de code — rechercher les noms exacts)
+Tout est dans le mono-fichier. Pour valider : extraire le `<script>` et `node --check`.
+- **Modes de jeu** (au démarrage d'une nouvelle partie) : `Difficile` = îles compactes
+  d'origine (`ISLAND_TERRAINS_BASE`), `Normal` = grandes îles éditeur (`NORMAL_ISLANDS`,
+  codes terrain W/T/M/C/O/P/X). `applyGameMode(mode)` peuple `ISLAND_TERRAINS` + `PORTS`
+  depuis les bases. `game.mode` sauvegardé ; modal `ModeModal` + handler `chooseMode`.
+- **Extension des mers** : `SEA_PAD = 8` tuiles d'eau ajoutées sur chaque côté via
+  `padIslandDef`. Décalage uniforme +8,+8 → migration des saves < v11 dans `loadSave`
+  (placements, pools, niveaux, clés `energyPriority`). `centerCam()` recentre la vue.
+- **Terrain pétrole** : type `oil` (`TERRAIN_COLORS.oil`, char `P`), où l'on pose
+  `puits_petrole` (terrains `['resource','oil']`, `exclusiveIsland: 3`).
+- **Réseaux (route/tuyau/câble)** : débit `networkThroughput(n) = 128×8^(n-1)` (infini, plus
+  de plafond Infinity). `networkUnitCost(type, level, payMat)` : V1-V2 base, V3+ choix
+  ciment/lingot_fer/câble (volume, base 800) **ou** béton armé/acier (premium, base 100),
+  ×2/niveau. État `net.unlimited` (débit Infinity) via 10000 du matériau **irradié**
+  (`beton_arme_irradie`/`acier_irradie`/`cable_irradie`). Sprite réseau bloqué à V3 (niv≥3),
+  V4 = visuel illimité (`Math.min(lvl,3)`, ou 4 si `net.unlimited`).
+- **Priorité de flux par bâtiment** : `bld.fluxPri` (`haute`/`normale`/`basse`), sert les
+  prioritaires d'abord sur réseau saturé (`netTierDemand`/`tierFactor` dans le tick).
+- **Énergie** : `game.energy[isl]` = {produced(=supply), consumed, demand, gross, accStored,
+  accCap}. HUD : bilan réel (supply−demand), pastille 🔋 batterie. `EnergyPanel` : récap +
+  « Demande non servie ».
+- **Transit** (taille des lots cargo) : `portSpeed` / `portSpeedMult = 2^level`,
+  `PORT_MAX_LEVEL = Infinity` (infini, coût ×2/niveau).
+- **Bateau** : `drawSpriteRot` (rotation), visible seulement ~10 s près du quai (départ/arrivée),
+  hors écran le reste (seuil `BOAT_PROX_THRESH`).
+- **Répare/remblai** : gâtés par recherche (`isTerrainRepairUnlocked`/`isTerrainExtendUnlocked`)
+  AU TAP — on n'ouvre plus le panneau avant déblocage.
 
 ## Build APK Android (CI)
 - Workflow : `.github/workflows/android.yml`. Déclencheurs : push sur `main` (chemins
