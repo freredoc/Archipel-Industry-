@@ -1084,7 +1084,7 @@ const ISLAND_TERRAINS_BASE = [{
   id: 3,
   cols: 14,
   rows: 14,
-  grid: ["WWWWWWWWWWWWWW", "WWTTTTTTWWWWWW", "WTTPTMMTTWWWWW", "WTTTTOTTTTWWWW", "WWTTTTTPTTTWWW", "WWWWTTTTTTTTWW", "WWWWWWTTOTTTWW", "WWWWWWTTPTMTWW", "WWWWWWTTOTMTWW", "WWWWWWTTTTTTWW", "WWWWWWWTTPTTWW", "WWWWWWWTTTTTWW", "WWWWWWWWTTWWWW", "WWWWWWWWWWWWWW"]
+  grid: ["WWWWWWWWWWWWWW", "WWTTTTTTWWWWWW", "WTTPTMMTTWWWWW", "WTTTTOTTTTWWWW", "WWTTTTTPTTTWWW", "WWWWTPTTTTTTWW", "WWWWWWTTOTTTWW", "WWWWWWTTPTMTWW", "WWWWWWTTOTMTWW", "WWWWWWTTPTTTWW", "WWWWWWWTTPTTWW", "WWWWWWWTTTTTWW", "WWWWWWWWTTWWWW", "WWWWWWWWWWWWWW"]
 }, {
   id: 4,
   cols: 16,
@@ -2952,8 +2952,8 @@ const SAVE_VERSION = 11;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 28;
-const GAME_VERSION = 'Alpha 10.3';
+const GAME_BUILD = 29;
+const GAME_VERSION = 'Alpha 10.4';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -8573,9 +8573,9 @@ function App() {
         const mask = netConnectMask(tiles, r, c, [carrier]);
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
-        // Les niveaux peuvent dépasser V4 (amélioration infinie) mais les sprites
-        // s'arrêtent à V4 : on bloque le visuel sur le sprite de l'amélioration finale.
-        const slvl = Math.min(lvl, 4);
+        // Visuel bloqué à V3 pour les niveaux >= 3 ; le sprite V4 est réservé à
+        // l'état « illimité » (irradié / infini).
+        const slvl = net && net.unlimited ? 4 : Math.min(lvl, 3);
         const key = NET_PREFIX[bid] + '_v' + slvl + '_' + NET_MASK_SUFFIX[mask];
         if (drawSprite(ctx, key, x, y, tile, tile)) continue;
       }
@@ -8583,7 +8583,7 @@ function App() {
       if (SPRITES_ENABLED && bdef && bdef.kind === 'junction') {
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
-        const jk = bid + '_v' + Math.min(lvl, 4);
+        const jk = bid + '_v' + (net && net.unlimited ? 4 : Math.min(lvl, 3));
         if (drawSprite(ctx, jk, x, y, tile, tile)) continue;
       }
       const sz = buildingSize(bid);
