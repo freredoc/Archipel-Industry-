@@ -2753,11 +2753,12 @@ const SOLID_THROUGHPUT_V1 = 32;
 const NETWORK_THROUGHPUT = {
   1: 128,
   2: 1024,
-  3: 8192,
-  4: Infinity
+  3: 8192
 };
-const networkThroughput = level => NETWORK_THROUGHPUT[level] || NETWORK_THROUGHPUT[1];
-const NETWORK_MAX_LEVEL = 4;
+// Débit max d'un réseau de niveau N : 128 × 8^(N-1). Croît ×8 à chaque niveau, sans plafond
+// (amélioration « infinie »). N=1:128, 2:1024, 3:8192, 4:65536, 5:524288, 6:4194304, …
+const networkThroughput = level => 128 * Math.pow(8, (level || 1) - 1);
+const NETWORK_MAX_LEVEL = 99;
 // Per-tile upgrade cost for going from (level) to (level+1), by infra type.
 const NETWORK_UPGRADE_COST = {
   road: {
@@ -2794,6 +2795,30 @@ const NETWORK_UPGRADE_COST = {
     }
   }
 };
+// Coût unitaire (par tuile) pour passer du niveau `level` au niveau `level+1`.
+// Niveaux 1-3 : tables ci-dessus. Niveaux 4+ : on poursuit avec le matériau de pointe
+// (béton armé pour la route, câble pour le fil, acier pour le tuyau), coût ×2 par niveau
+// — toujours croissant, sans fin. Le palier 3→4 (béton armé) reste la porte d'entrée
+// vers les niveaux infinis.
+function networkUnitCost(type, level) {
+  const tbl = NETWORK_UPGRADE_COST[type] || {};
+  if (tbl[level]) return tbl[level];
+  const TOP = {
+    road: 'beton_arme',
+    wire: 'cable',
+    pipe: 'acier'
+  };
+  const BASE = {
+    road: 100,
+    wire: 1000,
+    pipe: 100
+  };
+  const mat = TOP[type];
+  if (!mat || level < 3) return {};
+  return {
+    [mat]: BASE[type] * Math.pow(2, level - 3)
+  };
+}
 const SAVE_KEY = 'archipel_save_v1';
 const SLOTS_INDEX_KEY = 'archipel_slots';
 const ACTIVE_SLOT_KEY = 'archipel_active';
@@ -2879,8 +2904,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 24;
-const GAME_VERSION = 'Alpha 10.0';
+const GAME_BUILD = 25;
+const GAME_VERSION = 'Alpha 10.1';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3194,7 +3219,7 @@ function networkLevelChange(game, islandId, networkId, dir) {
   for (const id of ids) {
     const n = nets[id];
     if (!n) continue;
-    const per = (NETWORK_UPGRADE_COST[n.type] || {})[stepLevel] || {};
+    const per = networkUnitCost(n.type, stepLevel);
     const tiles = networkTileCount(game, islandId, id);
     for (const k in per) cost[k] = (cost[k] || 0) + per[k] * tiles;
   }
