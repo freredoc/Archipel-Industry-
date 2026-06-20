@@ -469,12 +469,12 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   display:flex;align-items:stretch;gap:0;overflow-x:auto;scrollbar-width:thin;
   scrollbar-color:var(--line) transparent;}
 .toolbar-wrap{flex-shrink:0;display:flex;flex-direction:column;}
-.build-panel{display:flex;align-items:stretch;gap:0;overflow-x:auto;background:var(--panel-2);
-  border-top:1px solid var(--line);scrollbar-width:thin;scrollbar-color:var(--line) transparent;
-  max-height:148px;animation:buildrise .16s ease-out;}
-.build-panel::-webkit-scrollbar{height:6px;}
+.build-panel{display:flex;flex-direction:column;align-items:stretch;gap:0;overflow-x:hidden;
+  overflow-y:auto;background:var(--panel-2);border-top:1px solid var(--line);scrollbar-width:thin;
+  scrollbar-color:var(--line) transparent;max-height:44vh;animation:buildrise .16s ease-out;}
+.build-panel::-webkit-scrollbar{height:6px;width:6px;}
 .build-panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
-@keyframes buildrise{from{max-height:0;opacity:.3;}to{max-height:148px;opacity:1;}}
+@keyframes buildrise{from{opacity:.2;}to{opacity:1;}}
 .tool-group.tabs{margin-left:auto;border-right:none;border-left:1px solid var(--line);}
 .tab-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:96px;
   background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px 10px;
@@ -511,6 +511,14 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .tool-group-label{font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;
   color:var(--ink-faint);padding-left:2px;}
 .tool-row{display:flex;gap:5px;}
+/* Menu construction : bâtiments rangés en grille de 4 colonnes (tout visible, pas de
+   débordement horizontal). Les groupes (catégories) s'empilent verticalement. */
+.build-panel .tool-group{width:100%;border-right:none;border-bottom:1px solid var(--line);}
+.build-panel .tool-group-inner{width:100%;}
+.build-panel .tool-row{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+.build-panel .tool-btn{min-width:0;}
+.build-panel .tool-btn .tb-name{white-space:normal;}
+.build-panel .tool-btn .tb-sub{white-space:normal;line-height:1.15;}
 .tool-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:76px;
   background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px 8px;
   cursor:pointer;text-align:left;transition:border-color .1s,background .1s;flex-shrink:0;}
@@ -580,7 +588,7 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   .hud-brand{display:none;}
   .hud{flex-wrap:wrap;overflow-x:visible;row-gap:6px;}
   .toolbar{flex-wrap:wrap;overflow-x:visible;}
-  .build-panel{flex-wrap:wrap;max-height:none;overflow-x:visible;}
+  .build-panel{overflow-x:hidden;max-height:46vh;}
   .tool-group.tabs{margin-left:0;}
   .inventory{flex-wrap:wrap;overflow-x:visible;}
   .stocks,.repair-btn,.dev-btn,.research-btn,.save-btn{flex-shrink:0;}
@@ -2818,8 +2826,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 16;
-const GAME_VERSION = 'Alpha 8.6';
+const GAME_BUILD = 17;
+const GAME_VERSION = 'Alpha 8.7';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3834,27 +3842,11 @@ function resourceRates(game, isl, res) {
   };
 }
 const techProduced = (game, res) => game.techTree.produced[res] || 0;
-// Stock actuellement détenu d'une ressource (tous les ports + pools de tuyaux). Sert
-// à valider un objectif « produire N » même si le compteur cumulé est en retard
-// (ancienne sauvegarde, ressources accumulées avant le suivi de production).
-const techHeld = (game, res) => {
-  let s = 0;
-  for (const isl in game.port) s += (game.port[isl] && game.port[isl][res]) || 0;
-  const allNets = game.networks || {};
-  for (const isl in allNets) {
-    const nets = allNets[isl] || {};
-    for (const id in nets) {
-      const pool = nets[id] && nets[id].pool;
-      if (pool) s += pool[res] || 0;
-    }
-  }
-  return s;
-};
 function reqValue(game, req) {
   switch (req.t) {
     case 'produce':
       {
-        const cur = Math.max(techProduced(game, req.res), techHeld(game, req.res));
+        const cur = techProduced(game, req.res);
         return {
           cur,
           target: req.n,
