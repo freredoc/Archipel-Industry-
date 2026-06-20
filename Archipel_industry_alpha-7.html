@@ -2809,8 +2809,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 18;
-const GAME_VERSION = 'Alpha 8.8';
+const GAME_BUILD = 19;
+const GAME_VERSION = 'Alpha 8.9';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3348,6 +3348,9 @@ function tickIsland(game, isl) {
   game.netSaturated[isl] = saturated;
   if (!game.netFactor) game.netFactor = {};
   game.netFactor[isl] = netFactor;
+  // Demande de flux par réseau (pour l'affichage « demandé vs limite » dans le panneau réseau).
+  if (!game.netDemand) game.netDemand = {};
+  game.netDemand[isl] = netDemand;
   // Backward-compat: island-wide solid factor (min over road networks) for the InfoPanel "Réel" row.
   let solidF = 1;
   for (const nid in netFactor) {
@@ -5846,6 +5849,10 @@ function NetworkPanel({
   const port = game.port[currentIsland] || {};
   const upInfo = networkLevelChange(game, currentIsland, net.networkId, +1);
   const downInfo = networkLevelChange(game, currentIsland, net.networkId, -1);
+  // Flux demandé sur ce réseau vs débit max (saturation).
+  const demand = game.netDemand && game.netDemand[currentIsland] && game.netDemand[currentIsland][net.networkId] || 0;
+  const saturatedNet = cap !== Infinity && demand > cap + 0.001;
+  const servedPct = saturatedNet ? Math.max(0, Math.round(cap / demand * 100)) : 100;
   const coupled = upInfo.ids && upInfo.ids.length > 1 || downInfo.ids && downInfo.ids.length > 1;
   const canUp = !upInfo.blocked && (dev || Object.keys(upInfo.cost || {}).every(k => (port[k] || 0) >= upInfo.cost[k]));
   const upLabel = coupled ? ' Monter A + B' : ' Monter';
@@ -5882,6 +5889,25 @@ function NetworkPanel({
   }, "D\xE9bit max"), React.createElement("span", {
     className: "val io"
   }, cap === Infinity ? 'illimité' : fmtInt(cap) + ' /s')), React.createElement("div", {
+    className: "ip-row" + (saturatedNet ? ' capped' : '')
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "Flux demand\xE9"), React.createElement("span", {
+    className: "val io",
+    style: saturatedNet ? {
+      color: '#ff8079'
+    } : undefined
+  }, fmtInt(demand) + ' /s')), saturatedNet && React.createElement("div", {
+    className: "ip-row capped"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "Satur\xE9 ⚠"), React.createElement("span", {
+    className: "val io",
+    style: {
+      color: '#ff8079'
+    },
+    title: "Demande sup\xE9rieure au d\xE9bit max : tous les b\xE2timents du r\xE9seau sont ralentis \xE0 ce pourcentage"
+  }, servedPct + '% servi')), React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
