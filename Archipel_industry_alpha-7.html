@@ -2821,8 +2821,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 22;
-const GAME_VERSION = 'Alpha 9.2';
+const GAME_BUILD = 23;
+const GAME_VERSION = 'Alpha 9.3';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -5216,15 +5216,41 @@ function InfoPanel({
   const capped = cappedCarrier && bld.active !== false && f < 0.999;
   // Priorité de flux : pertinent seulement pour les bâtiments raccordés à un réseau
   // route/tuyau (entrée ou sortie de matière). Sert à arbitrer en cas de saturation.
-  let usesNet = false;
+  let usedRoad = false,
+    usedPipe = false;
   for (const k in b.inputs || {}) {
     const ty = k !== 'energie_kw' && carrierOf(k);
-    if (ty === 'road' || ty === 'pipe') usesNet = true;
+    if (ty === 'road') usedRoad = true;else if (ty === 'pipe') usedPipe = true;
   }
   for (const k in b.outputs || {}) {
     const ty = k !== 'energie_kw' && carrierOf(k);
-    if (ty === 'road' || ty === 'pipe') usesNet = true;
+    if (ty === 'road') usedRoad = true;else if (ty === 'pipe') usedPipe = true;
   }
+  const usesNet = usedRoad || usedPipe;
+  // Vitesse de fonctionnement réelle : 0 % si inactif (déconnecté ou coupé), sinon le
+  // plus faible facteur de saturation parmi les réseaux que ce bâtiment utilise réellement
+  // (pondéré par sa priorité de flux). 100 % = plein régime.
+  let speedF = 1;
+  if (usesNet) {
+    const snets = game.networks[currentIsland] || {};
+    const sfacs = game.netFactor && game.netFactor[currentIsland] || {};
+    const stfs = game.netTierFactor && game.netTierFactor[currentIsland] || {};
+    const carriers = [];
+    if (usedRoad) carriers.push('road');
+    if (usedPipe) carriers.push('pipe');
+    for (const ty of carriers) {
+      for (const nid of adjacentNetworks(game, currentIsland, info.r, info.c, ty)) {
+        const okNet = ty === 'road' ? snets[nid] && snets[nid].connected : !!snets[nid];
+        if (!okNet) continue;
+        const tf = stfs[nid];
+        const fct = tf ? tf[bldPri] != null ? tf[bldPri] : 1 : sfacs[nid] != null ? sfacs[nid] : 1;
+        if (fct < speedF) speedF = fct;
+      }
+    }
+  }
+  const speedPct = bld.active === false ? 0 : Math.round(speedF * 100);
+  const speedReason = bld.active === false ? bld.disc ? 'déconnecté' : 'à l\'arrêt' : speedPct < 100 ? 'réseau saturé' : 'plein régime';
+  const speedColor = speedPct >= 100 ? 'var(--green)' : speedPct > 0 ? 'var(--orange)' : '#ff8079';
   return React.createElement("div", {
     ref: ref,
     className: "info-panel",
@@ -5302,7 +5328,18 @@ function InfoPanel({
       className: 'ip-nuc-mat' + (matKey === k ? ' on' : ''),
       onClick: () => onSetNuclear && onSetNuclear(currentIsland, k)
     }, label)))));
-  })(), b.inputs && React.createElement("div", {
+  })(), usesNet && React.createElement("div", {
+    className: "ip-row" + (speedPct < 100 ? ' capped' : '')
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "Vitesse"), React.createElement("span", {
+    className: "val",
+    style: {
+      color: speedColor,
+      fontWeight: 700
+    },
+    title: "R\xE9gime de fonctionnement r\xE9el ce tick (" + speedReason + ")"
+  }, speedPct + "% · " + speedReason)), b.inputs && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
