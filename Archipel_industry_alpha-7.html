@@ -2952,8 +2952,8 @@ const SAVE_VERSION = 11;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 29;
-const GAME_VERSION = 'Alpha 10.4';
+const GAME_BUILD = 30;
+const GAME_VERSION = 'Alpha 10.5';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -4716,8 +4716,9 @@ const SHIP_LINKS = ['1-2', '2-3', '3-4', '4-5'];
 const SHIP_BATCH = 600;
 const SHIP_TRAVEL_TICKS = 30;
 // Transit upgrade: each level doubles the ship batch size (×2 cargo per trip).
-// Independent of network throughput levels.
-const PORT_MAX_LEVEL = 8;
+// Independent of network throughput levels. Amélioration infinie : pas de plafond,
+// le coût qui double à chaque niveau (×2) limite naturellement la progression.
+const PORT_MAX_LEVEL = Infinity;
 // Base upgrade cost per island port = the delivery cost that (un)locks that island.
 // Île 1 (starting island, no access node) borrows île 2's cost per design.
 const PORT_BASE_COST = {
