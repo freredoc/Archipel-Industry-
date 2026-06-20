@@ -2728,37 +2728,54 @@ const PORTS_BASE = {
     c: 8
   }
 };
+// Marge d'eau ajoutée sur chaque côté de chaque île (pour voir la mer tout autour).
+// Décalage uniforme : toute coordonnée de l'île d'origine est translatée de (+SEA_PAD, +SEA_PAD).
+const SEA_PAD = 8;
+// Entoure une grille d'île de SEA_PAD tuiles d'eau sur les 4 côtés.
+function padIslandDef(def) {
+  const P = SEA_PAD;
+  const wRow = 'W'.repeat(def.cols + 2 * P);
+  const grid = [];
+  for (let i = 0; i < P; i++) grid.push(wRow);
+  for (const row of def.grid) grid.push('W'.repeat(P) + row + 'W'.repeat(P));
+  for (let i = 0; i < P; i++) grid.push(wRow);
+  return {
+    id: def.id,
+    cols: def.cols + 2 * P,
+    rows: def.rows + 2 * P,
+    grid
+  };
+}
 // PORTS et ISLAND_TERRAINS « actifs » : peuplés selon le mode de jeu courant.
 // Difficile = îles compactes d'origine ; Normal = grandes îles de l'éditeur.
 const PORTS = {};
 function applyGameMode(mode) {
   const normal = mode === 'normal';
+  const P = SEA_PAD;
   ISLAND_TERRAINS.length = 0;
   for (const k in PORTS) delete PORTS[k];
   if (normal) {
     for (const d of NORMAL_ISLANDS) {
-      ISLAND_TERRAINS.push({
+      ISLAND_TERRAINS.push(padIslandDef({
         id: d.id,
         cols: d.cols,
         rows: d.rows,
-        grid: d.grid.slice()
-      });
-      PORTS[d.id] = d.portR != null && d.portC != null ? {
+        grid: d.grid
+      }));
+      const base = d.portR != null && d.portC != null ? {
         r: d.portR,
         c: d.portC
-      } : {
-        ...PORTS_BASE[d.id]
+      } : PORTS_BASE[d.id];
+      PORTS[d.id] = {
+        r: base.r + P,
+        c: base.c + P
       };
     }
   } else {
-    for (const d of ISLAND_TERRAINS_BASE) ISLAND_TERRAINS.push({
-      id: d.id,
-      cols: d.cols,
-      rows: d.rows,
-      grid: d.grid.slice()
-    });
+    for (const d of ISLAND_TERRAINS_BASE) ISLAND_TERRAINS.push(padIslandDef(d));
     for (const k in PORTS_BASE) PORTS[k] = {
-      ...PORTS_BASE[k]
+      r: PORTS_BASE[k].r + P,
+      c: PORTS_BASE[k].c + P
     };
   }
 }
@@ -2931,12 +2948,12 @@ function ensureSlotsInitialized() {
   }
   return active;
 }
-const SAVE_VERSION = 10;
+const SAVE_VERSION = 11;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 27;
-const GAME_VERSION = 'Alpha 10.2';
+const GAME_BUILD = 28;
+const GAME_VERSION = 'Alpha 10.3';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -7168,8 +7185,11 @@ function App() {
     } catch (e) {
       return false;
     }
-    if (!data || [3, 4, 5, 6, 7, 8, 9, 10].indexOf(data.version) === -1) return false;
+    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11].indexOf(data.version) === -1) return false;
     const g = gameRef.current;
+    // Extension des mers (v11) : les îles sont désormais entourées de SEA_PAD tuiles d'eau.
+    // Les sauvegardes antérieures (coordonnées non décalées) sont translatées de +SEA_PAD.
+    const padShift = (data.version || 0) < 11 ? SEA_PAD : 0;
     // Mode de jeu : reconstruit les îles selon le mode sauvegardé (Normal = grandes îles).
     // Les anciennes sauvegardes sans mode sont traitées comme « difficile » (îles d'origine).
     g.mode = data.mode === 'normal' ? 'normal' : 'difficile';
@@ -7270,7 +7290,9 @@ function App() {
       if (!tiles) continue;
       for (const p of isl.placements || []) {
         if (!BUILDINGS[p.b] || BUILDINGS[p.b].fixed) continue;
-        const t = tiles[p.r] && tiles[p.r][p.c];
+        const pr = p.r + padShift,
+          pc = p.c + padShift;
+        const t = tiles[pr] && tiles[pr][pc];
         if (t && !t.building) {
           t.building = {
             id: p.b,
@@ -7290,10 +7312,10 @@ function App() {
           if (hh > 1 || ww > 1) {
             for (let dr = 0; dr < hh; dr++) for (let dc = 0; dc < ww; dc++) {
               if (dr === 0 && dc === 0) continue;
-              const ot = tiles[p.r + dr] && tiles[p.r + dr][p.c + dc];
+              const ot = tiles[pr + dr] && tiles[pr + dr][pc + dc];
               if (ot) ot.occupied = {
-                r: p.r,
-                c: p.c
+                r: pr,
+                c: pc
               };
             }
           }
@@ -7325,7 +7347,12 @@ function App() {
       5: []
     };
     if (data.energyPriority) for (const id in data.energyPriority) {
-      if (Array.isArray(data.energyPriority[id])) g.energyPriority[+id] = data.energyPriority[id].filter(k => typeof k === 'string');
+      if (Array.isArray(data.energyPriority[id])) g.energyPriority[+id] = data.energyPriority[id].filter(k => typeof k === 'string').map(k => {
+        // Clés « r-c » : décalées de +SEA_PAD pour les sauvegardes pré-extension.
+        if (!padShift) return k;
+        const m = /^(\d+)-(\d+)$/.exec(k);
+        return m ? (+m[1] + padShift) + '-' + (+m[2] + padShift) : k;
+      });
     }
     g.portSpeed = {
       1: 0,
@@ -7383,13 +7410,13 @@ function App() {
       const tiles = g.islands[isl.id];
       if (!tiles) continue;
       for (const p of isl.pools || []) {
-        const t = tiles[p.r] && tiles[p.r][p.c];
+        const t = tiles[p.r + padShift] && tiles[p.r + padShift][p.c + padShift];
         if (!t || t.networkId == null) continue;
         const net = g.networks[isl.id][t.networkId];
         if (net) addInto(net.pool, p.res || {});
       }
       for (const p of isl.levels || []) {
-        const t = tiles[p.r] && tiles[p.r][p.c];
+        const t = tiles[p.r + padShift] && tiles[p.r + padShift][p.c + padShift];
         if (!t || t.networkId == null) continue;
         const net = g.networks[isl.id][t.networkId];
         if (net && p.lvl >= 1 && p.lvl <= NETWORK_MAX_LEVEL) net.level = p.lvl;
@@ -8079,6 +8106,7 @@ function App() {
     g.cam.y = 0;
     g.cam.zoom = 1;
     layout();
+    centerCam();
     setNeedMode(false);
     bumpHud();
     markDirty();
@@ -8105,6 +8133,7 @@ function App() {
     g.cam.y = 0;
     g.cam.zoom = 1;
     layout();
+    centerCam();
     setInfo(null);
     setUpgrade(null);
     setPortOpen(false);
@@ -8272,6 +8301,18 @@ function App() {
     const maxY = Math.max(0, gridH - cam.cssH);
     cam.x = clamp(cam.x, 0, maxX);
     cam.y = clamp(cam.y, 0, maxY);
+  }
+  // Recentre la vue sur le milieu de la grille (l'île est ~centrée dans sa marge de mer),
+  // afin de ne pas démarrer sur un coin d'océan vide quand la grille dépasse l'écran.
+  function centerCam() {
+    const cam = gameRef.current.cam;
+    const def = curDef();
+    const gridW = def.cols * cam.tile,
+      gridH = def.rows * cam.tile;
+    cam.x = Math.max(0, (gridW - cam.cssW) / 2);
+    cam.y = Math.max(0, (gridH - cam.cssH) / 2);
+    clampPan();
+    markDirty();
   }
   function applyZoom(newZoom, cx, cy) {
     const g = gameRef.current,
@@ -8955,6 +8996,7 @@ function App() {
     gameRef.current.researchReady = [];
     gameRef.current.researchNotify = [];
     layout();
+    centerCam();
     if (gameRef.current.lastSave === 0) gameRef.current.lastSave = Date.now();
     // Rattrapage de la production hors-ligne (uniquement si une partie a été chargée).
     if (loaded) applyOfflineProgress();
