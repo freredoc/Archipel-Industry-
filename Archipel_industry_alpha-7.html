@@ -214,6 +214,12 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
   font-size:.6rem;cursor:pointer;padding:1px 3px;line-height:1;}
 .pp-c-pri button:disabled{opacity:.3;cursor:not-allowed;}
 .pp-c-pri button:not(:disabled):hover{border-color:var(--yellow);color:var(--ink);}
+.ep-stats{display:flex;flex-direction:column;gap:3px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:7px 9px;margin-bottom:4px;}
+.ep-stat{display:flex;justify-content:space-between;font-size:.84rem;}
+.ep-stat .lbl{color:var(--ink-dim);}
+.ep-stat .val{font-weight:600;font-variant-numeric:tabular-nums;}
+.ep-bar{height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:2px;}
+.ep-bar > i{display:block;height:100%;background:var(--green);}
 .ep-modes{display:flex;gap:6px;margin:4px 0 6px;}
 .ep-mode-btn{flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;color:var(--ink-dim);
   font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;padding:6px 4px;}
@@ -2815,8 +2821,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 20;
-const GAME_VERSION = 'Alpha 9.0';
+const GAME_BUILD = 21;
+const GAME_VERSION = 'Alpha 9.1';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3566,6 +3572,8 @@ function tickIsland(game, isl) {
   }
   let consumed = 0;
   for (const cc of energyConsumers) consumed += cc.power;
+  // Demande totale (puissance nominale de tous les consommateurs, avant coupures).
+  const demand = consumed;
   let balance = energyProduced - consumed;
   let discharged = 0;
   if (accList.length) {
@@ -3678,12 +3686,22 @@ function tickIsland(game, isl) {
     for (const cc of kept) consumed += cc.power;
     balance = supply - consumed;
   }
+  let accStored = 0,
+    accCap = 0;
+  for (const acc of accList) {
+    accStored += acc.stored;
+    accCap += acc.capacity;
+  }
   const pe = game.energy[isl] || {};
-  const energyChanged = pe.produced !== supply || pe.consumed !== consumed || pe.balance !== balance;
+  const energyChanged = pe.produced !== supply || pe.consumed !== consumed || pe.balance !== balance || pe.demand !== demand || pe.accStored !== accStored;
   game.energy[isl] = {
     produced: supply,
     consumed,
-    balance
+    balance,
+    demand,
+    gross: energyProduced,
+    accStored,
+    accCap
   };
   return {
     resChanged,
@@ -4775,8 +4793,14 @@ function Hud({
   onToggleInv,
   onOpenOptions
 }) {
-  const bal = energy && energy.balance || 0;
-  const deficit = bal < 0;
+  // Bilan « réel vs demandé » : produit (générateurs + décharge batterie) − demande totale.
+  // Négatif = déficit réel (des bâtiments sont coupés), même si la batterie tampon un instant.
+  const supplyKw = energy && energy.produced || 0;
+  const demandKw = energy && energy.demand || 0;
+  const net = supplyKw - demandKw;
+  const deficit = net < -1e-6;
+  const accCap = energy && energy.accCap || 0;
+  const accPct = accCap > 0 ? Math.round(100 * (energy.accStored || 0) / accCap) : null;
   const inv = Object.keys(resources).filter(k => (resources[k] || 0) >= 0.5).sort((a, b) => {
     const d = resTierRank(a) - resTierRank(b);
     return d !== 0 ? d : a < b ? -1 : 1;
@@ -4810,7 +4834,15 @@ function Hud({
     className: "k"
   }, "\u26A1 \xC9nergie"), React.createElement("span", {
     className: "v"
-  }, bal >= 0 ? '+' : '', fmtInt(bal), " kW"))), repairInfo && React.createElement("button", {
+  }, net >= 0 ? '+' : '', fmtInt(net), " kW")), accPct != null && React.createElement("div", {
+    className: "stock battery" + (accPct <= 15 ? ' deficit' : ' ok'),
+    title: "Charge des accumulateurs de l'\xEEle \u2014 cliquer pour g\xE9rer l'\xE9nergie",
+    onClick: onEnergy
+  }, React.createElement("span", {
+    className: "k"
+  }, "\uD83D\uDD0B Batterie"), React.createElement("span", {
+    className: "v"
+  }, accPct + "%"))), repairInfo && React.createElement("button", {
     className: "repair-btn",
     disabled: !canRepair,
     onClick: () => onRepair(repairInfo.node),
@@ -5750,6 +5782,26 @@ function EnergyPanel({
 }) {
   const mode = (game.energyMode && game.energyMode[currentIsland]) || 'priority';
   const consumers = energyConsumerList(game, currentIsland);
+  const e = game.energy && game.energy[currentIsland] || {};
+  const gross = e.gross || 0;
+  const supply = e.produced || 0;
+  const battery = supply - gross;
+  const dem = e.demand || 0;
+  const netE = supply - dem;
+  const accCap = e.accCap || 0;
+  const accStored = e.accStored || 0;
+  const accPct = accCap > 0 ? Math.round(100 * accStored / accCap) : null;
+  const statRow = (label, val, color) => React.createElement("div", {
+    className: "ep-stat",
+    key: label
+  }, React.createElement("span", {
+    className: "lbl"
+  }, label), React.createElement("span", {
+    className: "val",
+    style: color ? {
+      color: color
+    } : undefined
+  }, val));
   const MODES = [['priority', 'Priorit\xE9'], ['fair', '\xC9quitable'], ['proportional', 'Proportionnel']];
   const explain = {
     fair: "Chaque consommateur re\xE7oit la m\xEAme quantit\xE9 absolue (kW) ; le surplus non utilis\xE9 par un petit b\xE2timent profite aux autres. Un b\xE2timent qui n'atteint pas sa puissance nominale est coup\xE9 ce tick.",
@@ -5771,6 +5823,16 @@ function EnergyPanel({
   }, "\xD7")), React.createElement("div", {
     className: "rp-list"
   }, React.createElement("div", {
+    className: "ep-stats"
+  }, statRow("Production (g\xE9n\xE9rateurs)", fmtInt(gross) + " kW"), battery > 0.5 && statRow("Batterie (d\xE9charge)", "+" + fmtInt(battery) + " kW", "var(--green)"), statRow("Demande totale", fmtInt(dem) + " kW"), statRow("Bilan r\xE9el", (netE >= 0 ? '+' : '') + fmtInt(netE) + " kW", netE < -1e-6 ? '#ff8079' : 'var(--green)'), accPct != null && statRow("Accumulateurs", fmtInt(accStored) + " / " + fmtInt(accCap) + " kWh \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
+    className: "ep-bar",
+    key: "bar"
+  }, React.createElement("i", {
+    style: {
+      width: accPct + '%',
+      background: accPct <= 15 ? '#ff8079' : 'var(--green)'
+    }
+  }))), React.createElement("div", {
     className: "pp-section-label"
   }, "Mode de gestion du d\xE9ficit"), React.createElement("div", {
     className: "ep-modes"
