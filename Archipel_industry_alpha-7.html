@@ -235,6 +235,15 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 
 /* ── Panneau Recherche (overlay) ── */
 .research-backdrop{position:fixed;inset:0;z-index:120;background:rgba(5,5,15,.55);}
+.mode-modal{position:fixed;z-index:130;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;box-shadow:0 18px 60px rgba(0,0,0,.65);max-width:520px;width:calc(100vw - 32px);text-align:center;}
+.mode-title{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;margin-bottom:4px;}
+.mode-sub{color:var(--ink-dim);font-size:.85rem;margin-bottom:16px;}
+.mode-opts{display:flex;gap:12px;}
+.mode-card{flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:16px 12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color .12s,background .12s;}
+.mode-card:hover{border-color:var(--yellow);background:rgba(255,210,80,.08);}
+.mode-card-icon{font-size:2rem;line-height:1;}
+.mode-card-name{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;}
+.mode-card-desc{color:var(--ink-dim);font-size:.78rem;line-height:1.25;}
 .research-panel{position:fixed;z-index:121;top:50%;left:50%;transform:translate(-50%,-50%);
   width:min(560px,94vw);max-height:84vh;display:flex;flex-direction:column;
   background:var(--panel);border:1px solid #33335e;border-radius:10px;
@@ -1059,7 +1068,7 @@ const {
   useLayoutEffect,
   useCallback
 } = React;
-const ISLAND_TERRAINS = [{
+const ISLAND_TERRAINS_BASE = [{
   id: 1,
   cols: 12,
   rows: 12,
@@ -1085,12 +1094,25 @@ const ISLAND_TERRAINS = [{
   rows: 16,
   grid: ["WWWWWWWWWWWWWWWW", "WWTTTTWWWWWWWWWW", "WTOMTTTTWWWWWWWW", "WTTMMMTTWWWWWWWW", "WTTTTOTTWWWWWWWW", "WTTOTTTTWWWWWWWW", "WTTTTTTTWWTWWWWW", "WTTTTTTTTTTTWWWW", "WWTTTWTTTTTTTWWW", "WWWWWWTTOTTTTWWW", "WWWWWWTTMMMTTWWW", "WWWWWWTTTTOTTWWW", "WWWWWWWTTTTTWWWW", "WWWWWWWWTTWWWWWW", "WWWWWWWWTWWWWWWW", "WWWWWWWWWWWWWWWW"]
 }];
+// Îles « Normal » (éditeur de carte) — plus grandes. Codes terrain : W=mer, T=plaine,
+// M=montagne(ressource), C=côte, O=accidenté, P=pétrole, X=emplacement du port.
+const NORMAL_ISLANDS = [
+{ id: 1, rows: 16, cols: 16, portR: 13, portC: 4, grid: ["WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW", "WWWWWCCCCCCCWWWW", "WWWWCTMTTTTTCWWW", "WWWCTMMMTTTTTCWW", "WWWCTTTTTTTTTCWW", "WWCTTTTTTTOMMTCW", "WWCTTMTTTTTTMTCW", "WWCTMMTTTTTTMTCW", "WWCTMTTTOTTTTTCW", "WWCTTTTTTTMTTTCW", "WWCTTTTTTTMMTOCW", "WWWCTTTTTOMTTCWW", "WWWWXTTTTTTTCWWW", "WWWWWCCCCCCCWWWW", "WWWWWWWWWWWWWWWW"] },
+{ id: 2, rows: 13, cols: 20, portR: 10, portC: 4, grid: ["WWWWWWWWWWWWWWWWWWWW", "WWWWWWWWCCCCWWWWWWWW", "WWWWWCCCTTTTCCCCWWWW", "WWWWCTTTTTOTTTMTCWWW", "WWWCTMMMTTTTMMMTTCWW", "WWCTTMTTTTTTTTTTTCWW", "WWCTTTTTTMMMTTOTTTCW", "WWWCTTMTTTTTTTTTTTCW", "WWWCMMMTTOTTMTTTTOCW", "WWWCTTTTTTTMMMTTCCWW", "WWWWXTTTTTTTTTTCWWWW", "WWWWWCCCCCCCCCCWWWWW", "WWWWWWWWWWWWWWWWWWWW"] },
+{ id: 3, rows: 16, cols: 16, portR: 8, portC: 6, grid: ["WWWWWWWWWWWWWWWW", "WWCCCCCWWWWWWWWW", "WCTTTPTCCCCCCCWW", "WCTPTTTPTTTTTTCW", "WCTTTOTTTTTTMMCW", "WCTTPTTTTOTOTTCW", "WWCCTTTTTTTTTTCW", "WWWWCCTTTTTTTTCW", "WWWWWWXTTTTTTTCW", "WWWWWWWCTTMMMTCW", "WWWWWWWCTTTTTTCW", "WWWWWWWCTTTOTPCW", "WWWWWWWWCTPTTTCW", "WWWWWWWWCTTTTCWW", "WWWWWWWWWCCCCWWW", "WWWWWWWWWWWWWWWW"] },
+{ id: 4, rows: 16, cols: 16, portR: 12, portC: 3, grid: ["WWWWWWWWWWWWWWWW", "WWWWWCCCCWCCWWWW", "WWWWCCTTTCTTCCWW", "WWWCCTMMMOTMMCWW", "WWCTTMTTTTTTMCCW", "WWCTTTTTCCCCCWWW", "WWCOTTTCWWWWWWWW", "WWCTTTTCWWWWWWWW", "WWCTTTTTCWWWWWWW", "WWCTTTTTCWWWWWWW", "WWCTOTOTCWWWWWWW", "WWCTTTTTCCWWCWCW", "WWWXTTTTTTCCTCCW", "WWWWCCCTMMTMTTCW", "WWWWWWWCCCCCCCWW", "WWWWWWWWWWWWWWWW"] },
+{ id: 5, rows: 18, cols: 18, portR: 9, portC: 7, grid: ["WWWWWWWWWWWWWWWWWW", "WWWWCCCWWWWWWWWWWW", "WWCCTTTCCWWWWWWWWW", "WCTTMTTTCWWWWWWWWW", "WCTMMMTTTCWWWWWWWW", "WCTTTTTTTCWWWWWWWW", "WCMMTOTTTTCWWWWWWW", "WCMTTTTTTTTCWWWWWW", "WWCCCCCTTTTTCCWWWW", "WWWWWWWXCTTTTTCWWW", "WWWWWWWWWCTTOTTCCW", "WWWWWWWWWCTTTTTTCW", "WWWWWWWWWCTTTOTTCW", "WWWWWWWWWCTOTTTMCW", "WWWWWWWWWCTTTMMTCW", "WWWWWWWWWCMMTTTCWW", "WWWWWWWWWWCCCCCCWW", "WWWWWWWWWWWWWWWWWW"] },
+];
+const ISLAND_TERRAINS = [];
 function charToTerrain(c) {
   return {
     W: 'water',
     T: 'land',
     M: 'resource',
-    O: 'obstacle'
+    O: 'obstacle',
+    C: 'coast',
+    P: 'oil',
+    X: 'coast'
   }[c] ?? 'water';
 }
 function buildIslandTiles(def) {
@@ -1427,7 +1449,8 @@ const TERRAIN_COLORS = {
   land: '#4A7A3A',
   resource: '#7A6040',
   obstacle: '#3A3060',
-  coast: '#3A6A5A'
+  coast: '#3A6A5A',
+  oil: '#241813'
 };
 const BUILDINGS = {
   road: {
@@ -1783,7 +1806,7 @@ const BUILDINGS = {
     label: 'OIL',
     kind: 'build',
     tier: 't2',
-    terrains: ['resource'],
+    terrains: ['resource', 'oil'],
     size: [1, 1],
     exclusiveIsland: 3,
     cost: {
@@ -2668,7 +2691,7 @@ function networkUnlocked(id, unlockedSet, currentIsland) {
 const DEMOLISH = '__demolish';
 const UPGRADE = '__upgrade';
 const COPY = '__copy';
-const PORTS = {
+const PORTS_BASE = {
   1: {
     r: 10,
     c: 4
@@ -2690,6 +2713,41 @@ const PORTS = {
     c: 8
   }
 };
+// PORTS et ISLAND_TERRAINS « actifs » : peuplés selon le mode de jeu courant.
+// Difficile = îles compactes d'origine ; Normal = grandes îles de l'éditeur.
+const PORTS = {};
+function applyGameMode(mode) {
+  const normal = mode === 'normal';
+  ISLAND_TERRAINS.length = 0;
+  for (const k in PORTS) delete PORTS[k];
+  if (normal) {
+    for (const d of NORMAL_ISLANDS) {
+      ISLAND_TERRAINS.push({
+        id: d.id,
+        cols: d.cols,
+        rows: d.rows,
+        grid: d.grid.slice()
+      });
+      PORTS[d.id] = d.portR != null && d.portC != null ? {
+        r: d.portR,
+        c: d.portC
+      } : {
+        ...PORTS_BASE[d.id]
+      };
+    }
+  } else {
+    for (const d of ISLAND_TERRAINS_BASE) ISLAND_TERRAINS.push({
+      id: d.id,
+      cols: d.cols,
+      rows: d.rows,
+      grid: d.grid.slice()
+    });
+    for (const k in PORTS_BASE) PORTS[k] = {
+      ...PORTS_BASE[k]
+    };
+  }
+}
+applyGameMode('difficile');
 const portPosFor = islandId => PORTS[islandId] || null;
 const SOLID_THROUGHPUT_V1 = 32;
 const NETWORK_THROUGHPUT = {
@@ -2821,8 +2879,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 23;
-const GAME_VERSION = 'Alpha 9.3';
+const GAME_BUILD = 24;
+const GAME_VERSION = 'Alpha 10.0';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -6283,6 +6341,31 @@ function SlotPanel({
     onClick: () => onCreate()
   }, "+ Nouvelle partie"))));
 }
+function ModeModal({
+  onChoose
+}) {
+  const card = (mode, icon, name, desc) => React.createElement("button", {
+    className: "mode-card",
+    onClick: () => onChoose(mode)
+  }, React.createElement("div", {
+    className: "mode-card-icon"
+  }, icon), React.createElement("div", {
+    className: "mode-card-name"
+  }, name), React.createElement("div", {
+    className: "mode-card-desc"
+  }, desc));
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "research-backdrop"
+  }), React.createElement("div", {
+    className: "mode-modal"
+  }, React.createElement("div", {
+    className: "mode-title"
+  }, "Choisis ton mode de jeu"), React.createElement("div", {
+    className: "mode-sub"
+  }, "Le mode fixe la taille des \xEEles pour cette partie."), React.createElement("div", {
+    className: "mode-opts"
+  }, card('normal', "🗺", "Normal", "Grandes \xEEles, plus d'espace pour construire."), card('difficile', "⛰", "Difficile", "\xCEles compactes, espace limit\xE9."))));
+}
 function OptionsModal({
   dev,
   showLevels,
@@ -6647,6 +6730,7 @@ function App() {
         active: true,
         step: 0
       },
+      mode: 'difficile',
       saveTimer: null
     };
   }
@@ -6688,6 +6772,7 @@ function App() {
   const [portOpen, setPortOpen] = useState(false);
   const [slotOpen, setSlotOpen] = useState(false);
   const [energyOpen, setEnergyOpen] = useState(false);
+  const [needMode, setNeedMode] = useState(false);
   const [resPop, setResPop] = useState(null);
   const [network, setNetwork] = useState(null);
   const [researchPopup, setResearchPopup] = useState(null);
@@ -6810,6 +6895,7 @@ function App() {
     return {
       version: SAVE_VERSION,
       savedAt: Date.now(),
+      mode: g.mode === 'normal' ? 'normal' : 'difficile',
       tutorial: g.tutorial ? {
         active: !!g.tutorial.active,
         step: g.tutorial.step || 0
@@ -6946,6 +7032,23 @@ function App() {
     }
     if (!data || [3, 4, 5, 6, 7, 8, 9, 10].indexOf(data.version) === -1) return false;
     const g = gameRef.current;
+    // Mode de jeu : reconstruit les îles selon le mode sauvegardé (Normal = grandes îles).
+    // Les anciennes sauvegardes sans mode sont traitées comme « difficile » (îles d'origine).
+    g.mode = data.mode === 'normal' ? 'normal' : 'difficile';
+    if (g.mode === 'normal') {
+      applyGameMode('normal');
+      for (const def of ISLAND_TERRAINS) g.islands[def.id] = buildIslandTiles(def);
+      for (const idStr in PORTS) {
+        const pid = +idStr,
+          p = PORTS[idStr],
+          tiles = g.islands[pid];
+        if (tiles && tiles[p.r] && tiles[p.r][p.c]) tiles[p.r][p.c].building = {
+          id: 'port',
+          variant: 0,
+          fixed: true
+        };
+      }
+    }
     g.port = {};
     if (data.port) for (const id in data.port) g.port[+id] = {
       ...data.port[id]
@@ -7778,6 +7881,35 @@ function App() {
     setInfo(null);
     setUpgrade(null);
     markDirty();
+  }
+  function chooseMode(mode) {
+    const g = gameRef.current;
+    const m = mode === 'normal' ? 'normal' : 'difficile';
+    applyGameMode(m);
+    // Partie neuve : on reconstruit toutes les îles selon le mode (aucun bâtiment joueur
+    // à perdre) puis on replace les ports fixes et on régénère les réseaux.
+    for (const def of ISLAND_TERRAINS) g.islands[def.id] = buildIslandTiles(def);
+    for (const idStr in PORTS) {
+      const pid = +idStr,
+        p = PORTS[idStr],
+        tiles = g.islands[pid];
+      if (tiles && tiles[p.r] && tiles[p.r][p.c]) tiles[p.r][p.c].building = {
+        id: 'port',
+        variant: 0,
+        fixed: true
+      };
+    }
+    for (const def of ISLAND_TERRAINS) rebuildNetworks(g, def.id);
+    g.mode = m;
+    g.cam.x = 0;
+    g.cam.y = 0;
+    g.cam.zoom = 1;
+    layout();
+    setNeedMode(false);
+    bumpHud();
+    markDirty();
+    scheduleSave();
+    showToast(m === 'normal' ? '🗺 Mode Normal — grandes îles' : '⛰ Mode Difficile — îles compactes', 'var(--green)');
   }
   function switchIsland(id) {
     const g = gameRef.current;
@@ -8613,6 +8745,8 @@ function App() {
     ensureSlotsInitialized();
     const loaded = loadSave();
     if (!loaded) rebuildNetworks(gameRef.current, gameRef.current.currentIsland);
+    // Partie neuve (aucune sauvegarde) : proposer le choix du mode de jeu.
+    if (!loaded) setNeedMode(true);
     evaluateTechTree(gameRef.current);
     // Redraw when async sprite images finish decoding.
     spriteOnReady = () => {
@@ -9006,6 +9140,8 @@ function App() {
     onSetMode: setEnergyMode,
     onMovePriority: moveEnergyPriority,
     onClose: () => setEnergyOpen(false)
+  }), needMode && React.createElement(ModeModal, {
+    onChoose: chooseMode
   }), resPop && React.createElement(ResPopover, {
     game: game,
     currentIsland: game.currentIsland,
