@@ -1,7 +1,7 @@
 {
-  "build": 16,
-  "version": "Alpha 8.6",
+  "build": 17,
+  "version": "Alpha 8.7",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Merge pull request #15 from freredoc/claude/resource-access-question-5mftqw"
+  "notes": "Merge pull request #16 from freredoc/claude/resource-access-question-5mftqw"
 }
