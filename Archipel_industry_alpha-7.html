@@ -184,6 +184,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .pp-port-lvl{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.86rem;color:var(--ink);}
 .pp-port-next{font-family:'DM Mono',monospace;font-size:.7rem;color:#7fd98a;}
 .pp-port-cost{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.pp-port-locked{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--orange);margin:4px 0;line-height:1.3;}
 .pp-empty,.pp-note{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--ink-faint);padding:3px 0;}
 .pp-note{margin-top:6px;line-height:1.35;}
 .pp-link{border:1px solid var(--line);border-radius:6px;padding:6px 9px;background:var(--panel-2);margin-bottom:5px;}
@@ -2817,8 +2818,8 @@ const SAVE_VERSION = 10;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 15;
-const GAME_VERSION = 'Alpha 8.5';
+const GAME_BUILD = 16;
+const GAME_VERSION = 'Alpha 8.6';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3833,11 +3834,27 @@ function resourceRates(game, isl, res) {
   };
 }
 const techProduced = (game, res) => game.techTree.produced[res] || 0;
+// Stock actuellement détenu d'une ressource (tous les ports + pools de tuyaux). Sert
+// à valider un objectif « produire N » même si le compteur cumulé est en retard
+// (ancienne sauvegarde, ressources accumulées avant le suivi de production).
+const techHeld = (game, res) => {
+  let s = 0;
+  for (const isl in game.port) s += (game.port[isl] && game.port[isl][res]) || 0;
+  const allNets = game.networks || {};
+  for (const isl in allNets) {
+    const nets = allNets[isl] || {};
+    for (const id in nets) {
+      const pool = nets[id] && nets[id].pool;
+      if (pool) s += pool[res] || 0;
+    }
+  }
+  return s;
+};
 function reqValue(game, req) {
   switch (req.t) {
     case 'produce':
       {
-        const cur = techProduced(game, req.res);
+        const cur = Math.max(techProduced(game, req.res), techHeld(game, req.res));
         return {
           cur,
           target: req.n,
@@ -5558,9 +5575,11 @@ function PortPanel({
     }, Object.keys(cost).map(k => React.createElement("span", {
       className: 'rp-ci' + ((islandPort[k] || 0) >= cost[k] ? ' ok' : ' miss'),
       key: k
-    }, RES_SHORT[k] || k, " ", fmtInt(islandPort[k] || 0), "/", fmtInt(cost[k])))), React.createElement("button", {
+    }, RES_SHORT[k] || k, " ", fmtInt(islandPort[k] || 0), "/", fmtInt(cost[k])))), links.length === 0 && React.createElement("div", {
+      className: "pp-port-locked"
+    }, "🔒 R\xE9parez l'\xEEle voisine pour activer une liaison avant d'am\xE9liorer le transit."), React.createElement("button", {
       className: "rp-btn",
-      disabled: atMax || !canPay,
+      disabled: atMax || !canPay || links.length === 0,
       onClick: () => onUpgradePort(currentIsland)
     }, atMax ? 'Max' : 'Améliorer'));
   })(), React.createElement("div", {
@@ -6073,6 +6092,8 @@ function SlotPanel({
 function OptionsModal({
   dev,
   showLevels,
+  fastUpgrade,
+  onToggleFastUpgrade,
   onToggleDev,
   onToggleLevels,
   onOpenSaves,
@@ -6154,7 +6175,7 @@ function OptionsModal({
     title: "Fermer"
   }, "\xD7")), React.createElement("div", {
     className: "slot-list"
-  }, toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Mode d\xE9veloppeur", "Construction et am\xE9liorations gratuites", dev, onToggleDev, 'dev'), React.createElement("button", {
+  }, toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Am\xE9lioration imm\xE9diate", "En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)", fastUpgrade, onToggleFastUpgrade), toggleRow("Mode d\xE9veloppeur", "Construction et am\xE9liorations gratuites", dev, onToggleDev, 'dev'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onOpenSaves
   }, uiIcon('sauvegarde', "💾"), " Emplacements de sauvegarde"), React.createElement("div", {
@@ -6412,7 +6433,8 @@ function App() {
       ui: {
         tool: null,
         dev: false,
-        showLevels: true
+        showLevels: true,
+        fastUpgrade: false
       },
       drag: {
         active: false,
@@ -6477,6 +6499,7 @@ function App() {
   const [researchPopup, setResearchPopup] = useState(null);
   const [dev, setDev] = useState(false);
   const [showLevels, setShowLevels] = useState(true);
+  const [fastUpgrade, setFastUpgrade] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
   const rafRef = useRef(null);
   const [, bumpHud] = useReducer(c => c + 1, 0);
@@ -7622,6 +7645,16 @@ function App() {
   }
   function upgradePort(islandId) {
     const g = gameRef.current;
+    // Améliorer le transit n'a de sens que si une liaison est active, c.-à-d. si
+    // l'île voisine a été réparée/débloquée. Sinon on bloque.
+    const hasLink = SHIP_LINKS.some(key => {
+      const [a, b] = key.split('-').map(Number);
+      return (a === islandId || b === islandId) && linkActive(g, key);
+    });
+    if (!hasLink) {
+      showToast('🔒 Aucune liaison active — réparez d\'abord l\'île voisine', 'var(--orange)');
+      return;
+    }
     const lvl = (g.portSpeed && g.portSpeed[islandId]) || 0;
     if (lvl >= PORT_MAX_LEVEL) {
       showToast('Transit au maximum', 'var(--orange)');
@@ -7710,6 +7743,12 @@ function App() {
     setShowLevels(g.ui.showLevels);
     markDirty();
     scheduleSave();
+  }
+  function toggleFastUpgrade() {
+    const g = gameRef.current;
+    g.ui.fastUpgrade = !g.ui.fastUpgrade;
+    setFastUpgrade(g.ui.fastUpgrade);
+    showToast(g.ui.fastUpgrade ? '⬆ Amélioration immédiate activée' : 'Amélioration immédiate désactivée', 'var(--ink-dim)');
   }
   function clampPan() {
     const cam = gameRef.current.cam;
@@ -8233,8 +8272,10 @@ function App() {
       // Tap franc en mode construction = pose sur la tuile.
       tryPlace(tile.r, tile.c, g.ui.tool, true);
     } else if (drag.mode === 'upgrade' && !drag.panned && drag.dist < TAP_THRESHOLD && tile) {
-      // Tap franc en mode amélioration = ouvre le panneau d'amélioration.
-      openUpgrade(tile.r, tile.c);
+      // Tap franc en mode amélioration : amélioration immédiate (option activée) ou
+      // ouverture du panneau de confirmation (par défaut).
+      if (g.ui.fastUpgrade) tryUpgrade(tile.r, tile.c);
+      else openUpgrade(tile.r, tile.c);
     }
     drag.active = false;
     drag.mode = null;
@@ -8609,6 +8650,7 @@ function App() {
     onOpenOptions: () => {
       const g = gameRef.current;
       setShowLevels(g.ui.showLevels !== false);
+      setFastUpgrade(!!g.ui.fastUpgrade);
       setDev(g.ui.dev);
       setOptionsOpen(true);
     }
@@ -8731,6 +8773,8 @@ function App() {
   }), optionsOpen && React.createElement(OptionsModal, {
     dev: dev,
     showLevels: showLevels,
+    fastUpgrade: fastUpgrade,
+    onToggleFastUpgrade: toggleFastUpgrade,
     onToggleDev: toggleDev,
     onToggleLevels: toggleLevels,
     onOpenSaves: () => {
