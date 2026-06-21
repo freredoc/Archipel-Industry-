@@ -2703,6 +2703,18 @@ for (const id in NO_COAST) {
   const b = BUILDINGS[id];
   if (b && b.terrains) b.terrains = b.terrains.filter(t => t !== 'coast');
 }
+// Coût de construction renchéri par palier : T1 ×2, T2 ×4, T3 ×8 (T0/infra inchangés).
+// Le surcoût croît ×2 par palier pour ralentir la montée en gamme.
+const TIER_COST_MULT = {
+  t1: 2,
+  t2: 4,
+  t3: 8
+};
+for (const id in BUILDINGS) {
+  const b = BUILDINGS[id];
+  const m = TIER_COST_MULT[b.tier];
+  if (m && b.cost) for (const k in b.cost) b.cost[k] *= m;
+}
 const TIER_ACCENT = {
   infra: 'var(--t-infra)',
   t0: 'var(--t0)',
@@ -2805,8 +2817,13 @@ function padIslandDef(def) {
 // PORTS et ISLAND_TERRAINS « actifs » : peuplés selon le mode de jeu courant.
 // Difficile = îles compactes d'origine ; Normal = grandes îles de l'éditeur.
 const PORTS = {};
+// Mode de jeu courant (suivi au niveau module pour ajuster flux/transit sans passer `game`
+// à chaque fonction utilitaire). Mis à jour par applyGameMode ET en tête de onTick.
+let CURRENT_MODE = 'difficile';
+const isDifficileMode = () => CURRENT_MODE === 'difficile';
 function applyGameMode(mode) {
   const normal = mode === 'normal';
+  CURRENT_MODE = normal ? 'normal' : 'difficile';
   const P = SEA_PAD;
   ISLAND_TERRAINS.length = 0;
   for (const k in PORTS) delete PORTS[k];
@@ -2845,7 +2862,9 @@ const NETWORK_THROUGHPUT = {
 };
 // Débit max d'un réseau de niveau N : 128 × 8^(N-1). Croît ×8 à chaque niveau, sans plafond
 // (amélioration « infinie »). N=1:128, 2:1024, 3:8192, 4:65536, 5:524288, 6:4194304, …
-const networkThroughput = level => 128 * Math.pow(8, (level || 1) - 1);
+// En mode Difficile, tous les débits sont divisés par 8 (économie d'origine, plus tendue) :
+// N=1:16, 2:128, 3:1024, …
+const networkThroughput = level => 128 * Math.pow(8, (level || 1) - 1) / (isDifficileMode() ? 8 : 1);
 const NETWORK_MAX_LEVEL = 99;
 // Per-tile upgrade cost for going from (level) to (level+1), by infra type.
 const NETWORK_UPGRADE_COST = {
@@ -3008,8 +3027,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 38;
-const GAME_VERSION = 'Alpha 10.13';
+const GAME_BUILD = 39;
+const GAME_VERSION = 'Alpha 10.14';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3956,6 +3975,9 @@ function tickIsland(game, isl) {
   };
 }
 function onTick(game) {
+  // Garde le mode courant à jour au niveau module (flux ÷8 / transit ÷10 en Difficile),
+  // quel que soit le chemin de chargement de la partie.
+  CURRENT_MODE = game.mode === 'normal' ? 'normal' : 'difficile';
   let cur = {
     resChanged: false,
     activeChanged: false,
@@ -4982,6 +5004,9 @@ function onTutorialStep() {}
 const SHIP_LINKS = ['1-2', '2-3', '3-4', '4-5'];
 const SHIP_BATCH = 600;
 const SHIP_TRAVEL_TICKS = 30;
+// Taille de lot de base effective. En mode Difficile, le transit est divisé par 10
+// (économie plus tendue, cohérent avec les flux réseau réduits).
+const shipBatchBase = () => SHIP_BATCH / (isDifficileMode() ? 10 : 1);
 // Transit upgrade: each level doubles the ship batch size (×2 cargo per trip).
 // Independent of network throughput levels. Amélioration infinie : pas de plafond,
 // le coût qui double à chaque niveau (×2) limite naturellement la progression.
@@ -5082,29 +5107,74 @@ const tradeCfgFor = (game, islandId, res) => {
   });
 };
 const tradePriorityFor = (game, islandId) => game.tradePriority[islandId] || (game.tradePriority[islandId] = [...TRADE_RESOURCES]);
+const tradeModeFor = (game, islandId) => game.tradeMode && game.tradeMode[islandId] === 'proportional' ? 'proportional' : 'priority';
 function linkActive(game, key) {
   const [a, b] = key.split('-').map(Number);
   return !!(game.islandUnlocked[a] && game.islandUnlocked[b]);
 }
+// Quantité expédiable d'une ressource d'srcIsland vers destIsland (surplus exportable
+// borné par le manque côté destination). Sans tenir compte de la place restante.
+function shippableQty(game, srcIsland, destIsland, res) {
+  const cfg = tradeCfgFor(game, srcIsland, res);
+  if (cfg.interdit) return 0;
+  const exportable = Math.max(0, Math.floor(tradeAvail(game, srcIsland, res) - cfg.seuilExport));
+  if (exportable <= 0) return 0;
+  const need = tradeCfgFor(game, destIsland, res).stockCible - tradeAvail(game, destIsland, res);
+  if (need <= 0) return 0;
+  return Math.min(need, exportable);
+}
 function loadCargo(game, ship, srcIsland, destIsland) {
   const ps = game.portSpeed || {};
   const lvl = Math.max(ps[srcIsland] || 0, ps[destIsland] || 0);
-  let room = SHIP_BATCH * portSpeedMult(lvl);
+  let room = shipBatchBase() * portSpeedMult(lvl);
   for (const k in ship.cargo) room -= ship.cargo[k];
-  for (const res of tradePriorityFor(game, srcIsland)) {
-    if (room <= 0) break;
-    const cfg = tradeCfgFor(game, srcIsland, res);
-    if (cfg.interdit) continue;
-    const exportable = Math.max(0, Math.floor(tradeAvail(game, srcIsland, res) - cfg.seuilExport));
-    if (exportable <= 0) continue;
-    const need = tradeCfgFor(game, destIsland, res).stockCible - tradeAvail(game, destIsland, res);
-    if (need <= 0) continue;
-    const qty = Math.min(need, exportable, room);
-    if (qty <= 0) continue;
+  if (room <= 0) return;
+  const order = tradePriorityFor(game, srcIsland);
+  const got = {};
+  const draw = (res, qty) => {
+    if (qty <= 0) return;
     const drawn = tradeDraw(game, srcIsland, res, qty);
-    if (drawn <= 0) continue;
+    if (drawn <= 0) return;
     ship.cargo[res] = (ship.cargo[res] || 0) + drawn;
+    got[res] = (got[res] || 0) + drawn;
     room -= drawn;
+  };
+  if (tradeModeFor(game, srcIsland) === 'proportional') {
+    // Mode proportionnel : la cale est répartie au prorata de la demande de chaque
+    // ressource (l'ordre ne sert qu'à départager les arrondis/restes).
+    const want = {};
+    let total = 0;
+    for (const res of order) {
+      const q = shippableQty(game, srcIsland, destIsland, res);
+      if (q > 0) {
+        want[res] = q;
+        total += q;
+      }
+    }
+    if (total <= 0) return;
+    if (total <= room) {
+      for (const res of order) if (want[res]) draw(res, want[res]);
+      return;
+    }
+    const scale = room / total;
+    for (const res of order) {
+      if (room <= 0) break;
+      if (!want[res]) continue;
+      draw(res, Math.min(want[res], Math.floor(want[res] * scale)));
+    }
+    // Restes (arrondis) distribués par ordre de priorité jusqu'à remplir la cale.
+    for (const res of order) {
+      if (room <= 0) break;
+      if (!want[res]) continue;
+      draw(res, Math.min(want[res] - (got[res] || 0), Math.floor(room)));
+    }
+    return;
+  }
+  // Mode priorité (défaut) : on remplit la cale de la ressource la plus prioritaire
+  // à la moins prioritaire.
+  for (const res of order) {
+    if (room <= 0) break;
+    draw(res, Math.min(shippableQty(game, srcIsland, destIsland, res), Math.floor(room)));
   }
 }
 function tickShips(game) {
@@ -6168,8 +6238,10 @@ function PortPanel({
   onClose,
   onSetCfg,
   onMovePriority,
+  onSetTradeMode,
   onUpgradePort
 }) {
+  const tradeMode = tradeModeFor(game, currentIsland);
   const links = SHIP_LINKS.filter(key => {
     const [a, b] = key.split('-').map(Number);
     return (a === currentIsland || b === currentIsland) && linkActive(game, key);
@@ -6205,7 +6277,7 @@ function PortPanel({
       className: "pp-port-row"
     }, React.createElement("span", {
       className: "pp-port-lvl"
-    }, "Taille des lots ×", portSpeedMult(lvl), " (", fmtInt(SHIP_BATCH * portSpeedMult(lvl)), " u)"), React.createElement("span", {
+    }, "Taille des lots ×", portSpeedMult(lvl), " (", fmtInt(shipBatchBase() * portSpeedMult(lvl)), " u)"), React.createElement("span", {
       className: "pp-port-next"
     }, atMax ? 'MAX' : '→ ×' + portSpeedMult(lvl + 1))), !atMax && React.createElement("div", {
       className: "pp-port-cost"
@@ -6253,6 +6325,14 @@ function PortPanel({
   }), React.createElement("div", {
     className: "pp-section-label"
   }, "Commerce (\xCEle ", currentIsland, ")"), React.createElement("div", {
+    className: "ep-modes"
+  }, [['priority', 'Priorit\xE9'], ['proportional', 'Proportionnel']].map(([m, label]) => React.createElement("button", {
+    key: m,
+    className: 'ep-mode-btn' + (tradeMode === m ? ' on' : ''),
+    onClick: () => onSetTradeMode(currentIsland, m)
+  }, label))), React.createElement("div", {
+    className: "pp-note"
+  }, tradeMode === 'proportional' ? "Proportionnel : la cale est r\xE9partie au prorata de la demande de chaque ressource (l'ordre ne sert qu'\xE0 d\xE9partager les restes)." : "Priorit\xE9 : la cale est remplie de la ressource la plus prioritaire \xE0 la moins prioritaire."), React.createElement("div", {
     className: "pp-cfg-head"
   }, React.createElement("span", {
     className: "pp-c-res"
@@ -6356,6 +6436,8 @@ function EnergyPanel({
   }, "\xD7")), React.createElement("div", {
     className: "rp-list"
   }, React.createElement("div", {
+    className: "pp-note"
+  }, "⚡ L'\xE9lectricit\xE9 est partag\xE9e sur toute l'\xEEle : tous les g\xE9n\xE9rateurs et consommateurs sont mis en commun, quels que soient les r\xE9seaux de c\xE2bles s\xE9par\xE9s. Il suffit qu'un b\xE2timent touche un c\xE2ble pour acc\xE9der \xE0 ce pool commun."), React.createElement("div", {
     className: "ep-stats"
   }, statRow("Production (g\xE9n\xE9rateurs)", fmtInt(gross) + " kW"), battery > 0.5 && statRow("Batterie (d\xE9charge)", "+" + fmtInt(battery) + " kW", "var(--green)"), statRow("Demande totale", fmtInt(dem) + " kW"), cut > 0.5 && statRow("Demande non servie", "-" + fmtInt(cut) + " kW", '#ff8079'), statRow("Bilan r\xE9el", (netE >= 0 ? '+' : '') + fmtInt(netE) + " kW", netE < -1e-6 ? '#ff8079' : 'var(--green)'), accPct != null && statRow("Accumulateurs", fmtInt(accStored) + " / " + fmtInt(accCap) + " kWh \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
     className: "ep-bar",
@@ -7192,6 +7274,7 @@ function App() {
       ships: defaultShips(),
       tradeConfig: {},
       tradePriority: {},
+      tradeMode: {},
       accumulators: {
         1: [],
         2: [],
@@ -7497,6 +7580,9 @@ function App() {
       ships: g.ships,
       tradeConfig: g.tradeConfig,
       tradePriority: g.tradePriority,
+      tradeMode: {
+        ...g.tradeMode
+      },
       energyMode: {
         ...g.energyMode
       },
@@ -7718,6 +7804,10 @@ function App() {
       const saved = (data.tradePriority[id] || []).filter(r => TRADE_RESOURCES.includes(r));
       for (const r of TRADE_RESOURCES) if (!saved.includes(r)) saved.push(r);
       g.tradePriority[id] = saved;
+    }
+    g.tradeMode = {};
+    if (data.tradeMode) for (const id in data.tradeMode) {
+      if (data.tradeMode[id] === 'proportional') g.tradeMode[+id] = 'proportional';
     }
     for (const isl of data.islands || []) {
       const tiles = g.islands[isl.id];
@@ -8729,6 +8819,13 @@ function App() {
     if (i < 0 || j < 0 || j >= arr.length) return;
     arr.splice(i, 1);
     arr.splice(j, 0, res);
+    bumpHud();
+    scheduleSave();
+  }
+  function setTradeMode(islandId, mode) {
+    const g = gameRef.current;
+    if (!g.tradeMode) g.tradeMode = {};
+    if (mode === 'proportional') g.tradeMode[islandId] = 'proportional';else delete g.tradeMode[islandId];
     bumpHud();
     scheduleSave();
   }
@@ -9925,6 +10022,7 @@ function App() {
     onClose: () => setPortOpen(false),
     onSetCfg: setTradeCfg,
     onMovePriority: movePriority,
+    onSetTradeMode: setTradeMode,
     onUpgradePort: upgradePort
   }), energyOpen && React.createElement(EnergyPanel, {
     game: game,
