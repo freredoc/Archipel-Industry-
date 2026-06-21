@@ -2862,9 +2862,9 @@ const NETWORK_THROUGHPUT = {
 };
 // Débit max d'un réseau de niveau N : 128 × 8^(N-1). Croît ×8 à chaque niveau, sans plafond
 // (amélioration « infinie »). N=1:128, 2:1024, 3:8192, 4:65536, 5:524288, 6:4194304, …
-// En mode Difficile, tous les débits sont divisés par 8 (économie d'origine, plus tendue) :
-// N=1:16, 2:128, 3:1024, …
-const networkThroughput = level => 128 * Math.pow(8, (level || 1) - 1) / (isDifficileMode() ? 8 : 1);
+// En mode Difficile, tous les débits sont divisés par 2 (économie plus tendue) :
+// N=1:64, 2:512, 3:4096, …
+const networkThroughput = level => 128 * Math.pow(8, (level || 1) - 1) / (isDifficileMode() ? 2 : 1);
 const NETWORK_MAX_LEVEL = 99;
 // Per-tile upgrade cost for going from (level) to (level+1), by infra type.
 const NETWORK_UPGRADE_COST = {
@@ -3027,8 +3027,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 39;
-const GAME_VERSION = 'Alpha 10.14';
+const GAME_BUILD = 40;
+const GAME_VERSION = 'Alpha 10.15';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
