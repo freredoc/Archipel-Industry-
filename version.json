@@ -1,7 +1,7 @@
 {
-  "build": 46,
-  "version": "Alpha 10.21",
+  "build": 47,
+  "version": "Alpha 10.22",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.21 — onglet Réparer déplacé vers la barre inventaire (#46)"
+  "notes": "Alpha 10.22 — ajustement de coûts (Diesel, Usine Polymère) (#47)"
 }
