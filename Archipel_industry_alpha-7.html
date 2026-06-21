@@ -191,8 +191,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .pp-link-top{display:flex;justify-content:space-between;align-items:baseline;}
 .pp-link-name{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.86rem;color:var(--ink);}
 .pp-link-state{font-family:'DM Mono',monospace;font-size:.64rem;color:var(--ink-dim);}
-.pp-block-btn{margin-top:5px;width:100%;font-family:'Barlow Condensed',sans-serif;font-size:.72rem;padding:4px 6px;border-radius:5px;border:1px solid var(--line);background:var(--panel-2);color:var(--green);cursor:pointer;}
+.pp-block-btn{margin-top:5px;width:100%;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:.72rem;padding:4px 6px;border-radius:5px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink-dim);cursor:pointer;}
 .pp-block-btn.on{border-color:#ff8079;color:#ff8079;background:rgba(255,128,121,.08);}
+.pp-block-btn.open{border-color:var(--yellow);}
+.pp-block-grid{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.pp-block-chip{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;padding:3px 6px;border-radius:5px;border:1px solid var(--line);background:rgba(120,200,140,.08);color:var(--green);cursor:pointer;}
+.pp-block-chip.off{border-color:#ff8079;color:#ff8079;background:rgba(255,128,121,.1);}
 .pp-cargo{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px;}
 .pp-cargo-item{font-family:'DM Mono',monospace;font-size:.66rem;color:#8fd0ff;}
 .pp-cargo-empty{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-faint);}
@@ -3029,8 +3033,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 43;
-const GAME_VERSION = 'Alpha 10.18';
+const GAME_BUILD = 44;
+const GAME_VERSION = 'Alpha 10.19';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -5185,6 +5189,9 @@ const tradeCfgFor = (game, islandId, res) => {
 };
 const tradePriorityFor = (game, islandId) => game.tradePriority[islandId] || (game.tradePriority[islandId] = [...TRADE_RESOURCES]);
 const tradeModeFor = (game, islandId) => game.tradeMode && game.tradeMode[islandId] === 'proportional' ? 'proportional' : 'priority';
+// Export d'une ressource interdit de srcIsland vers destIsland (réglage par ressource
+// ET par destination dans le port) : game.tradeBlockDest[src][dest][res] === true.
+const tradeResBlocked = (game, src, dest, res) => !!(game.tradeBlockDest && game.tradeBlockDest[src] && game.tradeBlockDest[src][dest] && game.tradeBlockDest[src][dest][res]);
 function linkActive(game, key) {
   const [a, b] = key.split('-').map(Number);
   return !!(game.islandUnlocked[a] && game.islandUnlocked[b]);
@@ -5194,16 +5201,15 @@ function linkActive(game, key) {
 function shippableQty(game, srcIsland, destIsland, res) {
   const cfg = tradeCfgFor(game, srcIsland, res);
   if (cfg.interdit) return 0;
+  if (tradeResBlocked(game, srcIsland, destIsland, res)) return 0;
   const exportable = Math.max(0, Math.floor(tradeAvail(game, srcIsland, res) - cfg.seuilExport));
   if (exportable <= 0) return 0;
   const need = tradeCfgFor(game, destIsland, res).stockCible - tradeAvail(game, destIsland, res);
   if (need <= 0) return 0;
   return Math.min(need, exportable);
 }
-const tradeBlockedDest = (game, srcIsland, destIsland) => !!(game.tradeBlockDest && game.tradeBlockDest[srcIsland] && game.tradeBlockDest[srcIsland][destIsland]);
 function loadCargo(game, ship, srcIsland, destIsland) {
-  // Export interdit de srcIsland vers destIsland (réglage par île dans le port).
-  if (tradeBlockedDest(game, srcIsland, destIsland)) return;
+  // L'interdiction d'export par ressource/destination est appliquée dans shippableQty.
   const ps = game.portSpeed || {};
   const lvl = Math.max(ps[srcIsland] || 0, ps[destIsland] || 0);
   let room = shipBatchBase() * portSpeedMult(lvl);
@@ -6348,6 +6354,7 @@ function PortPanel({
   onUpgradePort
 }) {
   const tradeMode = tradeModeFor(game, currentIsland);
+  const [openLink, setOpenLink] = React.useState(null);
   const links = SHIP_LINKS.filter(key => {
     const [a, b] = key.split('-').map(Number);
     return (a === currentIsland || b === currentIsland) && linkActive(game, key);
@@ -6411,6 +6418,9 @@ function PortPanel({
     };
     const destIsland = ship.position === 'A' ? a : b;
     const cargoEntries = Object.keys(ship.cargo).filter(k => ship.cargo[k] > 0);
+    const blockedRes = game.tradeBlockDest && game.tradeBlockDest[currentIsland] && game.tradeBlockDest[currentIsland][other] || {};
+    const nBlocked = Object.keys(blockedRes).filter(k => blockedRes[k]).length;
+    const isOpen = openLink === other;
     return React.createElement("div", {
       className: "pp-link",
       key: key
@@ -6421,10 +6431,20 @@ function PortPanel({
     }, "\xCEle ", a, " \u2194 \xCEle ", b), React.createElement("span", {
       className: "pp-link-state"
     }, ship.timer > 0 ? `en mer · ${ship.timer}s` : 'à quai')), React.createElement("button", {
-      className: 'pp-block-btn' + (tradeBlockedDest(game, currentIsland, other) ? ' on' : ''),
-      onClick: () => onToggleBlock(currentIsland, other),
-      title: tradeBlockedDest(game, currentIsland, other) ? "Export interdit vers l'\xEEle " + other + " — cliquer pour autoriser" : "Autoriser l'export vers l'\xEEle " + other + " — cliquer pour interdire"
-    }, tradeBlockedDest(game, currentIsland, other) ? "⛔ Export → \xCEle " + other + " interdit" : "✅ Export → \xCEle " + other + " autoris\xE9"), React.createElement("div", {
+      className: 'pp-block-btn' + (nBlocked > 0 ? ' on' : '') + (isOpen ? ' open' : ''),
+      onClick: () => setOpenLink(isOpen ? null : other),
+      title: "R\xE9gler l'export par ressource vers l'\xEEle " + other
+    }, (isOpen ? "▾ " : "▸ ") + "Export → \xCEle " + other + (nBlocked > 0 ? " — " + nBlocked + " interdite" + (nBlocked > 1 ? "s" : "") : " — tout autoris\xE9")), isOpen && React.createElement("div", {
+      className: "pp-block-grid"
+    }, priority.map(res => {
+      const off = !!blockedRes[res];
+      return React.createElement("button", {
+        key: res,
+        className: 'pp-block-chip' + (off ? ' off' : ''),
+        onClick: () => onToggleBlock(currentIsland, other, res),
+        title: off ? "Export de " + (RES_SHORT[res] || res) + " interdit vers l'\xEEle " + other + " — cliquer pour autoriser" : "Export de " + (RES_SHORT[res] || res) + " autoris\xE9 vers l'\xEEle " + other + " — cliquer pour interdire"
+      }, (off ? "⛔ " : "✅ ") + (RES_SHORT[res] || res));
+    })), React.createElement("div", {
       className: "pp-cargo"
     }, cargoEntries.length === 0 ? React.createElement("span", {
       className: "pp-cargo-empty"
@@ -7924,7 +7944,16 @@ function App() {
     g.tradeBlockDest = {};
     if (data.tradeBlockDest) for (const sid in data.tradeBlockDest) {
       const dests = data.tradeBlockDest[sid] || {};
-      for (const did in dests) if (dests[did]) (g.tradeBlockDest[+sid] || (g.tradeBlockDest[+sid] = {}))[+did] = true;
+      for (const did in dests) {
+        const v = dests[did];
+        if (!v) continue;
+        const dmap = {};
+        // Format imbriqué par ressource ; rétro-compat ancien format (v === true = tout interdit).
+        if (v === true) {
+          for (const res of TRADE_RESOURCES) dmap[res] = true;
+        } else for (const res in v) if (v[res]) dmap[res] = true;
+        if (Object.keys(dmap).length) (g.tradeBlockDest[+sid] || (g.tradeBlockDest[+sid] = {}))[+did] = dmap;
+      }
     }
     for (const isl of data.islands || []) {
       const tiles = g.islands[isl.id];
@@ -8946,11 +8975,14 @@ function App() {
     bumpHud();
     scheduleSave();
   }
-  function toggleTradeBlock(srcIsland, destIsland) {
+  function toggleTradeBlock(srcIsland, destIsland, res) {
     const g = gameRef.current;
     if (!g.tradeBlockDest) g.tradeBlockDest = {};
     const m = g.tradeBlockDest[srcIsland] || (g.tradeBlockDest[srcIsland] = {});
-    if (m[destIsland]) delete m[destIsland];else m[destIsland] = true;
+    const d = m[destIsland] || (m[destIsland] = {});
+    if (d[res]) delete d[res];else d[res] = true;
+    if (Object.keys(d).length === 0) delete m[destIsland];
+    if (Object.keys(m).length === 0) delete g.tradeBlockDest[srcIsland];
     bumpHud();
     scheduleSave();
   }

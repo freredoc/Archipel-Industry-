@@ -17,7 +17,7 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 43`, `GAME_VERSION = 'Alpha 10.18'`.** Le `SAVE_VERSION`
+- **État au dernier passage : `GAME_BUILD = 44`, `GAME_VERSION = 'Alpha 10.19'`.** Le `SAVE_VERSION`
   est à **12** (rétro-compat gérée au chargement pour les versions 3→12).
 
 ## Systèmes du jeu (repères de code — rechercher les noms exacts)
