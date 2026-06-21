@@ -3031,8 +3031,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 51;
-const GAME_VERSION = 'Alpha 10.26';
+const GAME_BUILD = 52;
+const GAME_VERSION = 'Alpha 10.27';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3299,6 +3299,19 @@ function countJunctions(game, islandId, junctionId) {
     if (bl && bl.id === junctionId) n++;
   }
   return n;
+}
+// Coût d'une jonction en mode Normal : croît avec le nombre déjà posé (de ce type) sur
+// l'île (×2 par jonction existante), pour autoriser des jonctions illimitées sans en
+// abuser. En Difficile, les jonctions restent limitées à 1/type/île (gratuites).
+const JUNCTION_BASE_COST = {
+  lingot_fer: 25,
+  cable: 25
+};
+function junctionCost(game, islandId, id) {
+  const mult = Math.pow(2, countJunctions(game, islandId, id));
+  const c = {};
+  for (const k in JUNCTION_BASE_COST) c[k] = JUNCTION_BASE_COST[k] * mult;
+  return c;
 }
 // Set of network ids that a junction couples to the given network id on an island.
 // Used so upgrading/downgrading a network also moves its junction-coupled partners.
@@ -5590,7 +5603,7 @@ function ToolButton({
   onSelect
 }) {
   const b = BUILDINGS[id];
-  const sub = b.kind === 'infra' ? 'tracé continu' : formatCost(b.cost) || 'gratuit';
+  const sub = b.kind === 'infra' ? 'tracé continu' : b.kind === 'junction' && CURRENT_MODE === 'normal' ? 'coût croissant' : formatCost(b.cost) || 'gratuit';
   const skey = SPRITES_ENABLED ? buildingSpriteKey(id) : null;
   const sdata = skey && SPRITE_DATA[skey];
   return React.createElement("button", {
@@ -8484,7 +8497,8 @@ function App() {
     if (b.kind === 'junction') {
       const g = gameRef.current,
         isl = g.currentIsland;
-      if (countJunctions(g, isl, id) >= 1) {
+      // En Normal : jonctions illimitées (coût croissant). En Difficile : 1/type/île.
+      if (g.mode !== 'normal' && countJunctions(g, isl, id) >= 1) {
         if (verbose) showToast('❌ Une seule jonction de ce type par île', 'var(--red)');
         return false;
       }
@@ -8525,11 +8539,13 @@ function App() {
       }
     }
     const dev = gameRef.current.ui.dev;
-    const costToPay = extCost || b.cost;
+    // Jonction en Normal : coût croissant selon le nombre déjà posé sur l'île.
+    const junctionCostNow = b.kind === 'junction' && gameRef.current.mode === 'normal' ? junctionCost(gameRef.current, gameRef.current.currentIsland, id) : null;
+    const costToPay = extCost || junctionCostNow || b.cost;
     if (!dev) {
       const miss = missingFor(costToPay);
       if (miss.length) {
-        if (verbose) showToast('❌ Extension V' + joinLvl + ' : manque ' + miss.join(', '), 'var(--red)');
+        if (verbose) showToast((b.kind === 'junction' ? '❌ Jonction : manque ' : '❌ Extension V' + joinLvl + ' : manque ') + miss.join(', '), 'var(--red)');
         return false;
       }
       pay(costToPay);
@@ -8551,7 +8567,7 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
-    if (verbose && b.kind !== 'infra') showToast(`✓ ${b.name}`, 'var(--green)');
+    if (verbose && b.kind !== 'infra') showToast(`✓ ${b.name}` + (junctionCostNow && Object.keys(junctionCostNow).length ? ` — ${formatCost(junctionCostNow)}` : ''), 'var(--green)');
     else if (verbose && extCost) showToast(`✓ ${b.name} V${joinLvl} — ${formatCost(extCost)}`, 'var(--green)');
     return true;
   }
@@ -8581,7 +8597,16 @@ function App() {
     }
     const wasInfra = b.kind === 'infra';
     if (!gameRef.current.ui.dev) {
-      refund(b.cost);
+      // Jonction en Normal : rembourse le coût de la dernière posée (place/démolit symétrique).
+      if (b.kind === 'junction' && gameRef.current.mode === 'normal') {
+        const g = gameRef.current,
+          isl = g.currentIsland;
+        const n = Math.max(0, countJunctions(g, isl, t.building.id) - 1);
+        const mult = Math.pow(2, n);
+        const rc = {};
+        for (const k in JUNCTION_BASE_COST) rc[k] = JUNCTION_BASE_COST[k] * mult;
+        refund(rc);
+      } else refund(b.cost);
       if (t.building.upgrade) refund(cumulativeUpgradeCost(b.cost, t.building.upgrade, t.building.id));
     }
     // Clear the whole footprint (occupancy tiles) for multi-tile buildings.
