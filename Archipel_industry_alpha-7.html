@@ -1327,7 +1327,7 @@ const CARRIER_BY_RES = {
   minerai_cuivre: 'road',
   acier: 'road',
   cable: 'road',
-  diesel: 'road',
+  diesel: 'pipe',
   polymere: 'road',
   beton_arme: 'road',
   piece_meca: 'road',
@@ -1462,6 +1462,19 @@ function drawSprite(ctx, fileKey, x, y, w, h) {
   ctx.drawImage(img, x, y, w, h);
   return true;
 }
+// Sprite d'état (« panne ») dessiné PAR-DESSUS un bâtiment qui ne fonctionne pas, à la
+// place du carré rouge/noir. Mappé depuis le motif de panne (bld.discReason). Tant que le
+// PNG correspondant n'existe pas dans __SPRITE_DATA__, drawSprite renvoie false → on retombe
+// sur l'ancienne teinte. Sprites à fournir : etat_route, etat_tuyau, etat_cable,
+// etat_intrant, etat_courant, etat_arret.
+const STATUS_SPRITE = {
+  road: 'etat_route',
+  pipe: 'etat_tuyau',
+  wire: 'etat_cable',
+  input: 'etat_intrant',
+  power: 'etat_courant'
+};
+const statusSpriteKey = reason => STATUS_SPRITE[reason] || 'etat_arret';
 // Comme drawSprite mais avec une rotation (radians) autour du centre de la tuile.
 function drawSpriteRot(ctx, fileKey, x, y, w, h, angle) {
   if (!SPRITES_ENABLED || !fileKey) return false;
@@ -3038,8 +3051,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 58;
-const GAME_VERSION = 'Alpha 10.33';
+const GAME_BUILD = 59;
+const GAME_VERSION = 'Alpha 10.34';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -7172,12 +7185,38 @@ function SlotPanel({
   onCreate,
   onRename,
   onDelete,
-  onSaveNow
+  onSaveNow,
+  onGetSlotData,
+  onImport
 }) {
   const slots = readSlotIndex().slice().sort((a, b) => (b.updated || 0) - (a.updated || 0));
   const [editId, setEditId] = useState(null);
   const [editName, setEditName] = useState('');
   const [confirmId, setConfirmId] = useState(null);
+  const [exportText, setExportText] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importErr, setImportErr] = useState(null);
+  const copyText = txt => {
+    setCopied(false);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(() => setCopied(true)).catch(() => {});
+      }
+    } catch (e) {}
+  };
+  const doExport = id => {
+    const data = onGetSlotData(id) || '';
+    setCopied(false);
+    setExportText(data);
+    if (data) copyText(data);
+  };
+  const doImport = () => {
+    const err = onImport(importText);
+    if (err) setImportErr(err);
+    // En cas de succès, le parent recharge la page (pas besoin de fermer).
+  };
   const startEdit = s => {
     setEditId(s.id);
     setEditName(s.name);
@@ -7252,6 +7291,9 @@ function SlotPanel({
       className: "slot-btn",
       onClick: () => startEdit(s)
     }, "Renommer"), React.createElement("button", {
+      className: "slot-btn",
+      onClick: () => doExport(s.id)
+    }, "Exporter"), React.createElement("button", {
       className: "slot-btn danger",
       onClick: () => setConfirmId(s.id)
     }, "Supprimer"))));
@@ -7260,7 +7302,141 @@ function SlotPanel({
   }, React.createElement("button", {
     className: "slot-new",
     onClick: () => onCreate()
-  }, "+ Nouvelle partie"))));
+  }, "+ Nouvelle partie"), React.createElement("button", {
+    className: "slot-new",
+    onClick: () => {
+      setImportOpen(true);
+      setImportErr(null);
+      setImportText('');
+    }
+  }, "⤓ Importer"))), exportText != null && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "slot-backdrop",
+    style: {
+      zIndex: 130
+    },
+    onClick: () => setExportText(null)
+  }), React.createElement("div", {
+    className: "slot-panel",
+    style: {
+      zIndex: 131
+    }
+  }, React.createElement("div", {
+    className: "slot-head"
+  }, React.createElement("span", {
+    className: "slot-title"
+  }, "Exporter la sauvegarde"), React.createElement("button", {
+    className: "slot-close",
+    onClick: () => setExportText(null)
+  }, "\xD7")), React.createElement("div", {
+    style: {
+      padding: '12px'
+    }
+  }, exportText ? React.createElement(React.Fragment, null, React.createElement("div", {
+    style: {
+      fontSize: '.78rem',
+      color: 'var(--ink-dim)',
+      marginBottom: '8px'
+    }
+  }, copied ? "✓ Copi\xE9 dans le presse-papier. Conserve-le pour le r\xE9importer." : "S\xE9lectionne et copie ce texte, garde-le en lieu s\xFBr."), React.createElement("textarea", {
+    readOnly: true,
+    value: exportText,
+    onFocus: e => e.target.select(),
+    style: {
+      width: '100%',
+      height: '160px',
+      fontFamily: 'monospace',
+      fontSize: '.62rem',
+      background: 'var(--panel)',
+      color: 'var(--ink)',
+      border: '1px solid var(--line)',
+      borderRadius: '6px',
+      padding: '6px',
+      resize: 'none',
+      boxSizing: 'border-box'
+    }
+  }), React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: '8px',
+      marginTop: '10px'
+    }
+  }, React.createElement("button", {
+    className: "slot-btn primary",
+    onClick: () => copyText(exportText)
+  }, "Copier"), React.createElement("button", {
+    className: "slot-btn",
+    onClick: () => setExportText(null)
+  }, "Fermer"))) : React.createElement("div", {
+    style: {
+      fontSize: '.82rem',
+      color: 'var(--ink-dim)'
+    }
+  }, "Cet emplacement est vide (aucune sauvegarde \xE0 exporter).")))), importOpen && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "slot-backdrop",
+    style: {
+      zIndex: 130
+    },
+    onClick: () => setImportOpen(false)
+  }), React.createElement("div", {
+    className: "slot-panel",
+    style: {
+      zIndex: 131
+    }
+  }, React.createElement("div", {
+    className: "slot-head"
+  }, React.createElement("span", {
+    className: "slot-title"
+  }, "Importer une sauvegarde"), React.createElement("button", {
+    className: "slot-close",
+    onClick: () => setImportOpen(false)
+  }, "\xD7")), React.createElement("div", {
+    style: {
+      padding: '12px'
+    }
+  }, React.createElement("div", {
+    style: {
+      fontSize: '.78rem',
+      color: 'var(--ink-dim)',
+      marginBottom: '8px'
+    }
+  }, "Colle ici une sauvegarde export\xE9e : une nouvelle partie sera cr\xE9\xE9e."), React.createElement("textarea", {
+    value: importText,
+    autoFocus: true,
+    placeholder: "{ … }",
+    onChange: e => setImportText(e.target.value),
+    style: {
+      width: '100%',
+      height: '160px',
+      fontFamily: 'monospace',
+      fontSize: '.62rem',
+      background: 'var(--panel)',
+      color: 'var(--ink)',
+      border: '1px solid var(--line)',
+      borderRadius: '6px',
+      padding: '6px',
+      resize: 'none',
+      boxSizing: 'border-box'
+    }
+  }), importErr && React.createElement("div", {
+    style: {
+      color: '#ff8079',
+      fontSize: '.74rem',
+      marginTop: '6px'
+    }
+  }, importErr), React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: '8px',
+      marginTop: '10px'
+    }
+  }, React.createElement("button", {
+    className: "slot-btn primary",
+    disabled: !importText.trim(),
+    onClick: doImport
+  }, "Importer"), React.createElement("button", {
+    className: "slot-btn",
+    onClick: () => setImportOpen(false)
+  }, "Annuler"))))));
 }
 function ModeModal({
   onChoose
@@ -7991,6 +8167,31 @@ function App() {
     // New slot has no data yet -> a fresh game will start on reload.
     slotSwitchTo(id);
   }
+  // Importe une sauvegarde texte (JSON exporté) dans un nouvel emplacement, puis bascule
+  // dessus. Renvoie un message d'erreur (string) ou null en cas de succès.
+  function slotImport(text) {
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      return 'Texte invalide (JSON illisible).';
+    }
+    if (!data || typeof data !== 'object' || data.version == null || !Array.isArray(data.islands)) {
+      return "Ce texte n'est pas une sauvegarde Archipel valide.";
+    }
+    flushSave();
+    const id = newSlotId();
+    const index = readSlotIndex();
+    index.push({
+      id,
+      name: 'Import ' + (index.length + 1),
+      updated: Date.now()
+    });
+    writeSlotIndex(index);
+    lsSet(slotDataKey(id), JSON.stringify(data));
+    slotSwitchTo(id);
+    return null;
+  }
   function slotRename(id, name) {
     const index = readSlotIndex();
     const slot = index.find(s => s.id === id);
@@ -8601,7 +8802,8 @@ function App() {
     } else {
       if (!b.terrains.includes(t.terrain)) return false;
     }
-    if (b.needRoad && !hasAdjacentRoad(r, c)) return false;
+    // La connexion à la route n'est PLUS exigée à la pose : un bâtiment sans route
+    // se pose quand même (il s'affiche déconnecté tant qu'aucune route ne le touche).
     if (b.needCoastAdj && !hasAdjacentCoast(r, c)) return false;
     return true;
   }
@@ -8717,10 +8919,8 @@ function App() {
       if (verbose) showToast(`❌ ${b.name} : terrain non autorisé`, 'var(--red)');
       return false;
     }
-    if (b.needRoad && !hasAdjacentRoad(r, c)) {
-      if (verbose) showToast('❌ Doit toucher une route', 'var(--red)');
-      return false;
-    }
+    // Pose autorisée sans route adjacente (cf. canPlace) : le bâtiment se posera
+    // déconnecté et se reliera dès qu'une route le touchera.
     if (b.needCoastAdj && !hasAdjacentCoast(r, c)) {
       if (verbose) showToast('❌ Doit être en mer, adjacent à la côte', 'var(--red)');
       return false;
@@ -9493,11 +9693,17 @@ function App() {
     ctx.fillStyle = '#9ee29f';
     ctx.fillText(txt, bx + pad, by + pad);
   }
-  function drawBuildingStateOverlay(ctx, x, y, W, H, tile, inactive, disconnected, upg) {
+  // Badge d'état (sprite de panne) centré sur le bâtiment. Renvoie true si un sprite a
+  // bien été dessiné (sinon l'appelant retombe sur l'ancienne teinte rouge/noire).
+  function drawStatusBadge(ctx, x, y, W, H, discReason) {
+    const s = Math.max(8, Math.min(W, H) * 0.62);
+    return drawSprite(ctx, statusSpriteKey(discReason), x + (W - s) / 2, y + (H - s) / 2, s, s);
+  }
+  function drawBuildingStateOverlay(ctx, x, y, W, H, tile, inactive, disconnected, upg, discReason) {
     if (inactive) {
-      ctx.fillStyle = 'rgba(13,13,26,.6)';
+      ctx.fillStyle = 'rgba(13,13,26,.55)';
       ctx.fillRect(x, y, W, H);
-      if (!disconnected) {
+      if (!drawStatusBadge(ctx, x, y, W, H, discReason) && !disconnected) {
         ctx.fillStyle = 'rgba(255,59,48,.26)';
         ctx.fillRect(x, y, W, H);
         const lw = Math.max(1, tile * 0.045);
@@ -9508,7 +9714,7 @@ function App() {
     }
     drawLevelBadge(ctx, x, y, W, H, tile, upg);
   }
-  function drawBuilding(ctx, x, y, tile, id, inactive, disconnected, upg, wTiles, hTiles) {
+  function drawBuilding(ctx, x, y, tile, id, inactive, disconnected, upg, wTiles, hTiles, discReason) {
     const b = BUILDINGS[id];
     const W = (wTiles || 1) * tile,
       H = (hTiles || 1) * tile;
@@ -9517,7 +9723,7 @@ function App() {
     if (SPRITES_ENABLED && b.kind !== 'infra' && b.kind !== 'junction') {
       const sk = buildingSpriteKey(id, upg);
       if (sk && drawSprite(ctx, sk, x, y, W, H)) {
-        drawBuildingStateOverlay(ctx, x, y, W, H, tile, inactive, disconnected, upg, true);
+        drawBuildingStateOverlay(ctx, x, y, W, H, tile, inactive, disconnected, upg, discReason);
         return;
       }
     }
@@ -9572,9 +9778,10 @@ function App() {
           ctx.fill();
         } else ctx.fillRect(ix, iy, iw, ih);
       };
-      ctx.fillStyle = 'rgba(13,13,26,.6)';
+      ctx.fillStyle = 'rgba(13,13,26,.55)';
       fillShape();
-      if (!disconnected) {
+      // Sprite de panne par-dessus ; à défaut (PNG absent) on garde la teinte rouge.
+      if (!drawStatusBadge(ctx, x, y, W, H, discReason) && !disconnected) {
         ctx.fillStyle = 'rgba(255,59,48,.26)';
         fillShape();
         const lw = Math.max(1, tile * 0.045);
@@ -9727,7 +9934,7 @@ function App() {
         }
       }
       const sz = buildingSize(bid);
-      drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h);
+      drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason);
     }
     drawPortExtras(ctx, ox, oy, tile);
     drawHover(ctx, ox, oy, tile);
@@ -10538,6 +10745,11 @@ function App() {
     onCreate: () => slotCreate(),
     onRename: (id, name) => slotRename(id, name),
     onDelete: id => slotDelete(id),
+    onGetSlotData: id => {
+      if (id === getActiveSlotId()) flushSave();
+      return lsGet(slotDataKey(id)) || '';
+    },
+    onImport: text => slotImport(text),
     onSaveNow: () => {
       writeSave();
       showToast('💾 Sauvegardé', 'var(--green)');
