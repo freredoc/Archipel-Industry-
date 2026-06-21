@@ -1,7 +1,7 @@
 {
-  "build": 54,
-  "version": "Alpha 10.29",
+  "build": 55,
+  "version": "Alpha 10.30",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.29 — barre du haut : boutons à position fixe (#54)"
+  "notes": "Alpha 10.30 — jonctions fonctionnelles (croisement réel + rotation auto) (#55)"
 }
