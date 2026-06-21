@@ -1,7 +1,7 @@
 {
-  "build": 49,
-  "version": "Alpha 10.24",
+  "build": 50,
+  "version": "Alpha 10.25",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.24 — suppression totale de la Pompe Eau V2 (#49)"
+  "notes": "Alpha 10.25 — VITESSE reflète le régime réel (élec. insuffisante) (#50)"
 }
