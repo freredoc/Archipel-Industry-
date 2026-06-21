@@ -1,7 +1,7 @@
 {
-  "build": 38,
-  "version": "Alpha 10.13",
+  "build": 39,
+  "version": "Alpha 10.14",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Icône d'app Android : scène d'île (#38)"
+  "notes": "Alpha 10.14 — équilibrage modes, coûts T1/T2/T3, transit proportionnel (#39)"
 }
