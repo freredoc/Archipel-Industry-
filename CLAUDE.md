@@ -17,7 +17,12 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 57`, `GAME_VERSION = 'Alpha 10.32'`.** Jonctions :
+- **État au dernier passage : `GAME_BUILD = 58`, `GAME_VERSION = 'Alpha 10.33'`.** Le panneau
+  Câble affiche le **bilan électrique par réseau** (Production / Demande / Livrée) via
+  `game.wireInfo[isl][nid]` (rempli dans la boucle énergie de `tickIsland`) : si un câble est
+  **saturé** (production ≥ demande mais livrée < demande à cause du débit) → message « câble saturé,
+  améliorez le débit » ; sinon si production < demande → « production insuffisante ». Le motif `power`
+  du panneau bâtiment renvoie vers le débit du câble. Jonctions :
   en **Normal** illimitées avec **coût croissant** (`JUNCTION_BASE_COST` ×2^(nb déjà posées du type) ;
   remboursement symétrique à la démolition) ; en **Difficile** limitées à 1/type/île (gratuites).
   Pose via `tryPlaceJunction` : autorisée **sur une tuile vide** OU **par-dessus un réseau infra**
