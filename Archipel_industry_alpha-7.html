@@ -3031,8 +3031,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 52;
-const GAME_VERSION = 'Alpha 10.27';
+const GAME_BUILD = 53;
+const GAME_VERSION = 'Alpha 10.28';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -8444,8 +8444,16 @@ function App() {
   function canPlace(r, c, id) {
     const tiles = curTiles();
     const t = tiles[r] && tiles[r][c];
-    if (!t || t.building || t.occupied) return false;
+    if (!t) return false;
     const b = BUILDINGS[id];
+    // Jonction : autorisée sur tuile vide (terrain ok) OU par-dessus un réseau infra
+    // d'un de ses deux porteurs (croisement converti en jonction).
+    if (b.kind === 'junction') {
+      if (t.occupied) return false;
+      if (t.building) return !!(BUILDINGS[t.building.id] && BUILDINGS[t.building.id].kind === 'infra' && b.junction.indexOf(t.building.id) !== -1);
+      return b.terrains.includes(t.terrain);
+    }
+    if (t.building || t.occupied) return false;
     const {
       h,
       w
@@ -8459,11 +8467,103 @@ function App() {
     if (b.needCoastAdj && !hasAdjacentCoast(r, c)) return false;
     return true;
   }
+  function tryPlaceJunction(r, c, id, verbose) {
+    const g = gameRef.current,
+      isl = g.currentIsland;
+    const tiles = curTiles(),
+      def = curDef();
+    const b = BUILDINGS[id];
+    const t = tiles[r] && tiles[r][c];
+    if (!t) return false;
+    const [typeA, typeB] = b.junction;
+    // La tuile peut être vide, ou porter un réseau infra de l'un des deux porteurs
+    // couplés (on convertit alors ce croisement en jonction).
+    let tileCarrier = null;
+    if (t.occupied) {
+      if (verbose) showToast('❌ Tuile occupée', 'var(--red)');
+      return false;
+    }
+    if (t.building) {
+      const tb = BUILDINGS[t.building.id];
+      if (tb && tb.kind === 'infra' && (t.building.id === typeA || t.building.id === typeB)) tileCarrier = t.building.id;else {
+        if (verbose) showToast('❌ Jonction : pose sur une tuile vide ou un réseau croisé', 'var(--red)');
+        return false;
+      }
+    } else if (!b.terrains.includes(t.terrain)) {
+      if (verbose) showToast('❌ Terrain non autorisé', 'var(--red)');
+      return false;
+    }
+    // Difficile : 1 jonction/type/île. Normal : illimité (coût croissant).
+    if (g.mode !== 'normal' && countJunctions(g, isl, id) >= 1) {
+      if (verbose) showToast('❌ Une seule jonction de ce type par île', 'var(--red)');
+      return false;
+    }
+    // Porteurs présents (sur la tuile ou via un réseau adjacent).
+    const hasA = tileCarrier === typeA || adjacentNetworks(g, isl, r, c, typeA).length > 0;
+    const hasB = tileCarrier === typeB || adjacentNetworks(g, isl, r, c, typeB).length > 0;
+    if (!hasA && !hasB) {
+      if (verbose) showToast('❌ Doit toucher un réseau (route/câble/tuyau)', 'var(--red)');
+      return false;
+    }
+    const missing = !hasA ? typeA : !hasB ? typeB : null;
+    const present = missing === typeA ? typeB : typeA;
+    // Auto-pose du porteur manquant (la « route de l'autre côté ») perpendiculairement
+    // au porteur déjà présent, sur les tuiles voisines libres.
+    const autoTiles = [];
+    if (missing) {
+      const carries = (tt, car) => tt && tt.building && (tt.building.id === car || BUILDINGS[tt.building.id] && BUILDINGS[tt.building.id].junction && BUILDINGS[tt.building.id].junction.indexOf(car) !== -1);
+      const vert = carries(tiles[r - 1] && tiles[r - 1][c], present) || carries(tiles[r + 1] && tiles[r + 1][c], present);
+      const horiz = carries(tiles[r] && tiles[r][c - 1], present) || carries(tiles[r] && tiles[r][c + 1], present);
+      const axisKnown = vert !== horiz;
+      const candidates = axisKnown ? vert ? [[0, -1], [0, 1]] : [[-1, 0], [1, 0]] : [[0, -1], [0, 1], [-1, 0], [1, 0]];
+      const maxAuto = axisKnown ? 2 : 1;
+      for (const [dr, dc] of candidates) {
+        if (autoTiles.length >= maxAuto) break;
+        const nr = r + dr,
+          nc = c + dc;
+        if (nr < 0 || nc < 0 || nr >= def.rows || nc >= def.cols) continue;
+        const nt = tiles[nr][nc];
+        if (!nt || nt.building || nt.occupied) continue;
+        if (!BUILDINGS[missing].terrains.includes(nt.terrain)) continue;
+        autoTiles.push([nr, nc]);
+      }
+      if (autoTiles.length === 0) {
+        if (verbose) showToast('❌ Pas de place pour le réseau croisé à côté', 'var(--red)');
+        return false;
+      }
+    }
+    // Coût (croissant en Normal ; le réseau auto-posé est en V1, gratuit).
+    const dev = g.ui.dev;
+    const cost = g.mode === 'normal' ? junctionCost(g, isl, id) : b.cost || {};
+    if (!dev) {
+      const miss = missingFor(cost);
+      if (miss.length) {
+        if (verbose) showToast('❌ Jonction : manque ' + miss.join(', '), 'var(--red)');
+        return false;
+      }
+      pay(cost);
+    }
+    t.building = {
+      id,
+      variant: 0
+    };
+    for (const [nr, nc] of autoTiles) tiles[nr][nc].building = {
+      id: missing,
+      variant: 0
+    };
+    rebuildNetworks(g, isl);
+    bumpHud();
+    markDirty();
+    scheduleSave();
+    if (verbose) showToast(`✓ ${b.name}` + (Object.keys(cost).length ? ` — ${formatCost(cost)}` : ''), 'var(--green)');
+    return true;
+  }
   function tryPlace(r, c, id, verbose) {
     const tiles = curTiles();
     const t = tiles[r] && tiles[r][c];
     if (!t) return false;
     const b = BUILDINGS[id];
+    if (b.kind === 'junction') return tryPlaceJunction(r, c, id, verbose);
     if (t.building || t.occupied) return false;
     const {
       h,
@@ -8494,29 +8594,6 @@ function App() {
         return false;
       }
     }
-    if (b.kind === 'junction') {
-      const g = gameRef.current,
-        isl = g.currentIsland;
-      // En Normal : jonctions illimitées (coût croissant). En Difficile : 1/type/île.
-      if (g.mode !== 'normal' && countJunctions(g, isl, id) >= 1) {
-        if (verbose) showToast('❌ Une seule jonction de ce type par île', 'var(--red)');
-        return false;
-      }
-      const [typeA, typeB] = b.junction;
-      const idsA = adjacentNetworks(g, isl, r, c, typeA);
-      const idsB = adjacentNetworks(g, isl, r, c, typeB);
-      if (!idsA.length || !idsB.length) {
-        if (verbose) showToast('❌ Doit toucher les deux réseaux croisés', 'var(--red)');
-        return false;
-      }
-      const nets = g.networks[isl] || {};
-      const lvlA = nets[idsA[0]] && nets[idsA[0]].level || 1;
-      const lvlB = nets[idsB[0]] && nets[idsB[0]].level || 1;
-      if (lvlA !== lvlB) {
-        if (verbose) showToast(`❌ Réseaux de niveaux différents (V${lvlA} / V${lvlB})`, 'var(--red)');
-        return false;
-      }
-    }
     // Extension d'un réseau déjà amélioré : la nouvelle tuile paie le rattrapage
     // de niveau (coût d'upgrade cumulé par tuile) pour rejoindre un réseau V2+.
     // La pose de base (réseau V1) reste gratuite.
@@ -8539,13 +8616,11 @@ function App() {
       }
     }
     const dev = gameRef.current.ui.dev;
-    // Jonction en Normal : coût croissant selon le nombre déjà posé sur l'île.
-    const junctionCostNow = b.kind === 'junction' && gameRef.current.mode === 'normal' ? junctionCost(gameRef.current, gameRef.current.currentIsland, id) : null;
-    const costToPay = extCost || junctionCostNow || b.cost;
+    const costToPay = extCost || b.cost;
     if (!dev) {
       const miss = missingFor(costToPay);
       if (miss.length) {
-        if (verbose) showToast((b.kind === 'junction' ? '❌ Jonction : manque ' : '❌ Extension V' + joinLvl + ' : manque ') + miss.join(', '), 'var(--red)');
+        if (verbose) showToast('❌ Extension V' + joinLvl + ' : manque ' + miss.join(', '), 'var(--red)');
         return false;
       }
       pay(costToPay);
@@ -8567,7 +8642,7 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
-    if (verbose && b.kind !== 'infra') showToast(`✓ ${b.name}` + (junctionCostNow && Object.keys(junctionCostNow).length ? ` — ${formatCost(junctionCostNow)}` : ''), 'var(--green)');
+    if (verbose && b.kind !== 'infra') showToast(`✓ ${b.name}`, 'var(--green)');
     else if (verbose && extCost) showToast(`✓ ${b.name} V${joinLvl} — ${formatCost(extCost)}`, 'var(--green)');
     return true;
   }
@@ -8595,7 +8670,7 @@ function App() {
       if (verbose) showToast(`🔒 ${b.name} non démolissable`, 'var(--orange)');
       return false;
     }
-    const wasInfra = b.kind === 'infra';
+    const wasInfra = b.kind === 'infra' || b.kind === 'junction';
     if (!gameRef.current.ui.dev) {
       // Jonction en Normal : rembourse le coût de la dernière posée (place/démolit symétrique).
       if (b.kind === 'junction' && gameRef.current.mode === 'normal') {
