@@ -460,11 +460,13 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 /* Panneaux bâtiment / amélioration / réseau : DOCKÉS en bas (au-dessus des onglets),
    plutôt qu'en mini-fenêtre flottante qui sortait de l'écran. !important écrase le
    positionnement inline (left/top) calculé en JS. Défilement interne si trop haut. */
-.info-panel{position:absolute;z-index:50;width:230px;left:50%!important;right:auto;
-  top:auto!important;bottom:8px;transform:translateX(-50%);max-height:60vh;overflow-y:auto;
+/* Panneau bâtiment/réseau : mini-menu pleine largeur DANS le flux, juste au-dessus de
+   la barre du bas (comme le menu construction), au lieu d'un popup flottant sur la carte. */
+.info-panel{position:relative;z-index:50;width:100%;left:auto!important;right:auto;
+  top:auto!important;bottom:auto;transform:none;max-height:46vh;overflow-y:auto;flex-shrink:0;
   overscroll-behavior:contain;background:var(--panel);
-  border:1px solid var(--line);border-radius:8px;padding:13px 14px;
-  box-shadow:0 10px 30px rgba(0,0,0,.5);transition:opacity .08s;}
+  border:none;border-top:1px solid var(--line);border-radius:0;padding:11px 14px 12px;
+  box-shadow:0 -6px 18px rgba(0,0,0,.45);transition:opacity .08s;}
 .info-panel::-webkit-scrollbar{width:6px;}
 .info-panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
 .ip-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
@@ -618,7 +620,7 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .tool-btn.upgrade-btn.active .tb-name{color:#7fd98a;}
 
 /* ── Panneau d'amélioration ── */
-.up-panel{width:262px;}
+.up-panel{width:100%;}
 .up-level{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px;
   font-family:'Barlow Condensed',sans-serif;font-size:.86rem;color:var(--ink);}
 .up-level b{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;color:#7fd98a;}
@@ -3003,8 +3005,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 35;
-const GAME_VERSION = 'Alpha 10.10';
+const GAME_BUILD = 36;
+const GAME_VERSION = 'Alpha 10.11';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -8424,6 +8426,8 @@ function App() {
       setNetwork(null);
       return;
     }
+    setBuildOpen(false);
+    setNetOpen(false);
     const cam = g.cam;
     const ox = cam.baseX - cam.x,
       oy = cam.baseY - cam.y;
@@ -9462,6 +9466,10 @@ function App() {
       return;
     }
     setNetwork(null);
+    // Le panneau bâtiment s'affiche en bas (comme le menu construction) : on referme
+    // les menus construction/réseau pour ne pas empiler deux panneaux.
+    setBuildOpen(false);
+    setNetOpen(false);
     const cam = gameRef.current.cam;
     const ox = cam.baseX - cam.x,
       oy = cam.baseY - cam.y;
@@ -9785,7 +9793,7 @@ function App() {
     style: {
       color: toast.color
     }
-  }, toast.msg), info && React.createElement(InfoPanel, {
+  }, toast.msg)), info && React.createElement(InfoPanel, {
     info: info,
     game: game,
     currentIsland: game.currentIsland,
@@ -9821,7 +9829,7 @@ function App() {
     onMakeUnlimited: (r, c) => {
       if (makeNetworkUnlimited(r, c)) openNetwork(r, c);
     }
-  })), React.createElement(Toolbar, {
+  }), React.createElement(Toolbar, {
     tool: tool,
     currentIsland: game.currentIsland,
     unlockedSet: unlockedSet,
