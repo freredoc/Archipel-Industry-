@@ -163,16 +163,16 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .tuto-skip:hover{border-color:var(--red);color:#ff8079;}
 @media (max-width:480px){.tuto-banner{padding:6px 9px;gap:7px;}.tuto-goal{font-size:.82rem;white-space:normal;}}
 /* Bouton Réparer (déblocage île suivante) */
-.repair-btn{display:flex;flex-direction:column;align-items:flex-start;gap:0;background:rgba(76,175,80,.14);
-  border:1px solid #4CAF50;color:#7fd98a;border-radius:4px;padding:2px 8px;cursor:pointer;flex-shrink:0;
-  font-family:'Barlow Condensed',sans-serif;transition:background .1s;line-height:1.1;
-  align-self:flex-start;max-width:46%;box-sizing:border-box;}
+.repair-btn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;background:rgba(76,175,80,.14);
+  border:1px solid #4CAF50;color:#7fd98a;border-radius:5px;padding:5px 12px;cursor:pointer;flex-shrink:0;
+  font-family:'Barlow Condensed',sans-serif;transition:background .1s;line-height:1.15;
+  align-self:flex-start;max-width:62%;box-sizing:border-box;}
 .repair-btn:hover{background:rgba(76,175,80,.24);}
 .repair-btn:active{transform:translateY(1px);}
 .repair-btn:disabled{background:#2a2a3e;border-color:var(--line);color:var(--ink-faint);cursor:not-allowed;}
-.repair-btn .ui-ico{width:12px;height:12px;}
-.repair-btn .rep-txt{font-size:.62rem;text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
-.repair-btn .rep-cost{font-family:'DM Mono',monospace;font-size:.5rem;color:var(--ink-dim);white-space:normal;word-break:break-word;}
+.repair-btn .ui-ico{width:15px;height:15px;}
+.repair-btn .rep-txt{font-size:.78rem;text-transform:uppercase;letter-spacing:.03em;font-weight:700;}
+.repair-btn .rep-cost{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--ink-dim);white-space:normal;word-break:break-word;}
 
 /* ── Panneau Port ── */
 .port-panel{width:min(540px,95vw);}
@@ -285,7 +285,10 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 .tip-ok:hover{filter:brightness(1.08);}
 @media (max-width:480px){.tip-popup{padding:15px 16px;}.tip-title{font-size:1.02rem;}.tip-body p{font-size:.88rem;}}
 /* ── Glossaire d'aide (toutes les astuces) ── */
-.help-btn{margin-left:6px;}
+.help-btn{margin-left:4px;padding:5px 9px;}
+/* Aide en icône seule (« ? ») pour libérer de la place et bien voir énergie/batterie. */
+.help-btn > span:last-child{display:none;}
+.help-btn .gear{font-weight:800;font-size:1.05rem;}
 .help-list{gap:12px;}
 .help-section-title{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.08em;
   color:var(--yellow);margin-top:4px;border-bottom:1px solid var(--line);padding-bottom:3px;}
@@ -3005,8 +3008,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 37;
-const GAME_VERSION = 'Alpha 10.12';
+const GAME_BUILD = 38;
+const GAME_VERSION = 'Alpha 10.13';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
