@@ -3038,8 +3038,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 57;
-const GAME_VERSION = 'Alpha 10.32';
+const GAME_BUILD = 58;
+const GAME_VERSION = 'Alpha 10.33';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -4013,6 +4013,10 @@ function tickIsland(game, isl) {
     demand = 0,
     accStored = 0,
     accCap = 0;
+  // Bilan électrique détaillé par réseau câble (pour le panneau Câble : Production /
+  // Demande / Livrée). Permet de voir si une coupure vient du débit (livrée < demande
+  // alors que production ≥ demande) ou d'un déficit de production (production < demande).
+  const wireInfo = {};
   for (const nidStr in allWireNids) {
     const nid = +nidStr;
     const prod = wireProd[nid] || 0;
@@ -4063,6 +4067,15 @@ function tickIsland(game, isl) {
     }
     // Demande électrique reportée sur netDemand → le panneau Câble affiche débit/saturation.
     netDemand[nid] = (netDemand[nid] || 0) + netDem;
+    wireInfo[nid] = {
+      prod: prod,
+      disc: disc,
+      supply: netSupply,
+      demand: netDem,
+      deliver: deliver,
+      served: netServed,
+      cap: cap
+    };
     supply += netSupply;
     consumed += netServed;
     demand += netDem;
@@ -4071,6 +4084,8 @@ function tickIsland(game, isl) {
       accCap += acc.capacity;
     }
   }
+  if (!game.wireInfo) game.wireInfo = {};
+  game.wireInfo[isl] = wireInfo;
   // Régime moyen (duty-cycle) lissé des consommateurs électriques : reflète une
   // production « au ralenti » quand l'élec. est insuffisante (cyclage on/off par tick).
   for (const cc of energyConsumers) {
@@ -5966,7 +5981,7 @@ function InfoPanel({
     pipe: 'tuyau manquant',
     wire: 'câble manquant (élec.)',
     input: 'intrants manquants',
-    power: 'électricité insuffisante'
+    power: 'élec. insuffisante (vérifier le débit du câble)'
   };
   // L'élec. fonctionne en tout-ou-rien CHAQUE tick : un bâtiment sous-alimenté est
   // coupé/rallumé d'un tick à l'autre. Le régime moyen lissé (bld.pwrAvg) reflète la
@@ -6901,6 +6916,15 @@ function NetworkPanel({
   const demand = game.netDemand && game.netDemand[currentIsland] && game.netDemand[currentIsland][net.networkId] || 0;
   const saturatedNet = cap !== Infinity && demand > cap + 0.001;
   const servedPct = saturatedNet ? Math.max(0, Math.round(cap / demand * 100)) : 100;
+  // Bilan électrique détaillé (réseaux câble uniquement) : Production / Demande / Livrée.
+  const isWire = netObj.type === 'wire';
+  const wi = isWire && game.wireInfo && game.wireInfo[currentIsland] && game.wireInfo[currentIsland][net.networkId] || null;
+  const elProd = wi ? wi.supply : 0;
+  const elDeliver = wi ? wi.deliver : 0;
+  // Coupure par débit : on produit assez mais le câble ne transmet pas tout.
+  const cappedByThroughput = isWire && wi && elProd + 1e-6 >= wi.demand && elDeliver + 1e-6 < wi.demand;
+  // Coupure par déficit de production réel.
+  const prodDeficit = isWire && wi && elProd + 1e-6 < wi.demand;
   const coupled = upInfo.ids && upInfo.ids.length > 1 || downInfo.ids && downInfo.ids.length > 1;
   const canUp = !upInfo.blocked && (dev || Object.keys(upInfo.cost || {}).every(k => (port[k] || 0) >= upInfo.cost[k]));
   const canUnl = !unlInfo.blocked && (dev || Object.keys(unlInfo.cost || {}).every(k => (port[k] || 0) >= unlInfo.cost[k]));
@@ -6958,7 +6982,36 @@ function NetworkPanel({
       color: '#ff8079'
     },
     title: "Demande sup\xE9rieure au d\xE9bit max : tous les b\xE2timents du r\xE9seau sont ralentis \xE0 ce pourcentage"
-  }, servedPct + '% servi')), React.createElement("div", {
+  }, servedPct + '% servi')), isWire && wi && React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "Production"), React.createElement("span", {
+    className: "val io"
+  }, fmtInt(elProd) + ' kW')), isWire && wi && (cappedByThroughput || prodDeficit) && React.createElement("div", {
+    className: "ip-row" + (cappedByThroughput ? ' capped' : '')
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "Livr\xE9e"), React.createElement("span", {
+    className: "val io",
+    style: {
+      color: '#ff8079'
+    }
+  }, fmtInt(elDeliver) + ' kW')), isWire && cappedByThroughput && React.createElement("div", {
+    className: "ip-note",
+    style: {
+      color: '#ffcf6b',
+      fontSize: '11px',
+      padding: '2px 0'
+    }
+  }, "⚡ Production suffisante mais c\xE2ble satur\xE9 : am\xE9liorez le d\xE9bit pour tout transmettre."), isWire && prodDeficit && React.createElement("div", {
+    className: "ip-note",
+    style: {
+      color: '#ff8079',
+      fontSize: '11px',
+      padding: '2px 0'
+    }
+  }, "⚡ Production insuffisante sur ce r\xE9seau c\xE2ble."), React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
