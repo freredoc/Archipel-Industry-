@@ -1,7 +1,7 @@
 {
-  "build": 42,
-  "version": "Alpha 10.17",
+  "build": 43,
+  "version": "Alpha 10.18",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.17 — l'électricité transite par le réseau câble (#42)"
+  "notes": "Alpha 10.18 — interdiction d'export par île + motif de panne clair (#43)"
 }
