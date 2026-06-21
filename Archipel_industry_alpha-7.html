@@ -3027,8 +3027,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 41;
-const GAME_VERSION = 'Alpha 10.16';
+const GAME_BUILD = 42;
+const GAME_VERSION = 'Alpha 10.17';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3253,6 +3253,12 @@ function adjacentNetworksFootprint(game, islandId, r, c, w, h, infraType) {
   }
   return ids;
 }
+// Premier réseau câble adjacent au bâtiment (footprint) — réseau électrique auquel
+// le générateur/consommateur/accumulateur est rattaché. null si non câblé.
+function firstWireNid(game, islandId, r, c, w, h) {
+  const ids = adjacentNetworksFootprint(game, islandId, r, c, w, h, 'wire');
+  return ids.length ? ids[0] : null;
+}
 function roadReachesPortFootprint(game, islandId, r, c, w, h) {
   const nets = game.networks[islandId] || {};
   for (const nid of adjacentNetworksFootprint(game, islandId, r, c, w, h, 'road')) {
@@ -3441,6 +3447,8 @@ function tickIsland(game, isl) {
   const energyConsumers = [];
   const accList = [];
   const nucList = [];
+  // Production électrique ventilée par réseau câble (sous-réseau électrique distinct).
+  const wireProd = {};
   // --- Antenna buff pre-pass ---
   // Mark the 8 tiles around each wire-connected antenna. Buffed production buildings
   // get ×2 output and a sigmoid-oscillating power draw (×1→×3 of nominal, 60s cycle).
@@ -3464,10 +3472,12 @@ function tickIsland(game, isl) {
     if (!bld) continue;
     const b = BUILDINGS[bld.id];
     if (b.accumulator) {
+      const asz = b.size || [1, 1];
       accList.push({
         bld,
         capacity: accCapacity(bld),
-        stored: bld.stored || 0
+        stored: bld.stored || 0,
+        wnid: firstWireNid(game, isl, r, c, asz[1] || 1, asz[0] || 1)
       });
       continue;
     }
@@ -3579,7 +3589,9 @@ function tickIsland(game, isl) {
       }
     }
     const usesWire = energyOut > 0 || power > 0;
-    if (ok && usesWire && adjacentNetworks(game, isl, r, c, 'wire').length === 0) {
+    const wsz = b.size || [1, 1];
+    const wireNid = usesWire ? firstWireNid(game, isl, r, c, wsz[1] || 1, wsz[0] || 1) : null;
+    if (ok && usesWire && wireNid == null) {
       ok = false;
       disc = true;
     }
@@ -3609,12 +3621,16 @@ function tickIsland(game, isl) {
       netDemand[routeOut.pipe] = (netDemand[routeOut.pipe] || 0) + outByType.pipe[k];
       addTier(routeOut.pipe, pri, outByType.pipe[k]);
     }
-    if (energyOut > 0) energyProduced += energyOut;
+    if (energyOut > 0) {
+      energyProduced += energyOut;
+      wireProd[wireNid] = (wireProd[wireNid] || 0) + energyOut;
+    }
     if (power > 0) energyConsumers.push({
       idx: r * def.cols + c,
       power,
       bld,
-      key: r + '-' + c
+      key: r + '-' + c,
+      wnid: wireNid
     });
     bld.active = true;
     bld.disc = false;
@@ -3745,7 +3761,9 @@ function tickIsland(game, isl) {
         }
       }
     }
-    const wireOk = adjacentNetworksFootprint(game, isl, r, c, nw, nh, 'wire').length > 0;
+    const wireIds = adjacentNetworksFootprint(game, isl, r, c, nw, nh, 'wire');
+    const wireOk = wireIds.length > 0;
+    const nucWireNid = wireOk ? wireIds[0] : null;
     const haveRoad = roadNid != null && (port['combustible_u235'] || 0) >= 1 && (port[matKey] || 0) >= 1;
     let coldNid = null;
     for (const nid of adjacentNetworksFootprint(game, isl, r, c, nw, nh, 'pipe')) {
@@ -3795,7 +3813,10 @@ function tickIsland(game, isl) {
       nucPower = NUC_POWER / (1 + Math.exp(-12 * (x - 0.5)));
     }
     if (nucPower < 1) nucPower = 0;
-    if (nucPower > 0 && wireOk) energyProduced += nucPower;
+    if (nucPower > 0 && wireOk) {
+      energyProduced += nucPower;
+      wireProd[nucWireNid] = (wireProd[nucWireNid] || 0) + nucPower;
+    }
     if (bld.nucState === 'running' && roadNid != null) {
       port[irrKey] = (port[irrKey] || 0) + 1;
       if (prod) prod[irrKey] = (prod[irrKey] || 0) + 1;
@@ -3835,62 +3856,64 @@ function tickIsland(game, isl) {
     if (!pool) continue;
     for (const k in NON_STORABLE) if (pool[k]) pool[k] = 0;
   }
-  let consumed = 0;
-  for (const cc of energyConsumers) consumed += cc.power;
-  // Demande totale (puissance nominale de tous les consommateurs, avant coupures).
-  const demand = consumed;
-  let balance = energyProduced - consumed;
-  let discharged = 0;
-  if (accList.length) {
-    if (balance > 1e-6) {
-      let surplus = balance;
-      for (const acc of accList) {
-        if (surplus <= 1e-6) break;
-        const free = acc.capacity - acc.stored;
-        if (free <= 0) continue;
-        const store = Math.min(free, acc.capacity, surplus * 0.8);
-        if (store > 0) {
-          acc.stored += store;
-          surplus -= store / 0.8;
-        }
-      }
-    } else if (balance < -1e-6) {
-      let need = -balance;
-      for (const acc of accList) {
-        if (need <= 1e-6) break;
-        const give = Math.min(acc.stored, acc.capacity, need);
-        if (give > 0) {
-          acc.stored -= give;
-          need -= give;
-          discharged += give;
-        }
-      }
-    }
-    for (const acc of accList) acc.bld.stored = acc.stored;
-  }
-  game.accumulators[isl] = accList.map(a => ({
-    capacity: a.capacity,
-    stored: a.stored
-  }));
-  const supply = energyProduced + discharged;
-  balance = supply - consumed;
-  if (balance < 0) {
-    const mode = (game.energyMode && game.energyMode[isl]) || 'priority';
-    const cut = cc => {
-      const pA = cc.bld.active,
-        pD = cc.bld.disc;
-      cc.bld.active = false;
-      cc.bld.disc = false;
-      if (cc.bld.active !== pA || cc.bld.disc !== pD) activeChanged = true;
-    };
+  // === Électricité par réseau câble ===
+  // Chaque réseau câble est un sous-réseau électrique distinct : producteurs,
+  // consommateurs et accumulateurs rattachés à CE réseau se partagent l'énergie, et
+  // le débit du câble (networkThroughput / illimité) borne la puissance transmissible.
+  const energyMode = (game.energyMode && game.energyMode[isl]) || 'priority';
+  const energyOrder = (game.energyPriority && game.energyPriority[isl]) || [];
+  const cutBld = cc => {
+    const pA = cc.bld.active,
+      pD = cc.bld.disc;
+    cc.bld.active = false;
+    cc.bld.disc = false;
+    if (cc.bld.active !== pA || cc.bld.disc !== pD) activeChanged = true;
+  };
+  // Réduit la liste de consommateurs pour tenir dans `avail` selon le mode de gestion
+  // du déficit ; coupe les bâtiments écartés. Renvoie les conservés.
+  const cutToFit = (consumers, avail) => {
     let kept;
-    if (mode === 'priority') {
-      const order = (game.energyPriority && game.energyPriority[isl]) || [];
+    if (energyMode === 'fair') {
+      let remaining = consumers.slice();
+      let av = avail;
+      kept = [];
+      let progress = true;
+      while (remaining.length && progress) {
+        progress = false;
+        const share = av / remaining.length;
+        const next = [];
+        for (const cc of remaining) {
+          if (cc.power <= share + 1e-6) {
+            kept.push(cc);
+            av -= cc.power;
+            progress = true;
+          } else {
+            next.push(cc);
+          }
+        }
+        remaining = next;
+      }
+      for (const cc of remaining) cutBld(cc);
+    } else if (energyMode === 'proportional') {
+      // Coupe les plus gros consommateurs d'abord pour que le reste tourne à plein régime.
+      const sorted = consumers.slice().sort((a, b) => b.power - a.power || a.idx - b.idx);
+      kept = [];
+      let needSum = 0;
+      for (const cc of consumers) needSum += cc.power;
+      let dropIdx = 0;
+      while (needSum > avail + 1e-6 && dropIdx < sorted.length) {
+        cutBld(sorted[dropIdx]);
+        needSum -= sorted[dropIdx].power;
+        dropIdx++;
+      }
+      for (let i = dropIdx; i < sorted.length; i++) kept.push(sorted[i]);
+    } else {
+      // priority : sert les bâtiments prioritaires (ordre énergétique) d'abord.
       const rank = {};
-      order.forEach((k, i) => {
+      energyOrder.forEach((k, i) => {
         rank[k] = i;
       });
-      const sorted = energyConsumers.slice().sort((a, b) => {
+      const sorted = consumers.slice().sort((a, b) => {
         const ra = rank[a.key],
           rb = rank[b.key];
         if (ra != null && rb != null) return ra - rb;
@@ -3899,64 +3922,102 @@ function tickIsland(game, isl) {
         return a.idx - b.idx;
       });
       kept = [];
-      let avail = supply;
+      let av = avail;
       for (const cc of sorted) {
-        if (cc.power <= avail + 1e-6) {
-          avail -= cc.power;
+        if (cc.power <= av + 1e-6) {
+          av -= cc.power;
           kept.push(cc);
         } else {
-          cut(cc);
+          cutBld(cc);
         }
       }
-    } else if (mode === 'fair') {
-      let remaining = energyConsumers.slice();
-      let avail = supply;
-      kept = [];
-      let progress = true;
-      while (remaining.length && progress) {
-        progress = false;
-        const share = avail / remaining.length;
-        const next = [];
-        for (const cc of remaining) {
-          if (cc.power <= share + 1e-6) {
-            kept.push(cc);
-            avail -= cc.power;
-            progress = true;
-          } else {
-            next.push(cc);
+    }
+    return kept;
+  };
+  // Regroupe consommateurs et accumulateurs par réseau câble.
+  const wireCons = {};
+  for (const cc of energyConsumers) (wireCons[cc.wnid] || (wireCons[cc.wnid] = [])).push(cc);
+  const wireAccs = {};
+  for (const acc of accList) {
+    if (acc.wnid == null) {
+      // Accumulateur non câblé : inerte ce tick (ne participe à aucun sous-réseau).
+      acc.bld.stored = acc.stored;
+      continue;
+    }
+    (wireAccs[acc.wnid] || (wireAccs[acc.wnid] = [])).push(acc);
+  }
+  const allWireNids = {};
+  for (const k in wireProd) allWireNids[k] = true;
+  for (const k in wireCons) allWireNids[k] = true;
+  for (const k in wireAccs) allWireNids[k] = true;
+  let supply = 0,
+    consumed = 0,
+    demand = 0,
+    accStored = 0,
+    accCap = 0;
+  for (const nidStr in allWireNids) {
+    const nid = +nidStr;
+    const prod = wireProd[nid] || 0;
+    const cons = wireCons[nid] || [];
+    const accs = wireAccs[nid] || [];
+    let netDem = 0;
+    for (const cc of cons) netDem += cc.power;
+    // Accumulateurs : stockent le surplus (rendement 0.8) / déchargent en cas de déficit.
+    let bal = prod - netDem;
+    let disc = 0;
+    if (accs.length) {
+      if (bal > 1e-6) {
+        let surplus = bal;
+        for (const acc of accs) {
+          if (surplus <= 1e-6) break;
+          const free = acc.capacity - acc.stored;
+          if (free <= 0) continue;
+          const store = Math.min(free, acc.capacity, surplus * 0.8);
+          if (store > 0) {
+            acc.stored += store;
+            surplus -= store / 0.8;
           }
         }
-        remaining = next;
+      } else if (bal < -1e-6) {
+        let need = -bal;
+        for (const acc of accs) {
+          if (need <= 1e-6) break;
+          const give = Math.min(acc.stored, acc.capacity, need);
+          if (give > 0) {
+            acc.stored -= give;
+            need -= give;
+            disc += give;
+          }
+        }
       }
-      for (const cc of remaining) cut(cc);
-    } else {
-      // proportional: binary engine -> cut largest consumers first so the
-      // retained subset runs at 100%, hitting big consumers proportionally more.
-      const sorted = energyConsumers.slice().sort((a, b) => b.power - a.power || a.idx - b.idx);
-      kept = [];
-      let avail = supply;
-      const toCut = [];
-      for (const cc of sorted) toCut.push(cc);
-      // greedily drop largest until the rest fits
-      let dropIdx = 0;
-      let needSum = consumed;
-      while (needSum > avail + 1e-6 && dropIdx < sorted.length) {
-        cut(sorted[dropIdx]);
-        needSum -= sorted[dropIdx].power;
-        dropIdx++;
-      }
-      for (let i = dropIdx; i < sorted.length; i++) kept.push(sorted[i]);
+      for (const acc of accs) acc.bld.stored = acc.stored;
     }
-    consumed = 0;
-    for (const cc of kept) consumed += cc.power;
-    balance = supply - consumed;
+    const netSupply = prod + disc;
+    // Débit du câble : borne la puissance livrable aux consommateurs de ce réseau.
+    const netObj = nets[nid];
+    const cap = netObj && netObj.unlimited ? Infinity : networkThroughput(netObj ? netObj.level : 1);
+    const deliver = Math.min(netSupply, cap);
+    let netServed = netDem;
+    if (deliver + 1e-6 < netDem) {
+      const kept = cutToFit(cons, deliver);
+      netServed = 0;
+      for (const cc of kept) netServed += cc.power;
+    }
+    // Demande électrique reportée sur netDemand → le panneau Câble affiche débit/saturation.
+    netDemand[nid] = (netDemand[nid] || 0) + netDem;
+    supply += netSupply;
+    consumed += netServed;
+    demand += netDem;
+    for (const acc of accs) {
+      accStored += acc.stored;
+      accCap += acc.capacity;
+    }
   }
-  let accStored = 0,
-    accCap = 0;
-  for (const acc of accList) {
-    accStored += acc.stored;
-    accCap += acc.capacity;
-  }
+  const balance = supply - consumed;
+  game.accumulators[isl] = accList.map(a => ({
+    capacity: a.capacity,
+    stored: a.stored
+  }));
   const pe = game.energy[isl] || {};
   const energyChanged = pe.produced !== supply || pe.consumed !== consumed || pe.balance !== balance || pe.demand !== demand || pe.accStored !== accStored;
   game.energy[isl] = {
@@ -6451,7 +6512,7 @@ function EnergyPanel({
     className: "rp-list"
   }, React.createElement("div", {
     className: "pp-note"
-  }, "⚡ L'\xE9lectricit\xE9 est partag\xE9e sur toute l'\xEEle : tous les g\xE9n\xE9rateurs et consommateurs sont mis en commun, quels que soient les r\xE9seaux de c\xE2bles s\xE9par\xE9s. Il suffit qu'un b\xE2timent touche un c\xE2ble pour acc\xE9der \xE0 ce pool commun."), React.createElement("div", {
+  }, "⚡ L'\xE9lectricit\xE9 circule par r\xE9seau de c\xE2bles : chaque r\xE9seau c\xE2ble est un sous-r\xE9seau \xE9lectrique distinct (les g\xE9n\xE9rateurs, consommateurs et accumulateurs qu'il relie se partagent l'\xE9nergie). Le d\xE9bit du c\xE2ble (V1, V2…) borne la puissance transmissible : montez-le si un r\xE9seau sature. Les totaux ci-dessous additionnent tous les r\xE9seaux de l'\xEEle."), React.createElement("div", {
     className: "ep-stats"
   }, statRow("Production (g\xE9n\xE9rateurs)", fmtInt(gross) + " kW"), battery > 0.5 && statRow("Batterie (d\xE9charge)", "+" + fmtInt(battery) + " kW", "var(--green)"), statRow("Demande totale", fmtInt(dem) + " kW"), cut > 0.5 && statRow("Demande non servie", "-" + fmtInt(cut) + " kW", '#ff8079'), statRow("Bilan r\xE9el", (netE >= 0 ? '+' : '') + fmtInt(netE) + " kW", netE < -1e-6 ? '#ff8079' : 'var(--green)'), accPct != null && statRow("Accumulateurs", fmtInt(accStored) + " / " + fmtInt(accCap) + " kWh \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
     className: "ep-bar",

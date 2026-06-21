@@ -17,7 +17,7 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 40`, `GAME_VERSION = 'Alpha 10.15'`.** Le `SAVE_VERSION`
+- **État au dernier passage : `GAME_BUILD = 42`, `GAME_VERSION = 'Alpha 10.17'`.** Le `SAVE_VERSION`
   est à **12** (rétro-compat gérée au chargement pour les versions 3→12).
 
 ## Systèmes du jeu (repères de code — rechercher les noms exacts)
@@ -41,8 +41,12 @@ Tout est dans le mono-fichier. Pour valider : extraire le `<script>` et `node --
   prioritaires d'abord sur réseau saturé (`netTierDemand`/`tierFactor` dans le tick).
 - **Énergie** : `game.energy[isl]` = {produced(=supply), consumed, demand, gross, accStored,
   accCap}. HUD : bilan réel (supply−demand), pastille 🔋 batterie. `EnergyPanel` : récap +
-  « Demande non servie ». ⚠️ L'élec est **mise en commun à l'échelle de l'île** (un bâtiment
-  doit juste toucher *un* câble) — note explicative en tête de `EnergyPanel`.
+  « Demande non servie ». ⚡ **L'élec circule PAR réseau câble** : chaque réseau câble est un
+  sous-réseau électrique distinct (prod/conso/accus rattachés via `firstWireNid` = 1er câble
+  adjacent au footprint). Le **débit du câble** (`networkThroughput`/illimité) borne la puissance
+  transmissible → `netDemand[wireNid]` = demande élec, le `NetworkPanel` câble affiche débit/
+  saturation et l'amélioration sert vraiment. Tick : boucle par `wireProd`/`wireCons`/`wireAccs`
+  dans `tickIsland` (modes priority/fair/proportional via `cutToFit`).
 - **Transit** (taille des lots cargo) : `portSpeed` / `portSpeedMult = 2^level`,
   `PORT_MAX_LEVEL = Infinity` (infini, coût ×2/niveau). Base lot = `shipBatchBase()` (=`SHIP_BATCH`
   600, ÷10 en Difficile). Mode de répartition `game.tradeMode[isl]` : `priority` (défaut, remplit
