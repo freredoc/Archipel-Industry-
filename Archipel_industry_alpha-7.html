@@ -3033,8 +3033,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 54;
-const GAME_VERSION = 'Alpha 10.29';
+const GAME_BUILD = 55;
+const GAME_VERSION = 'Alpha 10.30';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3155,14 +3155,22 @@ function rebuildNetworks(game, islandId) {
     length: def.rows
   }, () => new Array(def.cols).fill(false));
   const port = portPosFor(islandId);
+  // Une jonction appartient aux DEUX réseaux porteurs qu'elle croise : le flood-fill
+  // la traverse pour chaque porteur et stocke un networkId par porteur dans t.netIds.
+  // Ainsi route ET câble (ou tuyau) « passent » à travers, quelle que soit l'orientation.
+  const isJunctionTile = t => t && t.building && BUILDINGS[t.building.id] && BUILDINGS[t.building.id].kind === 'junction';
+  for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
+    const t = tiles[r][c];
+    if (isJunctionTile(t)) {
+      t.netIds = {};
+      t.networkId = null;
+    } else if (!isInfraTile(t)) t.networkId = null;
+  }
+  const jseen = new Set();
   let nextId = 1;
   for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
     const t = tiles[r][c];
-    if (!isInfraTile(t)) {
-      t.networkId = null;
-      continue;
-    }
-    if (seen[r][c]) continue;
+    if (!isInfraTile(t) || seen[r][c]) continue;
     const type = t.building.id;
     const nid = nextId++;
     const net = {
@@ -3172,14 +3180,16 @@ function rebuildNetworks(game, islandId) {
       pool: {}
     };
     newNets[nid] = net;
-    const stack = [[r, c]];
+    const stack = [[r, c, false]];
     seen[r][c] = true;
     while (stack.length) {
-      const [cr, cc] = stack.pop();
+      const [cr, cc, cj] = stack.pop();
       const ct = tiles[cr][cc];
-      const oldId = ct.networkId;
-      if (oldId != null && oldToNew[oldId] === undefined) oldToNew[oldId] = nid;
-      ct.networkId = nid;
+      if (!cj) {
+        const oldId = ct.networkId;
+        if (oldId != null && oldToNew[oldId] === undefined) oldToNew[oldId] = nid;
+        ct.networkId = nid;
+      }
       if ((type === 'road' || type === 'pipe') && port) {
         for (const [dr, dc] of DIRS4) {
           if (cr + dr === port.r && cc + dc === port.c) {
@@ -3191,11 +3201,19 @@ function rebuildNetworks(game, islandId) {
       for (const [dr, dc] of DIRS4) {
         const nr = cr + dr,
           nc = cc + dc;
-        if (nr < 0 || nc < 0 || nr >= def.rows || nc >= def.cols || seen[nr][nc]) continue;
+        if (nr < 0 || nc < 0 || nr >= def.rows || nc >= def.cols) continue;
         const nt = tiles[nr][nc];
-        if (nt && nt.building && nt.building.id === type) {
+        if (!nt || !nt.building) continue;
+        if (nt.building.id === type) {
+          if (seen[nr][nc]) continue;
           seen[nr][nc] = true;
-          stack.push([nr, nc]);
+          stack.push([nr, nc, false]);
+        } else if (isJunctionTile(nt) && BUILDINGS[nt.building.id].junction.indexOf(type) !== -1) {
+          const key = nr + ',' + nc + ',' + type;
+          if (jseen.has(key)) continue;
+          jseen.add(key);
+          nt.netIds[type] = nid;
+          stack.push([nr, nc, true]);
         }
       }
     }
@@ -3230,9 +3248,10 @@ function adjacentNetworks(game, islandId, r, c, infraType) {
       nc = c + dc;
     if (nr < 0 || nc < 0 || nr >= def.rows || nc >= def.cols) continue;
     const t = tiles[nr][nc];
-    if (t && t.building && t.building.id === infraType && t.networkId != null) {
-      if (ids.indexOf(t.networkId) === -1) ids.push(t.networkId);
-    }
+    if (!t || !t.building) continue;
+    let nid = null;
+    if (t.building.id === infraType && t.networkId != null) nid = t.networkId;else if (t.netIds && BUILDINGS[t.building.id] && BUILDINGS[t.building.id].kind === 'junction' && t.netIds[infraType] != null) nid = t.netIds[infraType];
+    if (nid != null && ids.indexOf(nid) === -1) ids.push(nid);
   }
   return ids;
 }
@@ -3252,9 +3271,10 @@ function adjacentNetworksFootprint(game, islandId, r, c, w, h, infraType) {
       // skip neighbors that are inside the footprint
       if (nr >= r && nr < r + h && nc >= c && nc < c + w) continue;
       const t = tiles[nr][nc];
-      if (t && t.building && t.building.id === infraType && t.networkId != null) {
-        if (ids.indexOf(t.networkId) === -1) ids.push(t.networkId);
-      }
+      if (!t || !t.building) continue;
+      let nid = null;
+      if (t.building.id === infraType && t.networkId != null) nid = t.networkId;else if (t.netIds && BUILDINGS[t.building.id] && BUILDINGS[t.building.id].kind === 'junction' && t.netIds[infraType] != null) nid = t.netIds[infraType];
+      if (nid != null && ids.indexOf(nid) === -1) ids.push(nid);
     }
   }
   return ids;
@@ -9531,12 +9551,26 @@ function App() {
         const key = NET_PREFIX[bid] + '_v' + slvl + '_' + NET_MASK_SUFFIX[mask];
         if (drawSprite(ctx, key, x, y, tile, tile)) continue;
       }
-      // Junction sprites: jonction_<a>_<b>_v<level>.
+      // Junction sprites: jonction_<a>_<b>_v<level>. Niveau = max des deux réseaux
+      // porteurs (t.netIds) ; rotation automatique selon l'orientation des raccords.
       if (SPRITES_ENABLED && bdef && bdef.kind === 'junction') {
-        const net = g.networks[isl] && g.networks[isl][t.networkId];
-        const lvl = net && net.level || 1;
-        const jk = bid + '_v' + (net && net.unlimited ? 4 : Math.min(lvl, 3));
-        if (drawSprite(ctx, jk, x, y, tile, tile)) continue;
+        let lvl = 1,
+          unl = false;
+        if (t.netIds) for (const car in t.netIds) {
+          const nn = g.networks[isl] && g.networks[isl][t.netIds[car]];
+          if (nn) {
+            if ((nn.level || 1) > lvl) lvl = nn.level;
+            if (nn.unlimited) unl = true;
+          }
+        }
+        const jk = bid + '_v' + (unl ? 4 : Math.min(lvl, 3));
+        // Le sprite suppose le 1er porteur horizontal : si ses raccords sont verticaux
+        // (et pas horizontaux), on pivote de 90° pour coller au tracé réel.
+        const mA = netConnectMask(tiles, r, c, [bdef.junction[0]]);
+        const aH = mA & 2 || mA & 8,
+          aV = mA & 1 || mA & 4;
+        const ang = aV && !aH ? Math.PI / 2 : 0;
+        if (ang ? drawSpriteRot(ctx, jk, x, y, tile, tile, ang) : drawSprite(ctx, jk, x, y, tile, tile)) continue;
       }
       // Stub réseau SOUS le bâtiment : prolonge la connexion du réseau adjacent sous la
       // tuile du bâtiment (lien continu route/tuyau/câble), et matérialise le raccordement
