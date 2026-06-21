@@ -263,6 +263,45 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 .rd-btn-sec{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;
   padding:7px 14px;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;}
 .rd-btn-sec:hover{border-color:var(--yellow);}
+/* ── Astuce contextuelle (tip à usage unique) ── */
+.tip-popup{position:fixed;z-index:131;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(420px,92vw);max-height:84vh;overflow-y:auto;background:var(--panel);
+  border:1px solid var(--green);border-radius:12px;box-shadow:0 18px 60px rgba(0,0,0,.65);
+  padding:18px 20px;display:flex;flex-direction:column;gap:9px;}
+.tip-head{display:flex;align-items:center;gap:11px;}
+.tip-icon{font-size:1.9rem;line-height:1;flex-shrink:0;}
+.tip-titles{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.tip-kicker{font-family:'Bebas Neue',sans-serif;font-size:.7rem;letter-spacing:.12em;color:var(--green);}
+.tip-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.12rem;color:var(--ink);line-height:1.1;}
+.tip-body{display:flex;flex-direction:column;gap:7px;}
+.tip-body p{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:.93rem;line-height:1.32;color:var(--ink-dim);}
+.tip-body p b,.tip-body p strong{color:var(--ink);font-weight:700;}
+.tip-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px;}
+.tip-dismiss{background:none;border:none;color:var(--ink-dim);font-family:'Barlow Condensed',sans-serif;
+  font-size:.76rem;cursor:pointer;text-decoration:underline;padding:0;}
+.tip-dismiss:hover{color:#ff8079;}
+.tip-ok{background:var(--green);color:#0c1a0c;border:none;border-radius:6px;padding:8px 22px;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;}
+.tip-ok:hover{filter:brightness(1.08);}
+@media (max-width:480px){.tip-popup{padding:15px 16px;}.tip-title{font-size:1.02rem;}.tip-body p{font-size:.88rem;}}
+/* ── Glossaire d'aide (toutes les astuces) ── */
+.help-btn{margin-left:6px;}
+.help-list{gap:12px;}
+.help-section-title{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.08em;
+  color:var(--yellow);margin-top:4px;border-bottom:1px solid var(--line);padding-bottom:3px;}
+.help-tut{display:flex;flex-direction:column;gap:5px;}
+.help-tut-row{display:flex;align-items:flex-start;gap:8px;}
+.help-tut-num{flex-shrink:0;width:18px;height:18px;border-radius:50%;background:var(--panel-2);
+  border:1px solid var(--line);color:var(--green);font-family:'Bebas Neue',sans-serif;font-size:.72rem;
+  display:flex;align-items:center;justify-content:center;}
+.help-tut-goal{font-family:'Barlow Condensed',sans-serif;font-size:.86rem;color:var(--ink-dim);line-height:1.25;}
+.help-card{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;
+  display:flex;flex-direction:column;gap:5px;}
+.help-card-head{display:flex;align-items:center;gap:8px;}
+.help-card-icon{font-size:1.15rem;line-height:1;}
+.help-card-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.95rem;color:var(--ink);}
+.help-card-body{display:flex;flex-direction:column;gap:4px;}
+.help-card-body p{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:.84rem;line-height:1.28;color:var(--ink-dim);}
 .rp-head{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line);}
 .rp-title{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.06em;color:var(--ink);}
 .rp-close{margin-left:auto;background:none;border:none;color:var(--ink-dim);font-size:1.3rem;
@@ -2960,12 +2999,12 @@ function ensureSlotsInitialized() {
   }
   return active;
 }
-const SAVE_VERSION = 11;
+const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 33;
-const GAME_VERSION = 'Alpha 10.8';
+const GAME_BUILD = 34;
+const GAME_VERSION = 'Alpha 10.9';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -4669,6 +4708,195 @@ function isTechFlagConfirmed(game, flag) {
 }
 const isTerrainRepairUnlocked = game => isTechFlagConfirmed(game, 'terrainRepair');
 const isTerrainExtendUnlocked = game => isTechFlagConfirmed(game, 'terrainExtend');
+
+// ====== ASTUCES CONTEXTUELLES (tips à usage unique) ======
+// Chaque mécanique est expliquée la première fois qu'elle devient pertinente.
+// `when(game)` = la condition de déclenchement (vraie quand la mécanique apparaît).
+// Chaque astuce ne s'affiche qu'une fois : son id est mémorisé dans game.tipsSeen
+// (persisté par slot). Pour ajouter une astuce : ajouter une entrée ici. Pas d'autre
+// code à toucher.
+// Un bâtiment dont l'id est dans `ids` existe quelque part dans l'archipel.
+function tipAnyPlaced(game, ids) {
+  const set = Array.isArray(ids) ? ids : [ids];
+  for (const def of ISLAND_TERRAINS) {
+    const tiles = game.islands && game.islands[def.id];
+    if (!tiles) continue;
+    for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
+      const b = tiles[r] && tiles[r][c] && tiles[r][c].building;
+      if (b && set.indexOf(b.id) !== -1) return true;
+    }
+  }
+  return false;
+}
+// `pred(energyObj)` est vrai pour au moins une île.
+function tipAnyEnergy(game, pred) {
+  const e = game.energy || {};
+  for (const k in e) if (pred(e[k] || {})) return true;
+  return false;
+}
+// Au moins un nœud de recherche (hors nœud de départ) est prêt à valider ou validé.
+function tipResearchActionable(game) {
+  const ns = game.techTree && game.techTree.nodes || [];
+  for (const n of ns) {
+    if (n.id === 1) continue;
+    if (n.status === 'condition_ok' || n.status === 'confirmed') return true;
+  }
+  return false;
+}
+// Au moins un réseau (route/tuyau/câble) est saturé : sa demande dépasse son débit.
+function tipAnyNetworkSaturated(game) {
+  const ns = game.netSaturated || {};
+  for (const k in ns) if (Array.isArray(ns[k]) && ns[k].length) return true;
+  return false;
+}
+// Au moins un bâtiment est posé mais relié à aucun réseau (flag disc) — il ne produit rien.
+function tipAnyDisconnected(game) {
+  for (const def of ISLAND_TERRAINS) {
+    const tiles = game.islands && game.islands[def.id];
+    if (!tiles) continue;
+    for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
+      const b = tiles[r] && tiles[r][c] && tiles[r][c].building;
+      if (b && b.disc === true) return true;
+    }
+  }
+  return false;
+}
+const GAME_TIPS = [{
+  id: 'bienvenue',
+  icon: '🏝️',
+  title: 'Bienvenue sur l\'archipel',
+  body: ['Votre but : <b>extraire</b> des ressources, les <b>acheminer</b> au port par des réseaux, les <b>transformer</b> en produits, puis <b>livrer</b> et <b>chercher</b> pour débloquer de nouveaux bâtiments et de nouvelles îles.', 'Le bandeau en haut vous guide pas à pas pour vos premières constructions.', 'Trois réseaux relient tout : la <b>route</b> (solides), le <b>tuyau</b> (liquides) et le <b>câble</b> (électricité).'],
+  when: () => true
+}, {
+  id: 'recherche',
+  icon: '🔬',
+  title: 'La recherche',
+  body: ['Ouvrez le panneau <b>Recherche</b> (🔬). Chaque nœud demande des ressources livrées au port pour débloquer des bâtiments ou des îles.', 'Trois façons de valider : <b>automatique</b> (dès les ressources réunies), <b>manuel</b> (bouton Confirmer) ou <b>livraison</b> (acheminer un lot par bateau).', 'Une recherche prête à valider apparaît en jaune.'],
+  when: g => tipResearchActionable(g)
+}, {
+  id: 'transport',
+  icon: '🚢',
+  title: 'Transport inter-îles',
+  body: ['Une nouvelle île est accessible ! Chaque île a son <b>port</b>. Reliez vos bâtiments au port par la route, puis configurez les <b>liaisons</b> dans le panneau Port.', 'Les cargos transportent des <b>lots</b> entre deux îles à intervalle régulier. Un liquide n\'est transportable que si un <b>tuyau</b> relie sa production au port.'],
+  when: g => !!(g.islandUnlocked && g.islandUnlocked[2])
+}, {
+  id: 'energie',
+  icon: '⚡',
+  title: 'L\'énergie',
+  body: ['Certains bâtiments consomment de l\'<b>électricité</b>. Il faut en produire assez (éolienne, centrale…) pour couvrir la demande.', 'L\'électricité est partagée à l\'échelle de l\'<b>île entière</b> : le bilan (production − consommation) s\'affiche en haut, avec la pastille 🔋.', 'Ouvrez le panneau <b>Énergie</b> pour voir le détail et la demande non servie.'],
+  when: g => tipAnyEnergy(g, e => (e.demand || 0) > 0 || (e.produced || 0) > 0)
+}, {
+  id: 'deficit',
+  icon: '🪫',
+  title: 'Déficit d\'énergie',
+  body: ['Votre production ne couvre plus la consommation : des bâtiments vont être <b>coupés</b>.', 'Dans le panneau Énergie, choisissez comment l\'électricité est rationnée : par <b>priorité</b>, en <b>partage équitable</b>, ou de façon <b>proportionnelle</b>.', 'Ajoutez des producteurs, ou stockez le surplus dans un <b>accumulateur</b> pour absorber les pics.'],
+  when: g => tipAnyEnergy(g, e => (e.balance || 0) < -1e-6)
+}, {
+  id: 'tuyaux',
+  icon: '💧',
+  title: 'Les liquides',
+  body: ['Vous produisez un <b>liquide</b> (eau, pétrole…). Les liquides circulent uniquement par le réseau <b>tuyau</b>, pas par la route.', 'Pour exporter un liquide vers une autre île, le tuyau doit relier sa production directement au <b>port</b>.'],
+  when: g => tipAnyPlaced(g, ['pompe_eau', 'pompe_eau_v2', 'puits_petrole'])
+}, {
+  id: 'reseau_sature',
+  icon: '🚦',
+  title: 'Réseau saturé',
+  body: ['Un réseau transporte plus que son débit ne le permet : le flux est <b>bridé</b> et les bâtiments concernés tournent au ralenti.', 'Sélectionnez le réseau et <b>améliorez son niveau</b> (V2, V3…) pour augmenter le débit.', 'Vous pouvez aussi régler la <b>priorité de flux</b> de chaque bâtiment (haute / normale / basse) pour servir l\'essentiel d\'abord.'],
+  when: g => tipAnyNetworkSaturated(g)
+}, {
+  id: 'batiment_deconnecte',
+  icon: '🔌',
+  title: 'Bâtiment déconnecté',
+  body: ['Un bâtiment est posé mais n\'est relié à <b>aucun réseau</b> : il ne produit rien et ne reçoit rien.', 'Reliez-le au port par une <b>route</b> (et, selon ses besoins, par un <b>tuyau</b> pour les liquides ou un <b>câble</b> pour l\'électricité).'],
+  when: g => (!g.tutorial || !g.tutorial.active) && tipAnyDisconnected(g)
+}, {
+  id: 'jonctions',
+  icon: '🔀',
+  title: 'Les jonctions',
+  body: ['Les <b>jonctions</b> laissent deux réseaux se croiser sur la même tuile <b>sans se connecter</b> (ex. une route qui passe au-dessus d\'un câble).', 'Une seule sorte de jonction par île. Pratique quand la place manque.'],
+  when: g => isBuildingUnlocked(g, 'jonction_route_cable')
+}, {
+  id: 'upgrade_vs_v2',
+  icon: '⬆️',
+  title: 'Améliorer ou passer en V2 ?',
+  body: ['Deux progressions différentes coexistent. <b>Améliorer sur place</b> (mode Améliorer) monte le <b>même</b> bâtiment d\'un niveau : plus de production sur la même tuile.', 'Une <b>version V2</b> (ex. Four Fer V2) est un <b>nouveau</b> bâtiment, avec sa propre recette : il faut le construire à la place de l\'ancien.', 'L\'espace au sol étant limité, améliorer sur place est souvent le meilleur choix.'],
+  when: g => isBuildingUnlocked(g, 'four_fer_v2')
+}, {
+  id: 'accumulateur',
+  icon: '🔋',
+  title: 'L\'accumulateur',
+  body: ['L\'<b>accumulateur</b> stocke le surplus d\'électricité quand vous produisez plus que nécessaire, et le restitue en cas de <b>déficit</b>.', 'Idéal pour les producteurs irréguliers ou les pics de consommation. On peut l\'améliorer pour augmenter sa capacité.'],
+  when: g => isBuildingUnlocked(g, 'accumulateur')
+}, {
+  id: 'nucleaire',
+  icon: '☢️',
+  title: 'La filière nucléaire',
+  body: ['Une longue chaîne s\'ouvre : mine d\'uranium → broyage → yellow cake → enrichissement → <b>Centrale Nucléaire</b>.', 'La centrale doit être reliée au <b>câble</b> pour fournir de l\'électricité, et alimentée en continu : son <b>combustible se consomme en permanence</b>.', 'Son démarrage est progressif (plusieurs minutes) — prévoyez la logistique à l\'avance.'],
+  when: g => isBuildingUnlocked(g, 'mine_uranium')
+}, {
+  id: 'non_stockable',
+  icon: '💧',
+  title: 'Ressource non stockable',
+  body: ['L\'<b>eau froide</b> (produite par le refroidisseur) ne se stocke pas : elle est consommée dans le tick même où elle est produite.', 'Le débit de production doit donc être suffisant <b>en continu</b> ; un surplus est simplement perdu, un manque coupe le bâtiment alimenté.'],
+  when: g => tipAnyPlaced(g, ['refroidisseur'])
+}, {
+  id: 'irradie',
+  icon: '♻️',
+  title: 'Matériaux irradiés & réseau illimité',
+  body: ['La Centrale Nucléaire peut <b>irradier</b> des matériaux (béton armé, acier, câble).', 'Avec 10 000 unités d\'un matériau irradié, un réseau passe en <b>débit illimité</b> : plus aucune limite de flux, plus jamais de saturation sur ce réseau.'],
+  when: g => isBuildingUnlocked(g, 'centrale_nucleaire')
+}, {
+  id: 'antenne',
+  icon: '📡',
+  title: 'L\'antenne T5',
+  body: ['L\'<b>antenne</b> double la production des <b>8 tuiles adjacentes</b> (montée en puissance progressive jusqu\'à ×3 d\'effet).', 'Elle consomme 512 kW en continu : placez-la au centre d\'un groupe de bâtiments clés pour maximiser le bonus.'],
+  when: g => isBuildingUnlocked(g, 'antenne')
+}, {
+  id: 'reparer',
+  icon: '🛠️',
+  title: 'Réparer le terrain',
+  body: ['Vous pouvez désormais <b>réparer</b> les tuiles obstacle pour les rendre constructibles.', 'Chaque réparation coûte plus cher que la précédente : l\'espace au sol reste votre ressource la plus précieuse.'],
+  when: g => isTerrainRepairUnlocked(g)
+}, {
+  id: 'etendre',
+  icon: '🏗️',
+  title: 'Étendre le terrain',
+  body: ['Le <b>remblai</b> transforme une tuile d\'eau côtière en terre constructible.', 'Comme la réparation, le coût augmente à chaque extension. À réserver aux emplacements vraiment stratégiques.'],
+  when: g => isTerrainExtendUnlocked(g)
+}];
+const TIP_BY_ID = {};
+for (const t of GAME_TIPS) TIP_BY_ID[t.id] = t;
+// Marque comme « déjà vues » toutes les astuces dont la condition est déjà remplie.
+// Appelé au chargement d'une partie et après un rattrapage hors-ligne, pour ne pas
+// noyer le joueur sous une avalanche d'astuces accumulées.
+function primeTipsSeen(game) {
+  if (!game.tipsSeen) game.tipsSeen = {};
+  for (const t of GAME_TIPS) {
+    try {
+      if (t.when(game)) game.tipsSeen[t.id] = true;
+    } catch (e) {}
+  }
+}
+// Renvoie l'id de la prochaine astuce à montrer (non vue + condition remplie), en la
+// marquant vue. Renvoie null si aucune. Ne fait rien si les astuces sont désactivées.
+function nextPendingTip(game) {
+  if (game.tipsEnabled === false) return null;
+  if (!game.tipsSeen) game.tipsSeen = {};
+  for (const t of GAME_TIPS) {
+    if (game.tipsSeen[t.id]) continue;
+    let ok = false;
+    try {
+      ok = !!t.when(game);
+    } catch (e) {
+      ok = false;
+    }
+    if (ok) {
+      game.tipsSeen[t.id] = true;
+      return t.id;
+    }
+  }
+  return null;
+}
 function evaluateTechTree(game) {
   const tt = game.techTree;
   if (!tt) return false;
@@ -4972,7 +5200,8 @@ function Hud({
   onSave,
   invOpen,
   onToggleInv,
-  onOpenOptions
+  onOpenOptions,
+  onOpenHelp
 }) {
   // Bilan « réel vs demandé » : produit (générateurs + décharge batterie) − demande totale.
   // Négatif = déficit réel (des bâtiments sont coupés), même si la batterie tampon un instant.
@@ -5001,7 +5230,13 @@ function Hud({
     title: "Options"
   }, React.createElement("span", {
     className: "gear"
-  }, "⚙"), React.createElement("span", null, "Options")), React.createElement(IslandSelector, {
+  }, "⚙"), React.createElement("span", null, "Options")), React.createElement("button", {
+    className: "options-btn help-btn",
+    onClick: onOpenHelp,
+    title: "Aide \u2014 toutes les astuces"
+  }, React.createElement("span", {
+    className: "gear"
+  }, "?"), React.createElement("span", null, "Aide")), React.createElement(IslandSelector, {
     current: currentIsland,
     onSelect: onSelectIsland,
     unlocked: islandUnlocked
@@ -6378,6 +6613,45 @@ function NetworkPanel({
     className: "ip-sub"
   }, formatCost(unlInfo.cost) || '—'))));
 }
+function TipPopup({
+  tip,
+  onClose,
+  onDisableAll
+}) {
+  if (!tip) return null;
+  const body = Array.isArray(tip.body) ? tip.body : [tip.body];
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "research-backdrop",
+    onClick: onClose
+  }), React.createElement("div", {
+    className: "tip-popup"
+  }, React.createElement("div", {
+    className: "tip-head"
+  }, React.createElement("span", {
+    className: "tip-icon"
+  }, tip.icon || '💡'), React.createElement("div", {
+    className: "tip-titles"
+  }, React.createElement("span", {
+    className: "tip-kicker"
+  }, "Astuce"), React.createElement("span", {
+    className: "tip-title"
+  }, tip.title))), React.createElement("div", {
+    className: "tip-body"
+  }, body.map((p, i) => React.createElement("p", {
+    key: i,
+    dangerouslySetInnerHTML: {
+      __html: p
+    }
+  }))), React.createElement("div", {
+    className: "tip-foot"
+  }, React.createElement("button", {
+    className: "tip-dismiss",
+    onClick: onDisableAll
+  }, "Ne plus afficher les astuces"), React.createElement("button", {
+    className: "tip-ok",
+    onClick: onClose
+  }, "Compris"))));
+}
 function ResearchDonePopup({
   info,
   onClose,
@@ -6550,9 +6824,12 @@ function OptionsModal({
   dev,
   showLevels,
   fastUpgrade,
+  tipsEnabled,
   onToggleFastUpgrade,
   onToggleDev,
   onToggleLevels,
+  onToggleTips,
+  onResetTips,
   onOpenSaves,
   onClose
 }) {
@@ -6632,7 +6909,10 @@ function OptionsModal({
     title: "Fermer"
   }, "\xD7")), React.createElement("div", {
     className: "slot-list"
-  }, toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Am\xE9lioration imm\xE9diate", "En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)", fastUpgrade, onToggleFastUpgrade), toggleRow("Mode d\xE9veloppeur", "Construction et am\xE9liorations gratuites", dev, onToggleDev, 'dev'), React.createElement("button", {
+  }, toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Am\xE9lioration imm\xE9diate", "En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)", fastUpgrade, onToggleFastUpgrade), toggleRow("Astuces", "Afficher une explication \xE0 chaque nouvelle m\xE9canique", tipsEnabled !== false, onToggleTips), React.createElement("button", {
+    className: "slot-new opt-fullbtn",
+    onClick: onResetTips
+  }, "💡 Revoir les astuces"), toggleRow("Mode d\xE9veloppeur", "Construction et am\xE9liorations gratuites", dev, onToggleDev, 'dev'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onOpenSaves
   }, uiIcon('sauvegarde', "💾"), " Emplacements de sauvegarde"), React.createElement("div", {
@@ -6648,6 +6928,58 @@ function OptionsModal({
     onClick: checkUpdate,
     disabled: upd.state === 'checking'
   }, "Vérifier les mises à jour")), updStatus())));
+}
+function HelpPanel({
+  onClose
+}) {
+  const stripHtml = s => s.replace(/<[^>]+>/g, '');
+  const tutRows = TUTORIAL_STEPS.map((st, i) => React.createElement("div", {
+    className: "help-tut-row",
+    key: i
+  }, React.createElement("span", {
+    className: "help-tut-num"
+  }, i + 1), React.createElement("span", {
+    className: "help-tut-goal"
+  }, st.goal)));
+  const tipCards = GAME_TIPS.map(t => {
+    const body = Array.isArray(t.body) ? t.body : [t.body];
+    return React.createElement("div", {
+      className: "help-card",
+      key: t.id
+    }, React.createElement("div", {
+      className: "help-card-head"
+    }, React.createElement("span", {
+      className: "help-card-icon"
+    }, t.icon || '💡'), React.createElement("span", {
+      className: "help-card-title"
+    }, t.title)), React.createElement("div", {
+      className: "help-card-body"
+    }, body.map((p, i) => React.createElement("p", {
+      key: i
+    }, stripHtml(p)))));
+  });
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "slot-backdrop",
+    onClick: onClose
+  }), React.createElement("div", {
+    className: "slot-panel"
+  }, React.createElement("div", {
+    className: "slot-head"
+  }, React.createElement("span", {
+    className: "slot-title"
+  }, "\u2754 Aide & astuces"), React.createElement("button", {
+    className: "slot-close",
+    onClick: onClose,
+    title: "Fermer"
+  }, "\xD7")), React.createElement("div", {
+    className: "slot-list help-list"
+  }, React.createElement("div", {
+    className: "help-section-title"
+  }, "Premiers pas (tutoriel \xEEle 1)"), React.createElement("div", {
+    className: "help-tut"
+  }, tutRows), React.createElement("div", {
+    className: "help-section-title"
+  }, "Toutes les m\xE9caniques"), tipCards)));
 }
 function TutorialBanner({
   step,
@@ -6910,6 +7242,8 @@ function App() {
         active: true,
         step: 0
       },
+      tipsSeen: {},
+      tipsEnabled: true,
       mode: 'difficile',
       saveTimer: null
     };
@@ -6942,6 +7276,7 @@ function App() {
   const [buildOpen, setBuildOpen] = useState(false);
   const [netOpen, setNetOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [offlineReport, setOfflineReport] = useState(null);
   const [tutorialStep, setTutorialStep] = useState(-1);
   const [researchPending, setResearchPending] = useState(false);
@@ -6956,9 +7291,13 @@ function App() {
   const [resPop, setResPop] = useState(null);
   const [network, setNetwork] = useState(null);
   const [researchPopup, setResearchPopup] = useState(null);
+  const [activeTip, setActiveTip] = useState(null);
+  const activeTipRef = useRef(null);
+  const needModeRef = useRef(false);
   const [dev, setDev] = useState(false);
   const [showLevels, setShowLevels] = useState(true);
   const [fastUpgrade, setFastUpgrade] = useState(false);
+  const [tipsEnabled, setTipsEnabled] = useState(true);
   const [canvasKey, setCanvasKey] = useState(0);
   const rafRef = useRef(null);
   const [, bumpHud] = useReducer(c => c + 1, 0);
@@ -7110,7 +7449,11 @@ function App() {
       },
       extensionsCount: {
         ...g.extensionsCount
-      }
+      },
+      tipsSeen: {
+        ...g.tipsSeen
+      },
+      tipsEnabled: g.tipsEnabled !== false
     };
   }
   function writeSave() {
@@ -7213,7 +7556,7 @@ function App() {
     } catch (e) {
       return false;
     }
-    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11].indexOf(data.version) === -1) return false;
+    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].indexOf(data.version) === -1) return false;
     const g = gameRef.current;
     // Extension des mers (v11) : les îles sont désormais entourées de SEA_PAD tuiles d'eau.
     // Les sauvegardes antérieures (coordonnées non décalées) sont translatées de +SEA_PAD.
@@ -7461,6 +7804,10 @@ function App() {
       active: false,
       step: 0
     };
+    g.tipsSeen = data.tipsSeen && typeof data.tipsSeen === 'object' ? {
+      ...data.tipsSeen
+    } : {};
+    g.tipsEnabled = data.tipsEnabled !== false;
     return true;
   }
   // Rejoue la production manquée pendant une absence (production hors-ligne / idle).
@@ -7493,6 +7840,7 @@ function App() {
     // Évite une avalanche de pop-ups/recherches accumulées pendant l'absence.
     g.researchReady = [];
     g.researchNotify = [];
+    primeTipsSeen(g);
     g.lastSave = Date.now();
     g.lastActiveTs = Date.now();
     // Notification « Bon retour » seulement après >= 1 min d'absence ; en deçà, la
@@ -7551,6 +7899,45 @@ function App() {
     if (g.tutorial) g.tutorial.active = false;
     setTutorialStep(-1);
     showToast('Tutoriel passé — bâtiments débloqués', 'var(--ink-dim)');
+    markDirty();
+    scheduleSave();
+  }
+  const showTip = id => {
+    activeTipRef.current = id;
+    setActiveTip(id);
+  };
+  const closeTip = () => {
+    activeTipRef.current = null;
+    setActiveTip(null);
+  };
+  // Affiche la prochaine astuce contextuelle si une mécanique vient d'apparaître.
+  // Appelé chaque frame. Une seule astuce à la fois ; rien tant qu'une est ouverte
+  // ou que la modale de choix de mode bloque le démarrage.
+  function checkTips() {
+    const g = gameRef.current;
+    if (g.tipsEnabled === false) return;
+    if (activeTipRef.current || needModeRef.current) return;
+    const id = nextPendingTip(g);
+    if (id) {
+      showTip(id);
+      markDirty();
+      scheduleSave();
+    }
+  }
+  function toggleTips() {
+    const g = gameRef.current;
+    g.tipsEnabled = g.tipsEnabled === false;
+    setTipsEnabled(g.tipsEnabled);
+    showToast(g.tipsEnabled ? '💡 Astuces activées' : 'Astuces désactivées', 'var(--ink-dim)');
+    markDirty();
+    scheduleSave();
+  }
+  function resetTips() {
+    const g = gameRef.current;
+    g.tipsSeen = {};
+    g.tipsEnabled = true;
+    setTipsEnabled(true);
+    showToast('💡 Astuces réinitialisées', 'var(--green)');
     markDirty();
     scheduleSave();
   }
@@ -9067,6 +9454,11 @@ function App() {
     // Don't fire research-ready toasts for nodes already met at load time.
     gameRef.current.researchReady = [];
     gameRef.current.researchNotify = [];
+    // Astuces : sur une partie chargée, on marque comme déjà vues celles dont la
+    // condition est déjà remplie (pas d'avalanche). Sur une partie neuve, l'astuce
+    // de bienvenue s'affichera naturellement à la première frame.
+    if (loaded) primeTipsSeen(gameRef.current);
+    setTipsEnabled(gameRef.current.tipsEnabled !== false);
     layout();
     centerCam();
     if (gameRef.current.lastSave === 0) gameRef.current.lastSave = Date.now();
@@ -9087,6 +9479,10 @@ function App() {
     layout();
     gameRef.current.dirty = true;
   }, [tutorialStep >= 0]);
+  // L'astuce de bienvenue ne doit pas s'afficher tant que la modale de choix de mode bloque.
+  useEffect(() => {
+    needModeRef.current = needMode;
+  }, [needMode]);
   useEffect(() => {
     const canvasEl = canvasRef.current;
     const ctxValid = () => {
@@ -9135,6 +9531,7 @@ function App() {
       }
       g.animClock = (g.animClock || 0) + 1;
       checkTutorial();
+      checkTips();
       // Keep redrawing smoothly while a cargo boat is animating near the current port.
       if (boatActiveNearPort(g)) g.dirty = true;
       if (g.dirty && ctxValid()) {
@@ -9307,7 +9704,8 @@ function App() {
       setFastUpgrade(!!g.ui.fastUpgrade);
       setDev(g.ui.dev);
       setOptionsOpen(true);
-    }
+    },
+    onOpenHelp: () => setHelpOpen(true)
   }), tutorialStep >= 0 && React.createElement(TutorialBanner, {
     step: tutorialStep,
     total: TUTORIAL_STEPS.length,
@@ -9432,14 +9830,19 @@ function App() {
     dev: dev,
     showLevels: showLevels,
     fastUpgrade: fastUpgrade,
+    tipsEnabled: tipsEnabled,
     onToggleFastUpgrade: toggleFastUpgrade,
     onToggleDev: toggleDev,
     onToggleLevels: toggleLevels,
+    onToggleTips: toggleTips,
+    onResetTips: resetTips,
     onOpenSaves: () => {
       setOptionsOpen(false);
       setSlotOpen(true);
     },
     onClose: () => setOptionsOpen(false)
+  }), helpOpen && React.createElement(HelpPanel, {
+    onClose: () => setHelpOpen(false)
   }), offlineReport && React.createElement(OfflineModal, {
     report: offlineReport,
     onClose: () => setOfflineReport(null)
@@ -9471,6 +9874,18 @@ function App() {
     onOpenResearch: () => {
       setResearchPopup(null);
       setResearchOpen(true);
+    }
+  }), activeTip && React.createElement(TipPopup, {
+    tip: TIP_BY_ID[activeTip],
+    onClose: closeTip,
+    onDisableAll: () => {
+      const g = gameRef.current;
+      g.tipsEnabled = false;
+      setTipsEnabled(false);
+      closeTip();
+      showToast('Astuces désactivées — réactivables dans les options', 'var(--ink-dim)');
+      markDirty();
+      scheduleSave();
     }
   }));
 }
