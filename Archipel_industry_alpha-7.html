@@ -495,6 +495,7 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .info-panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
 .ip-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
 .ip-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0;border:1px solid rgba(255,255,255,.15);}
+.ip-sprite{width:20px;height:20px;flex-shrink:0;image-rendering:pixelated;image-rendering:crisp-edges;}
 .ip-name{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.04em;
   color:var(--ink);line-height:1;flex:1;}
 .ip-level{font-family:'DM Mono',monospace;font-size:.66rem;color:#0d0d1a;background:rgba(76,175,80,.95);
@@ -3050,8 +3051,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 47;
-const GAME_VERSION = 'Alpha 10.22';
+const GAME_BUILD = 48;
+const GAME_VERSION = 'Alpha 10.23';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -5946,12 +5947,22 @@ function InfoPanel({
     }
   }, React.createElement("div", {
     className: "ip-head"
-  }, React.createElement("span", {
-    className: "ip-swatch",
-    style: {
-      background: b.color
-    }
-  }), React.createElement("span", {
+  }, (() => {
+    // Vignette du bâtiment : sprite si disponible, sinon pastille de couleur.
+    const _sk = SPRITES_ENABLED ? buildingSpriteKey(info.id, upg) : null;
+    const _sd = _sk && SPRITE_DATA[_sk];
+    return _sd ? React.createElement("img", {
+      className: "ip-sprite",
+      src: _sd,
+      alt: "",
+      draggable: false
+    }) : React.createElement("span", {
+      className: "ip-swatch",
+      style: {
+        background: b.color
+      }
+    });
+  })(), React.createElement("span", {
     className: "ip-name"
   }, b.name), upgradable && React.createElement("span", {
     className: "ip-level"
@@ -7800,7 +7811,12 @@ function App() {
       tipsSeen: {
         ...g.tipsSeen
       },
-      tipsEnabled: g.tipsEnabled !== false
+      tipsEnabled: g.tipsEnabled !== false,
+      // Préférences d'affichage (Options) — persistées pour survivre aux mises à jour.
+      uiPrefs: {
+        showLevels: (g.ui && g.ui.showLevels) !== false,
+        fastUpgrade: !!(g.ui && g.ui.fastUpgrade)
+      }
     };
   }
   function writeSave() {
@@ -8173,6 +8189,16 @@ function App() {
       ...data.tipsSeen
     } : {};
     g.tipsEnabled = data.tipsEnabled !== false;
+    // Restaure les préférences d'affichage (Options) sauvegardées.
+    if (!g.ui) g.ui = {
+      tool: null,
+      dev: false,
+      showLevels: true,
+      fastUpgrade: false
+    };
+    const up = data.uiPrefs || {};
+    g.ui.showLevels = up.showLevels !== false;
+    g.ui.fastUpgrade = !!up.fastUpgrade;
     return true;
   }
   // Rejoue la production manquée pendant une absence (production hors-ligne / idle).
@@ -9093,6 +9119,7 @@ function App() {
     g.ui.fastUpgrade = !g.ui.fastUpgrade;
     setFastUpgrade(g.ui.fastUpgrade);
     showToast(g.ui.fastUpgrade ? '⬆ Amélioration immédiate activée' : 'Amélioration immédiate désactivée', 'var(--ink-dim)');
+    scheduleSave();
   }
   function clampPan() {
     const cam = gameRef.current.cam;
@@ -9852,6 +9879,9 @@ function App() {
     // de bienvenue s'affichera naturellement à la première frame.
     if (loaded) primeTipsSeen(gameRef.current);
     setTipsEnabled(gameRef.current.tipsEnabled !== false);
+    // Synchronise l'état React des préférences d'affichage avec la sauvegarde.
+    setShowLevels(gameRef.current.ui.showLevels !== false);
+    setFastUpgrade(!!gameRef.current.ui.fastUpgrade);
     layout();
     centerCam();
     if (gameRef.current.lastSave === 0) gameRef.current.lastSave = Date.now();
