@@ -1,7 +1,7 @@
 {
-  "build": 40,
-  "version": "Alpha 10.15",
+  "build": 41,
+  "version": "Alpha 10.16",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.15 — Difficile : flux réseau ÷2 (V1=64, V2=512) (#40)"
+  "notes": "Alpha 10.16 — champs port : vider le 0 au focus (#41)"
 }
