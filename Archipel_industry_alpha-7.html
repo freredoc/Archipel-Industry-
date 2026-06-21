@@ -7944,7 +7944,16 @@ function App() {
     g.tradeBlockDest = {};
     if (data.tradeBlockDest) for (const sid in data.tradeBlockDest) {
       const dests = data.tradeBlockDest[sid] || {};
-      for (const did in dests) if (dests[did]) (g.tradeBlockDest[+sid] || (g.tradeBlockDest[+sid] = {}))[+did] = true;
+      for (const did in dests) {
+        const v = dests[did];
+        if (!v) continue;
+        const dmap = {};
+        // Format imbriqué par ressource ; rétro-compat ancien format (v === true = tout interdit).
+        if (v === true) {
+          for (const res of TRADE_RESOURCES) dmap[res] = true;
+        } else for (const res in v) if (v[res]) dmap[res] = true;
+        if (Object.keys(dmap).length) (g.tradeBlockDest[+sid] || (g.tradeBlockDest[+sid] = {}))[+did] = dmap;
+      }
     }
     for (const isl of data.islands || []) {
       const tiles = g.islands[isl.id];
