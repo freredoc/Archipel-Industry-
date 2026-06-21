@@ -3005,8 +3005,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 36;
-const GAME_VERSION = 'Alpha 10.11';
+const GAME_BUILD = 37;
+const GAME_VERSION = 'Alpha 10.12';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -5240,7 +5240,7 @@ function Hud({
     return d !== 0 ? d : a < b ? -1 : 1;
   });
   let canRepair = false;
-  if (repairInfo) {
+  if (repairInfo && !repairInfo.locked) {
     canRepair = true;
     for (const k in repairInfo.cost) if ((resources[k] || 0) < repairInfo.cost[k]) canRepair = false;
   }
@@ -5291,7 +5291,7 @@ function Hud({
     className: "rep-txt"
   }, "R\xE9parer \xCEle ", repairInfo.island), React.createElement("span", {
     className: "rep-cost"
-  }, formatCost(repairInfo.cost))), React.createElement("div", {
+  }, repairInfo.locked ? "verrouillé · recherche" : formatCost(repairInfo.cost))), React.createElement("div", {
     className: "hud-right-stack"
   }, React.createElement("button", {
     className: "research-btn",
@@ -6132,6 +6132,33 @@ function ResearchPanel({
     }, "Requiert : ", (TECH_BY_ID[def.prereq] || {}).name));
   }))));
 }
+// Champ numérique qui accepte la notation scientifique : le texte saisi reste libre
+// pendant la frappe (« 1e6 », « 2,43e8 »…) et n'est converti/validé qu'au blur ou Entrée.
+function NumField({
+  value,
+  onCommit,
+  title,
+  className
+}) {
+  const [txt, setTxt] = useState(null);
+  return React.createElement("input", {
+    className: className,
+    type: "text",
+    inputMode: "text",
+    title: title,
+    value: txt != null ? txt : String(value),
+    onFocus: () => setTxt(String(value)),
+    onChange: e => setTxt(e.target.value),
+    onBlur: e => {
+      const v = Math.floor(parseNum(e.target.value));
+      onCommit(isNaN(v) || v < 0 ? 0 : v);
+      setTxt(null);
+    },
+    onKeyDown: e => {
+      if (e.key === 'Enter') e.target.blur();
+    }
+  });
+}
 function PortPanel({
   game,
   currentIsland,
@@ -6245,19 +6272,15 @@ function PortPanel({
       className: "pp-res-name"
     }, RES_SHORT[res] || res), React.createElement("span", {
       className: "pp-res-stock"
-    }, fmtInt(islandPort[res] || 0), " en stock")), React.createElement("input", {
+    }, fmtInt(islandPort[res] || 0), " en stock")), React.createElement(NumField, {
       className: "pp-c-num",
-      type: "text",
-      inputMode: "text",
       value: cfg.stockCible,
-      onChange: e => onSetCfg(currentIsland, res, 'stockCible', e.target.value),
+      onCommit: v => onSetCfg(currentIsland, res, 'stockCible', v),
       title: "Stock cible (quantit\xE9 \xE0 importer ici)"
-    }), React.createElement("input", {
+    }), React.createElement(NumField, {
       className: "pp-c-num",
-      type: "text",
-      inputMode: "text",
       value: cfg.seuilExport,
-      onChange: e => onSetCfg(currentIsland, res, 'seuilExport', e.target.value),
+      onCommit: v => onSetCfg(currentIsland, res, 'seuilExport', v),
       title: "R\xE9serve locale (on n'exporte que le surplus au-dessus)"
     }), React.createElement("button", {
       className: 'pp-c-tog' + (cfg.interdit ? ' active' : ''),
@@ -9702,11 +9725,15 @@ function App() {
   let repairInfo = null;
   const nextIsl = game.currentIsland + 1;
   const accNode = ISLAND_ACCESS_NODE[nextIsl];
-  if (accNode && !game.islandUnlocked[nextIsl] && game.techTree.nodes[accNode - 1].status === 'condition_ok') {
+  if (accNode && !game.islandUnlocked[nextIsl]) {
+    // Onglet toujours affiché pour l'île suivante ; verrouillé tant que le nœud d'accès
+    // n'est pas prêt à livrer (recherche correspondante non atteinte).
+    const ready = game.techTree.nodes[accNode - 1].status === 'condition_ok';
     repairInfo = {
       island: nextIsl,
       node: accNode,
-      cost: TECH_BY_ID[accNode].delivery || {}
+      cost: TECH_BY_ID[accNode].delivery || {},
+      locked: !ready
     };
   }
   return React.createElement("div", {
