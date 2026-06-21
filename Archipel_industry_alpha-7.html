@@ -140,16 +140,19 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .save-btn:hover{background:#23234a;border-color:#3a3a6a;}
 .save-btn:active{transform:translateY(1px);}
 .save-btn .ago{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-dim);}
-.research-btn{display:flex;align-items:center;gap:5px;background:var(--panel-2);
+.research-btn{position:relative;display:flex;align-items:center;gap:5px;background:var(--panel-2);
   border:1px solid var(--line);color:var(--ink);border-radius:4px;padding:4px 9px;
   cursor:pointer;flex-shrink:0;font-family:'Barlow Condensed',sans-serif;font-size:.72rem;
   letter-spacing:.03em;transition:background .1s,border-color .1s;}
 .research-btn:hover{background:#23234a;border-color:var(--yellow);}
 .research-btn:active{transform:translateY(1px);}
 .research-btn .rlabel{text-transform:uppercase;letter-spacing:.05em;}
-/* Pile verticale à droite du HUD : Recherche placée sous le Port */
-.hud-right-stack{display:flex;flex-direction:column;gap:6px;margin-left:auto;align-items:stretch;flex-shrink:0;max-width:46%;align-self:flex-start;}
-.hud-right-stack .research-btn{width:100%;}
+/* HUD groupé en deux blocs : gauche (Options/Aide/Île) et droite (Réparer/Port/Recherche/Énergie).
+   Sur écran étroit le bloc droit passe à la ligne et comble le vide laissé par « Réparer ». */
+.hud-grp{display:flex;align-items:center;gap:8px;min-width:0;}
+.hud-main{flex-shrink:0;}
+.hud-side{flex-wrap:wrap;gap:6px;margin-left:auto;}
+.hud-side .stocks{flex:0 0 auto;overflow:visible;}
 /* ── Bandeau tutoriel (sous le HUD) ── */
 .tuto-banner{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:7px 12px;
   background:linear-gradient(90deg,rgba(76,175,80,.2),var(--panel-2));border-bottom:1px solid var(--line);}
@@ -670,6 +673,8 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 @media (max-width:760px){
   .hud-brand{display:none;}
   .hud{flex-wrap:wrap;overflow-x:visible;row-gap:6px;}
+  /* Le bloc droit occupe toute la 2ᵉ ligne, aligné à gauche (comble le vide). */
+  .hud-side{margin-left:0;width:100%;}
   .toolbar{flex-wrap:wrap;overflow-x:visible;}
   .build-panel{overflow-x:hidden;max-height:46vh;}
   .tool-group.tabs{margin-left:0;}
@@ -3033,8 +3038,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 44;
-const GAME_VERSION = 'Alpha 10.19';
+const GAME_BUILD = 45;
+const GAME_VERSION = 'Alpha 10.20';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -5042,17 +5047,11 @@ function evaluateTechTree(game) {
       }
     }
     if (node.status === 'available' && nodeCond(game, def)) {
-      if (def.mode === 'auto') {
-        node.status = 'confirmed';
-        applyUnlocks(game, def);
-        if (!game.researchNotify) game.researchNotify = [];
-        game.researchNotify.push(def.id);
-      } else {
-        node.status = 'condition_ok';
-        // Manual/delivery node now ready to confirm — notify the player.
-        if (!game.researchReady) game.researchReady = [];
-        game.researchReady.push(def.id);
-      }
+      // Toutes les recherches demandent désormais une validation manuelle du joueur
+      // (y compris les anciennes 'auto') : on passe en « prêt » et on notifie.
+      node.status = 'condition_ok';
+      if (!game.researchReady) game.researchReady = [];
+      game.researchReady.push(def.id);
       changed = true;
     }
   }
@@ -5061,7 +5060,8 @@ function evaluateTechTree(game) {
 function techConfirm(game, id) {
   const def = TECH_BY_ID[id],
     node = game.techTree.nodes[id - 1];
-  if (!def || !node || node.status !== 'condition_ok' || def.mode !== 'manual') return false;
+  // 'auto' et 'manual' se valident d'un clic ; 'delivery' passe par techDeliver.
+  if (!def || !node || node.status !== 'condition_ok' || def.mode !== 'manual' && def.mode !== 'auto') return false;
   node.status = 'confirmed';
   applyUnlocks(game, def);
   if (!game.researchNotify) game.researchNotify = [];
@@ -5080,6 +5080,19 @@ function techDeliver(game, id) {
   if (!game.researchNotify) game.researchNotify = [];
   game.researchNotify.push(def.id);
   return true;
+}
+// Au moins une recherche est « prête » et réellement validable par le joueur
+// (manuel/auto, ou livraison calibrée). Sert à piloter la pastille de notification.
+function hasPendingResearch(game) {
+  const tt = game.techTree;
+  if (!tt) return false;
+  for (const def of TECH_NODES) {
+    const n = tt.nodes[def.id - 1];
+    if (!n || n.status !== 'condition_ok') continue;
+    if (def.mode === 'delivery' && !def.delivery) continue;
+    return true;
+  }
+  return false;
 }
 function onTutorialStep() {}
 const SHIP_LINKS = ['1-2', '2-3', '3-4', '4-5'];
@@ -5407,7 +5420,9 @@ function Hud({
     className: "hud"
   }, React.createElement("div", {
     className: "hud-brand"
-  }, "ARCHIPEL ", React.createElement("b", null, "INDUSTRY")), React.createElement("button", {
+  }, "ARCHIPEL ", React.createElement("b", null, "INDUSTRY")), React.createElement("div", {
+    className: "hud-grp hud-main"
+  }, React.createElement("button", {
     className: "options-btn",
     onClick: onOpenOptions,
     title: "Options"
@@ -5423,7 +5438,9 @@ function Hud({
     current: currentIsland,
     onSelect: onSelectIsland,
     unlocked: islandUnlocked
-  }), React.createElement("div", {
+  })), React.createElement("div", {
+    className: "hud-grp hud-side"
+  }, React.createElement("div", {
     className: "stocks"
   }, React.createElement("div", {
     className: 'stock energy' + (deficit ? ' deficit' : ' ok'),
@@ -5450,9 +5467,7 @@ function Hud({
     className: "rep-txt"
   }, "R\xE9parer \xCEle ", repairInfo.island), React.createElement("span", {
     className: "rep-cost"
-  }, repairInfo.locked ? "verrouillé · recherche" : formatCost(repairInfo.cost))), React.createElement("div", {
-    className: "hud-right-stack"
-  }, React.createElement("button", {
+  }, repairInfo.locked ? "verrouillé · recherche" : formatCost(repairInfo.cost))), React.createElement("button", {
     className: "research-btn",
     onClick: onOpenPort,
     title: "Configuration du port (commerce)"
@@ -6247,7 +6262,7 @@ function ResearchPanel({
     const reqs = (def.reqs || []).map(r => reqValue(game, r));
     const showReqs = (node.status === 'available' || node.status === 'condition_ok') && reqs.length > 0;
     const isDelivery = node.status === 'condition_ok' && def.mode === 'delivery' && def.delivery;
-    const isManual = node.status === 'condition_ok' && def.mode === 'manual';
+    const isManual = node.status === 'condition_ok' && (def.mode === 'manual' || def.mode === 'auto');
     let canDeliver = false;
     if (isDelivery) {
       canDeliver = true;
@@ -8862,6 +8877,7 @@ function App() {
     if (techDeliver(g, id)) {
       const def = TECH_BY_ID[id];
       showToast('🔬 ' + def.name + ' débloqué', 'var(--green)');
+      setResearchPending(hasPendingResearch(g));
       bumpHud();
       markDirty();
       flushSave();
@@ -8874,6 +8890,7 @@ function App() {
     if (techConfirm(g, id)) {
       const def = TECH_BY_ID[id];
       showToast('🔬 ' + def.name + ' débloqué', 'var(--green)');
+      setResearchPending(hasPendingResearch(g));
       bumpHud();
       markDirty();
       flushSave();
@@ -9777,6 +9794,8 @@ function App() {
     // Don't fire research-ready toasts for nodes already met at load time.
     gameRef.current.researchReady = [];
     gameRef.current.researchNotify = [];
+    // …mais on allume la pastille si des recherches restent à valider (save en cours).
+    setResearchPending(hasPendingResearch(gameRef.current));
     // Astuces : sur une partie chargée, on marque comme déjà vues celles dont la
     // condition est déjà remplie (pas d'avalanche). Sur une partie neuve, l'astuce
     // de bienvenue s'affichera naturellement à la première frame.
@@ -10140,7 +10159,10 @@ function App() {
     currentIsland: game.currentIsland,
     onDeliver: doDeliver,
     onConfirm: doConfirm,
-    onClose: () => setResearchOpen(false)
+    onClose: () => {
+      setResearchOpen(false);
+      setResearchPending(hasPendingResearch(gameRef.current));
+    }
   }), slotOpen && React.createElement(SlotPanel, {
     activeId: getActiveSlotId(),
     onClose: () => setSlotOpen(false),
