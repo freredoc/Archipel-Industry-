@@ -2956,8 +2956,8 @@ const SAVE_VERSION = 11;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 31;
-const GAME_VERSION = 'Alpha 10.6';
+const GAME_BUILD = 32;
+const GAME_VERSION = 'Alpha 10.7';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -8605,6 +8605,32 @@ function App() {
         const lvl = net && net.level || 1;
         const jk = bid + '_v' + (net && net.unlimited ? 4 : Math.min(lvl, 3));
         if (drawSprite(ctx, jk, x, y, tile, tile)) continue;
+      }
+      // Stub réseau SOUS le bâtiment : prolonge la connexion du réseau adjacent sous la
+      // tuile du bâtiment (lien continu route/tuyau/câble), et matérialise le raccordement
+      // (aucun stub = bâtiment non connecté). Ordre tuyau→route→câble (câble au-dessus).
+      if (SPRITES_ENABLED && bdef && bdef.kind !== 'infra' && bdef.kind !== 'junction') {
+        for (const carrier of ['pipe', 'road', 'wire']) {
+          if (!buildingConnectsCarrier(bid, carrier)) continue;
+          let mask = 0,
+            lvl = 1,
+            unl = false;
+          for (const [dr, dc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
+            let nt = tiles[r + dr] && tiles[r + dr][c + dc];
+            if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
+            if (!nt || !nt.building) continue;
+            const nd = BUILDINGS[nt.building.id];
+            const isNet = nt.building.id === carrier || nd && nd.kind === 'junction' && nd.junction && nd.junction.indexOf(carrier) !== -1;
+            if (!isNet) continue;
+            mask |= bit;
+            const nnet = g.networks[isl] && g.networks[isl][nt.networkId];
+            if (nnet) {
+              if ((nnet.level || 1) > lvl) lvl = nnet.level;
+              if (nnet.unlimited) unl = true;
+            }
+          }
+          if (mask) drawSprite(ctx, NET_PREFIX[carrier] + '_v' + (unl ? 4 : Math.min(lvl, 3)) + '_' + NET_MASK_SUFFIX[mask], x, y, tile, tile);
+        }
       }
       const sz = buildingSize(bid);
       drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h);
