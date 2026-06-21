@@ -3027,8 +3027,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 40;
-const GAME_VERSION = 'Alpha 10.15';
+const GAME_BUILD = 41;
+const GAME_VERSION = 'Alpha 10.16';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -6220,7 +6220,21 @@ function NumField({
     inputMode: "text",
     title: title,
     value: txt != null ? txt : String(value),
-    onFocus: () => setTxt(String(value)),
+    onFocus: e => {
+      // Champ à 0 → on le vide pour ne pas avoir à effacer le « 0 » à la main
+      // (sinon on sélectionne tout pour pouvoir remplacer la valeur directement).
+      if (value === 0) {
+        setTxt('');
+      } else {
+        setTxt(String(value));
+        const t = e.target;
+        requestAnimationFrame(() => {
+          try {
+            t.select();
+          } catch (err) {}
+        });
+      }
+    },
     onChange: e => setTxt(e.target.value),
     onBlur: e => {
       const v = Math.floor(parseNum(e.target.value));
