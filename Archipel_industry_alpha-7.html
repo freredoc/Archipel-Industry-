@@ -90,6 +90,18 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   color:var(--ink-dim);background:var(--panel);border:1px solid var(--line);border-radius:4px;
   padding:3px 12px;cursor:pointer;display:flex;align-items:center;gap:7px;flex-shrink:0;}
 .inv-label-btn:hover{border-color:var(--yellow);color:var(--ink);}
+/* Bouton Réparer à gauche d'INVENTAIRE (visible une fois la recherche d'accès atteinte) */
+.inv-repair-btn{display:flex;align-items:center;gap:6px;flex-shrink:0;cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.74rem;letter-spacing:.03em;
+  text-transform:uppercase;color:#7fd98a;background:rgba(76,175,80,.16);border:1px solid #4CAF50;
+  border-radius:4px;padding:3px 11px;animation:repairPulse 1.6s ease-in-out infinite;}
+.inv-repair-btn:hover{background:rgba(76,175,80,.28);}
+.inv-repair-btn:active{transform:translateY(1px);}
+.inv-repair-btn .ui-ico{width:15px;height:15px;}
+@keyframes repairPulse{0%,100%{box-shadow:0 0 0 0 rgba(76,175,80,.0);}50%{box-shadow:0 0 0 2px rgba(76,175,80,.35);}}
+.repair-modal{width:min(380px,94vw);}
+.repair-modal-desc{font-family:'Barlow Condensed',sans-serif;font-size:.84rem;color:var(--ink-dim);
+  line-height:1.35;margin-bottom:9px;}
 .inv-label-btn.open{color:var(--yellow);border-color:rgba(255,209,102,.4);position:sticky;left:0;}
 .inv-count{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-faint);
   background:var(--panel-2);border-radius:8px;padding:0 6px;}
@@ -3038,8 +3050,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 45;
-const GAME_VERSION = 'Alpha 10.20';
+const GAME_BUILD = 46;
+const GAME_VERSION = 'Alpha 10.21';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -5384,6 +5396,7 @@ function Hud({
   islandUnlocked,
   repairInfo,
   onRepair,
+  onShowRepair,
   onOpenPort,
   onEnergy,
   onResClick,
@@ -5458,16 +5471,7 @@ function Hud({
     className: "k"
   }, "\uD83D\uDD0B Batterie"), React.createElement("span", {
     className: "v"
-  }, accPct + "%"))), repairInfo && React.createElement("button", {
-    className: "repair-btn",
-    disabled: !canRepair,
-    onClick: () => onRepair(repairInfo.node),
-    title: 'Réparer le port pour débloquer l\'île ' + repairInfo.island
-  }, uiIcon('reparation', "\uD83D\uDEE0"), React.createElement("span", {
-    className: "rep-txt"
-  }, "R\xE9parer \xCEle ", repairInfo.island), React.createElement("span", {
-    className: "rep-cost"
-  }, repairInfo.locked ? "verrouillé · recherche" : formatCost(repairInfo.cost))), React.createElement("button", {
+  }, accPct + "%"))), React.createElement("button", {
     className: "research-btn",
     onClick: onOpenPort,
     title: "Configuration du port (commerce)"
@@ -5484,10 +5488,17 @@ function Hud({
   })))), (() => {
     // Two states only: collapsed = just the INVENTAIRE button; expanded = all items.
     // The "INVENTAIRE" label itself is the toggle (no separate arrow).
+    // Bouton Réparer (déblocage île suivante) : placé à gauche d'INVENTAIRE, visible
+    // une fois la recherche d'accès atteinte (nœud prêt). Ouvre les infos de réparation.
+    const repairBtn = repairInfo && !repairInfo.locked && React.createElement("button", {
+      className: "inv-repair-btn",
+      onClick: onShowRepair,
+      title: "R\xE9parer le port pour d\xE9bloquer l'\xEEle " + repairInfo.island
+    }, uiIcon('reparation', "🛠"), React.createElement("span", null, "R\xE9parer \xCEle ", repairInfo.island));
     if (!invOpen) {
       return React.createElement("div", {
         className: "inventory collapsed"
-      }, React.createElement("button", {
+      }, repairBtn, React.createElement("button", {
         className: "inv-label-btn",
         onClick: onToggleInv,
         title: "Afficher l'inventaire"
@@ -5526,7 +5537,7 @@ function Hud({
     return React.createElement("div", {
       className: "inventory open",
       title: "Inventaire de l'\xEEle (port)"
-    }, React.createElement("button", {
+    }, repairBtn, React.createElement("button", {
       className: "inv-label-btn open",
       onClick: onToggleInv,
       title: "Replier l'inventaire"
@@ -5534,6 +5545,45 @@ function Hud({
       className: "inv-empty"
     }, "\u2014 vide \u2014") : items);
   })());
+}
+// Infos de r\u00e9paration (d\u00e9blocage de l'\u00eele suivante) \u2014 ouvert depuis le bouton \u00e0 gauche
+// d'INVENTAIRE. Affiche le co\u00fbt en ressources et le bouton \u00ab R\u00e9parer \u00bb (livraison au port).
+function RepairModal({
+  repairInfo,
+  resources,
+  onRepair,
+  onClose
+}) {
+  const cost = repairInfo.cost || {};
+  let canRepair = Object.keys(cost).length > 0;
+  for (const k in cost) if ((resources[k] || 0) < cost[k]) canRepair = false;
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "research-backdrop",
+    onClick: onClose
+  }), React.createElement("div", {
+    className: "research-panel repair-modal"
+  }, React.createElement("div", {
+    className: "rp-head"
+  }, React.createElement("span", {
+    className: "rp-title"
+  }, uiIcon('reparation', "\ud83d\udee0"), " R\xE9parer \u2014 \xCEle ", repairInfo.island), React.createElement("button", {
+    className: "rp-close",
+    onClick: onClose,
+    title: "Fermer"
+  }, "\xD7")), React.createElement("div", {
+    className: "rp-list"
+  }, React.createElement("div", {
+    className: "repair-modal-desc"
+  }, "Livrez les ressources requises au port pour r\xE9parer la liaison et d\xE9bloquer l'\xEEle ", repairInfo.island, "."), React.createElement("div", {
+    className: "pp-port-cost"
+  }, Object.keys(cost).map(k => React.createElement("span", {
+    className: 'rp-ci' + ((resources[k] || 0) >= cost[k] ? ' ok' : ' miss'),
+    key: k
+  }, RES_SHORT[k] || k, " ", fmtInt(resources[k] || 0), "/", fmtInt(cost[k])))), React.createElement("button", {
+    className: "rp-btn",
+    disabled: !canRepair,
+    onClick: () => onRepair(repairInfo.node)
+  }, canRepair ? "R\xE9parer l'\xEEle " + repairInfo.island : "Stock insuffisant"))));
 }
 function ToolButton({
   id,
@@ -7577,6 +7627,7 @@ function App() {
   const [toast, setToast] = useState(null);
   const [researchOpen, setResearchOpen] = useState(false);
   const [portOpen, setPortOpen] = useState(false);
+  const [repairOpen, setRepairOpen] = useState(false);
   const [slotOpen, setSlotOpen] = useState(false);
   const [energyOpen, setEnergyOpen] = useState(false);
   const [needMode, setNeedMode] = useState(false);
@@ -10022,6 +10073,7 @@ function App() {
     islandUnlocked: game.islandUnlocked,
     repairInfo: repairInfo,
     onRepair: repairIsland,
+    onShowRepair: () => setRepairOpen(true),
     onOpenPort: () => setPortOpen(true),
     onEnergy: () => setEnergyOpen(true),
     onResClick: (k, e) => {
@@ -10204,6 +10256,14 @@ function App() {
     onSetTradeMode: setTradeMode,
     onToggleBlock: toggleTradeBlock,
     onUpgradePort: upgradePort
+  }), repairOpen && repairInfo && React.createElement(RepairModal, {
+    repairInfo: repairInfo,
+    resources: game.port[game.currentIsland] || {},
+    onRepair: node => {
+      repairIsland(node);
+      setRepairOpen(false);
+    },
+    onClose: () => setRepairOpen(false)
   }), energyOpen && React.createElement(EnergyPanel, {
     game: game,
     currentIsland: game.currentIsland,
