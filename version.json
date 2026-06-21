@@ -1,7 +1,7 @@
 {
-  "build": 51,
-  "version": "Alpha 10.26",
+  "build": 52,
+  "version": "Alpha 10.27",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.26 — port : afficher uniquement les ressources débloquées (#51)"
+  "notes": "Alpha 10.27 — jonctions illimitées en mode Normal (coût croissant) (#52)"
 }
