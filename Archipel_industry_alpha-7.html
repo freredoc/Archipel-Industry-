@@ -3031,8 +3031,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 50;
-const GAME_VERSION = 'Alpha 10.25';
+const GAME_BUILD = 51;
+const GAME_VERSION = 'Alpha 10.26';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -4834,6 +4834,17 @@ function unlockedBuildingSet(game) {
   return s;
 }
 const isBuildingUnlocked = (game, id) => BUILDING_NODE[id] == null || game.techTree.nodes[BUILDING_NODE[id] - 1].status === 'confirmed';
+// Ressources « débloquées » = produites par au moins un bâtiment débloqué par la recherche.
+// Sert à n'afficher dans le port (commerce + liaisons) que les ressources accessibles.
+function unlockedResourceSet(game) {
+  const s = new Set();
+  for (const id in BUILDINGS) {
+    if (!isBuildingUnlocked(game, id)) continue;
+    const o = BUILDINGS[id].outputs;
+    if (o) for (const k in o) if (k !== 'energie_kw') s.add(k);
+  }
+  return s;
+}
 function isTechFlagConfirmed(game, flag) {
   for (const n of TECH_NODES) {
     if (n.unlocks && n.unlocks[flag] && game.techTree.nodes[n.id - 1].status === 'confirmed') return true;
@@ -6434,7 +6445,11 @@ function PortPanel({
     return (a === currentIsland || b === currentIsland) && linkActive(game, key);
   });
   const priority = tradePriorityFor(game, currentIsland);
+  // Port : on n'affiche (commerce + liaisons) que les ressources débloquées par la
+  // recherche ; on garde aussi celles déjà en stock pour ne rien rendre inaccessible.
+  const unlockedRes = unlockedResourceSet(game);
   const islandPort = game.port[currentIsland] || {};
+  const visiblePriority = priority.filter(res => unlockedRes.has(res) || (islandPort[res] || 0) > 0);
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "research-backdrop",
     onClick: onClose
@@ -6510,7 +6525,7 @@ function PortPanel({
       title: "R\xE9gler l'export par ressource vers l'\xEEle " + other
     }, (isOpen ? "▾ " : "▸ ") + "Export → \xCEle " + other + (nBlocked > 0 ? " — " + nBlocked + " interdite" + (nBlocked > 1 ? "s" : "") : " — tout autoris\xE9")), isOpen && React.createElement("div", {
       className: "pp-block-grid"
-    }, priority.map(res => {
+    }, visiblePriority.map(res => {
       const off = !!blockedRes[res];
       return React.createElement("button", {
         key: res,
@@ -6548,7 +6563,7 @@ function PortPanel({
     className: "pp-c-tog"
   }, "Stop"), React.createElement("span", {
     className: "pp-c-pri"
-  }, "Prio")), priority.map((res, i) => {
+  }, "Prio")), visiblePriority.map((res, i) => {
     const cfg = tradeCfgFor(game, currentIsland, res);
     return React.createElement("div", {
       className: 'pp-cfg-row' + (cfg.interdit ? ' off' : ''),
@@ -6580,7 +6595,7 @@ function PortPanel({
       onClick: () => onMovePriority(currentIsland, res, -1),
       title: "Monter"
     }, "\u25B2"), React.createElement("button", {
-      disabled: i === priority.length - 1,
+      disabled: i === visiblePriority.length - 1,
       onClick: () => onMovePriority(currentIsland, res, +1),
       title: "Descendre"
     }, "\u25BC")));
@@ -9052,11 +9067,19 @@ function App() {
   function movePriority(islandId, res, dir) {
     const g = gameRef.current;
     const arr = tradePriorityFor(g, islandId);
-    const i = arr.indexOf(res),
-      j = i + dir;
-    if (i < 0 || j < 0 || j >= arr.length) return;
-    arr.splice(i, 1);
-    arr.splice(j, 0, res);
+    const i = arr.indexOf(res);
+    if (i < 0) return;
+    // On déplace parmi les ressources VISIBLES uniquement : on saute les ressources
+    // masquées (verrouillées par la recherche) pour échanger avec le voisin visible.
+    const unlocked = unlockedResourceSet(g);
+    const port = g.port[islandId] || {};
+    const visible = r => unlocked.has(r) || (port[r] || 0) > 0;
+    let j = i + dir;
+    while (j >= 0 && j < arr.length && !visible(arr[j])) j += dir;
+    if (j < 0 || j >= arr.length) return;
+    const t = arr[i];
+    arr[i] = arr[j];
+    arr[j] = t;
     bumpHud();
     scheduleSave();
   }
