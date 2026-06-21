@@ -3033,8 +3033,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 55;
-const GAME_VERSION = 'Alpha 10.30';
+const GAME_BUILD = 56;
+const GAME_VERSION = 'Alpha 10.31';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -9551,8 +9551,9 @@ function App() {
         const key = NET_PREFIX[bid] + '_v' + slvl + '_' + NET_MASK_SUFFIX[mask];
         if (drawSprite(ctx, key, x, y, tile, tile)) continue;
       }
-      // Junction sprites: jonction_<a>_<b>_v<level>. Niveau = max des deux réseaux
-      // porteurs (t.netIds) ; rotation automatique selon l'orientation des raccords.
+      // Jonction : il existe 2 sprites orientés (jonction_<H>_<V> où H = porteur
+      // horizontal, V = porteur vertical). On choisit celui qui colle au tracé réel
+      // (= « rotation automatique »). Niveau = max des deux réseaux porteurs (t.netIds).
       if (SPRITES_ENABLED && bdef && bdef.kind === 'junction') {
         let lvl = 1,
           unl = false;
@@ -9563,14 +9564,25 @@ function App() {
             if (nn.unlimited) unl = true;
           }
         }
-        const jk = bid + '_v' + (unl ? 4 : Math.min(lvl, 3));
-        // Le sprite suppose le 1er porteur horizontal : si ses raccords sont verticaux
-        // (et pas horizontaux), on pivote de 90° pour coller au tracé réel.
-        const mA = netConnectMask(tiles, r, c, [bdef.junction[0]]);
+        const JTOK = {
+          road: 'route',
+          wire: 'cable',
+          pipe: 'tuyau'
+        };
+        const cA = bdef.junction[0],
+          cB = bdef.junction[1];
+        const mA = netConnectMask(tiles, r, c, [cA]),
+          mB = netConnectMask(tiles, r, c, [cB]);
         const aH = mA & 2 || mA & 8,
           aV = mA & 1 || mA & 4;
-        const ang = aV && !aH ? Math.PI / 2 : 0;
-        if (ang ? drawSpriteRot(ctx, jk, x, y, tile, tile, ang) : drawSprite(ctx, jk, x, y, tile, tile)) continue;
+        const bH = mB & 2 || mB & 8,
+          bV = mB & 1 || mB & 4;
+        // Met en 1er (axe horizontal du sprite) le porteur réellement horizontal.
+        const swap = aV && !aH || bH && !bV;
+        const first = swap ? cB : cA,
+          second = swap ? cA : cB;
+        const jk = 'jonction_' + JTOK[first] + '_' + JTOK[second] + '_v' + (unl ? 4 : Math.min(lvl, 3));
+        if (drawSprite(ctx, jk, x, y, tile, tile)) continue;
       }
       // Stub réseau SOUS le bâtiment : prolonge la connexion du réseau adjacent sous la
       // tuile du bâtiment (lien continu route/tuyau/câble), et matérialise le raccordement
