@@ -191,6 +191,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .pp-link-top{display:flex;justify-content:space-between;align-items:baseline;}
 .pp-link-name{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.86rem;color:var(--ink);}
 .pp-link-state{font-family:'DM Mono',monospace;font-size:.64rem;color:var(--ink-dim);}
+.pp-block-btn{margin-top:5px;width:100%;font-family:'Barlow Condensed',sans-serif;font-size:.72rem;padding:4px 6px;border-radius:5px;border:1px solid var(--line);background:var(--panel-2);color:var(--green);cursor:pointer;}
+.pp-block-btn.on{border-color:#ff8079;color:#ff8079;background:rgba(255,128,121,.08);}
 .pp-cargo{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px;}
 .pp-cargo-item{font-family:'DM Mono',monospace;font-size:.66rem;color:#8fd0ff;}
 .pp-cargo-empty{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-faint);}
@@ -3027,8 +3029,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 42;
-const GAME_VERSION = 'Alpha 10.17';
+const GAME_BUILD = 43;
+const GAME_VERSION = 'Alpha 10.18';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3535,6 +3537,10 @@ function tickIsland(game, isl) {
     const hasPoolIO = inByType.road || outByType.road || inByType.pipe || outByType.pipe;
     let ok = true,
       disc = false;
+    // Motif précis de dysfonctionnement (affiché dans l'onglet bâtiment) :
+    // 'road'|'pipe'|'wire' = réseau manquant ; 'input' = intrants/matières manquants ;
+    // 'power' = élec insuffisante (renseigné plus tard à la coupure énergétique).
+    let discReason = null;
     const routeIn = {},
       routeOut = {};
     const usesSolid = inByType.road || outByType.road;
@@ -3542,6 +3548,7 @@ function tickIsland(game, isl) {
       if (!roadReachesPort(game, isl, r, c)) {
         ok = false;
         disc = true;
+        discReason = 'road';
       } else {
         // resolve the connected road network id adjacent to this building
         for (const nid of adjacentNetworks(game, isl, r, c, 'road')) {
@@ -3555,6 +3562,7 @@ function tickIsland(game, isl) {
           for (const k in inByType.road) {
             if ((workPort[k] || 0) < inByType.road[k]) {
               ok = false;
+              discReason = 'input';
               break;
             }
           }
@@ -3566,6 +3574,7 @@ function tickIsland(game, isl) {
       if (adj.length === 0) {
         ok = false;
         disc = true;
+        discReason = 'pipe';
       } else {
         if (inByType.pipe) {
           let pick = null;
@@ -3583,7 +3592,10 @@ function tickIsland(game, isl) {
               break;
             }
           }
-          if (pick == null) ok = false;else routeIn.pipe = pick;
+          if (pick == null) {
+            ok = false;
+            discReason = 'input';
+          } else routeIn.pipe = pick;
         }
         if (ok && outByType.pipe) routeOut.pipe = inByType.pipe ? routeIn.pipe : adj[0];
       }
@@ -3594,12 +3606,14 @@ function tickIsland(game, isl) {
     if (ok && usesWire && wireNid == null) {
       ok = false;
       disc = true;
+      discReason = 'wire';
     }
     const prevA = bld.active,
       prevD = bld.disc;
     if (!ok) {
       bld.active = false;
       bld.disc = disc;
+      bld.discReason = discReason;
       if (bld.active !== prevA || bld.disc !== prevD) activeChanged = true;
       continue;
     }
@@ -3634,6 +3648,7 @@ function tickIsland(game, isl) {
     });
     bld.active = true;
     bld.disc = false;
+    bld.discReason = null;
     if (hasPoolIO) resChanged = true;
     if (bld.active !== prevA || bld.disc !== prevD) activeChanged = true;
     if (hasPoolIO) actives.push({
@@ -3867,6 +3882,7 @@ function tickIsland(game, isl) {
       pD = cc.bld.disc;
     cc.bld.active = false;
     cc.bld.disc = false;
+    cc.bld.discReason = 'power';
     if (cc.bld.active !== pA || cc.bld.disc !== pD) activeChanged = true;
   };
   // Réduit la liste de consommateurs pour tenir dans `avail` selon le mode de gestion
@@ -5184,7 +5200,10 @@ function shippableQty(game, srcIsland, destIsland, res) {
   if (need <= 0) return 0;
   return Math.min(need, exportable);
 }
+const tradeBlockedDest = (game, srcIsland, destIsland) => !!(game.tradeBlockDest && game.tradeBlockDest[srcIsland] && game.tradeBlockDest[srcIsland][destIsland]);
 function loadCargo(game, ship, srcIsland, destIsland) {
+  // Export interdit de srcIsland vers destIsland (réglage par île dans le port).
+  if (tradeBlockedDest(game, srcIsland, destIsland)) return;
   const ps = game.portSpeed || {};
   const lvl = Math.max(ps[srcIsland] || 0, ps[destIsland] || 0);
   let room = shipBatchBase() * portSpeedMult(lvl);
@@ -5833,8 +5852,19 @@ function InfoPanel({
     }
   }
   const speedPct = bld.active === false ? 0 : Math.round(speedF * 100);
-  const speedReason = bld.active === false ? bld.disc ? 'déconnecté' : 'à l\'arrêt' : speedPct < 100 ? 'réseau saturé' : 'plein régime';
+  // Motif précis de panne (renseigné par le tick) pour expliquer un bâtiment à l'arrêt.
+  const DISC_LABELS = {
+    road: 'non reliée au port (route)',
+    pipe: 'tuyau manquant',
+    wire: 'câble manquant (élec.)',
+    input: 'intrants manquants',
+    power: 'électricité insuffisante'
+  };
+  const speedReason = bld.active === false ? DISC_LABELS[bld.discReason] || (bld.disc ? 'déconnecté' : 'à l\'arrêt') : speedPct < 100 ? 'réseau saturé' : 'plein régime';
   const speedColor = speedPct >= 100 ? 'var(--green)' : speedPct > 0 ? 'var(--orange)' : '#ff8079';
+  // Statut affiché dès que le bâtiment « fait » quelque chose (réseau, élec, ou en panne).
+  const usesWireUI = (b.power || 0) > 0 || b.outputs && b.outputs.energie_kw != null || !!b.sigmoid || !!b.randomP || !!b.antenna;
+  const showStatus = usesNet || usesWireUI || bld.active === false;
   return React.createElement("div", {
     ref: ref,
     className: "info-panel",
@@ -5912,7 +5942,7 @@ function InfoPanel({
       className: 'ip-nuc-mat' + (matKey === k ? ' on' : ''),
       onClick: () => onSetNuclear && onSetNuclear(currentIsland, k)
     }, label)))));
-  })(), usesNet && React.createElement("div", {
+  })(), showStatus && React.createElement("div", {
     className: "ip-row" + (speedPct < 100 ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
@@ -6314,6 +6344,7 @@ function PortPanel({
   onSetCfg,
   onMovePriority,
   onSetTradeMode,
+  onToggleBlock,
   onUpgradePort
 }) {
   const tradeMode = tradeModeFor(game, currentIsland);
@@ -6389,7 +6420,11 @@ function PortPanel({
       className: "pp-link-name"
     }, "\xCEle ", a, " \u2194 \xCEle ", b), React.createElement("span", {
       className: "pp-link-state"
-    }, ship.timer > 0 ? `en mer · ${ship.timer}s` : 'à quai')), React.createElement("div", {
+    }, ship.timer > 0 ? `en mer · ${ship.timer}s` : 'à quai')), React.createElement("button", {
+      className: 'pp-block-btn' + (tradeBlockedDest(game, currentIsland, other) ? ' on' : ''),
+      onClick: () => onToggleBlock(currentIsland, other),
+      title: tradeBlockedDest(game, currentIsland, other) ? "Export interdit vers l'\xEEle " + other + " — cliquer pour autoriser" : "Autoriser l'export vers l'\xEEle " + other + " — cliquer pour interdire"
+    }, tradeBlockedDest(game, currentIsland, other) ? "⛔ Export → \xCEle " + other + " interdit" : "✅ Export → \xCEle " + other + " autoris\xE9"), React.createElement("div", {
       className: "pp-cargo"
     }, cargoEntries.length === 0 ? React.createElement("span", {
       className: "pp-cargo-empty"
@@ -7350,6 +7385,7 @@ function App() {
       tradeConfig: {},
       tradePriority: {},
       tradeMode: {},
+      tradeBlockDest: {},
       accumulators: {
         1: [],
         2: [],
@@ -7658,6 +7694,7 @@ function App() {
       tradeMode: {
         ...g.tradeMode
       },
+      tradeBlockDest: g.tradeBlockDest,
       energyMode: {
         ...g.energyMode
       },
@@ -7883,6 +7920,11 @@ function App() {
     g.tradeMode = {};
     if (data.tradeMode) for (const id in data.tradeMode) {
       if (data.tradeMode[id] === 'proportional') g.tradeMode[+id] = 'proportional';
+    }
+    g.tradeBlockDest = {};
+    if (data.tradeBlockDest) for (const sid in data.tradeBlockDest) {
+      const dests = data.tradeBlockDest[sid] || {};
+      for (const did in dests) if (dests[did]) (g.tradeBlockDest[+sid] || (g.tradeBlockDest[+sid] = {}))[+did] = true;
     }
     for (const isl of data.islands || []) {
       const tiles = g.islands[isl.id];
@@ -8901,6 +8943,14 @@ function App() {
     const g = gameRef.current;
     if (!g.tradeMode) g.tradeMode = {};
     if (mode === 'proportional') g.tradeMode[islandId] = 'proportional';else delete g.tradeMode[islandId];
+    bumpHud();
+    scheduleSave();
+  }
+  function toggleTradeBlock(srcIsland, destIsland) {
+    const g = gameRef.current;
+    if (!g.tradeBlockDest) g.tradeBlockDest = {};
+    const m = g.tradeBlockDest[srcIsland] || (g.tradeBlockDest[srcIsland] = {});
+    if (m[destIsland]) delete m[destIsland];else m[destIsland] = true;
     bumpHud();
     scheduleSave();
   }
@@ -10098,6 +10148,7 @@ function App() {
     onSetCfg: setTradeCfg,
     onMovePriority: movePriority,
     onSetTradeMode: setTradeMode,
+    onToggleBlock: toggleTradeBlock,
     onUpgradePort: upgradePort
   }), energyOpen && React.createElement(EnergyPanel, {
     game: game,
