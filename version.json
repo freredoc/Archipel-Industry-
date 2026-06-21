@@ -1,7 +1,7 @@
 {
-  "build": 45,
-  "version": "Alpha 10.20",
+  "build": 46,
+  "version": "Alpha 10.21",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.20 — recherches toujours à confirmer + barre du haut compactée (#45)"
+  "notes": "Alpha 10.21 — onglet Réparer déplacé vers la barre inventaire (#46)"
 }
