@@ -1398,7 +1398,6 @@ const NET_MASK_SUFFIX = (() => {
 const BLD_SPRITE_OVERRIDE = {
   four_arc_piece: 'four_arc_meca',
   usine_moteur_nuc: 'bat_usine_moteur_nucleaire',
-  pompe_eau_v2: 'bat_pompe_eau',
   carriere: 'carriere_v1',
   carriere_v2: 'carriere_v2',
   carriere_v3: 'carriere_v3',
@@ -2128,25 +2127,6 @@ const BUILDINGS = {
       pierre: 2
     }
   },
-  pompe_eau_v2: {
-    name: 'Pompe Eau V2',
-    color: '#0277BD',
-    label: 'EAU2',
-    kind: 'build',
-    tier: 't2',
-    exclusiveIsland: 3,
-    terrains: ['coast'],
-    size: [1, 1],
-    power: 16,
-    cost: {
-      acier: 80,
-      beton_arme: 60,
-      polymere: 40
-    },
-    outputs: {
-      eau: 2
-    }
-  },
   mine_or: {
     name: 'Mine Or V1',
     color: '#C9A227',
@@ -2754,7 +2734,7 @@ const TOOLBAR_GROUPS = [{
   ids: ['jonction_route_cable', 'jonction_route_tuyau', 'jonction_cable_tuyau']
 }, {
   label: 'Extraction',
-  ids: ['mine_fer', 'mine_charbon', 'carriere', 'pompe_eau', 'mine_cuivre', 'puits_petrole', 'mine_fer_v2', 'mine_cuivre_v2', 'carriere_v2', 'pompe_eau_v2', 'mine_charbon_v2', 'mine_or', 'plateforme_petroliere', 'mine_uranium', 'mine_fer_v3', 'mine_cuivre_v3', 'carriere_v3', 'mine_charbon_v3', 'mine_or_v3']
+  ids: ['mine_fer', 'mine_charbon', 'carriere', 'pompe_eau', 'mine_cuivre', 'puits_petrole', 'mine_fer_v2', 'mine_cuivre_v2', 'carriere_v2', 'mine_charbon_v2', 'mine_or', 'plateforme_petroliere', 'mine_uranium', 'mine_fer_v3', 'mine_cuivre_v3', 'carriere_v3', 'mine_charbon_v3', 'mine_or_v3']
 }, {
   label: 'Énergie',
   ids: ['eolienne', 'centrale_charbon', 'centrale_diesel', 'eolienne_offshore', 'accumulateur']
@@ -3051,8 +3031,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 48;
-const GAME_VERSION = 'Alpha 10.23';
+const GAME_BUILD = 49;
+const GAME_VERSION = 'Alpha 10.24';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -4478,7 +4458,7 @@ const TECH_NODES = [{
     n: 10000
   }],
   unlocks: {
-    buildings: ['four_fer_v2', 'four_cuivre_v2', 'pompe_eau_v2']
+    buildings: ['four_fer_v2', 'four_cuivre_v2']
   }
 }, {
   id: 8,
@@ -4572,7 +4552,7 @@ const TECH_NODES = [{
     n: 1000
   }],
   unlocks: {
-    buildings: ['mine_fer_v2', 'mine_cuivre_v2', 'carriere_v2', 'pompe_eau_v2', 'mine_charbon_v2']
+    buildings: ['mine_fer_v2', 'mine_cuivre_v2', 'carriere_v2', 'mine_charbon_v2']
   }
 }, {
   id: 14,
@@ -4944,7 +4924,7 @@ const GAME_TIPS = [{
   icon: '💧',
   title: 'Les liquides',
   body: ['Vous produisez un <b>liquide</b> (eau, pétrole…). Les liquides circulent uniquement par le réseau <b>tuyau</b>, pas par la route.', 'Pour exporter un liquide vers une autre île, le tuyau doit relier sa production directement au <b>port</b>.'],
-  when: g => tipAnyPlaced(g, ['pompe_eau', 'pompe_eau_v2', 'puits_petrole'])
+  when: g => tipAnyPlaced(g, ['pompe_eau', 'puits_petrole'])
 }, {
   id: 'reseau_sature',
   icon: '🚦',
