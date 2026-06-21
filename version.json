@@ -1,7 +1,7 @@
 {
-  "build": 55,
-  "version": "Alpha 10.30",
+  "build": 56,
+  "version": "Alpha 10.31",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.30 — jonctions fonctionnelles (croisement réel + rotation auto) (#55)"
+  "notes": "Alpha 10.31 — jonction : sprite orienté (rotation auto correcte) (#56)"
 }
