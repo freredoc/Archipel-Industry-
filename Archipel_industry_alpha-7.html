@@ -1334,7 +1334,15 @@ const BLD_SPRITE_OVERRIDE = {
   carriere: 'carriere_v1',
   carriere_v2: 'carriere_v2',
   carriere_v3: 'carriere_v3',
-  port: 'tile_port_terre'
+  port: 'tile_port_terre',
+  // Réseaux/jonctions (infra) : icône représentative pour le menu Réseau (la carte
+  // les rend via les sprites de connexion, pas via buildingSpriteKey).
+  road: 'route_v1_15_NESO',
+  pipe: 'tuyau_v1_15_NESO',
+  wire: 'cable_v1_15_NESO',
+  jonction_route_cable: 'jonction_route_cable_v1',
+  jonction_route_tuyau: 'jonction_route_tuyau_v1',
+  jonction_cable_tuyau: 'jonction_cable_tuyau_v1'
 };
 // Some V2/V3 game ids map to the same base sprite family with a version file.
 function buildingSpriteKey(id, upgrade) {
@@ -2956,8 +2964,8 @@ const SAVE_VERSION = 11;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 32;
-const GAME_VERSION = 'Alpha 10.7';
+const GAME_BUILD = 33;
+const GAME_VERSION = 'Alpha 10.8';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
