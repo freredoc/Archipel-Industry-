@@ -686,8 +686,10 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 @media (max-width:760px){
   .hud-brand{display:none;}
   .hud{flex-wrap:wrap;overflow-x:visible;row-gap:6px;}
-  /* Le bloc droit occupe toute la 2ᵉ ligne, aligné à gauche (comble le vide). */
-  .hud-side{margin-left:0;width:100%;}
+  /* 2ᵉ ligne fixe : énergie + Port + Recherche restent sur UNE seule ligne, dans le
+     même ordre quel que soit le téléphone (pas de retour à la ligne aléatoire). */
+  .hud-side{margin-left:0;width:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
+  .hud-side::-webkit-scrollbar{display:none;}
   .toolbar{flex-wrap:wrap;overflow-x:visible;}
   .build-panel{overflow-x:hidden;max-height:46vh;}
   .tool-group.tabs{margin-left:0;}
@@ -3031,8 +3033,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 53;
-const GAME_VERSION = 'Alpha 10.28';
+const GAME_BUILD = 54;
+const GAME_VERSION = 'Alpha 10.29';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
