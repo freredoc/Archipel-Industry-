@@ -136,6 +136,11 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .res-pop-row.net{border-top:1px solid var(--line);margin-top:3px;padding-top:4px;}
 .res-pop-row.net .rv.pos{color:#5fd08a;}
 .res-pop-row.net .rv.neg{color:#ff7a72;}
+.res-pop-alert{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:5px;
+  border-top:1px solid var(--line);padding-top:6px;}
+.res-pop-alert .ra-l{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;color:var(--orange);white-space:nowrap;}
+.res-pop-alert .ra-input{width:74px;flex-shrink:0;background:var(--panel-2);border:1px solid var(--line);
+  color:var(--ink);border-radius:5px;padding:3px 7px;font-family:'DM Mono',monospace;font-size:.74rem;text-align:right;}
 /* Bandeau MODE DEV en haut du canvas */
 .dev-banner{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:40;
   background:rgba(255,59,48,.9);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.9rem;
@@ -3033,8 +3038,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 56;
-const GAME_VERSION = 'Alpha 10.31';
+const GAME_BUILD = 57;
+const GAME_VERSION = 'Alpha 10.32';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -6744,6 +6749,7 @@ function ResPopover({
   res,
   x,
   y,
+  onSetAlert,
   onClose
 }) {
   const ref = useRef(null);
@@ -6811,7 +6817,16 @@ function ResPopover({
     className: "rl"
   }, "Bilan net"), React.createElement("span", {
     className: "rv " + (net >= 0 ? 'pos' : 'neg')
-  }, net >= 0 ? '+' : '\u2212', fmtRate(Math.abs(net)), " /s"))));
+  }, net >= 0 ? '+' : '\u2212', fmtRate(Math.abs(net)), " /s")), React.createElement("div", {
+    className: "res-pop-alert"
+  }, React.createElement("span", {
+    className: "ra-l"
+  }, "\u26a0\ufe0f Alerte si stock <"), React.createElement(NumField, {
+    className: "ra-input",
+    value: game.stockAlerts && game.stockAlerts[currentIsland] && game.stockAlerts[currentIsland][res] || 0,
+    onCommit: v => onSetAlert && onSetAlert(currentIsland, res, v),
+    title: "Pr\xE9venir quand le stock de cette \xEEle passe sous ce seuil (0 = d\xE9sactiv\xE9)"
+  }))));
 }
 function NetworkPanel({
   net,
@@ -7530,6 +7545,7 @@ function App() {
       tradePriority: {},
       tradeMode: {},
       tradeBlockDest: {},
+      stockAlerts: {},
       accumulators: {
         1: [],
         2: [],
@@ -7840,6 +7856,7 @@ function App() {
         ...g.tradeMode
       },
       tradeBlockDest: g.tradeBlockDest,
+      stockAlerts: g.stockAlerts,
       energyMode: {
         ...g.energyMode
       },
@@ -8083,6 +8100,15 @@ function App() {
           for (const res of TRADE_RESOURCES) dmap[res] = true;
         } else for (const res in v) if (v[res]) dmap[res] = true;
         if (Object.keys(dmap).length) (g.tradeBlockDest[+sid] || (g.tradeBlockDest[+sid] = {}))[+did] = dmap;
+      }
+    }
+    g.stockAlerts = {};
+    g.stockAlertState = {};
+    if (data.stockAlerts) for (const sid in data.stockAlerts) {
+      const m = data.stockAlerts[sid] || {};
+      for (const res in m) {
+        const v = Math.max(0, Math.floor(m[res] || 0));
+        if (v > 0) (g.stockAlerts[+sid] || (g.stockAlerts[+sid] = {}))[res] = v;
       }
     }
     for (const isl of data.islands || []) {
@@ -8361,6 +8387,43 @@ function App() {
       showTip(id);
       markDirty();
       scheduleSave();
+    }
+  }
+  // Alertes de stock bas (par île, par ressource) : seuil réglé dans le popover ressource.
+  function setStockAlert(islandId, res, value) {
+    const g = gameRef.current;
+    if (!g.stockAlerts) g.stockAlerts = {};
+    const m = g.stockAlerts[islandId] || (g.stockAlerts[islandId] = {});
+    const v = Math.max(0, Math.floor(value || 0));
+    if (v > 0) m[res] = v;else delete m[res];
+    if (g.stockAlertState && g.stockAlertState[islandId]) delete g.stockAlertState[islandId][res];
+    if (v > 0) showToast(`⚠️ Alerte réglée : Île ${islandId} ${RES_SHORT[res] || res} < ${fmtInt(v)}`, 'var(--ink-dim)');else showToast(`Alerte retirée : ${RES_SHORT[res] || res}`, 'var(--ink-dim)');
+    bumpHud();
+    scheduleSave();
+  }
+  // Déclenche un toast quand le stock d'une ressource passe SOUS son seuil (une fois par
+  // franchissement ; se réarme quand le stock repasse au-dessus). Toutes îles confondues.
+  function checkStockAlerts() {
+    const g = gameRef.current;
+    if (!g.stockAlerts) return;
+    if (!g.stockAlertState) g.stockAlertState = {};
+    for (const islStr in g.stockAlerts) {
+      const thr = g.stockAlerts[islStr];
+      if (!thr) continue;
+      const pool = g.port[islStr] || {};
+      const state = g.stockAlertState[islStr] || (g.stockAlertState[islStr] = {});
+      for (const res in thr) {
+        const t = thr[res];
+        if (!t || t <= 0) {
+          delete state[res];
+          continue;
+        }
+        const below = (pool[res] || 0) < t;
+        if (below && !state[res]) {
+          state[res] = true;
+          showToast(`⚠️ Île ${islStr} — ${RES_SHORT[res] || res} bas : ${fmtInt(pool[res] || 0)} < ${fmtInt(t)}`, 'var(--orange)');
+        } else if (!below && state[res]) state[res] = false;
+      }
     }
   }
   function toggleTips() {
@@ -10124,6 +10187,7 @@ function App() {
       g.animClock = (g.animClock || 0) + 1;
       checkTutorial();
       checkTips();
+      checkStockAlerts();
       // Keep redrawing smoothly while a cargo boat is animating near the current port.
       if (boatActiveNearPort(g)) g.dirty = true;
       if (g.dirty && ctxValid()) {
@@ -10477,6 +10541,7 @@ function App() {
     res: resPop.res,
     x: resPop.x,
     y: resPop.y,
+    onSetAlert: setStockAlert,
     onClose: () => setResPop(null)
   }), researchPopup && React.createElement(ResearchDonePopup, {
     info: researchPopup,
