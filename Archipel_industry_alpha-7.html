@@ -3003,8 +3003,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 34;
-const GAME_VERSION = 'Alpha 10.9';
+const GAME_BUILD = 35;
+const GAME_VERSION = 'Alpha 10.10';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3012,7 +3012,29 @@ const MAX_ZOOM = 4,
   MIN_ZOOM = 1;
 const TAP_THRESHOLD = 6;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const fmtInt = n => Math.round(n).toLocaleString('fr-FR');
+// À partir d'un million, on bascule en notation scientifique « 1e6 », « 2,43e8 »
+// (virgule décimale française). En dessous, séparateurs de milliers classiques.
+const fmtInt = n => {
+  const r = Math.round(n);
+  if (Math.abs(r) >= 1e6) {
+    let exp = Math.floor(Math.log10(Math.abs(r)));
+    let mant = Math.round(r / Math.pow(10, exp) * 100) / 100;
+    if (Math.abs(mant) >= 10) {
+      mant /= 10;
+      exp++;
+    }
+    return String(mant).replace('.', ',') + 'e' + exp;
+  }
+  return r.toLocaleString('fr-FR');
+};
+// Parse une saisie numérique acceptant la notation scientifique et la virgule
+// française : « 1e6 », « 2,43e8 », « 2.43e8 », « 1000000 » -> nombre (NaN sinon).
+function parseNum(s) {
+  if (typeof s === 'number') return s;
+  if (typeof s !== 'string') return NaN;
+  const v = Number(s.trim().replace(/\s/g, '').replace(',', '.'));
+  return isFinite(v) ? v : NaN;
+}
 function formatCost(cost) {
   return Object.entries(cost || {}).map(([k, v]) => `${v} ${RES_SHORT[k]}`).join(' · ');
 }
@@ -5796,7 +5818,20 @@ function InfoPanel({
     className: "lbl"
   }, "\xC9lec."), React.createElement("span", {
     className: "val"
-  }, b.sigmoid ? fmtRate(b.sigmoid.base * upgradeMult(upg)) + '→' + fmtRate((b.sigmoid.base + b.sigmoid.amp) * upgradeMult(upg)) : b.randomP ? fmtRate(b.randomP.min * upgradeMult(upg)) + '→' + fmtRate(b.randomP.max * upgradeMult(upg)) : fmtRate((b.power || 0) * upgradeMult(upg)), " kW")), b.antenna && React.createElement("div", {
+  }, (() => {
+    const mult = upgradeMult(upg);
+    // Conso variable (sigmoïde/aléatoire) : on affiche la valeur ACTUELLE (depuis la
+    // phase/valeur stockée sur le bâtiment) puis la plage prévue min→max.
+    if (b.sigmoid) {
+      const cur = (b.sigmoid.base + b.sigmoid.amp * (1 + Math.sin(2 * Math.PI * (bld.sigmoidT || 0) / b.sigmoid.period)) / 2) * mult;
+      return fmtRate(cur) + ' kW · prévu ' + fmtRate(b.sigmoid.base * mult) + '→' + fmtRate((b.sigmoid.base + b.sigmoid.amp) * mult) + ' kW';
+    }
+    if (b.randomP) {
+      const cur = (bld.randomPower != null ? bld.randomPower : (b.randomP.min + b.randomP.max) / 2) * mult;
+      return fmtRate(cur) + ' kW · prévu ' + fmtRate(b.randomP.min * mult) + '→' + fmtRate(b.randomP.max * mult) + ' kW';
+    }
+    return fmtRate((b.power || 0) * mult) + ' kW';
+  })())), b.antenna && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -6210,15 +6245,15 @@ function PortPanel({
       className: "pp-res-stock"
     }, fmtInt(islandPort[res] || 0), " en stock")), React.createElement("input", {
       className: "pp-c-num",
-      type: "number",
-      min: "0",
+      type: "text",
+      inputMode: "text",
       value: cfg.stockCible,
       onChange: e => onSetCfg(currentIsland, res, 'stockCible', e.target.value),
       title: "Stock cible (quantit\xE9 \xE0 importer ici)"
     }), React.createElement("input", {
       className: "pp-c-num",
-      type: "number",
-      min: "0",
+      type: "text",
+      inputMode: "text",
       value: cfg.seuilExport,
       onChange: e => onSetCfg(currentIsland, res, 'seuilExport', e.target.value),
       title: "R\xE9serve locale (on n'exporte que le surplus au-dessus)"
@@ -8650,7 +8685,7 @@ function App() {
     const g = gameRef.current;
     const cfg = tradeCfgFor(g, islandId, res);
     if (field === 'interdit') cfg.interdit = !!value;else {
-      const v = parseInt(value, 10);
+      const v = Math.floor(parseNum(value));
       cfg[field] = isNaN(v) || v < 0 ? 0 : v;
     }
     bumpHud();
