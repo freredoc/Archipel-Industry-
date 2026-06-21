@@ -1,7 +1,7 @@
 {
-  "build": 52,
-  "version": "Alpha 10.27",
+  "build": 53,
+  "version": "Alpha 10.28",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.27 — jonctions illimitées en mode Normal (coût croissant) (#52)"
+  "notes": "Alpha 10.28 — pose de jonction assouplie (sur réseau + auto-croisement) (#53)"
 }
