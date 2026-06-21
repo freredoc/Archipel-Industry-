@@ -3031,8 +3031,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 49;
-const GAME_VERSION = 'Alpha 10.24';
+const GAME_BUILD = 50;
+const GAME_VERSION = 'Alpha 10.25';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -4030,6 +4030,12 @@ function tickIsland(game, isl) {
       accStored += acc.stored;
       accCap += acc.capacity;
     }
+  }
+  // Régime moyen (duty-cycle) lissé des consommateurs électriques : reflète une
+  // production « au ralenti » quand l'élec. est insuffisante (cyclage on/off par tick).
+  for (const cc of energyConsumers) {
+    const on = cc.bld.active === false ? 0 : 1;
+    cc.bld.pwrAvg = cc.bld.pwrAvg == null ? on : cc.bld.pwrAvg + (on - cc.bld.pwrAvg) * 0.12;
   }
   const balance = supply - consumed;
   game.accumulators[isl] = accList.map(a => ({
@@ -5903,7 +5909,6 @@ function InfoPanel({
       }
     }
   }
-  const speedPct = bld.active === false ? 0 : Math.round(speedF * 100);
   // Motif précis de panne (renseigné par le tick) pour expliquer un bâtiment à l'arrêt.
   const DISC_LABELS = {
     road: 'non reliée au port (route)',
@@ -5912,7 +5917,20 @@ function InfoPanel({
     input: 'intrants manquants',
     power: 'électricité insuffisante'
   };
-  const speedReason = bld.active === false ? DISC_LABELS[bld.discReason] || (bld.disc ? 'déconnecté' : 'à l\'arrêt') : speedPct < 100 ? 'réseau saturé' : 'plein régime';
+  // L'élec. fonctionne en tout-ou-rien CHAQUE tick : un bâtiment sous-alimenté est
+  // coupé/rallumé d'un tick à l'autre. Le régime moyen lissé (bld.pwrAvg) reflète la
+  // production réelle « au ralenti » au lieu d'un trompeur 0 % à l'instant de la coupure.
+  const pwrAvg = bld.pwrAvg;
+  const powerLimited = (b.power || 0) > 0 && pwrAvg != null && pwrAvg < 0.995 && (bld.active !== false || bld.discReason === 'power');
+  let speedPct, speedReason;
+  if (powerLimited) {
+    // Débit effectif = part du temps alimenté × saturation réseau éventuelle.
+    speedPct = Math.max(0, Math.min(100, Math.round(pwrAvg * speedF * 100)));
+    speedReason = speedPct <= 0 ? 'à l\'arrêt · élec. insuffisante' : 'au ralenti · élec. insuffisante';
+  } else {
+    speedPct = bld.active === false ? 0 : Math.round(speedF * 100);
+    speedReason = bld.active === false ? DISC_LABELS[bld.discReason] || (bld.disc ? 'déconnecté' : 'à l\'arrêt') : speedPct < 100 ? 'réseau saturé' : 'plein régime';
+  }
   const speedColor = speedPct >= 100 ? 'var(--green)' : speedPct > 0 ? 'var(--orange)' : '#ff8079';
   // Statut affiché dès que le bâtiment « fait » quelque chose (réseau, élec, ou en panne).
   const usesWireUI = (b.power || 0) > 0 || b.outputs && b.outputs.energie_kw != null || !!b.sigmoid || !!b.randomP || !!b.antenna;
