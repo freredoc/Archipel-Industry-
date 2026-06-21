@@ -1,7 +1,7 @@
 {
-  "build": 44,
-  "version": "Alpha 10.19",
+  "build": 45,
+  "version": "Alpha 10.20",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.19 — interdiction d'export par ressource (#44)"
+  "notes": "Alpha 10.20 — recherches toujours à confirmer + barre du haut compactée (#45)"
 }
