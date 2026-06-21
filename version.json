@@ -1,7 +1,7 @@
 {
-  "build": 43,
-  "version": "Alpha 10.18",
+  "build": 44,
+  "version": "Alpha 10.19",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.18 — interdiction d'export par île + motif de panne clair (#43)"
+  "notes": "Alpha 10.19 — interdiction d'export par ressource (#44)"
 }
