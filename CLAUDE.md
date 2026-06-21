@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 58`, `GAME_VERSION = 'Alpha 10.33'`.** Le panneau
+- **État au dernier passage : `GAME_BUILD = 59`, `GAME_VERSION = 'Alpha 10.34'`.** Changements
+  10.34 : (1) **pose sans route** — le garde-fou `needRoad`/`hasAdjacentRoad` est retiré de
+  `canPlace`/`tryPlace` ; un bâtiment se pose même sans route adjacente (il s'affiche déconnecté
+  via `discReason='road'` tant qu'aucune route ne le touche). (2) **Export/Import de sauvegarde
+  (texte)** dans `SlotPanel` : bouton « Exporter » par emplacement (copie le JSON du slot dans le
+  presse-papier + textarea), bouton « Importer » (colle un JSON → nouveau slot via `slotImport`,
+  puis `slotSwitchTo`/reload). Choix texte (pas de fichier) car la WebView Android n'a ni
+  DownloadListener ni file chooser. (3) **Diesel transporté par tuyau** : `CARRIER_BY_RES.diesel`
+  passe `road`→`pipe`. (4) **Sprites d'état de panne** : `drawStatusBadge` dessine un sprite
+  PAR-DESSUS un bâtiment à l'arrêt (au lieu du carré rouge/noir), mappé depuis `bld.discReason` via
+  `STATUS_SPRITE` ; fallback teinte si le PNG manque. **Sprites à fournir (clés)** : `etat_route`,
+  `etat_tuyau`, `etat_cable`, `etat_intrant`, `etat_courant`, `etat_arret`.
+- Panneau (10.33) : le panneau
   Câble affiche le **bilan électrique par réseau** (Production / Demande / Livrée) via
   `game.wireInfo[isl][nid]` (rempli dans la boucle énergie de `tickIsland`) : si un câble est
   **saturé** (production ≥ demande mais livrée < demande à cause du débit) → message « câble saturé,
