@@ -3064,8 +3064,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 67;
-const GAME_VERSION = 'Alpha 10.42';
+const GAME_BUILD = 68;
+const GAME_VERSION = 'Alpha 10.43';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5003,11 +5003,44 @@ const ISLAND_KICKSTART_BASE = {
   lingot_fer: 500,
   ciment: 500
 };
+// Île 3 : base (île 2) + métaux/câble pour amorcer les chaînes avancées.
+const ISLAND_KICKSTART_3 = {
+  ...ISLAND_KICKSTART_BASE,
+  lingot_cuivre: 500,
+  acier: 250,
+  cable: 250
+};
+// Île 4 : mêmes ressources que l'île 3 mais toutes à 1000, + matériaux avancés (500 chacun).
+const ISLAND_KICKSTART_4 = {
+  minerai_fer: 1000,
+  pierre: 1000,
+  lingot_fer: 1000,
+  ciment: 1000,
+  lingot_cuivre: 1000,
+  acier: 1000,
+  cable: 1000,
+  beton_arme: 500,
+  polymere: 500,
+  piece_meca: 500
+};
+// Île 5 : mêmes ressources que l'île 4, toutes à 1000.
+const ISLAND_KICKSTART_5 = {
+  minerai_fer: 1000,
+  pierre: 1000,
+  lingot_fer: 1000,
+  ciment: 1000,
+  lingot_cuivre: 1000,
+  acier: 1000,
+  cable: 1000,
+  beton_arme: 1000,
+  polymere: 1000,
+  piece_meca: 1000
+};
 const ISLAND_KICKSTART = {
   2: ISLAND_KICKSTART_BASE,
-  3: ISLAND_KICKSTART_BASE,
-  4: ISLAND_KICKSTART_BASE,
-  5: ISLAND_KICKSTART_BASE
+  3: ISLAND_KICKSTART_3,
+  4: ISLAND_KICKSTART_4,
+  5: ISLAND_KICKSTART_5
 };
 function applyUnlocks(game, def) {
   const u = def.unlocks || {};
