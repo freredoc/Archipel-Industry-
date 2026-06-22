@@ -3064,8 +3064,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 69;
-const GAME_VERSION = 'Alpha 10.44';
+const GAME_BUILD = 70;
+const GAME_VERSION = 'Alpha 10.45';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -3516,6 +3516,17 @@ function tickIsland(game, isl) {
     const t = netTierDemand[nid] || (netTierDemand[nid] = {});
     t[tier] = (t[tier] || 0) + amt;
   };
+  // Flux ventilé par ressource pour chaque réseau (route/tuyau) : ce qui y est PRODUIT (déposé)
+  // et CONSOMMÉ (puisé) par seconde → panneau réseau « détail de ce qui transite ».
+  const netFlow = {};
+  const addFlow = (nid, bucket, k, v) => {
+    if (nid == null || !v) return;
+    const f = netFlow[nid] || (netFlow[nid] = {
+      prod: {},
+      cons: {}
+    });
+    f[bucket][k] = (f[bucket][k] || 0) + v;
+  };
   let energyProduced = 0;
   const energyConsumers = [];
   const accList = [];
@@ -3745,26 +3756,32 @@ function tickIsland(game, isl) {
     if (inByType.pipePort && routeIn.pipePort != null) for (const k in inByType.pipePort) {
       netDemand[routeIn.pipePort] = (netDemand[routeIn.pipePort] || 0) + inByType.pipePort[k];
       addTier(routeIn.pipePort, pri, inByType.pipePort[k]);
+      addFlow(routeIn.pipePort, 'cons', k, inByType.pipePort[k]);
     }
     if (outByType.pipePort && routeOut.pipePort != null) for (const k in outByType.pipePort) {
       netDemand[routeOut.pipePort] = (netDemand[routeOut.pipePort] || 0) + outByType.pipePort[k];
       addTier(routeOut.pipePort, pri, outByType.pipePort[k]);
+      addFlow(routeOut.pipePort, 'prod', k, outByType.pipePort[k]);
     }
     if (inByType.road && routeIn.road != null) for (const k in inByType.road) {
       netDemand[routeIn.road] = (netDemand[routeIn.road] || 0) + inByType.road[k];
       addTier(routeIn.road, pri, inByType.road[k]);
+      addFlow(routeIn.road, 'cons', k, inByType.road[k]);
     }
     if (outByType.road && routeOut.road != null) for (const k in outByType.road) {
       netDemand[routeOut.road] = (netDemand[routeOut.road] || 0) + outByType.road[k];
       addTier(routeOut.road, pri, outByType.road[k]);
+      addFlow(routeOut.road, 'prod', k, outByType.road[k]);
     }
     if (inByType.pipe && routeIn.pipe != null) for (const k in inByType.pipe) {
       netDemand[routeIn.pipe] = (netDemand[routeIn.pipe] || 0) + inByType.pipe[k];
       addTier(routeIn.pipe, pri, inByType.pipe[k]);
+      addFlow(routeIn.pipe, 'cons', k, inByType.pipe[k]);
     }
     if (outByType.pipe && routeOut.pipe != null) for (const k in outByType.pipe) {
       netDemand[routeOut.pipe] = (netDemand[routeOut.pipe] || 0) + outByType.pipe[k];
       addTier(routeOut.pipe, pri, outByType.pipe[k]);
+      addFlow(routeOut.pipe, 'prod', k, outByType.pipe[k]);
     }
     if (energyOut > 0) {
       energyProduced += energyOut;
@@ -3838,6 +3855,9 @@ function tickIsland(game, isl) {
   // Demande de flux par réseau (pour l'affichage « demandé vs limite » dans le panneau réseau).
   if (!game.netDemand) game.netDemand = {};
   game.netDemand[isl] = netDemand;
+  // Détail par ressource transitant sur chaque réseau (route/tuyau) → panneau réseau.
+  if (!game.netFlow) game.netFlow = {};
+  game.netFlow[isl] = netFlow;
   // Backward-compat: island-wide solid factor (min over road networks) for the InfoPanel "Réel" row.
   let solidF = 1;
   for (const nid in netFactor) {
@@ -7244,6 +7264,13 @@ function NetworkPanel({
   const upLabel = coupled ? ' Monter A + B' : ' Monter';
   const downLabel = coupled ? ' Baisser A + B' : ' Baisser';
   const matLabel = k => RES_SHORT[k] || k;
+  // Détail des ressources transitant sur ce réseau (route/tuyau) : produites (déposées) vs
+  // consommées (puisées) par seconde. Le câble affiche déjà son bilan électrique en kW.
+  const flow = game.netFlow && game.netFlow[currentIsland] && game.netFlow[currentIsland][net.networkId];
+  const flowList = bucket => flow && flow[bucket] ? Object.entries(flow[bucket]).filter(e => e[1] > 1e-6).sort((a, b) => b[1] - a[1]) : [];
+  const prodEntries = isWire ? [] : flowList('prod');
+  const consEntries = isWire ? [] : flowList('cons');
+  const fmtFlow = entries => entries.map(([k, v]) => fmtRate(v) + ' ' + matLabel(k)).join(' · ');
   const showUnlBtn = lvl >= 3 && !unlimited && hiMats.irradie;
   return React.createElement("div", {
     ref: ref,
@@ -7324,7 +7351,25 @@ function NetworkPanel({
       fontSize: '11px',
       padding: '2px 0'
     }
-  }, "⚡ Production insuffisante sur ce r\xE9seau c\xE2ble."), React.createElement("div", {
+  }, "⚡ Production insuffisante sur ce r\xE9seau c\xE2ble."), prodEntries.length > 0 && React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "Production /s"), React.createElement("span", {
+    className: "val io"
+  }, fmtFlow(prodEntries))), consEntries.length > 0 && React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "Consommation /s"), React.createElement("span", {
+    className: "val io"
+  }, fmtFlow(consEntries))), !isWire && !prodEntries.length && !consEntries.length && React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "Transit"), React.createElement("span", {
+    className: "val"
+  }, "aucun")), React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
