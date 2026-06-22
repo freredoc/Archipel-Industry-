@@ -17,8 +17,15 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 61`, `GAME_VERSION = 'Alpha 10.36'`.** Changement
-  10.36 : **détecteur de mise à jour automatique** — au lancement, un `useEffect` fetch `version.json`
+- **État au dernier passage : `GAME_BUILD = 62`, `GAME_VERSION = 'Alpha 10.37'`.** Changements
+  10.37 : (1) **fix régime 0 %** — le panneau bâtiment montrait 0 % pour un consommateur élec. à
+  demande variable (`sigmoid`/`randomP`, dont `b.power===0`) coupé à l'instant T ; on teste désormais
+  `nominalPower(bld) > 0` (et non `b.power>0`) pour activer le régime lissé `pwrAvg` → affiche le vrai
+  duty-cycle (~50-100 %). (2) **bannière de saturation câble** — la saturation électrique d'un câble
+  (demande élec. > débit) est maintenant ajoutée à `game.netSaturated[isl]` dans la boucle énergie
+  (la liste était figée avant, route/tuyau seulement) → la bannière haut-droite « ⚠ Câble VN saturé »
+  s'affiche comme pour la route.
+- Changement 10.36 : **détecteur de mise à jour automatique** — au lancement, un `useEffect` fetch `version.json`
   (`VERSION_URL`) et compare `build > GAME_BUILD` ; si une version plus récente existe → state App
   `updateInfo` → **pastille `notif-dot` + classe `has-update` sur le bouton Options** (Hud), **toast**
   « Mise à jour disponible », et l'`OptionsModal` s'ouvre déjà sur l'état `available` (lien de

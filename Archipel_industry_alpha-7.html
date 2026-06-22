@@ -3052,8 +3052,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 61;
-const GAME_VERSION = 'Alpha 10.36';
+const GAME_BUILD = 62;
+const GAME_VERSION = 'Alpha 10.37';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -4090,6 +4090,13 @@ function tickIsland(game, isl) {
       served: netServed,
       cap: cap
     };
+    // Saturation électrique du câble : la demande dépasse le débit transmissible. On
+    // l'ajoute à la liste `saturated` (calculée pour route/tuyau avant la boucle énergie,
+    // qui ne voyait pas encore la demande élec.) → bannière « ⚠ Câble VN saturé » en haut.
+    if (netObj && cap !== Infinity && netDem > cap + 1e-6) saturated.push({
+      type: 'wire',
+      level: netObj.level
+    });
     supply += netSupply;
     consumed += netServed;
     demand += netDem;
@@ -6004,7 +6011,10 @@ function InfoPanel({
   // coupé/rallumé d'un tick à l'autre. Le régime moyen lissé (bld.pwrAvg) reflète la
   // production réelle « au ralenti » au lieu d'un trompeur 0 % à l'instant de la coupure.
   const pwrAvg = bld.pwrAvg;
-  const powerLimited = (b.power || 0) > 0 && pwrAvg != null && pwrAvg < 0.995 && (bld.active !== false || bld.discReason === 'power');
+  // Un consommateur d'élec. inclut les bâtiments à demande variable (sigmoid/randomP),
+  // dont `b.power` vaut 0 : on teste donc nominalPower(bld) > 0, pas seulement b.power.
+  const drawsPower = nominalPower(bld) > 0;
+  const powerLimited = drawsPower && pwrAvg != null && pwrAvg < 0.995 && (bld.active !== false || bld.discReason === 'power');
   let speedPct, speedReason;
   if (powerLimited) {
     // Débit effectif = part du temps alimenté × saturation réseau éventuelle.
