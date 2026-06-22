@@ -17,8 +17,16 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 63`, `GAME_VERSION = 'Alpha 10.38'`.** Changements
-  10.38 : (1) **diesel stocké au port** — nouveau concept `PORT_PIPE_RES`/`isPortPipe` : une ressource
+- **État au dernier passage : `GAME_BUILD = 64`, `GAME_VERSION = 'Alpha 10.39'`.** Changement
+  10.39 : **électricité « puiser sur tous les câbles adjacents »** — un bâtiment (producteur /
+  consommateur / accu) qui touche plusieurs réseaux câble les fusionne électriquement (union-find
+  `wireUF`/`ufRoot`/`ufUnion` + `wireRepFor` dans `tickIsland`). La boucle énergie itère désormais par
+  **composante fusionnée** (pools `poolProd`/`poolCons`/`poolAccs`), avec **débit de composante =
+  somme des débits des câbles** qui la composent. Corrige la fragmentation en mini-réseaux d'une
+  tuile (des bâtiments restaient sous-alimentés alors que l'île produisait assez). Le `NetworkPanel`
+  câble et `game.wireInfo[isl]` affichent le bilan de la composante (reporté sur chaque câble). Seuls
+  les bâtiments vraiment isolés (1 seul câble sous-dimensionné, ou aucun câble) restent coupés.
+  Changements 10.38 : (1) **diesel stocké au port** — nouveau concept `PORT_PIPE_RES`/`isPortPipe` : une ressource
   peut être transportée par TUYAU mais stockée au PORT (au lieu du pool tuyau). Le diesel est routé
   via un nouveau bucket `inByType.pipePort`/`outByType.pipePort` (dépôt/conso au port, demande reportée
   sur le réseau tuyau pour la saturation). `tradeAvail/Draw/Deposit` excluent `PORT_PIPE_RES` du
