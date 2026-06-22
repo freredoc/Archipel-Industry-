@@ -1,7 +1,7 @@
 {
-  "build": 66,
-  "version": "Alpha 10.41",
+  "build": 67,
+  "version": "Alpha 10.42",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.41 — persistance des modifications de terrain (réparation/remblai) (#66)"
+  "notes": "Alpha 10.42 — mise à jour in-app quasi-automatique (1 tap) (#67)"
 }
