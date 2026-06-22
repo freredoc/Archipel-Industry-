@@ -1,7 +1,7 @@
 {
-  "build": 68,
-  "version": "Alpha 10.43",
+  "build": 69,
+  "version": "Alpha 10.44",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.43 — stocks de démarrage différenciés (îles 3, 4, 5) (#68)"
+  "notes": "Alpha 10.44 — fiche détaillée d'un bâtiment par appui long (#69)"
 }
