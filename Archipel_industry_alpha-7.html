@@ -2749,7 +2749,12 @@ const TIER_COST_MULT = {
   t2: 4,
   t3: 8
 };
+// Bâtiments « récompense » : les versions améliorées (suffixe _v2 / _v3 …, ex. mine_fer_v2,
+// four_fer_v2, carriere_v3) débloquées par la recherche. On NE leur applique PAS le surcoût de
+// palier (elles restent à leur coût de base), contrairement aux autres bâtiments du même palier.
+const isRewardBuilding = id => /_v\d+$/.test(id);
 for (const id in BUILDINGS) {
+  if (isRewardBuilding(id)) continue;
   const b = BUILDINGS[id];
   const m = TIER_COST_MULT[b.tier];
   if (m && b.cost) for (const k in b.cost) b.cost[k] *= m;
@@ -3066,8 +3071,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 71;
-const GAME_VERSION = 'Alpha 10.46';
+const GAME_BUILD = 72;
+const GAME_VERSION = 'Alpha 10.47';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
