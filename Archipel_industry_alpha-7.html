@@ -1220,6 +1220,9 @@ function buildIslandTiles(def) {
       }
     }
   }
+  // Terrain « de base » mémorisé par tuile → permet de sérialiser les modifications de terrain
+  // (réparation accidenté→terre, remblai eau→côte) et de les restaurer au chargement.
+  for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) tiles[r][c].baseTerrain = tiles[r][c].terrain;
   return tiles;
 }
 const defById = id => ISLAND_TERRAINS.find(d => d.id === id);
@@ -3056,12 +3059,12 @@ function ensureSlotsInitialized() {
   }
   return active;
 }
-const SAVE_VERSION = 12;
+const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 65;
-const GAME_VERSION = 'Alpha 10.40';
+const GAME_BUILD = 66;
+const GAME_VERSION = 'Alpha 10.41';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -8133,9 +8136,16 @@ function App() {
     const islands = ISLAND_TERRAINS.map(def => {
       const tiles = g.islands[def.id];
       const placements = [];
+      const terrainMods = [];
       const repByNid = {};
       for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
         const t = tiles[r][c];
+        // Modification de terrain (réparation / remblai) à conserver dans la sauvegarde.
+        if (t.baseTerrain != null && t.terrain !== t.baseTerrain) terrainMods.push({
+          r,
+          c,
+          t: t.terrain
+        });
         const b = t.building;
         if (b && !(BUILDINGS[b.id] && BUILDINGS[b.id].fixed)) {
           const pl = {
@@ -8191,6 +8201,7 @@ function App() {
       return {
         id: def.id,
         placements,
+        terrainMods,
         pools,
         levels
       };
@@ -8402,7 +8413,7 @@ function App() {
     } catch (e) {
       return false;
     }
-    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12].indexOf(data.version) === -1) return false;
+    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].indexOf(data.version) === -1) return false;
     const g = gameRef.current;
     // Extension des mers (v11) : les îles sont désormais entourées de SEA_PAD tuiles d'eau.
     // Les sauvegardes antérieures (coordonnées non décalées) sont translatées de +SEA_PAD.
@@ -8532,6 +8543,14 @@ function App() {
     for (const isl of data.islands || []) {
       const tiles = g.islands[isl.id];
       if (!tiles) continue;
+      // Restaurer les modifications de terrain (réparation accidenté→terre, remblai eau→côte)
+      // AVANT de poser les bâtiments (la tuile doit avoir le bon terrain).
+      for (const tm of isl.terrainMods || []) {
+        const tr = tm.r + padShift,
+          tc = tm.c + padShift;
+        const tt = tiles[tr] && tiles[tr][tc];
+        if (tt && typeof tm.t === 'string') tt.terrain = tm.t;
+      }
       for (const p of isl.placements || []) {
         if (!BUILDINGS[p.b] || BUILDINGS[p.b].fixed) continue;
         const pr = p.r + padShift,

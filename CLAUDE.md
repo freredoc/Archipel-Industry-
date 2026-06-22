@@ -17,7 +17,14 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 65`, `GAME_VERSION = 'Alpha 10.40'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 66`, `GAME_VERSION = 'Alpha 10.41'`.** Changement
+  10.41 : **persistance des modifications de terrain** — la réparation (accidenté→terre/côte) et le
+  remblai (eau→côte) n'étaient PAS sauvegardés : `buildIslandTiles` reconstruit les tuiles depuis la
+  def à chaque chargement, et seuls les *compteurs* `repairsCount`/`extensionsCount` étaient persistés
+  → terrain réparé perdu au reload/MAJ. Fix : `buildIslandTiles` mémorise `tiles[r][c].baseTerrain` ;
+  `serialize` émet un tableau `terrainMods` (tuiles où `terrain !== baseTerrain`) par île ; `loadSave`
+  réapplique ces overrides (avec `padShift`) AVANT de poser les bâtiments. `SAVE_VERSION` **12 → 13**
+  (ajouté à la whitelist de `slotLoad`). Changement
   10.40 : **fix stub réseau « deux câbles »** — quand plusieurs porteurs (câble + tuyau) se
   raccordent à un bâtiment via la MÊME jonction (même direction), leurs stubs se superposaient et
   le câble (dessiné en dernier) masquait le tuyau (ex. centrale diesel → « deux câbles »). Le draw
