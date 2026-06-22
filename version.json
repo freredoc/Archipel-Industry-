@@ -1,7 +1,7 @@
 {
-  "build": 62,
-  "version": "Alpha 10.37",
+  "build": 63,
+  "version": "Alpha 10.38",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.37 — fix régime 0% (sigmoid) + bannière de saturation câble (#62)"
+  "notes": "Alpha 10.38 — diesel stocké au port (transport tuyau) + fix stub de connexion jonction (#63)"
 }
