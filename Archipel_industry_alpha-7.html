@@ -3060,8 +3060,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 63;
-const GAME_VERSION = 'Alpha 10.38';
+const GAME_BUILD = 64;
+const GAME_VERSION = 'Alpha 10.39';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3515,6 +3515,33 @@ function tickIsland(game, isl) {
   const nucList = [];
   // Production électrique ventilée par réseau câble (sous-réseau électrique distinct).
   const wireProd = {};
+  // Sous-réseaux électriques « fusionnés » (option : puiser sur tous les câbles adjacents) :
+  // un bâtiment (producteur / consommateur / accu) qui touche plusieurs réseaux câble les relie
+  // électriquement. Union-find sur les ids de réseau câble ; la prod/conso est mise en commun par
+  // composante, et le débit de la composante = somme des débits des câbles qui la composent.
+  const wireUF = {};
+  const ufRoot = x => {
+    if (wireUF[x] == null) wireUF[x] = x;
+    while (wireUF[x] !== x) {
+      wireUF[x] = wireUF[wireUF[x]] != null ? wireUF[wireUF[x]] : wireUF[x];
+      x = wireUF[x];
+    }
+    return x;
+  };
+  const ufUnion = (a, b) => {
+    const ra = ufRoot(a),
+      rb = ufRoot(b);
+    if (ra !== rb) wireUF[ra] = rb;
+  };
+  // Réseau câble représentant d'un bâtiment (1er adjacent) en fusionnant tous ses réseaux câble
+  // adjacents dans la même composante électrique. null si non câblé.
+  const wireRepFor = (r, c, w, h) => {
+    const ids = adjacentNetworksFootprint(game, isl, r, c, w, h, 'wire');
+    if (!ids.length) return null;
+    ufRoot(ids[0]);
+    for (let i = 1; i < ids.length; i++) ufUnion(ids[0], ids[i]);
+    return ids[0];
+  };
   // --- Antenna buff pre-pass ---
   // Mark the 8 tiles around each wire-connected antenna. Buffed production buildings
   // get ×2 output and a sigmoid-oscillating power draw (×1→×3 of nominal, 60s cycle).
@@ -3543,7 +3570,7 @@ function tickIsland(game, isl) {
         bld,
         capacity: accCapacity(bld),
         stored: bld.stored || 0,
-        wnid: firstWireNid(game, isl, r, c, asz[1] || 1, asz[0] || 1)
+        wnid: wireRepFor(r, c, asz[1] || 1, asz[0] || 1)
       });
       continue;
     }
@@ -3689,7 +3716,7 @@ function tickIsland(game, isl) {
     }
     const usesWire = energyOut > 0 || power > 0;
     const wsz = b.size || [1, 1];
-    const wireNid = usesWire ? firstWireNid(game, isl, r, c, wsz[1] || 1, wsz[0] || 1) : null;
+    const wireNid = usesWire ? wireRepFor(r, c, wsz[1] || 1, wsz[0] || 1) : null;
     if (ok && usesWire && wireNid == null) {
       ok = false;
       disc = true;
@@ -3888,6 +3915,10 @@ function tickIsland(game, isl) {
     const wireIds = adjacentNetworksFootprint(game, isl, r, c, nw, nh, 'wire');
     const wireOk = wireIds.length > 0;
     const nucWireNid = wireOk ? wireIds[0] : null;
+    if (wireOk) {
+      ufRoot(wireIds[0]);
+      for (let i = 1; i < wireIds.length; i++) ufUnion(wireIds[0], wireIds[i]);
+    }
     const haveRoad = roadNid != null && (port['combustible_u235'] || 0) >= 1 && (port[matKey] || 0) >= 1;
     let coldNid = null;
     for (const nid of adjacentNetworksFootprint(game, isl, r, c, nw, nh, 'pipe')) {
@@ -4059,36 +4090,61 @@ function tickIsland(game, isl) {
     }
     return kept;
   };
-  // Regroupe consommateurs et accumulateurs par réseau câble.
-  const wireCons = {};
-  for (const cc of energyConsumers) (wireCons[cc.wnid] || (wireCons[cc.wnid] = [])).push(cc);
-  const wireAccs = {};
+  // Regroupe production / consommateurs / accumulateurs par COMPOSANTE électrique (root union-find).
+  const rootNids = {};
+  for (const k in wireUF) {
+    const nid = +k,
+      root = ufRoot(nid);
+    (rootNids[root] || (rootNids[root] = [])).push(nid);
+  }
+  const poolProd = {};
+  for (const k in wireProd) {
+    const root = ufRoot(+k);
+    poolProd[root] = (poolProd[root] || 0) + wireProd[k];
+  }
+  const poolCons = {};
+  for (const cc of energyConsumers) {
+    if (cc.wnid == null) continue;
+    const root = ufRoot(cc.wnid);
+    (poolCons[root] || (poolCons[root] = [])).push(cc);
+  }
+  const poolAccs = {};
   for (const acc of accList) {
     if (acc.wnid == null) {
-      // Accumulateur non câblé : inerte ce tick (ne participe à aucun sous-réseau).
+      // Accumulateur non câblé : inerte ce tick (ne participe à aucune composante).
       acc.bld.stored = acc.stored;
       continue;
     }
-    (wireAccs[acc.wnid] || (wireAccs[acc.wnid] = [])).push(acc);
+    const root = ufRoot(acc.wnid);
+    (poolAccs[root] || (poolAccs[root] = [])).push(acc);
   }
-  const allWireNids = {};
-  for (const k in wireProd) allWireNids[k] = true;
-  for (const k in wireCons) allWireNids[k] = true;
-  for (const k in wireAccs) allWireNids[k] = true;
+  // Débit d'une composante = somme des débits des câbles qui la composent (illimité si l'un l'est).
+  const poolCap = {};
+  for (const root in rootNids) {
+    let cap = 0;
+    for (const nid of rootNids[root]) {
+      const no = nets[nid];
+      cap += no && no.unlimited ? Infinity : networkThroughput(no ? no.level : 1);
+    }
+    poolCap[root] = cap;
+  }
+  const allRoots = {};
+  for (const k in poolProd) allRoots[k] = true;
+  for (const k in poolCons) allRoots[k] = true;
+  for (const k in poolAccs) allRoots[k] = true;
   let supply = 0,
     consumed = 0,
     demand = 0,
     accStored = 0,
     accCap = 0;
-  // Bilan électrique détaillé par réseau câble (pour le panneau Câble : Production /
-  // Demande / Livrée). Permet de voir si une coupure vient du débit (livrée < demande
-  // alors que production ≥ demande) ou d'un déficit de production (production < demande).
+  // Bilan électrique détaillé par composante (panneau Câble : Production / Demande / Livrée),
+  // reporté sur chaque câble de la composante (taper n'importe lequel affiche le même bilan).
   const wireInfo = {};
-  for (const nidStr in allWireNids) {
-    const nid = +nidStr;
-    const prod = wireProd[nid] || 0;
-    const cons = wireCons[nid] || [];
-    const accs = wireAccs[nid] || [];
+  for (const rootStr in allRoots) {
+    const root = +rootStr;
+    const prod = poolProd[root] || 0;
+    const cons = poolCons[root] || [];
+    const accs = poolAccs[root] || [];
     let netDem = 0;
     for (const cc of cons) netDem += cc.power;
     // Accumulateurs : stockent le surplus (rendement 0.8) / déchargent en cas de déficit.
@@ -4122,9 +4178,8 @@ function tickIsland(game, isl) {
       for (const acc of accs) acc.bld.stored = acc.stored;
     }
     const netSupply = prod + disc;
-    // Débit du câble : borne la puissance livrable aux consommateurs de ce réseau.
-    const netObj = nets[nid];
-    const cap = netObj && netObj.unlimited ? Infinity : networkThroughput(netObj ? netObj.level : 1);
+    // Débit total de la composante : borne la puissance livrable à ses consommateurs.
+    const cap = poolCap[root] != null ? poolCap[root] : NETWORK_THROUGHPUT[1];
     const deliver = Math.min(netSupply, cap);
     let netServed = netDem;
     if (deliver + 1e-6 < netDem) {
@@ -4132,9 +4187,13 @@ function tickIsland(game, isl) {
       netServed = 0;
       for (const cc of kept) netServed += cc.power;
     }
-    // Demande électrique reportée sur netDemand → le panneau Câble affiche débit/saturation.
-    netDemand[nid] = (netDemand[nid] || 0) + netDem;
-    wireInfo[nid] = {
+    const nidsOf = rootNids[root] || [root];
+    let maxLvl = 1;
+    for (const nid of nidsOf) {
+      const no = nets[nid];
+      if (no && (no.level || 1) > maxLvl) maxLvl = no.level;
+    }
+    const info = {
       prod: prod,
       disc: disc,
       supply: netSupply,
@@ -4143,12 +4202,14 @@ function tickIsland(game, isl) {
       served: netServed,
       cap: cap
     };
-    // Saturation électrique du câble : la demande dépasse le débit transmissible. On
-    // l'ajoute à la liste `saturated` (calculée pour route/tuyau avant la boucle énergie,
-    // qui ne voyait pas encore la demande élec.) → bannière « ⚠ Câble VN saturé » en haut.
-    if (netObj && cap !== Infinity && netDem > cap + 1e-6) saturated.push({
+    for (const nid of nidsOf) {
+      wireInfo[nid] = info;
+      netDemand[nid] = (netDemand[nid] || 0) + netDem;
+    }
+    // Saturation électrique : demande > débit total de la composante → bannière « ⚠ Câble VN saturé ».
+    if (cap !== Infinity && netDem > cap + 1e-6) saturated.push({
       type: 'wire',
-      level: netObj.level
+      level: maxLvl
     });
     supply += netSupply;
     consumed += netServed;
@@ -6980,7 +7041,11 @@ function NetworkPanel({
   };
   const lvl = netObj.level;
   const unlimited = !!netObj.unlimited;
-  const cap = unlimited ? Infinity : networkThroughput(lvl);
+  // Câble : le débit affiché est celui de la COMPOSANTE électrique (somme des câbles fusionnés),
+  // pas du seul réseau cliqué — cohérent avec « puiser sur tous les câbles adjacents ».
+  const isWire = netObj.type === 'wire';
+  const wi = isWire && game.wireInfo && game.wireInfo[currentIsland] && game.wireInfo[currentIsland][net.networkId] || null;
+  const cap = isWire && wi ? wi.cap : unlimited ? Infinity : networkThroughput(lvl);
   const tiles = networkTileCount(game, currentIsland, net.networkId);
   const dev = game.ui && game.ui.dev;
   const port = game.port[currentIsland] || {};
@@ -6992,13 +7057,11 @@ function NetworkPanel({
   const upInfo = networkLevelChange(game, currentIsland, net.networkId, +1, effPay);
   const downInfo = networkLevelChange(game, currentIsland, net.networkId, -1);
   const unlInfo = networkUnlimitedInfo(game, currentIsland, net.networkId);
-  // Flux demandé sur ce réseau vs débit max (saturation).
-  const demand = game.netDemand && game.netDemand[currentIsland] && game.netDemand[currentIsland][net.networkId] || 0;
+  // Flux demandé : pour un câble, la demande de toute la composante électrique.
+  const demand = isWire && wi ? wi.demand : game.netDemand && game.netDemand[currentIsland] && game.netDemand[currentIsland][net.networkId] || 0;
   const saturatedNet = cap !== Infinity && demand > cap + 0.001;
   const servedPct = saturatedNet ? Math.max(0, Math.round(cap / demand * 100)) : 100;
   // Bilan électrique détaillé (réseaux câble uniquement) : Production / Demande / Livrée.
-  const isWire = netObj.type === 'wire';
-  const wi = isWire && game.wireInfo && game.wireInfo[currentIsland] && game.wireInfo[currentIsland][net.networkId] || null;
   const elProd = wi ? wi.supply : 0;
   const elDeliver = wi ? wi.deliver : 0;
   // Coupure par débit : on produit assez mais le câble ne transmet pas tout.
