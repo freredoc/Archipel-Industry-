@@ -1,7 +1,7 @@
 {
-  "build": 60,
-  "version": "Alpha 10.35",
+  "build": 61,
+  "version": "Alpha 10.36",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.35 — intègre les 6 sprites d'état de panne (etat_*) (#60)"
+  "notes": "Alpha 10.36 — détecteur de mise à jour automatique au lancement (#61)"
 }
