@@ -1,7 +1,7 @@
 {
-  "build": 63,
-  "version": "Alpha 10.38",
+  "build": 64,
+  "version": "Alpha 10.39",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.38 — diesel stocké au port (transport tuyau) + fix stub de connexion jonction (#63)"
+  "notes": "Alpha 10.39 — électricité : puiser sur tous les câbles adjacents (composantes fusionnées) (#64)"
 }
