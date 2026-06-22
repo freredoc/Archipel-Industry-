@@ -1,7 +1,7 @@
 {
-  "build": 69,
-  "version": "Alpha 10.44",
+  "build": 70,
+  "version": "Alpha 10.45",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.44 — fiche détaillée d'un bâtiment par appui long (#69)"
+  "notes": "Alpha 10.45 — détail des ressources transitant sur un réseau (#70)"
 }
