@@ -408,10 +408,11 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 .slot-new:hover{border-color:var(--yellow);color:var(--yellow);}
 .slot-confirm{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:#ff8079;align-self:center;}
 /* ── Panneau Options ── */
-.options-btn{flex-shrink:0;display:flex;align-items:center;gap:5px;background:var(--panel-2);
+.options-btn{position:relative;flex-shrink:0;display:flex;align-items:center;gap:5px;background:var(--panel-2);
   border:1px solid var(--line);border-radius:6px;color:var(--ink-dim);cursor:pointer;
   font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.03em;
   padding:5px 11px;}
+.options-btn.has-update{border-color:var(--yellow);color:var(--ink);}
 .options-btn:hover{border-color:#3a3a6a;color:var(--ink);}
 .options-btn .gear{font-size:1rem;line-height:1;}
 .opt-row{display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -3051,8 +3052,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 60;
-const GAME_VERSION = 'Alpha 10.35';
+const GAME_BUILD = 61;
+const GAME_VERSION = 'Alpha 10.36';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -5476,7 +5477,8 @@ function Hud({
   invOpen,
   onToggleInv,
   onOpenOptions,
-  onOpenHelp
+  onOpenHelp,
+  updateInfo
 }) {
   // Bilan « réel vs demandé » : produit (générateurs + décharge batterie) − demande totale.
   // Négatif = déficit réel (des bâtiments sont coupés), même si la batterie tampon un instant.
@@ -5502,12 +5504,14 @@ function Hud({
   }, "ARCHIPEL ", React.createElement("b", null, "INDUSTRY")), React.createElement("div", {
     className: "hud-grp hud-main"
   }, React.createElement("button", {
-    className: "options-btn",
+    className: "options-btn" + (updateInfo ? ' has-update' : ''),
     onClick: onOpenOptions,
-    title: "Options"
+    title: updateInfo ? "Mise à jour disponible : " + updateInfo.label : "Options"
   }, React.createElement("span", {
     className: "gear"
-  }, "⚙"), React.createElement("span", null, "Options")), React.createElement("button", {
+  }, "⚙"), React.createElement("span", null, "Options"), updateInfo && React.createElement("span", {
+    className: "notif-dot"
+  })), React.createElement("button", {
     className: "options-btn help-btn",
     onClick: onOpenHelp,
     title: "Aide \u2014 toutes les astuces"
@@ -7474,7 +7478,8 @@ function OptionsModal({
   onToggleTips,
   onResetTips,
   onOpenSaves,
-  onClose
+  onClose,
+  updateInfo
 }) {
   const toggleRow = (name, desc, on, onClick, extraCls) => React.createElement("div", {
     className: "opt-row"
@@ -7489,7 +7494,12 @@ function OptionsModal({
     onClick: onClick,
     title: on ? 'Activé' : 'Désactivé'
   }));
-  const [upd, setUpd] = useState({
+  const [upd, setUpd] = useState(updateInfo ? {
+    state: 'available',
+    label: updateInfo.label,
+    apk: updateInfo.apk,
+    notes: updateInfo.notes
+  } : {
     state: 'idle'
   });
   const checkUpdate = () => {
@@ -7942,6 +7952,7 @@ function App() {
   const activeTipRef = useRef(null);
   const needModeRef = useRef(false);
   const [dev, setDev] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState(null);
   const [showLevels, setShowLevels] = useState(true);
   const [fastUpgrade, setFastUpgrade] = useState(false);
   const [tipsEnabled, setTipsEnabled] = useState(true);
@@ -7963,6 +7974,33 @@ function App() {
     });
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 1800);
+  }, []);
+  // Détecteur de mise à jour : au lancement, on compare le build en ligne (version.json)
+  // à GAME_BUILD. Si une version plus récente existe → pastille sur Options + une notif.
+  // Échoue en silence hors-ligne (le jeu reste 100 % jouable sans réseau).
+  useEffect(() => {
+    let cancelled = false;
+    fetch(VERSION_URL + '?t=' + Date.now(), {
+      cache: 'no-store'
+    }).then(r => {
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json();
+    }).then(d => {
+      if (cancelled) return;
+      const build = +d.build || 0;
+      if (build > GAME_BUILD) {
+        setUpdateInfo({
+          build,
+          label: d.version || ('build ' + build),
+          apk: d.apk || d.url || '',
+          notes: d.notes || ''
+        });
+        showToast('⬆ Mise à jour disponible : ' + (d.version || ('build ' + build)), 'var(--yellow)');
+      }
+    }).catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
   function serialize() {
     const g = gameRef.current;
@@ -10626,7 +10664,8 @@ function App() {
       setDev(g.ui.dev);
       setOptionsOpen(true);
     },
-    onOpenHelp: () => setHelpOpen(true)
+    onOpenHelp: () => setHelpOpen(true),
+    updateInfo: updateInfo
   }), tutorialStep >= 0 && React.createElement(TutorialBanner, {
     step: tutorialStep,
     total: TUTORIAL_STEPS.length,
@@ -10769,7 +10808,8 @@ function App() {
       setOptionsOpen(false);
       setSlotOpen(true);
     },
-    onClose: () => setOptionsOpen(false)
+    onClose: () => setOptionsOpen(false),
+    updateInfo: updateInfo
   }), helpOpen && React.createElement(HelpPanel, {
     onClose: () => setHelpOpen(false)
   }), offlineReport && React.createElement(OfflineModal, {
