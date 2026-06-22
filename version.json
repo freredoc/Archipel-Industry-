@@ -1,7 +1,7 @@
 {
-  "build": 61,
-  "version": "Alpha 10.36",
+  "build": 62,
+  "version": "Alpha 10.37",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.36 — détecteur de mise à jour automatique au lancement (#61)"
+  "notes": "Alpha 10.37 — fix régime 0% (sigmoid) + bannière de saturation câble (#62)"
 }
