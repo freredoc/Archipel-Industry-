@@ -17,8 +17,13 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 68`, `GAME_VERSION = 'Alpha 10.43'`.** Changement
-  10.43 : **stocks de démarrage différenciés par île** — `ISLAND_KICKSTART` n'utilise plus la même
+- **État au dernier passage : `GAME_BUILD = 69`, `GAME_VERSION = 'Alpha 10.44'`.** Changement
+  10.44 : **fiche détaillée d'un bâtiment par appui long** — dans l'onglet Bâtiment / Réseau, un
+  appui long (~450 ms) sur une tuile ouvre `BuildingDetailModal` (coût, taille, terrain, entrées/
+  sorties /s, conso/prod élec., stockage, exclusivité). `ToolButton` gère le long-press (pointer
+  events + timer, annulé si glissement >10 px pour ne pas gêner le défilement ; appui court =
+  sélection inchangée, `lp.current.fired` supprime le clic). `Toolbar` détient l'état `detailId`.
+  Changement 10.43 : **stocks de démarrage différenciés par île** — `ISLAND_KICKSTART` n'utilise plus la même
   base pour les îles 2-5. Nouveaux objets `ISLAND_KICKSTART_3/4/5` (île 2 inchangée). Île 3 = base
   + lingot_cuivre 500 / acier 250 / cable 250 ; île 4 = ces ressources toutes à 1000 + beton_arme /
   polymere / piece_meca 500 ; île 5 = celles de l'île 4 toutes à 1000. Déposé au port à la 1re
