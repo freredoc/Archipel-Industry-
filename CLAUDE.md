@@ -17,7 +17,12 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 70`, `GAME_VERSION = 'Alpha 10.45'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 71`, `GAME_VERSION = 'Alpha 10.46'`.** Changement
+  10.46 : **recherches terminées reléguées en fin de liste + compactées** — `techNodesOrdered(game)`
+  trie les nœuds de `ResearchPanel` pour mettre les `confirmed` à la FIN (ordre d'id sinon) ; les
+  nœuds confirmés s'affichent en compact (CSS `.rp-node.st-confirmed` : padding réduit, `.rp-st`
+  masqué, `.rp-name` plus petit) et n'affichent plus la ligne « → débloque … ». Changement
+  10.45 : **détail des ressources transitant sur un réseau**
   10.45 : **détail des ressources transitant sur un réseau** — `tickIsland` accumule `netFlow[nid] =
   {prod, cons}` par ressource (déposée / puisée /s) pour route+tuyau (+pipePort) en parallèle de
   `netDemand`, stocké dans `game.netFlow[isl]`. Le `NetworkPanel` (clic sur une route/tuyau) affiche
