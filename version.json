@@ -1,7 +1,7 @@
 {
-  "build": 64,
-  "version": "Alpha 10.39",
+  "build": 65,
+  "version": "Alpha 10.40",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.39 — électricité : puiser sur tous les câbles adjacents (composantes fusionnées) (#64)"
+  "notes": "Alpha 10.40 — fix stub réseau « deux câbles » (câble+tuyau via même jonction) (#65)"
 }
