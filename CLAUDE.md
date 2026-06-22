@@ -17,7 +17,11 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 59`, `GAME_VERSION = 'Alpha 10.34'`.** Changements
+- **État au dernier passage : `GAME_BUILD = 60`, `GAME_VERSION = 'Alpha 10.35'`.** Changement
+  10.35 : intégration des **6 sprites d'état de panne** (`etat_route`, `etat_tuyau`, `etat_cable`,
+  `etat_intrant`, `etat_courant`, `etat_arret`) inlinés en base64 dans `window.__SPRITE_DATA__`
+  (350 sprites au total) → `drawStatusBadge` les affiche désormais réellement par-dessus les
+  bâtiments à l'arrêt. Changements
   10.34 : (1) **pose sans route** — le garde-fou `needRoad`/`hasAdjacentRoad` est retiré de
   `canPlace`/`tryPlace` ; un bâtiment se pose même sans route adjacente (il s'affiche déconnecté
   via `discReason='road'` tant qu'aucune route ne le touche). (2) **Export/Import de sauvegarde
