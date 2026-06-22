@@ -445,8 +445,9 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 .opt-upd-notes{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--ink-dim);}
 .opt-upd-dl{align-self:flex-start;background:rgba(76,175,80,.2);border:1px solid #4CAF50;color:#9ee29f;
   border-radius:6px;padding:6px 13px;text-decoration:none;font-family:'Barlow Condensed',sans-serif;
-  font-weight:700;font-size:.85rem;}
+  font-weight:700;font-size:.85rem;cursor:pointer;}
 .opt-upd-dl:hover{background:rgba(76,175,80,.32);}
+.opt-upd-dl:disabled{opacity:.6;cursor:default;}
 /* ── Notification de production hors-ligne ── */
 .offline-panel{width:min(420px,94vw);}
 .offline-body{padding:14px;display:flex;flex-direction:column;gap:11px;}
@@ -3063,9 +3064,12 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 66;
-const GAME_VERSION = 'Alpha 10.41';
+const GAME_BUILD = 67;
+const GAME_VERSION = 'Alpha 10.42';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
+// Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
+// jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
+const NATIVE_UPDATER = typeof window !== 'undefined' && window.ArchipelNative && typeof window.ArchipelNative.update === 'function';
 const MIN_TILE = 26,
   MAX_TILE = 64;
 const MAX_ZOOM = 4,
@@ -7631,6 +7635,25 @@ function OptionsModal({
   } : {
     state: 'idle'
   });
+  // Avancement de la MAJ in-app (Android) : null = inactif, 0-100 = %, -1 = erreur.
+  // Alimenté par la coquille native via window.__archipelUpdate(state, pct).
+  const [dlPct, setDlPct] = useState(null);
+  useEffect(() => {
+    window.__archipelUpdate = (state, pct) => {
+      if (state === 'download') setDlPct(typeof pct === 'number' ? pct : 0);else if (state === 'install') setDlPct(100);else if (state === 'error') setDlPct(-1);
+    };
+    return () => {
+      if (window.__archipelUpdate) window.__archipelUpdate = null;
+    };
+  }, []);
+  const startNativeUpdate = () => {
+    setDlPct(0);
+    try {
+      window.ArchipelNative.update(upd.apk);
+    } catch (e) {
+      setDlPct(-1);
+    }
+  };
   const checkUpdate = () => {
     setUpd({
       state: 'checking'
@@ -7664,16 +7687,28 @@ function OptionsModal({
     if (upd.state === 'error') return React.createElement("div", {
       className: "opt-upd-status err"
     }, "Impossible de vérifier (hors-ligne ?).");
-    if (upd.state === 'available') return React.createElement("div", {
-      className: "opt-upd-status new"
-    }, React.createElement("div", null, "⬆ Mise à jour disponible : ", React.createElement("b", null, upd.label)), upd.notes && React.createElement("div", {
-      className: "opt-upd-notes"
-    }, upd.notes), upd.apk && React.createElement("a", {
-      className: "opt-upd-dl",
-      href: upd.apk,
-      target: "_blank",
-      rel: "noopener"
-    }, "Télécharger la mise à jour"));
+    if (upd.state === 'available') {
+      // Action : bouton « Mettre à jour maintenant » in-app si la coquille native est là
+      // (télécharge l'APK + lance l'installeur), sinon lien de téléchargement classique.
+      const link = React.createElement("a", {
+        className: "opt-upd-dl",
+        href: upd.apk,
+        target: "_blank",
+        rel: "noopener"
+      }, "Télécharger la mise à jour");
+      const action = !upd.apk ? null : NATIVE_UPDATER ? React.createElement("button", {
+        className: "opt-upd-dl",
+        onClick: startNativeUpdate,
+        disabled: dlPct != null && dlPct >= 0 && dlPct < 100
+      }, dlPct == null || dlPct < 0 ? "⬇ Mettre à jour maintenant" : dlPct >= 100 ? "Ouverture de l'installeur…" : "Téléchargement… " + dlPct + " %") : link;
+      return React.createElement("div", {
+        className: "opt-upd-status new"
+      }, React.createElement("div", null, "⬆ Mise à jour disponible : ", React.createElement("b", null, upd.label)), upd.notes && React.createElement("div", {
+        className: "opt-upd-notes"
+      }, upd.notes), action, NATIVE_UPDATER && dlPct === -1 && React.createElement("div", {
+        className: "opt-upd-notes"
+      }, "❌ Échec du téléchargement. Réessayez, ou ", link, "."));
+    }
     return null;
   };
   return React.createElement(React.Fragment, null, React.createElement("div", {
