@@ -17,7 +17,18 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 66`, `GAME_VERSION = 'Alpha 10.41'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 67`, `GAME_VERSION = 'Alpha 10.42'`.** Changement
+  10.42 : **mise à jour in-app (quasi-auto, 1 tap)** — la coquille Android expose un pont JS
+  `window.ArchipelNative` (`MainActivity.WebBridge`, `addJavascriptInterface`) avec `update(url)` :
+  télécharge l'APK (`HttpURLConnection`, suivi de redirection GitHub→CDN, cache `update.apk`) puis
+  l'installe via **`PackageInstaller`** (session MODE_FULL_INSTALL → `BroadcastReceiver` sur
+  `INSTALL_ACTION` qui lance l'écran de confirmation système). Pas de FileProvider (projet
+  `useAndroidX=false`). Permission **`REQUEST_INSTALL_PACKAGES`** + vérif `canRequestPackageInstalls()`
+  (sinon ouverture de `ACTION_MANAGE_UNKNOWN_APP_SOURCES`). Avancement renvoyé au JS via
+  `window.__archipelUpdate(state, pct)`. Côté jeu : const `NATIVE_UPDATER`, l'`OptionsModal` (état
+  `available`) affiche un bouton **« Mettre à jour maintenant »** (progress %) si le pont existe,
+  sinon le lien de téléchargement classique. ⚠️ Android interdit l'install 100 % silencieuse pour une
+  app sideloadée : 1 tap « Installer » reste requis. Changement
   10.41 : **persistance des modifications de terrain** — la réparation (accidenté→terre/côte) et le
   remblai (eau→côte) n'étaient PAS sauvegardés : `buildIslandTiles` reconstruit les tuiles depuis la
   def à chaque chargement, et seuls les *compteurs* `repairsCount`/`extensionsCount` étaient persistés

@@ -2,8 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Le jeu tourne hors-ligne (asset local). INTERNET sert uniquement à la
-         vérification de mise à jour et à l'ouverture du lien de téléchargement. -->
+         vérification de mise à jour et au téléchargement de l'APK. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Mise à jour in-app : installer l'APK téléchargé via l'installeur système. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:allowBackup="true"
