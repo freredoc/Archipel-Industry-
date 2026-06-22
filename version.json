@@ -1,7 +1,7 @@
 {
-  "build": 58,
-  "version": "Alpha 10.33",
+  "build": 59,
+  "version": "Alpha 10.34",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.33 — bilan électrique par câble (Production / Demande / Livrée) (#58)"
+  "notes": "Alpha 10.34 — pose sans route · export/import sauvegarde · diesel par tuyau · sprites d'état (#59)"
 }
