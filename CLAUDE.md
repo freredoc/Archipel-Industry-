@@ -17,8 +17,14 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 64`, `GAME_VERSION = 'Alpha 10.39'`.** Changement
-  10.39 : **électricité « puiser sur tous les câbles adjacents »** — un bâtiment (producteur /
+- **État au dernier passage : `GAME_BUILD = 65`, `GAME_VERSION = 'Alpha 10.40'`.** Changement
+  10.40 : **fix stub réseau « deux câbles »** — quand plusieurs porteurs (câble + tuyau) se
+  raccordent à un bâtiment via la MÊME jonction (même direction), leurs stubs se superposaient et
+  le câble (dessiné en dernier) masquait le tuyau (ex. centrale diesel → « deux câbles »). Le draw
+  des stubs (vers ligne 10090) calcule désormais `stubMask`/`juncMask` par porteur, puis attribue
+  chaque **direction de jonction contestée** à un seul porteur (le moins raccordé ailleurs, via
+  `popc`) sans jamais vider le masque d'un porteur → câble et tuyau s'affichent distinctement.
+  Changement 10.39 : **électricité « puiser sur tous les câbles adjacents »** — un bâtiment (producteur /
   consommateur / accu) qui touche plusieurs réseaux câble les fusionne électriquement (union-find
   `wireUF`/`ufRoot`/`ufUnion` + `wireRepFor` dans `tickIsland`). La boucle énergie itère désormais par
   **composante fusionnée** (pools `poolProd`/`poolCons`/`poolAccs`), avec **débit de composante =

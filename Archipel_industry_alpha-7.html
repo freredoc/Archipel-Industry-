@@ -3060,8 +3060,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 64;
-const GAME_VERSION = 'Alpha 10.39';
+const GAME_BUILD = 65;
+const GAME_VERSION = 'Alpha 10.40';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -10089,11 +10089,17 @@ function App() {
       // tuile du bâtiment (lien continu route/tuyau/câble), et matérialise le raccordement
       // (aucun stub = bâtiment non connecté). Ordre tuyau→route→câble (câble au-dessus).
       if (SPRITES_ENABLED && bdef && bdef.kind !== 'infra' && bdef.kind !== 'junction') {
-        for (const carrier of ['pipe', 'road', 'wire']) {
+        const carriers3 = ['pipe', 'road', 'wire'];
+        const stubMask = {},
+          stubLvl = {},
+          stubUnl = {},
+          juncMask = {};
+        for (const carrier of carriers3) {
           if (!buildingConnectsCarrier(bid, carrier)) continue;
           let mask = 0,
             lvl = 1,
-            unl = false;
+            unl = false,
+            jm = 0;
           for (const [dr, dc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
             let nt = tiles[r + dr] && tiles[r + dr][c + dc];
             if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
@@ -10103,6 +10109,7 @@ function App() {
             const isNet = nt.building.id === carrier || isJunc;
             if (!isNet) continue;
             mask |= bit;
+            if (isJunc) jm |= bit;
             // Pour une JONCTION, le networkId du porteur est dans netIds[carrier] (networkId est
             // null) — sinon le stub se dessinait toujours en V1, d'où un raccord visuel cassé.
             const nnid = isJunc ? nt.netIds && nt.netIds[carrier] : nt.networkId;
@@ -10112,7 +10119,41 @@ function App() {
               if (nnet.unlimited) unl = true;
             }
           }
-          if (mask) drawSprite(ctx, NET_PREFIX[carrier] + '_v' + (unl ? 4 : Math.min(lvl, 3)) + '_' + NET_MASK_SUFFIX[mask], x, y, tile, tile);
+          if (mask) {
+            stubMask[carrier] = mask;
+            stubLvl[carrier] = lvl;
+            stubUnl[carrier] = unl;
+            juncMask[carrier] = jm;
+          }
+        }
+        // Conflit d'affichage : plusieurs porteurs raccordés via la MÊME jonction (même direction)
+        // se superposaient (ex. centrale diesel : câble + tuyau via une jonction au nord → on
+        // voyait « deux câbles », le tuyau masqué). On attribue chaque direction de jonction
+        // contestée à UN SEUL porteur (celui qui a le moins d'autres raccords → en dépend le plus),
+        // sans jamais laisser un porteur sans aucun stub.
+        const popc = m => {
+          let n = 0;
+          while (m) {
+            n += m & 1;
+            m >>= 1;
+          }
+          return n;
+        };
+        for (const bit of [1, 2, 4, 8]) {
+          const here = [];
+          for (const c of carriers3)
+            if (stubMask[c] && stubMask[c] & bit && juncMask[c] & bit) here.push(c);
+          if (here.length < 2) continue;
+          here.sort((a, b) => popc(stubMask[a]) - popc(stubMask[b]));
+          for (let i = 1; i < here.length; i++) {
+            const c = here[i];
+            if (popc(stubMask[c]) > 1) stubMask[c] &= ~bit;
+          }
+        }
+        for (const carrier of carriers3) {
+          const mask = stubMask[carrier];
+          if (!mask) continue;
+          drawSprite(ctx, NET_PREFIX[carrier] + '_v' + (stubUnl[carrier] ? 4 : Math.min(stubLvl[carrier], 3)) + '_' + NET_MASK_SUFFIX[mask], x, y, tile, tile);
         }
       }
       const sz = buildingSize(bid);
