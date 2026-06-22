@@ -1,7 +1,7 @@
 {
-  "build": 67,
-  "version": "Alpha 10.42",
+  "build": 68,
+  "version": "Alpha 10.43",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.42 — mise à jour in-app quasi-automatique (1 tap) (#67)"
+  "notes": "Alpha 10.43 — stocks de démarrage différenciés (îles 3, 4, 5) (#68)"
 }
