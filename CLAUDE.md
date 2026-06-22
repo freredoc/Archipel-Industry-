@@ -17,7 +17,13 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 60`, `GAME_VERSION = 'Alpha 10.35'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 61`, `GAME_VERSION = 'Alpha 10.36'`.** Changement
+  10.36 : **détecteur de mise à jour automatique** — au lancement, un `useEffect` fetch `version.json`
+  (`VERSION_URL`) et compare `build > GAME_BUILD` ; si une version plus récente existe → state App
+  `updateInfo` → **pastille `notif-dot` + classe `has-update` sur le bouton Options** (Hud), **toast**
+  « Mise à jour disponible », et l'`OptionsModal` s'ouvre déjà sur l'état `available` (lien de
+  téléchargement APK via `updateInfo.apk`). Échoue en silence hors-ligne. La vérif manuelle
+  (`checkUpdate`) reste dispo. Changement
   10.35 : intégration des **6 sprites d'état de panne** (`etat_route`, `etat_tuyau`, `etat_cable`,
   `etat_intrant`, `etat_courant`, `etat_arret`) inlinés en base64 dans `window.__SPRITE_DATA__`
   (350 sprites au total) → `drawStatusBadge` les affiche désormais réellement par-dessus les
