@@ -17,7 +17,15 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 62`, `GAME_VERSION = 'Alpha 10.37'`.** Changements
+- **État au dernier passage : `GAME_BUILD = 63`, `GAME_VERSION = 'Alpha 10.38'`.** Changements
+  10.38 : (1) **diesel stocké au port** — nouveau concept `PORT_PIPE_RES`/`isPortPipe` : une ressource
+  peut être transportée par TUYAU mais stockée au PORT (au lieu du pool tuyau). Le diesel est routé
+  via un nouveau bucket `inByType.pipePort`/`outByType.pipePort` (dépôt/conso au port, demande reportée
+  sur le réseau tuyau pour la saturation). `tradeAvail/Draw/Deposit` excluent `PORT_PIPE_RES` du
+  chemin pool→port. Migration au chargement : le diesel resté dans les pools tuyau est rapatrié au
+  port. (2) **fix sprite de connexion bâtiment↔jonction** — le stub réseau sous un bâtiment lisait
+  le niveau via `nt.networkId` (null pour une jonction) → toujours V1 ; on lit désormais
+  `nt.netIds[carrier]`. Changements
   10.37 : (1) **fix régime 0 %** — le panneau bâtiment montrait 0 % pour un consommateur élec. à
   demande variable (`sigmoid`/`randomP`, dont `b.power===0`) coupé à l'instant T ; on teste désormais
   `nominalPower(bld) > 0` (et non `b.power>0`) pour activer le régime lissé `pwrAvg` → affiche le vrai

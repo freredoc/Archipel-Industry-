@@ -1353,6 +1353,14 @@ const CARRIER_BY_RES = {
   energie_kw: 'wire'
 };
 const carrierOf = res => CARRIER_BY_RES[res] || 'road';
+// Ressources transportées par TUYAU mais STOCKÉES AU PORT (comme un bien routier), au lieu
+// d'être confinées dans le pool du réseau tuyau (cas des liquides intermédiaires comme
+// pétrole/eau). Le diesel est un produit fini : il circule en tuyau mais s'accumule au port
+// (visible dans l'inventaire, échangeable). On le route comme la route mais via le tuyau.
+const PORT_PIPE_RES = {
+  diesel: true
+};
+const isPortPipe = res => CARRIER_BY_RES[res] === 'pipe' && !!PORT_PIPE_RES[res];
 // ============ SPRITES ============
 // Inlined base64 PNGs are in window.__SPRITE_DATA__ keyed by bare filename (no .png).
 // We resolve a logical game key -> filename, then lazily decode into Image objects.
@@ -3052,8 +3060,8 @@ const SAVE_VERSION = 12;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 62;
-const GAME_VERSION = 'Alpha 10.37';
+const GAME_BUILD = 63;
+const GAME_VERSION = 'Alpha 10.38';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 const MIN_TILE = 26,
   MAX_TILE = 64;
@@ -3579,18 +3587,18 @@ function tickIsland(game, isl) {
     let energyOut = 0;
     for (const k in b.inputs || {}) {
       if (k === 'energie_kw') continue;
-      const ty = carrierOf(k);
-      if (ty === 'road' || ty === 'pipe') (inByType[ty] || (inByType[ty] = {}))[k] = b.inputs[k] * mult;
+      const ty = isPortPipe(k) ? 'pipePort' : carrierOf(k);
+      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (inByType[ty] || (inByType[ty] = {}))[k] = b.inputs[k] * mult;
     }
     for (const k in b.outputs || {}) {
       if (k === 'energie_kw') {
         energyOut += b.outputs[k] * mult;
         continue;
       }
-      const ty = carrierOf(k);
-      if (ty === 'road' || ty === 'pipe') (outByType[ty] || (outByType[ty] = {}))[k] = b.outputs[k] * outMul;
+      const ty = isPortPipe(k) ? 'pipePort' : carrierOf(k);
+      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (outByType[ty] || (outByType[ty] = {}))[k] = b.outputs[k] * outMul;
     }
-    const hasPoolIO = inByType.road || outByType.road || inByType.pipe || outByType.pipe;
+    const hasPoolIO = inByType.road || outByType.road || inByType.pipe || outByType.pipe || inByType.pipePort || outByType.pipePort;
     let ok = true,
       disc = false;
     // Motif précis de dysfonctionnement (affiché dans l'onglet bâtiment) :
@@ -3625,7 +3633,7 @@ function tickIsland(game, isl) {
         }
       }
     }
-    if (ok && (inByType.pipe || outByType.pipe)) {
+    if (ok && (inByType.pipe || outByType.pipe || inByType.pipePort || outByType.pipePort)) {
       const adj = adjacentNetworks(game, isl, r, c, 'pipe');
       if (adj.length === 0) {
         ok = false;
@@ -3654,6 +3662,29 @@ function tickIsland(game, isl) {
           } else routeIn.pipe = pick;
         }
         if (ok && outByType.pipe) routeOut.pipe = inByType.pipe ? routeIn.pipe : adj[0];
+        // Diesel & co. : transportés par tuyau mais stockés au PORT. On route via un tuyau
+        // adjacent (de préférence relié au port) et on vérifie le stock du PORT, pas le pool.
+        if (ok && (inByType.pipePort || outByType.pipePort)) {
+          let pnid = null;
+          for (const nid of adj) {
+            if (nets[nid] && nets[nid].connected) {
+              pnid = nid;
+              break;
+            }
+          }
+          if (pnid == null) pnid = adj[0];
+          routeIn.pipePort = pnid;
+          routeOut.pipePort = pnid;
+          if (inByType.pipePort) {
+            for (const k in inByType.pipePort) {
+              if ((workPort[k] || 0) < inByType.pipePort[k]) {
+                ok = false;
+                discReason = 'input';
+                break;
+              }
+            }
+          }
+        }
       }
     }
     const usesWire = energyOut > 0 || power > 0;
@@ -3675,6 +3706,16 @@ function tickIsland(game, isl) {
     }
     const pri = bld.fluxPri === 'haute' || bld.fluxPri === 'basse' ? bld.fluxPri : 'normale';
     if (inByType.road) for (const k in inByType.road) workPort[k] = (workPort[k] || 0) - inByType.road[k];
+    // Diesel & co. : consommés depuis le PORT (réservation immédiate pour les bâtiments suivants).
+    if (inByType.pipePort) for (const k in inByType.pipePort) workPort[k] = (workPort[k] || 0) - inByType.pipePort[k];
+    if (inByType.pipePort && routeIn.pipePort != null) for (const k in inByType.pipePort) {
+      netDemand[routeIn.pipePort] = (netDemand[routeIn.pipePort] || 0) + inByType.pipePort[k];
+      addTier(routeIn.pipePort, pri, inByType.pipePort[k]);
+    }
+    if (outByType.pipePort && routeOut.pipePort != null) for (const k in outByType.pipePort) {
+      netDemand[routeOut.pipePort] = (netDemand[routeOut.pipePort] || 0) + outByType.pipePort[k];
+      addTier(routeOut.pipePort, pri, outByType.pipePort[k]);
+    }
     if (inByType.road && routeIn.road != null) for (const k in inByType.road) {
       netDemand[routeIn.road] = (netDemand[routeIn.road] || 0) + inByType.road[k];
       addTier(routeIn.road, pri, inByType.road[k]);
@@ -3787,6 +3828,10 @@ function tickIsland(game, isl) {
       const pool = nets[a.routeIn.pipe].pool;
       for (const k in a.inByType.pipe) pool[k] = (pool[k] || 0) - fc * a.inByType.pipe[k];
     }
+    if (a.inByType.pipePort) {
+      const fc = facOf(a.routeIn, 'pipePort', a.pri);
+      for (const k in a.inByType.pipePort) port[k] = (port[k] || 0) - fc * a.inByType.pipePort[k];
+    }
   }
   const prod = game.techTree && game.techTree.produced;
   for (const a of actives) {
@@ -3804,6 +3849,14 @@ function tickIsland(game, isl) {
       for (const k in a.outByType.pipe) {
         const amt = fc * a.outByType.pipe[k];
         pool[k] = (pool[k] || 0) + amt;
+        if (prod) prod[k] = (prod[k] || 0) + amt;
+      }
+    }
+    if (a.outByType.pipePort) {
+      const fc = facOf(a.routeOut, 'pipePort', a.pri);
+      for (const k in a.outByType.pipePort) {
+        const amt = fc * a.outByType.pipePort[k];
+        port[k] = (port[k] || 0) + amt;
         if (prod) prod[k] = (prod[k] || 0) + amt;
       }
     }
@@ -5236,7 +5289,7 @@ function portPipePools(game, islandId) {
   return pools;
 }
 function tradeAvail(game, islandId, res) {
-  if (CARRIER_BY_RES[res] === 'pipe') {
+  if (CARRIER_BY_RES[res] === 'pipe' && !PORT_PIPE_RES[res]) {
     let s = 0;
     for (const p of portPipePools(game, islandId)) s += p[res] || 0;
     return s;
@@ -5244,7 +5297,7 @@ function tradeAvail(game, islandId, res) {
   return (game.port[islandId] || {})[res] || 0;
 }
 function tradeDraw(game, islandId, res, qty) {
-  if (CARRIER_BY_RES[res] === 'pipe') {
+  if (CARRIER_BY_RES[res] === 'pipe' && !PORT_PIPE_RES[res]) {
     let left = qty;
     for (const p of portPipePools(game, islandId)) {
       if (left <= 0) break;
@@ -5262,7 +5315,7 @@ function tradeDraw(game, islandId, res, qty) {
   return take;
 }
 function tradeDeposit(game, islandId, res, amt) {
-  if (CARRIER_BY_RES[res] === 'pipe') {
+  if (CARRIER_BY_RES[res] === 'pipe' && !PORT_PIPE_RES[res]) {
     const pools = portPipePools(game, islandId);
     if (!pools.length) return false;
     pools[0][res] = (pools[0][res] || 0) + amt;
@@ -8550,6 +8603,20 @@ function App() {
         if (net && p.lvl >= 1 && p.lvl <= NETWORK_MAX_LEVEL) net.level = p.lvl;
         if (net && p.unl) net.unlimited = true;
       }
+      // Migration : le diesel (PORT_PIPE_RES) était jadis stocké dans les pools tuyau ; on le
+      // rapatrie vers le port (nouveau stockage), pour ne pas « perdre » le stock existant.
+      const islNets = g.networks[isl.id] || {};
+      for (const nid in islNets) {
+        const pool = islNets[nid] && islNets[nid].pool;
+        if (!pool) continue;
+        for (const k in PORT_PIPE_RES) {
+          if (pool[k]) {
+            const pport = g.port[isl.id] || (g.port[isl.id] = {});
+            pport[k] = (pport[k] || 0) + pool[k];
+            pool[k] = 0;
+          }
+        }
+      }
     }
     g.lastSave = data.savedAt || 0;
     // Tutoriel : sauvegardes existantes (sans champ) -> inactif ; nouvelles parties
@@ -9969,10 +10036,14 @@ function App() {
             if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
             if (!nt || !nt.building) continue;
             const nd = BUILDINGS[nt.building.id];
-            const isNet = nt.building.id === carrier || nd && nd.kind === 'junction' && nd.junction && nd.junction.indexOf(carrier) !== -1;
+            const isJunc = nd && nd.kind === 'junction' && nd.junction && nd.junction.indexOf(carrier) !== -1;
+            const isNet = nt.building.id === carrier || isJunc;
             if (!isNet) continue;
             mask |= bit;
-            const nnet = g.networks[isl] && g.networks[isl][nt.networkId];
+            // Pour une JONCTION, le networkId du porteur est dans netIds[carrier] (networkId est
+            // null) — sinon le stub se dessinait toujours en V1, d'où un raccord visuel cassé.
+            const nnid = isJunc ? nt.netIds && nt.netIds[carrier] : nt.networkId;
+            const nnet = g.networks[isl] && g.networks[isl][nnid];
             if (nnet) {
               if ((nnet.level || 1) > lvl) lvl = nnet.level;
               if (nnet.unlimited) unl = true;
