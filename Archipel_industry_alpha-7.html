@@ -3064,8 +3064,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 68;
-const GAME_VERSION = 'Alpha 10.43';
+const GAME_BUILD = 69;
+const GAME_VERSION = 'Alpha 10.44';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5820,18 +5820,58 @@ function ToolButton({
   id,
   active,
   accent,
-  onSelect
+  onSelect,
+  onDetail
 }) {
   const b = BUILDINGS[id];
   const sub = b.kind === 'infra' ? 'tracé continu' : b.kind === 'junction' && CURRENT_MODE === 'normal' ? 'coût croissant' : formatCost(b.cost) || 'gratuit';
   const skey = SPRITES_ENABLED ? buildingSpriteKey(id) : null;
   const sdata = skey && SPRITE_DATA[skey];
+  // Appui long (~450 ms) → fiche détaillée du bâtiment ; un appui court le sélectionne.
+  // On annule si le doigt glisse (>10 px, pour ne pas gêner le défilement de la barre).
+  const lp = useRef({});
+  const startLP = e => {
+    lp.current = {
+      x: e.clientX,
+      y: e.clientY,
+      fired: false,
+      t: setTimeout(() => {
+        lp.current.fired = true;
+        onDetail && onDetail(id);
+      }, 450)
+    };
+  };
+  const moveLP = e => {
+    const s = lp.current;
+    if (s.t && (Math.abs(e.clientX - s.x) > 10 || Math.abs(e.clientY - s.y) > 10)) {
+      clearTimeout(s.t);
+      s.t = null;
+    }
+  };
+  const endLP = () => {
+    if (lp.current.t) {
+      clearTimeout(lp.current.t);
+      lp.current.t = null;
+    }
+  };
   return React.createElement("button", {
     className: 'tool-btn' + (active ? ' active' : ''),
     style: {
       '--accent': accent
     },
-    onClick: () => onSelect(id)
+    onClick: () => {
+      if (lp.current.fired) {
+        lp.current.fired = false;
+        return;
+      }
+      onSelect(id);
+    },
+    onPointerDown: startLP,
+    onPointerMove: moveLP,
+    onPointerUp: endLP,
+    onPointerLeave: endLP,
+    onPointerCancel: endLP,
+    onContextMenu: e => e.preventDefault()
   }, React.createElement("div", {
     className: "tb-top"
   }, sdata ? React.createElement("img", {
@@ -5850,6 +5890,90 @@ function ToolButton({
     className: "tb-sub"
   }, sub));
 }
+// Fiche détaillée d'un bâtiment (appui long sur sa tuile dans l'onglet Bâtiment / Réseau).
+function BuildingDetailModal({
+  id,
+  onClose
+}) {
+  const b = BUILDINGS[id];
+  if (!b) return null;
+  const skey = SPRITES_ENABLED ? buildingSpriteKey(id) : null;
+  const sdata = skey && SPRITE_DATA[skey];
+  const TIER_LABEL = {
+    t0: 'Extraction',
+    t1: 'Palier 1',
+    t2: 'Palier 2',
+    t3: 'Palier 3'
+  };
+  const TERR_LABEL = {
+    land: 'terre',
+    coast: 'côte',
+    resource: 'gisement',
+    water: 'eau',
+    oil: 'pétrole',
+    obstacle: 'accidenté'
+  };
+  const sz = b.size || [1, 1];
+  // Séparer la production électrique (energie_kw) des sorties matérielles.
+  const outMat = {};
+  let energyOut = 0;
+  for (const k in b.outputs || {}) {
+    if (k === 'energie_kw') energyOut = b.outputs[k];else outMat[k] = b.outputs[k];
+  }
+  const rows = [];
+  const addRow = (lbl, val, io) => rows.push(React.createElement("div", {
+    className: "ip-row",
+    key: lbl
+  }, React.createElement("span", {
+    className: "lbl"
+  }, lbl), React.createElement("span", {
+    className: "val" + (io ? ' io' : '')
+  }, val)));
+  addRow('Coût', b.cost && Object.keys(b.cost).length ? formatCost(b.cost) : 'gratuit');
+  if (b.kind !== 'infra' && b.kind !== 'junction') addRow('Taille', sz[1] + '×' + sz[0]);
+  if (b.terrains && b.terrains.length) addRow('Terrain', b.terrains.map(t => TERR_LABEL[t] || t).join(', '));
+  if (b.inputs && Object.keys(b.inputs).length) addRow('Entrées', formatRecipe(b.inputs) + ' /s', true);
+  if (Object.keys(outMat).length) addRow('Sorties', formatRecipe(outMat) + ' /s', true);
+  if (b.power > 0) addRow('Conso. élec.', b.power + ' kW');
+  if (energyOut > 0) addRow('Prod. élec.', energyOut + ' kW', true);
+  if (b.accumulator) addRow('Stockage', 'batterie (élec.)');
+  if (b.exclusiveIsland != null) addRow('Exclusif', 'île ' + b.exclusiveIsland);
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "slot-backdrop",
+    onClick: onClose
+  }), React.createElement("div", {
+    className: "slot-panel",
+    style: {
+      width: 'min(330px, 86vw)'
+    }
+  }, React.createElement("div", {
+    className: "slot-head"
+  }, sdata && React.createElement("img", {
+    className: "ip-sprite",
+    src: sdata,
+    alt: ""
+  }), React.createElement("b", null, b.name), React.createElement("span", {
+    style: {
+      marginLeft: 'auto',
+      opacity: .55,
+      fontSize: '.66rem',
+      textTransform: 'uppercase',
+      letterSpacing: '.05em'
+    }
+  }, TIER_LABEL[b.tier] || b.tier || '')), React.createElement("div", {
+    className: "ip-rows",
+    style: {
+      padding: '12px 14px',
+      marginBottom: 0
+    }
+  }, rows), React.createElement("button", {
+    className: "opt-upd-dl",
+    style: {
+      margin: '4px 14px 14px'
+    },
+    onClick: onClose
+  }, "Fermer")));
+}
 function Toolbar({
   tool,
   currentIsland,
@@ -5861,6 +5985,8 @@ function Toolbar({
   onToggleNet,
   tutorialRevealed
 }) {
+  // Bâtiment dont la fiche détaillée est ouverte (appui long), ou null.
+  const [detailId, setDetailId] = useState(null);
   const visibleOn = id => {
     const ex = BUILDINGS[id].exclusiveIsland;
     if (!(ex == null || ex === currentIsland)) return false;
@@ -5887,7 +6013,8 @@ function Toolbar({
       id: id,
       active: tool === id,
       accent: TIER_ACCENT[BUILDINGS[id].tier],
-      onSelect: onSelect
+      onSelect: onSelect,
+      onDetail: setDetailId
     })))));
   });
   const tab = (key, extraCls, iconName, emoji, name, sub, active, onClick) => React.createElement("button", {
@@ -5905,7 +6032,10 @@ function Toolbar({
   }, sub));
   return React.createElement("div", {
     className: "toolbar-wrap"
-  }, buildOpen && React.createElement("div", {
+  }, detailId && React.createElement(BuildingDetailModal, {
+    id: detailId,
+    onClose: () => setDetailId(null)
+  }), buildOpen && React.createElement("div", {
     className: "build-panel"
   }, renderGroups(BUILD_GROUPS)), netOpen && React.createElement("div", {
     className: "build-panel"
