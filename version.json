@@ -1,7 +1,7 @@
 {
-  "build": 74,
-  "version": "Alpha 10.49",
+  "build": 75,
+  "version": "Alpha 10.50",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.49 — animations de bâtiments (35 spritesheets) (#74)"
+  "notes": "Alpha 10.50 — animations complètes (55 bât.) + fix notif recherche livraison (#75)"
 }
