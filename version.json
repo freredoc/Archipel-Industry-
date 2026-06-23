@@ -1,7 +1,7 @@
 {
-  "build": 79,
-  "version": "Alpha 10.54",
+  "build": 80,
+  "version": "Alpha 10.55",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.54 — nouveaux sprites UI : icône batterie + cadres menu 9-slice (#79)"
+  "notes": "Alpha 10.55 — déficit retravaillé + options + inventaire compact (#80)"
 }
