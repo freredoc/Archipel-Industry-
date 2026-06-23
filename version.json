@@ -1,7 +1,7 @@
 {
-  "build": 89,
-  "version": "Alpha 10.64",
+  "build": 90,
+  "version": "Alpha 10.65",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.64 — flux entrant au Port + sprites recette (tap) + rééquilibrage élec. (#89)"
+  "notes": "Alpha 10.65 — tuiles portuaires : animation rendue visible (balise pulsante) (#90)"
 }
