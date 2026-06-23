@@ -106,7 +106,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .inv-count{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-faint);
   background:var(--panel-2);border-radius:8px;padding:0 6px;}
 .inv-empty{font-family:'Barlow Condensed',sans-serif;font-size:.74rem;color:var(--ink-faint);}
-.inv-item{display:flex;align-items:baseline;gap:4px;white-space:nowrap;flex-shrink:0;
+.inv-item{display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;
   padding:1px 6px;border-radius:3px;background:var(--panel);border:1px solid var(--line);}
 .inv-item .ik{font-family:'Barlow Condensed',sans-serif;font-size:.66rem;color:var(--ink-dim);
   text-transform:capitalize;}
@@ -3181,8 +3181,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 79;
-const GAME_VERSION = 'Alpha 10.54';
+const GAME_BUILD = 80;
+const GAME_VERSION = 'Alpha 10.55';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5854,6 +5854,7 @@ function IslandSelector({
 }
 function Hud({
   resources,
+  unlockedRes,
   invTrends,
   energy,
   currentIsland,
@@ -5885,7 +5886,12 @@ function Hud({
   const deficit = net < -1e-6;
   const accCap = energy && energy.accCap || 0;
   const accPct = accCap > 0 ? Math.round(100 * (energy.accStored || 0) / accCap) : null;
-  const inv = Object.keys(resources).filter(k => (resources[k] || 0) >= 0.5).sort((a, b) => {
+  // Inventaire : on affiche chaque ressource DÉBLOQUÉE (produite par un bâtiment débloqué),
+  // même à 0 (sprite + 0). Les ressources jamais débloquées ne s'affichent pas. On inclut
+  // aussi celles déjà en stock (> 0) au cas où elles ne seraient pas couvertes par le set.
+  const invSet = new Set(unlockedRes ? unlockedRes : []);
+  for (const k in resources) if ((resources[k] || 0) > 0.5) invSet.add(k);
+  const inv = [...invSet].sort((a, b) => {
     const d = resTierRank(a) - resTierRank(b);
     return d !== 0 ? d : a < b ? -1 : 1;
   });
@@ -5986,20 +5992,21 @@ function Hud({
       }
       const _ikey = SPRITES_ENABLED ? itemSpriteKey(k) : null;
       const _idata = _ikey && SPRITE_DATA[_ikey];
+      // Sprite + chiffre uniquement (plus de nom). Repli sur le code court si le sprite manque.
       items.push(React.createElement("span", {
         className: "inv-item clickable",
         key: k,
         onClick: e => onResClick && onResClick(k, e),
-        title: "Voir production / consommation"
-      }, _idata && React.createElement("img", {
+        title: (RES_SHORT[k] || k) + " — voir production / consommation"
+      }, _idata ? React.createElement("img", {
         className: "inv-ico",
         src: _idata,
-        alt: ""
-      }), React.createElement("span", {
+        alt: RES_SHORT[k] || k
+      }) : React.createElement("span", {
         className: "ik"
       }, RES_SHORT[k] || k), React.createElement("span", {
         className: "iv" + (invTrends && invTrends[k] === 'up' ? ' up' : invTrends && invTrends[k] === 'down' ? ' down' : '')
-      }, fmtInt(resources[k]))));
+      }, fmtInt(resources[k] || 0))));
     }
     return React.createElement("div", {
       className: "inventory open",
@@ -8039,11 +8046,15 @@ function ModeModal({
 function OptionsModal({
   dev,
   showLevels,
+  showDeficitPct,
+  showDeficitSprite,
   fastUpgrade,
   tipsEnabled,
   onToggleFastUpgrade,
   onToggleDev,
   onToggleLevels,
+  onToggleDeficitPct,
+  onToggleDeficitSprite,
   onToggleTips,
   onResetTips,
   onOpenSaves,
@@ -8162,7 +8173,7 @@ function OptionsModal({
     title: "Fermer"
   }, "\xD7")), React.createElement("div", {
     className: "slot-list"
-  }, toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Am\xE9lioration imm\xE9diate", "En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)", fastUpgrade, onToggleFastUpgrade), toggleRow("Astuces", "Afficher une explication \xE0 chaque nouvelle m\xE9canique", tipsEnabled !== false, onToggleTips), React.createElement("button", {
+  }, toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Afficher l'efficacit\xE9 (%)", "Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit", showDeficitPct, onToggleDeficitPct), toggleRow("Afficher l'ic\xF4ne de d\xE9ficit", "Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne", showDeficitSprite, onToggleDeficitSprite), toggleRow("Am\xE9lioration imm\xE9diate", "En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)", fastUpgrade, onToggleFastUpgrade), toggleRow("Astuces", "Afficher une explication \xE0 chaque nouvelle m\xE9canique", tipsEnabled !== false, onToggleTips), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onResetTips
   }, "💡 Revoir les astuces"), toggleRow("Mode d\xE9veloppeur", "Construction et am\xE9liorations gratuites", dev, onToggleDev, 'dev'), React.createElement("button", {
@@ -8480,6 +8491,8 @@ function App() {
         tool: null,
         dev: false,
         showLevels: true,
+        showDeficitPct: true,
+        showDeficitSprite: true,
         fastUpgrade: false
       },
       drag: {
@@ -8555,6 +8568,8 @@ function App() {
   const [dev, setDev] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
   const [showLevels, setShowLevels] = useState(true);
+  const [showDeficitPct, setShowDeficitPct] = useState(true);
+  const [showDeficitSprite, setShowDeficitSprite] = useState(true);
   const [fastUpgrade, setFastUpgrade] = useState(false);
   const [tipsEnabled, setTipsEnabled] = useState(true);
   const [canvasKey, setCanvasKey] = useState(0);
@@ -8756,6 +8771,8 @@ function App() {
       // Préférences d'affichage (Options) — persistées pour survivre aux mises à jour.
       uiPrefs: {
         showLevels: (g.ui && g.ui.showLevels) !== false,
+        showDeficitPct: (g.ui && g.ui.showDeficitPct) !== false,
+        showDeficitSprite: (g.ui && g.ui.showDeficitSprite) !== false,
         fastUpgrade: !!(g.ui && g.ui.fastUpgrade)
       }
     };
@@ -9198,10 +9215,14 @@ function App() {
       tool: null,
       dev: false,
       showLevels: true,
+      showDeficitPct: true,
+      showDeficitSprite: true,
       fastUpgrade: false
     };
     const up = data.uiPrefs || {};
     g.ui.showLevels = up.showLevels !== false;
+    g.ui.showDeficitPct = up.showDeficitPct !== false;
+    g.ui.showDeficitSprite = up.showDeficitSprite !== false;
     g.ui.fastUpgrade = !!up.fastUpgrade;
     return true;
   }
@@ -10249,6 +10270,20 @@ function App() {
     markDirty();
     scheduleSave();
   }
+  function toggleDeficitPct() {
+    const g = gameRef.current;
+    g.ui.showDeficitPct = g.ui.showDeficitPct === false;
+    setShowDeficitPct(g.ui.showDeficitPct);
+    markDirty();
+    scheduleSave();
+  }
+  function toggleDeficitSprite() {
+    const g = gameRef.current;
+    g.ui.showDeficitSprite = g.ui.showDeficitSprite === false;
+    setShowDeficitSprite(g.ui.showDeficitSprite);
+    markDirty();
+    scheduleSave();
+  }
   function toggleFastUpgrade() {
     const g = gameRef.current;
     g.ui.fastUpgrade = !g.ui.fastUpgrade;
@@ -10347,77 +10382,87 @@ function App() {
       c
     };
   }
-  // Petit numéro de niveau (2, 3, …) en bas à gauche de la case. Désactivable via
-  // les Options (g.ui.showLevels). Le niveau 1 (upg 0) n'affiche rien.
-  function drawLevelBadge(ctx, x, y, W, H, tile, upg) {
-    if (upg <= 0 || tile < 16) return;
-    if (gameRef.current.ui.showLevels === false) return;
-    const txt = String(upg + 1);
-    const fs = Math.max(7, Math.round(tile * 0.30));
-    ctx.font = `700 ${fs}px "DM Mono",monospace`;
+  // Badges « infos » en bas à gauche de la case : [efficacité %][niveau] (gauche→droite).
+  // Le % d'efficacité n'apparaît qu'en cas de déficit (eff < ~99,5 %, y compris 0 % à l'arrêt),
+  // désactivable via g.ui.showDeficitPct ; le numéro de niveau (≥2) via g.ui.showLevels.
+  // Numéro de niveau réduit (0.22 au lieu de 0.30) pour laisser place au pourcentage.
+  function drawInfoBadges(ctx, x, y, W, H, tile, upg, eff) {
+    if (tile < 16) return;
+    const ui = gameRef.current.ui;
+    const showLv = ui.showLevels !== false && upg > 0;
+    const deficit = eff != null && eff < 0.995;
+    const showPct = ui.showDeficitPct !== false && deficit;
+    if (!showLv && !showPct) return;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
+    const fs = Math.max(6, Math.round(tile * 0.22));
     const pad = Math.max(1, tile * 0.05);
-    const tw = ctx.measureText(txt).width;
-    const bw = tw + pad * 2,
-      bh = fs + pad * 2;
-    const bx = x + Math.max(1, tile * 0.04),
-      by = y + H - bh - Math.max(1, tile * 0.04);
-    roundRectPath(ctx, bx, by, bw, bh, Math.max(1, tile * 0.06));
-    ctx.fillStyle = 'rgba(13,13,26,.66)';
-    ctx.fill();
-    ctx.fillStyle = '#9ee29f';
-    ctx.fillText(txt, bx + pad, by + pad);
-  }
-  // Badge d'état (sprite de panne) centré sur le bâtiment. Renvoie true si un sprite a
-  // bien été dessiné (sinon l'appelant retombe sur l'ancienne teinte rouge/noire).
-  function drawStatusBadge(ctx, x, y, W, H, discReason) {
-    const s = Math.max(8, Math.min(W, H) * 0.62);
-    return drawSprite(ctx, statusSpriteKey(discReason), x + (W - s) / 2, y + (H - s) / 2, s, s);
-  }
-  function drawBuildingStateOverlay(ctx, x, y, W, H, tile, inactive, disconnected, upg, discReason) {
-    if (inactive) {
-      ctx.fillStyle = 'rgba(13,13,26,.55)';
-      ctx.fillRect(x, y, W, H);
-      if (!drawStatusBadge(ctx, x, y, W, H, discReason) && !disconnected) {
-        ctx.fillStyle = 'rgba(255,59,48,.26)';
-        ctx.fillRect(x, y, W, H);
-        const lw = Math.max(1, tile * 0.045);
-        ctx.lineWidth = lw;
-        ctx.strokeStyle = 'rgba(255,59,48,.85)';
-        ctx.strokeRect(x + lw / 2, y + lw / 2, W - lw, H - lw);
-      }
+    const gap = Math.max(1, tile * 0.06);
+    const segH = fs + pad * 2;
+    let bx = x + Math.max(1, tile * 0.04);
+    const by = y + H - segH - Math.max(1, tile * 0.04);
+    const drawSeg = (txt, bg, fg) => {
+      ctx.font = `700 ${fs}px "DM Mono",monospace`;
+      const bw = ctx.measureText(txt).width + pad * 2;
+      roundRectPath(ctx, bx, by, bw, segH, Math.max(1, tile * 0.06));
+      ctx.fillStyle = bg;
+      ctx.fill();
+      ctx.fillStyle = fg;
+      ctx.fillText(txt, bx + pad, by + pad);
+      bx += bw + gap;
+    };
+    if (showPct) {
+      const pct = Math.round(Math.max(0, Math.min(1, eff)) * 100);
+      drawSeg(pct + '%', 'rgba(40,20,6,.80)', pct <= 0 ? '#ff9a8f' : '#ffd27f');
     }
-    drawLevelBadge(ctx, x, y, W, H, tile, upg);
+    if (showLv) drawSeg(String(upg + 1), 'rgba(13,13,26,.66)', '#9ee29f');
   }
-  function drawBuilding(ctx, x, y, tile, id, inactive, disconnected, upg, wTiles, hTiles, discReason, regime) {
+  // Petite icône de déficit / panne, en HAUT À DROITE de la case (taille réduite).
+  // Désactivable via g.ui.showDeficitSprite. `reason` choisit le sprite d'état.
+  function drawDeficitIcon(ctx, x, y, W, H, tile, reason) {
+    if (gameRef.current.ui.showDeficitSprite === false) return;
+    const s = Math.max(9, Math.min(W, H) * 0.40);
+    const pad = Math.max(1, tile * 0.04);
+    const bx = x + W - s - pad,
+      by = y + pad;
+    if (!drawSprite(ctx, statusSpriteKey(reason), bx, by, s, s)) {
+      // Fallback (PNG absent) : pastille colorée selon la cause.
+      ctx.fillStyle = reason === 'input' ? 'rgba(255,170,40,.9)' : 'rgba(255,80,60,.9)';
+      roundRectPath(ctx, bx, by, s, s, s * 0.25);
+      ctx.fill();
+    }
+  }
+  function drawBuilding(ctx, x, y, tile, id, inactive, disconnected, upg, wTiles, hTiles, discReason, regime, inFac, pwrAvg) {
     const b = BUILDINGS[id];
     const W = (wTiles || 1) * tile,
       H = (hTiles || 1) * tile;
-    // Déficit (intrants ET/OU élec.) : le bâtiment tourne au RALENTI au `regime` calculé par le tick.
-    // On le montre « réduit » (icône d'autant plus petite que le régime est bas) et FIGÉ (pas
-    // d'animation), sans badge de panne — il produit encore, au prorata. Au-dessous de ~2 % de
-    // régime il est considéré à l'arrêt (badge de panne via le chemin normal). Évite le clignotement.
-    const powerDef = regime != null && regime < 0.995 && regime > 0.02 && !disconnected;
+    // Efficacité réelle [0..1] : 0 si arrêté/déconnecté, sinon le régime calculé au tick.
+    const eff = inactive || disconnected ? 0 : regime != null ? Math.max(0, Math.min(1, regime)) : 1;
+    // En déficit (au ralenti) si actif mais sous ~99,5 % — on garde le sprite à PLEINE taille
+    // (plus de réduction) mais FIGÉ (pas d'animation), avec une petite icône en haut à droite.
+    const throttled = !inactive && !disconnected && eff < 0.995;
+    // Cause du déficit (pour l'icône) : à l'arrêt → discReason ; au ralenti → intrants vs élec.
+    let reason = discReason;
+    if (throttled) {
+      const lackInput = inFac != null && inFac < 0.995;
+      const lackPower = pwrAvg != null && pwrAvg < 0.995;
+      reason = lackInput && (!lackPower || inFac <= pwrAvg) ? 'input' : 'power';
+    }
+    const showIcon = inactive || throttled;
     // Sprite path for actual buildings (not infra/junction; those are drawn in the
     // network pass with connection-aware tiles). Falls back to vector shapes below.
     if (SPRITES_ENABLED && b.kind !== 'infra' && b.kind !== 'junction') {
       const sk = buildingSpriteKey(id, upg);
       if (sk) {
-        if (powerDef) {
-          const s = 0.55 + 0.4 * Math.max(0, Math.min(1, regime)); // 0.55 (presque à sec) → ~0.95 (presque plein)
-          const dw = W * s,
-            dh = H * s;
-          if (drawSprite(ctx, sk, x + (W - dw) / 2, y + (H - dh) / 2, dw, dh)) return;
-        } else {
-          // Bâtiment actif → frame animée ; à l'arrêt → sprite statique (= frame 0).
-          let drew = false;
-          if (!inactive && !disconnected) drew = drawAnimFrame(ctx, sk, x, y, W, H);
-          if (!drew) drew = drawSprite(ctx, sk, x, y, W, H);
-          if (drew) {
-            drawBuildingStateOverlay(ctx, x, y, W, H, tile, inactive, disconnected, upg, discReason);
-            return;
-          }
+        // Sprite TOUJOURS à pleine taille. Animé seulement si le bâtiment tourne à plein régime ;
+        // figé (frame statique) à l'arrêt OU en déficit (évite le clignotement actif/arrêt).
+        let drew = false;
+        if (!inactive && !disconnected && !throttled) drew = drawAnimFrame(ctx, sk, x, y, W, H);
+        if (!drew) drew = drawSprite(ctx, sk, x, y, W, H);
+        if (drew) {
+          if (showIcon) drawDeficitIcon(ctx, x, y, W, H, tile, reason);
+          drawInfoBadges(ctx, x, y, W, H, tile, upg, eff);
+          return;
         }
       }
     }
@@ -10465,29 +10510,10 @@ function App() {
       ctx.textBaseline = 'middle';
       ctx.fillText(b.label, x + W / 2, y + H / 2 + 1);
     }
-    if (inactive) {
-      const fillShape = () => {
-        if (rounded) {
-          roundRectPath(ctx, ix, iy, iw, ih, rad);
-          ctx.fill();
-        } else ctx.fillRect(ix, iy, iw, ih);
-      };
-      ctx.fillStyle = 'rgba(13,13,26,.55)';
-      fillShape();
-      // Sprite de panne par-dessus ; à défaut (PNG absent) on garde la teinte rouge.
-      if (!drawStatusBadge(ctx, x, y, W, H, discReason) && !disconnected) {
-        ctx.fillStyle = 'rgba(255,59,48,.26)';
-        fillShape();
-        const lw = Math.max(1, tile * 0.045);
-        ctx.lineWidth = lw;
-        ctx.strokeStyle = 'rgba(255,59,48,.85)';
-        if (rounded) {
-          roundRectPath(ctx, ix + lw / 2, iy + lw / 2, iw - lw, ih - lw, rad);
-          ctx.stroke();
-        } else ctx.strokeRect(ix + lw / 2, iy + lw / 2, iw - lw, ih - lw);
-      }
-    }
-    drawLevelBadge(ctx, x, y, W, H, tile, upg);
+    // Plus d'assombrissement de la case à l'arrêt : seule la petite icône (haut-droite)
+    // + le badge d'efficacité signalent le déficit / la panne.
+    if (showIcon) drawDeficitIcon(ctx, x, y, W, H, tile, reason);
+    drawInfoBadges(ctx, x, y, W, H, tile, upg, eff);
   }
   function drawHover(ctx, ox, oy, tile) {
     const g = gameRef.current;
@@ -10673,7 +10699,7 @@ function App() {
         }
       }
       const sz = buildingSize(bid);
-      drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime);
+      drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime, t.building.inFac, t.building.pwrAvg);
     }
     drawPortExtras(ctx, ox, oy, tile);
     drawHover(ctx, ox, oy, tile);
@@ -11112,6 +11138,8 @@ function App() {
     setTipsEnabled(gameRef.current.tipsEnabled !== false);
     // Synchronise l'état React des préférences d'affichage avec la sauvegarde.
     setShowLevels(gameRef.current.ui.showLevels !== false);
+    setShowDeficitPct(gameRef.current.ui.showDeficitPct !== false);
+    setShowDeficitSprite(gameRef.current.ui.showDeficitSprite !== false);
     setFastUpgrade(!!gameRef.current.ui.fastUpgrade);
     layout();
     centerCam();
@@ -11332,6 +11360,7 @@ function App() {
     className: "app"
   }, React.createElement(Hud, {
     resources: game.port[game.currentIsland] || {},
+    unlockedRes: unlockedResourceSet(game),
     invTrends: invTrends,
     energy: game.energy[game.currentIsland],
     currentIsland: game.currentIsland,
@@ -11364,6 +11393,8 @@ function App() {
     onOpenOptions: () => {
       const g = gameRef.current;
       setShowLevels(g.ui.showLevels !== false);
+      setShowDeficitPct(g.ui.showDeficitPct !== false);
+      setShowDeficitSprite(g.ui.showDeficitSprite !== false);
       setFastUpgrade(!!g.ui.fastUpgrade);
       setDev(g.ui.dev);
       setOptionsOpen(true);
@@ -11501,11 +11532,15 @@ function App() {
   }), optionsOpen && React.createElement(OptionsModal, {
     dev: dev,
     showLevels: showLevels,
+    showDeficitPct: showDeficitPct,
+    showDeficitSprite: showDeficitSprite,
     fastUpgrade: fastUpgrade,
     tipsEnabled: tipsEnabled,
     onToggleFastUpgrade: toggleFastUpgrade,
     onToggleDev: toggleDev,
     onToggleLevels: toggleLevels,
+    onToggleDeficitPct: toggleDeficitPct,
+    onToggleDeficitSprite: toggleDeficitSprite,
     onToggleTips: toggleTips,
     onResetTips: resetTips,
     onOpenSaves: () => {
