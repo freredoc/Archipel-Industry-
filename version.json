@@ -1,7 +1,7 @@
 {
-  "build": 88,
-  "version": "Alpha 10.63",
+  "build": 89,
+  "version": "Alpha 10.64",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.63 — import/export des sauvegardes en fichier .txt (#88)"
+  "notes": "Alpha 10.64 — flux entrant au Port + sprites recette (tap) + rééquilibrage élec. (#89)"
 }
