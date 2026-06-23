@@ -1,7 +1,7 @@
 {
-  "build": 80,
-  "version": "Alpha 10.55",
+  "build": 81,
+  "version": "Alpha 10.56",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.55 — déficit retravaillé + options + inventaire compact (#80)"
+  "notes": "Alpha 10.56 — coût batterie ÷2 et fours à arc ÷4 (#81)"
 }
