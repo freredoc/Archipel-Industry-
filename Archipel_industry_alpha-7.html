@@ -557,6 +557,10 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   padding-top:1px;}
 .ip-row .val{font-family:'DM Mono',monospace;font-size:.74rem;color:var(--ink);text-align:right;}
 .ip-row .val.io{color:var(--t0);}
+/* Chips ressources (sprite + quantité) dans la fiche détaillée d'un bâtiment. */
+.dr-res{display:inline-flex;align-items:center;gap:2px;margin-left:8px;vertical-align:middle;}
+.dr-res .inv-ico{width:15px;height:15px;}
+.dr-res .dr-q{font-variant-numeric:tabular-nums;}
 .ip-row.capped .lbl{color:var(--orange);}
 .ip-row.capped .val{color:var(--orange);}
 .ip-demolish{width:100%;background:rgba(255,59,48,.12);border:1px solid rgba(255,59,48,.5);
@@ -3181,8 +3185,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 81;
-const GAME_VERSION = 'Alpha 10.56';
+const GAME_BUILD = 82;
+const GAME_VERSION = 'Alpha 10.57';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5934,7 +5938,7 @@ function Hud({
     onClick: onEnergy
   }, React.createElement("span", {
     className: "k"
-  }, "\u26A1 \xC9nergie"), React.createElement("span", {
+  }, "\u26A1"), React.createElement("span", {
     className: "v"
   }, net >= 0 ? '+' : '', fmtInt(net), " kW")), accPct != null && React.createElement("div", {
     className: "stock battery" + (accPct <= 15 ? ' deficit' : ' ok'),
@@ -5942,7 +5946,7 @@ function Hud({
     onClick: onEnergy
   }, React.createElement("span", {
     className: "k"
-  }, uiIcon('batterie', "\uD83D\uDD0B"), " Batterie"), React.createElement("span", {
+  }, uiIcon('batterie', "\uD83D\uDD0B")), React.createElement("span", {
     className: "v"
   }, accPct + "%"))), React.createElement("button", {
     className: "research-btn",
@@ -6172,11 +6176,33 @@ function BuildingDetailModal({
   }, lbl), React.createElement("span", {
     className: "val" + (io ? ' io' : '')
   }, val)));
-  addRow('Coût', b.cost && Object.keys(b.cost).length ? formatCost(b.cost) : 'gratuit');
+  // Liste de ressources avec sprite + quantité (mieux visualisable que le texte seul).
+  // `perSec` = quantité par seconde (recette), sinon valeur brute (coût). Repli code court
+  // si le sprite manque.
+  const resChips = (obj, perSec) => {
+    const out = [];
+    for (const k in obj) {
+      const ikey = SPRITES_ENABLED ? itemSpriteKey(k) : null;
+      const idata = ikey && SPRITE_DATA[ikey];
+      out.push(React.createElement("span", {
+        className: "dr-res",
+        key: k,
+        title: RES_SHORT[k] || k
+      }, idata && React.createElement("img", {
+        className: "inv-ico",
+        src: idata,
+        alt: RES_SHORT[k] || k
+      }), React.createElement("span", {
+        className: "dr-q"
+      }, perSec ? fmtRate(obj[k]) : fmtInt(obj[k]), idata ? '' : ' ' + (RES_SHORT[k] || k))));
+    }
+    return out;
+  };
+  addRow('Coût', b.cost && Object.keys(b.cost).length ? resChips(b.cost, false) : 'gratuit');
   if (b.kind !== 'infra' && b.kind !== 'junction') addRow('Taille', sz[1] + '×' + sz[0]);
   if (b.terrains && b.terrains.length) addRow('Terrain', b.terrains.map(t => TERR_LABEL[t] || t).join(', '));
-  if (b.inputs && Object.keys(b.inputs).length) addRow('Entrées', formatRecipe(b.inputs) + ' /s', true);
-  if (Object.keys(outMat).length) addRow('Sorties', formatRecipe(outMat) + ' /s', true);
+  if (b.inputs && Object.keys(b.inputs).length) addRow('Entrées', resChips(b.inputs, true).concat(' /s'), true);
+  if (Object.keys(outMat).length) addRow('Sorties', resChips(outMat, true).concat(' /s'), true);
   if (b.power > 0) addRow('Conso. élec.', b.power + ' kW');
   if (energyOut > 0) addRow('Prod. élec.', energyOut + ' kW', true);
   if (b.accumulator) addRow('Stockage', 'batterie (élec.)');
