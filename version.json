@@ -1,7 +1,7 @@
 {
-  "build": 76,
-  "version": "Alpha 10.51",
+  "build": 77,
+  "version": "Alpha 10.52",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.51 — tuiles « brise » animées (île 1) (#76)"
+  "notes": "Alpha 10.52 — déficit élec : icône réduite + animation coupée (#77)"
 }
