@@ -17,7 +17,16 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 77`, `GAME_VERSION = 'Alpha 10.52'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 78`, `GAME_VERSION = 'Alpha 10.53'`.** Changement
+  10.53 : **production bridée au prorata du déficit (régime réel)** — un bâtiment qui manque
+  d'intrants ET/OU d'élec. ne s'arrête plus brutalement : il tourne à `regime = min(inFac, pwrF)`
+  (`inFac` = fraction d'intrants dispo calculée dans la boucle bâtiment au lieu du tout-ou-rien ;
+  `pwrF` = `bld.pwrAvg` du tick précédent). `regime` est stocké sur `bld` et bride conso+production
+  au dépôt (`actives` : `fc *= rg`), la prod élec. (`energyOut*regime`), et la réservation `workPort`.
+  Arrêt franc seulement si `inFac<=0` (PAS sur déficit élec. → le bâtiment reste dans
+  `energyConsumers` pour que pwrAvg converge, sinon oscillation). Affichage : icône réduite par
+  `regime` (drawBuilding reçoit `bld.regime`), et l'InfoPanel montre régime % + cause (intrants /
+  élec. / réseau) + ligne « Réel » = sorties×régime. Changement
   10.52 : **déficit élec. = icône réduite + figée** — `drawBuilding` reçoit `pwrAvg` (duty-cycle lissé) ;
   si `powerDef = pwrAvg<0.995 && !disconnected`, on dessine le sprite STATIQUE réduit (`s=0.55+0.4·pwrAvg`,
   centré, plus petit = plus de déficit), SANS badge de panne ni animation → fin du clignotement actif/

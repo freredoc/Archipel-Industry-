@@ -3174,8 +3174,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 77;
-const GAME_VERSION = 'Alpha 10.52';
+const GAME_BUILD = 78;
+const GAME_VERSION = 'Alpha 10.53';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -3760,6 +3760,9 @@ function tickIsland(game, isl) {
     // 'road'|'pipe'|'wire' = réseau manquant ; 'input' = intrants/matières manquants ;
     // 'power' = élec insuffisante (renseigné plus tard à la coupure énergétique).
     let discReason = null;
+    // Facteur d'intrants [0..1] : fraction des entrées réellement disponibles. < 1 = on bride la
+    // production au prorata (au lieu de tout arrêter). Combiné plus bas avec le facteur élec.
+    let inFac = 1;
     const routeIn = {},
       routeOut = {};
     const usesSolid = inByType.road || outByType.road;
@@ -3779,11 +3782,8 @@ function tickIsland(game, isl) {
         }
         if (inByType.road) {
           for (const k in inByType.road) {
-            if ((workPort[k] || 0) < inByType.road[k]) {
-              ok = false;
-              discReason = 'input';
-              break;
-            }
+            const av = workPort[k] || 0;
+            if (av < inByType.road[k]) inFac = Math.min(inFac, av / inByType.road[k]);
           }
         }
       }
@@ -3796,25 +3796,22 @@ function tickIsland(game, isl) {
         discReason = 'pipe';
       } else {
         if (inByType.pipe) {
-          let pick = null;
+          // On prend le pool tuyau le MIEUX approvisionné (facteur le plus élevé) ; s'il n'a pas
+          // tout, on bride au prorata au lieu de couper.
+          let pick = null,
+            best = -1;
           for (const nid of adj) {
             const pool = nets[nid] && nets[nid].pool || {};
-            let all = true;
-            for (const k in inByType.pipe) {
-              if ((pool[k] || 0) < inByType.pipe[k]) {
-                all = false;
-                break;
-              }
-            }
-            if (all) {
+            let f = 1;
+            for (const k in inByType.pipe) f = Math.min(f, (pool[k] || 0) / inByType.pipe[k]);
+            if (f > best) {
+              best = f;
               pick = nid;
-              break;
             }
+            if (f >= 1) break;
           }
-          if (pick == null) {
-            ok = false;
-            discReason = 'input';
-          } else routeIn.pipe = pick;
+          routeIn.pipe = pick != null ? pick : adj[0];
+          if (best < 1) inFac = Math.min(inFac, Math.max(0, best));
         }
         if (ok && outByType.pipe) routeOut.pipe = inByType.pipe ? routeIn.pipe : adj[0];
         // Diesel & co. : transportés par tuyau mais stockés au PORT. On route via un tuyau
@@ -3832,11 +3829,8 @@ function tickIsland(game, isl) {
           routeOut.pipePort = pnid;
           if (inByType.pipePort) {
             for (const k in inByType.pipePort) {
-              if ((workPort[k] || 0) < inByType.pipePort[k]) {
-                ok = false;
-                discReason = 'input';
-                break;
-              }
+              const av = workPort[k] || 0;
+              if (av < inByType.pipePort[k]) inFac = Math.min(inFac, av / inByType.pipePort[k]);
             }
           }
         }
@@ -3860,9 +3854,27 @@ function tickIsland(game, isl) {
       continue;
     }
     const pri = bld.fluxPri === 'haute' || bld.fluxPri === 'basse' ? bld.fluxPri : 'normale';
-    if (inByType.road) for (const k in inByType.road) workPort[k] = (workPort[k] || 0) - inByType.road[k];
+    // Régime [0..1] = min(intrants dispo, élec. dispo via duty-cycle lissé pwrAvg du tick précédent).
+    // On bride conso ET production au prorata. À 0 (aucun intrant / aucune élec.) le bâtiment est
+    // arrêté ; entre 0 et 1 il tourne au ralenti (jamais à plein quand il manque quelque chose).
+    const pwrF = power > 0 && bld.pwrAvg != null ? Math.max(0, Math.min(1, bld.pwrAvg)) : 1;
+    const regime = Math.max(0, Math.min(1, Math.min(inFac, pwrF)));
+    bld.inFac = inFac;
+    bld.regime = regime;
+    // Plus AUCUN intrant → arrêt franc (on saute le bâtiment). On NE saute PAS sur un déficit
+    // d'élec. (pwrF bas) : le bâtiment doit rester dans energyConsumers pour que la boucle énergie
+    // compte sa demande et fasse converger pwrAvg (sinon oscillation/blocage). Sa production sera
+    // bridée par `regime` (qui inclut pwrF) au dépôt.
+    if (inFac <= 0.001) {
+      bld.active = false;
+      bld.disc = false;
+      bld.discReason = 'input';
+      if (bld.active !== prevA || bld.disc !== prevD) activeChanged = true;
+      continue;
+    }
+    if (inByType.road) for (const k in inByType.road) workPort[k] = (workPort[k] || 0) - regime * inByType.road[k];
     // Diesel & co. : consommés depuis le PORT (réservation immédiate pour les bâtiments suivants).
-    if (inByType.pipePort) for (const k in inByType.pipePort) workPort[k] = (workPort[k] || 0) - inByType.pipePort[k];
+    if (inByType.pipePort) for (const k in inByType.pipePort) workPort[k] = (workPort[k] || 0) - regime * inByType.pipePort[k];
     if (inByType.pipePort && routeIn.pipePort != null) for (const k in inByType.pipePort) {
       netDemand[routeIn.pipePort] = (netDemand[routeIn.pipePort] || 0) + inByType.pipePort[k];
       addTier(routeIn.pipePort, pri, inByType.pipePort[k]);
@@ -3894,8 +3906,9 @@ function tickIsland(game, isl) {
       addFlow(routeOut.pipe, 'prod', k, outByType.pipe[k]);
     }
     if (energyOut > 0) {
-      energyProduced += energyOut;
-      wireProd[wireNid] = (wireProd[wireNid] || 0) + energyOut;
+      // Production électrique bridée par le régime (ex. centrale à court de combustible → moins de kW).
+      energyProduced += energyOut * regime;
+      wireProd[wireNid] = (wireProd[wireNid] || 0) + energyOut * regime;
     }
     if (power > 0) energyConsumers.push({
       idx: r * def.cols + c,
@@ -3914,7 +3927,8 @@ function tickIsland(game, isl) {
       outByType,
       routeIn,
       routeOut,
-      pri
+      pri,
+      regime
     });
   }
   // Per-network throughput factor based on each network's level cap.
@@ -3983,24 +3997,26 @@ function tickIsland(game, isl) {
     return netFactor[nid] != null ? netFactor[nid] : 1;
   };
   for (const a of actives) {
+    const rg = a.regime != null ? a.regime : 1; // bride conso au régime (intrants/élec.)
     if (a.inByType.road) {
-      const fc = facOf(a.routeIn, 'road', a.pri);
+      const fc = facOf(a.routeIn, 'road', a.pri) * rg;
       for (const k in a.inByType.road) port[k] = (port[k] || 0) - fc * a.inByType.road[k];
     }
     if (a.inByType.pipe) {
-      const fc = facOf(a.routeIn, 'pipe', a.pri);
+      const fc = facOf(a.routeIn, 'pipe', a.pri) * rg;
       const pool = nets[a.routeIn.pipe].pool;
       for (const k in a.inByType.pipe) pool[k] = (pool[k] || 0) - fc * a.inByType.pipe[k];
     }
     if (a.inByType.pipePort) {
-      const fc = facOf(a.routeIn, 'pipePort', a.pri);
+      const fc = facOf(a.routeIn, 'pipePort', a.pri) * rg;
       for (const k in a.inByType.pipePort) port[k] = (port[k] || 0) - fc * a.inByType.pipePort[k];
     }
   }
   const prod = game.techTree && game.techTree.produced;
   for (const a of actives) {
+    const rg = a.regime != null ? a.regime : 1; // bride production au régime
     if (a.outByType.road) {
-      const fc = facOf(a.routeOut, 'road', a.pri);
+      const fc = facOf(a.routeOut, 'road', a.pri) * rg;
       for (const k in a.outByType.road) {
         const amt = fc * a.outByType.road[k];
         port[k] = (port[k] || 0) + amt;
@@ -4008,7 +4024,7 @@ function tickIsland(game, isl) {
       }
     }
     if (a.outByType.pipe) {
-      const fc = facOf(a.routeOut, 'pipe', a.pri);
+      const fc = facOf(a.routeOut, 'pipe', a.pri) * rg;
       const pool = nets[a.routeOut.pipe].pool;
       for (const k in a.outByType.pipe) {
         const amt = fc * a.outByType.pipe[k];
@@ -4017,7 +4033,7 @@ function tickIsland(game, isl) {
       }
     }
     if (a.outByType.pipePort) {
-      const fc = facOf(a.routeOut, 'pipePort', a.pri);
+      const fc = facOf(a.routeOut, 'pipePort', a.pri) * rg;
       for (const k in a.outByType.pipePort) {
         const amt = fc * a.outByType.pipePort[k];
         port[k] = (port[k] || 0) + amt;
@@ -6504,22 +6520,25 @@ function InfoPanel({
     input: 'intrants manquants',
     power: 'élec. insuffisante (vérifier le débit du câble)'
   };
-  // L'élec. fonctionne en tout-ou-rien CHAQUE tick : un bâtiment sous-alimenté est
-  // coupé/rallumé d'un tick à l'autre. Le régime moyen lissé (bld.pwrAvg) reflète la
-  // production réelle « au ralenti » au lieu d'un trompeur 0 % à l'instant de la coupure.
+  // Régime RÉEL du bâtiment = min(intrants disponibles, élec. disponible) × saturation réseau.
+  // `bld.regime` (calculé au tick) bride conso ET production au prorata : un déficit partiel
+  // ralentit la production sans l'arrêter. On nomme la cause (intrants / élec. / réseau).
+  const regime = bld.regime != null ? bld.regime : 1;
+  const inFac = bld.inFac != null ? bld.inFac : 1;
   const pwrAvg = bld.pwrAvg;
-  // Un consommateur d'élec. inclut les bâtiments à demande variable (sigmoid/randomP),
-  // dont `b.power` vaut 0 : on teste donc nominalPower(bld) > 0, pas seulement b.power.
   const drawsPower = nominalPower(bld) > 0;
-  const powerLimited = drawsPower && pwrAvg != null && pwrAvg < 0.995 && (bld.active !== false || bld.discReason === 'power');
+  const netDisc = bld.active === false && (bld.disc || bld.discReason === 'road' || bld.discReason === 'pipe' || bld.discReason === 'wire');
   let speedPct, speedReason;
-  if (powerLimited) {
-    // Débit effectif = part du temps alimenté × saturation réseau éventuelle.
-    speedPct = Math.max(0, Math.min(100, Math.round(pwrAvg * speedF * 100)));
-    speedReason = speedPct <= 0 ? 'à l\'arrêt · élec. insuffisante' : 'au ralenti · élec. insuffisante';
+  if (netDisc) {
+    speedPct = 0;
+    speedReason = DISC_LABELS[bld.discReason] || (bld.disc ? 'déconnecté' : 'à l\'arrêt');
   } else {
-    speedPct = bld.active === false ? 0 : Math.round(speedF * 100);
-    speedReason = bld.active === false ? DISC_LABELS[bld.discReason] || (bld.disc ? 'déconnecté' : 'à l\'arrêt') : speedPct < 100 ? 'réseau saturé' : 'plein régime';
+    speedPct = Math.max(0, Math.min(100, Math.round(regime * speedF * 100)));
+    const lackInput = inFac < 0.995;
+    const lackPower = drawsPower && pwrAvg != null && pwrAvg < 0.995;
+    const lackNet = speedF < 0.999;
+    const cause = lackInput && lackPower ? 'intrants + élec. insuffisants' : lackInput ? 'intrants insuffisants' : lackPower ? 'élec. insuffisante' : lackNet ? 'réseau saturé' : '';
+    if (speedPct <= 0) speedReason = 'à l\'arrêt · ' + (cause || 'aucun intrant');else speedReason = (speedPct < 100 ? 'au ralenti' : 'plein régime') + (cause ? ' · ' + cause : '');
   }
   const speedColor = speedPct >= 100 ? 'var(--green)' : speedPct > 0 ? 'var(--orange)' : '#ff8079';
   // Statut affiché dès que le bâtiment « fait » quelque chose (réseau, élec, ou en panne).
@@ -6635,14 +6654,14 @@ function InfoPanel({
     className: "lbl"
   }, "Sortie"), React.createElement("span", {
     className: "val io"
-  }, formatRecipe(b.outputs, upgradeMult(upg)), " /s")), capped && React.createElement("div", {
+  }, formatRecipe(b.outputs, upgradeMult(upg)), " /s")), speedPct > 0 && speedPct < 100 && solidOut && Object.keys(solidOut).length > 0 && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
   }, "R\xE9el \u26A0"), React.createElement("span", {
     className: "val io",
-    title: "Réseau saturé — débit limité par le niveau du réseau (montez-le pour augmenter)"
-  }, formatRecipe(solidOut, upgradeMult(upg) * f), " /s")), b.accumulator && React.createElement("div", {
+    title: "Production r\xE9elle ce tick (brid\xE9e : " + speedReason + ")"
+  }, formatRecipe(solidOut, upgradeMult(upg) * speedPct / 100), " /s")), b.accumulator && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -10364,22 +10383,22 @@ function App() {
     }
     drawLevelBadge(ctx, x, y, W, H, tile, upg);
   }
-  function drawBuilding(ctx, x, y, tile, id, inactive, disconnected, upg, wTiles, hTiles, discReason, pwrAvg) {
+  function drawBuilding(ctx, x, y, tile, id, inactive, disconnected, upg, wTiles, hTiles, discReason, regime) {
     const b = BUILDINGS[id];
     const W = (wTiles || 1) * tile,
       H = (hTiles || 1) * tile;
-    // Déficit électrique : le bâtiment tourne au RALENTI (duty-cycle lissé pwrAvg < 1). On le montre
-    // « réduit » (icône d'autant plus petite que le déficit est marqué) et FIGÉ (pas d'animation),
-    // sans le badge de panne — il continue de produire, juste au ralenti (cf. boucle énergie : la
-    // production est déposée avant la coupure d'affichage). Évite aussi le clignotement actif/arrêt.
-    const powerDef = pwrAvg != null && pwrAvg < 0.995 && !disconnected;
+    // Déficit (intrants ET/OU élec.) : le bâtiment tourne au RALENTI au `regime` calculé par le tick.
+    // On le montre « réduit » (icône d'autant plus petite que le régime est bas) et FIGÉ (pas
+    // d'animation), sans badge de panne — il produit encore, au prorata. Au-dessous de ~2 % de
+    // régime il est considéré à l'arrêt (badge de panne via le chemin normal). Évite le clignotement.
+    const powerDef = regime != null && regime < 0.995 && regime > 0.02 && !disconnected;
     // Sprite path for actual buildings (not infra/junction; those are drawn in the
     // network pass with connection-aware tiles). Falls back to vector shapes below.
     if (SPRITES_ENABLED && b.kind !== 'infra' && b.kind !== 'junction') {
       const sk = buildingSpriteKey(id, upg);
       if (sk) {
         if (powerDef) {
-          const s = 0.55 + 0.4 * Math.max(0, Math.min(1, pwrAvg)); // 0.55 (à sec) → ~0.95 (presque plein)
+          const s = 0.55 + 0.4 * Math.max(0, Math.min(1, regime)); // 0.55 (presque à sec) → ~0.95 (presque plein)
           const dw = W * s,
             dh = H * s;
           if (drawSprite(ctx, sk, x + (W - dw) / 2, y + (H - dh) / 2, dw, dh)) return;
@@ -10647,7 +10666,7 @@ function App() {
         }
       }
       const sz = buildingSize(bid);
-      drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.pwrAvg);
+      drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime);
     }
     drawPortExtras(ctx, ox, oy, tile);
     drawHover(ctx, ox, oy, tile);
