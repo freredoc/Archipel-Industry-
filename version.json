@@ -1,7 +1,7 @@
 {
-  "build": 84,
-  "version": "Alpha 10.59",
+  "build": 85,
+  "version": "Alpha 10.60",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.59 — réseau traversant câble + tuyau (un bâtiment fait pont) (#84)"
+  "notes": "Alpha 10.60 — priorité de flux étendue à l'électricité (#85)"
 }
