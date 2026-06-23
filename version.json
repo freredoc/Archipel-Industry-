@@ -1,7 +1,7 @@
 {
-  "build": 82,
-  "version": "Alpha 10.57",
+  "build": 83,
+  "version": "Alpha 10.58",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.57 — HUD compact + sprites ressources dans la fiche bâtiment (#82)"
+  "notes": "Alpha 10.58 — animations tuiles portuaires + format port des gros nombres (#83)"
 }
