@@ -1,7 +1,7 @@
 {
-  "build": 77,
-  "version": "Alpha 10.52",
+  "build": 78,
+  "version": "Alpha 10.53",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.52 — déficit élec : icône réduite + animation coupée (#77)"
+  "notes": "Alpha 10.53 — production bridée au prorata du déficit (intrants/élec.) (#78)"
 }
