@@ -3188,12 +3188,14 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 87;
-const GAME_VERSION = 'Alpha 10.62';
+const GAME_BUILD = 88;
+const GAME_VERSION = 'Alpha 10.63';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
 const NATIVE_UPDATER = typeof window !== 'undefined' && window.ArchipelNative && typeof window.ArchipelNative.update === 'function';
+// Coquille Android : sauvegarde d'un fichier .txt via le pont natif (sinon repli téléchargement Blob).
+const NATIVE_SAVE = typeof window !== 'undefined' && window.ArchipelNative && typeof window.ArchipelNative.saveText === 'function';
 const MIN_TILE = 26,
   MAX_TILE = 64;
 const MAX_ZOOM = 4,
@@ -7912,10 +7914,53 @@ function SlotPanel({
   const [editName, setEditName] = useState('');
   const [confirmId, setConfirmId] = useState(null);
   const [exportText, setExportText] = useState(null);
+  const [exportName, setExportName] = useState('sauvegarde');
   const [copied, setCopied] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState('');
   const [importErr, setImportErr] = useState(null);
+  const fileRef = useRef(null);
+  // Nom de fichier .txt : « archipel-<nom du slot>.txt » (caractères sûrs).
+  const exportFileName = () => 'archipel-' + (exportName || 'sauvegarde').replace(/[^a-z0-9_-]+/gi, '_').slice(0, 40) + '.txt';
+  // Télécharge le texte en .txt : via le pont natif Android s'il existe, sinon par Blob (navigateur).
+  const saveTextFile = (name, text) => {
+    if (NATIVE_SAVE) {
+      try {
+        window.ArchipelNative.saveText(name, text);
+        return;
+      } catch (e) {}
+    }
+    try {
+      const blob = new Blob([text], {
+        type: 'text/plain'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        try {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } catch (e) {}
+      }, 200);
+    } catch (e) {}
+  };
+  // Lecture d'un fichier .txt choisi (input file) → remplit la zone d'import.
+  const onFilePicked = e => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImportText(String(reader.result || ''));
+      setImportErr(null);
+    };
+    reader.onerror = () => setImportErr('Lecture du fichier impossible.');
+    reader.readAsText(file);
+  };
   const copyText = txt => {
     setCopied(false);
     try {
@@ -7924,9 +7969,10 @@ function SlotPanel({
       }
     } catch (e) {}
   };
-  const doExport = id => {
+  const doExport = (id, name) => {
     const data = onGetSlotData(id) || '';
     setCopied(false);
+    setExportName(name || 'sauvegarde');
     setExportText(data);
     if (data) copyText(data);
   };
@@ -8010,7 +8056,7 @@ function SlotPanel({
       onClick: () => startEdit(s)
     }, "Renommer"), React.createElement("button", {
       className: "slot-btn",
-      onClick: () => doExport(s.id)
+      onClick: () => doExport(s.id, s.name)
     }, "Exporter"), React.createElement("button", {
       className: "slot-btn danger",
       onClick: () => setConfirmId(s.id)
@@ -8080,6 +8126,9 @@ function SlotPanel({
     }
   }, React.createElement("button", {
     className: "slot-btn primary",
+    onClick: () => saveTextFile(exportFileName(), exportText)
+  }, "⤓ Télécharger .txt"), React.createElement("button", {
+    className: "slot-btn",
     onClick: () => copyText(exportText)
   }, "Copier"), React.createElement("button", {
     className: "slot-btn",
@@ -8117,7 +8166,21 @@ function SlotPanel({
       color: 'var(--ink-dim)',
       marginBottom: '8px'
     }
-  }, "Colle ici une sauvegarde export\xE9e : une nouvelle partie sera cr\xE9\xE9e."), React.createElement("textarea", {
+  }, "Charge un fichier .txt export\xE9 (ou colle le texte) : une nouvelle partie sera cr\xE9\xE9e."), React.createElement("input", {
+    ref: fileRef,
+    type: "file",
+    accept: ".txt,text/plain,application/json",
+    style: {
+      display: 'none'
+    },
+    onChange: onFilePicked
+  }), React.createElement("button", {
+    className: "slot-btn primary",
+    style: {
+      marginBottom: '8px'
+    },
+    onClick: () => fileRef.current && fileRef.current.click()
+  }, "📂 Charger un fichier .txt"), React.createElement("textarea", {
     value: importText,
     autoFocus: true,
     placeholder: "{ … }",
