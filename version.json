@@ -1,7 +1,7 @@
 {
-  "build": 87,
-  "version": "Alpha 10.62",
+  "build": 88,
+  "version": "Alpha 10.63",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.62 — débit /s du transit + cible/réserve en notation scientifique (#87)"
+  "notes": "Alpha 10.63 — import/export des sauvegardes en fichier .txt (#88)"
 }
