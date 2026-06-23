@@ -17,7 +17,14 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 86`, `GAME_VERSION = 'Alpha 10.61'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 87`, `GAME_VERSION = 'Alpha 10.62'`.** Changement
+  10.62 : **débit /s du transit + champs cible/réserve en notation « port »**. (1) **Flux /s** :
+  `transferLink` mémorise le débit réel par ressource du dernier tick dans `game.transitFlow[src_'_'dest]`
+  (transitoire, non sauvegardé) ; le panneau Port affiche désormais `… <ressource> <débit>/s → Île N`
+  (via `fmtPort`) au lieu du nom seul. (2) **Champs numériques** : `NumField` affiche la valeur en
+  notation « port » (`fmtPort` : 1e5, 1,5e6…) hors édition (valeur brute en édition ; `parseNum`
+  accepte scientifique + virgule) → la **cible** et la **réserve** du commerce, et le seuil d'alerte,
+  ne s'affichent plus en entier. Changement
   10.61 : **sprite de la ressource transférée dans le panneau Port** — la liste « flux sortant »
   d'une liaison (`PortPanel`, `outFlow`) affichait le sprite générique du cargo (`cargoSprite`) +
   code court → on ne voyait pas QUEL item transitait. Désormais chaque ligne montre le **sprite de la

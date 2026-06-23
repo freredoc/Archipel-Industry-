@@ -3188,8 +3188,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 86;
-const GAME_VERSION = 'Alpha 10.61';
+const GAME_BUILD = 87;
+const GAME_VERSION = 'Alpha 10.62';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5812,6 +5812,9 @@ function transitPerSec(game, src, dest) {
 // de destination (pas de cale physique). Renvoie true si quelque chose a bougé.
 function transferLink(game, src, dest) {
   let room = transitPerSec(game, src, dest);
+  // Mémorise le flux réel /s par ressource (affiché dans le panneau Port).
+  if (!game.transitFlow) game.transitFlow = {};
+  const flow = game.transitFlow[src + '_' + dest] = {};
   if (room <= 0) return false;
   let moved = false;
   const order = tradePriorityFor(game, src);
@@ -5825,6 +5828,7 @@ function transferLink(game, src, dest) {
       return;
     }
     if (game.techTree && game.techTree.imported) game.techTree.imported[res] = (game.techTree.imported[res] || 0) + drawn;
+    flow[res] = (flow[res] || 0) + drawn;
     room -= drawn;
     moved = true;
   };
@@ -7141,7 +7145,9 @@ function NumField({
     type: "text",
     inputMode: "text",
     title: title,
-    value: txt != null ? txt : String(value),
+    // Affichage compact (notation « port » : 1e5, 1,5e6…) hors édition ; valeur brute en édition
+    // (parseNum accepte la notation scientifique et la virgule au commit).
+    value: txt != null ? txt : fmtPort(value),
     onFocus: e => {
       // Champ à 0 → on le vide pour ne pas avoir à effacer le « 0 » à la main
       // (sinon on sélectionne tout pour pouvoir remplacer la valeur directement).
@@ -7281,15 +7287,18 @@ function PortPanel({
       // Sprite de la ressource transf\u00e9r\u00e9e (pour voir CE qui transite), repli sur le cargo.
       const ikey = SPRITES_ENABLED ? itemSpriteKey(res) : null;
       const idata = ikey && SPRITE_DATA[ikey];
+      // D\u00e9bit r\u00e9el /s mesur\u00e9 au dernier tick de transfert (game.transitFlow).
+      const lf = game.transitFlow && game.transitFlow[currentIsland + '_' + other] || {};
+      const rate = lf[res] || 0;
       return React.createElement("span", {
         className: "pp-cargo-item",
         key: res,
-        title: "Transit : " + (RES_SHORT[res] || res) + " \u2192 \u00cele " + other
+        title: "Transit : " + fmtPort(rate) + "/s de " + (RES_SHORT[res] || res) + " \u2192 \u00cele " + other
       }, idata ? React.createElement("img", {
         className: "pp-cargo-ico",
         src: idata,
         alt: ""
-      }) : cargoSprite(), " ", RES_SHORT[res] || res, " \u2192 \xCEle ", other);
+      }) : cargoSprite(), " ", RES_SHORT[res] || res, " ", fmtPort(rate), "/s \u2192 \xCEle ", other);
     })));
   }), React.createElement("div", {
     className: "pp-section-label"
