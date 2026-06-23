@@ -1,7 +1,7 @@
 {
-  "build": 86,
-  "version": "Alpha 10.61",
+  "build": 87,
+  "version": "Alpha 10.62",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.61 — sprite de la ressource transférée dans le panneau Port (#86)"
+  "notes": "Alpha 10.62 — débit /s du transit + cible/réserve en notation scientifique (#87)"
 }
