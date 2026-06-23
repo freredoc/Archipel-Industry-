@@ -3303,8 +3303,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 91;
-const GAME_VERSION = 'Alpha 10.66';
+const GAME_BUILD = 92;
+const GAME_VERSION = 'Alpha 10.67';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4521,12 +4521,18 @@ function tickIsland(game, isl) {
     const accs = poolAccs[root] || [];
     let netDem = 0;
     for (const cc of cons) netDem += cc.power;
+    // Débit total de la composante : borne la puissance livrable à ses consommateurs.
+    const cap = poolCap[root] != null ? poolCap[root] : NETWORK_THROUGHPUT[1];
     // Accumulateurs : stockent le surplus (rendement 0.8) / déchargent en cas de déficit.
+    // ⚠ La charge ET la décharge sont bornées par le DÉBIT du câble (cap) : sans ça, sur un
+    // réseau saturé la batterie se vidait (ou se chargeait) au-delà de ce que le câble peut
+    // transporter → énergie gaspillée. On ne déplace que ce qui est réellement transmissible.
     let bal = prod - netDem;
     let disc = 0;
     if (accs.length) {
       if (bal > 1e-6) {
-        let surplus = bal;
+        // Surplus stockable = production excédentaire réellement livrable (≤ débit) au-delà de la demande.
+        let surplus = cap === Infinity ? bal : Math.max(0, Math.min(prod, cap) - netDem);
         for (const acc of accs) {
           if (surplus <= 1e-6) break;
           const free = acc.capacity - acc.stored;
@@ -4538,7 +4544,8 @@ function tickIsland(game, isl) {
           }
         }
       } else if (bal < -1e-6) {
-        let need = -bal;
+        // Déficit comblable = ce qui manque pour servir la demande LIVRABLE (bornée par le débit).
+        let need = cap === Infinity ? -bal : Math.max(0, Math.min(netDem, cap) - prod);
         for (const acc of accs) {
           if (need <= 1e-6) break;
           const give = Math.min(acc.stored, acc.capacity, need);
@@ -4552,8 +4559,6 @@ function tickIsland(game, isl) {
       for (const acc of accs) acc.bld.stored = acc.stored;
     }
     const netSupply = prod + disc;
-    // Débit total de la composante : borne la puissance livrable à ses consommateurs.
-    const cap = poolCap[root] != null ? poolCap[root] : NETWORK_THROUGHPUT[1];
     const deliver = Math.min(netSupply, cap);
     let netServed = netDem;
     if (deliver + 1e-6 < netDem) {

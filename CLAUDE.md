@@ -17,7 +17,15 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 91`, `GAME_VERSION = 'Alpha 10.66'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 92`, `GAME_VERSION = 'Alpha 10.67'`.** Changement
+  10.67 : **fix batterie — charge/décharge bornées par le débit du câble**. Vérif du fonctionnement
+  de l'accumulateur (boucle énergie de `tickIsland`) : charge rendement 0.8 / décharge 1.0, regroupé
+  par composante électrique (`poolAccs`/`ufRoot`), capacité ×2^upgrade (`accCapacity`), `stored`
+  sérialisé (`pl.s`) — **OK**. **Bug trouvé & corrigé** : sur un réseau **saturé** (demande > débit),
+  la batterie se déchargeait (ou chargeait) **au-delà** de ce que le câble peut transporter → l'énergie
+  non livrée était gaspillée (ex. batterie pleine 512 vidée mais seulement 256 livrés). Désormais
+  `surplus`/`need` sont bornés par `cap` : `surplus = min(prod,cap)−netDem`, `need = min(netDem,cap)−prod`
+  (inchangé si câble illimité ou non saturé). La réserve restante est conservée. Changement
   10.66 : **tuiles « brise » terrain animées sur TOUTES les îles** (le pack `Archipel_sprites_COMPLET`
   livré contenait enfin les sheets manquantes). Avant : seuls `tile_i1_land/water` animaient. Désormais
   **16 sheets** `tile_i{1..5}_{land,water,coast}_breeze` + `tile_i3_petrole_breeze` inlinées dans
