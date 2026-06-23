@@ -17,7 +17,14 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 93`, `GAME_VERSION = 'Alpha 10.68'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 94`, `GAME_VERSION = 'Alpha 10.69'`.** Changement
+  10.69 : **intrants en déficit (orange) + ligne « intrants réels » dans la fiche bâtiment**. (1) Le
+  tick stocke désormais `bld.inAvail` = ratio dispo/demande PAR intrant (calculé dans la boucle
+  bâtiment depuis `workPort`/pools, route + tuyau + pipePort). (2) `recipeChips(rec, mult, avail)`
+  accepte ce map : un intrant dont `inAvail[k] < 0.995` passe en **orange** (`.dr-res.dr-short`,
+  titre « déficit X% dispo ») dans la ligne **Entrées** de l'`InfoPanel`. (3) Nouvelle ligne **« Réel »
+  entrées** (quand le bâtiment tourne au ralenti, `0 < speedPct < 100`) : consommation réelle
+  `inputs × speedPct/100` (miroir de la ligne « Réel » de sortie). Changement
   10.68 : 4 demandes. (1) **fix transit incohérent** : le flux SORTANT du panneau Port lisait
   `shippableQty` (intention) → pouvait afficher « aucun flux sortant » alors que l'île voisine recevait
   bien la ressource. Désormais `outFlow` lit `game.transitFlow[courante+'_'+other]` (flux réel du
