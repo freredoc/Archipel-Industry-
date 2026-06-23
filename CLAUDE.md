@@ -17,7 +17,12 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 80`, `GAME_VERSION = 'Alpha 10.55'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 81`, `GAME_VERSION = 'Alpha 10.56'`.** Changement
+  10.56 : **rééquilibrage coûts** — `accumulateur` (batterie) coût de base **÷2** (silicium_raffine
+  150→75, processeur 10→5, cable 150→75) ; les **3 fours à arc** (`four_arc_acier`/`_cable`/`_piece`)
+  coût de base **÷4** (acier 300→75, beton_arme/cable 150→38, cable/piece_meca 100→25, processeur
+  40→10). NB : ces bâtiments sont t3, donc `TIER_COST_MULT` ×8 s'applique toujours par-dessus (le
+  ratio ÷2 / ÷4 est respecté). Changement
   10.55 : **affichage déficit retravaillé + options + inventaire compact**. (1) **Bâtiments en
   déficit** : le sprite garde sa **pleine taille** (fini la réduction du 10.52/10.53) ; une **petite
   icône d'état** (`drawDeficitIcon`, sprite `etat_*` via `statusSpriteKey`) s'affiche en **haut à

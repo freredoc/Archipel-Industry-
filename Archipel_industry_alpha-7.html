@@ -2424,9 +2424,9 @@ const BUILDINGS = {
     accumulator: true,
     capacity: 512,
     cost: {
-      silicium_raffine: 150,
-      processeur: 10,
-      cable: 150
+      silicium_raffine: 75,
+      processeur: 5,
+      cable: 75
     }
   },
   four_arc_acier: {
@@ -2444,10 +2444,10 @@ const BUILDINGS = {
       max: 256
     },
     cost: {
-      acier: 300,
-      beton_arme: 150,
-      cable: 100,
-      processeur: 40
+      acier: 75,
+      beton_arme: 38,
+      cable: 25,
+      processeur: 10
     },
     inputs: {
       minerai_fer: 24
@@ -2471,10 +2471,10 @@ const BUILDINGS = {
       max: 128
     },
     cost: {
-      acier: 300,
-      beton_arme: 150,
-      piece_meca: 100,
-      processeur: 40
+      acier: 75,
+      beton_arme: 38,
+      piece_meca: 25,
+      processeur: 10
     },
     inputs: {
       minerai_cuivre: 36
@@ -2498,10 +2498,10 @@ const BUILDINGS = {
       max: 192
     },
     cost: {
-      acier: 300,
-      cable: 150,
-      piece_meca: 100,
-      processeur: 40
+      acier: 75,
+      cable: 38,
+      piece_meca: 25,
+      processeur: 10
     },
     inputs: {
       minerai_fer: 24
@@ -3181,8 +3181,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 80;
-const GAME_VERSION = 'Alpha 10.55';
+const GAME_BUILD = 81;
+const GAME_VERSION = 'Alpha 10.56';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
