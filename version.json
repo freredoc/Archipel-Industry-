@@ -1,7 +1,7 @@
 {
-  "build": 92,
-  "version": "Alpha 10.67",
+  "build": 93,
+  "version": "Alpha 10.68",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.67 — batterie : charge/décharge bornées par le débit du câble (#92)"
+  "notes": "Alpha 10.68 — fix transit + batterie 2048 + prod élec en sortie + noms ressources (#93)"
 }
