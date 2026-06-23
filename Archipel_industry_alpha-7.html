@@ -219,6 +219,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .pp-block-chip.off{border-color:#ff8079;color:#ff8079;background:rgba(255,128,121,.1);}
 .pp-cargo{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px;}
 .pp-cargo-item{font-family:'DM Mono',monospace;font-size:.66rem;color:#8fd0ff;}
+.pp-cargo-item.pp-cargo-in{color:#9ee29f;}
 .pp-cargo-empty{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-faint);}
 .pp-cargo-spr{width:12px;height:12px;vertical-align:-2px;image-rendering:pixelated;image-rendering:crisp-edges;}
 .pp-cargo-ico{width:16px;height:16px;vertical-align:-4px;image-rendering:pixelated;image-rendering:crisp-edges;}
@@ -1890,7 +1891,7 @@ const BUILDINGS = {
       charbon: 8
     },
     outputs: {
-      energie_kw: 32
+      energie_kw: 64
     }
   },
   four_fer: {
@@ -2173,7 +2174,7 @@ const BUILDINGS = {
       diesel: 4
     },
     outputs: {
-      energie_kw: 128
+      energie_kw: 512
     }
   },
   circuit: {
@@ -3188,8 +3189,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 88;
-const GAME_VERSION = 'Alpha 10.63';
+const GAME_BUILD = 89;
+const GAME_VERSION = 'Alpha 10.64';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4129,7 +4130,7 @@ function tickIsland(game, isl) {
       c = nu.c;
     const NUC_START = 300,
       NUC_STOP = 30,
-      NUC_POWER = 2048,
+      NUC_POWER = 8192,
       NUC_COOL = 256;
     const matKey = (game.nuclearConfig && game.nuclearConfig[isl]) || 'acier';
     const irrKey = matKey + '_irradie';
@@ -6683,6 +6684,28 @@ function InfoPanel({
   // Statut affiché dès que le bâtiment « fait » quelque chose (réseau, élec, ou en panne).
   const usesWireUI = (b.power || 0) > 0 || b.outputs && b.outputs.energie_kw != null || !!b.sigmoid || !!b.randomP || !!b.antenna;
   const showStatus = usesNet || usesWireUI || bld.active === false;
+  // Recette en chips « sprite + débit » (comme la fiche détaillée) : on VOIT chaque ressource.
+  // energie_kw est exclu (affiché à part). Repli code court si le sprite manque.
+  const recipeChips = (rec, mult) => {
+    const out = [];
+    for (const k in rec || {}) {
+      if (k === 'energie_kw') continue;
+      const ikey = SPRITES_ENABLED ? itemSpriteKey(k) : null;
+      const idata = ikey && SPRITE_DATA[ikey];
+      out.push(React.createElement("span", {
+        className: "dr-res",
+        key: k,
+        title: RES_SHORT[k] || k
+      }, idata && React.createElement("img", {
+        className: "inv-ico",
+        src: idata,
+        alt: ""
+      }), React.createElement("span", {
+        className: "dr-q"
+      }, fmtRate((rec[k] || 0) * (mult || 1)), idata ? '' : ' ' + (RES_SHORT[k] || k))));
+    }
+    return out.length ? out : ['—'];
+  };
   return React.createElement("div", {
     ref: ref,
     className: "info-panel",
@@ -6787,20 +6810,20 @@ function InfoPanel({
     className: "lbl"
   }, "Entr\xE9es"), React.createElement("span", {
     className: "val"
-  }, formatRecipe(b.inputs, upgradeMult(upg)), " /s")), b.outputs && React.createElement("div", {
+  }, recipeChips(b.inputs, upgradeMult(upg)).concat(' /s'))), b.outputs && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
   }, "Sortie"), React.createElement("span", {
     className: "val io"
-  }, formatRecipe(b.outputs, upgradeMult(upg)), " /s")), speedPct > 0 && speedPct < 100 && solidOut && Object.keys(solidOut).length > 0 && React.createElement("div", {
+  }, recipeChips(b.outputs, upgradeMult(upg)).concat(' /s'))), speedPct > 0 && speedPct < 100 && solidOut && Object.keys(solidOut).length > 0 && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
   }, "R\xE9el \u26A0"), React.createElement("span", {
     className: "val io",
     title: "Production r\xE9elle ce tick (brid\xE9e : " + speedReason + ")"
-  }, formatRecipe(solidOut, upgradeMult(upg) * speedPct / 100), " /s")), b.accumulator && React.createElement("div", {
+  }, recipeChips(solidOut, upgradeMult(upg) * speedPct / 100).concat(' /s'))), b.accumulator && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -7255,6 +7278,12 @@ function PortPanel({
     };
     // Flux de transit continu sortant : ressources actuellement exportées currentIsland → other.
     const outFlow = visiblePriority.filter(res => shippableQty(game, currentIsland, other, res) > 0);
+    // Flux ENTRANT : ressources recues de l'autre ile ce tick (game.transitFlow other->courante).
+    const inFlowRec = game.transitFlow && game.transitFlow[other + '_' + currentIsland] || {};
+    const inFlow = Object.keys(inFlowRec).filter(res => inFlowRec[res] > 0).sort((a, b) => {
+      const d = resTierRank(a) - resTierRank(b);
+      return d !== 0 ? d : a < b ? -1 : 1;
+    });
     const blockedRes = game.tradeBlockDest && game.tradeBlockDest[currentIsland] && game.tradeBlockDest[currentIsland][other] || {};
     const nBlocked = Object.keys(blockedRes).filter(k => blockedRes[k]).length;
     const isOpen = openLink === other;
@@ -7301,6 +7330,21 @@ function PortPanel({
         src: idata,
         alt: ""
       }) : cargoSprite(), " ", RES_SHORT[res] || res, " ", fmtPort(rate), "/s \u2192 \xCEle ", other);
+    })), inFlow.length > 0 && React.createElement("div", {
+      className: "pp-cargo"
+    }, inFlow.map(res => {
+      const ikey = SPRITES_ENABLED ? itemSpriteKey(res) : null;
+      const idata = ikey && SPRITE_DATA[ikey];
+      const rate = inFlowRec[res] || 0;
+      return React.createElement("span", {
+        className: "pp-cargo-item pp-cargo-in",
+        key: 'in-' + res,
+        title: "Re\xe7u : " + fmtPort(rate) + "/s de " + (RES_SHORT[res] || res) + " \u2190 \xCEle " + other
+      }, idata ? React.createElement("img", {
+        className: "pp-cargo-ico",
+        src: idata,
+        alt: ""
+      }) : cargoSprite(), " ", RES_SHORT[res] || res, " ", fmtPort(rate), "/s \u2190 \xCEle ", other);
     })));
   }), React.createElement("div", {
     className: "pp-section-label"
