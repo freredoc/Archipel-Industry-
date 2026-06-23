@@ -3,6 +3,7 @@ package fr.archipel.industry;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -10,10 +11,14 @@ import android.content.pm.PackageInstaller;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.view.View;
 import android.view.Window;
 import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -40,9 +45,12 @@ import java.net.URL;
 public class MainActivity extends Activity {
 
     private static final String INSTALL_ACTION = "fr.archipel.industry.INSTALL_STATUS";
+    private static final int FILE_CHOOSER_REQUEST = 0xF11E;
 
     private WebView web;
     private BroadcastReceiver installReceiver;
+    // Import de sauvegarde : callback du <input type="file"> en attente du fichier choisi.
+    private ValueCallback<Uri[]> filePathCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +80,32 @@ public class MainActivity extends Activity {
             }
         });
         web.setBackgroundColor(0xFF0E1726);           // fond sombre pendant le chargement
+
+        // Import de sauvegarde : un <input type="file"> dans le jeu déclenche onShowFileChooser,
+        // qui ouvre le sélecteur de fichiers système et renvoie l'URI choisi à la WebView.
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback,
+                                             FileChooserParams params) {
+                if (filePathCallback != null) {
+                    filePathCallback.onReceiveValue(null);
+                }
+                filePathCallback = callback;
+                try {
+                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("*/*");
+                    intent.putExtra(Intent.EXTRA_MIME_TYPES,
+                            new String[]{"text/plain", "application/json"});
+                    startActivityForResult(Intent.createChooser(intent, "Choisir une sauvegarde"),
+                            FILE_CHOOSER_REQUEST);
+                    return true;
+                } catch (Exception e) {
+                    filePathCallback = null;
+                    return false;
+                }
+            }
+        });
 
         // Pont natif : réservé à l'asset local de confiance (les URLs externes ne sont JAMAIS
         // chargées dans la WebView, elles partent vers le navigateur système).
@@ -106,6 +140,17 @@ public class MainActivity extends Activity {
             return true;
         }
 
+        /** Export de sauvegarde : écrit un fichier .txt dans le dossier Téléchargements. */
+        @JavascriptInterface
+        public void saveText(final String filename, final String content) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    writeDownload(filename, content);
+                }
+            });
+        }
+
         @JavascriptInterface
         public void update(final String url) {
             if (url == null || url.isEmpty()) return;
@@ -135,6 +180,57 @@ public class MainActivity extends Activity {
                 }
             }).start();
         }
+    }
+
+    /** Écrit le contenu texte en .txt dans Téléchargements (MediaStore sur Android 10+,
+     *  sinon dossier de l'app). Affiche un Toast indiquant l'emplacement. */
+    private void writeDownload(String filename, String content) {
+        String name = (filename == null || filename.isEmpty()) ? "archipel-sauvegarde.txt" : filename;
+        if (content == null) content = "";
+        try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                ContentValues cv = new ContentValues();
+                cv.put(MediaStore.Downloads.DISPLAY_NAME, name);
+                cv.put(MediaStore.Downloads.MIME_TYPE, "text/plain");
+                cv.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv);
+                if (uri == null) throw new Exception("insert null");
+                OutputStream os = getContentResolver().openOutputStream(uri);
+                os.write(content.getBytes("UTF-8"));
+                os.flush();
+                os.close();
+                Toast.makeText(this, "Sauvegarde exportée dans Téléchargements : " + name,
+                        Toast.LENGTH_LONG).show();
+            } else {
+                File dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                if (dir != null && !dir.exists()) dir.mkdirs();
+                File f = new File(dir, name);
+                FileOutputStream fo = new FileOutputStream(f);
+                fo.write(content.getBytes("UTF-8"));
+                fo.flush();
+                fo.close();
+                Toast.makeText(this, "Sauvegarde exportée : " + f.getAbsolutePath(),
+                        Toast.LENGTH_LONG).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Échec de l'export du fichier.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == FILE_CHOOSER_REQUEST) {
+            Uri[] result = null;
+            if (resultCode == Activity.RESULT_OK && data != null && data.getData() != null) {
+                result = new Uri[]{ data.getData() };
+            }
+            if (filePathCallback != null) {
+                filePathCallback.onReceiveValue(result);
+                filePathCallback = null;
+            }
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void downloadAndInstall(String url) {
