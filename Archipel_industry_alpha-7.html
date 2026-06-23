@@ -2544,7 +2544,7 @@ const BUILDINGS = {
     size: [1, 1],
     power: 0,
     accumulator: true,
-    capacity: 512,
+    capacity: 2048,
     cost: {
       silicium_raffine: 75,
       processeur: 5,
@@ -3303,8 +3303,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 92;
-const GAME_VERSION = 'Alpha 10.67';
+const GAME_BUILD = 93;
+const GAME_VERSION = 'Alpha 10.68';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -6805,6 +6805,7 @@ function InfoPanel({
   const showStatus = usesNet || usesWireUI || bld.active === false;
   // Recette en chips « sprite + débit » (comme la fiche détaillée) : on VOIT chaque ressource.
   // energie_kw est exclu (affiché à part). Repli code court si le sprite manque.
+  // Chips « sprite + NOM + débit » par ressource (energie_kw exclu, affiché à part).
   const recipeChips = (rec, mult) => {
     const out = [];
     for (const k in rec || {}) {
@@ -6821,7 +6822,7 @@ function InfoPanel({
         alt: ""
       }), React.createElement("span", {
         className: "dr-q"
-      }, fmtRate((rec[k] || 0) * (mult || 1)), idata ? '' : ' ' + (RES_SHORT[k] || k))));
+      }, (RES_SHORT[k] || k) + ' ' + fmtRate((rec[k] || 0) * (mult || 1)))));
     }
     return out.length ? out : ['—'];
   };
@@ -6935,7 +6936,18 @@ function InfoPanel({
     className: "lbl"
   }, "Sortie"), React.createElement("span", {
     className: "val io"
-  }, recipeChips(b.outputs, upgradeMult(upg)).concat(' /s'))), speedPct > 0 && speedPct < 100 && solidOut && Object.keys(solidOut).length > 0 && React.createElement("div", {
+  }, (() => {
+    // Sortie = matières (chips) + PRODUCTION ÉLECTRIQUE si le bâtiment en génère (energie_kw).
+    const m = upgradeMult(upg);
+    const chips = recipeChips(b.outputs, m);
+    const hasMat = !(chips.length === 1 && chips[0] === '—');
+    const eOut = (b.outputs.energie_kw || 0) * m;
+    if (eOut > 0) {
+      const elec = '⚡ ' + fmtRate(eOut) + ' kW';
+      return hasMat ? chips.concat(' /s · ' + elec) : [elec];
+    }
+    return chips.concat(' /s');
+  })())), speedPct > 0 && speedPct < 100 && solidOut && Object.keys(solidOut).length > 0 && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
@@ -7395,8 +7407,13 @@ function PortPanel({
       cargo: {},
       timer: 0
     };
-    // Flux de transit continu sortant : ressources actuellement exportées currentIsland → other.
-    const outFlow = visiblePriority.filter(res => shippableQty(game, currentIsland, other, res) > 0);
+    // Flux de transit continu SORTANT : ressources réellement expédiées courante → other ce tick
+    // (game.transitFlow), pour rester COHÉRENT avec le flux entrant affiché côté île voisine.
+    const outFlowRec = game.transitFlow && game.transitFlow[currentIsland + '_' + other] || {};
+    const outFlow = Object.keys(outFlowRec).filter(res => outFlowRec[res] > 0).sort((a, b) => {
+      const d = resTierRank(a) - resTierRank(b);
+      return d !== 0 ? d : a < b ? -1 : 1;
+    });
     // Flux ENTRANT : ressources recues de l'autre ile ce tick (game.transitFlow other->courante).
     const inFlowRec = game.transitFlow && game.transitFlow[other + '_' + currentIsland] || {};
     const inFlow = Object.keys(inFlowRec).filter(res => inFlowRec[res] > 0).sort((a, b) => {
