@@ -1,7 +1,7 @@
 {
-  "build": 90,
-  "version": "Alpha 10.65",
+  "build": 91,
+  "version": "Alpha 10.66",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.65 — tuiles portuaires : animation rendue visible (balise pulsante) (#90)"
+  "notes": "Alpha 10.66 — tuiles brise terrain animées sur toutes les îles (#91)"
 }
