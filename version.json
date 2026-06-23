@@ -1,7 +1,7 @@
 {
-  "build": 85,
-  "version": "Alpha 10.60",
+  "build": 86,
+  "version": "Alpha 10.61",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.60 — priorité de flux étendue à l'électricité (#85)"
+  "notes": "Alpha 10.61 — sprite de la ressource transférée dans le panneau Port (#86)"
 }
