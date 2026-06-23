@@ -1,7 +1,7 @@
 {
-  "build": 71,
-  "version": "Alpha 10.46",
+  "build": 72,
+  "version": "Alpha 10.47",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.46 — recherches terminées en fin de liste + compact (#71)"
+  "notes": "Alpha 10.47 — bâtiments récompense (V2/V3) exemptés du surcoût de palier (#72)"
 }
