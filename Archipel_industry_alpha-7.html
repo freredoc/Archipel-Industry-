@@ -3174,8 +3174,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 76;
-const GAME_VERSION = 'Alpha 10.51';
+const GAME_BUILD = 77;
+const GAME_VERSION = 'Alpha 10.52';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -10364,22 +10364,34 @@ function App() {
     }
     drawLevelBadge(ctx, x, y, W, H, tile, upg);
   }
-  function drawBuilding(ctx, x, y, tile, id, inactive, disconnected, upg, wTiles, hTiles, discReason) {
+  function drawBuilding(ctx, x, y, tile, id, inactive, disconnected, upg, wTiles, hTiles, discReason, pwrAvg) {
     const b = BUILDINGS[id];
     const W = (wTiles || 1) * tile,
       H = (hTiles || 1) * tile;
+    // Déficit électrique : le bâtiment tourne au RALENTI (duty-cycle lissé pwrAvg < 1). On le montre
+    // « réduit » (icône d'autant plus petite que le déficit est marqué) et FIGÉ (pas d'animation),
+    // sans le badge de panne — il continue de produire, juste au ralenti (cf. boucle énergie : la
+    // production est déposée avant la coupure d'affichage). Évite aussi le clignotement actif/arrêt.
+    const powerDef = pwrAvg != null && pwrAvg < 0.995 && !disconnected;
     // Sprite path for actual buildings (not infra/junction; those are drawn in the
     // network pass with connection-aware tiles). Falls back to vector shapes below.
     if (SPRITES_ENABLED && b.kind !== 'infra' && b.kind !== 'junction') {
       const sk = buildingSpriteKey(id, upg);
       if (sk) {
-        // Bâtiment actif → frame animée ; à l'arrêt → sprite statique (= frame 0).
-        let drew = false;
-        if (!inactive && !disconnected) drew = drawAnimFrame(ctx, sk, x, y, W, H);
-        if (!drew) drew = drawSprite(ctx, sk, x, y, W, H);
-        if (drew) {
-          drawBuildingStateOverlay(ctx, x, y, W, H, tile, inactive, disconnected, upg, discReason);
-          return;
+        if (powerDef) {
+          const s = 0.55 + 0.4 * Math.max(0, Math.min(1, pwrAvg)); // 0.55 (à sec) → ~0.95 (presque plein)
+          const dw = W * s,
+            dh = H * s;
+          if (drawSprite(ctx, sk, x + (W - dw) / 2, y + (H - dh) / 2, dw, dh)) return;
+        } else {
+          // Bâtiment actif → frame animée ; à l'arrêt → sprite statique (= frame 0).
+          let drew = false;
+          if (!inactive && !disconnected) drew = drawAnimFrame(ctx, sk, x, y, W, H);
+          if (!drew) drew = drawSprite(ctx, sk, x, y, W, H);
+          if (drew) {
+            drawBuildingStateOverlay(ctx, x, y, W, H, tile, inactive, disconnected, upg, discReason);
+            return;
+          }
         }
       }
     }
@@ -10635,7 +10647,7 @@ function App() {
         }
       }
       const sz = buildingSize(bid);
-      drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason);
+      drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.pwrAvg);
     }
     drawPortExtras(ctx, ox, oy, tile);
     drawHover(ctx, ox, oy, tile);
