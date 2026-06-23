@@ -221,6 +221,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .pp-cargo-item{font-family:'DM Mono',monospace;font-size:.66rem;color:#8fd0ff;}
 .pp-cargo-empty{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-faint);}
 .pp-cargo-spr{width:12px;height:12px;vertical-align:-2px;image-rendering:pixelated;image-rendering:crisp-edges;}
+.pp-cargo-ico{width:16px;height:16px;vertical-align:-4px;image-rendering:pixelated;image-rendering:crisp-edges;}
 .pp-cfg-head,.pp-cfg-row{display:grid;grid-template-columns:1fr 62px 62px 34px 44px;gap:6px;align-items:center;}
 .pp-cfg-head{font-family:'Barlow Condensed',sans-serif;font-size:.6rem;text-transform:uppercase;letter-spacing:.04em;
   color:var(--ink-faint);padding:2px 0;}
@@ -3187,8 +3188,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 85;
-const GAME_VERSION = 'Alpha 10.60';
+const GAME_BUILD = 86;
+const GAME_VERSION = 'Alpha 10.61';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -7276,10 +7277,20 @@ function PortPanel({
       className: "pp-cargo"
     }, outFlow.length === 0 ? React.createElement("span", {
       className: "pp-cargo-empty"
-    }, cargoSprite(), " aucun flux sortant") : outFlow.map(res => React.createElement("span", {
-      className: "pp-cargo-item",
-      key: res
-    }, cargoSprite(), " ", RES_SHORT[res] || res, " \u2192 \xCEle ", other))));
+    }, cargoSprite(), " aucun flux sortant") : outFlow.map(res => {
+      // Sprite de la ressource transf\u00e9r\u00e9e (pour voir CE qui transite), repli sur le cargo.
+      const ikey = SPRITES_ENABLED ? itemSpriteKey(res) : null;
+      const idata = ikey && SPRITE_DATA[ikey];
+      return React.createElement("span", {
+        className: "pp-cargo-item",
+        key: res,
+        title: "Transit : " + (RES_SHORT[res] || res) + " \u2192 \u00cele " + other
+      }, idata ? React.createElement("img", {
+        className: "pp-cargo-ico",
+        src: idata,
+        alt: ""
+      }) : cargoSprite(), " ", RES_SHORT[res] || res, " \u2192 \xCEle ", other);
+    })));
   }), React.createElement("div", {
     className: "pp-section-label"
   }, "Commerce (\xCEle ", currentIsland, ")"), React.createElement("div", {
