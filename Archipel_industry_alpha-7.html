@@ -3187,8 +3187,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 83;
-const GAME_VERSION = 'Alpha 10.58';
+const GAME_BUILD = 84;
+const GAME_VERSION = 'Alpha 10.59';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -3384,6 +3384,68 @@ function rebuildNetworks(game, islandId) {
       addInto(newNets[target].pool, oldNets[oldId] && oldNets[oldId].pool || {});
       const oldLvl = oldNets[oldId] && oldNets[oldId].level || 1;
       if (oldLvl > newNets[target].level) newNets[target].level = oldLvl;
+    }
+  }
+  // ── Règle « traversée » : un bâtiment qui se raccorde au CÂBLE (élec.) ou au TUYAU
+  // laisse le réseau le TRAVERSER. Tous les réseaux d'un même porteur (wire/pipe) adjacents à
+  // l'emprise d'un tel bâtiment FUSIONNENT en un seul (le bâtiment fait pont). Interdit pour la
+  // route. Ex. éolienne–câble–four arc–câble–aciérie : les deux câbles deviennent UN réseau →
+  // l'éolienne alimente le four ET l'aciérie. Idem tuyaux (le pool de ressources est partagé).
+  const mUF = {};
+  const mFind = x => {
+    if (mUF[x] == null) mUF[x] = x;
+    while (mUF[x] !== x) {
+      mUF[x] = mUF[mUF[x]] != null ? mUF[mUF[x]] : mUF[x];
+      x = mUF[x];
+    }
+    return x;
+  };
+  let didMerge = false;
+  for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
+    const t = tiles[r][c];
+    if (!t.building) continue;
+    const bdef = BUILDINGS[t.building.id];
+    // Le port a une gestion spéciale (diesel stocké au port) → exclu du pontage tuyau.
+    if (!bdef || bdef.kind === 'infra' || bdef.kind === 'junction' || t.building.id === 'port') continue;
+    const s = bdef.size || [1, 1];
+    const bh = s[0] || 1,
+      bw = s[1] || 1;
+    for (const carrier of ['wire', 'pipe']) {
+      if (!buildingConnectsCarrier(t.building.id, carrier)) continue;
+      const ids = adjacentNetworksFootprint(game, islandId, r, c, bw, bh, carrier);
+      for (let i = 1; i < ids.length; i++) {
+        const ra = mFind(ids[0]),
+          rb = mFind(ids[i]);
+        if (ra !== rb) {
+          mUF[ra] = rb;
+          didMerge = true;
+        }
+      }
+    }
+  }
+  if (didMerge) {
+    const rootOf = {};
+    for (const idStr in newNets) rootOf[+idStr] = mFind(+idStr);
+    for (const idStr in newNets) {
+      const id = +idStr,
+        root = rootOf[id];
+      if (root === id) continue;
+      const rn = newNets[root],
+        n = newNets[id];
+      if (rn && n) {
+        addInto(rn.pool, n.pool || {});
+        if ((n.level || 1) > (rn.level || 1)) rn.level = n.level;
+        if (n.connected) rn.connected = true;
+      }
+      delete newNets[id];
+    }
+    for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
+      const t = tiles[r][c];
+      if (t.networkId != null && rootOf[t.networkId] != null) t.networkId = rootOf[t.networkId];
+      if (t.netIds) for (const k in t.netIds) {
+        const v = t.netIds[k];
+        if (v != null && rootOf[v] != null) t.netIds[k] = rootOf[v];
+      }
     }
   }
   game.networks[islandId] = newNets;
