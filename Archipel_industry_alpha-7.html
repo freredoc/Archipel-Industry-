@@ -220,6 +220,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .pp-cargo{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px;}
 .pp-cargo-item{font-family:'DM Mono',monospace;font-size:.66rem;color:#8fd0ff;}
 .pp-cargo-empty{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-faint);}
+.pp-cargo-spr{width:12px;height:12px;vertical-align:-2px;image-rendering:pixelated;image-rendering:crisp-edges;}
 .pp-cfg-head,.pp-cfg-row{display:grid;grid-template-columns:1fr 62px 62px 34px 44px;gap:6px;align-items:center;}
 .pp-cfg-head{font-family:'Barlow Condensed',sans-serif;font-size:.6rem;text-transform:uppercase;letter-spacing:.04em;
   color:var(--ink-faint);padding:2px 0;}
@@ -1467,6 +1468,16 @@ function uiIcon(name, fallback, cls) {
     draggable: false
   });
   return fallback;
+}
+// Petite icône cargo (sprite bateau_cargo) pour l'UI ; repli sur l'emoji 🚢 si le sprite manque.
+function cargoSprite() {
+  const d = SPRITES_ENABLED && SPRITE_DATA['bateau_cargo'];
+  return d ? React.createElement("img", {
+    className: "pp-cargo-spr",
+    src: d,
+    alt: "",
+    draggable: false
+  }) : "🚢";
 }
 // Draw a sprite into a tile rect; returns true if drawn, false if unavailable.
 function drawSprite(ctx, fileKey, x, y, w, h) {
@@ -3071,8 +3082,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 72;
-const GAME_VERSION = 'Alpha 10.47';
+const GAME_BUILD = 73;
+const GAME_VERSION = 'Alpha 10.48';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5364,7 +5375,13 @@ function hasPendingResearch(game) {
 function onTutorialStep() {}
 const SHIP_LINKS = ['1-2', '2-3', '3-4', '4-5'];
 const SHIP_BATCH = 600;
-const SHIP_TRAVEL_TICKS = 30;
+// Le transit des ressources est désormais CONTINU (chaque seconde), pas en gros lots. Le débit
+// par seconde et par sens = lot_de_base / TRANSIT_DIV (TRANSIT_DIV = ancien aller-retour de 60 s),
+// ce qui conserve exactement le débit d'avant mais en flux lissé (« 1/s »).
+const TRANSIT_DIV = 60;
+// SHIP_TRAVEL_TICKS ne sert plus qu'à l'ANIMATION du cargo (sprite décoratif). 10 ticks par trajet
+// = aller-retour de 20 s. Le transfert de ressources en est découplé (continu, voir tickShips).
+const SHIP_TRAVEL_TICKS = 10;
 // Taille de lot de base effective. En mode Difficile, le transit est divisé par 10
 // (économie plus tendue, cohérent avec les flux réseau réduits).
 const shipBatchBase = () => SHIP_BATCH / (isDifficileMode() ? 10 : 1);
@@ -5476,9 +5493,9 @@ function linkActive(game, key) {
   const [a, b] = key.split('-').map(Number);
   return !!(game.islandUnlocked[a] && game.islandUnlocked[b]);
 }
-// Quantité expédiable d'une ressource d'srcIsland vers destIsland (surplus exportable
-// borné par le manque côté destination). Sans tenir compte de la place restante.
-function shippableQty(game, srcIsland, destIsland, res) {
+// Quantité brute expédiable (surplus exportable borné par le manque côté destination), SANS
+// la règle anti aller-retour.
+function rawShippable(game, srcIsland, destIsland, res) {
   const cfg = tradeCfgFor(game, srcIsland, res);
   if (cfg.interdit) return 0;
   if (tradeResBlocked(game, srcIsland, destIsland, res)) return 0;
@@ -5487,6 +5504,15 @@ function shippableQty(game, srcIsland, destIsland, res) {
   const need = tradeCfgFor(game, destIsland, res).stockCible - tradeAvail(game, destIsland, res);
   if (need <= 0) return 0;
   return Math.min(need, exportable);
+}
+// Quantité expédiable d'une ressource de src vers dest. Règle anti aller-retour : si la
+// destination peut NOUS fournir cette ressource (on l'importe d'elle), on s'interdit de la lui
+// réexporter → évite les va-et-vient inutiles.
+function shippableQty(game, srcIsland, destIsland, res) {
+  const fwd = rawShippable(game, srcIsland, destIsland, res);
+  if (fwd <= 0) return 0;
+  if (rawShippable(game, destIsland, srcIsland, res) > 0) return 0;
+  return fwd;
 }
 function loadCargo(game, ship, srcIsland, destIsland) {
   // L'interdiction d'export par ressource/destination est appliquée dans shippableQty.
@@ -5543,6 +5569,63 @@ function loadCargo(game, ship, srcIsland, destIsland) {
     draw(res, Math.min(shippableQty(game, srcIsland, destIsland, res), Math.floor(room)));
   }
 }
+// Débit de transit par seconde et par sens pour une liaison (lot de base / TRANSIT_DIV).
+function transitPerSec(game, src, dest) {
+  const ps = game.portSpeed || {};
+  const lvl = Math.max(ps[src] || 0, ps[dest] || 0);
+  return Math.floor(shipBatchBase() * portSpeedMult(lvl) / TRANSIT_DIV);
+}
+// Transfert CONTINU d'une seconde dans un sens (src → dest), en respectant priorité/proportionnel,
+// seuils, interdits et la règle anti aller-retour (via shippableQty). Dépose directement au port
+// de destination (pas de cale physique). Renvoie true si quelque chose a bougé.
+function transferLink(game, src, dest) {
+  let room = transitPerSec(game, src, dest);
+  if (room <= 0) return false;
+  let moved = false;
+  const order = tradePriorityFor(game, src);
+  const move = (res, qty) => {
+    qty = Math.min(qty, room);
+    if (qty <= 0) return;
+    const drawn = tradeDraw(game, src, res, qty);
+    if (drawn <= 0) return;
+    if (!tradeDeposit(game, dest, res, drawn)) {
+      tradeDeposit(game, src, res, drawn); // dépôt impossible (ex. pool tuyau absent) → on remet
+      return;
+    }
+    if (game.techTree && game.techTree.imported) game.techTree.imported[res] = (game.techTree.imported[res] || 0) + drawn;
+    room -= drawn;
+    moved = true;
+  };
+  if (tradeModeFor(game, src) === 'proportional') {
+    const want = {};
+    let total = 0;
+    for (const res of order) {
+      const q = Math.min(shippableQty(game, src, dest, res), room);
+      if (q > 0) {
+        want[res] = q;
+        total += q;
+      }
+    }
+    if (total <= 0) return false;
+    if (total > room) {
+      const scale = room / total;
+      for (const res of order) {
+        if (room <= 0) break;
+        if (want[res]) move(res, Math.floor(want[res] * scale));
+      }
+    }
+    for (const res of order) {
+      if (room <= 0) break;
+      if (want[res]) move(res, want[res]);
+    }
+    return moved;
+  }
+  for (const res of order) {
+    if (room <= 0) break;
+    move(res, shippableQty(game, src, dest, res));
+  }
+  return moved;
+}
 function tickShips(game) {
   if (!game.ships) return false;
   let changed = false;
@@ -5550,27 +5633,18 @@ function tickShips(game) {
     if (!linkActive(game, key)) continue;
     const ship = game.ships[key];
     if (!ship) continue;
-    ship.timer = (ship.timer || 0) - 1;
-    if (ship.timer > 0) continue;
     const [a, b] = key.split('-').map(Number);
-    const arrIsland = ship.position === 'A' ? a : b;
-    const destSide = ship.position === 'A' ? 'B' : 'A';
-    const destIsland = destSide === 'A' ? a : b;
-    const remaining = {};
-    for (const k in ship.cargo) {
-      const amt = ship.cargo[k];
-      if (tradeDeposit(game, arrIsland, k, amt)) {
-        if (game.techTree && game.techTree.imported) game.techTree.imported[k] = (game.techTree.imported[k] || 0) + amt;
-        changed = true;
-      } else {
-        remaining[k] = amt;
-      }
+    // Animation décorative du cargo : aller-retour visuel découplé du transfert (cale toujours
+    // vide). On fait juste avancer le timer / basculer le côté pour le dessin du sprite.
+    ship.cargo = {};
+    ship.timer = (ship.timer || 0) - 1;
+    if (ship.timer <= 0) {
+      ship.position = ship.position === 'A' ? 'B' : 'A';
+      ship.timer = SHIP_TRAVEL_TICKS;
     }
-    ship.cargo = remaining;
-    loadCargo(game, ship, arrIsland, destIsland);
-    if (Object.keys(ship.cargo).length) changed = true;
-    ship.position = destSide;
-    ship.timer = SHIP_TRAVEL_TICKS;
+    // Transfert continu dans LES DEUX sens chaque seconde (flux lissé).
+    if (transferLink(game, a, b)) changed = true;
+    if (transferLink(game, b, a)) changed = true;
   }
   return changed;
 }
@@ -6907,8 +6981,8 @@ function PortPanel({
       cargo: {},
       timer: 0
     };
-    const destIsland = ship.position === 'A' ? a : b;
-    const cargoEntries = Object.keys(ship.cargo).filter(k => ship.cargo[k] > 0);
+    // Flux de transit continu sortant : ressources actuellement exportées currentIsland → other.
+    const outFlow = visiblePriority.filter(res => shippableQty(game, currentIsland, other, res) > 0);
     const blockedRes = game.tradeBlockDest && game.tradeBlockDest[currentIsland] && game.tradeBlockDest[currentIsland][other] || {};
     const nBlocked = Object.keys(blockedRes).filter(k => blockedRes[k]).length;
     const isOpen = openLink === other;
@@ -6921,7 +6995,7 @@ function PortPanel({
       className: "pp-link-name"
     }, "\xCEle ", a, " \u2194 \xCEle ", b), React.createElement("span", {
       className: "pp-link-state"
-    }, ship.timer > 0 ? `en mer · ${ship.timer}s` : 'à quai')), React.createElement("button", {
+    }, "↔ transit continu")), React.createElement("button", {
       className: 'pp-block-btn' + (nBlocked > 0 ? ' on' : '') + (isOpen ? ' open' : ''),
       onClick: () => setOpenLink(isOpen ? null : other),
       title: "R\xE9gler l'export par ressource vers l'\xEEle " + other
@@ -6937,12 +7011,12 @@ function PortPanel({
       }, (off ? "⛔ " : "✅ ") + (RES_SHORT[res] || res));
     })), React.createElement("div", {
       className: "pp-cargo"
-    }, cargoEntries.length === 0 ? React.createElement("span", {
+    }, outFlow.length === 0 ? React.createElement("span", {
       className: "pp-cargo-empty"
-    }, "\uD83D\uDEA2 \xE0 vide") : cargoEntries.map(k => React.createElement("span", {
+    }, cargoSprite(), " aucun flux sortant") : outFlow.map(res => React.createElement("span", {
       className: "pp-cargo-item",
-      key: k
-    }, "\uD83D\uDEA2 ", fmtInt(ship.cargo[k]), " ", RES_SHORT[k] || k, " \u2192 \xCEle ", destIsland))));
+      key: res
+    }, cargoSprite(), " ", RES_SHORT[res] || res, " \u2192 \xCEle ", other))));
   }), React.createElement("div", {
     className: "pp-section-label"
   }, "Commerce (\xCEle ", currentIsland, ")"), React.createElement("div", {
