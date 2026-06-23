@@ -563,6 +563,7 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .dr-res{display:inline-flex;align-items:center;gap:2px;margin-left:8px;vertical-align:middle;}
 .dr-res .inv-ico{width:15px;height:15px;}
 .dr-res .dr-q{font-variant-numeric:tabular-nums;}
+.dr-res.dr-short .dr-q{color:var(--orange);font-weight:700;}
 .ip-row.capped .lbl{color:var(--orange);}
 .ip-row.capped .val{color:var(--orange);}
 .ip-demolish{width:100%;background:rgba(255,59,48,.12);border:1px solid rgba(255,59,48,.5);
@@ -3303,8 +3304,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 93;
-const GAME_VERSION = 'Alpha 10.68';
+const GAME_BUILD = 94;
+const GAME_VERSION = 'Alpha 10.69';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -3959,6 +3960,9 @@ function tickIsland(game, isl) {
     // Facteur d'intrants [0..1] : fraction des entrées réellement disponibles. < 1 = on bride la
     // production au prorata (au lieu de tout arrêter). Combiné plus bas avec le facteur élec.
     let inFac = 1;
+    // Disponibilité par intrant (ratio dispo/demande, ∈[0..1]) → fiche bâtiment : intrant
+    // en orange si < 1, et débit réel consommé.
+    const inAvail = {};
     const routeIn = {},
       routeOut = {};
     const usesSolid = inByType.road || outByType.road;
@@ -3979,6 +3983,7 @@ function tickIsland(game, isl) {
         if (inByType.road) {
           for (const k in inByType.road) {
             const av = workPort[k] || 0;
+            inAvail[k] = Math.max(0, Math.min(1, av / inByType.road[k]));
             if (av < inByType.road[k]) inFac = Math.min(inFac, av / inByType.road[k]);
           }
         }
@@ -4008,6 +4013,8 @@ function tickIsland(game, isl) {
           }
           routeIn.pipe = pick != null ? pick : adj[0];
           if (best < 1) inFac = Math.min(inFac, Math.max(0, best));
+          const ppool = nets[routeIn.pipe] && nets[routeIn.pipe].pool || {};
+          for (const k in inByType.pipe) inAvail[k] = Math.max(0, Math.min(1, (ppool[k] || 0) / inByType.pipe[k]));
         }
         if (ok && outByType.pipe) routeOut.pipe = inByType.pipe ? routeIn.pipe : adj[0];
         // Diesel & co. : transportés par tuyau mais stockés au PORT. On route via un tuyau
@@ -4026,6 +4033,7 @@ function tickIsland(game, isl) {
           if (inByType.pipePort) {
             for (const k in inByType.pipePort) {
               const av = workPort[k] || 0;
+              inAvail[k] = Math.max(0, Math.min(1, av / inByType.pipePort[k]));
               if (av < inByType.pipePort[k]) inFac = Math.min(inFac, av / inByType.pipePort[k]);
             }
           }
@@ -4056,6 +4064,7 @@ function tickIsland(game, isl) {
     const pwrF = power > 0 && bld.pwrAvg != null ? Math.max(0, Math.min(1, bld.pwrAvg)) : 1;
     const regime = Math.max(0, Math.min(1, Math.min(inFac, pwrF)));
     bld.inFac = inFac;
+    bld.inAvail = inAvail;
     bld.regime = regime;
     // Plus AUCUN intrant → arrêt franc (on saute le bâtiment). On NE saute PAS sur un déficit
     // d'élec. (pwrF bas) : le bâtiment doit rester dans energyConsumers pour que la boucle énergie
@@ -6805,17 +6814,19 @@ function InfoPanel({
   const showStatus = usesNet || usesWireUI || bld.active === false;
   // Recette en chips « sprite + débit » (comme la fiche détaillée) : on VOIT chaque ressource.
   // energie_kw est exclu (affiché à part). Repli code court si le sprite manque.
-  // Chips « sprite + NOM + débit » par ressource (energie_kw exclu, affiché à part).
-  const recipeChips = (rec, mult) => {
+  // Chips « sprite + NOM + débit » par ressource (energie_kw exclu, affiché à part). `avail`
+  // (optionnel) = ratio dispo/demande par intrant : un intrant en déficit (< 1) passe en ORANGE.
+  const recipeChips = (rec, mult, avail) => {
     const out = [];
     for (const k in rec || {}) {
       if (k === 'energie_kw') continue;
       const ikey = SPRITES_ENABLED ? itemSpriteKey(k) : null;
       const idata = ikey && SPRITE_DATA[ikey];
+      const short = avail && avail[k] != null && avail[k] < 0.995;
       out.push(React.createElement("span", {
-        className: "dr-res",
+        className: "dr-res" + (short ? ' dr-short' : ''),
         key: k,
-        title: RES_SHORT[k] || k
+        title: short ? (RES_SHORT[k] || k) + ' — déficit (' + Math.round(avail[k] * 100) + '% dispo)' : RES_SHORT[k] || k
       }, idata && React.createElement("img", {
         className: "inv-ico",
         src: idata,
@@ -6930,7 +6941,14 @@ function InfoPanel({
     className: "lbl"
   }, "Entr\xE9es"), React.createElement("span", {
     className: "val"
-  }, recipeChips(b.inputs, upgradeMult(upg)).concat(' /s'))), b.outputs && React.createElement("div", {
+  }, recipeChips(b.inputs, upgradeMult(upg), bld.inAvail).concat(' /s'))), b.inputs && speedPct > 0 && speedPct < 100 && React.createElement("div", {
+    className: "ip-row capped"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "R\xE9el ⚠"), React.createElement("span", {
+    className: "val",
+    title: "Consommation r\xE9elle ce tick (brid\xE9e : " + speedReason + ")"
+  }, recipeChips(b.inputs, upgradeMult(upg) * speedPct / 100).concat(' /s'))), b.outputs && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
