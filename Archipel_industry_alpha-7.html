@@ -3801,8 +3801,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 101;
-const GAME_VERSION = 'Alpha 10.76';
+const GAME_BUILD = 102;
+const GAME_VERSION = 'Alpha 10.77';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5089,6 +5089,13 @@ function tickIsland(game, isl) {
       const no = nets[nid];
       if (no && (no.level || 1) > maxLvl) maxLvl = no.level;
     }
+    // Réserve des accumulateurs branchés sur cette composante électrique (kWh stockés / capacité).
+    let accStoredComp = 0,
+      accCapComp = 0;
+    for (const acc of accs) {
+      accStoredComp += acc.stored;
+      accCapComp += acc.capacity;
+    }
     const info = {
       prod: prod,
       disc: disc,
@@ -5099,7 +5106,10 @@ function tickIsland(game, isl) {
       variable: hasVarCons,
       deliver: deliver,
       served: netServed,
-      cap: cap
+      cap: cap,
+      accStored: accStoredComp,
+      accCap: accCapComp,
+      accCount: accs.length
     };
     for (const nid of nidsOf) {
       wireInfo[nid] = info;
@@ -8377,6 +8387,8 @@ function NetworkPanel({
   const fmtPool = entries => entries.map(([k, v]) => fmtPort(v) + ' ' + matLabel(k)).join(' · ');
   // Plage de demande élec. d'un réseau câble avec consommateurs variables (sigmoïde/aléatoire).
   const showWireRange = isWire && wi && wi.variable && wi.demandMax - wi.demandMin > 0.5;
+  // Réserve d'énergie : kWh stockés dans les accumulateurs branchés sur cette composante câble.
+  const showWireAcc = isWire && wi && wi.accCount > 0 && wi.accCap > 0;
   const showUnlBtn = lvl >= 3 && !unlimited && hiMats.irradie;
   return React.createElement("div", {
     ref: ref,
@@ -8441,7 +8453,14 @@ function NetworkPanel({
     className: "lbl"
   }, "Production"), React.createElement("span", {
     className: "val io"
-  }, fmtInt(elProd) + ' kW')), isWire && wi && (cappedByThroughput || prodDeficit) && React.createElement("div", {
+  }, fmtInt(elProd) + ' kW')), showWireAcc && React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "R\xE9serve"), React.createElement("span", {
+    className: "val io",
+    title: "\xC9nergie stock\xE9e dans les accumulateurs branch\xE9s sur ce r\xE9seau c\xE2ble (charge / capacit\xE9)."
+  }, '🔋 ' + fmtInt(wi.accStored) + ' / ' + fmtInt(wi.accCap) + ' kWh \xB7 ' + Math.round(wi.accStored / wi.accCap * 100) + '%')), isWire && wi && (cappedByThroughput || prodDeficit) && React.createElement("div", {
     className: "ip-row" + (cappedByThroughput ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
