@@ -1,7 +1,7 @@
 {
-  "build": 96,
-  "version": "Alpha 10.71",
+  "build": 97,
+  "version": "Alpha 10.72",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.71 — rattrapage hors-ligne non bloquant (barre %) + calcul simplifié (#96)"
+  "notes": "Alpha 10.72 — intégration des 180 sprites de connexion réseau (route/câble/tuyau) (#97)"
 }
