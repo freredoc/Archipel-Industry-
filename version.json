@@ -1,7 +1,7 @@
 {
-  "build": 103,
-  "version": "Alpha 10.78",
+  "build": 104,
+  "version": "Alpha 10.79",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.78 — coût build ciblé, transit recosté, onglets d'îles, panneau Production (#103)"
+  "notes": "Alpha 10.79 — éolienne x2 plus chère, offshore x2 efficace, pompe eau partout (#104)"
 }
