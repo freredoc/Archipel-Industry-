@@ -1,7 +1,7 @@
 {
-  "build": 109,
-  "version": "Alpha 10.84",
+  "build": 110,
+  "version": "Alpha 10.85",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.84 — kit UI inliné + boutons 9-slice 4 états (menu construction) (#109)"
+  "notes": "Alpha 10.85 — menu construction en 3 colonnes + cadre métal (#110)"
 }
