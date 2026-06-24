@@ -473,6 +473,20 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 .offline-ok{margin:0 14px 14px;border-style:solid;border-color:#4CAF50;color:#7fd98a;}
 .offline-ok:hover{background:rgba(76,175,80,.16);}
 @media (max-width:420px){.offline-gains{grid-template-columns:1fr;}}
+/* ── Overlay de rattrapage hors-ligne (barre de progression, pas d'écran noir) ── */
+.catchup-overlay{position:fixed;inset:0;z-index:300;background:rgba(8,12,20,.93);
+  display:flex;align-items:center;justify-content:center;}
+.catchup-box{display:flex;flex-direction:column;align-items:center;gap:12px;padding:26px 30px;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 18px 60px rgba(0,0,0,.6);min-width:240px;}
+.catchup-spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:#4CAF50;
+  border-radius:50%;animation:catchspin .8s linear infinite;}
+@keyframes catchspin{to{transform:rotate(360deg);}}
+.catchup-title{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.05em;color:var(--ink);}
+.catchup-pct{font-family:'DM Mono',monospace;font-size:1.6rem;color:#7fd98a;font-weight:700;}
+.catchup-bar{width:200px;height:8px;background:var(--panel-2);border-radius:4px;overflow:hidden;}
+.catchup-fill{height:100%;background:#4CAF50;transition:width .15s;}
+.catchup-note{font-family:'Barlow Condensed',sans-serif;font-size:.76rem;color:var(--ink-dim);}
 
 /* ── Scène (canvas + overlays) ── */
 .stage{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--bg);}
@@ -3302,8 +3316,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 95;
-const GAME_VERSION = 'Alpha 10.70';
+const GAME_BUILD = 96;
+const GAME_VERSION = 'Alpha 10.71';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -8451,6 +8465,7 @@ function OptionsModal({
   showLevels,
   showDeficitPct,
   showDeficitSprite,
+  simplifyOffline,
   fastUpgrade,
   tipsEnabled,
   onToggleFastUpgrade,
@@ -8458,6 +8473,7 @@ function OptionsModal({
   onToggleLevels,
   onToggleDeficitPct,
   onToggleDeficitSprite,
+  onToggleSimplifyOffline,
   onToggleTips,
   onResetTips,
   onOpenSaves,
@@ -8576,7 +8592,7 @@ function OptionsModal({
     title: "Fermer"
   }, "\xD7")), React.createElement("div", {
     className: "slot-list"
-  }, toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Afficher l'efficacit\xE9 (%)", "Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit", showDeficitPct, onToggleDeficitPct), toggleRow("Afficher l'ic\xF4ne de d\xE9ficit", "Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne", showDeficitSprite, onToggleDeficitSprite), toggleRow("Am\xE9lioration imm\xE9diate", "En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)", fastUpgrade, onToggleFastUpgrade), toggleRow("Astuces", "Afficher une explication \xE0 chaque nouvelle m\xE9canique", tipsEnabled !== false, onToggleTips), React.createElement("button", {
+  }, toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Afficher l'efficacit\xE9 (%)", "Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit", showDeficitPct, onToggleDeficitPct), toggleRow("Afficher l'ic\xF4ne de d\xE9ficit", "Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne", showDeficitSprite, onToggleDeficitSprite), toggleRow("Calcul hors-ligne simplifi\xE9", "Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)", simplifyOffline !== false, onToggleSimplifyOffline), toggleRow("Am\xE9lioration imm\xE9diate", "En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)", fastUpgrade, onToggleFastUpgrade), toggleRow("Astuces", "Afficher une explication \xE0 chaque nouvelle m\xE9canique", tipsEnabled !== false, onToggleTips), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onResetTips
   }, "💡 Revoir les astuces"), toggleRow("Mode d\xE9veloppeur", "Construction et am\xE9liorations gratuites", dev, onToggleDev, 'dev'), React.createElement("button", {
@@ -8896,6 +8912,7 @@ function App() {
         showLevels: true,
         showDeficitPct: true,
         showDeficitSprite: true,
+        simplifyOffline: true,
         fastUpgrade: false
       },
       drag: {
@@ -8951,6 +8968,9 @@ function App() {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [offlineReport, setOfflineReport] = useState(null);
+  // Progression du rattrapage hors-ligne (null = inactif, sinon {pct, approx}).
+  const [catchUp, setCatchUp] = useState(null);
+  const [simplifyOffline, setSimplifyOffline] = useState(true);
   const [tutorialStep, setTutorialStep] = useState(-1);
   const [researchPending, setResearchPending] = useState(false);
   const [info, setInfo] = useState(null);
@@ -9176,6 +9196,7 @@ function App() {
         showLevels: (g.ui && g.ui.showLevels) !== false,
         showDeficitPct: (g.ui && g.ui.showDeficitPct) !== false,
         showDeficitSprite: (g.ui && g.ui.showDeficitSprite) !== false,
+        simplifyOffline: (g.ui && g.ui.simplifyOffline) !== false,
         fastUpgrade: !!(g.ui && g.ui.fastUpgrade)
       }
     };
@@ -9620,12 +9641,14 @@ function App() {
       showLevels: true,
       showDeficitPct: true,
       showDeficitSprite: true,
+      simplifyOffline: true,
       fastUpgrade: false
     };
     const up = data.uiPrefs || {};
     g.ui.showLevels = up.showLevels !== false;
     g.ui.showDeficitPct = up.showDeficitPct !== false;
     g.ui.showDeficitSprite = up.showDeficitSprite !== false;
+    g.ui.simplifyOffline = up.simplifyOffline !== false;
     g.ui.fastUpgrade = !!up.fastUpgrade;
     return true;
   }
@@ -9634,45 +9657,36 @@ function App() {
   // D'ARRIÈRE-PLAN (onglet masqué / écran verrouillé — la boucle d'anim est gelée).
   // Plafonné à 8 h et à un budget de calcul pour ne pas figer l'UI. 1 tick = 1 s.
   const OFFLINE_MAX_TICKS = 8 * 3600;
-  function runCatchUp(elapsedSec) {
-    const g = gameRef.current;
-    // La production est toujours rattrapée, quel que soit le temps écoulé (>= 1 tick).
-    const ticks = Math.min(Math.floor(elapsedSec), OFFLINE_MAX_TICKS);
-    if (ticks < 1) return;
-    const sumPort = () => {
-      const acc = {};
-      for (const isl in g.port) for (const k in g.port[isl]) acc[k] = (acc[k] || 0) + (g.port[isl][k] || 0);
-      return acc;
+  const sumPortAll = g => {
+    const acc = {};
+    for (const isl in g.port) for (const k in g.port[isl]) acc[k] = (acc[k] || 0) + (g.port[isl][k] || 0);
+    return acc;
+  };
+  const snapshotPort = g => {
+    const o = {};
+    for (const isl in g.port) o[isl] = {
+      ...g.port[isl]
     };
-    const before = sumPort();
-    const t0 = performance.now();
-    let done = 0;
-    for (; done < ticks; done++) {
-      onTick(g);
-      tickShips(g);
-      // Budget de calcul : on s'arrête si le rattrapage dépasse ~2,5 s.
-      if ((done & 511) === 0 && performance.now() - t0 > 2500) {
-        done++;
-        break;
-      }
-    }
-    // Évite une avalanche de pop-ups/recherches accumulées pendant l'absence.
+    return o;
+  };
+  // Termine le rattrapage : nettoyage, notification « Bon retour », sauvegarde.
+  function finishCatchUp(g, before, elapsedSec) {
     g.researchReady = [];
     g.researchNotify = [];
     primeTipsSeen(g);
     g.lastSave = Date.now();
     g.lastActiveTs = Date.now();
-    // Notification « Bon retour » seulement après >= 1 min d'absence ; en deçà, la
-    // production est appliquée silencieusement (pas de pop-up à chaque va-et-vient).
+    g.catchingUp = false;
+    setCatchUp(null);
     if (elapsedSec >= 60) {
-      const after = sumPort();
+      const after = sumPortAll(g);
       const gains = [];
       for (const k in after) {
         const d = (after[k] || 0) - (before[k] || 0);
         if (d > 0.5) gains.push([k, d]);
       }
       gains.sort((a, b) => b[1] - a[1]);
-      const mins = Math.max(1, Math.round(done / 60));
+      const mins = Math.max(1, Math.round(elapsedSec / 60));
       const timeLabel = mins >= 60 ? Math.floor(mins / 60) + ' h ' + (mins % 60 < 10 ? '0' : '') + mins % 60 + ' min' : mins + ' min';
       setOfflineReport({
         timeLabel,
@@ -9686,10 +9700,82 @@ function App() {
     markDirty();
     flushSave();
   }
-  function applyOfflineProgress() {
+  // Rattrapage hors-ligne en MORCEAUX (non bloquant) : on simule par tranches de ~80 ms en
+  // rendant la main à l'UI entre chaque (→ une barre de progression s'affiche, pas d'écran noir).
+  // Au-delà d'1 h d'absence ET si l'option « calcul simplifié » est active, on ne simule qu'un
+  // échauffon puis on EXTRAPOLE le reste au débit moyen mesuré (rattrapage quasi instantané).
+  function runCatchUp(elapsedSec, onDone) {
     const g = gameRef.current;
-    if (!g.lastSave) return;
-    runCatchUp((Date.now() - g.lastSave) / 1000);
+    const ticks = Math.min(Math.floor(elapsedSec), OFFLINE_MAX_TICKS);
+    if (ticks < 1) {
+      onDone && onDone();
+      return;
+    }
+    const before = sumPortAll(g);
+    // Absence courte (≤ 5 min) : rattrapage instantané et SANS overlay (imperceptible) —
+    // évite de faire clignoter l'écran de chargement à chaque bascule d'onglet.
+    if (ticks <= 300) {
+      for (let i = 0; i < ticks; i++) {
+        onTick(g);
+        tickShips(g);
+      }
+      finishCatchUp(g, before, elapsedSec);
+      onDone && onDone();
+      return;
+    }
+    const simplify = g.ui.simplifyOffline !== false && ticks > 3600;
+    const SAMPLE = 300;
+    const WARM = simplify ? Math.min(ticks, 900) : ticks;
+    const sampleStart = Math.max(0, WARM - SAMPLE);
+    let done = 0;
+    let baseSnap = null;
+    g.catchingUp = true;
+    setCatchUp({
+      pct: 0,
+      approx: simplify
+    });
+    const step = () => {
+      const t0 = performance.now();
+      while (done < WARM && performance.now() - t0 < 80) {
+        if (simplify && done === sampleStart && baseSnap == null) baseSnap = snapshotPort(g);
+        onTick(g);
+        tickShips(g);
+        done++;
+      }
+      setCatchUp({
+        pct: Math.min(99, Math.round(100 * done / ticks)),
+        approx: simplify
+      });
+      if (done < WARM) {
+        setTimeout(step, 0);
+        return;
+      }
+      // Échauffon terminé → extrapolation du reste au débit moyen (mode simplifié).
+      if (simplify && ticks > WARM) {
+        const remaining = ticks - WARM;
+        const sampleTicks = Math.min(SAMPLE, WARM) || 1;
+        const base = baseSnap || before;
+        for (const isl in g.port) {
+          const p = g.port[isl];
+          const b0 = base[isl] || {};
+          for (const k in p) {
+            const rate = ((p[k] || 0) - (b0[k] || 0)) / sampleTicks;
+            if (rate > 0) p[k] = (p[k] || 0) + rate * remaining;else if (rate < 0) p[k] = Math.max(0, (p[k] || 0) + rate * remaining);
+          }
+        }
+      }
+      finishCatchUp(g, before, elapsedSec);
+      onDone && onDone();
+    };
+    setTimeout(step, 0);
+  }
+  function applyOfflineProgress(onDone) {
+    const g = gameRef.current;
+    if (!g.lastSave) {
+      onDone && onDone();
+      return;
+    }
+    runCatchUp((Date.now() - g.lastSave) / 1000, onDone);
   }
   // Fait avancer le tutoriel tant que l'étape courante est validée, et révèle le
   // bâtiment suivant. Appelé chaque frame (no-op si le tutoriel est inactif).
@@ -10687,6 +10773,12 @@ function App() {
     markDirty();
     scheduleSave();
   }
+  function toggleSimplifyOffline() {
+    const g = gameRef.current;
+    g.ui.simplifyOffline = g.ui.simplifyOffline === false;
+    setSimplifyOffline(g.ui.simplifyOffline);
+    scheduleSave();
+  }
   function toggleFastUpgrade() {
     const g = gameRef.current;
     g.ui.fastUpgrade = !g.ui.fastUpgrade;
@@ -11544,6 +11636,7 @@ function App() {
     setShowLevels(gameRef.current.ui.showLevels !== false);
     setShowDeficitPct(gameRef.current.ui.showDeficitPct !== false);
     setShowDeficitSprite(gameRef.current.ui.showDeficitSprite !== false);
+    setSimplifyOffline(gameRef.current.ui.simplifyOffline !== false);
     setFastUpgrade(!!gameRef.current.ui.fastUpgrade);
     layout();
     centerCam();
@@ -11580,6 +11673,14 @@ function App() {
     const frame = () => {
       const g = gameRef.current;
       const now = performance.now();
+      // Pendant le rattrapage hors-ligne (simulation par morceaux), on NE tique PAS ici
+      // (sinon double-tick) ; on garde juste la boucle vivante et l'horloge à jour.
+      if (g.catchingUp) {
+        g.lastFrameTs = now;
+        g.tickAcc = 0;
+        rafRef.current = requestAnimationFrame(frame);
+        return;
+      }
       const prev = g.lastFrameTs || now;
       g.lastFrameTs = now;
       // Horloge murale de la dernière frame « vivante » : sert à mesurer le temps
@@ -11645,10 +11746,10 @@ function App() {
     start();
     const onResume = () => {
       if (document.visibilityState !== 'visible') return;
-      // Rattrape la production manquée pendant que l'onglet était en arrière-plan.
+      // Rattrape la production manquée pendant que l'onglet était en arrière-plan, PUIS
+      // (via le callback, après le rattrapage non bloquant) on relance proprement la boucle.
       const gg = gameRef.current;
-      if (gg.lastActiveTs) runCatchUp((Date.now() - gg.lastActiveTs) / 1000);
-      requestAnimationFrame(() => {
+      const finishResume = () => requestAnimationFrame(() => {
         const g = gameRef.current;
         g.lastFrameTs = performance.now();
         g.lastActiveTs = Date.now();
@@ -11659,6 +11760,7 @@ function App() {
         }
         start();
       });
+      if (gg.lastActiveTs && !gg.catchingUp) runCatchUp((Date.now() - gg.lastActiveTs) / 1000, finishResume);else finishResume();
     };
     document.addEventListener('visibilitychange', onResume);
     window.addEventListener('pageshow', onResume);
@@ -11799,6 +11901,7 @@ function App() {
       setShowLevels(g.ui.showLevels !== false);
       setShowDeficitPct(g.ui.showDeficitPct !== false);
       setShowDeficitSprite(g.ui.showDeficitSprite !== false);
+      setSimplifyOffline(g.ui.simplifyOffline !== false);
       setFastUpgrade(!!g.ui.fastUpgrade);
       setDev(g.ui.dev);
       setOptionsOpen(true);
@@ -11938,6 +12041,7 @@ function App() {
     showLevels: showLevels,
     showDeficitPct: showDeficitPct,
     showDeficitSprite: showDeficitSprite,
+    simplifyOffline: simplifyOffline,
     fastUpgrade: fastUpgrade,
     tipsEnabled: tipsEnabled,
     onToggleFastUpgrade: toggleFastUpgrade,
@@ -11945,6 +12049,7 @@ function App() {
     onToggleLevels: toggleLevels,
     onToggleDeficitPct: toggleDeficitPct,
     onToggleDeficitSprite: toggleDeficitSprite,
+    onToggleSimplifyOffline: toggleSimplifyOffline,
     onToggleTips: toggleTips,
     onResetTips: resetTips,
     onOpenSaves: () => {
@@ -11955,7 +12060,26 @@ function App() {
     updateInfo: updateInfo
   }), helpOpen && React.createElement(HelpPanel, {
     onClose: () => setHelpOpen(false)
-  }), offlineReport && React.createElement(OfflineModal, {
+  }), catchUp && React.createElement("div", {
+    className: "catchup-overlay"
+  }, React.createElement("div", {
+    className: "catchup-box"
+  }, React.createElement("div", {
+    className: "catchup-spin"
+  }), React.createElement("div", {
+    className: "catchup-title"
+  }, "Rattrapage hors-ligne…"), React.createElement("div", {
+    className: "catchup-pct"
+  }, catchUp.pct + " %"), React.createElement("div", {
+    className: "catchup-bar"
+  }, React.createElement("div", {
+    className: "catchup-fill",
+    style: {
+      width: catchUp.pct + '%'
+    }
+  })), React.createElement("div", {
+    className: "catchup-note"
+  }, catchUp.approx ? "calcul simplifié (longue absence)" : "calcul de la production…"))), offlineReport && React.createElement(OfflineModal, {
     report: offlineReport,
     onClose: () => setOfflineReport(null)
   }), portOpen && React.createElement(PortPanel, {
