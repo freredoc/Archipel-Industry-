@@ -2474,7 +2474,6 @@ const BUILDINGS = {
     label: 'EAU',
     kind: 'build',
     tier: 't0',
-    exclusiveIsland: 3,
     terrains: ['coast'],
     size: [1, 1],
     cost: {
@@ -2495,8 +2494,8 @@ const BUILDINGS = {
     terrains: ['land', 'coast'],
     size: [1, 1],
     cost: {
-      ciment: 60,
-      lingot_cuivre: 60
+      ciment: 120,
+      lingot_cuivre: 120
     },
     power: 0,
     outputs: {
@@ -3183,7 +3182,7 @@ const BUILDINGS = {
       cable: 80
     },
     outputs: {
-      energie_kw: 8
+      energie_kw: 16
     }
   },
   plateforme_petroliere: {
@@ -3836,8 +3835,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 103;
-const GAME_VERSION = 'Alpha 10.78';
+const GAME_BUILD = 104;
+const GAME_VERSION = 'Alpha 10.79';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
