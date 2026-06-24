@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 95`, `GAME_VERSION = 'Alpha 10.70'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 96`, `GAME_VERSION = 'Alpha 10.71'`.** Changement
+  10.71 : **rattrapage hors-ligne non bloquant (barre de progression) + calcul simplifié**. (1)
+  `runCatchUp(elapsedSec, onDone)` réécrit : simulation par **tranches de ~80 ms** via `setTimeout`
+  (rend la main à l'UI entre chaque) → **overlay `.catchup-overlay`** plein écran avec spinner +
+  **pourcentage** + barre (`catchUp` state {pct, approx}). Le `frame` saute le tick tant que
+  `g.catchingUp` (pas de double-tick). Absence ≤ 5 min = chemin synchrone sans overlay (imperceptible).
+  (2) **Calcul simplifié** au-delà d'1 h (`ticks > 3600`) si l'option est active : on simule un
+  **échauffon** de 900 ticks réels, on mesure le débit moyen sur les 300 derniers, puis on
+  **extrapole** le reste (`port[k] += rate × restant`, clampé ≥ 0) → rattrapage quasi instantané.
+  (3) **Option `simplifyOffline`** (défaut **oui**, persistée dans `uiPrefs`) + toggle dans
+  `OptionsModal` (« Calcul hors-ligne simplifié »). Changement
   10.70 : (1) **processeur retiré du coût** de `eolienne_offshore` (10→0) et `plateforme_petroliere`
   (30→0). (2) **stockage batterie en temps réel** dans la fiche bâtiment (tap) : la ligne « Stockage »
   affiche désormais `🔋 <charge> / <capacité> kWh · X%` (lecture live de `bld.stored`, mis à jour
