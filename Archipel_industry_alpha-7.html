@@ -3496,8 +3496,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 97;
-const GAME_VERSION = 'Alpha 10.72';
+const GAME_BUILD = 98;
+const GAME_VERSION = 'Alpha 10.73';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -11540,16 +11540,11 @@ function App() {
     } else if (tool === COPY) {
       drag.mode = 'select';
     } else if (tool === DEMOLISH) {
+      // Démolition CLIC PAR CLIC : un tap franc démolit UN seul bâtiment (au
+      // relâchement), un glissé déplace la carte (navigation). Plus de balayage
+      // qui rase toute une rangée et provoque des suppressions accidentelles.
       drag.mode = 'demolish';
       drag.panned = false;
-      // On ne démolit que si le geste DÉMARRE sur un bâtiment : tap = 1, glissé = balayage.
-      // Démarré sur une case vide/mer → le glissé déplace la carte (navigation possible).
-      const st = tile && curTiles()[tile.r] && curTiles()[tile.r][tile.c];
-      drag.demoStart = !!(st && (st.building || st.occupied));
-      if (drag.demoStart && tile) {
-        tryDemolish(tile.r, tile.c, true);
-        drag.last = tile;
-      }
     } else if (tool === UPGRADE) {
       // Comme la pose : un tap ouvre l'amélioration, un glissé déplace la carte
       // (on peut donc naviguer même en mode amélioration).
@@ -11603,24 +11598,9 @@ function App() {
         tryPlace(tile.r, tile.c, g.ui.tool, false);
         drag.last = tile;
       }
-    } else if (drag.mode === 'demolish') {
-      if (drag.demoStart && tile) {
-        // Balayage de démolition (le geste a démarré sur un bâtiment).
-        if (!drag.last || drag.last.r !== tile.r || drag.last.c !== tile.c) {
-          tryDemolish(tile.r, tile.c, false);
-          drag.last = tile;
-        }
-      } else if (!drag.demoStart && drag.dist > TAP_THRESHOLD) {
-        // Démarré à vide → on déplace la carte (navigation en mode démolition).
-        drag.panned = true;
-        g.cam.x -= dx;
-        g.cam.y -= dy;
-        clampPan();
-        markDirty();
-      }
-    } else if (drag.mode === 'place' || drag.mode === 'upgrade') {
-      // En mode construction ou amélioration, un glissé (au-delà du seuil de tap)
-      // déplace la carte au lieu d'agir sur la tuile.
+    } else if (drag.mode === 'place' || drag.mode === 'upgrade' || drag.mode === 'demolish') {
+      // En mode construction, amélioration ou démolition, un glissé (au-delà du
+      // seuil de tap) déplace la carte au lieu d'agir sur la tuile.
       if (drag.dist > TAP_THRESHOLD) {
         drag.panned = true;
         g.cam.x -= dx;
@@ -11659,6 +11639,9 @@ function App() {
       // ouverture du panneau de confirmation (par défaut).
       if (g.ui.fastUpgrade) tryUpgrade(tile.r, tile.c);
       else openUpgrade(tile.r, tile.c);
+    } else if (drag.mode === 'demolish' && !drag.panned && drag.dist < TAP_THRESHOLD && tile) {
+      // Tap franc en mode démolition = démolit UNIQUEMENT le bâtiment touché (remb. 100%).
+      tryDemolish(tile.r, tile.c, true);
     }
     drag.active = false;
     drag.mode = null;
@@ -12002,7 +11985,7 @@ function App() {
       if (netOpen) return 'Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer';
       return 'Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos';
     }
-    if (tool === DEMOLISH) return React.createElement("span", null, React.createElement("b", null, "D\xE9molir"), " \u2014 touchez/balayez un b\xE2timent (remb. 100%) \xB7 glissez \xE0 vide pour naviguer");
+    if (tool === DEMOLISH) return React.createElement("span", null, React.createElement("b", null, "D\xE9molir"), " \u2014 touchez un b\xE2timent (remb. 100%, un par clic) \xB7 glissez pour naviguer");
     if (tool === UPGRADE) return React.createElement("span", null, React.createElement("b", null, "Am\xE9liorer"), " \u2014 touchez un b\xE2timent de production");
     if (tool === COPY) return React.createElement("span", null, React.createElement("b", null, "Copier"), " \u2014 touchez un b\xE2timent pour le s\xE9lectionner");
     const b = BUILDINGS[tool];
