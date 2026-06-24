@@ -1,7 +1,7 @@
 {
-  "build": 101,
-  "version": "Alpha 10.76",
+  "build": 102,
+  "version": "Alpha 10.77",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.76 — animation du littoral (écume + falaises + triangles) (#101)"
+  "notes": "Alpha 10.77 — réserve d'énergie (accumulateurs) dans le panneau Câble (#102)"
 }
