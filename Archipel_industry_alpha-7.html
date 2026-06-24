@@ -2646,8 +2646,7 @@ const BUILDINGS = {
     cost: {
       acier: 150,
       beton_arme: 100,
-      cable: 80,
-      processeur: 10
+      cable: 80
     },
     outputs: {
       energie_kw: 8
@@ -2667,8 +2666,7 @@ const BUILDINGS = {
     cost: {
       acier: 200,
       beton_arme: 150,
-      cable: 100,
-      processeur: 30
+      cable: 100
     },
     outputs: {
       petrole: 1
@@ -3304,8 +3302,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 94;
-const GAME_VERSION = 'Alpha 10.69';
+const GAME_BUILD = 95;
+const GAME_VERSION = 'Alpha 10.70';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -6978,7 +6976,13 @@ function InfoPanel({
     className: "lbl"
   }, "Stockage"), React.createElement("span", {
     className: "val io"
-  }, fmtInt(accCapacity(bld)), " kWh")), !b.nuclear && React.createElement("div", {
+  }, (() => {
+    // Détail de stockage en TEMPS RÉEL : charge actuelle / capacité + pourcentage.
+    const cap = accCapacity(bld);
+    const st = Math.max(0, Math.min(cap, bld.stored || 0));
+    const pct = cap > 0 ? Math.round(100 * st / cap) : 0;
+    return '🔋 ' + fmtInt(st) + ' / ' + fmtInt(cap) + ' kWh · ' + pct + '%';
+  })())), !b.nuclear && !b.accumulator && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
