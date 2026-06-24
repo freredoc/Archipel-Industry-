@@ -3496,8 +3496,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 98;
-const GAME_VERSION = 'Alpha 10.73';
+const GAME_BUILD = 99;
+const GAME_VERSION = 'Alpha 10.74';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4720,8 +4720,19 @@ function tickIsland(game, isl) {
     const prod = poolProd[root] || 0;
     const cons = poolCons[root] || [];
     const accs = poolAccs[root] || [];
-    let netDem = 0;
-    for (const cc of cons) netDem += cc.power;
+    let netDem = 0,
+      demMin = 0,
+      demMax = 0,
+      hasVarCons = false;
+    for (const cc of cons) {
+      netDem += cc.power;
+      // Plage de conso de la composante : min/max nominaux par consommateur (les
+      // bâtiments sigmoïde/aléatoire oscillent → on borne le pire et le meilleur cas).
+      demMin += minPower(cc.bld);
+      demMax += nominalPower(cc.bld);
+      const cb = BUILDINGS[cc.bld.id];
+      if (cb && (cb.sigmoid || cb.randomP)) hasVarCons = true;
+    }
     // Débit total de la composante : borne la puissance livrable à ses consommateurs.
     const cap = poolCap[root] != null ? poolCap[root] : NETWORK_THROUGHPUT[1];
     // Accumulateurs : stockent le surplus (rendement 0.8) / déchargent en cas de déficit.
@@ -4778,6 +4789,9 @@ function tickIsland(game, isl) {
       disc: disc,
       supply: netSupply,
       demand: netDem,
+      demandMin: demMin,
+      demandMax: demMax,
+      variable: hasVarCons,
       deliver: deliver,
       served: netServed,
       cap: cap
@@ -4968,6 +4982,16 @@ function nominalPower(bld) {
   const mult = Math.pow(2, bld.upgrade || 0);
   if (b.sigmoid) return (b.sigmoid.base + b.sigmoid.amp) * mult;
   if (b.randomP) return b.randomP.max * mult;
+  return (b.power || 0) * mult;
+}
+// Conso élec. MINIMALE d'un bâtiment (plancher de l'oscillation sigmoïde / borne basse
+// de la conso aléatoire ; = conso fixe sinon). Sert au bilan min→max du réseau câble.
+function minPower(bld) {
+  const b = BUILDINGS[bld.id];
+  if (!b) return 0;
+  const mult = Math.pow(2, bld.upgrade || 0);
+  if (b.sigmoid) return b.sigmoid.base * mult;
+  if (b.randomP) return b.randomP.min * mult;
   return (b.power || 0) * mult;
 }
 // List of {key,r,c,id,bld,power} consumers on an island, ordered by the saved
@@ -8042,6 +8066,12 @@ function NetworkPanel({
   const prodEntries = isWire ? [] : flowList('prod');
   const consEntries = isWire ? [] : flowList('cons');
   const fmtFlow = entries => entries.map(([k, v]) => fmtRate(v) + ' ' + matLabel(k)).join(' · ');
+  // Réserve stockée dans le pool du réseau TUYAU (citerne) : liquides en attente de
+  // consommation (pétrole, eau, acide…). Invisible dans l'inventaire du port → on l'expose ici.
+  const poolEntries = netObj.type === 'pipe' && netObj.pool ? Object.entries(netObj.pool).filter(e => e[1] > 1e-6).sort((a, b) => b[1] - a[1]) : [];
+  const fmtPool = entries => entries.map(([k, v]) => fmtPort(v) + ' ' + matLabel(k)).join(' · ');
+  // Plage de demande élec. d'un réseau câble avec consommateurs variables (sigmoïde/aléatoire).
+  const showWireRange = isWire && wi && wi.variable && wi.demandMax - wi.demandMin > 0.5;
   const showUnlBtn = lvl >= 3 && !unlimited && hiMats.irradie;
   return React.createElement("div", {
     ref: ref,
@@ -8083,7 +8113,14 @@ function NetworkPanel({
     style: saturatedNet ? {
       color: '#ff8079'
     } : undefined
-  }, fmtInt(demand) + ' /s')), saturatedNet && React.createElement("div", {
+  }, fmtInt(demand) + ' /s')), showWireRange && React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "Demande min→max"), React.createElement("span", {
+    className: "val io",
+    title: "Plage de consommation : les b\xE2timents \xE0 conso sigmo\xEFde/al\xE9atoire font varier la demande \xE9lec. Dimensionnez la production pour le max."
+  }, fmtInt(wi.demandMin) + ' → ' + fmtInt(wi.demandMax) + ' kW')), saturatedNet && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
@@ -8134,7 +8171,14 @@ function NetworkPanel({
     className: "lbl"
   }, "Consommation /s"), React.createElement("span", {
     className: "val io"
-  }, fmtFlow(consEntries))), !isWire && !prodEntries.length && !consEntries.length && React.createElement("div", {
+  }, fmtFlow(consEntries))), poolEntries.length > 0 && React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, "R\xE9serve"), React.createElement("span", {
+    className: "val io",
+    title: "Stock liquide accumul\xE9 dans la citerne du r\xE9seau tuyau (p\xE9trole, eau, acide…). N'appara\xEEt pas dans l'inventaire du port."
+  }, fmtPool(poolEntries))), !isWire && !prodEntries.length && !consEntries.length && !poolEntries.length && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
