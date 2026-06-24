@@ -595,6 +595,10 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-up-ptitle{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;
   text-transform:uppercase;letter-spacing:.04em;color:#7fd98a;margin-bottom:6px;}
 .ip-up-preview .up-rows{margin-bottom:6px;}
+/* Coût d'amélioration en pastilles : seules les ressources indisponibles en rouge. */
+.ip-cost-chips{display:flex;flex-wrap:wrap;gap:2px 7px;justify-content:flex-end;}
+.ip-cost-chips .ipc-ci{color:var(--ink-dim);}
+.ip-cost-chips .ipc-ci.miss{color:#ff6a60;font-weight:600;}
 .ip-close{background:none;border:none;color:var(--ink-faint);font-size:1.1rem;cursor:pointer;
   line-height:1;padding:0 2px;}
 .ip-close:hover{color:var(--ink);}
@@ -3835,8 +3839,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 104;
-const GAME_VERSION = 'Alpha 10.79';
+const GAME_BUILD = 105;
+const GAME_VERSION = 'Alpha 10.80';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -7729,11 +7733,12 @@ function InfoPanel({
   }, React.createElement("span", {
     className: "lbl"
   }, "Coût"), React.createElement("span", {
-    className: "val",
-    style: {
-      color: canUp ? 'var(--yellow)' : '#ff8079'
-    }
-  }, formatCost(upCost) || 'gratuit'))), upgradable && React.createElement("div", {
+    className: "val ip-cost-chips"
+  }, upCost && Object.keys(upCost).length ? Object.keys(upCost).map(k => React.createElement("span", {
+    key: k,
+    className: 'ipc-ci' + ((port && port[k] || 0) >= upCost[k] ? '' : ' miss'),
+    title: RES_SHORT[k] || k
+  }, (RES_SHORT[k] || k) + ' ' + fmtInt(upCost[k]))) : 'gratuit'))), upgradable && React.createElement("div", {
     className: "ip-actions"
   }, React.createElement("button", {
     className: "ip-up" + (armed ? ' armed' : ''),
