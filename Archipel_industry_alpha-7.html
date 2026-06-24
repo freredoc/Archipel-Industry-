@@ -3839,8 +3839,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 106;
-const GAME_VERSION = 'Alpha 10.81';
+const GAME_BUILD = 107;
+const GAME_VERSION = 'Alpha 10.82';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4531,6 +4531,29 @@ function tickIsland(game, isl) {
         disc = true;
         discReason = 'pipe';
       } else {
+        // Tuyau RELIÉ AU PORT (un réseau adjacent touche le port) : on stocke au PORT comme
+        // une route. Les intrants/extrants tuyau STOCKABLES de ce bâtiment basculent du pool
+        // vers le port (chemin pipePort). Les NON_STORABLE (ex. eau_froide du nucléaire) restent
+        // dans le pool : tampon transitoire jamais stocké.
+        const pipeToPort = adj.some(nid => nets[nid] && nets[nid].connected);
+        if (pipeToPort) {
+          if (inByType.pipe) {
+            for (const k in inByType.pipe) {
+              if (NON_STORABLE[k]) continue;
+              (inByType.pipePort || (inByType.pipePort = {}))[k] = inByType.pipe[k];
+              delete inByType.pipe[k];
+            }
+            if (!Object.keys(inByType.pipe).length) inByType.pipe = null;
+          }
+          if (outByType.pipe) {
+            for (const k in outByType.pipe) {
+              if (NON_STORABLE[k]) continue;
+              (outByType.pipePort || (outByType.pipePort = {}))[k] = outByType.pipe[k];
+              delete outByType.pipe[k];
+            }
+            if (!Object.keys(outByType.pipe).length) outByType.pipe = null;
+          }
+        }
         if (inByType.pipe) {
           // On prend le pool tuyau le MIEUX approvisionné (facteur le plus élevé) ; s'il n'a pas
           // tout, on bride au prorata au lieu de couper.
@@ -4900,8 +4923,19 @@ function tickIsland(game, isl) {
   // pool after production + consumption settle this tick. A consumer needing more
   // than is produced this tick is starved even if a pool briefly shows stock.
   for (const nid in nets) {
-    const pool = nets[nid] && nets[nid].pool;
+    const net = nets[nid];
+    const pool = net && net.pool;
     if (!pool) continue;
+    // Tuyau RELIÉ AU PORT : le pool ne sert plus de réserve (les liquides sont stockés au
+    // port, comme une route) → on vide la citerne dans le port chaque tick (ressources
+    // stockables). NON_STORABLE (eau_froide) reste géré ci-dessous.
+    if (net.type === 'pipe' && net.connected) {
+      for (const k in pool) {
+        if (NON_STORABLE[k]) continue;
+        if (pool[k] > 1e-9) port[k] = (port[k] || 0) + pool[k];
+        pool[k] = 0;
+      }
+    }
     for (const k in NON_STORABLE) if (pool[k]) pool[k] = 0;
   }
   // === Électricité par réseau câble ===
@@ -6366,39 +6400,18 @@ function portPipePools(game, islandId) {
   }
   return pools;
 }
+// Les liquides tuyau reliés au port sont désormais stockés au PORT (comme une route, drainés
+// du pool chaque tick) → le commerce/transit lit directement le port pour TOUTES les ressources.
 function tradeAvail(game, islandId, res) {
-  if (CARRIER_BY_RES[res] === 'pipe' && !PORT_PIPE_RES[res]) {
-    let s = 0;
-    for (const p of portPipePools(game, islandId)) s += p[res] || 0;
-    return s;
-  }
   return (game.port[islandId] || {})[res] || 0;
 }
 function tradeDraw(game, islandId, res, qty) {
-  if (CARRIER_BY_RES[res] === 'pipe' && !PORT_PIPE_RES[res]) {
-    let left = qty;
-    for (const p of portPipePools(game, islandId)) {
-      if (left <= 0) break;
-      const take = Math.min(p[res] || 0, left);
-      if (take > 0) {
-        p[res] = (p[res] || 0) - take;
-        left -= take;
-      }
-    }
-    return qty - left;
-  }
   const port = game.port[islandId] || (game.port[islandId] = {});
   const take = Math.min(port[res] || 0, qty);
   if (take > 0) port[res] = (port[res] || 0) - take;
   return take;
 }
 function tradeDeposit(game, islandId, res, amt) {
-  if (CARRIER_BY_RES[res] === 'pipe' && !PORT_PIPE_RES[res]) {
-    const pools = portPipePools(game, islandId);
-    if (!pools.length) return false;
-    pools[0][res] = (pools[0][res] || 0) + amt;
-    return true;
-  }
   const port = game.port[islandId] || (game.port[islandId] = {});
   port[res] = (port[res] || 0) + amt;
   return true;
