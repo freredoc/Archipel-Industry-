@@ -1,7 +1,7 @@
 {
-  "build": 97,
-  "version": "Alpha 10.72",
+  "build": 98,
+  "version": "Alpha 10.73",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.72 — intégration des 180 sprites de connexion réseau (route/câble/tuyau) (#97)"
+  "notes": "Alpha 10.73 — démolition clic par clic (fin du balayage accidentel) (#98)"
 }
