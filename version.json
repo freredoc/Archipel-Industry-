@@ -1,7 +1,7 @@
 {
-  "build": 94,
-  "version": "Alpha 10.69",
+  "build": 95,
+  "version": "Alpha 10.70",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.69 — intrants en déficit (orange) + intrants réels (fiche bâtiment) (#94)"
+  "notes": "Alpha 10.70 — processeur retiré (offshore) + stockage batterie en temps réel (#95)"
 }
