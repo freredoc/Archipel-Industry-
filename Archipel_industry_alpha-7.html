@@ -426,8 +426,13 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
    barre d'outils = cadre RIVETS. `fill` peint le fond #15152a (= var(--panel)). */
 .tip-popup,.mode-modal,.info-panel,.build-panel{border:8px solid transparent;border-image:var(--cadre-sobre) 8 fill / 8px stretch;border-radius:0;image-rendering:pixelated;}
 .toolbar{border:8px solid transparent;border-image:var(--cadre-rivets) 8 fill / 8px stretch;border-radius:0;image-rendering:pixelated;}
-/* Menu construction : ambiance industrielle = cadre MÉTAL (au lieu de sobre). */
-.build-panel{border-image:var(--cadre-metal) 8 fill / 8px stretch;}
+/* Option « Fond inox » (body.theme-inox) : cadres métal/inox + tôle larmée au lieu du bleu sobre.
+   Par défaut (sans la classe) tout reste en bleu (sobre/rivets). */
+body.theme-inox .research-panel,body.theme-inox .slot-panel,body.theme-inox .tip-popup,body.theme-inox .mode-modal,body.theme-inox .info-panel{border-image:var(--cadre-inox) 8 fill / 8px stretch;}
+body.theme-inox .build-panel,body.theme-inox .toolbar{background:var(--tex-inox) repeat;border-image:var(--cadre-metal) 8 / 8px stretch;image-rendering:pixelated;}
+.opt-theme-sel{display:flex;gap:4px;flex-shrink:0;}
+.opt-theme-btn{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.82rem;color:var(--ink-dim);background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:4px 12px;cursor:pointer;}
+.opt-theme-btn.on{background:#26264e;color:var(--yellow);border-color:var(--yellow);}
 
 .slot-head{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line);}
 .slot-title{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.06em;color:var(--ink);}
@@ -3861,8 +3866,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 110;
-const GAME_VERSION = 'Alpha 10.85';
+const GAME_BUILD = 111;
+const GAME_VERSION = 'Alpha 10.86';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -9223,6 +9228,8 @@ function OptionsModal({
   simplifyOffline,
   fastUpgrade,
   tipsEnabled,
+  theme,
+  onSetTheme,
   onToggleFastUpgrade,
   onToggleDev,
   onToggleLevels,
@@ -9347,7 +9354,23 @@ function OptionsModal({
     title: "Fermer"
   }, "\xD7")), React.createElement("div", {
     className: "slot-list"
-  }, toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Afficher l'efficacit\xE9 (%)", "Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit", showDeficitPct, onToggleDeficitPct), toggleRow("Afficher l'ic\xF4ne de d\xE9ficit", "Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne", showDeficitSprite, onToggleDeficitSprite), toggleRow("Calcul hors-ligne simplifi\xE9", "Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)", simplifyOffline !== false, onToggleSimplifyOffline), toggleRow("Am\xE9lioration imm\xE9diate", "En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)", fastUpgrade, onToggleFastUpgrade), toggleRow("Astuces", "Afficher une explication \xE0 chaque nouvelle m\xE9canique", tipsEnabled !== false, onToggleTips), React.createElement("button", {
+  }, React.createElement("div", {
+    className: "opt-row"
+  }, React.createElement("div", {
+    className: "opt-lbl"
+  }, React.createElement("span", {
+    className: "opt-name"
+  }, "Fond des panneaux"), React.createElement("span", {
+    className: "opt-desc"
+  }, "Bleu (par d\xE9faut) ou inox (m\xE9tal / t\xF4le larm\xE9e)")), React.createElement("div", {
+    className: "opt-theme-sel"
+  }, React.createElement("button", {
+    className: 'opt-theme-btn' + (theme !== 'inox' ? ' on' : ''),
+    onClick: () => onSetTheme && onSetTheme('bleu')
+  }, "Bleu"), React.createElement("button", {
+    className: 'opt-theme-btn' + (theme === 'inox' ? ' on' : ''),
+    onClick: () => onSetTheme && onSetTheme('inox')
+  }, "Inox"))), toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Afficher l'efficacit\xE9 (%)", "Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit", showDeficitPct, onToggleDeficitPct), toggleRow("Afficher l'ic\xF4ne de d\xE9ficit", "Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne", showDeficitSprite, onToggleDeficitSprite), toggleRow("Calcul hors-ligne simplifi\xE9", "Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)", simplifyOffline !== false, onToggleSimplifyOffline), toggleRow("Am\xE9lioration imm\xE9diate", "En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)", fastUpgrade, onToggleFastUpgrade), toggleRow("Astuces", "Afficher une explication \xE0 chaque nouvelle m\xE9canique", tipsEnabled !== false, onToggleTips), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onResetTips
   }, "💡 Revoir les astuces"), toggleRow("Mode d\xE9veloppeur", "Construction et am\xE9liorations gratuites", dev, onToggleDev, 'dev'), React.createElement("button", {
@@ -9668,7 +9691,8 @@ function App() {
         showDeficitPct: true,
         showDeficitSprite: true,
         simplifyOffline: true,
-        fastUpgrade: false
+        fastUpgrade: false,
+        theme: 'bleu'
       },
       drag: {
         active: false,
@@ -9726,6 +9750,18 @@ function App() {
   // Progression du rattrapage hors-ligne (null = inactif, sinon {pct, approx}).
   const [catchUp, setCatchUp] = useState(null);
   const [simplifyOffline, setSimplifyOffline] = useState(true);
+  const [theme, setTheme] = useState('bleu');
+  // Applique l'ambiance « inox » via une classe sur <body> (CSS body.theme-inox).
+  useEffect(() => {
+    if (typeof document !== 'undefined') document.body.classList.toggle('theme-inox', theme === 'inox');
+  }, [theme]);
+  // Choisit l'ambiance des panneaux ('bleu' | 'inox') et la persiste dans uiPrefs.
+  const chooseTheme = t => {
+    const g = gameRef.current;
+    g.ui.theme = t === 'inox' ? 'inox' : 'bleu';
+    setTheme(g.ui.theme);
+    scheduleSave();
+  };
   const [tutorialStep, setTutorialStep] = useState(-1);
   const [researchPending, setResearchPending] = useState(false);
   const [info, setInfo] = useState(null);
@@ -9953,7 +9989,8 @@ function App() {
         showDeficitPct: (g.ui && g.ui.showDeficitPct) !== false,
         showDeficitSprite: (g.ui && g.ui.showDeficitSprite) !== false,
         simplifyOffline: (g.ui && g.ui.simplifyOffline) !== false,
-        fastUpgrade: !!(g.ui && g.ui.fastUpgrade)
+        fastUpgrade: !!(g.ui && g.ui.fastUpgrade),
+        theme: g.ui && g.ui.theme === 'inox' ? 'inox' : 'bleu'
       }
     };
   }
@@ -10398,7 +10435,8 @@ function App() {
       showDeficitPct: true,
       showDeficitSprite: true,
       simplifyOffline: true,
-      fastUpgrade: false
+      fastUpgrade: false,
+      theme: 'bleu'
     };
     const up = data.uiPrefs || {};
     g.ui.showLevels = up.showLevels !== false;
@@ -10406,6 +10444,7 @@ function App() {
     g.ui.showDeficitSprite = up.showDeficitSprite !== false;
     g.ui.simplifyOffline = up.simplifyOffline !== false;
     g.ui.fastUpgrade = !!up.fastUpgrade;
+    g.ui.theme = up.theme === 'inox' ? 'inox' : 'bleu';
     return true;
   }
   // Rejoue la production manquée pendant une absence (production hors-ligne / idle).
@@ -12419,6 +12458,7 @@ function App() {
     setShowDeficitSprite(gameRef.current.ui.showDeficitSprite !== false);
     setSimplifyOffline(gameRef.current.ui.simplifyOffline !== false);
     setFastUpgrade(!!gameRef.current.ui.fastUpgrade);
+    setTheme(gameRef.current.ui.theme === 'inox' ? 'inox' : 'bleu');
     layout();
     centerCam();
     if (gameRef.current.lastSave === 0) gameRef.current.lastSave = Date.now();
@@ -12684,6 +12724,7 @@ function App() {
       setShowDeficitSprite(g.ui.showDeficitSprite !== false);
       setSimplifyOffline(g.ui.simplifyOffline !== false);
       setFastUpgrade(!!g.ui.fastUpgrade);
+      setTheme(g.ui.theme === 'inox' ? 'inox' : 'bleu');
       setDev(g.ui.dev);
       setOptionsOpen(true);
     },
@@ -12830,6 +12871,8 @@ function App() {
     simplifyOffline: simplifyOffline,
     fastUpgrade: fastUpgrade,
     tipsEnabled: tipsEnabled,
+    theme: theme,
+    onSetTheme: chooseTheme,
     onToggleFastUpgrade: toggleFastUpgrade,
     onToggleDev: toggleDev,
     onToggleLevels: toggleLevels,

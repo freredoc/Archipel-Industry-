@@ -17,7 +17,16 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 110`, `GAME_VERSION = 'Alpha 10.85'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 111`, `GAME_VERSION = 'Alpha 10.86'`.** Changement
+  10.86 : **option « Fond bleu / Fond inox » (ambiance des panneaux).** Nouvelle préférence `ui.theme`
+  (`'bleu'` défaut | `'inox'`), persistée dans `uiPrefs` (pattern complet : newGame, serialize,
+  loadSave défaut+restore, state React `theme`, sync au load + à l'ouverture des options). Sélecteur
+  2 boutons (Bleu/Inox) en haut de l'`OptionsModal` (`opt-theme-sel`, prop `theme`/`onSetTheme=chooseTheme`).
+  Un `useEffect` pose la classe **`body.theme-inox`**. CSS : par défaut tout reste bleu (sobre/rivets) ;
+  sous `body.theme-inox`, `.research-panel/.slot-panel/.tip-popup/.mode-modal/.info-panel` reçoivent le
+  **cadre inox** (fill), et `.build-panel/.toolbar` la **tôle larmée** (`--tex-inox` en background) +
+  **cadre métal** sans fill. Remplace le cadre métal inconditionnel du 10.85 (build-panel redevient
+  bleu par défaut). CSS + uiPrefs only, aucune logique de jeu. Changement
   10.85 : **menu construction en 3 colonnes + ambiance métal.** (1) `.build-panel .tool-row` passe de
   `repeat(4,1fr)` à **`repeat(3,1fr)`** — avec le cadre 9-slice des boutons (10.84), 4 colonnes
   tronquaient les noms/coûts (« Carriè », « Centra Charbo »…) ; 3 colonnes laissent la place. (2) Le
