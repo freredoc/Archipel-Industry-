@@ -1,7 +1,7 @@
 {
-  "build": 110,
-  "version": "Alpha 10.85",
+  "build": 111,
+  "version": "Alpha 10.86",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.85 — menu construction en 3 colonnes + cadre métal (#110)"
+  "notes": "Alpha 10.86 — option Fond bleu / Fond inox (ambiance des panneaux) (#111)"
 }
