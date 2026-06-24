@@ -43,25 +43,19 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .hud-brand{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;letter-spacing:.06em;
   color:var(--ink);line-height:1;white-space:nowrap;}
 .hud-brand b{color:var(--yellow);}
-.island-select{position:relative;flex-shrink:0;}
-.island-chip{font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:.08em;
+/* 5 onglets d'île côte à côte ; rétrécissent pour ne jamais déborder. */
+.island-tabs{display:flex;align-items:center;gap:3px;min-width:0;flex-shrink:1;}
+.island-tab{font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:.04em;
   background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
-  padding:3px 9px;border-radius:3px;white-space:nowrap;cursor:pointer;
-  display:flex;align-items:center;gap:6px;line-height:1;transition:background .1s,border-color .1s;}
-.island-chip:hover{background:#23234a;border-color:#3a3a6a;}
-.island-chip.open{border-color:var(--yellow);}
-.island-chip .caret{font-size:.66em;opacity:.7;}
-.island-backdrop{position:fixed;inset:0;z-index:121;}
-.island-menu{position:fixed;z-index:122;min-width:118px;
-  background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:4px;
-  display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 26px rgba(0,0,0,.55);}
-.island-menu-item{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.06em;
-  color:var(--ink);background:none;border:none;text-align:left;padding:7px 10px;border-radius:4px;
-  cursor:pointer;line-height:1;}
-.island-menu-item:hover{background:#2a2a4a;}
-.island-menu-item.active{background:#26264e;color:var(--yellow);}
-.island-menu-item.locked{opacity:.4;cursor:not-allowed;}
-.island-menu-item .lock{font-size:.7rem;margin-left:2px;}
+  min-width:0;flex:0 1 30px;width:30px;height:28px;padding:0;border-radius:4px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  transition:background .1s,border-color .1s;}
+.island-tab:hover:not(.locked){background:#23234a;border-color:#3a3a6a;}
+.island-tab.active{background:#26264e;color:var(--yellow);border-color:var(--yellow);}
+.island-tab.locked{opacity:.4;cursor:not-allowed;}
+.island-tab .lock{font-size:.72rem;}
+@media (max-width:560px){.island-tab{flex:0 1 26px;width:26px;height:26px;font-size:.78rem;}.island-tabs{gap:2px;}}
+@media (max-width:380px){.island-tab{flex:1 1 0;width:auto;}}
 .stocks{flex:1;display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;}
 .stocks::-webkit-scrollbar{display:none;}
 .stock{display:flex;align-items:baseline;gap:4px;background:var(--panel-2);
@@ -90,6 +84,43 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   color:var(--ink-dim);background:var(--panel);border:1px solid var(--line);border-radius:4px;
   padding:3px 12px;cursor:pointer;display:flex;align-items:center;gap:7px;flex-shrink:0;}
 .inv-label-btn:hover{border-color:var(--yellow);color:var(--ink);}
+/* Bouton Production (à droite d'INVENTAIRE) */
+.inv-prod-btn{font-family:'Bebas Neue',sans-serif;font-size:.78rem;letter-spacing:.08em;
+  color:var(--ink-dim);background:var(--panel);border:1px solid var(--line);border-radius:4px;
+  padding:3px 11px;cursor:pointer;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.inv-prod-btn:hover{border-color:#5bc0ff;color:var(--ink);}
+.inv-prod-btn .ui-ico{width:15px;height:15px;}
+/* Panneau Production */
+.prod-panel{width:min(560px,96vw);max-height:84vh;display:flex;flex-direction:column;}
+.prod-tabs{display:flex;flex-wrap:wrap;gap:4px;padding:8px 12px 4px;}
+.prod-tab{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.8rem;
+  color:var(--ink-dim);background:var(--panel-2);border:1px solid var(--line);border-radius:4px;
+  padding:3px 10px;cursor:pointer;}
+.prod-tab.active{background:#1b3a4e;color:#7fd0ff;border-color:#5bc0ff;}
+.prod-body{overflow-y:auto;padding:4px 12px 12px;}
+.prod-energy{display:flex;gap:14px;flex-wrap:wrap;font-family:'DM Mono',monospace;font-size:.78rem;
+  color:var(--ink-dim);padding:6px 0 10px;border-bottom:1px solid var(--line);margin-bottom:6px;}
+.prod-energy .pe-net.ok{color:#7fd98a;}.prod-energy .pe-net.bad{color:#ff8079;}
+.prod-table{display:flex;flex-direction:column;}
+.prod-row{display:grid;grid-template-columns:1fr 88px 88px 92px;align-items:center;gap:4px;
+  padding:3px 0;font-family:'DM Mono',monospace;font-size:.78rem;border-bottom:1px solid rgba(255,255,255,.05);}
+.prod-row.prod-head{color:var(--ink-dim);font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line);}
+.prod-row .pc-res{display:flex;align-items:center;gap:6px;color:var(--ink);}
+.prod-row .pc-res .inv-ico{width:16px;height:16px;}
+.prod-row .pc-p{text-align:right;color:#9fd9a6;}
+.prod-row .pc-c{text-align:right;color:#e6b673;}
+.prod-row .pc-n{text-align:right;}
+.prod-row .pc-n.ok{color:#7fd98a;}.prod-row .pc-n.bad{color:#ff8079;}
+.prod-empty{color:var(--ink-dim);font-style:italic;font-size:.78rem;padding:8px 0;}
+.prod-sub{font-family:'Bebas Neue',sans-serif;letter-spacing:.06em;color:#7fd0ff;font-size:.82rem;
+  margin-top:12px;padding-bottom:4px;border-bottom:1px solid var(--line);}
+.prod-transit{display:flex;flex-direction:column;}
+.prod-trow{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;
+  padding:3px 0;font-family:'DM Mono',monospace;font-size:.76rem;border-bottom:1px solid rgba(255,255,255,.05);}
+.prod-trow .pt-route{color:var(--ink-dim);}
+.prod-trow .pc-res{display:flex;align-items:center;gap:5px;color:var(--ink);}
+.prod-trow .pc-res .inv-ico{width:15px;height:15px;}
+.prod-trow .pt-rate{color:#7fd0ff;text-align:right;}
 /* Bouton Réparer à gauche d'INVENTAIRE (visible une fois la recherche d'accès atteinte) */
 .inv-repair-btn{display:flex;align-items:center;gap:6px;flex-shrink:0;cursor:pointer;
   font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.74rem;letter-spacing:.03em;
@@ -664,6 +695,10 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   letter-spacing:.01em;color:var(--ink);line-height:1.05;white-space:nowrap;}
 .tool-btn .tb-sub{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--ink-dim);
   white-space:nowrap;}
+/* Coût en pastilles : seules les ressources indisponibles passent en rouge. */
+.tool-btn .tb-cost{display:flex;flex-wrap:wrap;gap:2px 5px;white-space:normal;}
+.tool-btn .tb-cost .tb-ci{color:var(--ink-dim);}
+.tool-btn .tb-cost .tb-ci.miss{color:#ff6a60;font-weight:600;}
 .tool-btn.active{border-color:var(--accent,var(--yellow));background:#26264e;
   box-shadow:0 0 0 1px var(--accent,var(--yellow)) inset;}
 .tool-btn.active .tb-name{color:var(--accent,var(--yellow));}
@@ -3801,8 +3836,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 102;
-const GAME_VERSION = 'Alpha 10.77';
+const GAME_BUILD = 103;
+const GAME_VERSION = 'Alpha 10.78';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -6287,24 +6322,25 @@ const PORT_MAX_LEVEL = Infinity;
 // Île 1 (starting island, no access node) borrows île 2's cost per design.
 const PORT_BASE_COST = {
   1: {
-    lingot_fer: 10000,
-    ciment: 10000
+    ciment: 100000,
+    lingot_fer: 100000
   },
   2: {
-    lingot_fer: 100000,
-    ciment: 100000
+    ciment: 100000,
+    acier: 15000
   },
   3: {
-    acier: 50000,
-    cable: 50000
+    beton_arme: 15000,
+    acier: 50000
   },
   4: {
-    circuit: 10000,
     beton_arme: 50000,
-    piece_meca: 50000
+    piece_meca: 100000
   },
   5: {
-    processeur: 10000
+    acier: 100000,
+    beton_arme: 100000,
+    cable: 100000
   }
 };
 // Cost to go from current portSpeed level to level+1 = base × 2^(currentLevel).
@@ -6560,60 +6596,170 @@ function IslandSelector({
   onSelect,
   unlocked
 }) {
-  const [open, setOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({
-    left: 0,
-    top: 0
-  });
-  const chipRef = useRef(null);
+  // 5 boutons d'\u00EEle c\u00F4te \u00E0 c\u00F4te (au lieu d'un menu d\u00E9roulant). Les boutons r\u00E9tr\u00E9cissent
+  // pour ne jamais d\u00E9border (CSS .island-tabs / .island-tab, flex + min-width 0).
   const ids = ISLAND_TERRAINS.map(d => d.id);
   const isUnlocked = id => !unlocked || unlocked[id];
-  const toggle = () => {
-    setOpen(o => {
-      const next = !o;
-      if (next && chipRef.current) {
-        const r = chipRef.current.getBoundingClientRect();
-        setMenuPos({
-          left: r.left,
-          top: r.bottom + 5
-        });
-      }
-      return next;
-    });
-  };
   return React.createElement("div", {
-    className: "island-select"
-  }, React.createElement("button", {
-    ref: chipRef,
-    className: 'island-chip' + (open ? ' open' : ''),
-    onClick: toggle,
-    title: "Changer d'\xEEle"
-  }, "\xCELE ", current, " ", React.createElement("span", {
-    className: "caret"
-  }, "\u25BE")), open && React.createElement(React.Fragment, null, React.createElement("div", {
-    className: "island-backdrop",
-    onClick: () => setOpen(false)
-  }), React.createElement("div", {
-    className: "island-menu",
-    style: {
-      left: menuPos.left,
-      top: menuPos.top
-    }
+    className: "island-tabs"
   }, ids.map(id => {
     const locked = !isUnlocked(id);
     return React.createElement("button", {
       key: id,
-      className: 'island-menu-item' + (id === current ? ' active' : '') + (locked ? ' locked' : ''),
+      className: 'island-tab' + (id === current ? ' active' : '') + (locked ? ' locked' : ''),
       disabled: locked,
+      title: locked ? "\xCEle " + id + " verrouill\xE9e" : "\xCEle " + id,
       onClick: () => {
-        if (locked) return;
-        setOpen(false);
-        if (id !== current) onSelect(id);
+        if (!locked && id !== current) onSelect(id);
       }
-    }, "\xCEle ", id, " ", locked && React.createElement("span", {
+    }, locked ? React.createElement("span", {
       className: "lock"
-    }, "\uD83D\uDD12"));
-  }))));
+    }, "\uD83D\uDD12") : id);
+  }));
+}
+// Agrège prod/conso (/s) par ressource sur TOUS les réseaux d'une île (route+tuyau+pipePort),
+// depuis game.netFlow[isl] (rempli chaque tick par tickIsland pour toutes les îles).
+function islandFlowAgg(game, isl) {
+  const nf = game.netFlow && game.netFlow[isl];
+  const prod = {},
+    cons = {};
+  if (nf) for (const nid in nf) {
+    const f = nf[nid];
+    if (f && f.prod) for (const k in f.prod) prod[k] = (prod[k] || 0) + f.prod[k];
+    if (f && f.cons) for (const k in f.cons) cons[k] = (cons[k] || 0) + f.cons[k];
+  }
+  return {
+    prod,
+    cons
+  };
+}
+// Panneau Production : prod / conso / net par ressource + bilan énergie + transit inter-îles,
+// pour une île ou toutes. Lecture live (recalculé à chaque rendu depuis game.netFlow/energy/
+// transitFlow).
+function ProductionPanel({
+  game,
+  onClose
+}) {
+  const ids = ISLAND_TERRAINS.map(d => d.id).filter(id => game.islandUnlocked[id]);
+  const [sel, setSel] = useState('all');
+  const scopeList = sel === 'all' ? ids : [sel];
+  const prod = {},
+    cons = {};
+  for (const isl of scopeList) {
+    const a = islandFlowAgg(game, isl);
+    for (const k in a.prod) prod[k] = (prod[k] || 0) + a.prod[k];
+    for (const k in a.cons) cons[k] = (cons[k] || 0) + a.cons[k];
+  }
+  const resKeys = [...new Set([...Object.keys(prod), ...Object.keys(cons)])].filter(k => (prod[k] || 0) > 1e-6 || (cons[k] || 0) > 1e-6).sort((a, b) => {
+    const d = resTierRank(a) - resTierRank(b);
+    return d !== 0 ? d : a < b ? -1 : 1;
+  });
+  let enP = 0,
+    enD = 0;
+  for (const isl of scopeList) {
+    const e = game.energy[isl] || {};
+    enP += e.produced || 0;
+    enD += e.demand || 0;
+  }
+  const enN = enP - enD;
+  const transits = [];
+  const tf = game.transitFlow || {};
+  for (const key in tf) {
+    const parts = key.split('_');
+    const src = +parts[0],
+      dest = +parts[1];
+    if (!src || !dest) continue;
+    if (sel !== 'all' && src !== sel && dest !== sel) continue;
+    const rec = tf[key] || {};
+    for (const k in rec) if (rec[k] > 1e-6) transits.push({
+      src,
+      dest,
+      k,
+      rate: rec[k]
+    });
+  }
+  transits.sort((a, b) => b.rate - a.rate);
+  const resCell = k => {
+    const ikey = SPRITES_ENABLED ? itemSpriteKey(k) : null;
+    const idata = ikey && SPRITE_DATA[ikey];
+    return React.createElement("span", {
+      className: "pc-res"
+    }, idata && React.createElement("img", {
+      className: "inv-ico",
+      src: idata,
+      alt: ""
+    }), RES_SHORT[k] || k);
+  };
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "research-backdrop",
+    onClick: onClose
+  }), React.createElement("div", {
+    className: "research-panel prod-panel"
+  }, React.createElement("div", {
+    className: "rp-head"
+  }, React.createElement("span", {
+    className: "rp-title"
+  }, uiIcon('production', "📊"), " Production — ", sel === 'all' ? 'toutes les îles' : 'Île ' + sel), React.createElement("button", {
+    className: "rp-close",
+    onClick: onClose,
+    title: "Fermer"
+  }, "\xD7")), React.createElement("div", {
+    className: "prod-tabs"
+  }, React.createElement("button", {
+    className: 'prod-tab' + (sel === 'all' ? ' active' : ''),
+    onClick: () => setSel('all')
+  }, "Toutes"), ids.map(id => React.createElement("button", {
+    key: id,
+    className: 'prod-tab' + (sel === id ? ' active' : ''),
+    onClick: () => setSel(id)
+  }, "Île ", id))), React.createElement("div", {
+    className: "prod-body"
+  }, React.createElement("div", {
+    className: "prod-energy"
+  }, React.createElement("span", null, "⚡ Prod ", fmtInt(enP), " kW"), React.createElement("span", null, "Conso ", fmtInt(enD), " kW"), React.createElement("span", {
+    className: 'pe-net ' + (enN >= 0 ? 'ok' : 'bad')
+  }, "Net ", enN >= 0 ? '+' : '', fmtInt(enN), " kW")), React.createElement("div", {
+    className: "prod-table"
+  }, React.createElement("div", {
+    className: "prod-row prod-head"
+  }, React.createElement("span", {
+    className: "pc-res"
+  }, "Ressource"), React.createElement("span", {
+    className: "pc-p"
+  }, "Prod /s"), React.createElement("span", {
+    className: "pc-c"
+  }, "Conso /s"), React.createElement("span", {
+    className: "pc-n"
+  }, "Net /s")), resKeys.length === 0 ? React.createElement("div", {
+    className: "prod-empty"
+  }, "Aucune production en cours.") : resKeys.map(k => {
+    const p = prod[k] || 0,
+      c = cons[k] || 0,
+      n = p - c;
+    return React.createElement("div", {
+      className: "prod-row",
+      key: k
+    }, resCell(k), React.createElement("span", {
+      className: "pc-p"
+    }, fmtRate(p)), React.createElement("span", {
+      className: "pc-c"
+    }, fmtRate(c)), React.createElement("span", {
+      className: 'pc-n ' + (n >= -1e-6 ? 'ok' : 'bad')
+    }, n >= 0 ? '+' : '', fmtRate(n)));
+  })), React.createElement("div", {
+    className: "prod-sub"
+  }, "Transit entre îles"), transits.length === 0 ? React.createElement("div", {
+    className: "prod-empty"
+  }, "Aucun transit en cours.") : React.createElement("div", {
+    className: "prod-transit"
+  }, transits.map((t, i) => React.createElement("div", {
+    className: "prod-trow",
+    key: i
+  }, React.createElement("span", {
+    className: "pt-route"
+  }, "Île ", t.src, " → Île ", t.dest), resCell(t.k), React.createElement("span", {
+    className: "pt-rate"
+  }, fmtRate(t.rate), "/s")))))));
 }
 function Hud({
   resources,
@@ -6639,6 +6785,7 @@ function Hud({
   onToggleInv,
   onOpenOptions,
   onOpenHelp,
+  onOpenProduction,
   updateInfo
 }) {
   // Bilan « réel vs demandé » : produit (générateurs + décharge batterie) − demande totale.
@@ -6731,6 +6878,13 @@ function Hud({
       onClick: onShowRepair,
       title: "R\xE9parer le port pour d\xE9bloquer l'\xEEle " + repairInfo.island
     }, uiIcon('reparation', "🛠"), React.createElement("span", null, "R\xE9parer \xCEle ", repairInfo.island));
+    // Bouton Production (à droite d'INVENTAIRE) : ouvre le tableau prod/conso/net + transit
+    // de toutes les îles.
+    const prodBtn = React.createElement("button", {
+      className: "inv-prod-btn",
+      onClick: onOpenProduction,
+      title: "Production / consommation / transit de toutes les \xEEles"
+    }, uiIcon('production', "📊"), React.createElement("span", null, "Production"));
     if (!invOpen) {
       return React.createElement("div", {
         className: "inventory collapsed"
@@ -6740,7 +6894,7 @@ function Hud({
         title: "Afficher l'inventaire"
       }, "INVENTAIRE", inv.length > 0 && React.createElement("span", {
         className: "inv-count"
-      }, inv.length)));
+      }, inv.length)), prodBtn);
     }
     let lastTier = null;
     const items = [];
@@ -6778,7 +6932,7 @@ function Hud({
       className: "inv-label-btn open",
       onClick: onToggleInv,
       title: "Replier l'inventaire"
-    }, "INVENTAIRE"), inv.length === 0 ? React.createElement("span", {
+    }, "INVENTAIRE"), prodBtn, inv.length === 0 ? React.createElement("span", {
       className: "inv-empty"
     }, "\u2014 vide \u2014") : items);
   })());
@@ -6827,9 +6981,15 @@ function ToolButton({
   active,
   accent,
   onSelect,
-  onDetail
+  onDetail,
+  port
 }) {
   const b = BUILDINGS[id];
+  // Coût affiché en pastilles : chaque ressource INDISPONIBLE (stock du port < coût) passe
+  // en rouge, les autres restent normales. Infra (tracé continu) et jonctions à coût
+  // croissant gardent leur libellé texte.
+  const cost = b.cost;
+  const showCostChips = b.kind !== 'infra' && !(b.kind === 'junction' && CURRENT_MODE === 'normal') && cost && Object.keys(cost).length > 0;
   const sub = b.kind === 'infra' ? 'tracé continu' : b.kind === 'junction' && CURRENT_MODE === 'normal' ? 'coût croissant' : formatCost(b.cost) || 'gratuit';
   const skey = SPRITES_ENABLED ? buildingSpriteKey(id) : null;
   const sdata = skey && SPRITE_DATA[skey];
@@ -6892,7 +7052,13 @@ function ToolButton({
     }
   }), React.createElement("span", {
     className: "tb-name"
-  }, b.name)), React.createElement("span", {
+  }, b.name)), showCostChips ? React.createElement("span", {
+    className: "tb-sub tb-cost"
+  }, Object.keys(cost).map(k => React.createElement("span", {
+    key: k,
+    className: 'tb-ci' + ((port && port[k] || 0) >= cost[k] ? '' : ' miss'),
+    title: RES_SHORT[k] || k
+  }, (RES_SHORT[k] || k) + ' ' + fmtInt(cost[k])))) : React.createElement("span", {
     className: "tb-sub"
   }, sub));
 }
@@ -7011,7 +7177,8 @@ function Toolbar({
   onToggleBuild,
   netOpen,
   onToggleNet,
-  tutorialRevealed
+  tutorialRevealed,
+  port
 }) {
   // Bâtiment dont la fiche détaillée est ouverte (appui long), ou null.
   const [detailId, setDetailId] = useState(null);
@@ -7042,7 +7209,8 @@ function Toolbar({
       active: tool === id,
       accent: TIER_ACCENT[BUILDINGS[id].tier],
       onSelect: onSelect,
-      onDetail: setDetailId
+      onDetail: setDetailId,
+      port: port
     })))));
   });
   const tab = (key, extraCls, iconName, emoji, name, sub, active, onClick) => React.createElement("button", {
@@ -9529,6 +9697,7 @@ function App() {
   const [repairOpen, setRepairOpen] = useState(false);
   const [slotOpen, setSlotOpen] = useState(false);
   const [energyOpen, setEnergyOpen] = useState(false);
+  const [prodOpen, setProdOpen] = useState(false);
   const [needMode, setNeedMode] = useState(false);
   const [resPop, setResPop] = useState(null);
   const [network, setNetwork] = useState(null);
@@ -12480,7 +12649,11 @@ function App() {
       setOptionsOpen(true);
     },
     onOpenHelp: () => setHelpOpen(true),
+    onOpenProduction: () => setProdOpen(true),
     updateInfo: updateInfo
+  }), prodOpen && React.createElement(ProductionPanel, {
+    game: game,
+    onClose: () => setProdOpen(false)
   }), tutorialStep >= 0 && React.createElement(TutorialBanner, {
     step: tutorialStep,
     total: TUTORIAL_STEPS.length,
@@ -12582,7 +12755,8 @@ function App() {
       setNetOpen(opening);
       if (opening) deselectAll();
     },
-    tutorialRevealed: game.tutorial && game.tutorial.active && game.currentIsland === 1 ? tutorialRevealedSet(game.tutorial.step) : null
+    tutorialRevealed: game.tutorial && game.tutorial.active && game.currentIsland === 1 ? tutorialRevealedSet(game.tutorial.step) : null,
+    port: game.port[game.currentIsland] || {}
   }), researchOpen && React.createElement(ResearchPanel, {
     game: game,
     currentIsland: game.currentIsland,
