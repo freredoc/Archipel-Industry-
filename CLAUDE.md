@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 106`, `GAME_VERSION = 'Alpha 10.81'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 107`, `GAME_VERSION = 'Alpha 10.82'`.** Changement
+  10.82 : **stockage tuyau relié au port = stocké AU PORT (comme une route).** Un réseau TUYAU
+  adjacent au port (`net.connected`) ne garde plus ses liquides (pétrole/eau/acide) dans son pool
+  invisible : ils sont désormais stockés dans le **port** (visibles dans l'inventaire, partagés,
+  transitables). (1) **Boucle bâtiment** (`tickIsland`) : si un réseau tuyau adjacent est `connected`,
+  les intrants/extrants tuyau **stockables** du bâtiment basculent du bucket `pipe` (pool) vers
+  `pipePort` (port) — même chemin que le diesel ; `NON_STORABLE` (eau_froide du nucléaire) reste dans
+  le pool (tampon transitoire). (2) **Purge fin de tick** : les pools des réseaux tuyau `connected`
+  sont **vidés dans le port** chaque tick (migration des réserves existantes incluse). (3)
+  **`tradeAvail`/`Draw`/`Deposit`** simplifiés : lisent/écrivent directement le port pour TOUTES les
+  ressources (les liquides reliés au port y sont désormais) → transit pétrole/acide via le port.
+  `portPipePools` devient du code mort (laissé). Les réseaux tuyau **non reliés** au port gardent leur
+  pool local (boucle isolée inchangée). Changement
   10.81 : **rééquilibrage production (mines hautes / offshore / fours à arc).** (1) **Mines v2 ×8**
   (`outputs` 2→16) : `mine_fer_v2`, `mine_charbon_v2`, `mine_cuivre_v2`, `carriere_v2`. (2) **Mines v3
   ×8** (4→32) : `mine_fer_v3`, `mine_cuivre_v3`, `carriere_v3`, `mine_charbon_v3`. (3) **Offshore ×8
