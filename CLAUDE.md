@@ -17,7 +17,16 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 96`, `GAME_VERSION = 'Alpha 10.71'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 97`, `GAME_VERSION = 'Alpha 10.72'`.** Changement
+  10.72 : **sprites de connexion des réseaux (route/câble/tuyau) intégrés** — le pack
+  `Archipel_sprites_COMPLET` contenait les **180 tuiles de connexion** `route|cable|tuyau_v{1..4}_{01..15}_*`
+  (auto-tiling N/E/S/O). Le code de dessin les RÉFÉRENÇAIT déjà (`NET_PREFIX`+`NET_MASK_SUFFIX`,
+  `drawSprite(...)→continue`, sinon repli vecteur) mais elles n'étaient PAS dans `__SPRITE_DATA__` →
+  réseaux dessinés en rectangles. Désormais inlinées (per-key, ~68 Ko) → routes/câbles/tuyaux rendus
+  en **vraies tuiles texturées connectées** (V4 = illimité). NB : le pack contient aussi des sprites de
+  **côte/falaise/overlay** (`coast_*`, `iN_falaise_*`, `tile_iN_coast_tri_*`, `overlay_*`) NON intégrés :
+  ils nécessitent une **nouvelle logique d'auto-tiling du littoral** (le jeu dessine la côte en tuile
+  unique `tile_iN_coast`) — feature séparée à faire. Changement
   10.71 : **rattrapage hors-ligne non bloquant (barre de progression) + calcul simplifié**. (1)
   `runCatchUp(elapsedSec, onDone)` réécrit : simulation par **tranches de ~80 ms** via `setTimeout`
   (rend la main à l'UI entre chaque) → **overlay `.catchup-overlay`** plein écran avec spinner +
