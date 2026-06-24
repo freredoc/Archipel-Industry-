@@ -1,7 +1,7 @@
 {
-  "build": 95,
-  "version": "Alpha 10.70",
+  "build": 96,
+  "version": "Alpha 10.71",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.70 — processeur retiré (offshore) + stockage batterie en temps réel (#95)"
+  "notes": "Alpha 10.71 — rattrapage hors-ligne non bloquant (barre %) + calcul simplifié (#96)"
 }
