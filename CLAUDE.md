@@ -17,7 +17,18 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 108`, `GAME_VERSION = 'Alpha 10.83'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 109`, `GAME_VERSION = 'Alpha 10.84'`.** Changement
+  10.84 : **kit UI complet inliné (PROMPT_UI_COMPLET) + boutons 9-slice 4 états sur le menu
+  construction.** (1) **10 nouveaux sprites UI** inlinés en variables CSS `:root` (~3,8 Ko) :
+  `--btn-normal/-hover/-active/-off` (4 états de bouton `ui_bouton_*_9slice` 17×17), `--onglet-actif/
+  -inactif` (onglets), `--cadre-metal/-inox/-bouton` (cadres), `--tex-inox` (tôle larmée 32×32 tileable).
+  S'ajoutent à `--cadre-rivets/-sobre` (10.54). (2) **Application** : seuls les boutons du **menu
+  construction** (`.build-panel .tool-btn`, zone défilable) reçoivent le kit 4 états (normal→survol→
+  enfoncé/sélectionné via `border-image var(--btn-*) 8 fill / 8px stretch`) ; le nom garde sa couleur
+  d'accent. Volontairement **pas** appliqué aux boutons du HUD (hauteur fixe → un cadre 8px les ferait
+  déborder) ni aux boutons sémantiques colorés (vert confirmer / jaune primaire) ni aux onglets
+  compacts (densité mobile), ni l'ambiance metal/inox (sobre reste par défaut) — ces sprites sont
+  inlinés et **disponibles** mais non câblés (à activer selon préférence/retour visuel). CSS pur. Changement
   10.83 : **extension du cadre 9-slice aux menus/panneaux/tooltips/barre d'outils** (PROMPT_MENU_9SLICE
   / PROMPT_INTEGRATION_UI1). Le cadre n'était posé que sur `.research-panel`/`.slot-panel` (et tous les
   modaux réutilisant `research-panel`). Désormais : (1) la règle existante reçoit **`fill`** (peint le
