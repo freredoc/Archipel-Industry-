@@ -2873,7 +2873,7 @@ const BUILDINGS = {
       cable: 40
     },
     outputs: {
-      minerai_fer: 2
+      minerai_fer: 16
     }
   },
   mine_charbon_v2: {
@@ -2892,7 +2892,7 @@ const BUILDINGS = {
       cable: 40
     },
     outputs: {
-      charbon: 2
+      charbon: 16
     }
   },
   mine_cuivre_v2: {
@@ -2911,7 +2911,7 @@ const BUILDINGS = {
       polymere: 40
     },
     outputs: {
-      minerai_cuivre: 2
+      minerai_cuivre: 16
     }
   },
   carriere_v2: {
@@ -2929,7 +2929,7 @@ const BUILDINGS = {
       cable: 40
     },
     outputs: {
-      pierre: 2
+      pierre: 16
     }
   },
   mine_or: {
@@ -3110,10 +3110,10 @@ const BUILDINGS = {
       processeur: 10
     },
     inputs: {
-      minerai_fer: 24
+      minerai_fer: 96
     },
     outputs: {
-      acier: 1
+      acier: 4
     }
   },
   four_arc_cable: {
@@ -3137,10 +3137,10 @@ const BUILDINGS = {
       processeur: 10
     },
     inputs: {
-      minerai_cuivre: 36
+      minerai_cuivre: 144
     },
     outputs: {
-      cable: 1
+      cable: 4
     }
   },
   four_arc_piece: {
@@ -3164,10 +3164,10 @@ const BUILDINGS = {
       processeur: 10
     },
     inputs: {
-      minerai_fer: 24
+      minerai_fer: 96
     },
     outputs: {
-      piece_meca: 1
+      piece_meca: 4
     }
   },
   eolienne_offshore: {
@@ -3186,7 +3186,7 @@ const BUILDINGS = {
       cable: 80
     },
     outputs: {
-      energie_kw: 16
+      energie_kw: 128
     }
   },
   plateforme_petroliere: {
@@ -3206,7 +3206,7 @@ const BUILDINGS = {
       cable: 100
     },
     outputs: {
-      petrole: 1
+      petrole: 8
     }
   },
   mine_uranium: {
@@ -3337,7 +3337,7 @@ const BUILDINGS = {
       processeur: 10
     },
     outputs: {
-      minerai_fer: 4
+      minerai_fer: 32
     }
   },
   mine_cuivre_v3: {
@@ -3360,7 +3360,7 @@ const BUILDINGS = {
       processeur: 10
     },
     outputs: {
-      minerai_cuivre: 4
+      minerai_cuivre: 32
     }
   },
   carriere_v3: {
@@ -3383,7 +3383,7 @@ const BUILDINGS = {
       processeur: 10
     },
     outputs: {
-      pierre: 4
+      pierre: 32
     }
   },
   mine_charbon_v3: {
@@ -3407,7 +3407,7 @@ const BUILDINGS = {
       processeur: 10
     },
     outputs: {
-      charbon: 4
+      charbon: 32
     }
   },
   mine_or_v3: {
@@ -3839,8 +3839,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 105;
-const GAME_VERSION = 'Alpha 10.80';
+const GAME_BUILD = 106;
+const GAME_VERSION = 'Alpha 10.81';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
