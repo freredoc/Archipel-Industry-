@@ -1,7 +1,7 @@
 {
-  "build": 107,
-  "version": "Alpha 10.82",
+  "build": 108,
+  "version": "Alpha 10.83",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.82 — stockage tuyau relié au port = stocké au port (comme une route) (#107)"
+  "notes": "Alpha 10.83 — cadre 9-slice étendu (menus / panneaux / tooltips / barre d'outils) (#108)"
 }
