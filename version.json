@@ -1,7 +1,7 @@
 {
-  "build": 106,
-  "version": "Alpha 10.81",
+  "build": 107,
+  "version": "Alpha 10.82",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.81 — rééquilibrage prod : mines v2/v3 x8, offshore x8, fours à arc x4 (#106)"
+  "notes": "Alpha 10.82 — stockage tuyau relié au port = stocké au port (comme une route) (#107)"
 }
