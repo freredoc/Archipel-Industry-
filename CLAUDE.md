@@ -17,7 +17,14 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 109`, `GAME_VERSION = 'Alpha 10.84'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 110`, `GAME_VERSION = 'Alpha 10.85'`.** Changement
+  10.85 : **menu construction en 3 colonnes + ambiance métal.** (1) `.build-panel .tool-row` passe de
+  `repeat(4,1fr)` à **`repeat(3,1fr)`** — avec le cadre 9-slice des boutons (10.84), 4 colonnes
+  tronquaient les noms/coûts (« Carriè », « Centra Charbo »…) ; 3 colonnes laissent la place. (2) Le
+  menu construction (`.build-panel`) reçoit le **cadre MÉTAL** (`--cadre-metal`, `8 fill / 8px stretch`)
+  au lieu du sobre (10.83) → accent industriel sur la surface déjà thémée. CSS pur. Les autres sprites
+  du kit (onglets, boutons HUD, inox/texture) restent inlinés non câblés (densité mobile / sémantique
+  couleur — à activer selon retour). Changement
   10.84 : **kit UI complet inliné (PROMPT_UI_COMPLET) + boutons 9-slice 4 états sur le menu
   construction.** (1) **10 nouveaux sprites UI** inlinés en variables CSS `:root` (~3,8 Ko) :
   `--btn-normal/-hover/-active/-off` (4 états de bouton `ui_bouton_*_9slice` 17×17), `--onglet-actif/

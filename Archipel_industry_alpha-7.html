@@ -426,6 +426,8 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
    barre d'outils = cadre RIVETS. `fill` peint le fond #15152a (= var(--panel)). */
 .tip-popup,.mode-modal,.info-panel,.build-panel{border:8px solid transparent;border-image:var(--cadre-sobre) 8 fill / 8px stretch;border-radius:0;image-rendering:pixelated;}
 .toolbar{border:8px solid transparent;border-image:var(--cadre-rivets) 8 fill / 8px stretch;border-radius:0;image-rendering:pixelated;}
+/* Menu construction : ambiance industrielle = cadre MÉTAL (au lieu de sobre). */
+.build-panel{border-image:var(--cadre-metal) 8 fill / 8px stretch;}
 
 .slot-head{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line);}
 .slot-title{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.06em;color:var(--ink);}
@@ -695,7 +697,7 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
    débordement horizontal). Les groupes (catégories) s'empilent verticalement. */
 .build-panel .tool-group{width:100%;border-right:none;border-bottom:1px solid var(--line);}
 .build-panel .tool-group-inner{width:100%;}
-.build-panel .tool-row{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+.build-panel .tool-row{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
 .build-panel .tool-btn{min-width:0;}
 .build-panel .tool-btn .tb-name{white-space:normal;}
 .build-panel .tool-btn .tb-sub{white-space:normal;line-height:1.15;}
@@ -3859,8 +3861,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 109;
-const GAME_VERSION = 'Alpha 10.84';
+const GAME_BUILD = 110;
+const GAME_VERSION = 'Alpha 10.85';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
