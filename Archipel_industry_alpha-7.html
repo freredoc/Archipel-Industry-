@@ -412,7 +412,11 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
   box-shadow:0 18px 60px rgba(0,0,0,.6);overflow:hidden;}
 :root{--cadre-rivets:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAARCAYAAAA7bUf6AAAAlklEQVR4nGNkYGBg4OWV+s9AJvj8+RkjCy+v1H9ZWQNyzWB4/JjhPwuMIyCgQLIBHz48YGBgYGBgQRbcNu0bAwMDA4Oq6ym8mm/vNmNgYGBgsIqC8JlIth4LQHEJIRcgq2Nn52Pg4xOinktGDRkyhtzebQZPjfjA7d1mDFe2aMD5LNgUsbPzkeQSRspz8QUGRgYGyssTAN4fI3d4mLmaAAAAAElFTkSuQmCC");--cadre-sobre:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAARCAYAAAA7bUf6AAAAcElEQVR4nGNkYGBg4OWV+s9AJvj8+RkjCy+v1H9ZWQNyzWB4/JjhPwuMIyCgQLIBHz48YGBgYGBgQRa8ffsA0Qaws/Mx8PEJMTAwMDAwkWw9FjBqyKghdDMEJdmzs/NRZsiHDw/geYFUwMjAQHl5AgCoShVXzciDagAAAABJRU5ErkJggg==");}
 /* Cadres « menu » 9-slice (sprites ui_cadre_*) appliqués aux modales principales. */
-.research-panel,.slot-panel{border:8px solid transparent;border-image:var(--cadre-rivets) 8 / 8px stretch;border-radius:0;}
+.research-panel,.slot-panel{border:8px solid transparent;border-image:var(--cadre-rivets) 8 fill / 8px stretch;border-radius:0;image-rendering:pixelated;}
+/* Extension du cadre 9-slice (PROMPT_MENU_9SLICE) : panneaux/menus/tooltips = cadre SOBRE,
+   barre d'outils = cadre RIVETS. `fill` peint le fond #15152a (= var(--panel)). */
+.tip-popup,.mode-modal,.info-panel,.build-panel{border:8px solid transparent;border-image:var(--cadre-sobre) 8 fill / 8px stretch;border-radius:0;image-rendering:pixelated;}
+.toolbar{border:8px solid transparent;border-image:var(--cadre-rivets) 8 fill / 8px stretch;border-radius:0;image-rendering:pixelated;}
 
 .slot-head{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line);}
 .slot-title{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.06em;color:var(--ink);}
@@ -3839,8 +3843,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 107;
-const GAME_VERSION = 'Alpha 10.82';
+const GAME_BUILD = 108;
+const GAME_VERSION = 'Alpha 10.83';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.

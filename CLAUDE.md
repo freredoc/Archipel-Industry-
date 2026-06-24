@@ -17,7 +17,16 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 107`, `GAME_VERSION = 'Alpha 10.82'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 108`, `GAME_VERSION = 'Alpha 10.83'`.** Changement
+  10.83 : **extension du cadre 9-slice aux menus/panneaux/tooltips/barre d'outils** (PROMPT_MENU_9SLICE
+  / PROMPT_INTEGRATION_UI1). Le cadre n'était posé que sur `.research-panel`/`.slot-panel` (et tous les
+  modaux réutilisant `research-panel`). Désormais : (1) la règle existante reçoit **`fill`** (peint le
+  fond `#15152a` = `var(--panel)`) + `image-rendering:pixelated` ; (2) **cadre SOBRE** (`--cadre-sobre`,
+  `8 fill / 8px stretch`) sur `.tip-popup`, `.mode-modal`, `.info-panel` (feuille bâtiment), `.build-panel`
+  (menu construction) ; (3) **cadre RIVETS** sur `.toolbar` (barre d'outils). Pur CSS, aucune logique
+  touchée. ⚠️ Les **sprites UI** (`ui_*`/`item_*`/`etat_*`, 52) restent déjà 100% inlinés+câblés (10.54+) :
+  rien de neuf côté icônes. NB : `box-sizing:border-box` global → le cadre 8px n'élargit pas les
+  conteneurs. Changement
   10.82 : **stockage tuyau relié au port = stocké AU PORT (comme une route).** Un réseau TUYAU
   adjacent au port (`net.connected`) ne garde plus ses liquides (pétrole/eau/acide) dans son pool
   invisible : ils sont désormais stockés dans le **port** (visibles dans l'inventaire, partagés,
