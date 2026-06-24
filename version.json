@@ -1,7 +1,7 @@
 {
-  "build": 99,
-  "version": "Alpha 10.74",
+  "build": 100,
+  "version": "Alpha 10.75",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.74 — réserve du pool tuyau + plage de demande élec. (panneau Réseau) (#99)"
+  "notes": "Alpha 10.75 — rendu du littoral (écume + falaises + triangles + overlays) (#100)"
 }
