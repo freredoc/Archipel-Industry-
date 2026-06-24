@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 111`, `GAME_VERSION = 'Alpha 10.86'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 112`, `GAME_VERSION = 'Alpha 10.87'`.** Changement
+  10.87 : **2 corrections de bugs (chasse aux bugs).** (1) **Conversion croisement→jonction sans
+  remboursement** (`tryPlaceJunction`) : poser une jonction PAR-DESSUS un réseau infra existant
+  (`tileCarrier`) écrasait `t.building` (le réseau croisé) **sans rembourser** ses matériaux ni ses
+  améliorations → perte sèche (ex. câble V3 absorbé), aggravée en Difficile où la jonction est gratuite.
+  La démolition d'une jonction ne restitue que le coût de la jonction → asymétrie. Désormais, quand on
+  convertit un croisement, l'infra écrasée est **remboursée** (`refund(ob.cost)` + `cumulativeUpgradeCost`
+  si améliorée), hors mode dev → conservation de la matière (place/démolit redevient neutre). (2)
+  **Extrapolation hors-ligne d'une île débloquée pendant l'échauffon** (`runCatchUp`, mode simplifié
+  > 1 h) : une île dont l'accès se confirme PENDANT les 300 ticks d'échantillon reçoit un **kickstart
+  ponctuel** ; son port étant absent du `baseSnap`, le débit mesuré (`kickstart/sampleTicks`) était
+  extrapolé sur les milliers de ticks restants → stocks démesurés. Garde `if (!base[isl]) continue;`
+  → les îles apparues après le snapshot ne sont plus extrapolées. Changement
   10.86 : **option « Fond bleu / Fond inox » (ambiance des panneaux).** Nouvelle préférence `ui.theme`
   (`'bleu'` défaut | `'inox'`), persistée dans `uiPrefs` (pattern complet : newGame, serialize,
   loadSave défaut+restore, state React `theme`, sync au load + à l'ouverture des options). Sélecteur

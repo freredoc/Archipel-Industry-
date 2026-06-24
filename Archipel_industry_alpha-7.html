@@ -3866,8 +3866,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 111;
-const GAME_VERSION = 'Alpha 10.86';
+const GAME_BUILD = 112;
+const GAME_VERSION = 'Alpha 10.87';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -10551,6 +10551,9 @@ function App() {
         const sampleTicks = Math.min(SAMPLE, WARM) || 1;
         const base = baseSnap || before;
         for (const isl in g.port) {
+          // Île apparue APRÈS le snapshot (débloquée pendant l'échauffon) : son port a reçu un
+          // kickstart ponctuel, pas un débit → ne pas l'extrapoler (sinon stocks démesurés).
+          if (!base[isl]) continue;
           const p = g.port[isl];
           const b0 = base[isl] || {};
           for (const k in p) {
@@ -10863,6 +10866,16 @@ function App() {
         return false;
       }
       pay(cost);
+      // Conversion d'un croisement existant : rembourse l'infra écrasée (matériaux +
+      // améliorations), sinon ses ressources sont perdues (la démolition de la jonction ne
+      // restitue que le coût de la jonction). Symétrique avec tryDemolish.
+      if (tileCarrier && t.building) {
+        const ob = BUILDINGS[t.building.id];
+        if (ob) {
+          refund(ob.cost);
+          if (t.building.upgrade) refund(cumulativeUpgradeCost(ob.cost, t.building.upgrade, t.building.id));
+        }
+      }
     }
     t.building = {
       id,
