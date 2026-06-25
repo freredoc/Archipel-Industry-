@@ -1,7 +1,7 @@
 {
-  "build": 121,
-  "version": "Alpha 10.96",
+  "build": 122,
+  "version": "Alpha 10.97",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.96 — ressources irradiées en T4 + sous-catégories Traitement (#120)"
+  "notes": "Alpha 10.97 — lisibilité inox + croix de fermeture + centrale 0% à la pose + Électronique (#121)"
 }
