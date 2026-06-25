@@ -17,7 +17,13 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 141`, `GAME_VERSION = 'Alpha 11.16'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 142`, `GAME_VERSION = 'Alpha 11.17'`.** Changement
+  11.17 : **centrale d'enrichissement U235 — temps de fabrication ×4 (4× plus lente).** Comme pour
+  l'usine moteur nucléaire (11.14), `centrale_enrichissement` : **intrants ET sortants ÷4**
+  (yellow_cake 8→2, acier 1→0,25 ; combustible_u235 1→0,25) → fabrication 4× plus lente. **Conso
+  électrique INCHANGÉE** (`power: 0` + `sigmoid {base:64, amp:192, period:60}` conservés). Coût de
+  construction inchangé. Validé : `node --check` (6 blocs) + Chromium (recette ÷4, sigmoid intact,
+  0 erreur). Changement
   11.16 : **panneau Port — mention de l'île reliée par le transit.** Dans la section « Amélioration du
   transit » (onglet « Transit île »), une ligne **« ↔ Transit avec l'île N »** (ou « les îles N, M »
   si plusieurs liaisons, ex. île 3 ↔ 2 et 4) s'affiche sous le titre quand ≥1 liaison est active
