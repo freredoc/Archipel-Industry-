@@ -1,7 +1,7 @@
 {
-  "build": 119,
-  "version": "Alpha 10.94",
+  "build": 120,
+  "version": "Alpha 10.95",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.94 — recettes nucléaires + UI (boutons du haut, lisibilité) (#118)"
+  "notes": "Alpha 10.95 — centrale 4 MW + jauge de puissance graduée + lisibilité inox (#119)"
 }
