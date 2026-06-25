@@ -1,7 +1,7 @@
 {
-  "build": 120,
-  "version": "Alpha 10.95",
+  "build": 121,
+  "version": "Alpha 10.96",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.95 — centrale 4 MW + jauge de puissance graduée + lisibilité inox (#119)"
+  "notes": "Alpha 10.96 — ressources irradiées en T4 + sous-catégories Traitement (#120)"
 }
