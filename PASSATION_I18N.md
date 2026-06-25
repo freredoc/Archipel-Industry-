@@ -31,13 +31,31 @@ Ce qui est câblé dans `Archipel_industry_alpha-7.html` :
   - Rendu du menu Bâtiment en `de` : noms ET ressources (Stein/Eisenerz) ET catégories (Förderung, Eisen & Stahl) traduits.
 - `SAVE_VERSION` **inchangé** (13). Aucune recette / équilibrage / mécanique modifiés. Hors-ligne (file://) OK.
 
-## CHECKPOINT 2 — RESTE À FAIRE (couche UI, ~404 libellés)
+## CHECKPOINT 2 — FAIT ✅ (couche UI câblée)
 
-Le **chrome UI** (boutons, titres de panneaux, toasts : Options, PORT, RECHERCHE, INVENTAIRE,
-Production, Bâtiment/Réseau/Copier/Démolir/Améliorer, « Menu construction… », « Tutoriel passé… »,
-etc.) reste **en français**. Câblage prévu : envelopper chaque littéral fr de `ui_strings_reference.tsv`
-dans `I18N.t('…')` (clé = texte fr exact, espaces compris), panneau par panneau, avec `node --check`
-+ smoke après chacun. ⚠️ Ne jamais envelopper une chaîne servant de `className`/clé/comparaison.
+Les libellés d'interface en dur sont enveloppés dans `I18N.t('texte fr')` (gettext, clé = texte fr).
+
+**Méthode** : transform automatisé conservateur (`scratchpad/i18n_wrap.js` + `i18n_wrap2.js`), 2 passes :
+1. Littéraux **UTF-8** entre guillemets simples/doubles (~362 enveloppes).
+2. Formes **`\xNN`** produites par Babel pour les accents (~79 enveloppes ; ex. `"B\xE2timent"`).
+
+Restreint au `<script>` du jeu. Positions **sûres** uniquement : on saute si la chaîne est précédée de
+`className/key/id/label/name/type/color/res/kind/mode/tab/icon :`, d'une comparaison `==`/`!=`, de
+`case`, d'un `I18N.t(` déjà présent, ou suivie de `:` (clé d'objet). Tokens de longueur < 3 ou sans
+lettre ignorés (évite `/s`, `·`…). Total ≈ **440 enveloppes / ~351 clés distinctes** sur 403.
+
+**Vérifié** : `node --check` (6 blocs, 0 échec) ; smoke Chromium :
+- `de` → onglets d'action **Gebäude/Netz/Kopieren/Abreißen/Verbessern**, barre du haut **Optionen/HAFEN/
+  FORSCHUNG/INVENTAR/Produktion**, Options **Sprache/Stufen anzeigen/Effizienz anzeigen (%)**, bandeau
+  **Auswahlmodus…** ; **0 erreur console**.
+- `fr` → tout en français (repli sur la clé) ; **0 erreur**.
+
+### Reliquat (reste en français hors-fr — repli)
+- **Toasts en littéraux-gabarits** (backticks `` ` ``, ex. `` `✓ ${b.name}` ``) : non matchés par le wrap
+  par guillemets. À envelopper à la main si voulu (souvent contenu dynamique + fragment fr).
+- Quelques libellés **ajoutés après build 108** absents du TSV (ex. « Fond des panneaux », libellés
+  des sous-catégories récentes déjà gérés via `I18N.t(g.label)`). À ajouter aux locales au besoin.
+- Codes tuile (`label` FER/CHAR…) volontairement non traduits (mnémoniques).
 
 ## Reliquats / décisions
 - Nouveaux bâtiments postérieurs au build 108 (ex. `mine_uranium_v3`) absents des locales →

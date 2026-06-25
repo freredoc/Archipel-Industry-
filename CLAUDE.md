@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 125`, `GAME_VERSION = 'Alpha 11.00'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 126`, `GAME_VERSION = 'Alpha 11.01'`.** Changement
+  11.01 : **i18n — Phase 2 / CHECKPOINT 2 (couche UI câblée).** Les libellés d'interface en dur sont
+  désormais enveloppés dans `I18N.t('texte fr')` (modèle gettext, clé = texte français). Câblage fait
+  par **transform automatisé conservateur** (script Node, 2 passes : littéraux UTF-8 puis formes
+  `\xNN` de Babel), restreint au `<script>` du jeu, positions sûres uniquement (exclut
+  className/key/id/label/name/type/color/comparaisons/clés d'objet ; tokens < 3 ou sans lettre
+  ignorés) → ~440 enveloppes sur ~351 clés distinctes (sur 403). UI traduite : barre du haut,
+  onglets d'action (Gebäude/Netz/Kopieren/Abreißen/Verbessern…), titres de panneaux, options, aides.
+  **Reliquat** (reste en français hors-fr) : toasts en **littéraux-gabarits** (backticks `` ` ``, non
+  matchés par le wrap par guillemets) + quelques libellés ajoutés après build 108 absents du TSV
+  (ex. « Fond des panneaux »). Repli fr automatique partout. Validé : `node --check` (6 blocs, 0 échec)
+  + smoke Chromium de/en/fr (UI traduite, FR intact, **0 erreur console**) + rendu jeu DE. Voir
+  `PASSATION_I18N.md`. Changement
   11.00 : **i18n — Phase 1 / CHECKPOINT 1 (couche CONTENU + langue système + sélecteur).** Kit
   `archipel_i18n.js` (4 langues fr/en/es/de, API `t/get/set/applyToData/available/names`) **inliné**
   dans un `<script>` avant le script du jeu (fichier unique hors-ligne ; aucun `</script>` littéral).
