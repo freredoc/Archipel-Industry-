@@ -90,6 +90,25 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   padding:3px 11px;cursor:pointer;display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .inv-prod-btn:hover{border-color:#5bc0ff;color:var(--ink);}
 .inv-prod-btn .ui-ico{width:15px;height:15px;}
+/* Bouton ALERTE (à droite de Production) : récap des alertes de stock en cours, orange pulsant. */
+.inv-alert-btn{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.05em;color:#ffce54;
+  background:rgba(255,149,0,.16);border:1px solid var(--orange);border-radius:4px;padding:3px 10px;cursor:pointer;
+  display:flex;align-items:center;gap:6px;flex-shrink:0;animation:alertpulse 1.4s ease-in-out infinite;}
+.inv-alert-btn:hover{background:rgba(255,149,0,.30);}
+.inv-alert-btn .inv-count{background:var(--red);color:#fff;}
+@keyframes alertpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,149,0,0);}50%{box-shadow:0 0 0 3px rgba(255,149,0,.35);}}
+/* Panneau récapitulatif des alertes. */
+.alerts-panel{position:fixed;z-index:130;left:50%;top:54px;transform:translateX(-50%);
+  width:min(420px,calc(100vw - 24px));max-height:70vh;display:flex;flex-direction:column;}
+.alerts-list{overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:5px;}
+.alerts-empty{color:var(--ink-dim);font-family:'Barlow Condensed',sans-serif;padding:12px;text-align:center;}
+.alert-row{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;text-align:left;
+  background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--orange);border-radius:5px;
+  padding:6px 9px;cursor:pointer;color:var(--ink);}
+.alert-row:hover{border-color:var(--yellow);}
+.alert-isl{font-family:'Bebas Neue',sans-serif;font-size:.8rem;color:var(--ink-dim);}
+.alert-res{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.86rem;text-transform:capitalize;}
+.alert-val{font-family:'DM Mono',monospace;font-size:.74rem;color:#ffb14e;}
 /* Panneau Production */
 .prod-panel{width:min(560px,96vw);max-height:84vh;display:flex;flex-direction:column;}
 .prod-tabs{display:flex;flex-wrap:wrap;gap:4px;padding:8px 12px 4px;}
@@ -3682,13 +3701,10 @@ const TOOLBAR_GROUPS = [{
   ids: ['four_cuivre', 'four_cuivre_v2', 'cablerie', 'four_arc_cable']
 }, {
   label: 'Électronique',
-  ids: ['broyeur', 'raffineur_silicium', 'circuit', 'fab_processeur']
+  ids: ['broyeur', 'raffineur_silicium', 'circuit', 'fab_processeur', 'fonderie_or']
 }, {
   label: 'Plastique et chimie',
   ids: ['usine_polymere', 'raffinerie', 'distillerie']
-}, {
-  label: 'Or',
-  ids: ['fonderie_or']
 }, {
   label: 'Nucléaire',
   ids: ['broyeur_uranium', 'centrale_enrichissement', 'refroidisseur', 'centrale_nucleaire', 'usine_moteur_nuc', 'antenne']
@@ -3979,8 +3995,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 122;
-const GAME_VERSION = 'Alpha 10.97';
+const GAME_BUILD = 123;
+const GAME_VERSION = 'Alpha 10.98';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -6953,6 +6969,59 @@ function ProductionPanel({
     className: "pt-rate"
   }, fmtRate(t.rate), "/s")))))));
 }
+// Liste des alertes de stock ACTIVES (stock du port < seuil configuré) sur TOUTES les îles.
+function activeStockAlerts(game) {
+  const out = [];
+  const al = game && game.stockAlerts;
+  if (!al) return out;
+  for (const isl in al) {
+    const thr = al[isl] || {};
+    const pool = game.port && game.port[isl] || {};
+    for (const res in thr) {
+      const t = thr[res];
+      if (t > 0 && (pool[res] || 0) < t) out.push({
+        isl: +isl,
+        res,
+        stock: pool[res] || 0,
+        thr: t
+      });
+    }
+  }
+  out.sort((a, b) => a.isl - b.isl || resTierRank(a.res) - resTierRank(b.res));
+  return out;
+}
+// Panneau récapitulatif des alertes de stock (toutes îles). Clic sur une ligne → va à l'île + Port.
+function AlertsPanel({
+  game,
+  onGo,
+  onClose
+}) {
+  const alerts = activeStockAlerts(game);
+  return React.createElement("div", {
+    className: "research-panel alerts-panel"
+  }, React.createElement("div", {
+    className: "slot-head"
+  }, React.createElement("span", {
+    className: "slot-title"
+  }, "⚠️ Alertes ressources"), React.createElement("button", {
+    className: "rp-close",
+    onClick: onClose
+  }, "×")), React.createElement("div", {
+    className: "alerts-list"
+  }, alerts.length === 0 ? React.createElement("div", {
+    className: "alerts-empty"
+  }, "Aucune alerte en cours.") : alerts.map(a => React.createElement("button", {
+    key: a.isl + '-' + a.res,
+    className: "alert-row",
+    onClick: () => onGo && onGo(a.isl)
+  }, React.createElement("span", {
+    className: "alert-isl"
+  }, "Île " + a.isl), React.createElement("span", {
+    className: "alert-res"
+  }, RES_SHORT[a.res] || a.res), React.createElement("span", {
+    className: "alert-val"
+  }, fmtPort(a.stock) + " / " + fmtPort(a.thr))))));
+}
 function Hud({
   resources,
   unlockedRes,
@@ -6963,6 +7032,8 @@ function Hud({
   repairInfo,
   onRepair,
   onShowRepair,
+  alertCount,
+  onOpenAlerts,
   onOpenPort,
   onEnergy,
   onResClick,
@@ -7077,6 +7148,14 @@ function Hud({
       onClick: onOpenProduction,
       title: "Production / consommation / transit de toutes les \xEEles"
     }, uiIcon('production', "📊"), React.createElement("span", null, "Production"));
+    // Bouton ALERTE (à droite de Production) : visible s'il y a ≥1 alerte de stock active sur une île.
+    const alertBtn = alertCount > 0 && React.createElement("button", {
+      className: "inv-alert-btn",
+      onClick: onOpenAlerts,
+      title: alertCount + " alerte" + (alertCount > 1 ? "s" : "") + " de stock en cours"
+    }, "⚠", React.createElement("span", {
+      className: "inv-count"
+    }, alertCount));
     if (!invOpen) {
       return React.createElement("div", {
         className: "inventory collapsed"
@@ -7086,7 +7165,7 @@ function Hud({
         title: "Afficher l'inventaire"
       }, "INVENTAIRE", inv.length > 0 && React.createElement("span", {
         className: "inv-count"
-      }, inv.length)), prodBtn);
+      }, inv.length)), prodBtn, alertBtn);
     }
     let lastTier = null;
     const items = [];
@@ -7124,7 +7203,7 @@ function Hud({
       className: "inv-label-btn open",
       onClick: onToggleInv,
       title: "Replier l'inventaire"
-    }, "INVENTAIRE"), prodBtn, inv.length === 0 ? React.createElement("span", {
+    }, "INVENTAIRE"), prodBtn, alertBtn, inv.length === 0 ? React.createElement("span", {
       className: "inv-empty"
     }, "\u2014 vide \u2014") : items);
   })());
@@ -7789,8 +7868,12 @@ function InfoPanel({
       NUC_COOL = 256;
     const upMult = Math.pow(2, upg || 0);
     const lvl = game.nuclearPower && game.nuclearPower[currentIsland] != null ? game.nuclearPower[currentIsland] : 10;
-    const frac = Math.max(0, Math.min(10, lvl)) / 10;
+    const frac = Math.max(0, Math.min(10, lvl)) / 10; // cible (curseur)
     const pct = Math.round(frac * 100);
+    // Production RÉELLE en cours (sigmoïde de calibrage) : fraction effective de la puissance max.
+    const maxPw = NUC_POWER * upMult;
+    const running = st === 'starting' || st === 'running';
+    const realFrac = running && maxPw > 0 ? Math.max(0, Math.min(1, (bld.nucCur || 0) / maxPw)) : 0;
     const fmtN = n => {
       const r = Math.round(n * 100) / 100;
       return Number.isInteger(r) ? String(r) : String(r);
@@ -7844,19 +7927,19 @@ function InfoPanel({
       className: "lbl"
     }, "Entrées"), React.createElement("span", {
       className: "val"
-    }, fmtN(upMult * frac) + " comb.U235 + " + fmtN(NUC_COOL * upMult * frac) + " eau froide /s")), React.createElement("div", {
+    }, fmtN(upMult * realFrac) + " comb.U235 + " + fmtN(NUC_COOL * upMult * realFrac) + " eau froide /s")), React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
     }, "Sortie"), React.createElement("span", {
       className: "val io"
-    }, "⚡ " + fmtRate(NUC_POWER * upMult * frac) + " kW")), React.createElement("div", {
+    }, "⚡ " + fmtRate(NUC_POWER * upMult * realFrac) + " kW")), React.createElement("div", {
       className: "ip-nuc-irr"
     }, React.createElement("div", {
       className: "ip-nuc-irr-hd"
     }, "Matériau irradié (optionnel)"), React.createElement("div", {
       className: "ip-nuc-irr-io"
-    }, "− " + fmtN(upMult * frac) + " ", RES_SHORT[matKey] || matKey, " → + " + fmtN(upMult * frac) + " ", RES_SHORT[matKey + '_irradie'] || matKey + '_irradie', " /s"), React.createElement("div", {
+    }, "− " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey] || matKey, " → + " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey + '_irradie'] || matKey + '_irradie', " /s"), React.createElement("div", {
       className: "ip-nuc-irr-note"
     }, "Produit uniquement si le matériau est livré au port — sinon la centrale fournit l'électricité seule."), React.createElement("div", {
       className: "ip-nuc-mats"
@@ -9986,6 +10069,7 @@ function App() {
   const [slotOpen, setSlotOpen] = useState(false);
   const [energyOpen, setEnergyOpen] = useState(false);
   const [prodOpen, setProdOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
   const [needMode, setNeedMode] = useState(false);
   const [resPop, setResPop] = useState(null);
   const [network, setNetwork] = useState(null);
@@ -11126,6 +11210,7 @@ function App() {
     const t = tiles[r] && tiles[r][c];
     if (!t) return false;
     const b = BUILDINGS[id];
+    if (!b) return false;
     if (b.kind === 'junction') return tryPlaceJunction(r, c, id, verbose);
     if (t.building || t.occupied) return false;
     const {
@@ -12530,7 +12615,7 @@ function App() {
     if (g.pointers) delete g.pointers[e.pointerId];
     if (g.pinch && (!g.pointers || Object.keys(g.pointers).length < 2)) {
       g.pinch = null;
-      flushSave();
+      scheduleSave();
       try {
         canvasRef.current.releasePointerCapture(e.pointerId);
       } catch (_) {}
@@ -12565,7 +12650,10 @@ function App() {
     // « N… » du réseau et l'aperçu de pose restent collés sur la dernière tuile).
     if (e.pointerType === 'touch' && g.hover) g.hover = null;
     markDirty();
-    flushSave();
+    // Save DÉBOUNCÉ (et non flushSave synchrone) : un flushSave sérialisait les 5 îles +
+    // JSON.stringify + localStorage à CHAQUE pose/tap → gel de plusieurs secondes sur une grosse
+    // partie (visible en pose répétée via Copier). tryPlace/tryDemolish planifient déjà le save.
+    scheduleSave();
     try {
       canvasRef.current.releasePointerCapture(e.pointerId);
     } catch (_) {}
@@ -12993,10 +13081,20 @@ function App() {
     },
     onOpenHelp: () => setHelpOpen(true),
     onOpenProduction: () => setProdOpen(true),
+    alertCount: activeStockAlerts(game).length,
+    onOpenAlerts: () => setAlertsOpen(true),
     updateInfo: updateInfo
   }), prodOpen && React.createElement(ProductionPanel, {
     game: game,
     onClose: () => setProdOpen(false)
+  }), alertsOpen && React.createElement(AlertsPanel, {
+    game: game,
+    onGo: isl => {
+      switchIsland(isl);
+      setAlertsOpen(false);
+      setPortOpen(true);
+    },
+    onClose: () => setAlertsOpen(false)
   }), tutorialStep >= 0 && React.createElement(TutorialBanner, {
     step: tutorialStep,
     total: TUTORIAL_STEPS.length,
