@@ -1,7 +1,7 @@
 {
-  "build": 139,
-  "version": "Alpha 11.14",
+  "build": 140,
+  "version": "Alpha 11.15",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.14 — usine moteur nucléaire : durée de production ×10 (sens inversé) (#138)"
+  "notes": "Alpha 11.15 — coût réseau ×4/niveau + element_moteur_nuc en T4 (#139)"
 }
