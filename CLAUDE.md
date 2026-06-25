@@ -17,7 +17,16 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 134`, `GAME_VERSION = 'Alpha 11.09'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 135`, `GAME_VERSION = 'Alpha 11.10'`.** Changement
+  11.10 : **sprites de jonction RÉELLEMENT mis à jour (les 24 ré-inlinés).** En 11.08 j'avais comparé
+  les sprites jonction à une **copie périmée** du pack restée dans le working tree → conclusion erronée
+  « déjà à jour ». Le `Archipel_sprites_COMPLET.zip` sur `main` (617292 o) contenait en fait une
+  **nouvelle version** des 24 PNG `jonction_<H>_<V>_v1..v4`. Comparaison **exhaustive** des 350 sprites
+  statiques inlinés vs le zip du repo : **24 STALE (toutes les jonctions)**, le reste conforme. Les 24
+  ont été **ré-inlinés byte-à-byte** depuis le pack courant (MATCH 348/350 ; les 2 restants
+  `ui_reparation`/`ui_sauvegarde` viennent d'une autre source, hors pack, intacts). Convention
+  d'orientation re-vérifiée sur le nouvel art (premier token = porteur horizontal) → logique de draw
+  inchangée et correcte. Validé : `node --check` (6 blocs) + rendu Chromium (0 erreur). Changement
   11.09 : **export/transit du DIESEL possible.** Le diesel était **exclu du transit inter-îles** :
   `TRADE_RESOURCES` ne retient que les ressources portées par la **route** OU listées dans
   `TRADE_LIQUIDS` (`['petrole','acide']`). Or `CARRIER_BY_RES.diesel === 'pipe'` (depuis 10.34) et le
