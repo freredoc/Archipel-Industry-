@@ -17,7 +17,26 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 117`, `GAME_VERSION = 'Alpha 10.92'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 118`, `GAME_VERSION = 'Alpha 10.93'`.** Changement
+  10.93 : **refonte tech tree nucléaire + centrale réglable/améliorable (LOGIQUE).** (1) **Tech tree :**
+  les mines v3 ne sont PLUS débloquées par le nœud 24 (Centrale, « trop vite ») mais par le **nœud 25
+  (Usine Moteur Nucléaire)** — donc après le moteur. Nouveau bâtiment **`mine_uranium_v3`** (coût 100
+  béton armé + 100 acier + 100 câble + 1 `element_moteur_nuc` ; `randomP` 8-64 ; sortie uranium 32/s)
+  ajouté aux unlocks du nœud 25, à `TOOLBAR_GROUPS` Extraction. **Coût de TOUTES les mines v3** :
+  `processeur:10` → **`element_moteur_nuc:1`** (il faut donc avoir un moteur). **Antenne (nœud 26)** :
+  `produce element_moteur_nuc` 10 → **1000**. (2) **Centrale nucléaire (réécriture du bloc tick) :**
+  **puissance ×2** (`NUC_POWER` 8192→16384) ; **curseur de puissance 0→100 % par paliers de 10 %**
+  (`game.nuclearPower[isl]`, défaut 100 %) qui met à l'échelle **intrants ET sorties** (U235, matériau,
+  eau froide, matériau irradié, kW) ; **recalibrage sigmoïde de 5 min à CHAQUE changement** de puissance
+  (ou d'amélioration) via une rampe `nucFrom→nucTo` ; **mise en SÉCURITÉ** si l'eau froide manque (état
+  `safety`, 5 min sans rien consommer/produire, **redémarrage auto** + **notification** via `game.nucNotify`
+  → toast rouge) ; **plus de ciment irradié** (`ciment` retiré de `NUC_MATS` partout) ; **centrale
+  AMÉLIORABLE** comme les autres (`isUpgradable` n'exclut plus `nuclear` ; ×2^niveau sur puissance +
+  intrants + sorties). Fiche centrale réécrite (curseur −/%/+, états Calibrage/Sécurité, IO à l'échelle).
+  Persistance : `game.nuclearPower` (newGame/serialize/loadSave) + `nucCur` par centrale ; `ciment` retiré
+  des whitelists `nuclearConfig`. Validé : `node --check` + simulation machine à états (calibrage→16384 kW,
+  sécurité+notif+redémarrage, recalibrage 50 %→8192, upgrade Nv.1→32768, 0 %→arrêt) + chargement Chromium
+  sans erreur. Changement
   10.92 : **tôle larmée inox sur TOUTE l'UI (barre du haut + tous les panneaux), comme le menu
   bâtiment.** Jusqu'en 10.91 seuls `.build-panel` (+ `.inventory` depuis 10.90) avaient la tôle larmée ;
   la barre du haut `.hud` et tous les modaux (`.research-panel`/`.slot-panel`/`.tip-popup`/`.mode-modal`/
