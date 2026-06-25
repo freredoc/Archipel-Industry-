@@ -3771,13 +3771,13 @@ const BUILDINGS = {
       cable_irradie: 200
     },
     inputs: {
-      combustible_u235: 10,
-      piece_meca: 500,
-      processeur: 100,
-      polymere: 500
+      combustible_u235: 0.1,
+      piece_meca: 5,
+      processeur: 1,
+      polymere: 5
     },
     outputs: {
-      element_moteur_nuc: 10
+      element_moteur_nuc: 0.1
     }
   },
   antenne: {
@@ -4175,8 +4175,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 138;
-const GAME_VERSION = 'Alpha 11.13';
+const GAME_BUILD = 139;
+const GAME_VERSION = 'Alpha 11.14';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
