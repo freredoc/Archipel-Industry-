@@ -17,7 +17,20 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 123`, `GAME_VERSION = 'Alpha 10.98'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 124`, `GAME_VERSION = 'Alpha 10.99'`.** Changement
+  10.99 : **fix amélioration réseau avec jonctions + thème « plaque métal bleue » (défaut).** (1)
+  **Bug : impossible d'améliorer un réseau portant des jonctions** (route+câble+tuyau) — `coupledNetworkIds`
+  couplait, via `junctionLinks`, les réseaux des DEUX porteurs DIFFÉRENTS d'une jonction (route↔câble) ;
+  `networkLevelChange` exigeant un même niveau → bloqué « Réseaux couplés à des niveaux différents ». Or
+  les réseaux d'un MÊME porteur traversant une jonction sont déjà fusionnés en un seul id par
+  `rebuildNetworks` (union-find 10.59). `coupledNetworkIds` renvoie désormais `{networkId}` seul → chaque
+  porteur s'améliore INDÉPENDAMMENT. (2) **Nouveau UI bleu** (pack `ui_tex_bleu_brillant`) : le thème
+  par défaut (bleu) reçoit un **fond métal bleu brossé** sur tous les panneaux (`.hud`/`.research-panel`/
+  `.slot-panel`/`.toolbar`/`.tip-popup`/`.mode-modal`/`.info-panel`/`.build-panel`), comme la tôle larmée
+  de l'inox : `--tex-bleu` inliné + cadres rivets/sobre SANS `fill`. La texture brute (oblique très
+  contrastée) étant illisible, elle est posée **sous un voile sombre** (`linear-gradient(rgba(11,12,32,.74))`)
+  + ombre de texte → reflet métallique subtil et lisible. Scopé `body:not(.theme-inox)` (inox inchangé).
+  Validé : `node --check` + CSS équilibré + rendu Chromium (réseau améliorable, thème bleu lisible). Changement
   10.98 : **fix freeze pose + calibrage réel + bouton alerte + fonderie or → électronique.** (1)
   **Freeze ~3 s à la pose (surtout via Copier) corrigé** : `onPointerUp` (et fin de pinch) appelait
   `flushSave()` **synchrone** → `serialize()` des 5 îles + `JSON.stringify` + `localStorage` à CHAQUE
