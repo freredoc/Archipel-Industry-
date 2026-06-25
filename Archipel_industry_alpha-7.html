@@ -234,6 +234,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .pp-port-row{display:flex;justify-content:space-between;align-items:baseline;}
 .pp-port-lvl{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.86rem;color:var(--ink);}
 .pp-port-next{font-family:'DM Mono',monospace;font-size:.7rem;color:#7fd98a;}
+.pp-port-mult{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-dim);font-weight:400;margin-left:4px;}
 .pp-port-cost{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
 .pp-port-locked{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--orange);margin:4px 0;line-height:1.3;}
 .pp-empty,.pp-note{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--ink-faint);padding:3px 0;}
@@ -3889,8 +3890,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 113;
-const GAME_VERSION = 'Alpha 10.88';
+const GAME_BUILD = 114;
+const GAME_VERSION = 'Alpha 10.89';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -8165,15 +8166,22 @@ function PortPanel({
     const cost = atMax ? {} : portUpgradeCost(currentIsland, lvl);
     const dev = game.ui && game.ui.dev;
     const canPay = dev || Object.keys(cost).every(k => (islandPort[k] || 0) >= cost[k]);
+    // Débit max /s par liaison (transit continu, cf. transitPerSec) — c'est CE que l'amélioration
+    // augmente. On l'affiche explicitement (la « taille des lots » est l'ancien système par paquets).
+    const ratePerSec = Math.floor(shipBatchBase() * portSpeedMult(lvl) / TRANSIT_DIV);
+    const ratePerSecNext = Math.floor(shipBatchBase() * portSpeedMult(lvl + 1) / TRANSIT_DIV);
     return React.createElement("div", {
       className: "pp-port-up"
     }, React.createElement("div", {
       className: "pp-port-row"
     }, React.createElement("span", {
-      className: "pp-port-lvl"
-    }, "Taille des lots ×", portSpeedMult(lvl), " (", fmtInt(shipBatchBase() * portSpeedMult(lvl)), " u)"), React.createElement("span", {
+      className: "pp-port-lvl",
+      title: "Débit max de transit par liaison et par seconde (partagé entre les ressources expédiées)"
+    }, "Débit max ", fmtInt(ratePerSec), " u/s ", React.createElement("span", {
+      className: "pp-port-mult"
+    }, "· lots ×" + portSpeedMult(lvl))), React.createElement("span", {
       className: "pp-port-next"
-    }, atMax ? 'MAX' : '→ ×' + portSpeedMult(lvl + 1))), !atMax && React.createElement("div", {
+    }, atMax ? 'MAX' : '→ ' + fmtInt(ratePerSecNext) + ' u/s')), !atMax && React.createElement("div", {
       className: "pp-port-cost"
     }, Object.keys(cost).map(k => React.createElement("span", {
       className: 'rp-ci' + ((islandPort[k] || 0) >= cost[k] ? ' ok' : ' miss'),

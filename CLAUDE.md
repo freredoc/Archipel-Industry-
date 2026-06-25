@@ -17,7 +17,15 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 113`, `GAME_VERSION = 'Alpha 10.88'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 114`, `GAME_VERSION = 'Alpha 10.89'`.** Changement
+  10.89 : **débit max /s du transit affiché dans le panneau Port (section « Amélioration du
+  transit »).** La ligne montrait « Taille des lots ×N (X u) » → « ×N+1 » (formulation héritée du
+  système par paquets, alors que le transit est CONTINU depuis 10.48) : on ne voyait pas ce que
+  l'amélioration du port augmente réellement. Désormais elle affiche **« Débit max <X> u/s · lots ×N »**
+  (à gauche) et **« → <Y> u/s »** (prochain niveau, à droite), où le débit = `floor(shipBatchBase() ×
+  2^niveau / TRANSIT_DIV)` = le plafond `transitPerSec` par liaison et par seconde (partagé entre les
+  ressources expédiées). `TRANSIT_DIV` (=60) déjà accessible ; `title` explicatif + classe `.pp-port-mult`
+  (lots ×N atténué). Aucune logique de jeu touchée (affichage seul). Changement
   10.88 : **thème « Fond inox » rendu PLEINEMENT cohérent (PROMPT_UI_INOX).** Le 10.86 mélangeait
   les styles (cartes restées bleu foncé sur fond tôle larmée brillante). Désormais un seul thème
   métal gris appliqué PARTOUT, via **8 nouveaux sprites `theme_inox`** inlinés en variables CSS
