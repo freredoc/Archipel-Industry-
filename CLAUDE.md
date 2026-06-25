@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 129`, `GAME_VERSION = 'Alpha 11.04'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 130`, `GAME_VERSION = 'Alpha 11.05'`.** Changement
+  11.05 : **accumulateur ×10 + estimation charge/décharge + boutons haut/bas en sprite (thème bleu).**
+  (1) **Capacité accumulateur** `2048 → 20480` (×10 ; ×2^upgrade conservé). (2) **Estimation temps**
+  dans la fiche (tap) : nouvelle ligne « Charge/Déch. » → « ⬆ plein dans `mm min ss s` » (charge) ou
+  « ⬇ vide dans … » (décharge) ou « stable ». La boucle énergie stocke `bld.accDelta` (kWh/tick signé,
+  + charge / − décharge) par accumulateur ; la fiche calcule `(cap−stock)/delta` ou `stock/−delta`.
+  Lecture live (recalculé chaque tick). (3) **Boutons du haut (Options/?/PORT/RECHERCHE/INVENTAIRE/
+  Production) et du bas (onglets d'action)** reçoivent le **sprite bouton 9-slice `--btn-*`** en bordure
+  RÉDUITE (6px) sous `body:not(.theme-inox)` → « plus petit », comme les outils du menu bâtiment (avant
+  ils étaient plats en thème bleu ; l'inox les avait déjà). + clés i18n (en/es/de). Validé : `node
+  --check` (6 blocs) + CSS équilibré + rendu Chromium (boutons biseautés, 0 erreur, DE traduit). Changement
   11.04 : **texture « plaque métal bleue » affinée (v3).** Nouveau `ui_tex_bleu_brillant.png` (150×150,
   1166 o, navy quasi uni + une bande diagonale très douce) ré-uploadé dans le pack → `--tex-bleu`
   ré-inliné. Plus subtil/lisible encore que la v2 (11.02). Pas de voile (déjà retiré). CSS only.
