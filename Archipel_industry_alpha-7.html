@@ -1860,23 +1860,25 @@ const RES_TIER = {
   combustible_u235: 't3',
   eau_froide: 't3',
   element_moteur_nuc: 't3',
-  acier_irradie: 't3',
-  beton_arme_irradie: 't3',
-  cable_irradie: 't3',
-  ciment_irradie: 't3'
+  acier_irradie: 't4',
+  beton_arme_irradie: 't4',
+  cable_irradie: 't4',
+  ciment_irradie: 't4'
 };
 const RES_TIER_RANK = {
   t0: 0,
   t1: 1,
   t2: 2,
-  t3: 3
+  t3: 3,
+  t4: 4
 };
 const resTierRank = k => RES_TIER_RANK[RES_TIER[k]] != null ? RES_TIER_RANK[RES_TIER[k]] : 5;
 const RES_TIER_LABEL = {
   t0: 'T0',
   t1: 'T1',
   t2: 'T2',
-  t3: 'T3'
+  t3: 'T3',
+  t4: 'T4'
 };
 const RES_HUD_EXTRA = {
   2: [['minerai_cuivre', 'Min. cuivre'], ['lingot_cuivre', 'Lingot cuivre'], ['acier', 'Acier'], ['cable', 'Câble']]
@@ -3660,8 +3662,17 @@ const TOOLBAR_GROUPS = [{
   label: 'Énergie',
   ids: ['eolienne', 'centrale_charbon', 'centrale_diesel', 'eolienne_offshore', 'accumulateur']
 }, {
-  label: 'Traitement',
-  ids: ['four_fer', 'cimenterie', 'four_cuivre', 'four_fer_v2', 'four_cuivre_v2', 'cablerie', 'acierie', 'raffinerie', 'betonniere', 'atelier_meca', 'usine_polymere', 'circuit', 'broyeur', 'distillerie', 'fonderie_or', 'raffineur_silicium', 'fab_processeur', 'four_arc_acier', 'four_arc_cable', 'four_arc_piece']
+  label: 'Fer-acier',
+  ids: ['four_fer', 'four_fer_v2', 'acierie', 'four_arc_acier', 'cimenterie', 'betonniere', 'atelier_meca', 'four_arc_piece']
+}, {
+  label: 'Cuivre',
+  ids: ['four_cuivre', 'four_cuivre_v2', 'cablerie', 'four_arc_cable', 'circuit', 'broyeur', 'raffineur_silicium', 'fab_processeur']
+}, {
+  label: 'Plastique et chimie',
+  ids: ['usine_polymere', 'raffinerie', 'distillerie']
+}, {
+  label: 'Or',
+  ids: ['fonderie_or']
 }, {
   label: 'Nucléaire',
   ids: ['broyeur_uranium', 'centrale_enrichissement', 'refroidisseur', 'centrale_nucleaire', 'usine_moteur_nuc', 'antenne']
@@ -3952,8 +3963,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 120;
-const GAME_VERSION = 'Alpha 10.95';
+const GAME_BUILD = 121;
+const GAME_VERSION = 'Alpha 10.96';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
