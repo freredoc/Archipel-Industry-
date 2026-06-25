@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 139`, `GAME_VERSION = 'Alpha 11.14'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 140`, `GAME_VERSION = 'Alpha 11.15'`.** Changement
+  11.15 : **coût d'amélioration réseau ×4/niveau + élément moteur nuc. en T4.** (1) **Réseaux
+  (route/câble/tuyau) plus chers** : la montée des paliers élevés (niveau 3+, `networkUnitCost`)
+  passe de `×2` à **`×4` par niveau** (`base * Math.pow(4, level-3)`) → ex. route cheap L3→4 = 800,
+  L4→5 = 3200, L5→6 = 12800 (au lieu de 800/1600/3200). Niveaux 1-2 (tables fixes) inchangés. (2)
+  **`element_moteur_nuc`** passe `RES_TIER` t3 → **t4** (affiché sous le séparateur T4 de l'inventaire,
+  avec les matériaux irradiés). Validé : `node --check` (6 blocs) + Chromium (tier t4, coûts ×4, 0 erreur).
+  NB : la **pose/amélioration de port** est déjà bloquée sans liaison active (`hasLink`/`links.length`) ;
+  le port de l'île 5 transite avec l'île 4 (chaîne 1-2-3-4-5, pas d'île 6) → son amélioration est
+  légitime. Le **bouton alerte** (HUD, à droite de Production) n'apparaît que s'il y a ≥1 alerte active
+  (seuil « ⚠️ Alerte si stock < » réglé dans le Port + stock sous le seuil). Changement
   11.14 : **usine moteur nucléaire — durée de production ×10 (correction du 11.13, sens inversé).**
   L'utilisateur voulait l'inverse du 11.13 : production **10× plus LENTE**. `usine_moteur_nuc` :
   **intrants ET sortants ÷10 par rapport à l'original** (combustible_u235 1→0,1, piece_meca 50→5,
