@@ -17,7 +17,14 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 126`, `GAME_VERSION = 'Alpha 11.01'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 127`, `GAME_VERSION = 'Alpha 11.02'`.** Changement
+  11.02 : **nouvelle texture « plaque métal bleue » (douce) + retrait du voile.** Le pack a livré un
+  nouveau `ui_tex_bleu_brillant.png` (**150×150**, « bandes brillantes diagonales espacées et douces »,
+  navy foncé) remplaçant l'ancien 64×64 trop contrasté. `--tex-bleu` ré-inliné avec ce PNG ; le **voile
+  sombre** (`linear-gradient(rgba(11,12,32,.74))`) ajouté en 10.99 pour rattraper l'ancienne texture est
+  **retiré** des 2 règles de panneaux du thème bleu (la nouvelle texture est lisible telle quelle, sous
+  l'ombre de texte conservée). Scopé `body:not(.theme-inox)`. CSS only. Validé : `node --check` + CSS
+  équilibré + rendu Chromium (thème bleu lisible, sheen doux, 0 erreur). Changement
   11.01 : **i18n — Phase 2 / CHECKPOINT 2 (couche UI câblée).** Les libellés d'interface en dur sont
   désormais enveloppés dans `I18N.t('texte fr')` (modèle gettext, clé = texte français). Câblage fait
   par **transform automatisé conservateur** (script Node, 2 passes : littéraux UTF-8 puis formes
