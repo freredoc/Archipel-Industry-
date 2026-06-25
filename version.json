@@ -1,7 +1,7 @@
 {
-  "build": 132,
-  "version": "Alpha 11.07",
+  "build": 133,
+  "version": "Alpha 11.08",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.07 — inventaire ouvert : tout affiché + 1 tier par ligne (#131)"
+  "notes": "Alpha 11.08 — pose de jonction libre + vérif sprites jonction (#132)"
 }
