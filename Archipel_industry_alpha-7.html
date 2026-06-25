@@ -2061,7 +2061,7 @@ const RES_TIER = {
   yellow_cake: 't3',
   combustible_u235: 't3',
   eau_froide: 't3',
-  element_moteur_nuc: 't3',
+  element_moteur_nuc: 't4',
   acier_irradie: 't4',
   beton_arme_irradie: 't4',
   cable_irradie: 't4',
@@ -4077,7 +4077,7 @@ const NETWORK_HI_PREMIUM_BASE = 100;
 const NETWORK_UNLIMITED_COST = 10000;
 // Coût unitaire (par tuile) pour passer du niveau `level` au niveau `level+1`.
 // Niveaux 1-2 : tables ci-dessus (matériau de base). Niveaux 3+ : choix du matériau
-// (cheap/premium), coût ×2 par niveau — toujours croissant, sans fin.
+// (cheap/premium), coût ×4 par niveau — toujours croissant, sans fin.
 function networkUnitCost(type, level, payMat) {
   const tbl = NETWORK_UPGRADE_COST[type] || {};
   if (level < 3) return tbl[level] || {};
@@ -4087,7 +4087,7 @@ function networkUnitCost(type, level, payMat) {
   const mat = usePrem ? m.premium : m.cheap;
   const base = usePrem ? NETWORK_HI_PREMIUM_BASE : NETWORK_HI_CHEAP_BASE;
   return {
-    [mat]: base * Math.pow(2, level - 3)
+    [mat]: base * Math.pow(4, level - 3)
   };
 }
 const SAVE_KEY = 'archipel_save_v1';
@@ -4175,8 +4175,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 139;
-const GAME_VERSION = 'Alpha 11.14';
+const GAME_BUILD = 140;
+const GAME_VERSION = 'Alpha 11.15';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
