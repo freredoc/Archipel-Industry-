@@ -17,7 +17,20 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 127`, `GAME_VERSION = 'Alpha 11.02'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 128`, `GAME_VERSION = 'Alpha 11.03'`.** Changement
+  11.03 : **panneau Port (onglets Transit île/archipel) + mode import + centrale théorique + fix
+  save→options.** (1) **Onglets dans le Port** : « Transit île » (contenu actuel, défaut) et « Transit
+  archipel » (nouvel onglet listant TOUS les flux inter-îles, groupés src→dest, avec sprite ressource
+  + débit /s) ; helper module `allTransitFlows(game)` (lit `game.transitFlow`). `PortPanel` : state
+  `tab`, barre `.pp-tabs`/`.pp-tab`, rp-list rendu en ternaire ; vue archipel `.pp-arch-*`. (2) **Mode
+  Priorité/Proportionnel = IMPORT** : `transferLink` utilise désormais le mode ET l'ordre de priorité
+  de la **destination** (`tradeModeFor/tradePriorityFor(game, dest)` au lieu de `src`) → sur le panneau
+  d'une île, ces réglages gouvernent ses imports. (3) **Centrale : prod/conso THÉORIQUES** : 2 lignes
+  ajoutées à la fiche (`.ip-theo`, atténué/italique) montrant la cible (`frac`) en plus du réel
+  (`realFrac`). (4) **Fix save→Options** : fermer le panneau Sauvegarde (ou « Sauvegarder ») rouvre les
+  Options (d'où il a été ouvert) — `onClose`/`onSaveNow` font `setOptionsOpen(true)`. + clés i18n des
+  nouveaux libellés (en/es/de). Validé : `node --check` (6 blocs) + smoke Chromium fr/de (Port 2 onglets,
+  0 erreur, clés DE traduites). Changement
   11.02 : **nouvelle texture « plaque métal bleue » (douce) + retrait du voile.** Le pack a livré un
   nouveau `ui_tex_bleu_brillant.png` (**150×150**, « bandes brillantes diagonales espacées et douces »,
   navy foncé) remplaçant l'ancien 64×64 trop contrasté. `--tex-bleu` ré-inliné avec ce PNG ; le **voile

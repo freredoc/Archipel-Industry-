@@ -274,6 +274,16 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .pp-cargo-empty{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-faint);}
 .pp-cargo-spr{width:12px;height:12px;vertical-align:-2px;image-rendering:pixelated;image-rendering:crisp-edges;}
 .pp-cargo-ico{width:16px;height:16px;vertical-align:-4px;image-rendering:pixelated;image-rendering:crisp-edges;}
+/* Onglets du panneau Port (Transit île / Transit archipel). */
+.pp-tabs{display:flex;gap:5px;padding:8px 12px 2px;}
+.pp-tab{flex:1;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.84rem;color:var(--ink-dim);background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px 8px;cursor:pointer;}
+.pp-tab.on{background:#1b3a4e;color:#7fd0ff;border-color:#5bc0ff;}
+body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--yellow);}
+/* Vue « Transit archipel » : flux groupés par direction src→dest. */
+.pp-arch-link{border:1px solid var(--line);border-radius:7px;padding:7px 9px;margin-bottom:6px;background:var(--panel-2);}
+.pp-arch-head{font-family:'Bebas Neue',sans-serif;font-size:.92rem;letter-spacing:.04em;color:var(--ink);margin-bottom:4px;}
+.pp-arch-row{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;color:var(--ink-dim);display:flex;align-items:center;gap:5px;padding:1px 0;}
+.pp-arch-rate{margin-left:auto;font-family:'DM Mono',monospace;font-size:.74rem;color:#7fd0ff;}
 .pp-cfg-head,.pp-cfg-row{display:grid;grid-template-columns:1fr 62px 62px 34px 44px;gap:6px;align-items:center;}
 .pp-cfg-head{font-family:'Barlow Condensed',sans-serif;font-size:.6rem;text-transform:uppercase;letter-spacing:.04em;
   color:var(--ink-faint);padding:2px 0;}
@@ -668,6 +678,8 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-nuc-irr-hd{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.04em;color:#c4a7f0;margin-bottom:5px;}
 .ip-nuc-irr-io{font-family:'DM Mono',monospace;font-size:.74rem;color:var(--ink);margin-bottom:4px;}
 .ip-nuc-irr-note{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;color:var(--ink-dim);line-height:1.2;margin-bottom:6px;}
+/* Lignes « théorique » (cible) de la centrale : atténuées/italique pour les distinguer du réel. */
+.ip-row.ip-theo .lbl,.ip-row.ip-theo .val{opacity:.72;font-style:italic;}
 /* Curseur de puissance de la centrale : jauge graduée en % + boutons −/+. */
 .ip-nuc-pow{margin:6px 0 2px;padding-top:6px;border-top:1px solid var(--line);}
 .ip-nuc-pow-row{display:flex;align-items:center;gap:6px;margin-top:5px;}
@@ -1880,7 +1892,7 @@ window.__ANIM_DATA__["tile_i5_coast_tri_sw"]="data:image/png;base64,iVBORw0KGgoA
 })(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));
 
 /* i18n — libellés supplémentaires (catégories du menu Bâtiment + Options langue) ajoutés aux 4 langues. */
-(function(){ if(!window.I18N||!I18N.locales) return; var ADD={"en":{"Infrastructure":"Infrastructure","Jonctions":"Junctions","Extraction":"Extraction","Énergie":"Energy","Fer-acier":"Iron & Steel","Cuivre":"Copper","Électronique":"Electronics","Plastique et chimie":"Plastics & Chemicals","Nucléaire":"Nuclear","Langue":"Language","Langue du jeu (système par défaut)":"Game language (system default)"},"es":{"Infrastructure":"Infraestructura","Jonctions":"Uniones","Extraction":"Extracción","Énergie":"Energía","Fer-acier":"Hierro y acero","Cuivre":"Cobre","Électronique":"Electrónica","Plastique et chimie":"Plásticos y química","Nucléaire":"Nuclear","Langue":"Idioma","Langue du jeu (système par défaut)":"Idioma del juego (sistema por defecto)"},"de":{"Infrastructure":"Infrastruktur","Jonctions":"Kreuzungen","Extraction":"Förderung","Énergie":"Energie","Fer-acier":"Eisen & Stahl","Cuivre":"Kupfer","Électronique":"Elektronik","Plastique et chimie":"Kunststoff & Chemie","Nucléaire":"Nuklear","Langue":"Sprache","Langue du jeu (système par défaut)":"Spielsprache (System-Standard)"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; var ADD={"en":{"Infrastructure":"Infrastructure","Jonctions":"Junctions","Extraction":"Extraction","Énergie":"Energy","Fer-acier":"Iron & Steel","Cuivre":"Copper","Électronique":"Electronics","Plastique et chimie":"Plastics & Chemicals","Nucléaire":"Nuclear","Langue":"Language","Langue du jeu (système par défaut)":"Game language (system default)","Transit île":"Island transit","Transit archipel":"Archipelago transit","Flux entre îles":"Flows between islands","Aucun flux de transit en cours.":"No transit flow in progress.","Conso. théorique":"Theoretical consumption","Prod. théorique":"Theoretical output"},"es":{"Infrastructure":"Infraestructura","Jonctions":"Uniones","Extraction":"Extracción","Énergie":"Energía","Fer-acier":"Hierro y acero","Cuivre":"Cobre","Électronique":"Electrónica","Plastique et chimie":"Plásticos y química","Nucléaire":"Nuclear","Langue":"Idioma","Langue du jeu (système par défaut)":"Idioma del juego (sistema por defecto)","Transit île":"Tránsito de la isla","Transit archipel":"Tránsito del archipiélago","Flux entre îles":"Flujos entre islas","Aucun flux de transit en cours.":"Ningún flujo de tránsito en curso.","Conso. théorique":"Consumo teórico","Prod. théorique":"Producción teórica"},"de":{"Infrastructure":"Infrastruktur","Jonctions":"Kreuzungen","Extraction":"Förderung","Énergie":"Energie","Fer-acier":"Eisen & Stahl","Cuivre":"Kupfer","Électronique":"Elektronik","Plastique et chimie":"Kunststoff & Chemie","Nucléaire":"Nuklear","Langue":"Sprache","Langue du jeu (système par défaut)":"Spielsprache (System-Standard)","Transit île":"Insel-Transit","Transit archipel":"Archipel-Transit","Flux entre îles":"Flüsse zwischen Inseln","Aucun flux de transit en cours.":"Kein Transitfluss aktiv.","Conso. théorique":"Theoret. Verbrauch","Prod. théorique":"Theoret. Leistung"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 </script>
 <script>
 const {
@@ -4153,8 +4165,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 127;
-const GAME_VERSION = 'Alpha 11.02';
+const GAME_BUILD = 128;
+const GAME_VERSION = 'Alpha 11.03';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -6861,7 +6873,9 @@ function transferLink(game, src, dest) {
   const flow = game.transitFlow[src + '_' + dest] = {};
   if (room <= 0) return false;
   let moved = false;
-  const order = tradePriorityFor(game, src);
+  // Le mode (Priorité/Proportionnel) et l'ordre de priorité sont ceux de l'île qui REÇOIT (import,
+  // dest) : sur le panneau Port d'une île, ces réglages gouvernent donc ses IMPORTS.
+  const order = tradePriorityFor(game, dest);
   const move = (res, qty) => {
     qty = Math.min(qty, room);
     if (qty <= 0) return;
@@ -6876,7 +6890,7 @@ function transferLink(game, src, dest) {
     room -= drawn;
     moved = true;
   };
-  if (tradeModeFor(game, src) === 'proportional') {
+  if (tradeModeFor(game, dest) === 'proportional') {
     const want = {};
     let total = 0;
     for (const res of order) {
@@ -7106,6 +7120,23 @@ function ProductionPanel({
   }, I18N.t("Île "), t.src, I18N.t(" → Île "), t.dest), resCell(t.k), React.createElement("span", {
     className: "pt-rate"
   }, fmtRate(t.rate), "/s")))))));
+}
+// Tous les flux de transit inter-îles en cours (game.transitFlow src_dest -> {res: rate}),
+// groupés par direction src→dest. Utilisé par l'onglet « Transit archipel » du panneau Port.
+function allTransitFlows(game) {
+  const tf = game.transitFlow || {};
+  const out = [];
+  for (const key in tf) {
+    const parts = key.split('_').map(Number);
+    const src = parts[0], dest = parts[1];
+    if (!src || !dest) continue;
+    const rec = tf[key] || {};
+    const res = Object.keys(rec).filter(r => rec[r] > 1e-6).sort((a, b) => resTierRank(a) - resTierRank(b))
+      .map(r => ({ res: r, rate: rec[r] }));
+    if (res.length) out.push({ src, dest, res });
+  }
+  out.sort((a, b) => a.src - b.src || a.dest - b.dest);
+  return out;
 }
 // Liste des alertes de stock ACTIVES (stock du port < seuil configuré) sur TOUTES les îles.
 function activeStockAlerts(game) {
@@ -8072,6 +8103,18 @@ function InfoPanel({
     }, I18N.t("Sortie")), React.createElement("span", {
       className: "val io"
     }, "⚡ " + fmtRate(NUC_POWER * upMult * realFrac) + " kW")), React.createElement("div", {
+      className: "ip-row ip-theo"
+    }, React.createElement("span", {
+      className: "lbl"
+    }, I18N.t("Conso. théorique")), React.createElement("span", {
+      className: "val"
+    }, fmtN(upMult * frac) + " comb.U235 + " + fmtN(NUC_COOL * upMult * frac) + " eau froide /s")), React.createElement("div", {
+      className: "ip-row ip-theo"
+    }, React.createElement("span", {
+      className: "lbl"
+    }, I18N.t("Prod. théorique")), React.createElement("span", {
+      className: "val io"
+    }, "⚡ " + fmtRate(NUC_POWER * upMult * frac) + " kW")), React.createElement("div", {
       className: "ip-nuc-irr"
     }, React.createElement("div", {
       className: "ip-nuc-irr-hd"
@@ -8529,6 +8572,8 @@ function PortPanel({
 }) {
   const tradeMode = tradeModeFor(game, currentIsland);
   const [openLink, setOpenLink] = React.useState(null);
+  // Onglet du panneau Port : 'island' (transit de l'île courante, défaut) | 'archipel' (tous les flux).
+  const [tab, setTab] = React.useState('island');
   const links = SHIP_LINKS.filter(key => {
     const [a, b] = key.split('-').map(Number);
     return (a === currentIsland || b === currentIsland) && linkActive(game, key);
@@ -8553,6 +8598,14 @@ function PortPanel({
     onClick: onClose,
     title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
+    className: "pp-tabs"
+  }, React.createElement("button", {
+    className: 'pp-tab' + (tab === 'island' ? ' on' : ''),
+    onClick: () => setTab('island')
+  }, I18N.t("Transit île")), React.createElement("button", {
+    className: 'pp-tab' + (tab === 'archipel' ? ' on' : ''),
+    onClick: () => setTab('archipel')
+  }, I18N.t("Transit archipel"))), tab === 'island' ? React.createElement("div", {
     className: "rp-list"
   }, React.createElement("div", {
     className: "pp-section-label"
@@ -8736,7 +8789,35 @@ function PortPanel({
     }, "\u25BC")));
   }), React.createElement("div", {
     className: "pp-note"
-  }, I18N.t("Cible = quantit\xE9 voulue ici (import). R\xE9serve = stock gard\xE9 localement (export du surplus uniquement). Priorit\xE9 = ordre de chargement au d\xE9part.")))));
+  }, I18N.t("Cible = quantit\xE9 voulue ici (import). R\xE9serve = stock gard\xE9 localement (export du surplus uniquement). Priorit\xE9 = ordre de chargement au d\xE9part."))) : React.createElement("div", {
+    className: "rp-list"
+  }, React.createElement("div", {
+    className: "pp-section-label"
+  }, I18N.t("Flux entre \xEEles")), (() => {
+    const flows = allTransitFlows(game);
+    if (!flows.length) return React.createElement("div", {
+      className: "pp-empty"
+    }, I18N.t("Aucun flux de transit en cours."));
+    return flows.map(f => React.createElement("div", {
+      className: "pp-arch-link",
+      key: f.src + '_' + f.dest
+    }, React.createElement("div", {
+      className: "pp-arch-head"
+    }, I18N.t("\xCEle ") + f.src + " → " + I18N.t("\xCEle ") + f.dest), f.res.map(rr => {
+      const ik = SPRITES_ENABLED ? itemSpriteKey(rr.res) : null;
+      const idata = ik && SPRITE_DATA[ik];
+      return React.createElement("div", {
+        className: "pp-arch-row",
+        key: rr.res
+      }, idata ? React.createElement("img", {
+        className: "pp-cargo-ico",
+        src: idata,
+        alt: ""
+      }) : cargoSprite(), " ", RES_SHORT[rr.res] || rr.res, " ", React.createElement("span", {
+        className: "pp-arch-rate"
+      }, fmtPort(rr.rate) + "/s"));
+    })));
+  })())));
 }
 function EnergyPanel({
   game,
@@ -13367,7 +13448,10 @@ function App() {
     }
   }), slotOpen && React.createElement(SlotPanel, {
     activeId: getActiveSlotId(),
-    onClose: () => setSlotOpen(false),
+    onClose: () => {
+      setSlotOpen(false);
+      setOptionsOpen(true);
+    },
     onLoad: id => slotLoad(id),
     onCreate: () => slotCreate(),
     onRename: (id, name) => slotRename(id, name),
@@ -13381,6 +13465,7 @@ function App() {
       writeSave();
       showToast(I18N.t('💾 Sauvegardé'), 'var(--green)');
       setSlotOpen(false);
+      setOptionsOpen(true);
     }
   }), optionsOpen && React.createElement(OptionsModal, {
     dev: dev,
