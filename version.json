@@ -1,7 +1,7 @@
 {
-  "build": 118,
-  "version": "Alpha 10.93",
+  "build": 119,
+  "version": "Alpha 10.94",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.93 — refonte tech tree nucléaire + centrale réglable/améliorable (#117)"
+  "notes": "Alpha 10.94 — recettes nucléaires + UI (boutons du haut, lisibilité) (#118)"
 }
