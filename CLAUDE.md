@@ -17,7 +17,20 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 118`, `GAME_VERSION = 'Alpha 10.93'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 119`, `GAME_VERSION = 'Alpha 10.94'`.** Changement
+  10.94 : **recettes nucléaires + UI (lisibilité, boutons du haut).** (1) **Centrale enrichissement** :
+  +`acier: 1` aux intrants (yellow_cake 8 + **acier 1** → U235 1). (2) **Centrale nucléaire — matériau
+  irradié OPTIONNEL** : la centrale ne dépend plus du matériau (acier/béton/câble) pour tourner
+  (`fuelOK` = route + U235 seulement) ; le matériau n'est consommé (et l'irradié produit) QUE s'il est
+  livré au port (`if port[matKey] >= irrAmt`) — sinon la centrale fournit l'électricité seule. La fiche
+  affiche désormais Entrées = U235 + eau froide, Sortie = kW, et une **sous-fenêtre encadrée séparée**
+  « Matériau irradié (optionnel) » (conso→prod + note + sélecteur acier/béton/câble), classes
+  `.ip-nuc-irr*`. (3) **Boutons du haut** (Options/?/PORT/RECHERCHE/INVENTAIRE/Production) = **sprite
+  bouton inox 9-slice** (`--inox-btn-*`, bordure 6px) comme le menu du bas — les pastilles de valeur
+  (kW/batterie/chips) restent plates. (4) **Lisibilité thème inox** : `--ink-dim`/`--ink-faint`
+  éclaircis (`#aab1bf`/`#878e9c`) → sous-textes (« X en stock », en-têtes, valeurs réseau, sous-libellés
+  MONTER…) lisibles sur la plaque larmée. CSS+recettes, logique nucléaire inchangée sauf l'optionalité
+  du matériau. Validé : `node --check` + rendu Chromium. Changement
   10.93 : **refonte tech tree nucléaire + centrale réglable/améliorable (LOGIQUE).** (1) **Tech tree :**
   les mines v3 ne sont PLUS débloquées par le nœud 24 (Centrale, « trop vite ») mais par le **nœud 25
   (Usine Moteur Nucléaire)** — donc après le moteur. Nouveau bâtiment **`mine_uranium_v3`** (coût 100

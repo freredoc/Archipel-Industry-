@@ -438,7 +438,7 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
    Énergie `.ep-stats`, cartes Aide `.help-card`, champs `NumField`, priorité Haute/Normale/Basse…)
    utilisent `var(--panel)`/`var(--panel-2)`/`var(--line)` → ils deviennent gris d'un coup. Les
    accents de SÉLECTION (jaune/bleu/violet/vert, codés en dur) restent pour distinguer l'état actif. */
-body.theme-inox{--panel:#262931;--panel-2:#2f323b;--line:#474c57;}
+body.theme-inox{--panel:#262931;--panel-2:#2f323b;--line:#474c57;--ink-dim:#aab1bf;--ink-faint:#878e9c;}
 /* TOUS les panneaux/barres (haut, modaux, tooltips, fiche bâtiment, barre d'actions) = MÊME fond
    que le menu bâtiment : tôle larmée inox légère (`--tex-inox-leger` repeat) + cadre inox SANS `fill`
    → la texture « plaque » reste visible partout. Les cartes/boutons internes restent gris par-dessus
@@ -468,8 +468,14 @@ body.theme-inox .island-tab:hover:not(.locked){background:none;border-color:tran
    légère, et toutes les pastilles internes (Options / ? / kW / batterie / PORT / RECH / INVENTAIRE
    / Production / chips de ressources) passent du bleu (var(--panel)/--panel-2) au gunmetal. */
 body.theme-inox .inventory{background:var(--tex-inox-leger) repeat;border-top-color:#3a3d47;border-bottom-color:#3a3d47;image-rendering:pixelated;}
-body.theme-inox .options-btn,body.theme-inox .research-btn,body.theme-inox .stock,body.theme-inox .inv-label-btn,body.theme-inox .inv-prod-btn,body.theme-inox .inv-item,body.theme-inox .inv-count{background:#2c2f38;border-color:#4a4f5a;color:#ebeef5;}
-body.theme-inox .options-btn:hover,body.theme-inox .research-btn:hover,body.theme-inox .inv-label-btn:hover,body.theme-inox .inv-prod-btn:hover,body.theme-inox .inv-item.clickable:hover{background:#363a44;}
+/* Pastilles de VALEUR (kW/batterie + chips d'inventaire) : fond gunmetal plat. */
+body.theme-inox .stock,body.theme-inox .inv-item,body.theme-inox .inv-count{background:#2c2f38;border-color:#4a4f5a;color:#ebeef5;}
+body.theme-inox .inv-item.clickable:hover{background:#363a44;}
+/* Boutons du HAUT (Options/?/PORT/RECHERCHE/INVENTAIRE/Production) = sprite bouton inox 9-slice,
+   comme le menu du bas. Bordure 6px pour s'adapter aux pastilles compactes. */
+body.theme-inox .options-btn,body.theme-inox .research-btn,body.theme-inox .inv-label-btn,body.theme-inox .inv-prod-btn{border:6px solid transparent;border-image:var(--inox-btn-normal) 8 fill / 6px stretch;border-radius:0;background:none;image-rendering:pixelated;color:#ebeef5;}
+body.theme-inox .options-btn:hover,body.theme-inox .research-btn:hover,body.theme-inox .inv-label-btn:hover,body.theme-inox .inv-prod-btn:hover{border-image:var(--inox-btn-hover) 8 fill / 6px stretch;background:none;}
+body.theme-inox .inv-label-btn.open{border-image:var(--inox-btn-active) 8 fill / 6px stretch;}
 .opt-theme-sel{display:flex;gap:4px;flex-shrink:0;}
 .opt-theme-btn{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.82rem;color:var(--ink-dim);background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:4px 12px;cursor:pointer;}
 .opt-theme-btn.on{background:#26264e;color:var(--yellow);border-color:var(--yellow);}
@@ -628,6 +634,11 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-nuc-mat{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:5px 6px;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;}
 .ip-nuc-mat.on{background:#7E57C2;color:#fff;border-color:#7E57C2;}
 .ip-nuc-mat:hover{border-color:#7E57C2;}
+/* Sous-fenêtre « matériau irradié (optionnel) » de la centrale, différenciée (encadré violet). */
+.ip-nuc-irr{margin:8px 0 2px;padding:8px 9px;border:1px solid var(--line);border-radius:6px;background:rgba(126,87,194,.10);}
+.ip-nuc-irr-hd{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.04em;color:#c4a7f0;margin-bottom:5px;}
+.ip-nuc-irr-io{font-family:'DM Mono',monospace;font-size:.74rem;color:var(--ink);margin-bottom:4px;}
+.ip-nuc-irr-note{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;color:var(--ink-dim);line-height:1.2;margin-bottom:6px;}
 .ip-fluxpri{margin-bottom:8px;}
 .ip-fluxpri-lbl{font-size:.72rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
 .ip-fluxpri-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;}
@@ -3362,7 +3373,8 @@ const BUILDINGS = {
       piece_meca: 60
     },
     inputs: {
-      yellow_cake: 8
+      yellow_cake: 8,
+      acier: 1
     },
     outputs: {
       combustible_u235: 1
@@ -3930,8 +3942,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 118;
-const GAME_VERSION = 'Alpha 10.93';
+const GAME_BUILD = 119;
+const GAME_VERSION = 'Alpha 10.94';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4943,7 +4955,7 @@ function tickIsland(game, isl) {
       }
     }
     const coldAvail = coldNid != null ? (nets[coldNid].pool['eau_froide'] || 0) : 0;
-    const fuelOK = roadNid != null && (port['combustible_u235'] || 0) > 1e-6 && (port[matKey] || 0) > 1e-6;
+    const fuelOK = roadNid != null && (port['combustible_u235'] || 0) > 1e-6;
     if (bld.nucState == null) {
       bld.nucState = 'off';
       bld.nucTimer = 0;
@@ -5010,12 +5022,14 @@ function tickIsland(game, isl) {
         const frac = maxPower > 0 ? (bld.nucCur || 0) / maxPower : 0;
         if (frac > 0) {
           port['combustible_u235'] = (port['combustible_u235'] || 0) - upMult * frac;
-          port[matKey] = (port[matKey] || 0) - upMult * frac;
           nets[coldNid].pool['eau_froide'] = (nets[coldNid].pool['eau_froide'] || 0) - NUC_COOL * upMult * frac;
-          if (roadNid != null) {
-            const irr = upMult * frac;
-            port[irrKey] = (port[irrKey] || 0) + irr;
-            if (prod) prod[irrKey] = (prod[irrKey] || 0) + irr;
+          // Irradiation OPTIONNELLE : si le matériau (acier/béton/câble) est dispo au port, on le
+          // consomme pour produire sa version irradiée. Sinon la centrale tourne quand même (élec seule).
+          const irrAmt = upMult * frac;
+          if (roadNid != null && (port[matKey] || 0) >= irrAmt) {
+            port[matKey] = (port[matKey] || 0) - irrAmt;
+            port[irrKey] = (port[irrKey] || 0) + irrAmt;
+            if (prod) prod[irrKey] = (prod[irrKey] || 0) + irrAmt;
           }
           resChanged = true;
         }
@@ -7778,17 +7792,21 @@ function InfoPanel({
       className: "lbl"
     }, "Entrées"), React.createElement("span", {
       className: "val"
-    }, fmtN(upMult * frac) + " comb.U235 + " + fmtN(NUC_COOL * upMult * frac) + " eau froide + " + fmtN(upMult * frac) + " ", RES_SHORT[matKey] || matKey, " /s")), React.createElement("div", {
+    }, fmtN(upMult * frac) + " comb.U235 + " + fmtN(NUC_COOL * upMult * frac) + " eau froide /s")), React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
     }, "Sortie"), React.createElement("span", {
       className: "val io"
-    }, "⚡ " + fmtRate(NUC_POWER * upMult * frac) + " kW + " + fmtN(upMult * frac) + " ", RES_SHORT[matKey + '_irradie'] || matKey + '_irradie', " /s")), React.createElement("div", {
-      className: "ip-nuc-sel"
-    }, React.createElement("span", {
-      className: "ip-nuc-sel-lbl"
-    }, "Matériau à irradier"), React.createElement("div", {
+    }, "⚡ " + fmtRate(NUC_POWER * upMult * frac) + " kW")), React.createElement("div", {
+      className: "ip-nuc-irr"
+    }, React.createElement("div", {
+      className: "ip-nuc-irr-hd"
+    }, "Matériau irradié (optionnel)"), React.createElement("div", {
+      className: "ip-nuc-irr-io"
+    }, "− " + fmtN(upMult * frac) + " ", RES_SHORT[matKey] || matKey, " → + " + fmtN(upMult * frac) + " ", RES_SHORT[matKey + '_irradie'] || matKey + '_irradie', " /s"), React.createElement("div", {
+      className: "ip-nuc-irr-note"
+    }, "Produit uniquement si le matériau est livré au port — sinon la centrale fournit l'électricité seule."), React.createElement("div", {
       className: "ip-nuc-mats"
     }, NUC_MATS.map(([k, label]) => React.createElement("button", {
       key: k,
