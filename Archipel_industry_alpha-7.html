@@ -438,7 +438,7 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
    Énergie `.ep-stats`, cartes Aide `.help-card`, champs `NumField`, priorité Haute/Normale/Basse…)
    utilisent `var(--panel)`/`var(--panel-2)`/`var(--line)` → ils deviennent gris d'un coup. Les
    accents de SÉLECTION (jaune/bleu/violet/vert, codés en dur) restent pour distinguer l'état actif. */
-body.theme-inox{--panel:#262931;--panel-2:#2f323b;--line:#474c57;--ink-dim:#aab1bf;--ink-faint:#878e9c;}
+body.theme-inox{--panel:#262931;--panel-2:#2f323b;--line:#474c57;--ink-dim:#cbd0d9;--ink-faint:#aeb3bd;}
 /* TOUS les panneaux/barres (haut, modaux, tooltips, fiche bâtiment, barre d'actions) = MÊME fond
    que le menu bâtiment : tôle larmée inox légère (`--tex-inox-leger` repeat) + cadre inox SANS `fill`
    → la texture « plaque » reste visible partout. Les cartes/boutons internes restent gris par-dessus
@@ -639,6 +639,16 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-nuc-irr-hd{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.04em;color:#c4a7f0;margin-bottom:5px;}
 .ip-nuc-irr-io{font-family:'DM Mono',monospace;font-size:.74rem;color:var(--ink);margin-bottom:4px;}
 .ip-nuc-irr-note{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;color:var(--ink-dim);line-height:1.2;margin-bottom:6px;}
+/* Curseur de puissance de la centrale : jauge graduée en % + boutons −/+. */
+.ip-nuc-pow{margin:6px 0 2px;padding-top:6px;border-top:1px solid var(--line);}
+.ip-nuc-pow-row{display:flex;align-items:center;gap:6px;margin-top:5px;}
+.ip-nuc-pm{flex:0 0 auto;width:34px;height:26px;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:5px;font-size:1.05rem;font-weight:700;cursor:pointer;line-height:1;}
+.ip-nuc-pm:disabled{opacity:.4;cursor:default;}
+.ip-nuc-pm:hover:not(:disabled){border-color:#7E57C2;}
+.ip-nuc-gauge{position:relative;flex:1 1 auto;height:24px;background:var(--panel-2);border:1px solid var(--line);border-radius:5px;overflow:hidden;}
+.ip-nuc-gauge-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#5e3aa0,#9575CD);transition:width .25s ease;}
+.ip-nuc-gauge-tick{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.16);}
+.ip-nuc-gauge-lbl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:.76rem;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.65);}
 .ip-fluxpri{margin-bottom:8px;}
 .ip-fluxpri-lbl{font-size:.72rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
 .ip-fluxpri-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;}
@@ -3942,8 +3952,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 119;
-const GAME_VERSION = 'Alpha 10.94';
+const GAME_BUILD = 120;
+const GAME_VERSION = 'Alpha 10.95';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4917,8 +4927,8 @@ function tickIsland(game, isl) {
       NUC_STOP = 30,
       NUC_SAFETY = 300,
       // 5 min de mise en sécurité (manque de refroidissement)
-      NUC_POWER = 16384,
-      // ×2 (10.93)
+      NUC_POWER = 4096,
+      // 4 MW à V1 niveau 1 / 100 % (×2^upgrade ensuite)
       NUC_COOL = 256;
     const matKey = (game.nuclearConfig && game.nuclearConfig[isl]) || 'acier';
     const irrKey = matKey + '_irradie';
@@ -7748,7 +7758,7 @@ function InfoPanel({
     const NUC_START = 300,
       NUC_STOP = 30,
       NUC_SAFETY = 300,
-      NUC_POWER = 16384,
+      NUC_POWER = 4096,
       NUC_COOL = 256;
     const upMult = Math.pow(2, upg || 0);
     const lvl = game.nuclearPower && game.nuclearPower[currentIsland] != null ? game.nuclearPower[currentIsland] : 10;
@@ -7770,20 +7780,35 @@ function InfoPanel({
         color: stColors[st]
       }
     }, stLabels[st] + progress)), React.createElement("div", {
-      className: "ip-nuc-sel"
+      className: "ip-nuc-pow"
     }, React.createElement("span", {
       className: "ip-nuc-sel-lbl"
     }, "Puissance" + (upg > 0 ? ` · Nv.${upg} (×${upMult})` : '')), React.createElement("div", {
-      className: "ip-nuc-mats"
+      className: "ip-nuc-pow-row"
     }, React.createElement("button", {
-      className: "ip-nuc-mat",
+      className: "ip-nuc-pm",
       disabled: lvl <= 0,
       onClick: () => onSetNucPower && onSetNucPower(currentIsland, lvl - 1)
-    }, "−"), React.createElement("button", {
-      className: "ip-nuc-mat on",
+    }, "−"), React.createElement("div", {
+      className: "ip-nuc-gauge",
       title: "Recalibrage 5 min à chaque changement"
-    }, pct + " %"), React.createElement("button", {
-      className: "ip-nuc-mat",
+    }, React.createElement("div", {
+      className: "ip-nuc-gauge-fill",
+      style: {
+        width: pct + '%'
+      }
+    }), Array.from({
+      length: 9
+    }, (_, i) => React.createElement("div", {
+      className: "ip-nuc-gauge-tick",
+      key: 't' + i,
+      style: {
+        left: (i + 1) * 10 + '%'
+      }
+    })), React.createElement("span", {
+      className: "ip-nuc-gauge-lbl"
+    }, pct + " %")), React.createElement("button", {
+      className: "ip-nuc-pm",
       disabled: lvl >= 10,
       onClick: () => onSetNucPower && onSetNucPower(currentIsland, lvl + 1)
     }, "+"))), React.createElement("div", {
