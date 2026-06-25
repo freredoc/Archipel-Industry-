@@ -1988,7 +1988,7 @@ const RES_SHORT = {
   minerai_cuivre: 'min.cuivre',
   acier: 'acier',
   cable: 'câble',
-  petrole: 'pétrole',
+  petrole: I18N.t('pétrole'),
   diesel: 'diesel',
   polymere: 'polymère',
   beton_arme: 'béton armé',
@@ -2061,7 +2061,7 @@ const RES_TIER_LABEL = {
   t4: 'T4'
 };
 const RES_HUD_EXTRA = {
-  2: [['minerai_cuivre', 'Min. cuivre'], ['lingot_cuivre', 'Lingot cuivre'], ['acier', 'Acier'], ['cable', 'Câble']]
+  2: [['minerai_cuivre', 'Min. cuivre'], ['lingot_cuivre', 'Lingot cuivre'], ['acier', I18N.t('Acier')], ['cable', I18N.t('Câble')]]
 };
 const resHudFor = islandId => RES_HUD.concat(RES_HUD_EXTRA[islandId] || []);
 const CARRIER_BY_RES = {
@@ -4153,8 +4153,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 125;
-const GAME_VERSION = 'Alpha 11.00';
+const GAME_BUILD = 126;
+const GAME_VERSION = 'Alpha 11.01';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4552,7 +4552,7 @@ function networkLevelChange(game, islandId, networkId, dir, payMat) {
   const net = nets[networkId];
   if (!net) return {
     blocked: true,
-    reason: 'Réseau introuvable'
+    reason: I18N.t('Réseau introuvable')
   };
   const ids = Array.from(coupledNetworkIds(game, islandId, networkId));
   const fromLevel = net.level;
@@ -4561,20 +4561,20 @@ function networkLevelChange(game, islandId, networkId, dir, payMat) {
   for (const id of ids) {
     if ((nets[id] && nets[id].level || 1) !== fromLevel) return {
       blocked: true,
-      reason: 'Réseaux couplés à des niveaux différents'
+      reason: I18N.t('Réseaux couplés à des niveaux différents')
     };
   }
   if (dir > 0 && anyUnlimited) return {
     blocked: true,
-    reason: 'Déjà illimité'
+    reason: I18N.t('Déjà illimité')
   };
   if (dir > 0 && fromLevel >= NETWORK_MAX_LEVEL) return {
     blocked: true,
-    reason: 'Niveau maximum atteint'
+    reason: I18N.t('Niveau maximum atteint')
   };
   if (dir < 0 && fromLevel <= 1 && !anyUnlimited) return {
     blocked: true,
-    reason: 'Niveau minimum atteint'
+    reason: I18N.t('Niveau minimum atteint')
   };
   const stepLevel = dir > 0 ? fromLevel : fromLevel - 1; // the V→V+1 step whose cost applies
   const cost = {};
@@ -4604,17 +4604,17 @@ function networkUnlimitedInfo(game, islandId, networkId) {
   const net = nets[networkId];
   if (!net) return {
     blocked: true,
-    reason: 'Réseau introuvable'
+    reason: I18N.t('Réseau introuvable')
   };
   const ids = Array.from(coupledNetworkIds(game, islandId, networkId));
   if (ids.some(id => nets[id] && nets[id].unlimited)) return {
     blocked: true,
-    reason: 'Déjà illimité'
+    reason: I18N.t('Déjà illimité')
   };
   const irr = (NETWORK_HI_MATS[net.type] || {}).irradie;
   if (!irr) return {
     blocked: true,
-    reason: 'Indisponible'
+    reason: I18N.t('Indisponible')
   };
   const cost = {};
   for (const id of ids) cost[irr] = (cost[irr] || 0) + NETWORK_UNLIMITED_COST;
@@ -5806,7 +5806,7 @@ function reqValue(game, req) {
         return {
           cur: ok ? 1 : 0,
           target: 1,
-          label: 'nœud ' + req.id + ' confirmé',
+          label: 'nœud ' + req.id + I18N.t(' confirmé'),
           ok
         };
       }
@@ -5826,7 +5826,7 @@ function reqValue(game, req) {
         return {
           cur,
           target: req.n,
-          label: (RES_SHORT[req.res] || req.res) + ' importé',
+          label: (RES_SHORT[req.res] || req.res) + I18N.t(' importé'),
           ok: cur >= req.n
         };
       }
@@ -6954,7 +6954,7 @@ function IslandSelector({
       key: id,
       className: 'island-tab' + (id === current ? ' active' : '') + (locked ? ' locked' : ''),
       disabled: locked,
-      title: locked ? "\xCEle " + id + " verrouill\xE9e" : "\xCEle " + id,
+      title: locked ? I18N.t("\xCEle ") + id + I18N.t(" verrouill\xE9e") : I18N.t("\xCEle ") + id,
       onClick: () => {
         if (!locked && id !== current) onSelect(id);
       }
@@ -7045,40 +7045,40 @@ function ProductionPanel({
     className: "rp-head"
   }, React.createElement("span", {
     className: "rp-title"
-  }, uiIcon('production', "📊"), " Production — ", sel === 'all' ? 'toutes les îles' : 'Île ' + sel), React.createElement("button", {
+  }, uiIcon('production', "📊"), I18N.t(" Production — "), sel === 'all' ? I18N.t('toutes les îles') : I18N.t('Île ') + sel), React.createElement("button", {
     className: "rp-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "prod-tabs"
   }, React.createElement("button", {
     className: 'prod-tab' + (sel === 'all' ? ' active' : ''),
     onClick: () => setSel('all')
-  }, "Toutes"), ids.map(id => React.createElement("button", {
+  }, I18N.t("Toutes")), ids.map(id => React.createElement("button", {
     key: id,
     className: 'prod-tab' + (sel === id ? ' active' : ''),
     onClick: () => setSel(id)
-  }, "Île ", id))), React.createElement("div", {
+  }, I18N.t("Île "), id))), React.createElement("div", {
     className: "prod-body"
   }, React.createElement("div", {
     className: "prod-energy"
-  }, React.createElement("span", null, "⚡ Prod ", fmtInt(enP), " kW"), React.createElement("span", null, "Conso ", fmtInt(enD), " kW"), React.createElement("span", {
+  }, React.createElement("span", null, I18N.t("⚡ Prod "), fmtInt(enP), " kW"), React.createElement("span", null, I18N.t("Conso "), fmtInt(enD), " kW"), React.createElement("span", {
     className: 'pe-net ' + (enN >= 0 ? 'ok' : 'bad')
-  }, "Net ", enN >= 0 ? '+' : '', fmtInt(enN), " kW")), React.createElement("div", {
+  }, I18N.t("Net "), enN >= 0 ? '+' : '', fmtInt(enN), " kW")), React.createElement("div", {
     className: "prod-table"
   }, React.createElement("div", {
     className: "prod-row prod-head"
   }, React.createElement("span", {
     className: "pc-res"
-  }, "Ressource"), React.createElement("span", {
+  }, I18N.t("Ressource")), React.createElement("span", {
     className: "pc-p"
-  }, "Prod /s"), React.createElement("span", {
+  }, I18N.t("Prod /s")), React.createElement("span", {
     className: "pc-c"
-  }, "Conso /s"), React.createElement("span", {
+  }, I18N.t("Conso /s")), React.createElement("span", {
     className: "pc-n"
-  }, "Net /s")), resKeys.length === 0 ? React.createElement("div", {
+  }, I18N.t("Net /s"))), resKeys.length === 0 ? React.createElement("div", {
     className: "prod-empty"
-  }, "Aucune production en cours.") : resKeys.map(k => {
+  }, I18N.t("Aucune production en cours.")) : resKeys.map(k => {
     const p = prod[k] || 0,
       c = cons[k] || 0,
       n = p - c;
@@ -7094,16 +7094,16 @@ function ProductionPanel({
     }, n >= 0 ? '+' : '', fmtRate(n)));
   })), React.createElement("div", {
     className: "prod-sub"
-  }, "Transit entre îles"), transits.length === 0 ? React.createElement("div", {
+  }, I18N.t("Transit entre îles")), transits.length === 0 ? React.createElement("div", {
     className: "prod-empty"
-  }, "Aucun transit en cours.") : React.createElement("div", {
+  }, I18N.t("Aucun transit en cours.")) : React.createElement("div", {
     className: "prod-transit"
   }, transits.map((t, i) => React.createElement("div", {
     className: "prod-trow",
     key: i
   }, React.createElement("span", {
     className: "pt-route"
-  }, "Île ", t.src, " → Île ", t.dest), resCell(t.k), React.createElement("span", {
+  }, I18N.t("Île "), t.src, I18N.t(" → Île "), t.dest), resCell(t.k), React.createElement("span", {
     className: "pt-rate"
   }, fmtRate(t.rate), "/s")))))));
 }
@@ -7154,7 +7154,7 @@ function AlertsPanel({
     onClick: () => onGo && onGo(a.isl)
   }, React.createElement("span", {
     className: "alert-isl"
-  }, "Île " + a.isl), React.createElement("span", {
+  }, I18N.t("Île ") + a.isl), React.createElement("span", {
     className: "alert-res"
   }, RES_SHORT[a.res] || a.res), React.createElement("span", {
     className: "alert-val"
@@ -7220,10 +7220,10 @@ function Hud({
   }, React.createElement("button", {
     className: "options-btn" + (updateInfo ? ' has-update' : ''),
     onClick: onOpenOptions,
-    title: updateInfo ? "Mise à jour disponible : " + updateInfo.label : "Options"
+    title: updateInfo ? I18N.t("Mise à jour disponible : ") + updateInfo.label : "Options"
   }, React.createElement("span", {
     className: "gear"
-  }, "⚙"), React.createElement("span", null, "Options"), updateInfo && React.createElement("span", {
+  }, "⚙"), React.createElement("span", null, I18N.t("Options")), updateInfo && React.createElement("span", {
     className: "notif-dot"
   })), React.createElement("button", {
     className: "options-btn help-btn",
@@ -7231,7 +7231,7 @@ function Hud({
     title: "Aide \u2014 toutes les astuces"
   }, React.createElement("span", {
     className: "gear"
-  }, "?"), React.createElement("span", null, "Aide")), React.createElement(IslandSelector, {
+  }, "?"), React.createElement("span", null, I18N.t("Aide"))), React.createElement(IslandSelector, {
     current: currentIsland,
     onSelect: onSelectIsland,
     unlocked: islandUnlocked
@@ -7258,34 +7258,34 @@ function Hud({
   }, accPct + "%"))), React.createElement("button", {
     className: "research-btn",
     onClick: onOpenPort,
-    title: "Configuration du port (commerce)"
+    title: I18N.t("Configuration du port (commerce)")
   }, uiIcon('port', "\u2693"), React.createElement("span", {
     className: "rlabel"
-  }, "Port")), React.createElement("button", {
+  }, I18N.t("Port"))), React.createElement("button", {
     className: "research-btn" + (researchPending ? ' pending' : ''),
     onClick: onOpenResearch,
-    title: researchPending ? "Recherche prête à valider !" : "Panneau Recherche"
+    title: researchPending ? I18N.t("Recherche prête à valider !") : I18N.t("Panneau Recherche")
   }, uiIcon('recherche', "\uD83D\uDD2C"), React.createElement("span", {
     className: "rlabel"
-  }, "Recherche"), researchPending && React.createElement("span", {
+  }, I18N.t("Recherche")), researchPending && React.createElement("span", {
     className: "notif-dot"
   })))), (() => {
     // Two states only: collapsed = just the INVENTAIRE button; expanded = all items.
-    // The "INVENTAIRE" label itself is the toggle (no separate arrow).
+    // The I18N.t("INVENTAIRE") label itself is the toggle (no separate arrow).
     // Bouton Réparer (déblocage île suivante) : placé à gauche d'INVENTAIRE, visible
     // une fois la recherche d'accès atteinte (nœud prêt). Ouvre les infos de réparation.
     const repairBtn = repairInfo && !repairInfo.locked && React.createElement("button", {
       className: "inv-repair-btn",
       onClick: onShowRepair,
-      title: "R\xE9parer le port pour d\xE9bloquer l'\xEEle " + repairInfo.island
-    }, uiIcon('reparation', "🛠"), React.createElement("span", null, "R\xE9parer \xCEle ", repairInfo.island));
+      title: I18N.t("R\xE9parer le port pour d\xE9bloquer l'\xEEle ") + repairInfo.island
+    }, uiIcon('reparation', "🛠"), React.createElement("span", null, I18N.t("R\xE9parer \xCEle "), repairInfo.island));
     // Bouton Production (à droite d'INVENTAIRE) : ouvre le tableau prod/conso/net + transit
     // de toutes les îles.
     const prodBtn = React.createElement("button", {
       className: "inv-prod-btn",
       onClick: onOpenProduction,
-      title: "Production / consommation / transit de toutes les \xEEles"
-    }, uiIcon('production', "📊"), React.createElement("span", null, "Production"));
+      title: I18N.t("Production / consommation / transit de toutes les \xEEles")
+    }, uiIcon('production', "📊"), React.createElement("span", null, I18N.t("Production")));
     // Bouton ALERTE (à droite de Production) : visible s'il y a ≥1 alerte de stock active sur une île.
     const alertBtn = alertCount > 0 && React.createElement("button", {
       className: "inv-alert-btn",
@@ -7300,8 +7300,8 @@ function Hud({
       }, repairBtn, React.createElement("button", {
         className: "inv-label-btn",
         onClick: onToggleInv,
-        title: "Afficher l'inventaire"
-      }, "INVENTAIRE", inv.length > 0 && React.createElement("span", {
+        title: I18N.t("Afficher l'inventaire")
+      }, I18N.t("INVENTAIRE"), inv.length > 0 && React.createElement("span", {
         className: "inv-count"
       }, inv.length)), prodBtn, alertBtn);
     }
@@ -7323,7 +7323,7 @@ function Hud({
         className: "inv-item clickable",
         key: k,
         onClick: e => onResClick && onResClick(k, e),
-        title: (RES_SHORT[k] || k) + " — voir production / consommation"
+        title: (RES_SHORT[k] || k) + I18N.t(" — voir production / consommation")
       }, _idata ? React.createElement("img", {
         className: "inv-ico",
         src: _idata,
@@ -7336,12 +7336,12 @@ function Hud({
     }
     return React.createElement("div", {
       className: "inventory open",
-      title: "Inventaire de l'\xEEle (port)"
+      title: I18N.t("Inventaire de l'\xEEle (port)")
     }, repairBtn, React.createElement("button", {
       className: "inv-label-btn open",
       onClick: onToggleInv,
-      title: "Replier l'inventaire"
-    }, "INVENTAIRE"), prodBtn, alertBtn, inv.length === 0 ? React.createElement("span", {
+      title: I18N.t("Replier l'inventaire")
+    }, I18N.t("INVENTAIRE")), prodBtn, alertBtn, inv.length === 0 ? React.createElement("span", {
       className: "inv-empty"
     }, "\u2014 vide \u2014") : items);
   })());
@@ -7369,12 +7369,12 @@ function RepairModal({
   }, uiIcon('reparation', "\ud83d\udee0"), " R\xE9parer \u2014 \xCEle ", repairInfo.island), React.createElement("button", {
     className: "rp-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "rp-list"
   }, React.createElement("div", {
     className: "repair-modal-desc"
-  }, "Livrez les ressources requises au port pour r\xE9parer la liaison et d\xE9bloquer l'\xEEle ", repairInfo.island, "."), React.createElement("div", {
+  }, I18N.t("Livrez les ressources requises au port pour r\xE9parer la liaison et d\xE9bloquer l'\xEEle "), repairInfo.island, "."), React.createElement("div", {
     className: "pp-port-cost"
   }, Object.keys(cost).map(k => React.createElement("span", {
     className: 'rp-ci' + ((resources[k] || 0) >= cost[k] ? ' ok' : ' miss'),
@@ -7383,7 +7383,7 @@ function RepairModal({
     className: "rp-btn",
     disabled: !canRepair,
     onClick: () => onRepair(repairInfo.node)
-  }, canRepair ? "R\xE9parer l'\xEEle " + repairInfo.island : "Stock insuffisant"))));
+  }, canRepair ? I18N.t("R\xE9parer l'\xEEle ") + repairInfo.island : I18N.t("Stock insuffisant")))));
 }
 function ToolButton({
   id,
@@ -7399,7 +7399,7 @@ function ToolButton({
   // croissant gardent leur libellé texte.
   const cost = b.cost;
   const showCostChips = b.kind !== 'infra' && !(b.kind === 'junction' && CURRENT_MODE === 'normal') && cost && Object.keys(cost).length > 0;
-  const sub = b.kind === 'infra' ? 'tracé continu' : b.kind === 'junction' && CURRENT_MODE === 'normal' ? 'coût croissant' : formatCost(b.cost) || 'gratuit';
+  const sub = b.kind === 'infra' ? I18N.t('tracé continu') : b.kind === 'junction' && CURRENT_MODE === 'normal' ? I18N.t('coût croissant') : formatCost(b.cost) || 'gratuit';
   const skey = SPRITES_ENABLED ? buildingSpriteKey(id) : null;
   const sdata = skey && SPRITE_DATA[skey];
   // Appui long (~450 ms) → fiche détaillée du bâtiment ; un appui court le sélectionne.
@@ -7481,18 +7481,18 @@ function BuildingDetailModal({
   const skey = SPRITES_ENABLED ? buildingSpriteKey(id) : null;
   const sdata = skey && SPRITE_DATA[skey];
   const TIER_LABEL = {
-    t0: 'Extraction',
-    t1: 'Palier 1',
-    t2: 'Palier 2',
-    t3: 'Palier 3'
+    t0: I18N.t('Extraction'),
+    t1: I18N.t('Palier 1'),
+    t2: I18N.t('Palier 2'),
+    t3: I18N.t('Palier 3')
   };
   const TERR_LABEL = {
     land: 'terre',
-    coast: 'côte',
+    coast: I18N.t('côte'),
     resource: 'gisement',
     water: 'eau',
-    oil: 'pétrole',
-    obstacle: 'accidenté'
+    oil: I18N.t('pétrole'),
+    obstacle: I18N.t('accidenté')
   };
   const sz = b.size || [1, 1];
   // Séparer la production électrique (energie_kw) des sorties matérielles.
@@ -7532,15 +7532,15 @@ function BuildingDetailModal({
     }
     return out;
   };
-  addRow('Coût', b.cost && Object.keys(b.cost).length ? resChips(b.cost, false) : 'gratuit');
-  if (b.kind !== 'infra' && b.kind !== 'junction') addRow('Taille', sz[1] + '×' + sz[0]);
-  if (b.terrains && b.terrains.length) addRow('Terrain', b.terrains.map(t => TERR_LABEL[t] || t).join(', '));
-  if (b.inputs && Object.keys(b.inputs).length) addRow('Entrées', resChips(b.inputs, true).concat(' /s'), true);
-  if (Object.keys(outMat).length) addRow('Sorties', resChips(outMat, true).concat(' /s'), true);
-  if (b.power > 0) addRow('Conso. élec.', b.power + ' kW');
-  if (energyOut > 0) addRow('Prod. élec.', energyOut + ' kW', true);
-  if (b.accumulator) addRow('Stockage', 'batterie (élec.)');
-  if (b.exclusiveIsland != null) addRow('Exclusif', 'île ' + b.exclusiveIsland);
+  addRow(I18N.t('Coût'), b.cost && Object.keys(b.cost).length ? resChips(b.cost, false) : 'gratuit');
+  if (b.kind !== 'infra' && b.kind !== 'junction') addRow(I18N.t('Taille'), sz[1] + '×' + sz[0]);
+  if (b.terrains && b.terrains.length) addRow(I18N.t('Terrain'), b.terrains.map(t => TERR_LABEL[t] || t).join(', '));
+  if (b.inputs && Object.keys(b.inputs).length) addRow(I18N.t('Entrées'), resChips(b.inputs, true).concat(I18N.t(' /s')), true);
+  if (Object.keys(outMat).length) addRow(I18N.t('Sorties'), resChips(outMat, true).concat(I18N.t(' /s')), true);
+  if (b.power > 0) addRow(I18N.t('Conso. élec.'), b.power + ' kW');
+  if (energyOut > 0) addRow(I18N.t('Prod. élec.'), energyOut + ' kW', true);
+  if (b.accumulator) addRow(I18N.t('Stockage'), I18N.t('batterie (élec.)'));
+  if (b.exclusiveIsland != null) addRow(I18N.t('Exclusif'), I18N.t('île ') + b.exclusiveIsland);
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "slot-backdrop",
     onClick: onClose
@@ -7575,7 +7575,7 @@ function BuildingDetailModal({
       margin: '4px 14px 14px'
     },
     onClick: onClose
-  }, "Fermer")));
+  }, I18N.t("Fermer"))));
 }
 function Toolbar({
   tool,
@@ -7652,9 +7652,9 @@ function Toolbar({
     className: "tool-group-inner"
   }, React.createElement("span", {
     className: "tool-group-label"
-  }, "Actions"), React.createElement("div", {
+  }, I18N.t("Actions")), React.createElement("div", {
     className: "tool-row tabs-row"
-  }, [tab('bat', 'tab-build' + (isBuildingTool ? ' has-sel' : ''), 'batiment', "🏭", "B\xE2timent", isBuildingTool ? BUILDINGS[tool].name : buildOpen ? 'fermer ▾' : 'ouvrir ▴', buildOpen, onToggleBuild), tab('net', 'tab-net' + (isNetworkTool ? ' has-sel' : ''), 'route', "🛣️", "R\xE9seau", isNetworkTool ? BUILDINGS[tool].name : netOpen ? 'fermer ▾' : 'ouvrir ▴', netOpen, onToggleNet), tab('copy', 'tab-copy', 'copier', "⧉", "Copier", tool === COPY ? 'choisir' : 'copier', tool === COPY, () => onSelect(COPY)), tab('dem', 'tab-dem', 'demolir', "♻", "D\xE9molir", 'remb. 100%', tool === DEMOLISH, () => onSelect(DEMOLISH)), tab('upg', 'tab-upg', 'monter', "⬆", "Am\xE9liorer", 'niveau +1', tool === UPGRADE, () => onSelect(UPGRADE))])))));
+  }, [tab('bat', 'tab-build' + (isBuildingTool ? ' has-sel' : ''), 'batiment', "🏭", I18N.t("B\xE2timent"), isBuildingTool ? BUILDINGS[tool].name : buildOpen ? I18N.t('fermer ▾') : I18N.t('ouvrir ▴'), buildOpen, onToggleBuild), tab('net', 'tab-net' + (isNetworkTool ? ' has-sel' : ''), 'route', "🛣️", I18N.t("R\xE9seau"), isNetworkTool ? BUILDINGS[tool].name : netOpen ? I18N.t('fermer ▾') : I18N.t('ouvrir ▴'), netOpen, onToggleNet), tab('copy', 'tab-copy', 'copier', "⧉", I18N.t("Copier"), tool === COPY ? 'choisir' : 'copier', tool === COPY, () => onSelect(COPY)), tab('dem', 'tab-dem', 'demolir', "♻", I18N.t("D\xE9molir"), I18N.t('remb. 100%'), tool === DEMOLISH, () => onSelect(DEMOLISH)), tab('upg', 'tab-upg', 'monter', "⬆", I18N.t("Am\xE9liorer"), I18N.t('niveau +1'), tool === UPGRADE, () => onSelect(UPGRADE))])))));
 }
 function InfoPanel({
   info,
@@ -7720,10 +7720,10 @@ function InfoPanel({
     const dev = game.ui && game.ui.dev;
     const unlocked = isRepair ? isTerrainRepairUnlocked(game) : isTerrainExtendUnlocked(game);
     const affordable = dev || Object.keys(cost).every(k => (port[k] || 0) >= cost[k]);
-    const title = isRepair ? 'Terrain accidenté' : 'Extension de terrain';
+    const title = isRepair ? I18N.t('Terrain accidenté') : I18N.t('Extension de terrain');
     const swatch = isRepair ? 'var(--orange)' : 'var(--blue, #0277BD)';
-    const countLabel = isRepair ? 'Réparations effectuées sur cette île' : 'Extensions effectuées sur cette île';
-    const btnLabel = isRepair ? ' Réparer' : ' Remblayer';
+    const countLabel = isRepair ? I18N.t('Réparations effectuées sur cette île') : I18N.t('Extensions effectuées sur cette île');
+    const btnLabel = isRepair ? I18N.t(' Réparer') : I18N.t(' Remblayer');
     const icon = isRepair ? 'reparation' : 'batiment';
     return React.createElement("div", {
       ref: ref,
@@ -7745,14 +7745,14 @@ function InfoPanel({
     }, title), React.createElement("button", {
       className: "ip-close",
       onClick: onClose,
-      title: "Fermer"
+      title: I18N.t("Fermer")
     }, "\xD7")), React.createElement("div", {
       className: "ip-rows"
     }, React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
-    }, "Coût"), React.createElement("span", {
+    }, I18N.t("Coût")), React.createElement("span", {
       className: "val"
     }, formatCost(cost) || '—')), React.createElement("div", {
       className: "ip-row"
@@ -7767,13 +7767,13 @@ function InfoPanel({
       style: {
         color: 'var(--ink-dim)'
       }
-    }, "Technologie non débloquée"))), React.createElement("button", {
+    }, I18N.t("Technologie non débloquée")))), React.createElement("button", {
       className: "ip-demolish",
       disabled: !unlocked || !affordable,
       onClick: () => {
         if (isRepair) onRepair(info.r, info.c);else onExtend(info.r, info.c);
       },
-      title: 'Coût : ' + (formatCost(cost) || 'gratuit')
+      title: I18N.t('Coût : ') + (formatCost(cost) || 'gratuit')
     }, uiIcon(icon, isRepair ? "\u{1F527}" : "\u{1F3D7}"), btnLabel));
   }
   if (!bld) return null;
@@ -7891,11 +7891,11 @@ function InfoPanel({
   }
   // Motif précis de panne (renseigné par le tick) pour expliquer un bâtiment à l'arrêt.
   const DISC_LABELS = {
-    road: 'non reliée au port (route)',
-    pipe: 'tuyau manquant',
-    wire: 'câble manquant (élec.)',
-    input: 'intrants manquants',
-    power: 'élec. insuffisante (vérifier le débit du câble)'
+    road: I18N.t('non reliée au port (route)'),
+    pipe: I18N.t('tuyau manquant'),
+    wire: I18N.t('câble manquant (élec.)'),
+    input: I18N.t('intrants manquants'),
+    power: I18N.t('élec. insuffisante (vérifier le débit du câble)')
   };
   // Régime RÉEL du bâtiment = min(intrants disponibles, élec. disponible) × saturation réseau.
   // `bld.regime` (calculé au tick) bride conso ET production au prorata : un déficit partiel
@@ -7908,14 +7908,14 @@ function InfoPanel({
   let speedPct, speedReason;
   if (netDisc) {
     speedPct = 0;
-    speedReason = DISC_LABELS[bld.discReason] || (bld.disc ? 'déconnecté' : 'à l\'arrêt');
+    speedReason = DISC_LABELS[bld.discReason] || (bld.disc ? I18N.t('déconnecté') : 'à l\'arrêt');
   } else {
     speedPct = Math.max(0, Math.min(100, Math.round(regime * speedF * 100)));
     const lackInput = inFac < 0.995;
     const lackPower = drawsPower && pwrAvg != null && pwrAvg < 0.995;
     const lackNet = speedF < 0.999;
-    const cause = lackInput && lackPower ? 'intrants + élec. insuffisants' : lackInput ? 'intrants insuffisants' : lackPower ? 'élec. insuffisante' : lackNet ? 'réseau saturé' : '';
-    if (speedPct <= 0) speedReason = 'à l\'arrêt · ' + (cause || 'aucun intrant');else speedReason = (speedPct < 100 ? 'au ralenti' : 'plein régime') + (cause ? ' · ' + cause : '');
+    const cause = lackInput && lackPower ? I18N.t('intrants + élec. insuffisants') : lackInput ? I18N.t('intrants insuffisants') : lackPower ? I18N.t('élec. insuffisante') : lackNet ? I18N.t('réseau saturé') : '';
+    if (speedPct <= 0) speedReason = 'à l\'arrêt · ' + (cause || I18N.t('aucun intrant'));else speedReason = (speedPct < 100 ? I18N.t('au ralenti') : I18N.t('plein régime')) + (cause ? ' · ' + cause : '');
   }
   const speedColor = speedPct >= 100 ? 'var(--green)' : speedPct > 0 ? 'var(--orange)' : '#ff8079';
   // Statut affiché dès que le bâtiment « fait » quelque chose (réseau, élec, ou en panne).
@@ -7935,7 +7935,7 @@ function InfoPanel({
       out.push(React.createElement("span", {
         className: "dr-res" + (short ? ' dr-short' : ''),
         key: k,
-        title: short ? (RES_SHORT[k] || k) + ' — déficit (' + Math.round(avail[k] * 100) + '% dispo)' : RES_SHORT[k] || k
+        title: short ? (RES_SHORT[k] || k) + I18N.t(' — déficit (') + Math.round(avail[k] * 100) + I18N.t('% dispo)') : RES_SHORT[k] || k
       }, idata && React.createElement("img", {
         className: "inv-ico",
         src: idata,
@@ -7978,17 +7978,17 @@ function InfoPanel({
   }, "Nv.", upg + 1), React.createElement("button", {
     className: "ip-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "ip-rows"
   }, b.nuclear && (() => {
     const matKey = (game.nuclearConfig && game.nuclearConfig[currentIsland]) || 'acier';
-    const NUC_MATS = [['acier', 'Acier'], ['beton_arme', 'Béton armé'], ['cable', 'Câble']];
+    const NUC_MATS = [['acier', I18N.t('Acier')], ['beton_arme', I18N.t('Béton armé')], ['cable', I18N.t('Câble')]];
     const stLabels = {
-      off: 'Arrêtée',
+      off: I18N.t('Arrêtée'),
       starting: 'Calibrage…',
-      running: 'En marche',
-      stopping: 'Arrêt…',
+      running: I18N.t('En marche'),
+      stopping: I18N.t('Arrêt…'),
       safety: '⚠ Sécurité'
     };
     const stColors = {
@@ -8022,7 +8022,7 @@ function InfoPanel({
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
-    }, "État"), React.createElement("span", {
+    }, I18N.t("État")), React.createElement("span", {
       className: "val",
       style: {
         color: stColors[st]
@@ -8063,13 +8063,13 @@ function InfoPanel({
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
-    }, "Entrées"), React.createElement("span", {
+    }, I18N.t("Entrées")), React.createElement("span", {
       className: "val"
     }, fmtN(upMult * realFrac) + " comb.U235 + " + fmtN(NUC_COOL * upMult * realFrac) + " eau froide /s")), React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
-    }, "Sortie"), React.createElement("span", {
+    }, I18N.t("Sortie")), React.createElement("span", {
       className: "val io"
     }, "⚡ " + fmtRate(NUC_POWER * upMult * realFrac) + " kW")), React.createElement("div", {
       className: "ip-nuc-irr"
@@ -8077,7 +8077,7 @@ function InfoPanel({
       className: "ip-nuc-irr-hd"
     }, "Matériau irradié (optionnel)"), React.createElement("div", {
       className: "ip-nuc-irr-io"
-    }, "− " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey] || matKey, " → + " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey + '_irradie'] || matKey + '_irradie', " /s"), React.createElement("div", {
+    }, "− " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey] || matKey, " → + " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey + '_irradie'] || matKey + '_irradie', I18N.t(" /s")), React.createElement("div", {
       className: "ip-nuc-irr-note"
     }, "Produit uniquement si le matériau est livré au port — sinon la centrale fournit l'électricité seule."), React.createElement("div", {
       className: "ip-nuc-mats"
@@ -8090,31 +8090,31 @@ function InfoPanel({
     className: "ip-row" + (speedPct < 100 ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
-  }, "Vitesse"), React.createElement("span", {
+  }, I18N.t("Vitesse")), React.createElement("span", {
     className: "val",
     style: {
       color: speedColor,
       fontWeight: 700
     },
-    title: "R\xE9gime de fonctionnement r\xE9el ce tick (" + speedReason + ")"
+    title: I18N.t("R\xE9gime de fonctionnement r\xE9el ce tick (") + speedReason + ")"
   }, speedPct + "% · " + speedReason)), b.inputs && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Entr\xE9es"), React.createElement("span", {
+  }, I18N.t("Entr\xE9es")), React.createElement("span", {
     className: "val"
-  }, recipeChips(b.inputs, upgradeMult(upg), bld.inAvail).concat(' /s'))), b.inputs && speedPct > 0 && speedPct < 100 && React.createElement("div", {
+  }, recipeChips(b.inputs, upgradeMult(upg), bld.inAvail).concat(I18N.t(' /s')))), b.inputs && speedPct > 0 && speedPct < 100 && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
   }, "R\xE9el ⚠"), React.createElement("span", {
     className: "val",
-    title: "Consommation r\xE9elle ce tick (brid\xE9e : " + speedReason + ")"
-  }, recipeChips(b.inputs, upgradeMult(upg) * speedPct / 100).concat(' /s'))), b.outputs && React.createElement("div", {
+    title: I18N.t("Consommation r\xE9elle ce tick (brid\xE9e : ") + speedReason + ")"
+  }, recipeChips(b.inputs, upgradeMult(upg) * speedPct / 100).concat(I18N.t(' /s')))), b.outputs && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Sortie"), React.createElement("span", {
+  }, I18N.t("Sortie")), React.createElement("span", {
     className: "val io"
   }, (() => {
     // Sortie = matières (chips) + PRODUCTION ÉLECTRIQUE si le bâtiment en génère (energie_kw).
@@ -8124,28 +8124,28 @@ function InfoPanel({
     const eOut = (b.outputs.energie_kw || 0) * m;
     if (eOut > 0) {
       const elec = '⚡ ' + fmtRate(eOut) + ' kW';
-      return hasMat ? chips.concat(' /s · ' + elec) : [elec];
+      return hasMat ? chips.concat(I18N.t(' /s · ') + elec) : [elec];
     }
-    return chips.concat(' /s');
+    return chips.concat(I18N.t(' /s'));
   })())), speedPct > 0 && speedPct < 100 && solidOut && Object.keys(solidOut).length > 0 && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
   }, "R\xE9el \u26A0"), React.createElement("span", {
     className: "val io",
-    title: "Production r\xE9elle ce tick (brid\xE9e : " + speedReason + ")"
-  }, recipeChips(solidOut, upgradeMult(upg) * speedPct / 100).concat(' /s'))), b.accumulator && React.createElement("div", {
+    title: I18N.t("Production r\xE9elle ce tick (brid\xE9e : ") + speedReason + ")"
+  }, recipeChips(solidOut, upgradeMult(upg) * speedPct / 100).concat(I18N.t(' /s')))), b.accumulator && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Stockage"), React.createElement("span", {
+  }, I18N.t("Stockage")), React.createElement("span", {
     className: "val io"
   }, (() => {
     // Détail de stockage en TEMPS RÉEL : charge actuelle / capacité + pourcentage.
     const cap = accCapacity(bld);
     const st = Math.max(0, Math.min(cap, bld.stored || 0));
     const pct = cap > 0 ? Math.round(100 * st / cap) : 0;
-    return '🔋 ' + fmtInt(st) + ' / ' + fmtInt(cap) + ' kWh · ' + pct + '%';
+    return '🔋 ' + fmtInt(st) + ' / ' + fmtInt(cap) + I18N.t(' kWh · ') + pct + '%';
   })())), !b.nuclear && !b.accumulator && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
@@ -8158,41 +8158,41 @@ function InfoPanel({
     // phase/valeur stockée sur le bâtiment) puis la plage prévue min→max.
     if (b.sigmoid) {
       const cur = (b.sigmoid.base + b.sigmoid.amp * (1 + Math.sin(2 * Math.PI * (bld.sigmoidT || 0) / b.sigmoid.period)) / 2) * mult;
-      return fmtRate(cur) + ' kW · prévu ' + fmtRate(b.sigmoid.base * mult) + '→' + fmtRate((b.sigmoid.base + b.sigmoid.amp) * mult) + ' kW';
+      return fmtRate(cur) + I18N.t(' kW · prévu ') + fmtRate(b.sigmoid.base * mult) + '→' + fmtRate((b.sigmoid.base + b.sigmoid.amp) * mult) + ' kW';
     }
     if (b.randomP) {
       const cur = (bld.randomPower != null ? bld.randomPower : (b.randomP.min + b.randomP.max) / 2) * mult;
-      return fmtRate(cur) + ' kW · prévu ' + fmtRate(b.randomP.min * mult) + '→' + fmtRate(b.randomP.max * mult) + ' kW';
+      return fmtRate(cur) + I18N.t(' kW · prévu ') + fmtRate(b.randomP.min * mult) + '→' + fmtRate(b.randomP.max * mult) + ' kW';
     }
     return fmtRate((b.power || 0) * mult) + ' kW';
   })())), b.antenna && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Effet"), React.createElement("span", {
+  }, I18N.t("Effet")), React.createElement("span", {
     className: "val io"
-  }, "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)"))), (usesNet || drawsPower) && React.createElement("div", {
+  }, I18N.t("×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)")))), (usesNet || drawsPower) && React.createElement("div", {
     className: "ip-fluxpri"
   }, React.createElement("div", {
     className: "ip-fluxpri-lbl"
-  }, "Priorit\xE9 de flux (intrants & \xE9lec.)"), React.createElement("div", {
+  }, I18N.t("Priorit\xE9 de flux (intrants & \xE9lec.)")), React.createElement("div", {
     className: "ip-fluxpri-btns"
-  }, [['haute', 'Haute'], ['normale', 'Normale'], ['basse', 'Basse']].map(([k, label]) => React.createElement("button", {
+  }, [['haute', I18N.t('Haute')], ['normale', I18N.t('Normale')], ['basse', I18N.t('Basse')]].map(([k, label]) => React.createElement("button", {
     key: k,
     className: 'ip-fluxpri-btn' + (bldPri === k ? ' on' : ''),
     onClick: () => onSetFluxPri && onSetFluxPri(info.r, info.c, k),
-    title: k === 'haute' ? "Servi en premier : intrants (route/tuyau) ET \xE9lectricit\xE9 d'abord" : k === 'basse' ? "Servi en dernier : intrants ET \xE9lectricit\xE9 apr\xE8s les autres" : "Servi normalement"
+    title: k === 'haute' ? I18N.t("Servi en premier : intrants (route/tuyau) ET \xE9lectricit\xE9 d'abord") : k === 'basse' ? I18N.t("Servi en dernier : intrants ET \xE9lectricit\xE9 apr\xE8s les autres") : I18N.t("Servi normalement")
   }, label)))), armed && upgradable && React.createElement("div", {
     className: "ip-up-preview"
   }, React.createElement("div", {
     className: "ip-up-ptitle"
-  }, "Amélioration → Nv.", upg + 2), React.createElement("div", {
+  }, I18N.t("Amélioration → Nv."), upg + 2), React.createElement("div", {
     className: "up-rows"
-  }, previewRow("Entrées", b.inputs), previewRow("Sortie", b.outputs)), React.createElement("div", {
+  }, previewRow(I18N.t("Entrées"), b.inputs), previewRow(I18N.t("Sortie"), b.outputs)), React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Coût"), React.createElement("span", {
+  }, I18N.t("Coût")), React.createElement("span", {
     className: "val ip-cost-chips"
   }, upCost && Object.keys(upCost).length ? Object.keys(upCost).map(k => React.createElement("span", {
     key: k,
@@ -8210,22 +8210,22 @@ function InfoPanel({
       }
       onUpgrade(info.r, info.c);
     },
-    title: armed ? 'Confirmer · Coût : ' + (formatCost(upCost) || 'gratuit') : 'Voir l\'amélioration (Nv.' + (upg + 2) + ')'
-  }, uiIcon('monter', "\u2B06"), armed ? " Confirmer " : " Monter ", React.createElement("span", {
+    title: armed ? I18N.t('Confirmer · Coût : ') + (formatCost(upCost) || 'gratuit') : 'Voir l\'amélioration (Nv.' + (upg + 2) + ')'
+  }, uiIcon('monter', "\u2B06"), armed ? I18N.t(" Confirmer ") : I18N.t(" Monter "), React.createElement("span", {
     className: "ip-sub"
   }, "Nv.", upg + 2)), React.createElement("button", {
     className: "ip-down",
     disabled: upg <= 0,
     onClick: () => onDowngrade(info.r, info.c),
-    title: downRefund ? 'Remb. : ' + (formatCost(downRefund) || '—') : 'Déjà au niveau de base'
-  }, uiIcon('baisser', "\u2B07"), " Baisser ", React.createElement("span", {
+    title: downRefund ? I18N.t('Remb. : ') + (formatCost(downRefund) || '—') : I18N.t('Déjà au niveau de base')
+  }, uiIcon('baisser', "\u2B07"), I18N.t(" Baisser "), React.createElement("span", {
     className: "ip-sub"
   }, upg > 0 ? 'Nv.' + upg : '—'))), upgradable && upg > 0 && alignCount > 0 && React.createElement("button", {
     className: "ip-align",
     disabled: !canAlign,
     onClick: () => onUpgradeAll(info.r, info.c),
-    title: 'Aligner ' + alignCount + ' autre(s) ' + b.name + ' sur Nv.' + (upg + 1) + ' · Coût : ' + (formatCost(alignCost) || 'gratuit')
-  }, uiIcon('monter', "⬆"), " Aligner les " + b.name + " (Nv." + (upg + 1) + ") ", React.createElement("span", {
+    title: I18N.t('Aligner ') + alignCount + I18N.t(' autre(s) ') + b.name + I18N.t(' sur Nv.') + (upg + 1) + I18N.t(' · Coût : ') + (formatCost(alignCost) || 'gratuit')
+  }, uiIcon('monter', "⬆"), I18N.t(" Aligner les ") + b.name + I18N.t(" (Nv.") + (upg + 1) + ") ", React.createElement("span", {
     className: "ip-sub"
   }, "×", alignCount, " · ", formatCost(alignCost) || 'gratuit')), React.createElement("button", {
     className: "ip-demolish" + (armedDem ? ' armed' : ''),
@@ -8235,7 +8235,7 @@ function InfoPanel({
         onDemolish();
       } else setArmedDem(true);
     }
-  }, uiIcon('demolir', "\u267B"), armedDem ? " Confirmer la d\xE9molition ?" : " D\xE9molir (remb. 100%)"));
+  }, uiIcon('demolir', "\u267B"), armedDem ? I18N.t(" Confirmer la d\xE9molition ?") : I18N.t(" D\xE9molir (remb. 100%)")));
 }
 function UpgradePanel({
   up,
@@ -8319,10 +8319,10 @@ function UpgradePanel({
   }, b.name), React.createElement("button", {
     className: "ip-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "up-level"
-  }, React.createElement("span", null, "Niveau ", React.createElement("b", null, lvl + 1)), React.createElement("span", {
+  }, React.createElement("span", null, I18N.t("Niveau "), React.createElement("b", null, lvl + 1)), React.createElement("span", {
     className: "up-mult"
   }, "\xD7", mult, " actuel")), React.createElement("div", {
     className: "up-rows"
@@ -8332,11 +8332,11 @@ function UpgradePanel({
     className: "lbl"
   }), React.createElement("span", {
     className: "cur"
-  }, "Actuel"), React.createElement("span", {
+  }, I18N.t("Actuel")), React.createElement("span", {
     className: "arr"
   }), React.createElement("span", {
     className: "nxt"
-  }, "Niv. ", lvl + 2)), statLine('Entrées', b.inputs), statLine('Sortie', b.outputs), React.createElement("div", {
+  }, "Niv. ", lvl + 2)), statLine(I18N.t('Entrées'), b.inputs), statLine(I18N.t('Sortie'), b.outputs), React.createElement("div", {
     className: "up-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -8350,7 +8350,7 @@ function UpgradePanel({
     className: "up-cost"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Co\xFBt niv. ", lvl + 2), React.createElement("span", {
+  }, I18N.t("Co\xFBt niv. "), lvl + 2), React.createElement("span", {
     className: "val"
   }, formatCost(cost) || 'gratuit')), React.createElement("button", {
     className: "up-btn",
@@ -8407,10 +8407,10 @@ function ResearchPanel({
     className: "rp-head"
   }, React.createElement("span", {
     className: "rp-title"
-  }, uiIcon('recherche', "\uD83D\uDD2C"), " Recherche"), React.createElement("button", {
+  }, uiIcon('recherche', "\uD83D\uDD2C"), I18N.t(" Recherche")), React.createElement("button", {
     className: "rp-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "rp-list"
   }, techNodesOrdered(game).map(def => {
@@ -8458,20 +8458,20 @@ function ResearchPanel({
       className: "rp-btn",
       disabled: !canDeliver,
       onClick: () => onDeliver(def.id)
-    }, "Livrer")), isManual && React.createElement("div", {
+    }, I18N.t("Livrer"))), isManual && React.createElement("div", {
       className: "rp-deliver"
     }, React.createElement("span", {
       className: "rp-ready-note"
-    }, "Condition remplie"), React.createElement("button", {
+    }, I18N.t("Condition remplie")), React.createElement("button", {
       className: "rp-btn",
       onClick: () => onConfirm(def.id)
-    }, "Confirmer")), node.status === 'condition_ok' && def.mode === 'delivery' && !def.delivery && React.createElement("div", {
+    }, I18N.t("Confirmer"))), node.status === 'condition_ok' && def.mode === 'delivery' && !def.delivery && React.createElement("div", {
       className: "rp-lockhint"
     }, "Livraison \xE0 calibrer \u2014 non activable"), node.status !== 'locked' && node.status !== 'confirmed' && (blds.length > 0 || isls.length > 0) && React.createElement("div", {
       className: "rp-unlocks"
-    }, "\u2192 ", isls.map(i => 'Île ' + i).concat(blds.map(b => BUILDINGS[b] && BUILDINGS[b].name || b)).join(' · ')), node.status === 'locked' && def.prereq != null && React.createElement("div", {
+    }, "\u2192 ", isls.map(i => I18N.t('Île ') + i).concat(blds.map(b => BUILDINGS[b] && BUILDINGS[b].name || b)).join(' · ')), node.status === 'locked' && def.prereq != null && React.createElement("div", {
       className: "rp-lockhint"
-    }, "Requiert : ", (TECH_BY_ID[def.prereq] || {}).name));
+    }, I18N.t("Requiert : "), (TECH_BY_ID[def.prereq] || {}).name));
   }))));
 }
 // Champ numérique qui accepte la notation scientifique : le texte saisi reste libre
@@ -8551,12 +8551,12 @@ function PortPanel({
   }, uiIcon('port', "\u2693"), " Port \u2014 \xCEle ", currentIsland), React.createElement("button", {
     className: "rp-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "rp-list"
   }, React.createElement("div", {
     className: "pp-section-label"
-  }, "Amélioration du transit"), (() => {
+  }, I18N.t("Amélioration du transit")), (() => {
     const lvl = game.portSpeed && game.portSpeed[currentIsland] || 0;
     const atMax = lvl >= PORT_MAX_LEVEL;
     const cost = atMax ? {} : portUpgradeCost(currentIsland, lvl);
@@ -8588,12 +8588,12 @@ function PortPanel({
       className: "rp-btn",
       disabled: atMax || !canPay || links.length === 0,
       onClick: () => onUpgradePort(currentIsland)
-    }, atMax ? 'Max' : 'Améliorer'));
+    }, atMax ? I18N.t('Max') : I18N.t('Améliorer')));
   })(), React.createElement("div", {
     className: "pp-section-label"
-  }, "Liaisons"), links.length === 0 && React.createElement("div", {
+  }, I18N.t("Liaisons")), links.length === 0 && React.createElement("div", {
     className: "pp-empty"
-  }, "Aucune liaison active. D\xE9bloquez l'\xEEle voisine."), links.map(key => {
+  }, I18N.t("Aucune liaison active. D\xE9bloquez l'\xEEle voisine.")), links.map(key => {
     const [a, b] = key.split('-').map(Number);
     const other = a === currentIsland ? b : a;
     const ship = game.ships[key] || {
@@ -8624,12 +8624,12 @@ function PortPanel({
       className: "pp-link-top"
     }, React.createElement("span", {
       className: "pp-link-name"
-    }, "\xCEle ", a, " \u2194 \xCEle ", b), React.createElement("span", {
+    }, I18N.t("\xCEle "), a, " \u2194 \xCEle ", b), React.createElement("span", {
       className: "pp-link-state"
-    }, "↔ transit continu")), React.createElement("button", {
+    }, I18N.t("↔ transit continu"))), React.createElement("button", {
       className: 'pp-block-btn' + (nBlocked > 0 ? ' on' : '') + (isOpen ? ' open' : ''),
       onClick: () => setOpenLink(isOpen ? null : other),
-      title: "R\xE9gler l'export par ressource vers l'\xEEle " + other
+      title: I18N.t("R\xE9gler l'export par ressource vers l'\xEEle ") + other
     }, (isOpen ? "▾ " : "▸ ") + "Export → \xCEle " + other + (nBlocked > 0 ? " — " + nBlocked + " interdite" + (nBlocked > 1 ? "s" : "") : " — tout autoris\xE9")), isOpen && React.createElement("div", {
       className: "pp-block-grid"
     }, visiblePriority.map(res => {
@@ -8638,13 +8638,13 @@ function PortPanel({
         key: res,
         className: 'pp-block-chip' + (off ? ' off' : ''),
         onClick: () => onToggleBlock(currentIsland, other, res),
-        title: off ? "Export de " + (RES_SHORT[res] || res) + " interdit vers l'\xEEle " + other + " — cliquer pour autoriser" : "Export de " + (RES_SHORT[res] || res) + " autoris\xE9 vers l'\xEEle " + other + " — cliquer pour interdire"
+        title: off ? I18N.t("Export de ") + (RES_SHORT[res] || res) + I18N.t(" interdit vers l'\xEEle ") + other + I18N.t(" — cliquer pour autoriser") : I18N.t("Export de ") + (RES_SHORT[res] || res) + I18N.t(" autoris\xE9 vers l'\xEEle ") + other + I18N.t(" — cliquer pour interdire")
       }, (off ? "⛔ " : "✅ ") + (RES_SHORT[res] || res));
     })), React.createElement("div", {
       className: "pp-cargo"
     }, outFlow.length === 0 ? React.createElement("span", {
       className: "pp-cargo-empty"
-    }, cargoSprite(), " aucun flux sortant") : outFlow.map(res => {
+    }, cargoSprite(), I18N.t(" aucun flux sortant")) : outFlow.map(res => {
       // Sprite de la ressource transf\u00e9r\u00e9e (pour voir CE qui transite), repli sur le cargo.
       const ikey = SPRITES_ENABLED ? itemSpriteKey(res) : null;
       const idata = ikey && SPRITE_DATA[ikey];
@@ -8654,7 +8654,7 @@ function PortPanel({
       return React.createElement("span", {
         className: "pp-cargo-item",
         key: res,
-        title: "Transit : " + fmtPort(rate) + "/s de " + (RES_SHORT[res] || res) + " \u2192 \u00cele " + other
+        title: I18N.t("Transit : ") + fmtPort(rate) + I18N.t("/s de ") + (RES_SHORT[res] || res) + " \u2192 \u00cele " + other
       }, idata ? React.createElement("img", {
         className: "pp-cargo-ico",
         src: idata,
@@ -8669,7 +8669,7 @@ function PortPanel({
       return React.createElement("span", {
         className: "pp-cargo-item pp-cargo-in",
         key: 'in-' + res,
-        title: "Re\xe7u : " + fmtPort(rate) + "/s de " + (RES_SHORT[res] || res) + " \u2190 \xCEle " + other
+        title: "Re\xe7u : " + fmtPort(rate) + I18N.t("/s de ") + (RES_SHORT[res] || res) + " \u2190 \xCEle " + other
       }, idata ? React.createElement("img", {
         className: "pp-cargo-ico",
         src: idata,
@@ -8678,27 +8678,27 @@ function PortPanel({
     })));
   }), React.createElement("div", {
     className: "pp-section-label"
-  }, "Commerce (\xCEle ", currentIsland, ")"), React.createElement("div", {
+  }, I18N.t("Commerce (\xCEle "), currentIsland, ")"), React.createElement("div", {
     className: "ep-modes"
-  }, [['priority', 'Priorit\xE9'], ['proportional', 'Proportionnel']].map(([m, label]) => React.createElement("button", {
+  }, [['priority', I18N.t('Priorit\xE9')], ['proportional', I18N.t('Proportionnel')]].map(([m, label]) => React.createElement("button", {
     key: m,
     className: 'ep-mode-btn' + (tradeMode === m ? ' on' : ''),
     onClick: () => onSetTradeMode(currentIsland, m)
   }, label))), React.createElement("div", {
     className: "pp-note"
-  }, tradeMode === 'proportional' ? "Proportionnel : la cale est r\xE9partie au prorata de la demande de chaque ressource (l'ordre ne sert qu'\xE0 d\xE9partager les restes)." : "Priorit\xE9 : la cale est remplie de la ressource la plus prioritaire \xE0 la moins prioritaire."), React.createElement("div", {
+  }, tradeMode === 'proportional' ? I18N.t("Proportionnel : la cale est r\xE9partie au prorata de la demande de chaque ressource (l'ordre ne sert qu'\xE0 d\xE9partager les restes).") : I18N.t("Priorit\xE9 : la cale est remplie de la ressource la plus prioritaire \xE0 la moins prioritaire.")), React.createElement("div", {
     className: "pp-cfg-head"
   }, React.createElement("span", {
     className: "pp-c-res"
-  }, "Ressource"), React.createElement("span", {
+  }, I18N.t("Ressource")), React.createElement("span", {
     className: "pp-c-num"
-  }, "Cible"), React.createElement("span", {
+  }, I18N.t("Cible")), React.createElement("span", {
     className: "pp-c-num"
-  }, "R\xE9serve"), React.createElement("span", {
+  }, I18N.t("R\xE9serve")), React.createElement("span", {
     className: "pp-c-tog"
-  }, "Stop"), React.createElement("span", {
+  }, I18N.t("Stop")), React.createElement("span", {
     className: "pp-c-pri"
-  }, "Prio")), visiblePriority.map((res, i) => {
+  }, I18N.t("Prio"))), visiblePriority.map((res, i) => {
     const cfg = tradeCfgFor(game, currentIsland, res);
     return React.createElement("div", {
       className: 'pp-cfg-row' + (cfg.interdit ? ' off' : ''),
@@ -8709,34 +8709,34 @@ function PortPanel({
       className: "pp-res-name"
     }, RES_SHORT[res] || res), React.createElement("span", {
       className: "pp-res-stock"
-    }, fmtPort(islandPort[res] || 0), " en stock")), React.createElement(NumField, {
+    }, fmtPort(islandPort[res] || 0), I18N.t(" en stock"))), React.createElement(NumField, {
       className: "pp-c-num",
       value: cfg.stockCible,
       onCommit: v => onSetCfg(currentIsland, res, 'stockCible', v),
-      title: "Stock cible (quantit\xE9 \xE0 importer ici)"
+      title: I18N.t("Stock cible (quantit\xE9 \xE0 importer ici)")
     }), React.createElement(NumField, {
       className: "pp-c-num",
       value: cfg.seuilExport,
       onCommit: v => onSetCfg(currentIsland, res, 'seuilExport', v),
-      title: "R\xE9serve locale (on n'exporte que le surplus au-dessus)"
+      title: I18N.t("R\xE9serve locale (on n'exporte que le surplus au-dessus)")
     }), React.createElement("button", {
       className: 'pp-c-tog' + (cfg.interdit ? ' active' : ''),
       onClick: () => onSetCfg(currentIsland, res, 'interdit', !cfg.interdit),
-      title: "Interdire l'export de cette ressource"
+      title: I18N.t("Interdire l'export de cette ressource")
     }, cfg.interdit ? '⛔' : '○'), React.createElement("span", {
       className: "pp-c-pri"
     }, React.createElement("button", {
       disabled: i === 0,
       onClick: () => onMovePriority(currentIsland, res, -1),
-      title: "Monter"
+      title: I18N.t("Monter")
     }, "\u25B2"), React.createElement("button", {
       disabled: i === visiblePriority.length - 1,
       onClick: () => onMovePriority(currentIsland, res, +1),
-      title: "Descendre"
+      title: I18N.t("Descendre")
     }, "\u25BC")));
   }), React.createElement("div", {
     className: "pp-note"
-  }, "Cible = quantit\xE9 voulue ici (import). R\xE9serve = stock gard\xE9 localement (export du surplus uniquement). Priorit\xE9 = ordre de chargement au d\xE9part."))));
+  }, I18N.t("Cible = quantit\xE9 voulue ici (import). R\xE9serve = stock gard\xE9 localement (export du surplus uniquement). Priorit\xE9 = ordre de chargement au d\xE9part.")))));
 }
 function EnergyPanel({
   game,
@@ -8769,10 +8769,10 @@ function EnergyPanel({
       color: color
     } : undefined
   }, val));
-  const MODES = [['priority', 'Priorit\xE9'], ['fair', '\xC9quitable'], ['proportional', 'Proportionnel']];
+  const MODES = [['priority', I18N.t('Priorit\xE9')], ['fair', I18N.t('\xC9quitable')], ['proportional', I18N.t('Proportionnel')]];
   const explain = {
-    fair: "Chaque consommateur re\xE7oit la m\xEAme quantit\xE9 absolue (kW) ; le surplus non utilis\xE9 par un petit b\xE2timent profite aux autres. Un b\xE2timent qui n'atteint pas sa puissance nominale est coup\xE9 ce tick.",
-    proportional: "Coupe les plus gros consommateurs d'abord pour que le reste tourne \xE0 plein r\xE9gime (le moteur fonctionne en tout-ou-rien, pas de r\xE9gime partiel)."
+    fair: I18N.t("Chaque consommateur re\xE7oit la m\xEAme quantit\xE9 absolue (kW) ; le surplus non utilis\xE9 par un petit b\xE2timent profite aux autres. Un b\xE2timent qui n'atteint pas sa puissance nominale est coup\xE9 ce tick."),
+    proportional: I18N.t("Coupe les plus gros consommateurs d'abord pour que le reste tourne \xE0 plein r\xE9gime (le moteur fonctionne en tout-ou-rien, pas de r\xE9gime partiel).")
   };
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "research-backdrop",
@@ -8786,14 +8786,14 @@ function EnergyPanel({
   }, "\u26A1 \xC9nergie \u2014 \xCEle ", currentIsland), React.createElement("button", {
     className: "rp-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "rp-list"
   }, React.createElement("div", {
     className: "pp-note"
   }, "⚡ L'\xE9lectricit\xE9 circule par r\xE9seau de c\xE2bles : chaque r\xE9seau c\xE2ble est un sous-r\xE9seau \xE9lectrique distinct (les g\xE9n\xE9rateurs, consommateurs et accumulateurs qu'il relie se partagent l'\xE9nergie). Le d\xE9bit du c\xE2ble (V1, V2…) borne la puissance transmissible : montez-le si un r\xE9seau sature. Les totaux ci-dessous additionnent tous les r\xE9seaux de l'\xEEle."), React.createElement("div", {
     className: "ep-stats"
-  }, statRow("Production (g\xE9n\xE9rateurs)", fmtInt(gross) + " kW"), battery > 0.5 && statRow("Batterie (d\xE9charge)", "+" + fmtInt(battery) + " kW", "var(--green)"), statRow("Demande totale", fmtInt(dem) + " kW"), cut > 0.5 && statRow("Demande non servie", "-" + fmtInt(cut) + " kW", '#ff8079'), statRow("Bilan r\xE9el", (netE >= 0 ? '+' : '') + fmtInt(netE) + " kW", netE < -1e-6 ? '#ff8079' : 'var(--green)'), accPct != null && statRow("Accumulateurs", fmtInt(accStored) + " / " + fmtInt(accCap) + " kWh \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
+  }, statRow(I18N.t("Production (g\xE9n\xE9rateurs)"), fmtInt(gross) + " kW"), battery > 0.5 && statRow(I18N.t("Batterie (d\xE9charge)"), "+" + fmtInt(battery) + " kW", "var(--green)"), statRow(I18N.t("Demande totale"), fmtInt(dem) + " kW"), cut > 0.5 && statRow(I18N.t("Demande non servie"), "-" + fmtInt(cut) + " kW", '#ff8079'), statRow(I18N.t("Bilan r\xE9el"), (netE >= 0 ? '+' : '') + fmtInt(netE) + " kW", netE < -1e-6 ? '#ff8079' : 'var(--green)'), accPct != null && statRow(I18N.t("Accumulateurs"), fmtInt(accStored) + " / " + fmtInt(accCap) + I18N.t(" kWh \xB7 ") + accPct + "%"), accPct != null && React.createElement("div", {
     className: "ep-bar",
     key: "bar"
   }, React.createElement("i", {
@@ -8803,7 +8803,7 @@ function EnergyPanel({
     }
   }))), React.createElement("div", {
     className: "pp-section-label"
-  }, "Mode de gestion du d\xE9ficit"), React.createElement("div", {
+  }, I18N.t("Mode de gestion du d\xE9ficit")), React.createElement("div", {
     className: "ep-modes"
   }, MODES.map(([m, label]) => React.createElement("button", {
     key: m,
@@ -8811,9 +8811,9 @@ function EnergyPanel({
     onClick: () => onSetMode(currentIsland, m)
   }, label))), mode === 'priority' ? React.createElement(React.Fragment, null, React.createElement("div", {
     className: "pp-section-label"
-  }, "Ordre de priorit\xE9 (haut = servi en premier)"), consumers.length === 0 && React.createElement("div", {
+  }, I18N.t("Ordre de priorit\xE9 (haut = servi en premier)")), consumers.length === 0 && React.createElement("div", {
     className: "pp-empty"
-  }, "Aucun consommateur d'\xE9nergie sur cette \xEEle."), consumers.map((cc, i) => React.createElement("div", {
+  }, I18N.t("Aucun consommateur d'\xE9nergie sur cette \xEEle.")), consumers.map((cc, i) => React.createElement("div", {
     key: cc.key,
     className: "ep-row"
   }, React.createElement("span", {
@@ -8829,11 +8829,11 @@ function EnergyPanel({
   }, React.createElement("button", {
     disabled: i === consumers.length - 1,
     onClick: () => onMovePriority(currentIsland, cc.key, +1),
-    title: "Monter"
+    title: I18N.t("Monter")
   }, "\u25B2"), React.createElement("button", {
     disabled: i === 0,
     onClick: () => onMovePriority(currentIsland, cc.key, -1),
-    title: "Descendre"
+    title: I18N.t("Descendre")
   }, "\u25BC"))))) : React.createElement("div", {
     className: "pp-note"
   }, explain[mode]))));
@@ -8893,26 +8893,26 @@ function ResPopover({
   }, RES_SHORT[res] || res, React.createElement("button", {
     className: "res-pop-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "res-pop-row prod"
   }, React.createElement("span", {
     className: "rl"
-  }, "Production"), React.createElement("span", {
+  }, I18N.t("Production")), React.createElement("span", {
     className: "rv"
-  }, "+", fmtRate(prod), " /s")), React.createElement("div", {
+  }, "+", fmtRate(prod), I18N.t(" /s"))), React.createElement("div", {
     className: "res-pop-row conso"
   }, React.createElement("span", {
     className: "rl"
-  }, "Consommation"), React.createElement("span", {
+  }, I18N.t("Consommation")), React.createElement("span", {
     className: "rv"
-  }, "\u2212", fmtRate(conso), " /s")), React.createElement("div", {
+  }, "\u2212", fmtRate(conso), I18N.t(" /s"))), React.createElement("div", {
     className: "res-pop-row net"
   }, React.createElement("span", {
     className: "rl"
-  }, "Bilan net"), React.createElement("span", {
+  }, I18N.t("Bilan net")), React.createElement("span", {
     className: "rv " + (net >= 0 ? 'pos' : 'neg')
-  }, net >= 0 ? '+' : '\u2212', fmtRate(Math.abs(net)), " /s")), React.createElement("div", {
+  }, net >= 0 ? '+' : '\u2212', fmtRate(Math.abs(net)), I18N.t(" /s"))), React.createElement("div", {
     className: "res-pop-alert"
   }, React.createElement("span", {
     className: "ra-l"
@@ -8920,7 +8920,7 @@ function ResPopover({
     className: "ra-input",
     value: game.stockAlerts && game.stockAlerts[currentIsland] && game.stockAlerts[currentIsland][res] || 0,
     onCommit: v => onSetAlert && onSetAlert(currentIsland, res, v),
-    title: "Pr\xE9venir quand le stock de cette \xEEle passe sous ce seuil (0 = d\xE9sactiv\xE9)"
+    title: I18N.t("Pr\xE9venir quand le stock de cette \xEEle passe sous ce seuil (0 = d\xE9sactiv\xE9)")
   }))));
 }
 function NetworkPanel({
@@ -8969,9 +8969,9 @@ function NetworkPanel({
   }, [net.x, net.y, net.networkId, netObj && netObj.level]);
   if (!netObj) return null;
   const TYPE_NAME = {
-    road: 'Route',
-    pipe: 'Tuyau',
-    wire: 'Câble'
+    road: I18N.t('Route'),
+    pipe: I18N.t('Tuyau'),
+    wire: I18N.t('Câble')
   };
   const TYPE_COLOR = {
     road: '#777',
@@ -9010,8 +9010,8 @@ function NetworkPanel({
   const coupled = upInfo.ids && upInfo.ids.length > 1 || downInfo.ids && downInfo.ids.length > 1;
   const canUp = !upInfo.blocked && (dev || Object.keys(upInfo.cost || {}).every(k => (port[k] || 0) >= upInfo.cost[k]));
   const canUnl = !unlInfo.blocked && (dev || Object.keys(unlInfo.cost || {}).every(k => (port[k] || 0) >= unlInfo.cost[k]));
-  const upLabel = coupled ? ' Monter A + B' : ' Monter';
-  const downLabel = coupled ? ' Baisser A + B' : ' Baisser';
+  const upLabel = coupled ? I18N.t(' Monter A + B') : I18N.t(' Monter');
+  const downLabel = coupled ? I18N.t(' Baisser A + B') : I18N.t(' Baisser');
   const matLabel = k => RES_SHORT[k] || k;
   // Détail des ressources transitant sur ce réseau (route/tuyau) : produites (déposées) vs
   // consommées (puisées) par seconde. Le câble affiche déjà son bilan électrique en kW.
@@ -9051,31 +9051,31 @@ function NetworkPanel({
   }, "V", lvl), React.createElement("button", {
     className: "ip-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "ip-rows"
   }, React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "D\xE9bit max"), React.createElement("span", {
+  }, I18N.t("D\xE9bit max")), React.createElement("span", {
     className: "val io"
-  }, cap === Infinity ? 'illimité' : fmtInt(cap) + ' /s')), React.createElement("div", {
+  }, cap === Infinity ? I18N.t('illimité') : fmtInt(cap) + I18N.t(' /s'))), React.createElement("div", {
     className: "ip-row" + (saturatedNet ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
-  }, "Flux demand\xE9"), React.createElement("span", {
+  }, I18N.t("Flux demand\xE9")), React.createElement("span", {
     className: "val io",
     style: saturatedNet ? {
       color: '#ff8079'
     } : undefined
-  }, fmtInt(demand) + ' /s')), showWireRange && React.createElement("div", {
+  }, fmtInt(demand) + I18N.t(' /s'))), showWireRange && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Demande min→max"), React.createElement("span", {
+  }, I18N.t("Demande min→max")), React.createElement("span", {
     className: "val io",
-    title: "Plage de consommation : les b\xE2timents \xE0 conso sigmo\xEFde/al\xE9atoire font varier la demande \xE9lec. Dimensionnez la production pour le max."
+    title: I18N.t("Plage de consommation : les b\xE2timents \xE0 conso sigmo\xEFde/al\xE9atoire font varier la demande \xE9lec. Dimensionnez la production pour le max.")
   }, fmtInt(wi.demandMin) + ' → ' + fmtInt(wi.demandMax) + ' kW')), saturatedNet && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
@@ -9085,25 +9085,25 @@ function NetworkPanel({
     style: {
       color: '#ff8079'
     },
-    title: "Demande sup\xE9rieure au d\xE9bit max : tous les b\xE2timents du r\xE9seau sont ralentis \xE0 ce pourcentage"
-  }, servedPct + '% servi')), isWire && wi && React.createElement("div", {
+    title: I18N.t("Demande sup\xE9rieure au d\xE9bit max : tous les b\xE2timents du r\xE9seau sont ralentis \xE0 ce pourcentage")
+  }, servedPct + I18N.t('% servi'))), isWire && wi && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Production"), React.createElement("span", {
+  }, I18N.t("Production")), React.createElement("span", {
     className: "val io"
   }, fmtInt(elProd) + ' kW')), showWireAcc && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "R\xE9serve"), React.createElement("span", {
+  }, I18N.t("R\xE9serve")), React.createElement("span", {
     className: "val io",
-    title: "\xC9nergie stock\xE9e dans les accumulateurs branch\xE9s sur ce r\xE9seau c\xE2ble (charge / capacit\xE9)."
-  }, '🔋 ' + fmtInt(wi.accStored) + ' / ' + fmtInt(wi.accCap) + ' kWh \xB7 ' + Math.round(wi.accStored / wi.accCap * 100) + '%')), isWire && wi && (cappedByThroughput || prodDeficit) && React.createElement("div", {
+    title: I18N.t("\xC9nergie stock\xE9e dans les accumulateurs branch\xE9s sur ce r\xE9seau c\xE2ble (charge / capacit\xE9).")
+  }, '🔋 ' + fmtInt(wi.accStored) + ' / ' + fmtInt(wi.accCap) + I18N.t(' kWh \xB7 ') + Math.round(wi.accStored / wi.accCap * 100) + '%')), isWire && wi && (cappedByThroughput || prodDeficit) && React.createElement("div", {
     className: "ip-row" + (cappedByThroughput ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
-  }, "Livr\xE9e"), React.createElement("span", {
+  }, I18N.t("Livr\xE9e")), React.createElement("span", {
     className: "val io",
     style: {
       color: '#ff8079'
@@ -9126,44 +9126,44 @@ function NetworkPanel({
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Production /s"), React.createElement("span", {
+  }, I18N.t("Production /s")), React.createElement("span", {
     className: "val io"
   }, fmtFlow(prodEntries))), consEntries.length > 0 && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Consommation /s"), React.createElement("span", {
+  }, I18N.t("Consommation /s")), React.createElement("span", {
     className: "val io"
   }, fmtFlow(consEntries))), poolEntries.length > 0 && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "R\xE9serve"), React.createElement("span", {
+  }, I18N.t("R\xE9serve")), React.createElement("span", {
     className: "val io",
     title: "Stock liquide accumul\xE9 dans la citerne du r\xE9seau tuyau (p\xE9trole, eau, acide…). N'appara\xEEt pas dans l'inventaire du port."
   }, fmtPool(poolEntries))), !isWire && !prodEntries.length && !consEntries.length && !poolEntries.length && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Transit"), React.createElement("span", {
+  }, I18N.t("Transit")), React.createElement("span", {
     className: "val"
   }, "aucun")), React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Tuiles"), React.createElement("span", {
+  }, I18N.t("Tuiles")), React.createElement("span", {
     className: "val"
   }, fmtInt(tiles))), coupled && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Couplage"), React.createElement("span", {
+  }, I18N.t("Couplage")), React.createElement("span", {
     className: "val"
-  }, "jonction (", (upInfo.ids || downInfo.ids).length, " réseaux)"))), React.createElement(React.Fragment, null, matChoice && hasPremium && React.createElement("div", {
+  }, I18N.t("jonction ("), (upInfo.ids || downInfo.ids).length, I18N.t(" réseaux)")))), React.createElement(React.Fragment, null, matChoice && hasPremium && React.createElement("div", {
     className: "ip-fluxpri"
   }, React.createElement("div", {
     className: "ip-fluxpri-lbl"
-  }, "Matériau d'amélioration (V", lvl + 1, ")"), React.createElement("div", {
+  }, I18N.t("Matériau d'amélioration (V"), lvl + 1, ")"), React.createElement("div", {
     className: "ip-fluxpri-btns",
     style: {
       gridTemplateColumns: '1fr 1fr'
@@ -9183,8 +9183,8 @@ function NetworkPanel({
         onUpgrade(net.r, net.c, effPay);
       } else setArmed('up');
     },
-    title: upInfo.blocked ? upInfo.reason : 'Coût : ' + (formatCost(upInfo.cost) || 'gratuit')
-  }, uiIcon('monter', "\u2B06"), armed === 'up' ? ' Confirmer ?' : upLabel, React.createElement("span", {
+    title: upInfo.blocked ? upInfo.reason : I18N.t('Coût : ') + (formatCost(upInfo.cost) || 'gratuit')
+  }, uiIcon('monter', "\u2B06"), armed === 'up' ? I18N.t(' Confirmer ?') : upLabel, React.createElement("span", {
     className: "ip-sub"
   }, upInfo.blocked ? upInfo.reason : 'V' + (lvl + 1) + ' · ' + (formatCost(upInfo.cost) || 'gratuit'))), React.createElement("button", {
     className: "ip-down" + (armed === 'down' ? ' armed' : ''),
@@ -9195,8 +9195,8 @@ function NetworkPanel({
         onDowngrade(net.r, net.c);
       } else setArmed('down');
     },
-    title: unlimited ? 'Retirer le débit illimité' : downInfo.blocked ? downInfo.reason : 'Remb. : ' + (formatCost(downInfo.cost) || '—')
-  }, uiIcon('baisser', "\u2B07"), armed === 'down' ? ' Confirmer ?' : downLabel, React.createElement("span", {
+    title: unlimited ? I18N.t('Retirer le débit illimité') : downInfo.blocked ? downInfo.reason : I18N.t('Remb. : ') + (formatCost(downInfo.cost) || '—')
+  }, uiIcon('baisser', "\u2B07"), armed === 'down' ? I18N.t(' Confirmer ?') : downLabel, React.createElement("span", {
     className: "ip-sub"
   }, unlimited ? 'limiter' : downInfo.blocked ? '—' : 'V' + (lvl - 1)))), showUnlBtn && React.createElement("button", {
     className: "ip-up ip-unl" + (armed === 'unl' ? ' armed' : ''),
@@ -9211,8 +9211,8 @@ function NetworkPanel({
         onMakeUnlimited(net.r, net.c);
       } else setArmed('unl');
     },
-    title: unlInfo.blocked ? unlInfo.reason : 'Coût : ' + (formatCost(unlInfo.cost) || '—') + ' — débit illimité'
-  }, "∞ ", armed === 'unl' ? 'Confirmer ?' : 'Rendre illimité', React.createElement("span", {
+    title: unlInfo.blocked ? unlInfo.reason : I18N.t('Coût : ') + (formatCost(unlInfo.cost) || '—') + I18N.t(' — débit illimité')
+  }, "∞ ", armed === 'unl' ? I18N.t('Confirmer ?') : I18N.t('Rendre illimité'), React.createElement("span", {
     className: "ip-sub"
   }, formatCost(unlInfo.cost) || '—'))));
 }
@@ -9236,7 +9236,7 @@ function TipPopup({
     className: "tip-titles"
   }, React.createElement("span", {
     className: "tip-kicker"
-  }, "Astuce"), React.createElement("span", {
+  }, I18N.t("Astuce")), React.createElement("span", {
     className: "tip-title"
   }, tip.title))), React.createElement("div", {
     className: "tip-body"
@@ -9250,10 +9250,10 @@ function TipPopup({
   }, React.createElement("button", {
     className: "tip-dismiss",
     onClick: onDisableAll
-  }, "Ne plus afficher les astuces"), React.createElement("button", {
+  }, I18N.t("Ne plus afficher les astuces")), React.createElement("button", {
     className: "tip-ok",
     onClick: onClose
-  }, "Compris"))));
+  }, I18N.t("Compris")))));
 }
 function ResearchDonePopup({
   info,
@@ -9262,7 +9262,7 @@ function ResearchDonePopup({
 }) {
   const blds = info.unlocks && info.unlocks.buildings || [];
   const isls = info.unlocks && info.unlocks.islands || [];
-  const unlockNames = isls.map(i => 'Île ' + i).concat(blds.map(b => BUILDINGS[b] && BUILDINGS[b].name || b));
+  const unlockNames = isls.map(i => I18N.t('Île ') + i).concat(blds.map(b => BUILDINGS[b] && BUILDINGS[b].name || b));
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "research-backdrop",
     onClick: onClose
@@ -9272,16 +9272,16 @@ function ResearchDonePopup({
     className: "rd-icon"
   }, uiIcon('recherche', "🔬", "rd-spr")), React.createElement("div", {
     className: "rd-title"
-  }, "Recherche terminée"), React.createElement("div", {
+  }, I18N.t("Recherche terminée")), React.createElement("div", {
     className: "rd-name"
   }, info.name), unlockNames.length > 0 && React.createElement("div", {
     className: "rd-unlocks"
-  }, "Débloque : ", unlockNames.join(' · ')), React.createElement("div", {
+  }, I18N.t("Débloque : "), unlockNames.join(' · ')), React.createElement("div", {
     className: "rd-actions"
   }, React.createElement("button", {
     className: "rd-btn-sec",
     onClick: onOpenResearch
-  }, "Voir la recherche"), React.createElement("button", {
+  }, I18N.t("Voir la recherche")), React.createElement("button", {
     className: "rd-btn",
     onClick: onClose
   }, "OK"))));
@@ -9361,7 +9361,7 @@ function SlotPanel({
       setImportText(String(reader.result || ''));
       setImportErr(null);
     };
-    reader.onerror = () => setImportErr('Lecture du fichier impossible.');
+    reader.onerror = () => setImportErr(I18N.t('Lecture du fichier impossible.'));
     reader.readAsText(file);
   };
   const copyText = txt => {
@@ -9402,10 +9402,10 @@ function SlotPanel({
     className: "slot-head"
   }, React.createElement("span", {
     className: "slot-title"
-  }, uiIcon('sauvegarde', "\uD83D\uDCBE"), " Emplacements de sauvegarde"), React.createElement("button", {
+  }, uiIcon('sauvegarde', "\uD83D\uDCBE"), I18N.t(" Emplacements de sauvegarde")), React.createElement("button", {
     className: "slot-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "slot-list"
   }, slots.map(s => {
@@ -9430,53 +9430,53 @@ function SlotPanel({
       className: "slot-name"
     }, s.name), isActive && !editing && React.createElement("span", {
       className: "slot-badge"
-    }, "Actif"), React.createElement("span", {
+    }, I18N.t("Actif")), React.createElement("span", {
       className: "slot-date"
     }, fmtSlotDate(s.updated))), React.createElement("div", {
       className: "slot-actions"
     }, editing ? React.createElement(React.Fragment, null, React.createElement("button", {
       className: "slot-btn primary",
       onClick: () => commitEdit(s.id)
-    }, "Valider"), React.createElement("button", {
+    }, I18N.t("Valider")), React.createElement("button", {
       className: "slot-btn",
       onClick: () => setEditId(null)
-    }, "Annuler")) : confirming ? React.createElement(React.Fragment, null, React.createElement("span", {
+    }, I18N.t("Annuler"))) : confirming ? React.createElement(React.Fragment, null, React.createElement("span", {
       className: "slot-confirm"
-    }, "Supprimer définitivement ?"), React.createElement("button", {
+    }, I18N.t("Supprimer définitivement ?")), React.createElement("button", {
       className: "slot-btn danger",
       onClick: () => onDelete(s.id)
-    }, "Oui, supprimer"), React.createElement("button", {
+    }, I18N.t("Oui, supprimer")), React.createElement("button", {
       className: "slot-btn",
       onClick: () => setConfirmId(null)
-    }, "Annuler")) : React.createElement(React.Fragment, null, isActive ? React.createElement("button", {
+    }, I18N.t("Annuler"))) : React.createElement(React.Fragment, null, isActive ? React.createElement("button", {
       className: "slot-btn primary",
       onClick: onSaveNow
-    }, "Sauvegarder") : React.createElement("button", {
+    }, I18N.t("Sauvegarder")) : React.createElement("button", {
       className: "slot-btn primary",
       onClick: () => onLoad(s.id)
-    }, "Charger"), React.createElement("button", {
+    }, I18N.t("Charger")), React.createElement("button", {
       className: "slot-btn",
       onClick: () => startEdit(s)
-    }, "Renommer"), React.createElement("button", {
+    }, I18N.t("Renommer")), React.createElement("button", {
       className: "slot-btn",
       onClick: () => doExport(s.id, s.name)
-    }, "Exporter"), React.createElement("button", {
+    }, I18N.t("Exporter")), React.createElement("button", {
       className: "slot-btn danger",
       onClick: () => setConfirmId(s.id)
-    }, "Supprimer"))));
+    }, I18N.t("Supprimer")))));
   })), React.createElement("div", {
     className: "slot-foot"
   }, React.createElement("button", {
     className: "slot-new",
     onClick: () => onCreate()
-  }, "+ Nouvelle partie"), React.createElement("button", {
+  }, I18N.t("+ Nouvelle partie")), React.createElement("button", {
     className: "slot-new",
     onClick: () => {
       setImportOpen(true);
       setImportErr(null);
       setImportText('');
     }
-  }, "⤓ Importer"))), exportText != null && React.createElement(React.Fragment, null, React.createElement("div", {
+  }, I18N.t("⤓ Importer")))), exportText != null && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "slot-backdrop",
     style: {
       zIndex: 130
@@ -9491,7 +9491,7 @@ function SlotPanel({
     className: "slot-head"
   }, React.createElement("span", {
     className: "slot-title"
-  }, "Exporter la sauvegarde"), React.createElement("button", {
+  }, I18N.t("Exporter la sauvegarde")), React.createElement("button", {
     className: "slot-close",
     onClick: () => setExportText(null)
   }, "\xD7")), React.createElement("div", {
@@ -9504,7 +9504,7 @@ function SlotPanel({
       color: 'var(--ink-dim)',
       marginBottom: '8px'
     }
-  }, copied ? "✓ Copi\xE9 dans le presse-papier. Conserve-le pour le r\xE9importer." : "S\xE9lectionne et copie ce texte, garde-le en lieu s\xFBr."), React.createElement("textarea", {
+  }, copied ? "✓ Copi\xE9 dans le presse-papier. Conserve-le pour le r\xE9importer." : I18N.t("S\xE9lectionne et copie ce texte, garde-le en lieu s\xFBr.")), React.createElement("textarea", {
     readOnly: true,
     value: exportText,
     onFocus: e => e.target.select(),
@@ -9530,18 +9530,18 @@ function SlotPanel({
   }, React.createElement("button", {
     className: "slot-btn primary",
     onClick: () => saveTextFile(exportFileName(), exportText)
-  }, "⤓ Télécharger .txt"), React.createElement("button", {
+  }, I18N.t("⤓ Télécharger .txt")), React.createElement("button", {
     className: "slot-btn",
     onClick: () => copyText(exportText)
-  }, "Copier"), React.createElement("button", {
+  }, I18N.t("Copier")), React.createElement("button", {
     className: "slot-btn",
     onClick: () => setExportText(null)
-  }, "Fermer"))) : React.createElement("div", {
+  }, I18N.t("Fermer")))) : React.createElement("div", {
     style: {
       fontSize: '.82rem',
       color: 'var(--ink-dim)'
     }
-  }, "Cet emplacement est vide (aucune sauvegarde \xE0 exporter).")))), importOpen && React.createElement(React.Fragment, null, React.createElement("div", {
+  }, I18N.t("Cet emplacement est vide (aucune sauvegarde \xE0 exporter)."))))), importOpen && React.createElement(React.Fragment, null, React.createElement("div", {
     className: "slot-backdrop",
     style: {
       zIndex: 130
@@ -9556,7 +9556,7 @@ function SlotPanel({
     className: "slot-head"
   }, React.createElement("span", {
     className: "slot-title"
-  }, "Importer une sauvegarde"), React.createElement("button", {
+  }, I18N.t("Importer une sauvegarde")), React.createElement("button", {
     className: "slot-close",
     onClick: () => setImportOpen(false)
   }, "\xD7")), React.createElement("div", {
@@ -9569,7 +9569,7 @@ function SlotPanel({
       color: 'var(--ink-dim)',
       marginBottom: '8px'
     }
-  }, "Charge un fichier .txt export\xE9 (ou colle le texte) : une nouvelle partie sera cr\xE9\xE9e."), React.createElement("input", {
+  }, I18N.t("Charge un fichier .txt export\xE9 (ou colle le texte) : une nouvelle partie sera cr\xE9\xE9e.")), React.createElement("input", {
     ref: fileRef,
     type: "file",
     accept: ".txt,text/plain,application/json",
@@ -9583,7 +9583,7 @@ function SlotPanel({
       marginBottom: '8px'
     },
     onClick: () => fileRef.current && fileRef.current.click()
-  }, "📂 Charger un fichier .txt"), React.createElement("textarea", {
+  }, I18N.t("📂 Charger un fichier .txt")), React.createElement("textarea", {
     value: importText,
     autoFocus: true,
     placeholder: "{ … }",
@@ -9617,10 +9617,10 @@ function SlotPanel({
     className: "slot-btn primary",
     disabled: !importText.trim(),
     onClick: doImport
-  }, "Importer"), React.createElement("button", {
+  }, I18N.t("Importer")), React.createElement("button", {
     className: "slot-btn",
     onClick: () => setImportOpen(false)
-  }, "Annuler"))))));
+  }, I18N.t("Annuler")))))));
 }
 function ModeModal({
   onChoose
@@ -9641,11 +9641,11 @@ function ModeModal({
     className: "mode-modal"
   }, React.createElement("div", {
     className: "mode-title"
-  }, "Choisis ton mode de jeu"), React.createElement("div", {
+  }, I18N.t("Choisis ton mode de jeu")), React.createElement("div", {
     className: "mode-sub"
-  }, "Le mode fixe la taille des \xEEles pour cette partie."), React.createElement("div", {
+  }, I18N.t("Le mode fixe la taille des \xEEles pour cette partie.")), React.createElement("div", {
     className: "mode-opts"
-  }, card('normal', "🗺", "Normal", "Grandes \xEEles, plus d'espace pour construire."), card('difficile', "⛰", "Difficile", "\xCEles compactes, espace limit\xE9."))));
+  }, card('normal', "🗺", I18N.t("Normal"), I18N.t("Grandes \xEEles, plus d'espace pour construire.")), card('difficile', "⛰", I18N.t("Difficile"), I18N.t("\xCEles compactes, espace limit\xE9.")))));
 }
 function OptionsModal({
   dev,
@@ -9680,7 +9680,7 @@ function OptionsModal({
   }, desc)), React.createElement("button", {
     className: 'opt-toggle' + (extraCls ? ' ' + extraCls : '') + (on ? ' on' : ''),
     onClick: onClick,
-    title: on ? 'Activé' : 'Désactivé'
+    title: on ? I18N.t('Activé') : I18N.t('Désactivé')
   }));
   const [upd, setUpd] = useState(updateInfo ? {
     state: 'available',
@@ -9735,13 +9735,13 @@ function OptionsModal({
   const updStatus = () => {
     if (upd.state === 'checking') return React.createElement("div", {
       className: "opt-upd-status"
-    }, "Vérification…");
+    }, I18N.t("Vérification…"));
     if (upd.state === 'uptodate') return React.createElement("div", {
       className: "opt-upd-status ok"
-    }, "✓ Le jeu est à jour.");
+    }, I18N.t("✓ Le jeu est à jour."));
     if (upd.state === 'error') return React.createElement("div", {
       className: "opt-upd-status err"
-    }, "Impossible de vérifier (hors-ligne ?).");
+    }, I18N.t("Impossible de vérifier (hors-ligne ?)."));
     if (upd.state === 'available') {
       // Action : bouton « Mettre à jour maintenant » in-app si la coquille native est là
       // (télécharge l'APK + lance l'installeur), sinon lien de téléchargement classique.
@@ -9750,19 +9750,19 @@ function OptionsModal({
         href: upd.apk,
         target: "_blank",
         rel: "noopener"
-      }, "Télécharger la mise à jour");
+      }, I18N.t("Télécharger la mise à jour"));
       const action = !upd.apk ? null : NATIVE_UPDATER ? React.createElement("button", {
         className: "opt-upd-dl",
         onClick: startNativeUpdate,
         disabled: dlPct != null && dlPct >= 0 && dlPct < 100
-      }, dlPct == null || dlPct < 0 ? "⬇ Mettre à jour maintenant" : dlPct >= 100 ? "Ouverture de l'installeur…" : "Téléchargement… " + dlPct + " %") : link;
+      }, dlPct == null || dlPct < 0 ? I18N.t("⬇ Mettre à jour maintenant") : dlPct >= 100 ? I18N.t("Ouverture de l'installeur…") : I18N.t("Téléchargement… ") + dlPct + " %") : link;
       return React.createElement("div", {
         className: "opt-upd-status new"
-      }, React.createElement("div", null, "⬆ Mise à jour disponible : ", React.createElement("b", null, upd.label)), upd.notes && React.createElement("div", {
+      }, React.createElement("div", null, I18N.t("⬆ Mise à jour disponible : "), React.createElement("b", null, upd.label)), upd.notes && React.createElement("div", {
         className: "opt-upd-notes"
       }, upd.notes), action, NATIVE_UPDATER && dlPct === -1 && React.createElement("div", {
         className: "opt-upd-notes"
-      }, "❌ Échec du téléchargement. Réessayez, ou ", link, "."));
+      }, I18N.t("❌ Échec du téléchargement. Réessayez, ou "), link, "."));
     }
     return null;
   };
@@ -9775,10 +9775,10 @@ function OptionsModal({
     className: "slot-head"
   }, React.createElement("span", {
     className: "slot-title"
-  }, "⚙ Options"), React.createElement("button", {
+  }, I18N.t("⚙ Options")), React.createElement("button", {
     className: "slot-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "slot-list"
   }, React.createElement("div", {
@@ -9816,25 +9816,25 @@ function OptionsModal({
   }, I18N.available().map(code => React.createElement("option", {
     key: code,
     value: code
-  }, I18N.names[code])))), toggleRow("Afficher les niveaux", "Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents", showLevels, onToggleLevels), toggleRow("Afficher l'efficacit\xE9 (%)", "Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit", showDeficitPct, onToggleDeficitPct), toggleRow("Afficher l'ic\xF4ne de d\xE9ficit", "Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne", showDeficitSprite, onToggleDeficitSprite), toggleRow("Calcul hors-ligne simplifi\xE9", "Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)", simplifyOffline !== false, onToggleSimplifyOffline), toggleRow("Am\xE9lioration imm\xE9diate", "En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)", fastUpgrade, onToggleFastUpgrade), toggleRow("Astuces", "Afficher une explication \xE0 chaque nouvelle m\xE9canique", tipsEnabled !== false, onToggleTips), React.createElement("button", {
+  }, I18N.names[code])))), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onResetTips
-  }, "💡 Revoir les astuces"), toggleRow("Mode d\xE9veloppeur", "Construction et am\xE9liorations gratuites", dev, onToggleDev, 'dev'), React.createElement("button", {
+  }, I18N.t("💡 Revoir les astuces")), toggleRow(I18N.t("Mode d\xE9veloppeur"), I18N.t("Construction et am\xE9liorations gratuites"), dev, onToggleDev, 'dev'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onOpenSaves
-  }, uiIcon('sauvegarde', "💾"), " Emplacements de sauvegarde"), React.createElement("div", {
+  }, uiIcon('sauvegarde', "💾"), I18N.t(" Emplacements de sauvegarde")), React.createElement("div", {
     className: "opt-version-row"
   }, React.createElement("div", {
     className: "opt-lbl"
   }, React.createElement("span", {
     className: "opt-name"
-  }, "Version"), React.createElement("span", {
+  }, I18N.t("Version")), React.createElement("span", {
     className: "opt-desc"
-  }, GAME_VERSION, " · build ", GAME_BUILD)), React.createElement("button", {
+  }, GAME_VERSION, I18N.t(" · build "), GAME_BUILD)), React.createElement("button", {
     className: "opt-upd-btn",
     onClick: checkUpdate,
     disabled: upd.state === 'checking'
-  }, "Vérifier les mises à jour")), updStatus())));
+  }, I18N.t("Vérifier les mises à jour"))), updStatus())));
 }
 function HelpPanel({
   onClose
@@ -9877,16 +9877,16 @@ function HelpPanel({
   }, "\u2754 Aide & astuces"), React.createElement("button", {
     className: "slot-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "slot-list help-list"
   }, React.createElement("div", {
     className: "help-section-title"
-  }, "Premiers pas (tutoriel \xEEle 1)"), React.createElement("div", {
+  }, I18N.t("Premiers pas (tutoriel \xEEle 1)")), React.createElement("div", {
     className: "help-tut"
   }, tutRows), React.createElement("div", {
     className: "help-section-title"
-  }, "Toutes les m\xE9caniques"), tipCards)));
+  }, I18N.t("Toutes les m\xE9caniques")), tipCards)));
 }
 function TutorialBanner({
   step,
@@ -9900,13 +9900,13 @@ function TutorialBanner({
     className: "tuto-main"
   }, React.createElement("span", {
     className: "tuto-step"
-  }, "Tuto ", step + 1, "/", total), React.createElement("span", {
+  }, I18N.t("Tuto "), step + 1, "/", total), React.createElement("span", {
     className: "tuto-goal"
   }, goal)), React.createElement("button", {
     className: "tuto-skip",
     onClick: onSkip,
-    title: "Passer le tutoriel et tout débloquer"
-  }, "Passer"));
+    title: I18N.t("Passer le tutoriel et tout débloquer")
+  }, I18N.t("Passer")));
 }
 function OfflineModal({
   report,
@@ -9922,15 +9922,15 @@ function OfflineModal({
     className: "slot-head"
   }, React.createElement("span", {
     className: "slot-title"
-  }, "🌙 Bon retour !"), React.createElement("button", {
+  }, I18N.t("🌙 Bon retour !")), React.createElement("button", {
     className: "slot-close",
     onClick: onClose,
-    title: "Fermer"
+    title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "offline-body"
   }, React.createElement("div", {
     className: "offline-sub"
-  }, "Absence : ", React.createElement("b", null, report.timeLabel), gains.length ? " — production r\xE9cup\xE9r\xE9e :" : " — rien \xE0 produire."), gains.length > 0 && React.createElement("div", {
+  }, I18N.t("Absence : "), React.createElement("b", null, report.timeLabel), gains.length ? " — production r\xE9cup\xE9r\xE9e :" : " — rien \xE0 produire."), gains.length > 0 && React.createElement("div", {
     className: "offline-gains"
   }, gains.map(({
     res,
@@ -9956,7 +9956,7 @@ function OfflineModal({
   }))), React.createElement("button", {
     className: "slot-new offline-ok",
     onClick: onClose
-  }, "Continuer")));
+  }, I18N.t("Continuer"))));
 }
 function App() {
   const canvasRef = useRef(null);
@@ -10280,7 +10280,7 @@ function App() {
           apk: d.apk || d.url || '',
           notes: d.notes || ''
         });
-        showToast('⬆ Mise à jour disponible : ' + (d.version || ('build ' + build)), 'var(--yellow)');
+        showToast(I18N.t('⬆ Mise à jour disponible : ') + (d.version || ('build ' + build)), 'var(--yellow)');
       }
     }).catch(() => {});
     return () => {
@@ -10496,7 +10496,7 @@ function App() {
     flushSave();
     const id = newSlotId();
     const index = readSlotIndex();
-    const nm = (name && name.trim()) || ('Partie ' + (index.length + 1));
+    const nm = (name && name.trim()) || (I18N.t('Partie ') + (index.length + 1));
     index.push({
       id,
       name: nm,
@@ -10513,10 +10513,10 @@ function App() {
     try {
       data = JSON.parse(text);
     } catch (e) {
-      return 'Texte invalide (JSON illisible).';
+      return I18N.t('Texte invalide (JSON illisible).');
     }
     if (!data || typeof data !== 'object' || data.version == null || !Array.isArray(data.islands)) {
-      return "Ce texte n'est pas une sauvegarde Archipel valide.";
+      return I18N.t("Ce texte n'est pas une sauvegarde Archipel valide.");
     }
     flushSave();
     const id = newSlotId();
@@ -11055,11 +11055,11 @@ function App() {
       g.tutorial.step++;
       changed = true;
       const st = TUTORIAL_STEPS[g.tutorial.step];
-      if (st) for (const id of st.reveal) showToast('🔓 ' + (BUILDINGS[id] ? BUILDINGS[id].name : id) + ' débloqué !', 'var(--green)');
+      if (st) for (const id of st.reveal) showToast('🔓 ' + (BUILDINGS[id] ? BUILDINGS[id].name : id) + I18N.t(' débloqué !'), 'var(--green)');
     }
     if (g.tutorial.step >= TUTORIAL_STEPS.length) {
       g.tutorial.active = false;
-      showToast('🎓 Tutoriel terminé — bonne partie !', 'var(--green)');
+      showToast(I18N.t('🎓 Tutoriel terminé — bonne partie !'), 'var(--green)');
     }
     if (changed) {
       setTutorialStep(g.tutorial.active ? g.tutorial.step : -1);
@@ -11071,7 +11071,7 @@ function App() {
     const g = gameRef.current;
     if (g.tutorial) g.tutorial.active = false;
     setTutorialStep(-1);
-    showToast('Tutoriel passé — bâtiments débloqués', 'var(--ink-dim)');
+    showToast(I18N.t('Tutoriel passé — bâtiments débloqués'), 'var(--ink-dim)');
     markDirty();
     scheduleSave();
   }
@@ -11138,7 +11138,7 @@ function App() {
     const g = gameRef.current;
     g.tipsEnabled = g.tipsEnabled === false;
     setTipsEnabled(g.tipsEnabled);
-    showToast(g.tipsEnabled ? '💡 Astuces activées' : 'Astuces désactivées', 'var(--ink-dim)');
+    showToast(g.tipsEnabled ? I18N.t('💡 Astuces activées') : I18N.t('Astuces désactivées'), 'var(--ink-dim)');
     markDirty();
     scheduleSave();
   }
@@ -11147,7 +11147,7 @@ function App() {
     g.tipsSeen = {};
     g.tipsEnabled = true;
     setTipsEnabled(true);
-    showToast('💡 Astuces réinitialisées', 'var(--green)');
+    showToast(I18N.t('💡 Astuces réinitialisées'), 'var(--green)');
     markDirty();
     scheduleSave();
   }
@@ -11274,29 +11274,29 @@ function App() {
     // couplés (on convertit alors ce croisement en jonction).
     let tileCarrier = null;
     if (t.occupied) {
-      if (verbose) showToast('❌ Tuile occupée', 'var(--red)');
+      if (verbose) showToast(I18N.t('❌ Tuile occupée'), 'var(--red)');
       return false;
     }
     if (t.building) {
       const tb = BUILDINGS[t.building.id];
       if (tb && tb.kind === 'infra' && (t.building.id === typeA || t.building.id === typeB)) tileCarrier = t.building.id;else {
-        if (verbose) showToast('❌ Jonction : pose sur une tuile vide ou un réseau croisé', 'var(--red)');
+        if (verbose) showToast(I18N.t('❌ Jonction : pose sur une tuile vide ou un réseau croisé'), 'var(--red)');
         return false;
       }
     } else if (!b.terrains.includes(t.terrain)) {
-      if (verbose) showToast('❌ Terrain non autorisé', 'var(--red)');
+      if (verbose) showToast(I18N.t('❌ Terrain non autorisé'), 'var(--red)');
       return false;
     }
     // Difficile : 1 jonction/type/île. Normal : illimité (coût croissant).
     if (g.mode !== 'normal' && countJunctions(g, isl, id) >= 1) {
-      if (verbose) showToast('❌ Une seule jonction de ce type par île', 'var(--red)');
+      if (verbose) showToast(I18N.t('❌ Une seule jonction de ce type par île'), 'var(--red)');
       return false;
     }
     // Porteurs présents (sur la tuile ou via un réseau adjacent).
     const hasA = tileCarrier === typeA || adjacentNetworks(g, isl, r, c, typeA).length > 0;
     const hasB = tileCarrier === typeB || adjacentNetworks(g, isl, r, c, typeB).length > 0;
     if (!hasA && !hasB) {
-      if (verbose) showToast('❌ Doit toucher un réseau (route/câble/tuyau)', 'var(--red)');
+      if (verbose) showToast(I18N.t('❌ Doit toucher un réseau (route/câble/tuyau)'), 'var(--red)');
       return false;
     }
     const missing = !hasA ? typeA : !hasB ? typeB : null;
@@ -11322,7 +11322,7 @@ function App() {
         autoTiles.push([nr, nc]);
       }
       if (autoTiles.length === 0) {
-        if (verbose) showToast('❌ Pas de place pour le réseau croisé à côté', 'var(--red)');
+        if (verbose) showToast(I18N.t('❌ Pas de place pour le réseau croisé à côté'), 'var(--red)');
         return false;
       }
     }
@@ -11332,7 +11332,7 @@ function App() {
     if (!dev) {
       const miss = missingFor(cost);
       if (miss.length) {
-        if (verbose) showToast('❌ Jonction : manque ' + miss.join(', '), 'var(--red)');
+        if (verbose) showToast(I18N.t('❌ Jonction : manque ') + miss.join(', '), 'var(--red)');
         return false;
       }
       pay(cost);
@@ -11387,7 +11387,7 @@ function App() {
     // Pose autorisée sans route adjacente (cf. canPlace) : le bâtiment se posera
     // déconnecté et se reliera dès qu'une route le touchera.
     if (b.needCoastAdj && !hasAdjacentCoast(r, c)) {
-      if (verbose) showToast('❌ Doit être en mer, adjacent à la côte', 'var(--red)');
+      if (verbose) showToast(I18N.t('❌ Doit être en mer, adjacent à la côte'), 'var(--red)');
       return false;
     }
     if (b.maxPerIsland != null) {
@@ -11423,7 +11423,7 @@ function App() {
     if (!dev) {
       const miss = missingFor(costToPay);
       if (miss.length) {
-        if (verbose) showToast('❌ Extension V' + joinLvl + ' : manque ' + miss.join(', '), 'var(--red)');
+        if (verbose) showToast(I18N.t('❌ Extension V') + joinLvl + I18N.t(' : manque ') + miss.join(', '), 'var(--red)');
         return false;
       }
       pay(costToPay);
@@ -11460,7 +11460,7 @@ function App() {
     const tiles = curTiles();
     let t = tiles[r] && tiles[r][c];
     if (!t || !t.building && !t.occupied) {
-      if (verbose) showToast('Rien à démolir ici', 'var(--orange)');
+      if (verbose) showToast(I18N.t('Rien à démolir ici'), 'var(--orange)');
       return false;
     }
     // Redirect occupancy tiles to their anchor.
@@ -11471,7 +11471,7 @@ function App() {
       c = ac;
       t = tiles[r] && tiles[r][c];
       if (!t || !t.building) {
-        if (verbose) showToast('Rien à démolir ici', 'var(--orange)');
+        if (verbose) showToast(I18N.t('Rien à démolir ici'), 'var(--orange)');
         return false;
       }
     }
@@ -11527,7 +11527,7 @@ function App() {
       return;
     }
     if (!isUpgradable(t.building.id)) {
-      showToast('Non améliorable (infra / port)', 'var(--orange)');
+      showToast(I18N.t('Non améliorable (infra / port)'), 'var(--orange)');
       setUpgrade(null);
       return;
     }
@@ -11556,7 +11556,7 @@ function App() {
     if (!gameRef.current.ui.dev) {
       const miss = missingFor(cost);
       if (miss.length) {
-        showToast('❌ Manque ' + miss.join(', '), 'var(--red)');
+        showToast(I18N.t('❌ Manque ') + miss.join(', '), 'var(--red)');
         return false;
       }
       pay(cost);
@@ -11600,7 +11600,7 @@ function App() {
     if (!gameRef.current.ui.dev) {
       const miss = missingFor(totalCost);
       if (miss.length) {
-        showToast('❌ Manque ' + miss.join(', '), 'var(--red)');
+        showToast(I18N.t('❌ Manque ') + miss.join(', '), 'var(--red)');
         return false;
       }
       pay(totalCost);
@@ -11643,7 +11643,7 @@ function App() {
     const t = curTiles()[r] && curTiles()[r][c];
     if (!t || t.terrain !== 'obstacle' || t.building) return false;
     if (!isTerrainRepairUnlocked(g)) {
-      showToast('❌ Technologie non débloquée', 'var(--red)');
+      showToast(I18N.t('❌ Technologie non débloquée'), 'var(--red)');
       return false;
     }
     const count = g.repairsCount[isl] || 0;
@@ -11651,7 +11651,7 @@ function App() {
     if (!g.ui.dev) {
       const miss = missingFor(cost);
       if (miss.length) {
-        showToast('❌ Manque ' + miss.join(', '), 'var(--red)');
+        showToast(I18N.t('❌ Manque ') + miss.join(', '), 'var(--red)');
         return false;
       }
       pay(cost);
@@ -11662,7 +11662,7 @@ function App() {
     markDirty();
     scheduleSave();
     setInfo(null);
-    showToast('🔧 Terrain réparé', 'var(--green)');
+    showToast(I18N.t('🔧 Terrain réparé'), 'var(--green)');
     return true;
   }
   function tryExtend(r, c) {
@@ -11671,7 +11671,7 @@ function App() {
     const t = curTiles()[r] && curTiles()[r][c];
     if (!t || t.terrain !== 'water' || t.building) return false;
     if (!isTerrainExtendUnlocked(g)) {
-      showToast('❌ Technologie non débloquée', 'var(--red)');
+      showToast(I18N.t('❌ Technologie non débloquée'), 'var(--red)');
       return false;
     }
     const count = g.extensionsCount[isl] || 0;
@@ -11679,7 +11679,7 @@ function App() {
     if (!g.ui.dev) {
       const miss = missingFor(cost);
       if (miss.length) {
-        showToast('❌ Manque ' + miss.join(', '), 'var(--red)');
+        showToast(I18N.t('❌ Manque ') + miss.join(', '), 'var(--red)');
         return false;
       }
       pay(cost);
@@ -11692,7 +11692,7 @@ function App() {
     markDirty();
     scheduleSave();
     setInfo(null);
-    showToast('🏗 Terrain remblayé', 'var(--green)');
+    showToast(I18N.t('🏗 Terrain remblayé'), 'var(--green)');
     return true;
   }
   function openNetwork(r, c) {
@@ -11735,14 +11735,14 @@ function App() {
       bumpHud();
       markDirty();
       scheduleSave();
-      showToast('⬇ Réseau → débit limité (V' + info.fromLevel + ')', 'var(--ink-dim)');
+      showToast(I18N.t('⬇ Réseau → débit limité (V') + info.fromLevel + ')', 'var(--ink-dim)');
       return true;
     }
     if (dir > 0) {
       if (!g.ui.dev) {
         const miss = missingFor(info.cost);
         if (miss.length) {
-          showToast('❌ Manque ' + miss.join(', '), 'var(--red)');
+          showToast(I18N.t('❌ Manque ') + miss.join(', '), 'var(--red)');
           return false;
         }
         pay(info.cost);
@@ -11757,7 +11757,7 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
-    const label = info.ids.length > 1 ? 'Réseaux couplés' : 'Réseau';
+    const label = info.ids.length > 1 ? I18N.t('Réseaux couplés') : I18N.t('Réseau');
     showToast(`${dir > 0 ? '⬆' : '⬇'} ${label} → V${info.toLevel}`, dir > 0 ? 'var(--green)' : 'var(--ink-dim)');
     return true;
   }
@@ -11775,7 +11775,7 @@ function App() {
     if (!g.ui.dev) {
       const miss = missingFor(info.cost);
       if (miss.length) {
-        showToast('❌ Manque ' + miss.join(', '), 'var(--red)');
+        showToast(I18N.t('❌ Manque ') + miss.join(', '), 'var(--red)');
         return false;
       }
       pay(info.cost);
@@ -11784,7 +11784,7 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
-    showToast('∞ Réseau → débit ILLIMITÉ', 'var(--green)');
+    showToast(I18N.t('∞ Réseau → débit ILLIMITÉ'), 'var(--green)');
     return true;
   }
   function selectTool(id) {
@@ -11804,7 +11804,7 @@ function App() {
       setBuildOpen(false);
       setNetOpen(false);
     }
-    if (next === COPY) showToast('📋 Mode copie : touchez un bâtiment à copier', 'var(--ink-dim)');
+    if (next === COPY) showToast(I18N.t('📋 Mode copie : touchez un bâtiment à copier'), 'var(--ink-dim)');
     markDirty();
   }
   function deselectAll() {
@@ -11842,13 +11842,13 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
-    showToast(m === 'normal' ? '🗺 Mode Normal — grandes îles' : '⛰ Mode Difficile — îles compactes', 'var(--green)');
+    showToast(m === 'normal' ? I18N.t('🗺 Mode Normal — grandes îles') : I18N.t('⛰ Mode Difficile — îles compactes'), 'var(--green)');
   }
   function switchIsland(id) {
     const g = gameRef.current;
     if (id === g.currentIsland) return;
     if (!g.islandUnlocked[id]) {
-      showToast('Île verrouillée — débloquez-la via la Recherche', 'var(--red)');
+      showToast(I18N.t('Île verrouillée — débloquez-la via la Recherche'), 'var(--red)');
       return;
     }
     onIslandChange(g, id);
@@ -11876,20 +11876,20 @@ function App() {
     const g = gameRef.current;
     if (techDeliver(g, id)) {
       const def = TECH_BY_ID[id];
-      showToast('🔬 ' + def.name + ' débloqué', 'var(--green)');
+      showToast('🔬 ' + def.name + I18N.t(' débloqué'), 'var(--green)');
       setResearchPending(hasPendingResearch(g));
       bumpHud();
       markDirty();
       flushSave();
     } else {
-      showToast('Stock insuffisant sur cette île', 'var(--red)');
+      showToast(I18N.t('Stock insuffisant sur cette île'), 'var(--red)');
     }
   }
   function doConfirm(id) {
     const g = gameRef.current;
     if (techConfirm(g, id)) {
       const def = TECH_BY_ID[id];
-      showToast('🔬 ' + def.name + ' débloqué', 'var(--green)');
+      showToast('🔬 ' + def.name + I18N.t(' débloqué'), 'var(--green)');
       setResearchPending(hasPendingResearch(g));
       bumpHud();
       markDirty();
@@ -11899,12 +11899,12 @@ function App() {
   function repairIsland(nodeId) {
     const g = gameRef.current;
     if (techDeliver(g, nodeId)) {
-      showToast('🛠 Port réparé — île débloquée', 'var(--green)');
+      showToast(I18N.t('🛠 Port réparé — île débloquée'), 'var(--green)');
       bumpHud();
       markDirty();
       flushSave();
     } else {
-      showToast('❌ Stock insuffisant pour la réparation', 'var(--red)');
+      showToast(I18N.t('❌ Stock insuffisant pour la réparation'), 'var(--red)');
     }
   }
   function upgradePort(islandId) {
@@ -11921,7 +11921,7 @@ function App() {
     }
     const lvl = (g.portSpeed && g.portSpeed[islandId]) || 0;
     if (lvl >= PORT_MAX_LEVEL) {
-      showToast('Transit au maximum', 'var(--orange)');
+      showToast(I18N.t('Transit au maximum'), 'var(--orange)');
       return;
     }
     const cost = portUpgradeCost(islandId, lvl);
@@ -11933,7 +11933,7 @@ function App() {
         if (need > 0) miss.push(`${fmtInt(need)} ${RES_SHORT[k] || k}`);
       }
       if (miss.length) {
-        showToast('❌ Manque ' + miss.join(', '), 'var(--red)');
+        showToast(I18N.t('❌ Manque ') + miss.join(', '), 'var(--red)');
         return;
       }
       for (const k in cost) pool[k] = (pool[k] || 0) - cost[k];
@@ -12045,7 +12045,7 @@ function App() {
     const g = gameRef.current;
     g.ui.dev = !g.ui.dev;
     setDev(g.ui.dev);
-    showToast(g.ui.dev ? '🛠 MODE DEV activé — construction gratuite' : 'Mode dev désactivé', g.ui.dev ? 'var(--red)' : 'var(--ink-dim)');
+    showToast(g.ui.dev ? I18N.t('🛠 MODE DEV activé — construction gratuite') : I18N.t('Mode dev désactivé'), g.ui.dev ? 'var(--red)' : 'var(--ink-dim)');
   }
   function toggleLevels() {
     const g = gameRef.current;
@@ -12078,7 +12078,7 @@ function App() {
     const g = gameRef.current;
     g.ui.fastUpgrade = !g.ui.fastUpgrade;
     setFastUpgrade(g.ui.fastUpgrade);
-    showToast(g.ui.fastUpgrade ? '⬆ Amélioration immédiate activée' : 'Amélioration immédiate désactivée', 'var(--ink-dim)');
+    showToast(g.ui.fastUpgrade ? I18N.t('⬆ Amélioration immédiate activée') : I18N.t('Amélioration immédiate désactivée'), 'var(--ink-dim)');
     scheduleSave();
   }
   function clampPan() {
@@ -12899,7 +12899,7 @@ function App() {
           showToast(`📋 Copié : ${cb.name} — touchez pour placer`, 'var(--green)');
         }
       } else {
-        showToast('Ce bâtiment ne peut pas être copié', 'var(--orange)');
+        showToast(I18N.t('Ce bâtiment ne peut pas être copié'), 'var(--orange)');
       }
       setInfo(null);
       setNetwork(null);
@@ -12974,7 +12974,7 @@ function App() {
       const aid = getActiveSlotId();
       raw = aid ? lsGet(slotDataKey(aid)) : null;
     } catch (_) {}
-    if (!raw) showToast('Sélectionnez un outil en bas pour construire', 'var(--ink)');
+    if (!raw) showToast(I18N.t('Sélectionnez un outil en bas pour construire'), 'var(--ink)');
     bumpClock();
   }, []);
   // Le bandeau tutoriel apparaît/disparaît -> la hauteur du canvas change : relayout.
@@ -13138,22 +13138,22 @@ function App() {
   }, []);
   function saveLabel() {
     const last = gameRef.current.lastSave;
-    if (!last) return 'Sauvegardé';
+    if (!last) return I18N.t('Sauvegardé');
     const s = Math.floor((Date.now() - last) / 1000);
-    if (s < 2) return 'Sauvegardé';
+    if (s < 2) return I18N.t('Sauvegardé');
     if (s < 60) return `il y a ${s}s`;
     const m = Math.floor(s / 60);
     return `il y a ${m}min`;
   }
   function statusHint() {
     if (tool === null) {
-      if (buildOpen) return 'Menu construction — choisissez un bâtiment, ou « Quitter » pour fermer';
-      if (netOpen) return 'Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer';
-      return 'Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos';
+      if (buildOpen) return I18N.t('Menu construction — choisissez un bâtiment, ou « Quitter » pour fermer');
+      if (netOpen) return I18N.t('Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer');
+      return I18N.t('Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos');
     }
-    if (tool === DEMOLISH) return React.createElement("span", null, React.createElement("b", null, "D\xE9molir"), " \u2014 touchez un b\xE2timent (remb. 100%, un par clic) \xB7 glissez pour naviguer");
-    if (tool === UPGRADE) return React.createElement("span", null, React.createElement("b", null, "Am\xE9liorer"), " \u2014 touchez un b\xE2timent de production");
-    if (tool === COPY) return React.createElement("span", null, React.createElement("b", null, "Copier"), " \u2014 touchez un b\xE2timent pour le s\xE9lectionner");
+    if (tool === DEMOLISH) return React.createElement("span", null, React.createElement("b", null, I18N.t("D\xE9molir")), " \u2014 touchez un b\xE2timent (remb. 100%, un par clic) \xB7 glissez pour naviguer");
+    if (tool === UPGRADE) return React.createElement("span", null, React.createElement("b", null, I18N.t("Am\xE9liorer")), " \u2014 touchez un b\xE2timent de production");
+    if (tool === COPY) return React.createElement("span", null, React.createElement("b", null, I18N.t("Copier")), " \u2014 touchez un b\xE2timent pour le s\xE9lectionner");
     const b = BUILDINGS[tool];
     if (b.kind === 'infra') return React.createElement("span", null, React.createElement("b", null, b.name), " \u2014 glissez pour tracer");
     if (b.kind === 'junction') return React.createElement("span", null, React.createElement("b", null, b.name), " \u2014 touchez entre les deux réseaux (mêmes niveaux)");
@@ -13161,9 +13161,9 @@ function App() {
   }
   function saturationLabel() {
     const TYPE_NAME = {
-      road: 'Route',
-      pipe: 'Tuyau',
-      wire: 'Câble'
+      road: I18N.t('Route'),
+      pipe: I18N.t('Tuyau'),
+      wire: I18N.t('Câble')
     };
     const list = game.netSaturated && game.netSaturated[game.currentIsland] || [];
     if (!list.length) return null;
@@ -13172,7 +13172,7 @@ function App() {
       const lab = (TYPE_NAME[s.type] || s.type) + ' V' + s.level;
       if (seen.indexOf(lab) === -1) seen.push(lab);
     }
-    return '⚠ ' + seen.join(' · ') + (seen.length > 1 ? ' saturés' : ' saturée');
+    return '⚠ ' + seen.join(' · ') + (seen.length > 1 ? I18N.t(' saturés') : I18N.t(' saturée'));
   }
   const selMode = tool === null || tool === COPY;
   const dragging = game.drag.active && game.drag.mode === 'select';
@@ -13282,7 +13282,7 @@ function App() {
       setBuildOpen(false);
       setNetOpen(false);
     },
-    title: "Quitter le mode construction"
+    title: I18N.t("Quitter le mode construction")
   }, "\u2715 Quitter")), dev && React.createElement("div", {
     className: "dev-banner"
   }, "\u26A0 MODE DEV \u2014 construction gratuite"), (() => {
@@ -13379,7 +13379,7 @@ function App() {
     onImport: text => slotImport(text),
     onSaveNow: () => {
       writeSave();
-      showToast('💾 Sauvegardé', 'var(--green)');
+      showToast(I18N.t('💾 Sauvegardé'), 'var(--green)');
       setSlotOpen(false);
     }
   }), optionsOpen && React.createElement(OptionsModal, {
@@ -13416,7 +13416,7 @@ function App() {
     className: "catchup-spin"
   }), React.createElement("div", {
     className: "catchup-title"
-  }, "Rattrapage hors-ligne…"), React.createElement("div", {
+  }, I18N.t("Rattrapage hors-ligne…")), React.createElement("div", {
     className: "catchup-pct"
   }, catchUp.pct + " %"), React.createElement("div", {
     className: "catchup-bar"
@@ -13427,7 +13427,7 @@ function App() {
     }
   })), React.createElement("div", {
     className: "catchup-note"
-  }, catchUp.approx ? "calcul simplifié (longue absence)" : "calcul de la production…"))), offlineReport && React.createElement(OfflineModal, {
+  }, catchUp.approx ? I18N.t("calcul simplifié (longue absence)") : I18N.t("calcul de la production…")))), offlineReport && React.createElement(OfflineModal, {
     report: offlineReport,
     onClose: () => setOfflineReport(null)
   }), portOpen && React.createElement(PortPanel, {
@@ -13478,7 +13478,7 @@ function App() {
       g.tipsEnabled = false;
       setTipsEnabled(false);
       closeTip();
-      showToast('Astuces désactivées — réactivables dans les options', 'var(--ink-dim)');
+      showToast(I18N.t('Astuces désactivées — réactivables dans les options'), 'var(--ink-dim)');
       markDirty();
       scheduleSave();
     }
