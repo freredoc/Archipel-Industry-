@@ -1,7 +1,7 @@
 {
-  "build": 138,
-  "version": "Alpha 11.13",
+  "build": 139,
+  "version": "Alpha 11.14",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.13 — usine moteur nucléaire : durée de production ÷10 (#137)"
+  "notes": "Alpha 11.14 — usine moteur nucléaire : durée de production ×10 (sens inversé) (#138)"
 }
