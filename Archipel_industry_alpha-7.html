@@ -170,7 +170,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .inv-ico{width:14px;height:14px;image-rendering:pixelated;flex-shrink:0;vertical-align:middle;}
 .ui-ico{width:16px;height:16px;image-rendering:pixelated;flex-shrink:0;vertical-align:middle;display:inline-block;}
 .tab-ico .ui-ico,.tab-ico.ui-ico{width:18px;height:18px;}
-.inventory.open{flex-wrap:wrap;max-height:140px;overflow-y:auto;align-items:center;}
+.inventory.open{flex-wrap:wrap;align-items:center;}
+.inv-break{flex-basis:100%;width:100%;height:0;margin:0;padding:0;}
 .inv-tier-sep{font-family:'Bebas Neue',sans-serif;font-size:.62rem;letter-spacing:.12em;
   color:var(--yellow);background:rgba(255,209,102,.10);border:1px solid rgba(255,209,102,.28);
   border-radius:3px;padding:1px 6px;flex-shrink:0;align-self:center;}
@@ -4174,8 +4175,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 131;
-const GAME_VERSION = 'Alpha 11.06';
+const GAME_BUILD = 132;
+const GAME_VERSION = 'Alpha 11.07';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -7356,6 +7357,12 @@ function Hud({
     for (const k of inv) {
       const tr = RES_TIER[k] || 't0';
       if (tr !== lastTier) {
+        // Saut de ligne forcé (flex-basis 100%) : chaque tier (T0/T1/T2…) recommence sur sa
+        // propre ligne dans l'inventaire ouvert.
+        items.push(React.createElement("span", {
+          className: "inv-break",
+          key: 'br-' + tr
+        }));
         items.push(React.createElement("span", {
           className: "inv-tier-sep",
           key: 'sep-' + tr
