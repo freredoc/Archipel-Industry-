@@ -17,7 +17,11 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 130`, `GAME_VERSION = 'Alpha 11.05'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 131`, `GAME_VERSION = 'Alpha 11.06'`.** Changement
+  11.06 : **pastille batterie sous l'électricité (HUD).** Le conteneur `.stocks` (qui contient
+  exactement les pastilles ⚡ kW et 🔋 %) passe de `flex-direction:row` à **`column`** (gap 3px,
+  `align-items:stretch`, `flex:0 0 auto`) → la batterie s'empile **sous** l'électricité au lieu d'être
+  à côté ; PORT/RECHERCHE restent à droite (siblings dans `.hud-side`). CSS only (1 ligne). Changement
   11.05 : **accumulateur ×10 + estimation charge/décharge + boutons haut/bas en sprite (thème bleu).**
   (1) **Capacité accumulateur** `2048 → 20480` (×10 ; ×2^upgrade conservé). (2) **Estimation temps**
   dans la fiche (tap) : nouvelle ligne « Charge/Déch. » → « ⬆ plein dans `mm min ss s` » (charge) ou

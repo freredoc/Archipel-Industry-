@@ -56,7 +56,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .island-tab .lock{font-size:.72rem;}
 @media (max-width:560px){.island-tab{flex:0 1 26px;width:26px;height:26px;font-size:.78rem;}.island-tabs{gap:2px;}}
 @media (max-width:380px){.island-tab{flex:1 1 0;width:auto;}}
-.stocks{flex:1;display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;}
+/* Pastilles ⚡ électricité et 🔋 batterie EMPILÉES (batterie sous l'électricité). */
+.stocks{flex:0 0 auto;display:flex;flex-direction:column;align-items:stretch;gap:3px;overflow:visible;scrollbar-width:none;}
 .stocks::-webkit-scrollbar{display:none;}
 .stock{display:flex;align-items:baseline;gap:4px;background:var(--panel-2);
   border:1px solid var(--line);border-radius:3px;padding:2px 7px;white-space:nowrap;flex-shrink:0;}
@@ -4173,8 +4174,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 130;
-const GAME_VERSION = 'Alpha 11.05';
+const GAME_BUILD = 131;
+const GAME_VERSION = 'Alpha 11.06';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
