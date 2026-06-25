@@ -1,7 +1,7 @@
 {
-  "build": 142,
-  "version": "Alpha 11.17",
+  "build": 143,
+  "version": "Alpha 11.18",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.17 — centrale enrichissement U235 : temps de fabrication ×4 (#141)"
+  "notes": "Alpha 11.18 — calculateur de production intégré (#142)"
 }
