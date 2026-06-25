@@ -17,7 +17,13 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 131`, `GAME_VERSION = 'Alpha 11.06'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 132`, `GAME_VERSION = 'Alpha 11.07'`.** Changement
+  11.07 : **inventaire ouvert : tout affiché + 1 tier par ligne.** (1) `.inventory.open` perd
+  `max-height:140px`/`overflow-y:auto` → **tout l'inventaire est visible** (plus de scroll). (2) Un
+  **saut de ligne forcé** (`<span class="inv-break">`, `flex-basis:100%`) est inséré avant CHAQUE
+  séparateur de tier dans le rendu (boucle `inv`) → chaque tier (T0/T1/T2/T3/T4) **recommence sur sa
+  propre ligne**. CSS + 1 élément de rendu. Validé : `node --check` + rendu Chromium (T0 ligne 1, T1
+  ligne 2, 0 erreur). Changement
   11.06 : **pastille batterie sous l'électricité (HUD).** Le conteneur `.stocks` (qui contient
   exactement les pastilles ⚡ kW et 🔋 %) passe de `flex-direction:row` à **`column`** (gap 3px,
   `align-items:stretch`, `flex:0 0 auto`) → la batterie s'empile **sous** l'électricité au lieu d'être
