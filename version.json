@@ -1,7 +1,7 @@
 {
-  "build": 128,
-  "version": "Alpha 11.03",
+  "build": 129,
+  "version": "Alpha 11.04",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.03 — Port onglets Transit île/archipel + mode import + centrale théorique + fix save→options (#127)"
+  "notes": "Alpha 11.04 — texture plaque métal bleue affinée (v3) (#128)"
 }
