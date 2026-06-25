@@ -17,7 +17,13 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 138`, `GAME_VERSION = 'Alpha 11.13'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 139`, `GAME_VERSION = 'Alpha 11.14'`.** Changement
+  11.14 : **usine moteur nucléaire — durée de production ×10 (correction du 11.13, sens inversé).**
+  L'utilisateur voulait l'inverse du 11.13 : production **10× plus LENTE**. `usine_moteur_nuc` :
+  **intrants ET sortants ÷10 par rapport à l'original** (combustible_u235 1→0,1, piece_meca 50→5,
+  processeur 10→1, polymere 50→5 ; element_moteur_nuc 1→0,1). **Conso électrique INCHANGÉE**
+  (`power: 0` + `randomP {min:64, max:512}`). Coût de construction inchangé. Validé : `node --check`
+  (6 blocs) + Chromium (recette ÷10, randomP intact, 0 erreur). Changement
   11.13 : **usine moteur nucléaire — durée de production ÷10.** `usine_moteur_nuc` : **intrants ET
   sortants ×10** (combustible_u235 1→10, piece_meca 50→500, processeur 10→100, polymere 50→500 ;
   element_moteur_nuc 1→10) → elle produit 10× plus vite (durée ÷10). **Conso électrique INCHANGÉE**
