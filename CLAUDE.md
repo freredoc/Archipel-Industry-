@@ -17,7 +17,11 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 128`, `GAME_VERSION = 'Alpha 11.03'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 129`, `GAME_VERSION = 'Alpha 11.04'`.** Changement
+  11.04 : **texture « plaque métal bleue » affinée (v3).** Nouveau `ui_tex_bleu_brillant.png` (150×150,
+  1166 o, navy quasi uni + une bande diagonale très douce) ré-uploadé dans le pack → `--tex-bleu`
+  ré-inliné. Plus subtil/lisible encore que la v2 (11.02). Pas de voile (déjà retiré). CSS only.
+  Validé : CSS équilibré + rendu Chromium (thème bleu très lisible, 0 erreur). Changement
   11.03 : **panneau Port (onglets Transit île/archipel) + mode import + centrale théorique + fix
   save→options.** (1) **Onglets dans le Port** : « Transit île » (contenu actuel, défaut) et « Transit
   archipel » (nouvel onglet listant TOUS les flux inter-îles, groupés src→dest, avec sprite ressource
