@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 135`, `GAME_VERSION = 'Alpha 11.10'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 136`, `GAME_VERSION = 'Alpha 11.11'`.** Changement
+  11.11 : **notation scientifique dans les panneaux Production et Réseaux.** Nouveau helper
+  `fmtRateSci(v)` (= notation scientifique `1,5e5`/`2,43e6` dès 1e5, décimales fines en dessous, via
+  `fmtInt(v, 1e5)`). (1) **ProductionPanel** : bilan énergie (`fmtInt`→`fmtPort` pour ⚡ Prod/Conso/Net
+  kW) ; colonnes Prod/Conso/Net /s et débits Transit (`fmtRate`→`fmtRateSci`). (2) **NetworkPanel**
+  (clic sur route/câble/tuyau) : Débit max, Flux demandé, Demande min→max, Production kW, Réserve
+  accumulateur (charge/cap), Livrée, Tuiles (`fmtInt`→`fmtPort`) ; lignes Production /s & Consommation /s
+  (`fmtFlow` : `fmtRate`→`fmtRateSci`). La citerne tuyau (`fmtPool`) utilisait déjà `fmtPort`. Aucune
+  logique de jeu touchée (affichage seul ; le `fmtInt(cap)` de la fiche BATTERIE, ligne ~8220, non
+  concerné). Validé : `node --check` (6 blocs) + rendu Chromium (0 erreur ; `fmtRateSci(150000)`=`1,5e5`,
+  `fmtRateSci(123.45)`=`123.45`). Changement
   11.10 : **sprites de jonction RÉELLEMENT mis à jour (les 24 ré-inlinés).** En 11.08 j'avais comparé
   les sprites jonction à une **copie périmée** du pack restée dans le working tree → conclusion erronée
   « déjà à jour ». Le `Archipel_sprites_COMPLET.zip` sur `main` (617292 o) contenait en fait une

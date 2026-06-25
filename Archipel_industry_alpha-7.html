@@ -4175,8 +4175,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 135;
-const GAME_VERSION = 'Alpha 11.10';
+const GAME_BUILD = 136;
+const GAME_VERSION = 'Alpha 11.11';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4227,6 +4227,9 @@ function fmtRate(v) {
   if (Math.abs(v - Math.round(v)) < 1e-9) return String(Math.round(v));
   return (Math.round(v * 100) / 100).toString();
 }
+// Débit /s pour les panneaux Production/Réseaux : notation scientifique (1,5e5…) dès 1e5
+// pour compacter les gros débits ; décimales fines en dessous (comme fmtRate).
+const fmtRateSci = v => Math.abs(v) >= 1e5 ? fmtInt(v, 1e5) : fmtRate(v);
 const UPGRADE_SCALE = 2.7;
 const upgradeMult = upg => Math.pow(2, upg || 0);
 function repairCost(n) {
@@ -7099,9 +7102,9 @@ function ProductionPanel({
     className: "prod-body"
   }, React.createElement("div", {
     className: "prod-energy"
-  }, React.createElement("span", null, I18N.t("⚡ Prod "), fmtInt(enP), " kW"), React.createElement("span", null, I18N.t("Conso "), fmtInt(enD), " kW"), React.createElement("span", {
+  }, React.createElement("span", null, I18N.t("⚡ Prod "), fmtPort(enP), " kW"), React.createElement("span", null, I18N.t("Conso "), fmtPort(enD), " kW"), React.createElement("span", {
     className: 'pe-net ' + (enN >= 0 ? 'ok' : 'bad')
-  }, I18N.t("Net "), enN >= 0 ? '+' : '', fmtInt(enN), " kW")), React.createElement("div", {
+  }, I18N.t("Net "), enN >= 0 ? '+' : '', fmtPort(enN), " kW")), React.createElement("div", {
     className: "prod-table"
   }, React.createElement("div", {
     className: "prod-row prod-head"
@@ -7124,11 +7127,11 @@ function ProductionPanel({
       key: k
     }, resCell(k), React.createElement("span", {
       className: "pc-p"
-    }, fmtRate(p)), React.createElement("span", {
+    }, fmtRateSci(p)), React.createElement("span", {
       className: "pc-c"
-    }, fmtRate(c)), React.createElement("span", {
+    }, fmtRateSci(c)), React.createElement("span", {
       className: 'pc-n ' + (n >= -1e-6 ? 'ok' : 'bad')
-    }, n >= 0 ? '+' : '', fmtRate(n)));
+    }, n >= 0 ? '+' : '', fmtRateSci(n)));
   })), React.createElement("div", {
     className: "prod-sub"
   }, I18N.t("Transit entre îles")), transits.length === 0 ? React.createElement("div", {
@@ -7142,7 +7145,7 @@ function ProductionPanel({
     className: "pt-route"
   }, I18N.t("Île "), t.src, I18N.t(" → Île "), t.dest), resCell(t.k), React.createElement("span", {
     className: "pt-rate"
-  }, fmtRate(t.rate), "/s")))))));
+  }, fmtRateSci(t.rate), "/s")))))));
 }
 // Tous les flux de transit inter-îles en cours (game.transitFlow src_dest -> {res: rate}),
 // groupés par direction src→dest. Utilisé par l'onglet « Transit archipel » du panneau Port.
@@ -9149,7 +9152,7 @@ function NetworkPanel({
   const flowList = bucket => flow && flow[bucket] ? Object.entries(flow[bucket]).filter(e => e[1] > 1e-6).sort((a, b) => b[1] - a[1]) : [];
   const prodEntries = isWire ? [] : flowList('prod');
   const consEntries = isWire ? [] : flowList('cons');
-  const fmtFlow = entries => entries.map(([k, v]) => fmtRate(v) + ' ' + matLabel(k)).join(' · ');
+  const fmtFlow = entries => entries.map(([k, v]) => fmtRateSci(v) + ' ' + matLabel(k)).join(' · ');
   // Réserve stockée dans le pool du réseau TUYAU (citerne) : liquides en attente de
   // consommation (pétrole, eau, acide…). Invisible dans l'inventaire du port → on l'expose ici.
   const poolEntries = netObj.type === 'pipe' && netObj.pool ? Object.entries(netObj.pool).filter(e => e[1] > 1e-6).sort((a, b) => b[1] - a[1]) : [];
@@ -9190,7 +9193,7 @@ function NetworkPanel({
     className: "lbl"
   }, I18N.t("D\xE9bit max")), React.createElement("span", {
     className: "val io"
-  }, cap === Infinity ? I18N.t('illimité') : fmtInt(cap) + I18N.t(' /s'))), React.createElement("div", {
+  }, cap === Infinity ? I18N.t('illimité') : fmtPort(cap) + I18N.t(' /s'))), React.createElement("div", {
     className: "ip-row" + (saturatedNet ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
@@ -9199,14 +9202,14 @@ function NetworkPanel({
     style: saturatedNet ? {
       color: '#ff8079'
     } : undefined
-  }, fmtInt(demand) + I18N.t(' /s'))), showWireRange && React.createElement("div", {
+  }, fmtPort(demand) + I18N.t(' /s'))), showWireRange && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
   }, I18N.t("Demande min→max")), React.createElement("span", {
     className: "val io",
     title: I18N.t("Plage de consommation : les b\xE2timents \xE0 conso sigmo\xEFde/al\xE9atoire font varier la demande \xE9lec. Dimensionnez la production pour le max.")
-  }, fmtInt(wi.demandMin) + ' → ' + fmtInt(wi.demandMax) + ' kW')), saturatedNet && React.createElement("div", {
+  }, fmtPort(wi.demandMin) + ' → ' + fmtPort(wi.demandMax) + ' kW')), saturatedNet && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
@@ -9222,14 +9225,14 @@ function NetworkPanel({
     className: "lbl"
   }, I18N.t("Production")), React.createElement("span", {
     className: "val io"
-  }, fmtInt(elProd) + ' kW')), showWireAcc && React.createElement("div", {
+  }, fmtPort(elProd) + ' kW')), showWireAcc && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
   }, I18N.t("R\xE9serve")), React.createElement("span", {
     className: "val io",
     title: I18N.t("\xC9nergie stock\xE9e dans les accumulateurs branch\xE9s sur ce r\xE9seau c\xE2ble (charge / capacit\xE9).")
-  }, '🔋 ' + fmtInt(wi.accStored) + ' / ' + fmtInt(wi.accCap) + I18N.t(' kWh \xB7 ') + Math.round(wi.accStored / wi.accCap * 100) + '%')), isWire && wi && (cappedByThroughput || prodDeficit) && React.createElement("div", {
+  }, '🔋 ' + fmtPort(wi.accStored) + ' / ' + fmtPort(wi.accCap) + I18N.t(' kWh \xB7 ') + Math.round(wi.accStored / wi.accCap * 100) + '%')), isWire && wi && (cappedByThroughput || prodDeficit) && React.createElement("div", {
     className: "ip-row" + (cappedByThroughput ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
@@ -9238,7 +9241,7 @@ function NetworkPanel({
     style: {
       color: '#ff8079'
     }
-  }, fmtInt(elDeliver) + ' kW')), isWire && cappedByThroughput && React.createElement("div", {
+  }, fmtPort(elDeliver) + ' kW')), isWire && cappedByThroughput && React.createElement("div", {
     className: "ip-note",
     style: {
       color: '#ffcf6b',
@@ -9283,7 +9286,7 @@ function NetworkPanel({
     className: "lbl"
   }, I18N.t("Tuiles")), React.createElement("span", {
     className: "val"
-  }, fmtInt(tiles))), coupled && React.createElement("div", {
+  }, fmtPort(tiles))), coupled && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
