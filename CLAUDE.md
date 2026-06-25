@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 114`, `GAME_VERSION = 'Alpha 10.89'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 115`, `GAME_VERSION = 'Alpha 10.90'`.** Changement
+  10.90 : **barre du haut en PLAQUE INOX (thème inox).** En 10.88 le cadre `.hud` passait inox mais
+  les éléments INTERNES restaient bleus : la bande **inventaire** (`.inventory`, `var(--panel-2)`) et
+  toutes les **pastilles** (`.options-btn`/`.research-btn` PORT·RECHERCHE/`.stock` kW·batterie/
+  `.inv-label-btn` INVENTAIRE/`.inv-prod-btn` Production/`.inv-item`/`.inv-count`, en `var(--panel)`/
+  `--panel-2`). Désormais (sous `body.theme-inox`) : l'inventaire passe sur **tôle larmée légère**
+  (`--tex-inox-leger` repeat, bordures `#3a3d47`) et toutes les pastilles passent en **gunmetal**
+  (`#2c2f38`, bordure `#4a4f5a`, texte `#ebeef5`) + survol `#363a44`. Les accents (vert REPARER,
+  vert/rouge kW·batterie via règles plus spécifiques, indice or des onglets/tiers) sont conservés.
+  CSS only, aucune logique touchée. Validé : `node --check` + CSS équilibré + rendu Chromium (plus
+  aucun fond bleu en haut). Changement
   10.89 : **débit max /s du transit affiché dans le panneau Port (section « Amélioration du
   transit »).** La ligne montrait « Taille des lots ×N (X u) » → « ×N+1 » (formulation héritée du
   système par paquets, alors que le transit est CONTINU depuis 10.48) : on ne voyait pas ce que
