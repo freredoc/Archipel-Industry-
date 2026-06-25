@@ -1,7 +1,7 @@
 {
-  "build": 137,
-  "version": "Alpha 11.12",
+  "build": 138,
+  "version": "Alpha 11.13",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.12 — puissance affichée en kW / MW / GW selon l'ampleur (#136)"
+  "notes": "Alpha 11.13 — usine moteur nucléaire : durée de production ÷10 (#137)"
 }
