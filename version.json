@@ -1,7 +1,7 @@
 {
-  "build": 140,
-  "version": "Alpha 11.15",
+  "build": 141,
+  "version": "Alpha 11.16",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.15 — coût réseau ×4/niveau + element_moteur_nuc en T4 (#139)"
+  "notes": "Alpha 11.16 — panneau Port : mention de l'île reliée par le transit (#140)"
 }
