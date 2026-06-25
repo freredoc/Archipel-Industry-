@@ -1,7 +1,7 @@
 {
-  "build": 113,
-  "version": "Alpha 10.88",
+  "build": 114,
+  "version": "Alpha 10.89",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.88 — chasse aux bugs (jonction/hors-ligne) + thème inox cohérent (#112)"
+  "notes": "Alpha 10.89 — débit max /s du transit affiché dans le panneau Port (#113)"
 }
