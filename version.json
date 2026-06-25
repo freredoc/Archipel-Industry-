@@ -1,7 +1,7 @@
 {
-  "build": 117,
-  "version": "Alpha 10.92",
+  "build": 118,
+  "version": "Alpha 10.93",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.92 — tôle larmée inox sur toute l'UI (comme le menu bâtiment) (#116)"
+  "notes": "Alpha 10.93 — refonte tech tree nucléaire + centrale réglable/améliorable (#117)"
 }
