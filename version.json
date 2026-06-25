@@ -1,7 +1,7 @@
 {
-  "build": 134,
-  "version": "Alpha 11.09",
+  "build": 135,
+  "version": "Alpha 11.10",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.09 — export/transit du diesel possible (#133)"
+  "notes": "Alpha 11.10 — sprites de jonction réellement mis à jour (24 ré-inlinés) (#134)"
 }
