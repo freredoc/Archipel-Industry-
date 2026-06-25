@@ -4175,8 +4175,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 132;
-const GAME_VERSION = 'Alpha 11.07';
+const GAME_BUILD = 133;
+const GAME_VERSION = 'Alpha 11.08';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -11415,17 +11415,18 @@ function App() {
       if (verbose) showToast(I18N.t('❌ Une seule jonction de ce type par île'), 'var(--red)');
       return false;
     }
-    // Porteurs présents (sur la tuile ou via un réseau adjacent).
+    // Porteurs présents (sur la tuile ou via un réseau adjacent). La pose est LIBRE
+    // (cohérent avec la pose sans route des bâtiments, 10.34) : on ne bloque plus si
+    // aucun réseau n'est adjacent — la jonction porte les DEUX réseaux et se reliera
+    // dès qu'un tracé route/câble/tuyau la touchera (rebuildNetworks gère la topologie).
     const hasA = tileCarrier === typeA || adjacentNetworks(g, isl, r, c, typeA).length > 0;
     const hasB = tileCarrier === typeB || adjacentNetworks(g, isl, r, c, typeB).length > 0;
-    if (!hasA && !hasB) {
-      if (verbose) showToast(I18N.t('❌ Doit toucher un réseau (route/câble/tuyau)'), 'var(--red)');
-      return false;
-    }
-    const missing = !hasA ? typeA : !hasB ? typeB : null;
+    // Auto-pose du porteur manquant (« la route de l'autre côté ») perpendiculairement
+    // au porteur déjà présent — UNIQUEMENT si exactement UN des deux porteurs est présent,
+    // et en BEST-EFFORT (on ne refuse plus la pose s'il n'y a pas de place à côté : la
+    // jonction est posée seule, le croisement se complète quand le joueur étend l'autre réseau).
+    const missing = hasA && !hasB ? typeB : hasB && !hasA ? typeA : null;
     const present = missing === typeA ? typeB : typeA;
-    // Auto-pose du porteur manquant (la « route de l'autre côté ») perpendiculairement
-    // au porteur déjà présent, sur les tuiles voisines libres.
     const autoTiles = [];
     if (missing) {
       const carries = (tt, car) => tt && tt.building && (tt.building.id === car || BUILDINGS[tt.building.id] && BUILDINGS[tt.building.id].junction && BUILDINGS[tt.building.id].junction.indexOf(car) !== -1);
@@ -11444,10 +11445,7 @@ function App() {
         if (!BUILDINGS[missing].terrains.includes(nt.terrain)) continue;
         autoTiles.push([nr, nc]);
       }
-      if (autoTiles.length === 0) {
-        if (verbose) showToast(I18N.t('❌ Pas de place pour le réseau croisé à côté'), 'var(--red)');
-        return false;
-      }
+      // Pas de place pour le croisement : on pose tout de même la jonction seule (best-effort).
     }
     // Coût (croissant en Normal ; le réseau auto-posé est en V1, gratuit).
     const dev = g.ui.dev;

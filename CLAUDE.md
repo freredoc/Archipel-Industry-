@@ -17,7 +17,21 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 132`, `GAME_VERSION = 'Alpha 11.07'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 133`, `GAME_VERSION = 'Alpha 11.08'`.** Changement
+  11.08 : **pose de jonction LIBRE (fin des refus géométriques) + vérif sprites jonction.** (1) **Bug :
+  « impossible de poser une jonction ici ».** `tryPlaceJunction` refusait la pose sur une tuile vide qui
+  ne **touchait aucun réseau infra adjacent** (toast « ❌ Doit toucher un réseau ») ou quand le porteur
+  croisé ne pouvait pas être auto-posé à côté (toast « ❌ Pas de place pour le réseau croisé à côté »).
+  Or une jonction porte les DEUX réseaux et se relie dès qu'un tracé la touche (rebuildNetworks). Désormais
+  la pose est **libre** (cohérent avec la pose sans route des bâtiments, 10.34) : ces 2 refus sont retirés ;
+  l'auto-pose du porteur manquant ne se fait QUE si **exactement un** des deux porteurs est présent et reste
+  **best-effort** (pas de place à côté → la jonction est posée seule, le croisement se complète quand le
+  joueur étend l'autre réseau). Restent bloquants : tuile occupée, croisement d'une infra non-couplée,
+  terrain interdit, limite Difficile (1/type/île), coût. (2) **Sprites jonction VÉRIFIÉS à jour** : les 24
+  PNG inlinés (`jonction_<H>_<V>_v1..v4`, 6 paires orientées) **correspondent byte-à-byte** au pack
+  `Archipel_sprites_COMPLET` ; la logique d'orientation (`first` = porteur horizontal, `second` = vertical,
+  via les masques de connexion) est correcte → aucun sprite obsolète, rien à ré-inliner. Validé : `node
+  --check` (6 blocs) + rendu Chromium (0 erreur console). Changement
   11.07 : **inventaire ouvert : tout affiché + 1 tier par ligne.** (1) `.inventory.open` perd
   `max-height:140px`/`overflow-y:auto` → **tout l'inventaire est visible** (plus de scroll). (2) Un
   **saut de ligne forcé** (`<span class="inv-break">`, `flex-basis:100%`) est inséré avant CHAQUE
