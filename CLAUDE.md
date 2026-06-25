@@ -17,7 +17,18 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 120`, `GAME_VERSION = 'Alpha 10.95'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 121`, `GAME_VERSION = 'Alpha 10.96'`.** Changement
+  10.96 : **ressources irradiées en T4 (inventaire) + sous-catégories « Traitement ».** (1) Les 4
+  matériaux **irradiés** (`acier_irradie`/`beton_arme_irradie`/`cable_irradie`/`ciment_irradie`) passent
+  de `RES_TIER` t3 → **t4** ; ajout de `t4:4` à `RES_TIER_RANK` et `t4:'T4'` à `RES_TIER_LABEL` → ils
+  s'affichent sous un séparateur **T4** dans l'inventaire (le tri `resTierRank` les place après t3).
+  (2) L'ancienne catégorie unique **« Traitement »** du menu Bâtiment (`TOOLBAR_GROUPS`) est scindée en
+  **4 catégories** par filière : **Fer-acier** (four_fer/_v2, acierie, four_arc_acier, cimenterie,
+  betonniere, atelier_meca, four_arc_piece), **Cuivre** (four_cuivre/_v2, cablerie, four_arc_cable,
+  circuit, broyeur, raffineur_silicium, fab_processeur), **Plastique et chimie** (usine_polymere,
+  raffinerie, distillerie), **Or** (fonderie_or). Aucune logique de jeu ; les filtres NETWORK/BUILD
+  ne testent qu'Infrastructure/Jonctions (intacts). Validé : `node --check` + rendu Chromium (catégories
+  visibles, ex. « Fer-acier »). Changement
   10.95 : **centrale 4 MW + jauge de puissance + lisibilité inox renforcée.** (1) **`NUC_POWER`
   16384 → 4096** : la centrale V1 (niveau 1 / 100 %) produit **4 MW** (et ×2^upgrade : Nv.1 = 8 MW…).
   MAJ dans le tick ET la fiche. (2) **Curseur de puissance = jauge graduée** : les 3 boutons (−/%/+)
