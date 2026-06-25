@@ -1,7 +1,7 @@
 {
-  "build": 125,
-  "version": "Alpha 11.00",
+  "build": 126,
+  "version": "Alpha 11.01",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.00 — i18n Phase 1 (contenu fr/en/es/de + langue système + sélecteur) (#124)"
+  "notes": "Alpha 11.01 — i18n Phase 2 (couche UI câblée, fr/en/es/de) (#125)"
 }
