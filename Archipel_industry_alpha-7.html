@@ -4175,8 +4175,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 133;
-const GAME_VERSION = 'Alpha 11.08';
+const GAME_BUILD = 134;
+const GAME_VERSION = 'Alpha 11.09';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -6747,7 +6747,7 @@ function portUpgradeCost(islandId, currentLevel) {
   return out;
 }
 const portSpeedMult = level => Math.pow(2, level || 0);
-const TRADE_LIQUIDS = ['petrole', 'acide'];
+const TRADE_LIQUIDS = ['petrole', 'acide', 'diesel'];
 const TRADE_RESOURCES = Object.keys(CARRIER_BY_RES).filter(r => CARRIER_BY_RES[r] === 'road' || TRADE_LIQUIDS.includes(r));
 function portPipePools(game, islandId) {
   const nets = game.networks[islandId] || {};
@@ -6788,7 +6788,14 @@ const tradeCfgFor = (game, islandId, res) => {
     interdit: false
   });
 };
-const tradePriorityFor = (game, islandId) => game.tradePriority[islandId] || (game.tradePriority[islandId] = [...TRADE_RESOURCES]);
+const tradePriorityFor = (game, islandId) => {
+  let arr = game.tradePriority[islandId];
+  if (!arr) return game.tradePriority[islandId] = [...TRADE_RESOURCES];
+  // Réconcilie : ajoute les ressources transitables apparues APRÈS la création de la liste
+  // (ex. diesel en 11.09) — sinon, dans une save existante, elles ne seraient jamais transitées.
+  if (arr.length < TRADE_RESOURCES.length) for (const r of TRADE_RESOURCES) if (arr.indexOf(r) === -1) arr.push(r);
+  return arr;
+};
 const tradeModeFor = (game, islandId) => game.tradeMode && game.tradeMode[islandId] === 'proportional' ? 'proportional' : 'priority';
 // Export d'une ressource interdit de srcIsland vers destIsland (réglage par ressource
 // ET par destination dans le port) : game.tradeBlockDest[src][dest][res] === true.
