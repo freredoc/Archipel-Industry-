@@ -1,0 +1,834 @@
+{
+ "res": {
+  "pierre": "pierre",
+  "minerai_fer": "min.fer",
+  "charbon": "charbon",
+  "lingot_fer": "ling.fer",
+  "ciment": "ciment",
+  "eau": "eau",
+  "energie_kw": "kW",
+  "lingot_cuivre": "ling.cuivre",
+  "minerai_cuivre": "min.cuivre",
+  "acier": "acier",
+  "cable": "câble",
+  "petrole": "pétrole",
+  "diesel": "diesel",
+  "polymere": "polymère",
+  "beton_arme": "béton armé",
+  "piece_meca": "pièce méca",
+  "circuit": "circuit",
+  "minerai_or": "min.or",
+  "silicium": "silicium",
+  "acide": "acide",
+  "lingot_or": "ling.or",
+  "silicium_raffine": "si.raffiné",
+  "processeur": "proc.",
+  "uranium": "uranium",
+  "yellow_cake": "yellowcake",
+  "combustible_u235": "comb.U235",
+  "eau_froide": "eau froide",
+  "acier_irradie": "acier irr.",
+  "beton_arme_irradie": "béton irr.",
+  "cable_irradie": "câble irr.",
+  "ciment_irradie": "ciment irr.",
+  "element_moteur_nuc": "élém.moteur"
+ },
+ "bld": {
+  "road": {
+   "name": "Route",
+   "label": ""
+  },
+  "pipe": {
+   "name": "Tuyau",
+   "label": ""
+  },
+  "wire": {
+   "name": "Câble",
+   "label": ""
+  },
+  "jonction_route_cable": {
+   "name": "Jonction Route/Câble",
+   "label": "J-RC"
+  },
+  "jonction_route_tuyau": {
+   "name": "Jonction Route/Tuyau",
+   "label": "J-RT"
+  },
+  "jonction_cable_tuyau": {
+   "name": "Jonction Câble/Tuyau",
+   "label": "J-CT"
+  },
+  "mine_fer": {
+   "name": "Mine Fer V1",
+   "label": "FER"
+  },
+  "mine_charbon": {
+   "name": "Mine Charbon V1",
+   "label": "CHAR"
+  },
+  "carriere": {
+   "name": "Carrière V1",
+   "label": "PIER"
+  },
+  "pompe_eau": {
+   "name": "Pompe Eau V1",
+   "label": "EAU"
+  },
+  "eolienne": {
+   "name": "Éolienne V1",
+   "label": "ÉOL"
+  },
+  "mine_cuivre": {
+   "name": "Mine Cuivre V1",
+   "label": "CUIV"
+  },
+  "centrale_charbon": {
+   "name": "Centrale Charbon V1",
+   "label": "C.CH"
+  },
+  "four_fer": {
+   "name": "Four Fer V1",
+   "label": "FOUR"
+  },
+  "cimenterie": {
+   "name": "Cimenterie V1",
+   "label": "CIM"
+  },
+  "four_cuivre": {
+   "name": "Four Cuivre V1",
+   "label": "F.CU"
+  },
+  "four_fer_v2": {
+   "name": "Four Fer V2",
+   "label": "FER2"
+  },
+  "four_cuivre_v2": {
+   "name": "Four Cuivre V2",
+   "label": "CUI2"
+  },
+  "cablerie": {
+   "name": "Câblerie V1",
+   "label": "CABL"
+  },
+  "acierie": {
+   "name": "Aciérie V1",
+   "label": "ACIER"
+  },
+  "puits_petrole": {
+   "name": "Puits Pétrole V1",
+   "label": "OIL"
+  },
+  "raffinerie": {
+   "name": "Raffinerie V1",
+   "label": "RAFF"
+  },
+  "betonniere": {
+   "name": "Bétonnière V1",
+   "label": "BÉTON"
+  },
+  "atelier_meca": {
+   "name": "Atelier Méca. V1",
+   "label": "MÉCA"
+  },
+  "usine_polymere": {
+   "name": "Usine Polymère V1",
+   "label": "POLY"
+  },
+  "centrale_diesel": {
+   "name": "Centrale Diesel V1",
+   "label": "C.DSL"
+  },
+  "circuit": {
+   "name": "Circuit V1",
+   "label": "CIRC"
+  },
+  "mine_fer_v2": {
+   "name": "Mine Fer V2",
+   "label": "FER2"
+  },
+  "mine_charbon_v2": {
+   "name": "Mine Charbon V2",
+   "label": "CHA2"
+  },
+  "mine_cuivre_v2": {
+   "name": "Mine Cuivre V2",
+   "label": "CUI2"
+  },
+  "carriere_v2": {
+   "name": "Carrière V2",
+   "label": "CAR2"
+  },
+  "mine_or": {
+   "name": "Mine Or V1",
+   "label": "OR"
+  },
+  "broyeur": {
+   "name": "Broyeur V1",
+   "label": "BROY"
+  },
+  "distillerie": {
+   "name": "Distillerie V1",
+   "label": "DIST"
+  },
+  "fonderie_or": {
+   "name": "Fonderie Or V1",
+   "label": "F.OR"
+  },
+  "raffineur_silicium": {
+   "name": "Raffineur Si V1",
+   "label": "R.SI"
+  },
+  "fab_processeur": {
+   "name": "Fab. Processeur V1",
+   "label": "PROC"
+  },
+  "accumulateur": {
+   "name": "Accumulateur V1",
+   "label": "BATT"
+  },
+  "four_arc_acier": {
+   "name": "Four Arc Acier V1",
+   "label": "ARC.F"
+  },
+  "four_arc_cable": {
+   "name": "Four Arc Câble V1",
+   "label": "ARC.C"
+  },
+  "four_arc_piece": {
+   "name": "Four Arc Pièce Méca V1",
+   "label": "ARC.P"
+  },
+  "eolienne_offshore": {
+   "name": "Éolienne Offshore V2",
+   "label": "OFF.W"
+  },
+  "plateforme_petroliere": {
+   "name": "Plateforme Pétrolière V1",
+   "label": "OIL.P"
+  },
+  "mine_uranium": {
+   "name": "Mine Uranium V1",
+   "label": "URAN"
+  },
+  "broyeur_uranium": {
+   "name": "Broyeur Uranium V1",
+   "label": "BR.U"
+  },
+  "centrale_enrichissement": {
+   "name": "Centrale Enrichissement V1",
+   "label": "ENR"
+  },
+  "refroidisseur": {
+   "name": "Refroidisseur V1",
+   "label": "REFR"
+  },
+  "centrale_nucleaire": {
+   "name": "Centrale Nucléaire V1",
+   "label": "NUC"
+  },
+  "mine_fer_v3": {
+   "name": "Mine Fer V3",
+   "label": "FER3"
+  },
+  "mine_cuivre_v3": {
+   "name": "Mine Cuivre V3",
+   "label": "CUI3"
+  },
+  "carriere_v3": {
+   "name": "Carrière V3",
+   "label": "CAR3"
+  },
+  "mine_charbon_v3": {
+   "name": "Mine Charbon V3",
+   "label": "CHA3"
+  },
+  "mine_or_v3": {
+   "name": "Mine Or V3",
+   "label": "OR3"
+  },
+  "usine_moteur_nuc": {
+   "name": "Usine Moteur Nucléaire V1",
+   "label": "MOT"
+  },
+  "antenne": {
+   "name": "Antenne T5",
+   "label": "ANT"
+  },
+  "port": {
+   "name": "Port",
+   "label": "PORT"
+  }
+ },
+ "tech": {
+  "1": "Île 1 — Disponible",
+  "2": "Accès Île 2",
+  "3": "Four Cuivre V1",
+  "4": "Éolienne + Câblerie",
+  "5": "Centrale Charbon + Aciérie",
+  "6": "Jonctions (3 types)",
+  "7": "Upgrades V2",
+  "8": "Accès Île 3",
+  "9": "Usine Polymère",
+  "10": "Bétonnière + Atelier Méca.",
+  "11": "Centrale Diesel + Raffinerie",
+  "12": "Circuit V1",
+  "13": "Upgrades V2 — Mines",
+  "14": "Accès Île 4",
+  "15": "Broyeur + Distillerie",
+  "16": "Fonderie Or + Raffineur Si",
+  "17": "Fab. Processeur",
+  "18": "Accumulateur",
+  "19": "Fours à Arc",
+  "20": "Éolienne Offshore + Plateforme",
+  "21": "Accès Île 5",
+  "22": "Broyeur Uranium",
+  "23": "Centrale Enrichissement + Refroidisseur",
+  "24": "Centrale Nucléaire",
+  "25": "Usine Moteur Nucléaire V1",
+  "26": "Antenne T5",
+  "27": "Navire Futuriste"
+ },
+ "tutorial": {
+  "0": "Posez une mine de fer sur un gisement de fer.",
+  "1": "Posez une carrière sur une tuile.",
+  "2": "Reliez la mine et la carrière au port avec des routes.",
+  "3": "Améliorez la mine et la carrière au niveau 2.",
+  "4": "Posez une mine de charbon et reliez-la au port.",
+  "5": "Posez un four à fer et reliez-le au port.",
+  "6": "Posez une cimenterie et reliez-la au port."
+ },
+ "tips": {
+  "bienvenue": {
+   "title": "Bienvenue sur l'archipel",
+   "body": [
+    "Votre but : <b>extraire</b> des ressources, les <b>acheminer</b> au port par des réseaux, les <b>transformer</b> en produits, puis <b>livrer</b> et <b>chercher</b> pour débloquer de nouveaux bâtiments et de nouvelles îles.",
+    "Le bandeau en haut vous guide pas à pas pour vos premières constructions.",
+    "Trois réseaux relient tout : la <b>route</b> (solides), le <b>tuyau</b> (liquides) et le <b>câble</b> (électricité)."
+   ]
+  },
+  "recherche": {
+   "title": "La recherche",
+   "body": [
+    "Ouvrez le panneau <b>Recherche</b> (🔬). Chaque nœud demande des ressources livrées au port pour débloquer des bâtiments ou des îles.",
+    "Trois façons de valider : <b>automatique</b> (dès les ressources réunies), <b>manuel</b> (bouton Confirmer) ou <b>livraison</b> (acheminer un lot par bateau).",
+    "Une recherche prête à valider apparaît en jaune."
+   ]
+  },
+  "transport": {
+   "title": "Transport inter-îles",
+   "body": [
+    "Une nouvelle île est accessible ! Chaque île a son <b>port</b>. Reliez vos bâtiments au port par la route, puis configurez les <b>liaisons</b> dans le panneau Port.",
+    "Les cargos transportent des <b>lots</b> entre deux îles à intervalle régulier. Un liquide n'est transportable que si un <b>tuyau</b> relie sa production au port."
+   ]
+  },
+  "energie": {
+   "title": "L'énergie",
+   "body": [
+    "Certains bâtiments consomment de l'<b>électricité</b>. Il faut en produire assez (éolienne, centrale…) pour couvrir la demande.",
+    "L'électricité est partagée à l'échelle de l'<b>île entière</b> : le bilan (production − consommation) s'affiche en haut, avec la pastille 🔋.",
+    "Ouvrez le panneau <b>Énergie</b> pour voir le détail et la demande non servie."
+   ]
+  },
+  "deficit": {
+   "title": "Déficit d'énergie",
+   "body": [
+    "Votre production ne couvre plus la consommation : des bâtiments vont être <b>coupés</b>.",
+    "Dans le panneau Énergie, choisissez comment l'électricité est rationnée : par <b>priorité</b>, en <b>partage équitable</b>, ou de façon <b>proportionnelle</b>.",
+    "Ajoutez des producteurs, ou stockez le surplus dans un <b>accumulateur</b> pour absorber les pics."
+   ]
+  },
+  "tuyaux": {
+   "title": "Les liquides",
+   "body": [
+    "Vous produisez un <b>liquide</b> (eau, pétrole…). Les liquides circulent uniquement par le réseau <b>tuyau</b>, pas par la route.",
+    "Pour exporter un liquide vers une autre île, le tuyau doit relier sa production directement au <b>port</b>."
+   ]
+  },
+  "reseau_sature": {
+   "title": "Réseau saturé",
+   "body": [
+    "Un réseau transporte plus que son débit ne le permet : le flux est <b>bridé</b> et les bâtiments concernés tournent au ralenti.",
+    "Sélectionnez le réseau et <b>améliorez son niveau</b> (V2, V3…) pour augmenter le débit.",
+    "Vous pouvez aussi régler la <b>priorité de flux</b> de chaque bâtiment (haute / normale / basse) pour servir l'essentiel d'abord."
+   ]
+  },
+  "batiment_deconnecte": {
+   "title": "Bâtiment déconnecté",
+   "body": [
+    "Un bâtiment est posé mais n'est relié à <b>aucun réseau</b> : il ne produit rien et ne reçoit rien.",
+    "Reliez-le au port par une <b>route</b> (et, selon ses besoins, par un <b>tuyau</b> pour les liquides ou un <b>câble</b> pour l'électricité)."
+   ]
+  },
+  "jonctions": {
+   "title": "Les jonctions",
+   "body": [
+    "Les <b>jonctions</b> laissent deux réseaux se croiser sur la même tuile <b>sans se connecter</b> (ex. une route qui passe au-dessus d'un câble).",
+    "Une seule sorte de jonction par île. Pratique quand la place manque."
+   ]
+  },
+  "upgrade_vs_v2": {
+   "title": "Améliorer ou passer en V2 ?",
+   "body": [
+    "Deux progressions différentes coexistent. <b>Améliorer sur place</b> (mode Améliorer) monte le <b>même</b> bâtiment d'un niveau : plus de production sur la même tuile.",
+    "Une <b>version V2</b> (ex. Four Fer V2) est un <b>nouveau</b> bâtiment, avec sa propre recette : il faut le construire à la place de l'ancien.",
+    "L'espace au sol étant limité, améliorer sur place est souvent le meilleur choix."
+   ]
+  },
+  "accumulateur": {
+   "title": "L'accumulateur",
+   "body": [
+    "L'<b>accumulateur</b> stocke le surplus d'électricité quand vous produisez plus que nécessaire, et le restitue en cas de <b>déficit</b>.",
+    "Idéal pour les producteurs irréguliers ou les pics de consommation. On peut l'améliorer pour augmenter sa capacité."
+   ]
+  },
+  "nucleaire": {
+   "title": "La filière nucléaire",
+   "body": [
+    "Une longue chaîne s'ouvre : mine d'uranium → broyage → yellow cake → enrichissement → <b>Centrale Nucléaire</b>.",
+    "La centrale doit être reliée au <b>câble</b> pour fournir de l'électricité, et alimentée en continu : son <b>combustible se consomme en permanence</b>.",
+    "Son démarrage est progressif (plusieurs minutes) — prévoyez la logistique à l'avance."
+   ]
+  },
+  "non_stockable": {
+   "title": "Ressource non stockable",
+   "body": [
+    "L'<b>eau froide</b> (produite par le refroidisseur) ne se stocke pas : elle est consommée dans le tick même où elle est produite.",
+    "Le débit de production doit donc être suffisant <b>en continu</b> ; un surplus est simplement perdu, un manque coupe le bâtiment alimenté."
+   ]
+  },
+  "irradie": {
+   "title": "Matériaux irradiés & réseau illimité",
+   "body": [
+    "La Centrale Nucléaire peut <b>irradier</b> des matériaux (béton armé, acier, câble).",
+    "Avec 10 000 unités d'un matériau irradié, un réseau passe en <b>débit illimité</b> : plus aucune limite de flux, plus jamais de saturation sur ce réseau."
+   ]
+  },
+  "antenne": {
+   "title": "L'antenne T5",
+   "body": [
+    "L'<b>antenne</b> double la production des <b>8 tuiles adjacentes</b> (montée en puissance progressive jusqu'à ×3 d'effet).",
+    "Elle consomme 512 kW en continu : placez-la au centre d'un groupe de bâtiments clés pour maximiser le bonus."
+   ]
+  },
+  "reparer": {
+   "title": "Réparer le terrain",
+   "body": [
+    "Vous pouvez désormais <b>réparer</b> les tuiles obstacle pour les rendre constructibles.",
+    "Chaque réparation coûte plus cher que la précédente : l'espace au sol reste votre ressource la plus précieuse."
+   ]
+  },
+  "etendre": {
+   "title": "Étendre le terrain",
+   "body": [
+    "Le <b>remblai</b> transforme une tuile d'eau côtière en terre constructible.",
+    "Comme la réparation, le coût augmente à chaque extension. À réserver aux emplacements vraiment stratégiques."
+   ]
+  }
+ },
+ "ui": {
+  "Réseau introuvable": "Réseau introuvable",
+  "Réseaux couplés à des niveaux différents": "Réseaux couplés à des niveaux différents",
+  "Déjà illimité": "Déjà illimité",
+  "Niveau maximum atteint": "Niveau maximum atteint",
+  "Niveau minimum atteint": "Niveau minimum atteint",
+  "Indisponible": "Indisponible",
+  "unités irradiées": "unités irradiées",
+  "nœud ": "nœud ",
+  " confirmé": " confirmé",
+  "kW soutenus": "kW soutenus",
+  " importé": " importé",
+  "port île ": "port île ",
+  "kWh stockés": "kWh stockés",
+  "Île ": "Île ",
+  " verrouillée": " verrouillée",
+  " Production — ": " Production — ",
+  "toutes les îles": "toutes les îles",
+  "Fermer": "Fermer",
+  "Toutes": "Toutes",
+  "⚡ Prod ": "⚡ Prod ",
+  "Conso ": "Conso ",
+  "Net ": "Net ",
+  "Ressource": "Ressource",
+  "Prod /s": "Prod /s",
+  "Conso /s": "Conso /s",
+  "Net /s": "Net /s",
+  "Aucune production en cours.": "Aucune production en cours.",
+  "Transit entre îles": "Transit entre îles",
+  "Aucun transit en cours.": "Aucun transit en cours.",
+  " → Île ": " → Île ",
+  "/s": "/s",
+  "Mise à jour disponible : ": "Mise à jour disponible : ",
+  "Options": "Options",
+  "Aide — toutes les astuces": "Aide — toutes les astuces",
+  "Aide": "Aide",
+  "Bilan énergie de l'île — cliquer pour gérer le déficit": "Bilan énergie de l'île — cliquer pour gérer le déficit",
+  "Charge des accumulateurs de l'île — cliquer pour gérer l'énergie": "Charge des accumulateurs de l'île — cliquer pour gérer l'énergie",
+  "Configuration du port (commerce)": "Configuration du port (commerce)",
+  "Port": "Port",
+  "Recherche prête à valider !": "Recherche prête à valider !",
+  "Panneau Recherche": "Panneau Recherche",
+  "Recherche": "Recherche",
+  "Réparer le port pour débloquer l'île ": "Réparer le port pour débloquer l'île ",
+  "Réparer Île ": "Réparer Île ",
+  "Production / consommation / transit de toutes les îles": "Production / consommation / transit de toutes les îles",
+  "Production": "Production",
+  "Afficher l'inventaire": "Afficher l'inventaire",
+  "INVENTAIRE": "INVENTAIRE",
+  " — voir production / consommation": " — voir production / consommation",
+  "Inventaire de l'île (port)": "Inventaire de l'île (port)",
+  "Replier l'inventaire": "Replier l'inventaire",
+  "— vide —": "— vide —",
+  " Réparer — Île ": " Réparer — Île ",
+  "Livrez les ressources requises au port pour réparer la liaison et débloquer l'île ": "Livrez les ressources requises au port pour réparer la liaison et débloquer l'île ",
+  "Réparer l'île ": "Réparer l'île ",
+  "Stock insuffisant": "Stock insuffisant",
+  "tracé continu": "tracé continu",
+  "coût croissant": "coût croissant",
+  "Extraction": "Extraction",
+  "Palier 1": "Palier 1",
+  "Palier 2": "Palier 2",
+  "Palier 3": "Palier 3",
+  "côte": "côte",
+  "pétrole": "pétrole",
+  "accidenté": "accidenté",
+  "Coût": "Coût",
+  "Taille": "Taille",
+  "Terrain": "Terrain",
+  "Entrées": "Entrées",
+  " /s": " /s",
+  "Sorties": "Sorties",
+  "Conso. élec.": "Conso. élec.",
+  "Prod. élec.": "Prod. élec.",
+  "Stockage": "Stockage",
+  "batterie (élec.)": "batterie (élec.)",
+  "Exclusif": "Exclusif",
+  "île ": "île ",
+  "Actions": "Actions",
+  "Bâtiment": "Bâtiment",
+  "fermer ▾": "fermer ▾",
+  "ouvrir ▴": "ouvrir ▴",
+  "Réseau": "Réseau",
+  "Copier": "Copier",
+  "Démolir": "Démolir",
+  "remb. 100%": "remb. 100%",
+  "Améliorer": "Améliorer",
+  "niveau +1": "niveau +1",
+  "Terrain accidenté": "Terrain accidenté",
+  "Extension de terrain": "Extension de terrain",
+  "Réparations effectuées sur cette île": "Réparations effectuées sur cette île",
+  "Extensions effectuées sur cette île": "Extensions effectuées sur cette île",
+  " Réparer": " Réparer",
+  " Remblayer": " Remblayer",
+  "Technologie non débloquée": "Technologie non débloquée",
+  "Coût : ": "Coût : ",
+  "non reliée au port (route)": "non reliée au port (route)",
+  "tuyau manquant": "tuyau manquant",
+  "câble manquant (élec.)": "câble manquant (élec.)",
+  "intrants manquants": "intrants manquants",
+  "élec. insuffisante (vérifier le débit du câble)": "élec. insuffisante (vérifier le débit du câble)",
+  "déconnecté": "déconnecté",
+  "à l'arrêt": "à l'arrêt",
+  "intrants + élec. insuffisants": "intrants + élec. insuffisants",
+  "intrants insuffisants": "intrants insuffisants",
+  "élec. insuffisante": "élec. insuffisante",
+  "réseau saturé": "réseau saturé",
+  "à l'arrêt · ": "à l'arrêt · ",
+  "aucun intrant": "aucun intrant",
+  "au ralenti": "au ralenti",
+  "plein régime": "plein régime",
+  " — déficit (": " — déficit (",
+  "% dispo)": "% dispo)",
+  "Ciment": "Ciment",
+  "Acier": "Acier",
+  "Béton armé": "Béton armé",
+  "Câble": "Câble",
+  "Arrêtée": "Arrêtée",
+  "Démarrage…": "Démarrage…",
+  "En marche": "En marche",
+  "Arrêt…": "Arrêt…",
+  "État": "État",
+  "1 comb.U235 + 256 eau froide + 1 ": "1 comb.U235 + 256 eau froide + 1 ",
+  "Sortie": "Sortie",
+  "2048 kW + 1 ": "2048 kW + 1 ",
+  "Matériau à irradier": "Matériau à irradier",
+  "Vitesse": "Vitesse",
+  "Régime de fonctionnement réel ce tick (": "Régime de fonctionnement réel ce tick (",
+  "Réel ⚠": "Réel ⚠",
+  "Consommation réelle ce tick (bridée : ": "Consommation réelle ce tick (bridée : ",
+  " /s · ": " /s · ",
+  "Production réelle ce tick (bridée : ": "Production réelle ce tick (bridée : ",
+  " kWh · ": " kWh · ",
+  " kW · prévu ": " kW · prévu ",
+  "Effet": "Effet",
+  "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)": "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)",
+  "Priorité de flux (intrants & élec.)": "Priorité de flux (intrants & élec.)",
+  "Haute": "Haute",
+  "Normale": "Normale",
+  "Basse": "Basse",
+  "Servi en premier : intrants (route/tuyau) ET électricité d'abord": "Servi en premier : intrants (route/tuyau) ET électricité d'abord",
+  "Servi en dernier : intrants ET électricité après les autres": "Servi en dernier : intrants ET électricité après les autres",
+  "Servi normalement": "Servi normalement",
+  "Amélioration → Nv.": "Amélioration → Nv.",
+  "Confirmer · Coût : ": "Confirmer · Coût : ",
+  "Voir l'amélioration (Nv.": "Voir l'amélioration (Nv.",
+  " Confirmer ": " Confirmer ",
+  " Monter ": " Monter ",
+  "Remb. : ": "Remb. : ",
+  "Déjà au niveau de base": "Déjà au niveau de base",
+  " Baisser ": " Baisser ",
+  "Aligner ": "Aligner ",
+  " autre(s) ": " autre(s) ",
+  " sur Nv.": " sur Nv.",
+  " · Coût : ": " · Coût : ",
+  " Aligner les ": " Aligner les ",
+  " (Nv.": " (Nv.",
+  " Confirmer la démolition ?": " Confirmer la démolition ?",
+  " Démolir (remb. 100%)": " Démolir (remb. 100%)",
+  "Niveau ": "Niveau ",
+  "Actuel": "Actuel",
+  "Coût niv. ": "Coût niv. ",
+  "⬆ Améliorer (×": "⬆ Améliorer (×",
+  "Débloqué": "Débloqué",
+  "Prêt": "Prêt",
+  "En cours": "En cours",
+  "Verrouillé": "Verrouillé",
+  " Recherche": " Recherche",
+  "Livrer": "Livrer",
+  "Condition remplie": "Condition remplie",
+  "Confirmer": "Confirmer",
+  "Livraison à calibrer — non activable": "Livraison à calibrer — non activable",
+  "Requiert : ": "Requiert : ",
+  " Port — Île ": " Port — Île ",
+  "Amélioration du transit": "Amélioration du transit",
+  "Taille des lots ×": "Taille des lots ×",
+  " u)": " u)",
+  "🔒 Réparez l'île voisine pour activer une liaison avant d'améliorer le transit.": "🔒 Réparez l'île voisine pour activer une liaison avant d'améliorer le transit.",
+  "Max": "Max",
+  "Liaisons": "Liaisons",
+  "Aucune liaison active. Débloquez l'île voisine.": "Aucune liaison active. Débloquez l'île voisine.",
+  " ↔ Île ": " ↔ Île ",
+  "↔ transit continu": "↔ transit continu",
+  "Régler l'export par ressource vers l'île ": "Régler l'export par ressource vers l'île ",
+  "Export → Île ": "Export → Île ",
+  " — tout autorisé": " — tout autorisé",
+  "Export de ": "Export de ",
+  " interdit vers l'île ": " interdit vers l'île ",
+  " — cliquer pour autoriser": " — cliquer pour autoriser",
+  " autorisé vers l'île ": " autorisé vers l'île ",
+  " — cliquer pour interdire": " — cliquer pour interdire",
+  " aucun flux sortant": " aucun flux sortant",
+  "Transit : ": "Transit : ",
+  "/s de ": "/s de ",
+  "/s → Île ": "/s → Île ",
+  "Reçu : ": "Reçu : ",
+  " ← Île ": " ← Île ",
+  "/s ← Île ": "/s ← Île ",
+  "Commerce (Île ": "Commerce (Île ",
+  "Priorité": "Priorité",
+  "Proportionnel": "Proportionnel",
+  "Proportionnel : la cale est répartie au prorata de la demande de chaque ressource (l'ordre ne sert qu'à départager les restes).": "Proportionnel : la cale est répartie au prorata de la demande de chaque ressource (l'ordre ne sert qu'à départager les restes).",
+  "Priorité : la cale est remplie de la ressource la plus prioritaire à la moins prioritaire.": "Priorité : la cale est remplie de la ressource la plus prioritaire à la moins prioritaire.",
+  "Cible": "Cible",
+  "Réserve": "Réserve",
+  "Stop": "Stop",
+  "Prio": "Prio",
+  " en stock": " en stock",
+  "Stock cible (quantité à importer ici)": "Stock cible (quantité à importer ici)",
+  "Réserve locale (on n'exporte que le surplus au-dessus)": "Réserve locale (on n'exporte que le surplus au-dessus)",
+  "Interdire l'export de cette ressource": "Interdire l'export de cette ressource",
+  "Monter": "Monter",
+  "Descendre": "Descendre",
+  "Cible = quantité voulue ici (import). Réserve = stock gardé localement (export du surplus uniquement). Priorité = ordre de chargement au départ.": "Cible = quantité voulue ici (import). Réserve = stock gardé localement (export du surplus uniquement). Priorité = ordre de chargement au départ.",
+  "Équitable": "Équitable",
+  "Chaque consommateur reçoit la même quantité absolue (kW) ; le surplus non utilisé par un petit bâtiment profite aux autres. Un bâtiment qui n'atteint pas sa puissance nominale est coupé ce tick.": "Chaque consommateur reçoit la même quantité absolue (kW) ; le surplus non utilisé par un petit bâtiment profite aux autres. Un bâtiment qui n'atteint pas sa puissance nominale est coupé ce tick.",
+  "Coupe les plus gros consommateurs d'abord pour que le reste tourne à plein régime (le moteur fonctionne en tout-ou-rien, pas de régime partiel).": "Coupe les plus gros consommateurs d'abord pour que le reste tourne à plein régime (le moteur fonctionne en tout-ou-rien, pas de régime partiel).",
+  "⚡ Énergie — Île ": "⚡ Énergie — Île ",
+  "⚡ L'électricité circule par réseau de câbles : chaque réseau câble est un sous-réseau électrique distinct (les générateurs, consommateurs et accumulateurs qu'il relie se partagent l'énergie). Le débit du câble (V1, V2…) borne la puissance transmissible : montez-le si un réseau sature. Les totaux ci-dessous additionnent tous les réseaux de l'île.": "⚡ L'électricité circule par réseau de câbles : chaque réseau câble est un sous-réseau électrique distinct (les générateurs, consommateurs et accumulateurs qu'il relie se partagent l'énergie). Le débit du câble (V1, V2…) borne la puissance transmissible : montez-le si un réseau sature. Les totaux ci-dessous additionnent tous les réseaux de l'île.",
+  "Production (générateurs)": "Production (générateurs)",
+  "Batterie (décharge)": "Batterie (décharge)",
+  "Demande totale": "Demande totale",
+  "Demande non servie": "Demande non servie",
+  "Bilan réel": "Bilan réel",
+  "Accumulateurs": "Accumulateurs",
+  "Mode de gestion du déficit": "Mode de gestion du déficit",
+  "Ordre de priorité (haut = servi en premier)": "Ordre de priorité (haut = servi en premier)",
+  "Aucun consommateur d'énergie sur cette île.": "Aucun consommateur d'énergie sur cette île.",
+  "Consommation": "Consommation",
+  "Bilan net": "Bilan net",
+  "Prévenir quand le stock de cette île passe sous ce seuil (0 = désactivé)": "Prévenir quand le stock de cette île passe sous ce seuil (0 = désactivé)",
+  "Route": "Route",
+  "Tuyau": "Tuyau",
+  " Monter A + B": " Monter A + B",
+  " Monter": " Monter",
+  " Baisser A + B": " Baisser A + B",
+  " Baisser": " Baisser",
+  "Débit max": "Débit max",
+  "illimité": "illimité",
+  "Flux demandé": "Flux demandé",
+  "Demande min→max": "Demande min→max",
+  "Plage de consommation : les bâtiments à conso sigmoïde/aléatoire font varier la demande élec. Dimensionnez la production pour le max.": "Plage de consommation : les bâtiments à conso sigmoïde/aléatoire font varier la demande élec. Dimensionnez la production pour le max.",
+  "Saturé ⚠": "Saturé ⚠",
+  "Demande supérieure au débit max : tous les bâtiments du réseau sont ralentis à ce pourcentage": "Demande supérieure au débit max : tous les bâtiments du réseau sont ralentis à ce pourcentage",
+  "% servi": "% servi",
+  "Énergie stockée dans les accumulateurs branchés sur ce réseau câble (charge / capacité).": "Énergie stockée dans les accumulateurs branchés sur ce réseau câble (charge / capacité).",
+  "Livrée": "Livrée",
+  "⚡ Production suffisante mais câble saturé : améliorez le débit pour tout transmettre.": "⚡ Production suffisante mais câble saturé : améliorez le débit pour tout transmettre.",
+  "⚡ Production insuffisante sur ce réseau câble.": "⚡ Production insuffisante sur ce réseau câble.",
+  "Production /s": "Production /s",
+  "Consommation /s": "Consommation /s",
+  "Stock liquide accumulé dans la citerne du réseau tuyau (pétrole, eau, acide…). N'apparaît pas dans l'inventaire du port.": "Stock liquide accumulé dans la citerne du réseau tuyau (pétrole, eau, acide…). N'apparaît pas dans l'inventaire du port.",
+  "Transit": "Transit",
+  "Tuiles": "Tuiles",
+  "Couplage": "Couplage",
+  "jonction (": "jonction (",
+  " réseaux)": " réseaux)",
+  "Matériau d'amélioration (V": "Matériau d'amélioration (V",
+  " Confirmer ?": " Confirmer ?",
+  "Retirer le débit illimité": "Retirer le débit illimité",
+  " — débit illimité": " — débit illimité",
+  "Confirmer ?": "Confirmer ?",
+  "Rendre illimité": "Rendre illimité",
+  "Astuce": "Astuce",
+  "Ne plus afficher les astuces": "Ne plus afficher les astuces",
+  "Compris": "Compris",
+  "Recherche terminée": "Recherche terminée",
+  "Débloque : ": "Débloque : ",
+  "Voir la recherche": "Voir la recherche",
+  "Lecture du fichier impossible.": "Lecture du fichier impossible.",
+  " Emplacements de sauvegarde": " Emplacements de sauvegarde",
+  "Actif": "Actif",
+  "Valider": "Valider",
+  "Annuler": "Annuler",
+  "Supprimer définitivement ?": "Supprimer définitivement ?",
+  "Oui, supprimer": "Oui, supprimer",
+  "Sauvegarder": "Sauvegarder",
+  "Charger": "Charger",
+  "Renommer": "Renommer",
+  "Exporter": "Exporter",
+  "Supprimer": "Supprimer",
+  "+ Nouvelle partie": "+ Nouvelle partie",
+  "⤓ Importer": "⤓ Importer",
+  "Exporter la sauvegarde": "Exporter la sauvegarde",
+  "✓ Copié dans le presse-papier. Conserve-le pour le réimporter.": "✓ Copié dans le presse-papier. Conserve-le pour le réimporter.",
+  "Sélectionne et copie ce texte, garde-le en lieu sûr.": "Sélectionne et copie ce texte, garde-le en lieu sûr.",
+  "⤓ Télécharger .txt": "⤓ Télécharger .txt",
+  "Cet emplacement est vide (aucune sauvegarde à exporter).": "Cet emplacement est vide (aucune sauvegarde à exporter).",
+  "Importer une sauvegarde": "Importer une sauvegarde",
+  "Charge un fichier .txt exporté (ou colle le texte) : une nouvelle partie sera créée.": "Charge un fichier .txt exporté (ou colle le texte) : une nouvelle partie sera créée.",
+  "📂 Charger un fichier .txt": "📂 Charger un fichier .txt",
+  "Importer": "Importer",
+  "Choisis ton mode de jeu": "Choisis ton mode de jeu",
+  "Le mode fixe la taille des îles pour cette partie.": "Le mode fixe la taille des îles pour cette partie.",
+  "Normal": "Normal",
+  "Grandes îles, plus d'espace pour construire.": "Grandes îles, plus d'espace pour construire.",
+  "Difficile": "Difficile",
+  "Îles compactes, espace limité.": "Îles compactes, espace limité.",
+  "Activé": "Activé",
+  "Désactivé": "Désactivé",
+  "Vérification…": "Vérification…",
+  "✓ Le jeu est à jour.": "✓ Le jeu est à jour.",
+  "Impossible de vérifier (hors-ligne ?).": "Impossible de vérifier (hors-ligne ?).",
+  "Télécharger la mise à jour": "Télécharger la mise à jour",
+  "⬇ Mettre à jour maintenant": "⬇ Mettre à jour maintenant",
+  "Ouverture de l'installeur…": "Ouverture de l'installeur…",
+  "Téléchargement… ": "Téléchargement… ",
+  "⬆ Mise à jour disponible : ": "⬆ Mise à jour disponible : ",
+  "❌ Échec du téléchargement. Réessayez, ou ": "❌ Échec du téléchargement. Réessayez, ou ",
+  "⚙ Options": "⚙ Options",
+  "Afficher les niveaux": "Afficher les niveaux",
+  "Petit numéro de niveau en bas à gauche des bâtiments": "Petit numéro de niveau en bas à gauche des bâtiments",
+  "Afficher l'efficacité (%)": "Afficher l'efficacité (%)",
+  "Pourcentage d'efficacité à gauche du niveau, en cas de déficit": "Pourcentage d'efficacité à gauche du niveau, en cas de déficit",
+  "Afficher l'icône de déficit": "Afficher l'icône de déficit",
+  "Petite icône en haut à droite des bâtiments en déficit / panne": "Petite icône en haut à droite des bâtiments en déficit / panne",
+  "Calcul hors-ligne simplifié": "Calcul hors-ligne simplifié",
+  "Au-delà d'1 h d'absence, approxime la production (rattrapage quasi instantané)": "Au-delà d'1 h d'absence, approxime la production (rattrapage quasi instantané)",
+  "Amélioration immédiate": "Amélioration immédiate",
+  "En mode Améliorer, toucher un bâtiment le monte direct (sans confirmation)": "En mode Améliorer, toucher un bâtiment le monte direct (sans confirmation)",
+  "Astuces": "Astuces",
+  "Afficher une explication à chaque nouvelle mécanique": "Afficher une explication à chaque nouvelle mécanique",
+  "💡 Revoir les astuces": "💡 Revoir les astuces",
+  "Mode développeur": "Mode développeur",
+  "Construction et améliorations gratuites": "Construction et améliorations gratuites",
+  "Version": "Version",
+  " · build ": " · build ",
+  "Vérifier les mises à jour": "Vérifier les mises à jour",
+  "❔ Aide & astuces": "❔ Aide & astuces",
+  "Premiers pas (tutoriel île 1)": "Premiers pas (tutoriel île 1)",
+  "Toutes les mécaniques": "Toutes les mécaniques",
+  "Tuto ": "Tuto ",
+  "Passer le tutoriel et tout débloquer": "Passer le tutoriel et tout débloquer",
+  "Passer": "Passer",
+  "🌙 Bon retour !": "🌙 Bon retour !",
+  "Absence : ": "Absence : ",
+  " — production récupérée :": " — production récupérée :",
+  " — rien à produire.": " — rien à produire.",
+  "Continuer": "Continuer",
+  "Partie ": "Partie ",
+  "Texte invalide (JSON illisible).": "Texte invalide (JSON illisible).",
+  "Ce texte n'est pas une sauvegarde Archipel valide.": "Ce texte n'est pas une sauvegarde Archipel valide.",
+  "Import ": "Import ",
+  "Partie 1": "Partie 1",
+  " débloqué !": " débloqué !",
+  "🎓 Tutoriel terminé — bonne partie !": "🎓 Tutoriel terminé — bonne partie !",
+  "Tutoriel passé — bâtiments débloqués": "Tutoriel passé — bâtiments débloqués",
+  "💡 Astuces activées": "💡 Astuces activées",
+  "Astuces désactivées": "Astuces désactivées",
+  "💡 Astuces réinitialisées": "💡 Astuces réinitialisées",
+  "❌ Tuile occupée": "❌ Tuile occupée",
+  "❌ Jonction : pose sur une tuile vide ou un réseau croisé": "❌ Jonction : pose sur une tuile vide ou un réseau croisé",
+  "❌ Terrain non autorisé": "❌ Terrain non autorisé",
+  "❌ Une seule jonction de ce type par île": "❌ Une seule jonction de ce type par île",
+  "❌ Doit toucher un réseau (route/câble/tuyau)": "❌ Doit toucher un réseau (route/câble/tuyau)",
+  "❌ Pas de place pour le réseau croisé à côté": "❌ Pas de place pour le réseau croisé à côté",
+  "❌ Jonction : manque ": "❌ Jonction : manque ",
+  "❌ Doit être en mer, adjacent à la côte": "❌ Doit être en mer, adjacent à la côte",
+  "❌ Extension V": "❌ Extension V",
+  " : manque ": " : manque ",
+  "Rien à démolir ici": "Rien à démolir ici",
+  "Non améliorable (infra / port)": "Non améliorable (infra / port)",
+  "❌ Manque ": "❌ Manque ",
+  "❌ Technologie non débloquée": "❌ Technologie non débloquée",
+  "🔧 Terrain réparé": "🔧 Terrain réparé",
+  "🏗 Terrain remblayé": "🏗 Terrain remblayé",
+  "⬇ Réseau → débit limité (V": "⬇ Réseau → débit limité (V",
+  "Réseaux couplés": "Réseaux couplés",
+  "∞ Réseau → débit ILLIMITÉ": "∞ Réseau → débit ILLIMITÉ",
+  "📋 Mode copie : touchez un bâtiment à copier": "📋 Mode copie : touchez un bâtiment à copier",
+  "🗺 Mode Normal — grandes îles": "🗺 Mode Normal — grandes îles",
+  "⛰ Mode Difficile — îles compactes": "⛰ Mode Difficile — îles compactes",
+  "Île verrouillée — débloquez-la via la Recherche": "Île verrouillée — débloquez-la via la Recherche",
+  " débloqué": " débloqué",
+  "Stock insuffisant sur cette île": "Stock insuffisant sur cette île",
+  "🛠 Port réparé — île débloquée": "🛠 Port réparé — île débloquée",
+  "❌ Stock insuffisant pour la réparation": "❌ Stock insuffisant pour la réparation",
+  "🔒 Aucune liaison active — réparez d'abord l'île voisine": "🔒 Aucune liaison active — réparez d'abord l'île voisine",
+  "Transit au maximum": "Transit au maximum",
+  "🛠 MODE DEV activé — construction gratuite": "🛠 MODE DEV activé — construction gratuite",
+  "Mode dev désactivé": "Mode dev désactivé",
+  "⬆ Amélioration immédiate activée": "⬆ Amélioration immédiate activée",
+  "Amélioration immédiate désactivée": "Amélioration immédiate désactivée",
+  "Ce bâtiment ne peut pas être copié": "Ce bâtiment ne peut pas être copié",
+  "Sélectionnez un outil en bas pour construire": "Sélectionnez un outil en bas pour construire",
+  "Sauvegardé": "Sauvegardé",
+  "Menu construction — choisissez un bâtiment, ou « Quitter » pour fermer": "Menu construction — choisissez un bâtiment, ou « Quitter » pour fermer",
+  "Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer": "Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer",
+  "Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos": "Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos",
+  " — touchez un bâtiment (remb. 100%, un par clic) · glissez pour naviguer": " — touchez un bâtiment (remb. 100%, un par clic) · glissez pour naviguer",
+  " — touchez un bâtiment de production": " — touchez un bâtiment de production",
+  " — touchez un bâtiment pour le sélectionner": " — touchez un bâtiment pour le sélectionner",
+  " — glissez pour tracer": " — glissez pour tracer",
+  " — touchez entre les deux réseaux (mêmes niveaux)": " — touchez entre les deux réseaux (mêmes niveaux)",
+  " — touchez une tuile valide": " — touchez une tuile valide",
+  " saturés": " saturés",
+  " saturée": " saturée",
+  "Quitter le mode construction": "Quitter le mode construction",
+  "✕ Quitter": "✕ Quitter",
+  "⚠ MODE DEV — construction gratuite": "⚠ MODE DEV — construction gratuite",
+  "💾 Sauvegardé": "💾 Sauvegardé",
+  "Rattrapage hors-ligne…": "Rattrapage hors-ligne…",
+  "calcul simplifié (longue absence)": "calcul simplifié (longue absence)",
+  "calcul de la production…": "calcul de la production…",
+  "Astuces désactivées — réactivables dans les options": "Astuces désactivées — réactivables dans les options"
+ }
+}

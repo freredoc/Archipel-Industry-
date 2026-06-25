@@ -1,0 +1,834 @@
+{
+ "res": {
+  "pierre": "stone",
+  "minerai_fer": "iron ore",
+  "charbon": "coal",
+  "lingot_fer": "iron ing.",
+  "ciment": "cement",
+  "eau": "water",
+  "energie_kw": "kW",
+  "lingot_cuivre": "copper ing.",
+  "minerai_cuivre": "copper ore",
+  "acier": "steel",
+  "cable": "cable",
+  "petrole": "oil",
+  "diesel": "diesel",
+  "polymere": "polymer",
+  "beton_arme": "rf. concrete",
+  "piece_meca": "mech part",
+  "circuit": "circuit",
+  "minerai_or": "gold ore",
+  "silicium": "silicon",
+  "acide": "acid",
+  "lingot_or": "gold ing.",
+  "silicium_raffine": "ref. Si",
+  "processeur": "proc.",
+  "uranium": "uranium",
+  "yellow_cake": "yellowcake",
+  "combustible_u235": "U235 fuel",
+  "eau_froide": "cold water",
+  "acier_irradie": "irr. steel",
+  "beton_arme_irradie": "irr. concr.",
+  "cable_irradie": "irr. cable",
+  "ciment_irradie": "irr. cement",
+  "element_moteur_nuc": "eng. elem."
+ },
+ "bld": {
+  "road": {
+   "name": "Road",
+   "label": ""
+  },
+  "pipe": {
+   "name": "Pipe",
+   "label": ""
+  },
+  "wire": {
+   "name": "Cable",
+   "label": ""
+  },
+  "jonction_route_cable": {
+   "name": "Road/Cable Junction",
+   "label": "J-RC"
+  },
+  "jonction_route_tuyau": {
+   "name": "Road/Pipe Junction",
+   "label": "J-RT"
+  },
+  "jonction_cable_tuyau": {
+   "name": "Cable/Pipe Junction",
+   "label": "J-CT"
+  },
+  "mine_fer": {
+   "name": "Iron Mine V1",
+   "label": "IRON"
+  },
+  "mine_charbon": {
+   "name": "Coal Mine V1",
+   "label": "COAL"
+  },
+  "carriere": {
+   "name": "Quarry V1",
+   "label": "STONE"
+  },
+  "pompe_eau": {
+   "name": "Water Pump V1",
+   "label": "WATER"
+  },
+  "eolienne": {
+   "name": "Wind Turbine V1",
+   "label": "WIND"
+  },
+  "mine_cuivre": {
+   "name": "Copper Mine V1",
+   "label": "COPR"
+  },
+  "centrale_charbon": {
+   "name": "Coal Power Plant V1",
+   "label": "C.CO"
+  },
+  "four_fer": {
+   "name": "Iron Furnace V1",
+   "label": "FURN"
+  },
+  "cimenterie": {
+   "name": "Cement Plant V1",
+   "label": "CEM"
+  },
+  "four_cuivre": {
+   "name": "Copper Furnace V1",
+   "label": "F.CU"
+  },
+  "four_fer_v2": {
+   "name": "Iron Furnace V2",
+   "label": "IRN2"
+  },
+  "four_cuivre_v2": {
+   "name": "Copper Furnace V2",
+   "label": "CPR2"
+  },
+  "cablerie": {
+   "name": "Cable Mill V1",
+   "label": "CABL"
+  },
+  "acierie": {
+   "name": "Steel Mill V1",
+   "label": "STEEL"
+  },
+  "puits_petrole": {
+   "name": "Oil Well V1",
+   "label": "OIL"
+  },
+  "raffinerie": {
+   "name": "Refinery V1",
+   "label": "REFY"
+  },
+  "betonniere": {
+   "name": "Concrete Mixer V1",
+   "label": "CONC"
+  },
+  "atelier_meca": {
+   "name": "Mech. Workshop V1",
+   "label": "MECH"
+  },
+  "usine_polymere": {
+   "name": "Polymer Plant V1",
+   "label": "POLY"
+  },
+  "centrale_diesel": {
+   "name": "Diesel Power Plant V1",
+   "label": "C.DSL"
+  },
+  "circuit": {
+   "name": "Circuit V1",
+   "label": "CIRC"
+  },
+  "mine_fer_v2": {
+   "name": "Iron Mine V2",
+   "label": "IRN2"
+  },
+  "mine_charbon_v2": {
+   "name": "Coal Mine V2",
+   "label": "COL2"
+  },
+  "mine_cuivre_v2": {
+   "name": "Copper Mine V2",
+   "label": "CPR2"
+  },
+  "carriere_v2": {
+   "name": "Quarry V2",
+   "label": "STN2"
+  },
+  "mine_or": {
+   "name": "Gold Mine V1",
+   "label": "GOLD"
+  },
+  "broyeur": {
+   "name": "Crusher V1",
+   "label": "CRSH"
+  },
+  "distillerie": {
+   "name": "Distillery V1",
+   "label": "DIST"
+  },
+  "fonderie_or": {
+   "name": "Gold Smelter V1",
+   "label": "F.AU"
+  },
+  "raffineur_silicium": {
+   "name": "Silicon Refiner V1",
+   "label": "R.SI"
+  },
+  "fab_processeur": {
+   "name": "Processor Fab V1",
+   "label": "PROC"
+  },
+  "accumulateur": {
+   "name": "Accumulator V1",
+   "label": "BATT"
+  },
+  "four_arc_acier": {
+   "name": "Steel Arc Furnace V1",
+   "label": "ARC.S"
+  },
+  "four_arc_cable": {
+   "name": "Cable Arc Furnace V1",
+   "label": "ARC.C"
+  },
+  "four_arc_piece": {
+   "name": "Mech Part Arc Furnace V1",
+   "label": "ARC.P"
+  },
+  "eolienne_offshore": {
+   "name": "Offshore Wind Turbine V2",
+   "label": "OFF.W"
+  },
+  "plateforme_petroliere": {
+   "name": "Oil Platform V1",
+   "label": "OIL.P"
+  },
+  "mine_uranium": {
+   "name": "Uranium Mine V1",
+   "label": "URAN"
+  },
+  "broyeur_uranium": {
+   "name": "Uranium Crusher V1",
+   "label": "CR.U"
+  },
+  "centrale_enrichissement": {
+   "name": "Enrichment Plant V1",
+   "label": "ENR"
+  },
+  "refroidisseur": {
+   "name": "Cooler V1",
+   "label": "COOL"
+  },
+  "centrale_nucleaire": {
+   "name": "Nuclear Power Plant V1",
+   "label": "NUC"
+  },
+  "mine_fer_v3": {
+   "name": "Iron Mine V3",
+   "label": "IRN3"
+  },
+  "mine_cuivre_v3": {
+   "name": "Copper Mine V3",
+   "label": "CPR3"
+  },
+  "carriere_v3": {
+   "name": "Quarry V3",
+   "label": "STN3"
+  },
+  "mine_charbon_v3": {
+   "name": "Coal Mine V3",
+   "label": "COL3"
+  },
+  "mine_or_v3": {
+   "name": "Gold Mine V3",
+   "label": "GLD3"
+  },
+  "usine_moteur_nuc": {
+   "name": "Nuclear Engine Plant V1",
+   "label": "ENG"
+  },
+  "antenne": {
+   "name": "Antenna T5",
+   "label": "ANT"
+  },
+  "port": {
+   "name": "Port",
+   "label": "PORT"
+  }
+ },
+ "tech": {
+  "1": "Island 1 — Available",
+  "2": "Island 2 Access",
+  "3": "Copper Furnace V1",
+  "4": "Wind Turbine + Cable Mill",
+  "5": "Coal Plant + Steel Mill",
+  "6": "Junctions (3 types)",
+  "7": "V2 Upgrades",
+  "8": "Island 3 Access",
+  "9": "Polymer Plant",
+  "10": "Concrete Mixer + Mech. Workshop",
+  "11": "Diesel Plant + Refinery",
+  "12": "Circuit V1",
+  "13": "V2 Upgrades — Mines",
+  "14": "Island 4 Access",
+  "15": "Crusher + Distillery",
+  "16": "Gold Smelter + Si Refiner",
+  "17": "Processor Fab",
+  "18": "Accumulator",
+  "19": "Arc Furnaces",
+  "20": "Offshore Wind + Platform",
+  "21": "Island 5 Access",
+  "22": "Uranium Crusher",
+  "23": "Enrichment Plant + Cooler",
+  "24": "Nuclear Power Plant",
+  "25": "Nuclear Engine Plant V1",
+  "26": "Antenna T5",
+  "27": "Futuristic Ship"
+ },
+ "tutorial": {
+  "0": "Place an iron mine on an iron deposit.",
+  "1": "Place a quarry on a tile.",
+  "2": "Connect the mine and the quarry to the port with roads.",
+  "3": "Upgrade the mine and the quarry to level 2.",
+  "4": "Place a coal mine and connect it to the port.",
+  "5": "Place an iron furnace and connect it to the port.",
+  "6": "Place a cement plant and connect it to the port."
+ },
+ "tips": {
+  "bienvenue": {
+   "title": "Welcome to the archipelago",
+   "body": [
+    "Your goal: <b>extract</b> resources, <b>route</b> them to the port via networks, <b>process</b> them into products, then <b>deliver</b> and <b>research</b> to unlock new buildings and new islands.",
+    "The banner at the top guides you step by step through your first builds.",
+    "Three networks connect everything: the <b>road</b> (solids), the <b>pipe</b> (liquids) and the <b>cable</b> (electricity)."
+   ]
+  },
+  "recherche": {
+   "title": "Research",
+   "body": [
+    "Open the <b>Research</b> panel (🔬). Each node requires resources delivered to the port to unlock buildings or islands.",
+    "Three ways to validate: <b>automatic</b> (as soon as the resources are gathered), <b>manual</b> (Confirm button) or <b>delivery</b> (ship a batch by boat).",
+    "A research ready to validate appears in yellow."
+   ]
+  },
+  "transport": {
+   "title": "Inter-island transport",
+   "body": [
+    "A new island is available! Each island has its own <b>port</b>. Connect your buildings to the port by road, then configure the <b>links</b> in the Port panel.",
+    "Cargo ships carry <b>batches</b> between two islands at regular intervals. A liquid can only be shipped if a <b>pipe</b> connects its production to the port."
+   ]
+  },
+  "energie": {
+   "title": "Energy",
+   "body": [
+    "Some buildings consume <b>electricity</b>. You must produce enough (wind turbine, power plant…) to cover demand.",
+    "Electricity is shared across the <b>whole island</b>: the balance (production − consumption) is shown at the top, with the 🔋 badge.",
+    "Open the <b>Energy</b> panel to see the breakdown and the unmet demand."
+   ]
+  },
+  "deficit": {
+   "title": "Energy deficit",
+   "body": [
+    "Your production no longer covers consumption: some buildings will be <b>cut off</b>.",
+    "In the Energy panel, choose how electricity is rationed: by <b>priority</b>, by <b>fair share</b>, or <b>proportionally</b>.",
+    "Add producers, or store the surplus in an <b>accumulator</b> to absorb the peaks."
+   ]
+  },
+  "tuyaux": {
+   "title": "Liquids",
+   "body": [
+    "You are producing a <b>liquid</b> (water, oil…). Liquids travel only through the <b>pipe</b> network, not by road.",
+    "To export a liquid to another island, the pipe must connect its production directly to the <b>port</b>."
+   ]
+  },
+  "reseau_sature": {
+   "title": "Saturated network",
+   "body": [
+    "A network is carrying more than its throughput allows: the flow is <b>throttled</b> and the affected buildings run slowly.",
+    "Select the network and <b>upgrade its level</b> (V2, V3…) to increase throughput.",
+    "You can also set each building’s <b>flow priority</b> (high / normal / low) to serve the essentials first."
+   ]
+  },
+  "batiment_deconnecte": {
+   "title": "Disconnected building",
+   "body": [
+    "A building is placed but is connected to <b>no network</b>: it produces nothing and receives nothing.",
+    "Connect it to the port with a <b>road</b> (and, depending on its needs, a <b>pipe</b> for liquids or a <b>cable</b> for electricity)."
+   ]
+  },
+  "jonctions": {
+   "title": "Junctions",
+   "body": [
+    "A <b>junction</b> lets two networks cross on the same tile <b>without connecting</b> (e.g. a road passing over a cable).",
+    "Only one kind of junction per island. Handy when space is tight."
+   ]
+  },
+  "upgrade_vs_v2": {
+   "title": "Upgrade or switch to V2?",
+   "body": [
+    "Two different progressions coexist. <b>Upgrading in place</b> (Upgrade mode) raises the <b>same</b> building by a level: more production on the same tile.",
+    "A <b>V2 version</b> (e.g. Iron Furnace V2) is a <b>new</b> building, with its own recipe: you must build it in place of the old one.",
+    "Since ground space is limited, upgrading in place is often the best choice."
+   ]
+  },
+  "accumulateur": {
+   "title": "The accumulator",
+   "body": [
+    "The <b>accumulator</b> stores surplus electricity when you produce more than needed, and releases it during a <b>deficit</b>.",
+    "Ideal for irregular producers or consumption peaks. It can be upgraded to increase its capacity."
+   ]
+  },
+  "nucleaire": {
+   "title": "The nuclear chain",
+   "body": [
+    "A long chain opens up: uranium mine → crushing → yellow cake → enrichment → <b>Nuclear Power Plant</b>.",
+    "The plant must be connected to the <b>cable</b> to supply electricity, and fed continuously: its <b>fuel is consumed constantly</b>.",
+    "Its startup is gradual (several minutes) — plan the logistics ahead."
+   ]
+  },
+  "non_stockable": {
+   "title": "Non-storable resource",
+   "body": [
+    "<b>Cold water</b> (produced by the cooler) cannot be stored: it is consumed in the very tick it is produced.",
+    "Production throughput must therefore be sufficient <b>continuously</b>; a surplus is simply lost, a shortage cuts off the building it feeds."
+   ]
+  },
+  "irradie": {
+   "title": "Irradiated materials & unlimited network",
+   "body": [
+    "The Nuclear Power Plant can <b>irradiate</b> materials (reinforced concrete, steel, cable).",
+    "With 10,000 units of an irradiated material, a network switches to <b>unlimited throughput</b>: no more flow limit, never any saturation on that network again."
+   ]
+  },
+  "antenne": {
+   "title": "The T5 antenna",
+   "body": [
+    "The <b>antenna</b> doubles the production of the <b>8 adjacent tiles</b> (ramping up to a ×3 effect).",
+    "It consumes 512 kW continuously: place it at the center of a group of key buildings to maximize the bonus."
+   ]
+  },
+  "reparer": {
+   "title": "Repairing terrain",
+   "body": [
+    "You can now <b>repair</b> obstacle tiles to make them buildable.",
+    "Each repair costs more than the last: ground space remains your most precious resource."
+   ]
+  },
+  "etendre": {
+   "title": "Extending terrain",
+   "body": [
+    "<b>Land reclamation</b> turns a coastal water tile into buildable land.",
+    "Like repairs, the cost rises with each extension. Reserve it for truly strategic spots."
+   ]
+  }
+ },
+ "ui": {
+  "Réseau introuvable": "Network not found",
+  "Réseaux couplés à des niveaux différents": "Networks coupled at different levels",
+  "Déjà illimité": "Already unlimited",
+  "Niveau maximum atteint": "Maximum level reached",
+  "Niveau minimum atteint": "Minimum level reached",
+  "Indisponible": "Unavailable",
+  "unités irradiées": "irradiated units",
+  " confirmé": " confirmed",
+  "nœud ": "node ",
+  "kW soutenus": "kW sustained",
+  " importé": " imported",
+  "port île ": "port island ",
+  "kWh stockés": "kWh stored",
+  " verrouillée": " locked",
+  "Île ": "Island ",
+  " Production — ": " Production — ",
+  "toutes les îles": "all islands",
+  "Fermer": "Close",
+  "Toutes": "All",
+  "Conso ": "Cons. ",
+  "⚡ Prod ": "⚡ Prod ",
+  "Net ": "Net ",
+  "Ressource": "Resource",
+  "Prod /s": "Prod /s",
+  "Conso /s": "Cons. /s",
+  "Net /s": "Net /s",
+  "Aucune production en cours.": "No production under way.",
+  "Transit entre îles": "Inter-island transit",
+  "Aucun transit en cours.": "No transit under way.",
+  " → Île ": " → Island ",
+  "/s": "/s",
+  "Mise à jour disponible : ": "Update available: ",
+  "Options": "Options",
+  "Aide — toutes les astuces": "Help — all tips",
+  "Aide": "Help",
+  "Bilan énergie de l'île — cliquer pour gérer le déficit": "Island energy balance — click to manage the deficit",
+  "Charge des accumulateurs de l'île — cliquer pour gérer l'énergie": "Island accumulator charge — click to manage energy",
+  "Configuration du port (commerce)": "Port configuration (trade)",
+  "Port": "Port",
+  "Panneau Recherche": "Research panel",
+  "Recherche prête à valider !": "Research ready to validate!",
+  "Recherche": "Research",
+  "Réparer le port pour débloquer l'île ": "Repair the port to unlock island ",
+  "Réparer Île ": "Repair Island ",
+  "Production / consommation / transit de toutes les îles": "Production / consumption / transit of all islands",
+  "Production": "Production",
+  "Afficher l'inventaire": "Show inventory",
+  "INVENTAIRE": "INVENTORY",
+  " — voir production / consommation": " — see production / consumption",
+  "Inventaire de l'île (port)": "Island inventory (port)",
+  "Replier l'inventaire": "Collapse inventory",
+  "— vide —": "— empty —",
+  " Réparer — Île ": " Repair — Island ",
+  "Livrez les ressources requises au port pour réparer la liaison et débloquer l'île ": "Deliver the required resources to the port to repair the link and unlock island ",
+  "Réparer l'île ": "Repair island ",
+  "Stock insuffisant": "Insufficient stock",
+  "coût croissant": "rising cost",
+  "tracé continu": "continuous drawing",
+  "Extraction": "Extraction",
+  "Palier 1": "Tier 1",
+  "Palier 2": "Tier 2",
+  "Palier 3": "Tier 3",
+  "côte": "coast",
+  "pétrole": "oil",
+  "accidenté": "rugged",
+  "Coût": "Cost",
+  "Taille": "Size",
+  "Terrain": "Terrain",
+  " /s": " /s",
+  "Entrées": "Inputs",
+  "Sorties": "Outputs",
+  "Conso. élec.": "Power cons.",
+  "Prod. élec.": "Power prod.",
+  "Stockage": "Storage",
+  "batterie (élec.)": "battery (power)",
+  "Exclusif": "Exclusive",
+  "île ": "island ",
+  "Actions": "Actions",
+  "Améliorer": "Upgrade",
+  "Bâtiment": "Building",
+  "Copier": "Copy",
+  "Démolir": "Demolish",
+  "Réseau": "Network",
+  "fermer ▾": "close ▾",
+  "niveau +1": "level +1",
+  "ouvrir ▴": "open ▴",
+  "remb. 100%": "refund 100%",
+  "Extension de terrain": "Terrain extension",
+  "Terrain accidenté": "Rugged terrain",
+  "Extensions effectuées sur cette île": "Extensions made on this island",
+  "Réparations effectuées sur cette île": "Repairs made on this island",
+  " Remblayer": " Reclaim",
+  " Réparer": " Repair",
+  "Technologie non débloquée": "Technology not unlocked",
+  "Coût : ": "Cost: ",
+  "non reliée au port (route)": "not connected to the port (road)",
+  "tuyau manquant": "pipe missing",
+  "câble manquant (élec.)": "cable missing (power)",
+  "intrants manquants": "inputs missing",
+  "élec. insuffisante (vérifier le débit du câble)": "insufficient power (check cable throughput)",
+  "déconnecté": "disconnected",
+  "à l'arrêt": "stopped",
+  "intrants + élec. insuffisants": "inputs + power insufficient",
+  "intrants insuffisants": "inputs insufficient",
+  "réseau saturé": "network saturated",
+  "élec. insuffisante": "power insufficient",
+  "au ralenti": "running slow",
+  "aucun intrant": "no input",
+  "plein régime": "full speed",
+  "à l'arrêt · ": "stopped · ",
+  " — déficit (": " — deficit (",
+  "% dispo)": "% avail.)",
+  "Acier": "Steel",
+  "Béton armé": "Reinforced concrete",
+  "Ciment": "Cement",
+  "Câble": "Cable",
+  "Arrêtée": "Stopped",
+  "Démarrage…": "Starting up…",
+  "En marche": "Running",
+  "Arrêt…": "Shutting down…",
+  "État": "Status",
+  "1 comb.U235 + 256 eau froide + 1 ": "1 U235 fuel + 256 cold water + 1 ",
+  "Sortie": "Output",
+  "2048 kW + 1 ": "2048 kW + 1 ",
+  "Matériau à irradier": "Material to irradiate",
+  "Vitesse": "Speed",
+  "Régime de fonctionnement réel ce tick (": "Actual operating rate this tick (",
+  "Réel ⚠": "Actual ⚠",
+  "Consommation réelle ce tick (bridée : ": "Actual consumption this tick (throttled: ",
+  " /s · ": " /s · ",
+  "Production réelle ce tick (bridée : ": "Actual production this tick (throttled: ",
+  " kWh · ": " kWh · ",
+  " kW · prévu ": " kW · expected ",
+  "Effet": "Effect",
+  "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)": "×2 production on the 8 adjacent tiles (cons. ×1→×3 oscillating)",
+  "Priorité de flux (intrants & élec.)": "Flow priority (inputs & power)",
+  "Basse": "Low",
+  "Haute": "High",
+  "Normale": "Normal",
+  "Servi en dernier : intrants ET électricité après les autres": "Served last: inputs AND electricity after the others",
+  "Servi en premier : intrants (route/tuyau) ET électricité d'abord": "Served first: inputs (road/pipe) AND electricity first",
+  "Servi normalement": "Served normally",
+  "Amélioration → Nv.": "Upgrade → Lv.",
+  "Confirmer · Coût : ": "Confirm · Cost: ",
+  "Voir l'amélioration (Nv.": "View the upgrade (Lv.",
+  " Confirmer ": " Confirm ",
+  " Monter ": " Raise ",
+  "Déjà au niveau de base": "Already at base level",
+  "Remb. : ": "Refund: ",
+  " Baisser ": " Lower ",
+  " autre(s) ": " other(s) ",
+  " sur Nv.": " to Lv.",
+  " · Coût : ": " · Cost: ",
+  "Aligner ": "Align ",
+  " (Nv.": " (Lv.",
+  " Aligner les ": " Align the ",
+  " Confirmer la démolition ?": " Confirm demolition?",
+  " Démolir (remb. 100%)": " Demolish (refund 100%)",
+  "Niveau ": "Level ",
+  "Actuel": "Current",
+  "Coût niv. ": "Cost lv. ",
+  "⬆ Améliorer (×": "⬆ Upgrade (×",
+  "Débloqué": "Unlocked",
+  "Prêt": "Ready",
+  "En cours": "In progress",
+  "Verrouillé": "Locked",
+  " Recherche": " Research",
+  "Livrer": "Deliver",
+  "Condition remplie": "Condition met",
+  "Confirmer": "Confirm",
+  "Livraison à calibrer — non activable": "Delivery to calibrate — cannot be activated",
+  "Requiert : ": "Requires: ",
+  " Port — Île ": " Port — Island ",
+  "Amélioration du transit": "Transit upgrade",
+  " u)": " u)",
+  "Taille des lots ×": "Batch size ×",
+  "🔒 Réparez l'île voisine pour activer une liaison avant d'améliorer le transit.": "🔒 Repair the neighboring island to activate a link before upgrading transit.",
+  "Max": "Max",
+  "Liaisons": "Links",
+  "Aucune liaison active. Débloquez l'île voisine.": "No active link. Unlock the neighboring island.",
+  " ↔ Île ": " ↔ Island ",
+  "↔ transit continu": "↔ continuous transit",
+  "Régler l'export par ressource vers l'île ": "Set export per resource to island ",
+  " — tout autorisé": " — all allowed",
+  "Export → Île ": "Export → Island ",
+  " autorisé vers l'île ": " allowed to island ",
+  " interdit vers l'île ": " forbidden to island ",
+  " — cliquer pour autoriser": " — click to allow",
+  " — cliquer pour interdire": " — click to forbid",
+  "Export de ": "Export of ",
+  " aucun flux sortant": " no outgoing flow",
+  "/s de ": "/s of ",
+  "Transit : ": "Transit: ",
+  "/s → Île ": "/s → Island ",
+  " ← Île ": " ← Island ",
+  "Reçu : ": "Received: ",
+  "/s ← Île ": "/s ← Island ",
+  "Commerce (Île ": "Trade (Island ",
+  "Priorité": "Priority",
+  "Proportionnel": "Proportional",
+  "Priorité : la cale est remplie de la ressource la plus prioritaire à la moins prioritaire.": "Priority: the hold is filled from the highest-priority resource to the lowest.",
+  "Proportionnel : la cale est répartie au prorata de la demande de chaque ressource (l'ordre ne sert qu'à départager les restes).": "Proportional: the hold is shared pro rata to each resource's demand (the order only breaks ties for the remainder).",
+  "Cible": "Target",
+  "Réserve": "Reserve",
+  "Stop": "Stop",
+  "Prio": "Prio",
+  " en stock": " in stock",
+  "Stock cible (quantité à importer ici)": "Target stock (quantity to import here)",
+  "Réserve locale (on n'exporte que le surplus au-dessus)": "Local reserve (only the surplus above is exported)",
+  "Interdire l'export de cette ressource": "Forbid export of this resource",
+  "Cible = quantité voulue ici (import). Réserve = stock gardé localement (export du surplus uniquement). Priorité = ordre de chargement au départ.": "Target = quantity wanted here (import). Reserve = stock kept locally (only the surplus is exported). Priority = loading order on departure.",
+  "Équitable": "Fair",
+  "Chaque consommateur reçoit la même quantité absolue (kW) ; le surplus non utilisé par un petit bâtiment profite aux autres. Un bâtiment qui n'atteint pas sa puissance nominale est coupé ce tick.": "Each consumer gets the same absolute amount (kW); the surplus unused by a small building benefits the others. A building that does not reach its rated power is cut off this tick.",
+  "Coupe les plus gros consommateurs d'abord pour que le reste tourne à plein régime (le moteur fonctionne en tout-ou-rien, pas de régime partiel).": "Cuts the biggest consumers first so the rest run at full speed (the engine works all-or-nothing, no partial rate).",
+  "⚡ Énergie — Île ": "⚡ Energy — Island ",
+  "⚡ L'électricité circule par réseau de câbles : chaque réseau câble est un sous-réseau électrique distinct (les générateurs, consommateurs et accumulateurs qu'il relie se partagent l'énergie). Le débit du câble (V1, V2…) borne la puissance transmissible : montez-le si un réseau sature. Les totaux ci-dessous additionnent tous les réseaux de l'île.": "⚡ Electricity flows through cable networks: each cable network is a distinct electrical sub-network (the generators, consumers and accumulators it connects share the energy). The cable throughput (V1, V2…) caps the transmittable power: upgrade it if a network saturates. The totals below sum all the island's networks.",
+  "Accumulateurs": "Accumulators",
+  "Batterie (décharge)": "Battery (discharge)",
+  "Bilan réel": "Actual balance",
+  "Demande non servie": "Unmet demand",
+  "Demande totale": "Total demand",
+  "Production (générateurs)": "Production (generators)",
+  "Mode de gestion du déficit": "Deficit management mode",
+  "Ordre de priorité (haut = servi en premier)": "Priority order (top = served first)",
+  "Aucun consommateur d'énergie sur cette île.": "No energy consumer on this island.",
+  "Consommation": "Consumption",
+  "Bilan net": "Net balance",
+  "Prévenir quand le stock de cette île passe sous ce seuil (0 = désactivé)": "Warn when this island's stock drops below this threshold (0 = disabled)",
+  "Route": "Road",
+  "Tuyau": "Pipe",
+  " Monter": " Raise",
+  " Monter A + B": " Raise A + B",
+  " Baisser": " Lower",
+  " Baisser A + B": " Lower A + B",
+  "Débit max": "Max throughput",
+  "illimité": "unlimited",
+  "Flux demandé": "Requested flow",
+  "Demande min→max": "Demand min→max",
+  "Plage de consommation : les bâtiments à conso sigmoïde/aléatoire font varier la demande élec. Dimensionnez la production pour le max.": "Consumption range: buildings with sigmoid/random consumption make power demand vary. Size production for the max.",
+  "Saturé ⚠": "Saturated ⚠",
+  "Demande supérieure au débit max : tous les bâtiments du réseau sont ralentis à ce pourcentage": "Demand exceeds max throughput: all the network's buildings are slowed to this percentage",
+  "% servi": "% served",
+  "Énergie stockée dans les accumulateurs branchés sur ce réseau câble (charge / capacité).": "Energy stored in the accumulators connected to this cable network (charge / capacity).",
+  "Livrée": "Delivered",
+  "⚡ Production suffisante mais câble saturé : améliorez le débit pour tout transmettre.": "⚡ Production sufficient but cable saturated: upgrade the throughput to transmit everything.",
+  "⚡ Production insuffisante sur ce réseau câble.": "⚡ Insufficient production on this cable network.",
+  "Production /s": "Production /s",
+  "Consommation /s": "Consumption /s",
+  "Stock liquide accumulé dans la citerne du réseau tuyau (pétrole, eau, acide…). N'apparaît pas dans l'inventaire du port.": "Liquid stock accumulated in the pipe network's tank (oil, water, acid…). Does not appear in the port inventory.",
+  "Transit": "Transit",
+  "Tuiles": "Tiles",
+  "Couplage": "Coupling",
+  " réseaux)": " networks)",
+  "jonction (": "junction (",
+  "Matériau d'amélioration (V": "Upgrade material (V",
+  " Confirmer ?": " Confirm?",
+  "Retirer le débit illimité": "Remove unlimited throughput",
+  " — débit illimité": " — unlimited throughput",
+  "Confirmer ?": "Confirm?",
+  "Rendre illimité": "Make unlimited",
+  "Astuce": "Tip",
+  "Ne plus afficher les astuces": "Stop showing tips",
+  "Compris": "Got it",
+  "Recherche terminée": "Research complete",
+  "Débloque : ": "Unlocks: ",
+  "Voir la recherche": "View the research",
+  "Lecture du fichier impossible.": "Unable to read the file.",
+  " Emplacements de sauvegarde": " Save slots",
+  "Actif": "Active",
+  "Valider": "OK",
+  "Annuler": "Cancel",
+  "Supprimer définitivement ?": "Delete permanently?",
+  "Oui, supprimer": "Yes, delete",
+  "Sauvegarder": "Save",
+  "Charger": "Load",
+  "Renommer": "Rename",
+  "Exporter": "Export",
+  "Supprimer": "Delete",
+  "+ Nouvelle partie": "+ New game",
+  "⤓ Importer": "⤓ Import",
+  "Exporter la sauvegarde": "Export the save",
+  "Sélectionne et copie ce texte, garde-le en lieu sûr.": "Select and copy this text, keep it somewhere safe.",
+  "✓ Copié dans le presse-papier. Conserve-le pour le réimporter.": "✓ Copied to the clipboard. Keep it to re-import it.",
+  "⤓ Télécharger .txt": "⤓ Download .txt",
+  "Cet emplacement est vide (aucune sauvegarde à exporter).": "This slot is empty (no save to export).",
+  "Importer une sauvegarde": "Import a save",
+  "Charge un fichier .txt exporté (ou colle le texte) : une nouvelle partie sera créée.": "Load an exported .txt file (or paste the text): a new game will be created.",
+  "📂 Charger un fichier .txt": "📂 Load a .txt file",
+  "Importer": "Import",
+  "Choisis ton mode de jeu": "Choose your game mode",
+  "Le mode fixe la taille des îles pour cette partie.": "The mode sets the island size for this game.",
+  "Difficile": "Hard",
+  "Grandes îles, plus d'espace pour construire.": "Large islands, more space to build.",
+  "Normal": "Normal",
+  "Îles compactes, espace limité.": "Compact islands, limited space.",
+  "Activé": "On",
+  "Désactivé": "Off",
+  "Vérification…": "Checking…",
+  "✓ Le jeu est à jour.": "✓ The game is up to date.",
+  "Impossible de vérifier (hors-ligne ?).": "Unable to check (offline?).",
+  "Télécharger la mise à jour": "Download the update",
+  "Ouverture de l'installeur…": "Opening the installer…",
+  "Téléchargement… ": "Downloading… ",
+  "⬇ Mettre à jour maintenant": "⬇ Update now",
+  "⬆ Mise à jour disponible : ": "⬆ Update available: ",
+  "❌ Échec du téléchargement. Réessayez, ou ": "❌ Download failed. Try again, or ",
+  "⚙ Options": "⚙ Options",
+  "Afficher l'efficacité (%)": "Show efficiency (%)",
+  "Afficher l'icône de déficit": "Show the deficit icon",
+  "Afficher les niveaux": "Show levels",
+  "Afficher une explication à chaque nouvelle mécanique": "Show an explanation for each new mechanic",
+  "Amélioration immédiate": "Instant upgrade",
+  "Astuces": "Tips",
+  "Au-delà d'1 h d'absence, approxime la production (rattrapage quasi instantané)": "Beyond 1 h of absence, approximates production (near-instant catch-up)",
+  "Calcul hors-ligne simplifié": "Simplified offline calculation",
+  "En mode Améliorer, toucher un bâtiment le monte direct (sans confirmation)": "In Upgrade mode, tapping a building upgrades it directly (no confirmation)",
+  "Petit numéro de niveau en bas à gauche des bâtiments": "Small level number at the bottom-left of buildings",
+  "Petite icône en haut à droite des bâtiments en déficit / panne": "Small icon at the top-right of buildings in deficit / breakdown",
+  "Pourcentage d'efficacité à gauche du niveau, en cas de déficit": "Efficiency percentage to the left of the level, in case of deficit",
+  "Construction et améliorations gratuites": "Free construction and upgrades",
+  "Mode développeur": "Developer mode",
+  "💡 Revoir les astuces": "💡 Review the tips",
+  "Version": "Version",
+  " · build ": " · build ",
+  "Vérifier les mises à jour": "Check for updates",
+  "❔ Aide & astuces": "❔ Help & tips",
+  "Premiers pas (tutoriel île 1)": "First steps (island 1 tutorial)",
+  "Toutes les mécaniques": "All the mechanics",
+  "Tuto ": "Tutorial ",
+  "Passer le tutoriel et tout débloquer": "Skip the tutorial and unlock everything",
+  "Passer": "Skip",
+  "🌙 Bon retour !": "🌙 Welcome back!",
+  " — production récupérée :": " — production recovered:",
+  " — rien à produire.": " — nothing to produce.",
+  "Absence : ": "Away: ",
+  "Continuer": "Continue",
+  "Partie ": "Game ",
+  "Texte invalide (JSON illisible).": "Invalid text (unreadable JSON).",
+  "Ce texte n'est pas une sauvegarde Archipel valide.": "This text is not a valid Archipel save.",
+  "Import ": "Import ",
+  "Partie 1": "Game 1",
+  " débloqué !": " unlocked!",
+  "🎓 Tutoriel terminé — bonne partie !": "🎓 Tutorial complete — enjoy the game!",
+  "Tutoriel passé — bâtiments débloqués": "Tutorial skipped — buildings unlocked",
+  "Astuces désactivées": "Tips disabled",
+  "💡 Astuces activées": "💡 Tips enabled",
+  "💡 Astuces réinitialisées": "💡 Tips reset",
+  "❌ Tuile occupée": "❌ Tile occupied",
+  "❌ Jonction : pose sur une tuile vide ou un réseau croisé": "❌ Junction: place on an empty tile or a crossing network",
+  "❌ Terrain non autorisé": "❌ Terrain not allowed",
+  "❌ Une seule jonction de ce type par île": "❌ Only one junction of this type per island",
+  "❌ Doit toucher un réseau (route/câble/tuyau)": "❌ Must touch a network (road/cable/pipe)",
+  "❌ Pas de place pour le réseau croisé à côté": "❌ No room for the crossing network alongside",
+  "❌ Doit être en mer, adjacent à la côte": "❌ Must be at sea, adjacent to the coast",
+  "❌ Jonction : manque ": "❌ Junction: missing ",
+  " : manque ": " : missing ",
+  "❌ Extension V": "❌ Extension V",
+  "Rien à démolir ici": "Nothing to demolish here",
+  "Non améliorable (infra / port)": "Not upgradable (infra / port)",
+  "❌ Manque ": "❌ Missing ",
+  "❌ Technologie non débloquée": "❌ Technology not unlocked",
+  "🔧 Terrain réparé": "🔧 Terrain repaired",
+  "🏗 Terrain remblayé": "🏗 Terrain reclaimed",
+  "⬇ Réseau → débit limité (V": "⬇ Network → limited throughput (V",
+  "Réseaux couplés": "Coupled networks",
+  "∞ Réseau → débit ILLIMITÉ": "∞ Network → UNLIMITED throughput",
+  "📋 Mode copie : touchez un bâtiment à copier": "📋 Copy mode: tap a building to copy",
+  "⛰ Mode Difficile — îles compactes": "⛰ Hard mode — compact islands",
+  "🗺 Mode Normal — grandes îles": "🗺 Normal mode — large islands",
+  "Île verrouillée — débloquez-la via la Recherche": "Island locked — unlock it via Research",
+  " débloqué": " unlocked",
+  "Stock insuffisant sur cette île": "Insufficient stock on this island",
+  "🛠 Port réparé — île débloquée": "🛠 Port repaired — island unlocked",
+  "❌ Stock insuffisant pour la réparation": "❌ Insufficient stock for the repair",
+  "🔒 Aucune liaison active — réparez d'abord l'île voisine": "🔒 No active link — repair the neighboring island first",
+  "Transit au maximum": "Transit at maximum",
+  "Mode dev désactivé": "Dev mode disabled",
+  "🛠 MODE DEV activé — construction gratuite": "🛠 DEV MODE enabled — free construction",
+  "Amélioration immédiate désactivée": "Instant upgrade disabled",
+  "⬆ Amélioration immédiate activée": "⬆ Instant upgrade enabled",
+  "Ce bâtiment ne peut pas être copié": "This building cannot be copied",
+  "Sélectionnez un outil en bas pour construire": "Select a tool at the bottom to build",
+  "Sauvegardé": "Saved",
+  "Menu construction — choisissez un bâtiment, ou « Quitter » pour fermer": "Build menu — choose a building, or \"Quit\" to close",
+  "Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer": "Network menu — choose an infrastructure, or \"Quit\" to close",
+  "Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos": "Selection mode — drag to navigate, tap a building for its info",
+  " — touchez un bâtiment (remb. 100%, un par clic) · glissez pour naviguer": " — tap a building (refund 100%, one per tap) · drag to navigate",
+  " — touchez un bâtiment de production": " — tap a production building",
+  " — touchez un bâtiment pour le sélectionner": " — tap a building to select it",
+  " — glissez pour tracer": " — drag to draw",
+  " — touchez entre les deux réseaux (mêmes niveaux)": " — tap between the two networks (same levels)",
+  " — touchez une tuile valide": " — tap a valid tile",
+  " saturée": " saturated",
+  " saturés": " saturated",
+  "Quitter le mode construction": "Exit build mode",
+  "✕ Quitter": "✕ Quit",
+  "⚠ MODE DEV — construction gratuite": "⚠ DEV MODE — free construction",
+  "💾 Sauvegardé": "💾 Saved",
+  "Rattrapage hors-ligne…": "Offline catch-up…",
+  "calcul de la production…": "calculating production…",
+  "calcul simplifié (longue absence)": "simplified calculation (long absence)",
+  "Astuces désactivées — réactivables dans les options": "Tips disabled — can be re-enabled in the options",
+  "Monter": "Up",
+  "Descendre": "Down"
+ }
+}
