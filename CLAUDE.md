@@ -17,7 +17,21 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 122`, `GAME_VERSION = 'Alpha 10.97'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 123`, `GAME_VERSION = 'Alpha 10.98'`.** Changement
+  10.98 : **fix freeze pose + calibrage réel + bouton alerte + fonderie or → électronique.** (1)
+  **Freeze ~3 s à la pose (surtout via Copier) corrigé** : `onPointerUp` (et fin de pinch) appelait
+  `flushSave()` **synchrone** → `serialize()` des 5 îles + `JSON.stringify` + `localStorage` à CHAQUE
+  tap (≈ plusieurs secondes sur une grosse partie), **redondant** avec le `scheduleSave()` déjà planifié
+  par `tryPlace`/`tryDemolish`. Remplacé par `scheduleSave()` (débouncé 500 ms). Garde `if(!b) return`
+  dans `tryPlace` (évite un crash `'kind'` si l'outil est invalide). (2) **Calibrage centrale = production
+  RÉELLE** : la fiche affiche les Entrées/Sortie (U235, eau froide, kW, matériau irradié) selon la
+  fraction **réelle en cours** (`bld.nucCur / maxPower`, rampe sigmoïde) au lieu de la cible — 0 à
+  l'arrêt/sécurité, valeur qui monte pendant le calibrage ; le curseur affiche toujours la cible. (3)
+  **Bouton ALERTE** (HUD, à droite de Production) : helper `activeStockAlerts(game)` (stock port < seuil,
+  toutes îles) ; bouton orange pulsant `.inv-alert-btn` (visible si ≥1 alerte, badge = nombre) ouvrant
+  `AlertsPanel` (liste Île/ressource/stock·seuil, clic → va à l'île + ouvre le Port). (4) **Catégorie
+  bâtiment** : `fonderie_or` déplacée de « Or » (supprimée) vers **« Électronique »**. Validé :
+  `node --check` + CSS équilibré + chargement Chromium sans erreur. Changement
   10.97 : **4 ajustements UI/jeu.** (1) **Lisibilité inox renforcée** : `--ink-dim`/`--ink-faint`
   encore éclaircis (`#d6dae2`/`#bcc1cb`) + **ombre portée** (`text-shadow:0 1px 2px rgba(0,0,0,.55)`)
   sur le texte de tous les panneaux/barres inox (`.hud`/`.research-panel`/…/`.build-panel`) → le texte
