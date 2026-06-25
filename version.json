@@ -1,7 +1,7 @@
 {
-  "build": 136,
-  "version": "Alpha 11.11",
+  "build": 137,
+  "version": "Alpha 11.12",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.11 — notation scientifique dans les panneaux Production et Réseaux (#135)"
+  "notes": "Alpha 11.12 — puissance affichée en kW / MW / GW selon l'ampleur (#136)"
 }
