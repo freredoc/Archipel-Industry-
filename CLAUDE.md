@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 115`, `GAME_VERSION = 'Alpha 10.90'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 116`, `GAME_VERSION = 'Alpha 10.91'`.** Changement
+  10.91 : **palette bleue → gunmetal pour TOUT le thème inox (fin des fonds bleus dans les panneaux).**
+  En 10.88-10.90 seuls les CADRES + la barre du haut passaient inox ; les **cartes/encarts/champs/
+  boutons internes** des panneaux restaient bleus (Recherche `.rp-node`, Options, liaisons Port
+  `.pp-link`, encart Énergie `.ep-stats`, cartes Aide `.help-card`, champs `NumField`, priorité
+  Haute/Normale/Basse `.ip-fluxpri-btn`…) car ils utilisent `var(--panel)`/`var(--panel-2)`/`var(--line)`.
+  Fix : **une seule règle `body.theme-inox{--panel:#262931;--panel-2:#2f323b;--line:#474c57;}`** rebascule
+  toute la palette → tous ces éléments deviennent **gris gunmetal** d'un coup (« fond plaque inox, bouton
+  gris »). Les accents de SÉLECTION codés en dur (jaune Priorité/PRÊT, bleu `#0277BD` Normale, violet
+  `#7E57C2` matériau, vert toggles) restent pour distinguer l'état actif. CSS only, aucune logique.
+  Validé : `node --check` + CSS équilibré + rendu Chromium (Options/Recherche → cartes grises, 0 bleu). Changement
   10.90 : **barre du haut en PLAQUE INOX (thème inox).** En 10.88 le cadre `.hud` passait inox mais
   les éléments INTERNES restaient bleus : la bande **inventaire** (`.inventory`, `var(--panel-2)`) et
   toutes les **pastilles** (`.options-btn`/`.research-btn` PORT·RECHERCHE/`.stock` kW·batterie/

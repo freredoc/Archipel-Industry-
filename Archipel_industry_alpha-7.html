@@ -433,6 +433,12 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
    tout reste bleu. CSS uniquement, aucune logique de jeu. Les couleurs de valeurs (vert/orange/
    rouge des ressources) sont conservées via les règles plus spécifiques existantes. */
 /* Panneaux, barres, cartes, tooltips, barre du haut → cadre inox plein + texte clair. */
+/* Bascule la PALETTE bleue en gunmetal pour TOUT le thème inox : toutes les cartes/encarts/champs/
+   boutons internes des panneaux (Recherche `.rp-node`, Options, liaisons Port `.pp-link`, encart
+   Énergie `.ep-stats`, cartes Aide `.help-card`, champs `NumField`, priorité Haute/Normale/Basse…)
+   utilisent `var(--panel)`/`var(--panel-2)`/`var(--line)` → ils deviennent gris d'un coup. Les
+   accents de SÉLECTION (jaune/bleu/violet/vert, codés en dur) restent pour distinguer l'état actif. */
+body.theme-inox{--panel:#262931;--panel-2:#2f323b;--line:#474c57;}
 body.theme-inox .hud,
 body.theme-inox .research-panel,body.theme-inox .slot-panel,
 body.theme-inox .tip-popup,body.theme-inox .mode-modal,body.theme-inox .info-panel,
@@ -3896,8 +3902,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 115;
-const GAME_VERSION = 'Alpha 10.90';
+const GAME_BUILD = 116;
+const GAME_VERSION = 'Alpha 10.91';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
