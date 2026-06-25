@@ -1,7 +1,7 @@
 {
-  "build": 122,
-  "version": "Alpha 10.97",
+  "build": 123,
+  "version": "Alpha 10.98",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.97 — lisibilité inox + croix de fermeture + centrale 0% à la pose + Électronique (#121)"
+  "notes": "Alpha 10.98 — fix freeze pose (Copier) + calibrage réel + bouton alerte + fonderie or→électronique (#122)"
 }
