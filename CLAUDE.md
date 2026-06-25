@@ -17,7 +17,14 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 140`, `GAME_VERSION = 'Alpha 11.15'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 141`, `GAME_VERSION = 'Alpha 11.16'`.** Changement
+  11.16 : **panneau Port — mention de l'île reliée par le transit.** Dans la section « Amélioration du
+  transit » (onglet « Transit île »), une ligne **« ↔ Transit avec l'île N »** (ou « les îles N, M »
+  si plusieurs liaisons, ex. île 3 ↔ 2 et 4) s'affiche sous le titre quand ≥1 liaison est active
+  (`links` déjà calculé : SHIP_LINKS impliquant l'île courante + `linkActive`). Lève la confusion
+  « pourquoi puis-je améliorer le port 5 ? » → il transite avec l'île 4 (chaîne 1-2-3-4-5, pas d'île 6).
+  CSS `.pp-port-linked` (atténué). Affichage seul, aucune logique touchée. Validé : `node --check`
+  (6 blocs) + CSS équilibré + Chromium (0 erreur). Changement
   11.15 : **coût d'amélioration réseau ×4/niveau + élément moteur nuc. en T4.** (1) **Réseaux
   (route/câble/tuyau) plus chers** : la montée des paliers élevés (niveau 3+, `networkUnitCost`)
   passe de `×2` à **`×4` par niveau** (`base * Math.pow(4, level-3)`) → ex. route cheap L3→4 = 800,

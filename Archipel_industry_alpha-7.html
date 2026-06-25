@@ -258,6 +258,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .pp-port-mult{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-dim);font-weight:400;margin-left:4px;}
 .pp-port-cost{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
 .pp-port-locked{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--orange);margin:4px 0;line-height:1.3;}
+.pp-port-linked{font-family:'Barlow Condensed',sans-serif;font-size:.74rem;color:var(--ink-dim);margin:2px 0 5px;line-height:1.3;}
 .pp-empty,.pp-note{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--ink-faint);padding:3px 0;}
 .pp-note{margin-top:6px;line-height:1.35;}
 .pp-link{border:1px solid var(--line);border-radius:6px;padding:6px 9px;background:var(--panel-2);margin-bottom:5px;}
@@ -4175,8 +4176,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 140;
-const GAME_VERSION = 'Alpha 11.15';
+const GAME_BUILD = 141;
+const GAME_VERSION = 'Alpha 11.16';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -8696,7 +8697,12 @@ function PortPanel({
     className: "rp-list"
   }, React.createElement("div", {
     className: "pp-section-label"
-  }, I18N.t("Amélioration du transit")), (() => {
+  }, I18N.t("Amélioration du transit")), links.length > 0 && React.createElement("div", {
+    className: "pp-port-linked"
+  }, "↔ " + (links.length > 1 ? I18N.t("Transit avec les îles ") : I18N.t("Transit avec l'île ")) + links.map(key => {
+    const [a, b] = key.split('-').map(Number);
+    return a === currentIsland ? b : a;
+  }).join(', ')), (() => {
     const lvl = game.portSpeed && game.portSpeed[currentIsland] || 0;
     const atMax = lvl >= PORT_MAX_LEVEL;
     const cost = atMax ? {} : portUpgradeCost(currentIsland, lvl);
