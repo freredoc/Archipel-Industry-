@@ -1,0 +1,405 @@
+line	french_source
+4268	Réseau introuvable
+4277	Réseaux couplés à des niveaux différents
+4282	Déjà illimité
+4286	Niveau maximum atteint
+4290	Niveau minimum atteint
+4330	Indisponible
+5466	unités irradiées
+5486	 confirmé
+5486	nœud 
+5496	kW soutenus
+5506	 importé
+5522	port île 
+5534	kWh stockés
+6631	 verrouillée
+6631	Île 
+6722	 Production — 
+6722	toutes les îles
+6725	Fermer
+6731	Toutes
+6739	Conso 
+6739	⚡ Prod 
+6741	Net 
+6747	Ressource
+6749	Prod /s
+6751	Conso /s
+6753	Net /s
+6755	Aucune production en cours.
+6771	Transit entre îles
+6773	Aucun transit en cours.
+6780	 → Île 
+6782	/s
+6842	Mise à jour disponible : 
+6842	Options
+6850	Aide — toutes les astuces
+6853	Aide
+6863	Bilan énergie de l'île — cliquer pour gérer le déficit
+6871	Charge des accumulateurs de l'île — cliquer pour gérer l'énergie
+6880	Configuration du port (commerce)
+6883	Port
+6886	Panneau Recherche
+6886	Recherche prête à valider !
+6889	Recherche
+6899	Réparer le port pour débloquer l'île 
+6900	Réparer Île 
+6906	Production / consommation / transit de toutes les îles
+6907	Production
+6914	Afficher l'inventaire
+6915	INVENTAIRE
+6937	 — voir production / consommation
+6950	Inventaire de l'île (port)
+6954	Replier l'inventaire
+6957	— vide —
+6980	 Réparer — Île 
+6988	Livrez les ressources requises au port pour réparer la liaison et débloquer l'île 
+6997	Réparer l'île 
+6997	Stock insuffisant
+7013	coût croissant
+7013	tracé continu
+7095	Extraction
+7096	Palier 1
+7097	Palier 2
+7098	Palier 3
+7102	côte
+7105	pétrole
+7106	accidenté
+7146	Coût
+7147	Taille
+7148	Terrain
+7149	 /s
+7149	Entrées
+7150	Sorties
+7151	Conso. élec.
+7152	Prod. élec.
+7153	Stockage
+7153	batterie (élec.)
+7154	Exclusif
+7154	île 
+7266	Actions
+7268	Améliorer
+7268	Bâtiment
+7268	Copier
+7268	Démolir
+7268	Réseau
+7268	fermer ▾
+7268	niveau +1
+7268	ouvrir ▴
+7268	remb. 100%
+7333	Extension de terrain
+7333	Terrain accidenté
+7335	Extensions effectuées sur cette île
+7335	Réparations effectuées sur cette île
+7336	 Remblayer
+7336	 Réparer
+7380	Technologie non débloquée
+7386	Coût : 
+7504	non reliée au port (route)
+7505	tuyau manquant
+7506	câble manquant (élec.)
+7507	intrants manquants
+7508	élec. insuffisante (vérifier le débit du câble)
+7521	déconnecté
+7521	à l'arrêt
+7527	intrants + élec. insuffisants
+7527	intrants insuffisants
+7527	réseau saturé
+7527	élec. insuffisante
+7528	au ralenti
+7528	aucun intrant
+7528	plein régime
+7528	à l'arrêt · 
+7548	 — déficit (
+7548	% dispo)
+7596	Acier
+7596	Béton armé
+7596	Ciment
+7596	Câble
+7598	Arrêtée
+7599	Démarrage…
+7600	En marche
+7601	Arrêt…
+7618	État
+7629	1 comb.U235 + 256 eau froide + 1 
+7633	Sortie
+7635	2048 kW + 1 
+7639	Matériau à irradier
+7650	Vitesse
+7656	Régime de fonctionnement réel ce tick (
+7667	Réel ⚠
+7669	Consommation réelle ce tick (bridée : 
+7684	 /s · 
+7693	Production réelle ce tick (bridée : 
+7705	 kWh · 
+7718	 kW · prévu 
+7729	Effet
+7731	×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)
+7735	Priorité de flux (intrants & élec.)
+7737	Basse
+7737	Haute
+7737	Normale
+7741	Servi en dernier : intrants ET électricité après les autres
+7741	Servi en premier : intrants (route/tuyau) ET électricité d'abord
+7741	Servi normalement
+7746	Amélioration → Nv.
+7770	Confirmer · Coût : 
+7770	Voir l'amélioration (Nv.
+7771	 Confirmer 
+7771	 Monter 
+7777	Déjà au niveau de base
+7777	Remb. : 
+7778	 Baisser 
+7784	 autre(s) 
+7784	 sur Nv.
+7784	 · Coût : 
+7784	Aligner 
+7785	 (Nv.
+7785	 Aligner les 
+7795	 Confirmer la démolition ?
+7795	 Démolir (remb. 100%)
+7882	Niveau 
+7892	Actuel
+7910	Coût niv. 
+7916	⬆ Améliorer (×
+7939	Débloqué
+7944	Prêt
+7949	En cours
+7954	Verrouillé
+7967	 Recherche
+8018	Livrer
+8022	Condition remplie
+8025	Confirmer
+8027	Livraison à calibrer — non activable
+8031	Requiert : 
+8108	 Port — Île 
+8116	Amélioration du transit
+8128	 u)
+8128	Taille des lots ×
+8137	🔒 Réparez l'île voisine pour activer une liaison avant d'améliorer le transit.
+8141	Max
+8144	Liaisons
+8146	Aucune liaison active. Débloquez l'île voisine.
+8177	 ↔ Île 
+8179	↔ transit continu
+8182	Régler l'export par ressource vers l'île 
+8183	 — tout autorisé
+8183	Export → Île 
+8191	 autorisé vers l'île 
+8191	 interdit vers l'île 
+8191	 — cliquer pour autoriser
+8191	 — cliquer pour interdire
+8191	Export de 
+8197	 aucun flux sortant
+8207	/s de 
+8207	Transit : 
+8212	/s → Île 
+8222	 ← Île 
+8222	Reçu : 
+8227	/s ← Île 
+8231	Commerce (Île 
+8233	Priorité
+8233	Proportionnel
+8239	Priorité : la cale est remplie de la ressource la plus prioritaire à la moins prioritaire.
+8239	Proportionnel : la cale est répartie au prorata de la demande de chaque ressource (l'ordre ne sert qu'à départager les restes).
+8245	Cible
+8247	Réserve
+8249	Stop
+8251	Prio
+8262	 en stock
+8266	Stock cible (quantité à importer ici)
+8271	Réserve locale (on n'exporte que le surplus au-dessus)
+8275	Interdire l'export de cette ressource
+8281	Monter
+8285	Descendre
+8289	Cible = quantité voulue ici (import). Réserve = stock gardé localement (export du surplus uniquement). Priorité = ordre de chargement au départ.
+8322	Équitable
+8324	Chaque consommateur reçoit la même quantité absolue (kW) ; le surplus non utilisé par un petit bâtiment profite aux autres. Un bâtiment qui n'atteint pas sa puissance nominale est coupé ce tick.
+8325	Coupe les plus gros consommateurs d'abord pour que le reste tourne à plein régime (le moteur fonctionne en tout-ou-rien, pas de régime partiel).
+8336	⚡ Énergie — Île 
+8344	⚡ L'électricité circule par réseau de câbles : chaque réseau câble est un sous-réseau électrique distinct (les générateurs, consommateurs et accumulateurs qu'il relie se partagent l'énergie). Le débit du câble (V1, V2…) borne la puissance transmissible : montez-le si un réseau sature. Les totaux ci-dessous additionnent tous les réseaux de l'île.
+8346	Accumulateurs
+8346	Batterie (décharge)
+8346	Bilan réel
+8346	Demande non servie
+8346	Demande totale
+8346	Production (générateurs)
+8356	Mode de gestion du déficit
+8364	Ordre de priorité (haut = servi en premier)
+8366	Aucun consommateur d'énergie sur cette île.
+8457	Consommation
+8463	Bilan net
+8473	Prévenir quand le stock de cette île passe sous ce seuil (0 = désactivé)
+8522	Route
+8523	Tuyau
+8563	 Monter
+8563	 Monter A + B
+8564	 Baisser
+8564	 Baisser A + B
+8611	Débit max
+8613	illimité
+8617	Flux demandé
+8626	Demande min→max
+8628	Plage de consommation : les bâtiments à conso sigmoïde/aléatoire font varier la demande élec. Dimensionnez la production pour le max.
+8633	Saturé ⚠
+8638	Demande supérieure au débit max : tous les bâtiments du réseau sont ralentis à ce pourcentage
+8639	% servi
+8651	Énergie stockée dans les accumulateurs branchés sur ce réseau câble (charge / capacité).
+8656	Livrée
+8668	⚡ Production suffisante mais câble saturé : améliorez le débit pour tout transmettre.
+8675	⚡ Production insuffisante sur ce réseau câble.
+8679	Production /s
+8685	Consommation /s
+8693	Stock liquide accumulé dans la citerne du réseau tuyau (pétrole, eau, acide…). N'apparaît pas dans l'inventaire du port.
+8698	Transit
+8704	Tuiles
+8710	Couplage
+8712	 réseaux)
+8712	jonction (
+8716	Matériau d'amélioration (V
+8737	 Confirmer ?
+8748	Retirer le débit illimité
+8764	 — débit illimité
+8765	Confirmer ?
+8765	Rendre illimité
+8789	Astuce
+8803	Ne plus afficher les astuces
+8806	Compris
+8825	Recherche terminée
+8829	Débloque : 
+8834	Voir la recherche
+8914	Lecture du fichier impossible.
+8955	 Emplacements de sauvegarde
+8983	Actif
+8990	Valider
+8993	Annuler
+8995	Supprimer définitivement ?
+8998	Oui, supprimer
+9004	Sauvegarder
+9007	Charger
+9010	Renommer
+9013	Exporter
+9016	Supprimer
+9022	+ Nouvelle partie
+9029	⤓ Importer
+9044	Exporter la sauvegarde
+9057	Sélectionne et copie ce texte, garde-le en lieu sûr.
+9057	✓ Copié dans le presse-papier. Conserve-le pour le réimporter.
+9083	⤓ Télécharger .txt
+9094	Cet emplacement est vide (aucune sauvegarde à exporter).
+9109	Importer une sauvegarde
+9122	Charge un fichier .txt exporté (ou colle le texte) : une nouvelle partie sera créée.
+9136	📂 Charger un fichier .txt
+9170	Importer
+9194	Choisis ton mode de jeu
+9196	Le mode fixe la taille des îles pour cette partie.
+9198	Difficile
+9198	Grandes îles, plus d'espace pour construire.
+9198	Normal
+9198	Îles compactes, espace limité.
+9231	Activé
+9231	Désactivé
+9286	Vérification…
+9289	✓ Le jeu est à jour.
+9292	Impossible de vérifier (hors-ligne ?).
+9301	Télécharger la mise à jour
+9306	Ouverture de l'installeur…
+9306	Téléchargement… 
+9306	⬇ Mettre à jour maintenant
+9309	⬆ Mise à jour disponible : 
+9313	❌ Échec du téléchargement. Réessayez, ou 
+9326	⚙ Options
+9332	Afficher l'efficacité (%)
+9332	Afficher l'icône de déficit
+9332	Afficher les niveaux
+9332	Afficher une explication à chaque nouvelle mécanique
+9332	Amélioration immédiate
+9332	Astuces
+9332	Au-delà d'1 h d'absence, approxime la production (rattrapage quasi instantané)
+9332	Calcul hors-ligne simplifié
+9332	En mode Améliorer, toucher un bâtiment le monte direct (sans confirmation)
+9332	Petit numéro de niveau en bas à gauche des bâtiments
+9332	Petite icône en haut à droite des bâtiments en déficit / panne
+9332	Pourcentage d'efficacité à gauche du niveau, en cas de déficit
+9335	Construction et améliorations gratuites
+9335	Mode développeur
+9335	💡 Revoir les astuces
+9344	Version
+9346	 · build 
+9350	Vérifier les mises à jour
+9390	❔ Aide & astuces
+9398	Premiers pas (tutoriel île 1)
+9402	Toutes les mécaniques
+9416	Tuto 
+9421	Passer le tutoriel et tout débloquer
+9422	Passer
+9438	🌙 Bon retour !
+9446	 — production récupérée :
+9446	 — rien à produire.
+9446	Absence : 
+9472	Continuer
+9986	Partie 
+10003	Texte invalide (JSON illisible).
+10006	Ce texte n'est pas une sauvegarde Archipel valide.
+10013	Import 
+10040	Partie 1
+10528	 débloqué !
+10532	🎓 Tutoriel terminé — bonne partie !
+10544	Tutoriel passé — bâtiments débloqués
+10611	Astuces désactivées
+10611	💡 Astuces activées
+10620	💡 Astuces réinitialisées
+10747	❌ Tuile occupée
+10753	❌ Jonction : pose sur une tuile vide ou un réseau croisé
+10757	❌ Terrain non autorisé
+10762	❌ Une seule jonction de ce type par île
+10769	❌ Doit toucher un réseau (route/câble/tuyau)
+10795	❌ Pas de place pour le réseau croisé à côté
+10805	❌ Jonction : manque 
+10849	❌ Doit être en mer, adjacent à la côte
+10885	 : manque 
+10885	❌ Extension V
+10915	Rien à démolir ici
+10982	Non améliorable (infra / port)
+11011	❌ Manque 
+11098	❌ Technologie non débloquée
+11117	🔧 Terrain réparé
+11147	🏗 Terrain remblayé
+11190	⬇ Réseau → débit limité (V
+11212	Réseaux couplés
+11239	∞ Réseau → débit ILLIMITÉ
+11259	📋 Mode copie : touchez un bâtiment à copier
+11297	⛰ Mode Difficile — îles compactes
+11297	🗺 Mode Normal — grandes îles
+11303	Île verrouillée — débloquez-la via la Recherche
+11331	 débloqué
+11337	Stock insuffisant sur cette île
+11354	🛠 Port réparé — île débloquée
+11359	❌ Stock insuffisant pour la réparation
+11371	🔒 Aucune liaison active — réparez d'abord l'île voisine
+11376	Transit au maximum
+11491	Mode dev désactivé
+11491	🛠 MODE DEV activé — construction gratuite
+11524	Amélioration immédiate désactivée
+11524	⬆ Amélioration immédiate activée
+12342	Ce bâtiment ne peut pas être copié
+12416	Sélectionnez un outil en bas pour construire
+12575	Sauvegardé
+12584	Menu construction — choisissez un bâtiment, ou « Quitter » pour fermer
+12585	Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer
+12586	Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos
+12588	 — touchez un bâtiment (remb. 100%, un par clic) · glissez pour naviguer
+12589	 — touchez un bâtiment de production
+12590	 — touchez un bâtiment pour le sélectionner
+12592	 — glissez pour tracer
+12593	 — touchez entre les deux réseaux (mêmes niveaux)
+12594	 — touchez une tuile valide
+12609	 saturée
+12609	 saturés
+12708	Quitter le mode construction
+12709	✕ Quitter
+12711	⚠ MODE DEV — construction gratuite
+12804	💾 Sauvegardé
+12839	Rattrapage hors-ligne…
+12850	calcul de la production…
+12850	calcul simplifié (longue absence)
+12901	Astuces désactivées — réactivables dans les options

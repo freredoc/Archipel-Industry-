@@ -1,0 +1,834 @@
+{
+ "res": {
+  "pierre": "piedra",
+  "minerai_fer": "min. hierro",
+  "charbon": "carbón",
+  "lingot_fer": "ling. hierro",
+  "ciment": "cemento",
+  "eau": "agua",
+  "energie_kw": "kW",
+  "lingot_cuivre": "ling. cobre",
+  "minerai_cuivre": "min. cobre",
+  "acier": "acero",
+  "cable": "cable",
+  "petrole": "petróleo",
+  "diesel": "diésel",
+  "polymere": "polímero",
+  "beton_arme": "horm. armado",
+  "piece_meca": "pieza mec.",
+  "circuit": "circuito",
+  "minerai_or": "min. oro",
+  "silicium": "silicio",
+  "acide": "ácido",
+  "lingot_or": "ling. oro",
+  "silicium_raffine": "Si refin.",
+  "processeur": "proc.",
+  "uranium": "uranio",
+  "yellow_cake": "yellowcake",
+  "combustible_u235": "comb. U235",
+  "eau_froide": "agua fría",
+  "acier_irradie": "acero irr.",
+  "beton_arme_irradie": "horm. irr.",
+  "cable_irradie": "cable irr.",
+  "ciment_irradie": "cem. irr.",
+  "element_moteur_nuc": "elem. motor"
+ },
+ "bld": {
+  "road": {
+   "name": "Carretera",
+   "label": ""
+  },
+  "pipe": {
+   "name": "Tubería",
+   "label": ""
+  },
+  "wire": {
+   "name": "Cable",
+   "label": ""
+  },
+  "jonction_route_cable": {
+   "name": "Unión Carretera/Cable",
+   "label": "J-RC"
+  },
+  "jonction_route_tuyau": {
+   "name": "Unión Carretera/Tubería",
+   "label": "J-RT"
+  },
+  "jonction_cable_tuyau": {
+   "name": "Unión Cable/Tubería",
+   "label": "J-CT"
+  },
+  "mine_fer": {
+   "name": "Mina de Hierro V1",
+   "label": "IRON"
+  },
+  "mine_charbon": {
+   "name": "Mina de Carbón V1",
+   "label": "COAL"
+  },
+  "carriere": {
+   "name": "Cantera V1",
+   "label": "STONE"
+  },
+  "pompe_eau": {
+   "name": "Bomba de Agua V1",
+   "label": "WATER"
+  },
+  "eolienne": {
+   "name": "Aerogenerador V1",
+   "label": "WIND"
+  },
+  "mine_cuivre": {
+   "name": "Mina de Cobre V1",
+   "label": "COPR"
+  },
+  "centrale_charbon": {
+   "name": "Central de Carbón V1",
+   "label": "C.CO"
+  },
+  "four_fer": {
+   "name": "Horno de Hierro V1",
+   "label": "FURN"
+  },
+  "cimenterie": {
+   "name": "Cementera V1",
+   "label": "CEM"
+  },
+  "four_cuivre": {
+   "name": "Horno de Cobre V1",
+   "label": "F.CU"
+  },
+  "four_fer_v2": {
+   "name": "Horno de Hierro V2",
+   "label": "IRN2"
+  },
+  "four_cuivre_v2": {
+   "name": "Horno de Cobre V2",
+   "label": "CPR2"
+  },
+  "cablerie": {
+   "name": "Cablería V1",
+   "label": "CABL"
+  },
+  "acierie": {
+   "name": "Acería V1",
+   "label": "STEEL"
+  },
+  "puits_petrole": {
+   "name": "Pozo de Petróleo V1",
+   "label": "OIL"
+  },
+  "raffinerie": {
+   "name": "Refinería V1",
+   "label": "REFY"
+  },
+  "betonniere": {
+   "name": "Hormigonera V1",
+   "label": "CONC"
+  },
+  "atelier_meca": {
+   "name": "Taller Mec. V1",
+   "label": "MECH"
+  },
+  "usine_polymere": {
+   "name": "Fábrica de Polímeros V1",
+   "label": "POLY"
+  },
+  "centrale_diesel": {
+   "name": "Central Diésel V1",
+   "label": "C.DSL"
+  },
+  "circuit": {
+   "name": "Circuito V1",
+   "label": "CIRC"
+  },
+  "mine_fer_v2": {
+   "name": "Mina de Hierro V2",
+   "label": "IRN2"
+  },
+  "mine_charbon_v2": {
+   "name": "Mina de Carbón V2",
+   "label": "COL2"
+  },
+  "mine_cuivre_v2": {
+   "name": "Mina de Cobre V2",
+   "label": "CPR2"
+  },
+  "carriere_v2": {
+   "name": "Cantera V2",
+   "label": "STN2"
+  },
+  "mine_or": {
+   "name": "Mina de Oro V1",
+   "label": "GOLD"
+  },
+  "broyeur": {
+   "name": "Trituradora V1",
+   "label": "CRSH"
+  },
+  "distillerie": {
+   "name": "Destilería V1",
+   "label": "DIST"
+  },
+  "fonderie_or": {
+   "name": "Fundición de Oro V1",
+   "label": "F.AU"
+  },
+  "raffineur_silicium": {
+   "name": "Refinador de Silicio V1",
+   "label": "R.SI"
+  },
+  "fab_processeur": {
+   "name": "Fáb. de Procesadores V1",
+   "label": "PROC"
+  },
+  "accumulateur": {
+   "name": "Acumulador V1",
+   "label": "BATT"
+  },
+  "four_arc_acier": {
+   "name": "Horno de Arco Acero V1",
+   "label": "ARC.S"
+  },
+  "four_arc_cable": {
+   "name": "Horno de Arco Cable V1",
+   "label": "ARC.C"
+  },
+  "four_arc_piece": {
+   "name": "Horno de Arco Pieza Mec. V1",
+   "label": "ARC.P"
+  },
+  "eolienne_offshore": {
+   "name": "Aerogenerador Marino V2",
+   "label": "OFF.W"
+  },
+  "plateforme_petroliere": {
+   "name": "Plataforma Petrolífera V1",
+   "label": "OIL.P"
+  },
+  "mine_uranium": {
+   "name": "Mina de Uranio V1",
+   "label": "URAN"
+  },
+  "broyeur_uranium": {
+   "name": "Trituradora de Uranio V1",
+   "label": "CR.U"
+  },
+  "centrale_enrichissement": {
+   "name": "Central de Enriquecimiento V1",
+   "label": "ENR"
+  },
+  "refroidisseur": {
+   "name": "Refrigerador V1",
+   "label": "COOL"
+  },
+  "centrale_nucleaire": {
+   "name": "Central Nuclear V1",
+   "label": "NUC"
+  },
+  "mine_fer_v3": {
+   "name": "Mina de Hierro V3",
+   "label": "IRN3"
+  },
+  "mine_cuivre_v3": {
+   "name": "Mina de Cobre V3",
+   "label": "CPR3"
+  },
+  "carriere_v3": {
+   "name": "Cantera V3",
+   "label": "STN3"
+  },
+  "mine_charbon_v3": {
+   "name": "Mina de Carbón V3",
+   "label": "COL3"
+  },
+  "mine_or_v3": {
+   "name": "Mina de Oro V3",
+   "label": "GLD3"
+  },
+  "usine_moteur_nuc": {
+   "name": "Fáb. Motor Nuclear V1",
+   "label": "ENG"
+  },
+  "antenne": {
+   "name": "Antena T5",
+   "label": "ANT"
+  },
+  "port": {
+   "name": "Puerto",
+   "label": "PORT"
+  }
+ },
+ "tech": {
+  "1": "Isla 1 — Disponible",
+  "2": "Acceso Isla 2",
+  "3": "Horno de Cobre V1",
+  "4": "Aerogenerador + Cablería",
+  "5": "Central de Carbón + Acería",
+  "6": "Uniones (3 tipos)",
+  "7": "Mejoras V2",
+  "8": "Acceso Isla 3",
+  "9": "Fábrica de Polímeros",
+  "10": "Hormigonera + Taller Mec.",
+  "11": "Central Diésel + Refinería",
+  "12": "Circuito V1",
+  "13": "Mejoras V2 — Minas",
+  "14": "Acceso Isla 4",
+  "15": "Trituradora + Destilería",
+  "16": "Fundición de Oro + Refinador Si",
+  "17": "Fáb. de Procesadores",
+  "18": "Acumulador",
+  "19": "Hornos de Arco",
+  "20": "Eólica Marina + Plataforma",
+  "21": "Acceso Isla 5",
+  "22": "Trituradora de Uranio",
+  "23": "Central de Enriquecimiento + Refrigerador",
+  "24": "Central Nuclear",
+  "25": "Fáb. Motor Nuclear V1",
+  "26": "Antena T5",
+  "27": "Nave Futurista"
+ },
+ "tutorial": {
+  "0": "Coloca una mina de hierro sobre un yacimiento de hierro.",
+  "1": "Coloca una cantera sobre una casilla.",
+  "2": "Conecta la mina y la cantera al puerto con carreteras.",
+  "3": "Mejora la mina y la cantera al nivel 2.",
+  "4": "Coloca una mina de carbón y conéctala al puerto.",
+  "5": "Coloca un horno de hierro y conéctalo al puerto.",
+  "6": "Coloca una cementera y conéctala al puerto."
+ },
+ "tips": {
+  "bienvenue": {
+   "title": "Bienvenido al archipiélago",
+   "body": [
+    "Tu objetivo: <b>extraer</b> recursos, <b>llevarlos</b> al puerto por redes, <b>transformarlos</b> en productos, y luego <b>entregar</b> e <b>investigar</b> para desbloquear nuevos edificios y nuevas islas.",
+    "La barra de arriba te guía paso a paso en tus primeras construcciones.",
+    "Tres redes lo conectan todo: la <b>carretera</b> (sólidos), la <b>tubería</b> (líquidos) y el <b>cable</b> (electricidad)."
+   ]
+  },
+  "recherche": {
+   "title": "La investigación",
+   "body": [
+    "Abre el panel <b>Investigación</b> (🔬). Cada nodo requiere recursos entregados al puerto para desbloquear edificios o islas.",
+    "Tres formas de validar: <b>automática</b> (en cuanto se reúnen los recursos), <b>manual</b> (botón Confirmar) o <b>entrega</b> (enviar un lote por barco).",
+    "Una investigación lista para validar aparece en amarillo."
+   ]
+  },
+  "transport": {
+   "title": "Transporte entre islas",
+   "body": [
+    "¡Una nueva isla es accesible! Cada isla tiene su <b>puerto</b>. Conecta tus edificios al puerto por carretera y luego configura los <b>enlaces</b> en el panel Puerto.",
+    "Los cargueros transportan <b>lotes</b> entre dos islas a intervalos regulares. Un líquido solo se puede transportar si una <b>tubería</b> conecta su producción al puerto."
+   ]
+  },
+  "energie": {
+   "title": "La energía",
+   "body": [
+    "Algunos edificios consumen <b>electricidad</b>. Hay que producir suficiente (aerogenerador, central…) para cubrir la demanda.",
+    "La electricidad se comparte a escala de la <b>isla entera</b>: el balance (producción − consumo) se muestra arriba, con el indicador 🔋.",
+    "Abre el panel <b>Energía</b> para ver el detalle y la demanda no atendida."
+   ]
+  },
+  "deficit": {
+   "title": "Déficit de energía",
+   "body": [
+    "Tu producción ya no cubre el consumo: algunos edificios serán <b>cortados</b>.",
+    "En el panel Energía, elige cómo se raciona la electricidad: por <b>prioridad</b>, en <b>reparto equitativo</b>, o de forma <b>proporcional</b>.",
+    "Añade productores, o almacena el excedente en un <b>acumulador</b> para absorber los picos."
+   ]
+  },
+  "tuyaux": {
+   "title": "Los líquidos",
+   "body": [
+    "Produces un <b>líquido</b> (agua, petróleo…). Los líquidos circulan solo por la red de <b>tuberías</b>, no por carretera.",
+    "Para exportar un líquido a otra isla, la tubería debe conectar su producción directamente al <b>puerto</b>."
+   ]
+  },
+  "reseau_sature": {
+   "title": "Red saturada",
+   "body": [
+    "Una red transporta más de lo que permite su caudal: el flujo se <b>limita</b> y los edificios afectados funcionan al ralentí.",
+    "Selecciona la red y <b>mejora su nivel</b> (V2, V3…) para aumentar el caudal.",
+    "También puedes ajustar la <b>prioridad de flujo</b> de cada edificio (alta / normal / baja) para servir lo esencial primero."
+   ]
+  },
+  "batiment_deconnecte": {
+   "title": "Edificio desconectado",
+   "body": [
+    "Un edificio está colocado pero no está conectado a <b>ninguna red</b>: no produce ni recibe nada.",
+    "Conéctalo al puerto con una <b>carretera</b> (y, según sus necesidades, con una <b>tubería</b> para líquidos o un <b>cable</b> para electricidad)."
+   ]
+  },
+  "jonctions": {
+   "title": "Las uniones",
+   "body": [
+    "Las <b>uniones</b> permiten que dos redes se crucen en la misma casilla <b>sin conectarse</b> (p. ej. una carretera que pasa sobre un cable).",
+    "Solo un tipo de unión por isla. Útil cuando falta espacio."
+   ]
+  },
+  "upgrade_vs_v2": {
+   "title": "¿Mejorar o pasar a V2?",
+   "body": [
+    "Coexisten dos progresiones distintas. <b>Mejorar in situ</b> (modo Mejorar) sube el <b>mismo</b> edificio un nivel: más producción en la misma casilla.",
+    "Una <b>versión V2</b> (p. ej. Horno de Hierro V2) es un edificio <b>nuevo</b>, con su propia receta: hay que construirlo en lugar del anterior.",
+    "Como el espacio en el suelo es limitado, mejorar in situ suele ser la mejor opción."
+   ]
+  },
+  "accumulateur": {
+   "title": "El acumulador",
+   "body": [
+    "El <b>acumulador</b> almacena el excedente de electricidad cuando produces más de lo necesario, y lo devuelve en caso de <b>déficit</b>.",
+    "Ideal para productores irregulares o picos de consumo. Se puede mejorar para aumentar su capacidad."
+   ]
+  },
+  "nucleaire": {
+   "title": "La cadena nuclear",
+   "body": [
+    "Se abre una larga cadena: mina de uranio → triturado → yellow cake → enriquecimiento → <b>Central Nuclear</b>.",
+    "La central debe estar conectada al <b>cable</b> para suministrar electricidad, y alimentada de forma continua: su <b>combustible se consume permanentemente</b>.",
+    "Su arranque es progresivo (varios minutos) — prevé la logística con antelación."
+   ]
+  },
+  "non_stockable": {
+   "title": "Recurso no almacenable",
+   "body": [
+    "El <b>agua fría</b> (producida por el refrigerador) no se almacena: se consume en el mismo tick en que se produce.",
+    "El caudal de producción debe ser suficiente <b>de forma continua</b>; un excedente simplemente se pierde, una falta corta el edificio alimentado."
+   ]
+  },
+  "irradie": {
+   "title": "Materiales irradiados y red ilimitada",
+   "body": [
+    "La Central Nuclear puede <b>irradiar</b> materiales (hormigón armado, acero, cable).",
+    "Con 10 000 unidades de un material irradiado, una red pasa a <b>caudal ilimitado</b>: sin ningún límite de flujo, nunca más saturación en esa red."
+   ]
+  },
+  "antenne": {
+   "title": "La antena T5",
+   "body": [
+    "La <b>antena</b> duplica la producción de las <b>8 casillas adyacentes</b> (aumento progresivo hasta ×3 de efecto).",
+    "Consume 512 kW de forma continua: colócala en el centro de un grupo de edificios clave para maximizar la bonificación."
+   ]
+  },
+  "reparer": {
+   "title": "Reparar el terreno",
+   "body": [
+    "Ahora puedes <b>reparar</b> las casillas obstáculo para hacerlas construibles.",
+    "Cada reparación cuesta más que la anterior: el espacio en el suelo sigue siendo tu recurso más valioso."
+   ]
+  },
+  "etendre": {
+   "title": "Ampliar el terreno",
+   "body": [
+    "El <b>relleno</b> transforma una casilla de agua costera en tierra construible.",
+    "Como la reparación, el coste aumenta con cada ampliación. Resérvalo para emplazamientos realmente estratégicos."
+   ]
+  }
+ },
+ "ui": {
+  "Réseau introuvable": "Red no encontrada",
+  "Réseaux couplés à des niveaux différents": "Redes acopladas a niveles distintos",
+  "Déjà illimité": "Ya ilimitado",
+  "Niveau maximum atteint": "Nivel máximo alcanzado",
+  "Niveau minimum atteint": "Nivel mínimo alcanzado",
+  "Indisponible": "No disponible",
+  "unités irradiées": "unidades irradiadas",
+  " confirmé": " confirmado",
+  "nœud ": "nodo ",
+  "kW soutenus": "kW sostenidos",
+  " importé": " importado",
+  "port île ": "puerto isla ",
+  "kWh stockés": "kWh almacenados",
+  " verrouillée": " bloqueada",
+  "Île ": "Isla ",
+  " Production — ": " Producción — ",
+  "toutes les îles": "todas las islas",
+  "Fermer": "Cerrar",
+  "Toutes": "Todas",
+  "Conso ": "Cons. ",
+  "⚡ Prod ": "⚡ Prod ",
+  "Net ": "Neto ",
+  "Ressource": "Recurso",
+  "Prod /s": "Prod /s",
+  "Conso /s": "Cons. /s",
+  "Net /s": "Neto /s",
+  "Aucune production en cours.": "Sin producción en curso.",
+  "Transit entre îles": "Tránsito entre islas",
+  "Aucun transit en cours.": "Sin tránsito en curso.",
+  " → Île ": " → Isla ",
+  "/s": "/s",
+  "Mise à jour disponible : ": "Actualización disponible: ",
+  "Options": "Opciones",
+  "Aide — toutes les astuces": "Ayuda — todos los consejos",
+  "Aide": "Ayuda",
+  "Bilan énergie de l'île — cliquer pour gérer le déficit": "Balance energético de la isla — pulsa para gestionar el déficit",
+  "Charge des accumulateurs de l'île — cliquer pour gérer l'énergie": "Carga de los acumuladores de la isla — pulsa para gestionar la energía",
+  "Configuration du port (commerce)": "Configuración del puerto (comercio)",
+  "Port": "Puerto",
+  "Panneau Recherche": "Panel de investigación",
+  "Recherche prête à valider !": "¡Investigación lista para validar!",
+  "Recherche": "Investigación",
+  "Réparer le port pour débloquer l'île ": "Repara el puerto para desbloquear la isla ",
+  "Réparer Île ": "Reparar Isla ",
+  "Production / consommation / transit de toutes les îles": "Producción / consumo / tránsito de todas las islas",
+  "Production": "Producción",
+  "Afficher l'inventaire": "Mostrar inventario",
+  "INVENTAIRE": "INVENTARIO",
+  " — voir production / consommation": " — ver producción / consumo",
+  "Inventaire de l'île (port)": "Inventario de la isla (puerto)",
+  "Replier l'inventaire": "Plegar inventario",
+  "— vide —": "— vacío —",
+  " Réparer — Île ": " Reparar — Isla ",
+  "Livrez les ressources requises au port pour réparer la liaison et débloquer l'île ": "Entrega los recursos requeridos al puerto para reparar el enlace y desbloquear la isla ",
+  "Réparer l'île ": "Reparar isla ",
+  "Stock insuffisant": "Existencias insuficientes",
+  "coût croissant": "coste creciente",
+  "tracé continu": "trazado continuo",
+  "Extraction": "Extracción",
+  "Palier 1": "Nivel 1",
+  "Palier 2": "Nivel 2",
+  "Palier 3": "Nivel 3",
+  "côte": "costa",
+  "pétrole": "petróleo",
+  "accidenté": "accidentado",
+  "Coût": "Coste",
+  "Taille": "Tamaño",
+  "Terrain": "Terreno",
+  " /s": " /s",
+  "Entrées": "Entradas",
+  "Sorties": "Salidas",
+  "Conso. élec.": "Cons. eléc.",
+  "Prod. élec.": "Prod. eléc.",
+  "Stockage": "Almacenamiento",
+  "batterie (élec.)": "batería (eléc.)",
+  "Exclusif": "Exclusivo",
+  "île ": "isla ",
+  "Actions": "Acciones",
+  "Améliorer": "Mejorar",
+  "Bâtiment": "Edificio",
+  "Copier": "Copiar",
+  "Démolir": "Demoler",
+  "Réseau": "Red",
+  "fermer ▾": "cerrar ▾",
+  "niveau +1": "nivel +1",
+  "ouvrir ▴": "abrir ▴",
+  "remb. 100%": "reemb. 100%",
+  "Extension de terrain": "Ampliación de terreno",
+  "Terrain accidenté": "Terreno accidentado",
+  "Extensions effectuées sur cette île": "Ampliaciones realizadas en esta isla",
+  "Réparations effectuées sur cette île": "Reparaciones realizadas en esta isla",
+  " Remblayer": " Rellenar",
+  " Réparer": " Reparar",
+  "Technologie non débloquée": "Tecnología no desbloqueada",
+  "Coût : ": "Coste: ",
+  "non reliée au port (route)": "sin conexión al puerto (carretera)",
+  "tuyau manquant": "falta tubería",
+  "câble manquant (élec.)": "falta cable (eléc.)",
+  "intrants manquants": "faltan insumos",
+  "élec. insuffisante (vérifier le débit du câble)": "energía insuficiente (revisa el caudal del cable)",
+  "déconnecté": "desconectado",
+  "à l'arrêt": "detenido",
+  "intrants + élec. insuffisants": "insumos + energía insuficientes",
+  "intrants insuffisants": "insumos insuficientes",
+  "réseau saturé": "red saturada",
+  "élec. insuffisante": "energía insuficiente",
+  "au ralenti": "al ralentí",
+  "aucun intrant": "sin insumos",
+  "plein régime": "pleno rendimiento",
+  "à l'arrêt · ": "detenido · ",
+  " — déficit (": " — déficit (",
+  "% dispo)": "% disp.)",
+  "Acier": "Acero",
+  "Béton armé": "Hormigón armado",
+  "Ciment": "Cemento",
+  "Câble": "Cable",
+  "Arrêtée": "Detenida",
+  "Démarrage…": "Arrancando…",
+  "En marche": "En marcha",
+  "Arrêt…": "Parando…",
+  "État": "Estado",
+  "1 comb.U235 + 256 eau froide + 1 ": "1 comb. U235 + 256 agua fría + 1 ",
+  "Sortie": "Salida",
+  "2048 kW + 1 ": "2048 kW + 1 ",
+  "Matériau à irradier": "Material a irradiar",
+  "Vitesse": "Velocidad",
+  "Régime de fonctionnement réel ce tick (": "Régimen de funcionamiento real este tick (",
+  "Réel ⚠": "Real ⚠",
+  "Consommation réelle ce tick (bridée : ": "Consumo real este tick (limitado: ",
+  " /s · ": " /s · ",
+  "Production réelle ce tick (bridée : ": "Producción real este tick (limitada: ",
+  " kWh · ": " kWh · ",
+  " kW · prévu ": " kW · previsto ",
+  "Effet": "Efecto",
+  "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)": "×2 producción en las 8 casillas adyacentes (cons. ×1→×3 oscilante)",
+  "Priorité de flux (intrants & élec.)": "Prioridad de flujo (insumos y eléc.)",
+  "Basse": "Baja",
+  "Haute": "Alta",
+  "Normale": "Normal",
+  "Servi en dernier : intrants ET électricité après les autres": "Servido el último: insumos Y electricidad después de los demás",
+  "Servi en premier : intrants (route/tuyau) ET électricité d'abord": "Servido el primero: insumos (carretera/tubería) Y electricidad primero",
+  "Servi normalement": "Servido normalmente",
+  "Amélioration → Nv.": "Mejora → Nv.",
+  "Confirmer · Coût : ": "Confirmar · Coste: ",
+  "Voir l'amélioration (Nv.": "Ver la mejora (Nv.",
+  " Confirmer ": " Confirmar ",
+  " Monter ": " Subir ",
+  "Déjà au niveau de base": "Ya en el nivel base",
+  "Remb. : ": "Reemb.: ",
+  " Baisser ": " Bajar ",
+  " autre(s) ": " otro(s) ",
+  " sur Nv.": " a Nv.",
+  " · Coût : ": " · Coste: ",
+  "Aligner ": "Alinear ",
+  " (Nv.": " (Nv.",
+  " Aligner les ": " Alinear las ",
+  " Confirmer la démolition ?": " ¿Confirmar la demolición?",
+  " Démolir (remb. 100%)": " Demoler (reemb. 100%)",
+  "Niveau ": "Nivel ",
+  "Actuel": "Actual",
+  "Coût niv. ": "Coste nv. ",
+  "⬆ Améliorer (×": "⬆ Mejorar (×",
+  "Débloqué": "Desbloqueado",
+  "Prêt": "Listo",
+  "En cours": "En curso",
+  "Verrouillé": "Bloqueado",
+  " Recherche": " Investigación",
+  "Livrer": "Entregar",
+  "Condition remplie": "Condición cumplida",
+  "Confirmer": "Confirmar",
+  "Livraison à calibrer — non activable": "Entrega por calibrar — no activable",
+  "Requiert : ": "Requiere: ",
+  " Port — Île ": " Puerto — Isla ",
+  "Amélioration du transit": "Mejora del tránsito",
+  " u)": " u)",
+  "Taille des lots ×": "Tamaño de lote ×",
+  "🔒 Réparez l'île voisine pour activer une liaison avant d'améliorer le transit.": "🔒 Repara la isla vecina para activar un enlace antes de mejorar el tránsito.",
+  "Max": "Máx",
+  "Liaisons": "Enlaces",
+  "Aucune liaison active. Débloquez l'île voisine.": "Sin enlace activo. Desbloquea la isla vecina.",
+  " ↔ Île ": " ↔ Isla ",
+  "↔ transit continu": "↔ tránsito continuo",
+  "Régler l'export par ressource vers l'île ": "Ajusta la exportación por recurso hacia la isla ",
+  " — tout autorisé": " — todo permitido",
+  "Export → Île ": "Exportar → Isla ",
+  " autorisé vers l'île ": " permitido a la isla ",
+  " interdit vers l'île ": " prohibido a la isla ",
+  " — cliquer pour autoriser": " — pulsa para permitir",
+  " — cliquer pour interdire": " — pulsa para prohibir",
+  "Export de ": "Exportación de ",
+  " aucun flux sortant": " sin flujo de salida",
+  "/s de ": "/s de ",
+  "Transit : ": "Tránsito: ",
+  "/s → Île ": "/s → Isla ",
+  " ← Île ": " ← Isla ",
+  "Reçu : ": "Recibido: ",
+  "/s ← Île ": "/s ← Isla ",
+  "Commerce (Île ": "Comercio (Isla ",
+  "Priorité": "Prioridad",
+  "Proportionnel": "Proporcional",
+  "Priorité : la cale est remplie de la ressource la plus prioritaire à la moins prioritaire.": "Prioridad: la bodega se llena del recurso de mayor prioridad al de menor.",
+  "Proportionnel : la cale est répartie au prorata de la demande de chaque ressource (l'ordre ne sert qu'à départager les restes).": "Proporcional: la bodega se reparte a prorrateo según la demanda de cada recurso (el orden solo desempata los restos).",
+  "Cible": "Objetivo",
+  "Réserve": "Reserva",
+  "Stop": "Stop",
+  "Prio": "Prio",
+  " en stock": " en stock",
+  "Stock cible (quantité à importer ici)": "Stock objetivo (cantidad a importar aquí)",
+  "Réserve locale (on n'exporte que le surplus au-dessus)": "Reserva local (solo se exporta el excedente por encima)",
+  "Interdire l'export de cette ressource": "Prohibir la exportación de este recurso",
+  "Cible = quantité voulue ici (import). Réserve = stock gardé localement (export du surplus uniquement). Priorité = ordre de chargement au départ.": "Objetivo = cantidad deseada aquí (importación). Reserva = stock guardado localmente (solo se exporta el excedente). Prioridad = orden de carga a la salida.",
+  "Équitable": "Equitativo",
+  "Chaque consommateur reçoit la même quantité absolue (kW) ; le surplus non utilisé par un petit bâtiment profite aux autres. Un bâtiment qui n'atteint pas sa puissance nominale est coupé ce tick.": "Cada consumidor recibe la misma cantidad absoluta (kW); el excedente no usado por un edificio pequeño beneficia a los demás. Un edificio que no alcanza su potencia nominal se corta este tick.",
+  "Coupe les plus gros consommateurs d'abord pour que le reste tourne à plein régime (le moteur fonctionne en tout-ou-rien, pas de régime partiel).": "Corta primero los mayores consumidores para que el resto funcione a pleno rendimiento (el motor funciona todo o nada, sin régimen parcial).",
+  "⚡ Énergie — Île ": "⚡ Energía — Isla ",
+  "⚡ L'électricité circule par réseau de câbles : chaque réseau câble est un sous-réseau électrique distinct (les générateurs, consommateurs et accumulateurs qu'il relie se partagent l'énergie). Le débit du câble (V1, V2…) borne la puissance transmissible : montez-le si un réseau sature. Les totaux ci-dessous additionnent tous les réseaux de l'île.": "⚡ La electricidad circula por redes de cables: cada red de cable es una subred eléctrica distinta (los generadores, consumidores y acumuladores que conecta comparten la energía). El caudal del cable (V1, V2…) limita la potencia transmisible: mejóralo si una red se satura. Los totales de abajo suman todas las redes de la isla.",
+  "Accumulateurs": "Acumuladores",
+  "Batterie (décharge)": "Batería (descarga)",
+  "Bilan réel": "Balance real",
+  "Demande non servie": "Demanda no atendida",
+  "Demande totale": "Demanda total",
+  "Production (générateurs)": "Producción (generadores)",
+  "Mode de gestion du déficit": "Modo de gestión del déficit",
+  "Ordre de priorité (haut = servi en premier)": "Orden de prioridad (arriba = servido primero)",
+  "Aucun consommateur d'énergie sur cette île.": "Ningún consumidor de energía en esta isla.",
+  "Consommation": "Consumo",
+  "Bilan net": "Balance neto",
+  "Prévenir quand le stock de cette île passe sous ce seuil (0 = désactivé)": "Avisar cuando el stock de esta isla baje de este umbral (0 = desactivado)",
+  "Route": "Carretera",
+  "Tuyau": "Tubería",
+  " Monter": " Subir",
+  " Monter A + B": " Subir A + B",
+  " Baisser": " Bajar",
+  " Baisser A + B": " Bajar A + B",
+  "Débit max": "Caudal máx",
+  "illimité": "ilimitado",
+  "Flux demandé": "Flujo solicitado",
+  "Demande min→max": "Demanda mín→máx",
+  "Plage de consommation : les bâtiments à conso sigmoïde/aléatoire font varier la demande élec. Dimensionnez la production pour le max.": "Rango de consumo: los edificios con consumo sigmoide/aleatorio hacen variar la demanda eléctrica. Dimensiona la producción para el máximo.",
+  "Saturé ⚠": "Saturado ⚠",
+  "Demande supérieure au débit max : tous les bâtiments du réseau sont ralentis à ce pourcentage": "La demanda supera el caudal máx: todos los edificios de la red se ralentizan a este porcentaje",
+  "% servi": "% servido",
+  "Énergie stockée dans les accumulateurs branchés sur ce réseau câble (charge / capacité).": "Energía almacenada en los acumuladores conectados a esta red de cable (carga / capacidad).",
+  "Livrée": "Entregada",
+  "⚡ Production suffisante mais câble saturé : améliorez le débit pour tout transmettre.": "⚡ Producción suficiente pero cable saturado: mejora el caudal para transmitir todo.",
+  "⚡ Production insuffisante sur ce réseau câble.": "⚡ Producción insuficiente en esta red de cable.",
+  "Production /s": "Producción /s",
+  "Consommation /s": "Consumo /s",
+  "Stock liquide accumulé dans la citerne du réseau tuyau (pétrole, eau, acide…). N'apparaît pas dans l'inventaire du port.": "Stock líquido acumulado en el tanque de la red de tuberías (petróleo, agua, ácido…). No aparece en el inventario del puerto.",
+  "Transit": "Tránsito",
+  "Tuiles": "Casillas",
+  "Couplage": "Acoplamiento",
+  " réseaux)": " redes)",
+  "jonction (": "unión (",
+  "Matériau d'amélioration (V": "Material de mejora (V",
+  " Confirmer ?": " ¿Confirmar?",
+  "Retirer le débit illimité": "Quitar el caudal ilimitado",
+  " — débit illimité": " — caudal ilimitado",
+  "Confirmer ?": "¿Confirmar?",
+  "Rendre illimité": "Hacer ilimitado",
+  "Astuce": "Consejo",
+  "Ne plus afficher les astuces": "No mostrar más los consejos",
+  "Compris": "Entendido",
+  "Recherche terminée": "Investigación completada",
+  "Débloque : ": "Desbloquea: ",
+  "Voir la recherche": "Ver la investigación",
+  "Lecture du fichier impossible.": "No se puede leer el archivo.",
+  " Emplacements de sauvegarde": " Ranuras de guardado",
+  "Actif": "Activo",
+  "Valider": "Aceptar",
+  "Annuler": "Cancelar",
+  "Supprimer définitivement ?": "¿Eliminar definitivamente?",
+  "Oui, supprimer": "Sí, eliminar",
+  "Sauvegarder": "Guardar",
+  "Charger": "Cargar",
+  "Renommer": "Renombrar",
+  "Exporter": "Exportar",
+  "Supprimer": "Eliminar",
+  "+ Nouvelle partie": "+ Nueva partida",
+  "⤓ Importer": "⤓ Importar",
+  "Exporter la sauvegarde": "Exportar la partida",
+  "Sélectionne et copie ce texte, garde-le en lieu sûr.": "Selecciona y copia este texto, guárdalo en un lugar seguro.",
+  "✓ Copié dans le presse-papier. Conserve-le pour le réimporter.": "✓ Copiado al portapapeles. Consérvalo para reimportarlo.",
+  "⤓ Télécharger .txt": "⤓ Descargar .txt",
+  "Cet emplacement est vide (aucune sauvegarde à exporter).": "Esta ranura está vacía (sin partida que exportar).",
+  "Importer une sauvegarde": "Importar una partida",
+  "Charge un fichier .txt exporté (ou colle le texte) : une nouvelle partie sera créée.": "Carga un archivo .txt exportado (o pega el texto): se creará una nueva partida.",
+  "📂 Charger un fichier .txt": "📂 Cargar un archivo .txt",
+  "Importer": "Importar",
+  "Choisis ton mode de jeu": "Elige tu modo de juego",
+  "Le mode fixe la taille des îles pour cette partie.": "El modo fija el tamaño de las islas para esta partida.",
+  "Difficile": "Difícil",
+  "Grandes îles, plus d'espace pour construire.": "Islas grandes, más espacio para construir.",
+  "Normal": "Normal",
+  "Îles compactes, espace limité.": "Islas compactas, espacio limitado.",
+  "Activé": "Activado",
+  "Désactivé": "Desactivado",
+  "Vérification…": "Comprobando…",
+  "✓ Le jeu est à jour.": "✓ El juego está actualizado.",
+  "Impossible de vérifier (hors-ligne ?).": "No se puede comprobar (¿sin conexión?).",
+  "Télécharger la mise à jour": "Descargar la actualización",
+  "Ouverture de l'installeur…": "Abriendo el instalador…",
+  "Téléchargement… ": "Descargando… ",
+  "⬇ Mettre à jour maintenant": "⬇ Actualizar ahora",
+  "⬆ Mise à jour disponible : ": "⬆ Actualización disponible: ",
+  "❌ Échec du téléchargement. Réessayez, ou ": "❌ Descarga fallida. Vuelve a intentarlo, o ",
+  "⚙ Options": "⚙ Opciones",
+  "Afficher l'efficacité (%)": "Mostrar la eficiencia (%)",
+  "Afficher l'icône de déficit": "Mostrar el icono de déficit",
+  "Afficher les niveaux": "Mostrar los niveles",
+  "Afficher une explication à chaque nouvelle mécanique": "Mostrar una explicación en cada nueva mecánica",
+  "Amélioration immédiate": "Mejora inmediata",
+  "Astuces": "Consejos",
+  "Au-delà d'1 h d'absence, approxime la production (rattrapage quasi instantané)": "Más allá de 1 h de ausencia, aproxima la producción (recuperación casi instantánea)",
+  "Calcul hors-ligne simplifié": "Cálculo sin conexión simplificado",
+  "En mode Améliorer, toucher un bâtiment le monte direct (sans confirmation)": "En modo Mejorar, tocar un edificio lo sube directo (sin confirmación)",
+  "Petit numéro de niveau en bas à gauche des bâtiments": "Pequeño número de nivel abajo a la izquierda de los edificios",
+  "Petite icône en haut à droite des bâtiments en déficit / panne": "Pequeño icono arriba a la derecha de los edificios en déficit / avería",
+  "Pourcentage d'efficacité à gauche du niveau, en cas de déficit": "Porcentaje de eficiencia a la izquierda del nivel, en caso de déficit",
+  "Construction et améliorations gratuites": "Construcción y mejoras gratis",
+  "Mode développeur": "Modo desarrollador",
+  "💡 Revoir les astuces": "💡 Volver a ver los consejos",
+  "Version": "Versión",
+  " · build ": " · build ",
+  "Vérifier les mises à jour": "Buscar actualizaciones",
+  "❔ Aide & astuces": "❔ Ayuda y consejos",
+  "Premiers pas (tutoriel île 1)": "Primeros pasos (tutorial isla 1)",
+  "Toutes les mécaniques": "Todas las mecánicas",
+  "Tuto ": "Tutorial ",
+  "Passer le tutoriel et tout débloquer": "Saltar el tutorial y desbloquear todo",
+  "Passer": "Saltar",
+  "🌙 Bon retour !": "🌙 ¡Bienvenido de nuevo!",
+  " — production récupérée :": " — producción recuperada:",
+  " — rien à produire.": " — nada que producir.",
+  "Absence : ": "Ausencia: ",
+  "Continuer": "Continuar",
+  "Partie ": "Partida ",
+  "Texte invalide (JSON illisible).": "Texto no válido (JSON ilegible).",
+  "Ce texte n'est pas une sauvegarde Archipel valide.": "Este texto no es una partida válida de Archipel.",
+  "Import ": "Importación ",
+  "Partie 1": "Partida 1",
+  " débloqué !": " ¡desbloqueado!",
+  "🎓 Tutoriel terminé — bonne partie !": "🎓 Tutorial completado — ¡buena partida!",
+  "Tutoriel passé — bâtiments débloqués": "Tutorial saltado — edificios desbloqueados",
+  "Astuces désactivées": "Consejos desactivados",
+  "💡 Astuces activées": "💡 Consejos activados",
+  "💡 Astuces réinitialisées": "💡 Consejos reiniciados",
+  "❌ Tuile occupée": "❌ Casilla ocupada",
+  "❌ Jonction : pose sur une tuile vide ou un réseau croisé": "❌ Unión: coloca en una casilla vacía o una red cruzada",
+  "❌ Terrain non autorisé": "❌ Terreno no permitido",
+  "❌ Une seule jonction de ce type par île": "❌ Solo una unión de este tipo por isla",
+  "❌ Doit toucher un réseau (route/câble/tuyau)": "❌ Debe tocar una red (carretera/cable/tubería)",
+  "❌ Pas de place pour le réseau croisé à côté": "❌ Sin espacio para la red cruzada al lado",
+  "❌ Doit être en mer, adjacent à la côte": "❌ Debe estar en el mar, junto a la costa",
+  "❌ Jonction : manque ": "❌ Unión: falta ",
+  " : manque ": " : falta ",
+  "❌ Extension V": "❌ Ampliación V",
+  "Rien à démolir ici": "Nada que demoler aquí",
+  "Non améliorable (infra / port)": "No mejorable (infra / puerto)",
+  "❌ Manque ": "❌ Falta ",
+  "❌ Technologie non débloquée": "❌ Tecnología no desbloqueada",
+  "🔧 Terrain réparé": "🔧 Terreno reparado",
+  "🏗 Terrain remblayé": "🏗 Terreno rellenado",
+  "⬇ Réseau → débit limité (V": "⬇ Red → caudal limitado (V",
+  "Réseaux couplés": "Redes acopladas",
+  "∞ Réseau → débit ILLIMITÉ": "∞ Red → caudal ILIMITADO",
+  "📋 Mode copie : touchez un bâtiment à copier": "📋 Modo copia: toca un edificio para copiar",
+  "⛰ Mode Difficile — îles compactes": "⛰ Modo Difícil — islas compactas",
+  "🗺 Mode Normal — grandes îles": "🗺 Modo Normal — islas grandes",
+  "Île verrouillée — débloquez-la via la Recherche": "Isla bloqueada — desbloquéala mediante Investigación",
+  " débloqué": " desbloqueado",
+  "Stock insuffisant sur cette île": "Existencias insuficientes en esta isla",
+  "🛠 Port réparé — île débloquée": "🛠 Puerto reparado — isla desbloqueada",
+  "❌ Stock insuffisant pour la réparation": "❌ Existencias insuficientes para la reparación",
+  "🔒 Aucune liaison active — réparez d'abord l'île voisine": "🔒 Sin enlace activo — repara primero la isla vecina",
+  "Transit au maximum": "Tránsito al máximo",
+  "Mode dev désactivé": "Modo dev desactivado",
+  "🛠 MODE DEV activé — construction gratuite": "🛠 MODO DEV activado — construcción gratis",
+  "Amélioration immédiate désactivée": "Mejora inmediata desactivada",
+  "⬆ Amélioration immédiate activée": "⬆ Mejora inmediata activada",
+  "Ce bâtiment ne peut pas être copié": "Este edificio no se puede copiar",
+  "Sélectionnez un outil en bas pour construire": "Selecciona una herramienta abajo para construir",
+  "Sauvegardé": "Guardado",
+  "Menu construction — choisissez un bâtiment, ou « Quitter » pour fermer": "Menú de construcción — elige un edificio, o «Salir» para cerrar",
+  "Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer": "Menú de red — elige una infraestructura, o «Salir» para cerrar",
+  "Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos": "Modo selección — arrastra para navegar, toca un edificio para su info",
+  " — touchez un bâtiment (remb. 100%, un par clic) · glissez pour naviguer": " — toca un edificio (reemb. 100%, uno por toque) · arrastra para navegar",
+  " — touchez un bâtiment de production": " — toca un edificio de producción",
+  " — touchez un bâtiment pour le sélectionner": " — toca un edificio para seleccionarlo",
+  " — glissez pour tracer": " — arrastra para trazar",
+  " — touchez entre les deux réseaux (mêmes niveaux)": " — toca entre las dos redes (mismos niveles)",
+  " — touchez une tuile valide": " — toca una casilla válida",
+  " saturée": " saturada",
+  " saturés": " saturadas",
+  "Quitter le mode construction": "Salir del modo construcción",
+  "✕ Quitter": "✕ Salir",
+  "⚠ MODE DEV — construction gratuite": "⚠ MODO DEV — construcción gratis",
+  "💾 Sauvegardé": "💾 Guardado",
+  "Rattrapage hors-ligne…": "Recuperación sin conexión…",
+  "calcul de la production…": "calculando la producción…",
+  "calcul simplifié (longue absence)": "cálculo simplificado (ausencia larga)",
+  "Astuces désactivées — réactivables dans les options": "Consejos desactivados — reactivables en las opciones",
+  "Monter": "Subir",
+  "Descendre": "Bajar"
+ }
+}
