@@ -17,7 +17,16 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 116`, `GAME_VERSION = 'Alpha 10.91'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 117`, `GAME_VERSION = 'Alpha 10.92'`.** Changement
+  10.92 : **tôle larmée inox sur TOUTE l'UI (barre du haut + tous les panneaux), comme le menu
+  bâtiment.** Jusqu'en 10.91 seuls `.build-panel` (+ `.inventory` depuis 10.90) avaient la tôle larmée ;
+  la barre du haut `.hud` et tous les modaux (`.research-panel`/`.slot-panel`/`.tip-popup`/`.mode-modal`/
+  `.info-panel`/`.toolbar`) gardaient un fond gunmetal PLEIN (`--inox-panneau` avec `fill`). Désormais
+  ils reçoivent TOUS le **MÊME** fond que le menu bâtiment : `background:var(--tex-inox-leger) repeat`
+  + cadre `--inox-panneau` **SANS `fill`** → la **plaque larmée inox** est visible derrière Recherche,
+  Port/transit, fiche bâtiment, Options, Production, Aide, barre du haut et barre d'actions ; les
+  cartes/boutons internes restent gris gunmetal par-dessus (« fond plaque inox, bouton gris »). CSS
+  only. Changement
   10.91 : **palette bleue → gunmetal pour TOUT le thème inox (fin des fonds bleus dans les panneaux).**
   En 10.88-10.90 seuls les CADRES + la barre du haut passaient inox ; les **cartes/encarts/champs/
   boutons internes** des panneaux restaient bleus (Recherche `.rp-node`, Options, liaisons Port
