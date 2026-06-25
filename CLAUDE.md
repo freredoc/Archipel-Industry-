@@ -17,7 +17,20 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 124`, `GAME_VERSION = 'Alpha 10.99'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 125`, `GAME_VERSION = 'Alpha 11.00'`.** Changement
+  11.00 : **i18n — Phase 1 / CHECKPOINT 1 (couche CONTENU + langue système + sélecteur).** Kit
+  `archipel_i18n.js` (4 langues fr/en/es/de, API `t/get/set/applyToData/available/names`) **inliné**
+  dans un `<script>` avant le script du jeu (fichier unique hors-ligne ; aucun `</script>` littéral).
+  + **bloc d'augmentation** ajoutant aux 4 langues les 9 labels de catégories du menu Bâtiment +
+  `Langue`. **`I18N.applyToData({BUILDINGS,RES_SHORT,TECH_NODES,TUTORIAL_STEPS,GAME_TIPS})`** appelé
+  après `GAME_TIPS` → réécrit en place noms ressources/bâtiments/recherches + tuto + astuces (repli
+  fr). **`TOOLBAR_GROUPS`** : `key` stable par groupe (infra/junction/extraction/energy/steel/copper/
+  electronics/chemistry/nuclear), filtres `NETWORK_GROUPS`/`BUILD_GROUPS` sur `g.key`, label rendu via
+  `I18N.t(g.label)`. **Sélecteur de langue** dans Options (reload au changement). Langue par défaut =
+  système. `SAVE_VERSION` inchangé, aucune mécanique modifiée. Validé : `node --check` (6 blocs) + CSS
+  équilibré + smoke Chromium (de→Eisenmine V1/Schließen, en→Iron Mine V1/Close, 0 erreur) + rendu menu
+  DE (noms+ressources+catégories traduits). **RESTE : Phase 2 (couche UI, ~404 libellés `I18N.t`)** —
+  le chrome UI est encore en français. Voir `PASSATION_I18N.md`. Changement
   10.99 : **fix amélioration réseau avec jonctions + thème « plaque métal bleue » (défaut).** (1)
   **Bug : impossible d'améliorer un réseau portant des jonctions** (route+câble+tuyau) — `coupledNetworkIds`
   couplait, via `junctionLinks`, les réseaux des DEUX porteurs DIFFÉRENTS d'une jonction (route↔câble) ;

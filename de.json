@@ -1,834 +1,844 @@
 {
- "res": {
-  "pierre": "Stein",
-  "minerai_fer": "Eisenerz",
-  "charbon": "Kohle",
-  "lingot_fer": "Eisenb.",
-  "ciment": "Zement",
-  "eau": "Wasser",
-  "energie_kw": "kW",
-  "lingot_cuivre": "Kupferb.",
-  "minerai_cuivre": "Kupfererz",
-  "acier": "Stahl",
-  "cable": "Kabel",
-  "petrole": "Öl",
-  "diesel": "Diesel",
-  "polymere": "Polymer",
-  "beton_arme": "Stahlbet.",
-  "piece_meca": "Mech.Teil",
-  "circuit": "Schaltkr.",
-  "minerai_or": "Golderz",
-  "silicium": "Silizium",
-  "acide": "Säure",
-  "lingot_or": "Goldb.",
-  "silicium_raffine": "Si raff.",
-  "processeur": "Proz.",
-  "uranium": "Uran",
-  "yellow_cake": "Yellowcake",
-  "combustible_u235": "U235-Br.",
-  "eau_froide": "Kaltw.",
-  "acier_irradie": "Stahl irr.",
-  "beton_arme_irradie": "Beton irr.",
-  "cable_irradie": "Kabel irr.",
-  "ciment_irradie": "Zem. irr.",
-  "element_moteur_nuc": "Mot.-El."
- },
- "bld": {
-  "road": {
-   "name": "Straße",
-   "label": ""
+  "res": {
+    "pierre": "Stein",
+    "minerai_fer": "Eisenerz",
+    "charbon": "Kohle",
+    "lingot_fer": "Eisenb.",
+    "ciment": "Zement",
+    "eau": "Wasser",
+    "energie_kw": "kW",
+    "lingot_cuivre": "Kupferb.",
+    "minerai_cuivre": "Kupfererz",
+    "acier": "Stahl",
+    "cable": "Kabel",
+    "petrole": "Öl",
+    "diesel": "Diesel",
+    "polymere": "Polymer",
+    "beton_arme": "Stahlbet.",
+    "piece_meca": "Mech.Teil",
+    "circuit": "Schaltkr.",
+    "minerai_or": "Golderz",
+    "silicium": "Silizium",
+    "acide": "Säure",
+    "lingot_or": "Goldb.",
+    "silicium_raffine": "Si raff.",
+    "processeur": "Proz.",
+    "uranium": "Uran",
+    "yellow_cake": "Yellowcake",
+    "combustible_u235": "U235-Br.",
+    "eau_froide": "Kaltw.",
+    "acier_irradie": "Stahl irr.",
+    "beton_arme_irradie": "Beton irr.",
+    "cable_irradie": "Kabel irr.",
+    "ciment_irradie": "Zem. irr.",
+    "element_moteur_nuc": "Mot.-El."
   },
-  "pipe": {
-   "name": "Rohr",
-   "label": ""
+  "bld": {
+    "road": {
+      "name": "Straße",
+      "label": ""
+    },
+    "pipe": {
+      "name": "Rohr",
+      "label": ""
+    },
+    "wire": {
+      "name": "Kabel",
+      "label": ""
+    },
+    "jonction_route_cable": {
+      "name": "Straße/Kabel-Kreuzung",
+      "label": "J-RC"
+    },
+    "jonction_route_tuyau": {
+      "name": "Straße/Rohr-Kreuzung",
+      "label": "J-RT"
+    },
+    "jonction_cable_tuyau": {
+      "name": "Kabel/Rohr-Kreuzung",
+      "label": "J-CT"
+    },
+    "mine_fer": {
+      "name": "Eisenmine V1",
+      "label": "IRON"
+    },
+    "mine_charbon": {
+      "name": "Kohlemine V1",
+      "label": "COAL"
+    },
+    "carriere": {
+      "name": "Steinbruch V1",
+      "label": "STONE"
+    },
+    "pompe_eau": {
+      "name": "Wasserpumpe V1",
+      "label": "WATER"
+    },
+    "eolienne": {
+      "name": "Windrad V1",
+      "label": "WIND"
+    },
+    "mine_cuivre": {
+      "name": "Kupfermine V1",
+      "label": "COPR"
+    },
+    "centrale_charbon": {
+      "name": "Kohlekraftwerk V1",
+      "label": "C.CO"
+    },
+    "four_fer": {
+      "name": "Eisenofen V1",
+      "label": "FURN"
+    },
+    "cimenterie": {
+      "name": "Zementwerk V1",
+      "label": "CEM"
+    },
+    "four_cuivre": {
+      "name": "Kupferofen V1",
+      "label": "F.CU"
+    },
+    "four_fer_v2": {
+      "name": "Eisenofen V2",
+      "label": "IRN2"
+    },
+    "four_cuivre_v2": {
+      "name": "Kupferofen V2",
+      "label": "CPR2"
+    },
+    "cablerie": {
+      "name": "Kabelwerk V1",
+      "label": "CABL"
+    },
+    "acierie": {
+      "name": "Stahlwerk V1",
+      "label": "STEEL"
+    },
+    "puits_petrole": {
+      "name": "Ölquelle V1",
+      "label": "OIL"
+    },
+    "raffinerie": {
+      "name": "Raffinerie V1",
+      "label": "REFY"
+    },
+    "betonniere": {
+      "name": "Betonmischer V1",
+      "label": "CONC"
+    },
+    "atelier_meca": {
+      "name": "Mech. Werkstatt V1",
+      "label": "MECH"
+    },
+    "usine_polymere": {
+      "name": "Polymerwerk V1",
+      "label": "POLY"
+    },
+    "centrale_diesel": {
+      "name": "Dieselkraftwerk V1",
+      "label": "C.DSL"
+    },
+    "circuit": {
+      "name": "Schaltkreis V1",
+      "label": "CIRC"
+    },
+    "mine_fer_v2": {
+      "name": "Eisenmine V2",
+      "label": "IRN2"
+    },
+    "mine_charbon_v2": {
+      "name": "Kohlemine V2",
+      "label": "COL2"
+    },
+    "mine_cuivre_v2": {
+      "name": "Kupfermine V2",
+      "label": "CPR2"
+    },
+    "carriere_v2": {
+      "name": "Steinbruch V2",
+      "label": "STN2"
+    },
+    "mine_or": {
+      "name": "Goldmine V1",
+      "label": "GOLD"
+    },
+    "broyeur": {
+      "name": "Brecher V1",
+      "label": "CRSH"
+    },
+    "distillerie": {
+      "name": "Destillerie V1",
+      "label": "DIST"
+    },
+    "fonderie_or": {
+      "name": "Goldhütte V1",
+      "label": "F.AU"
+    },
+    "raffineur_silicium": {
+      "name": "Silizium-Raffinerie V1",
+      "label": "R.SI"
+    },
+    "fab_processeur": {
+      "name": "Prozessorfabrik V1",
+      "label": "PROC"
+    },
+    "accumulateur": {
+      "name": "Akkumulator V1",
+      "label": "BATT"
+    },
+    "four_arc_acier": {
+      "name": "Lichtbogenofen Stahl V1",
+      "label": "ARC.S"
+    },
+    "four_arc_cable": {
+      "name": "Lichtbogenofen Kabel V1",
+      "label": "ARC.C"
+    },
+    "four_arc_piece": {
+      "name": "Lichtbogenofen Mech. Teil V1",
+      "label": "ARC.P"
+    },
+    "eolienne_offshore": {
+      "name": "Offshore-Windrad V2",
+      "label": "OFF.W"
+    },
+    "plateforme_petroliere": {
+      "name": "Ölplattform V1",
+      "label": "OIL.P"
+    },
+    "mine_uranium": {
+      "name": "Uranmine V1",
+      "label": "URAN"
+    },
+    "broyeur_uranium": {
+      "name": "Uranbrecher V1",
+      "label": "CR.U"
+    },
+    "centrale_enrichissement": {
+      "name": "Anreicherungsanlage V1",
+      "label": "ENR"
+    },
+    "refroidisseur": {
+      "name": "Kühler V1",
+      "label": "COOL"
+    },
+    "centrale_nucleaire": {
+      "name": "Kernkraftwerk V1",
+      "label": "NUC"
+    },
+    "mine_fer_v3": {
+      "name": "Eisenmine V3",
+      "label": "IRN3"
+    },
+    "mine_cuivre_v3": {
+      "name": "Kupfermine V3",
+      "label": "CPR3"
+    },
+    "carriere_v3": {
+      "name": "Steinbruch V3",
+      "label": "STN3"
+    },
+    "mine_charbon_v3": {
+      "name": "Kohlemine V3",
+      "label": "COL3"
+    },
+    "mine_or_v3": {
+      "name": "Goldmine V3",
+      "label": "GLD3"
+    },
+    "usine_moteur_nuc": {
+      "name": "Kernmotorenwerk V1",
+      "label": "ENG"
+    },
+    "antenne": {
+      "name": "Antenne T5",
+      "label": "ANT"
+    },
+    "port": {
+      "name": "Hafen",
+      "label": "PORT"
+    }
   },
-  "wire": {
-   "name": "Kabel",
-   "label": ""
+  "tech": {
+    "1": "Insel 1 — Verfügbar",
+    "2": "Zugang Insel 2",
+    "3": "Kupferofen V1",
+    "4": "Windrad + Kabelwerk",
+    "5": "Kohlekraftwerk + Stahlwerk",
+    "6": "Kreuzungen (3 Typen)",
+    "7": "V2-Verbesserungen",
+    "8": "Zugang Insel 3",
+    "9": "Polymerwerk",
+    "10": "Betonmischer + Mech. Werkstatt",
+    "11": "Dieselkraftwerk + Raffinerie",
+    "12": "Schaltkreis V1",
+    "13": "V2-Verbesserungen — Minen",
+    "14": "Zugang Insel 4",
+    "15": "Brecher + Destillerie",
+    "16": "Goldhütte + Si-Raffinerie",
+    "17": "Prozessorfabrik",
+    "18": "Akkumulator",
+    "19": "Lichtbogenöfen",
+    "20": "Offshore-Wind + Plattform",
+    "21": "Zugang Insel 5",
+    "22": "Uranbrecher",
+    "23": "Anreicherungsanlage + Kühler",
+    "24": "Kernkraftwerk",
+    "25": "Kernmotorenwerk V1",
+    "26": "Antenne T5",
+    "27": "Futuristisches Schiff"
   },
-  "jonction_route_cable": {
-   "name": "Straße/Kabel-Kreuzung",
-   "label": "J-RC"
+  "tutorial": {
+    "0": "Platziere eine Eisenmine auf einem Eisenvorkommen.",
+    "1": "Platziere einen Steinbruch auf einem Feld.",
+    "2": "Verbinde die Mine und den Steinbruch mit Straßen zum Hafen.",
+    "3": "Verbessere die Mine und den Steinbruch auf Stufe 2.",
+    "4": "Platziere eine Kohlemine und verbinde sie mit dem Hafen.",
+    "5": "Platziere einen Eisenofen und verbinde ihn mit dem Hafen.",
+    "6": "Platziere ein Zementwerk und verbinde es mit dem Hafen."
   },
-  "jonction_route_tuyau": {
-   "name": "Straße/Rohr-Kreuzung",
-   "label": "J-RT"
+  "tips": {
+    "bienvenue": {
+      "title": "Willkommen im Archipel",
+      "body": [
+        "Dein Ziel: Rohstoffe <b>fördern</b>, sie über Netze zum Hafen <b>transportieren</b>, sie zu Produkten <b>verarbeiten</b>, dann <b>liefern</b> und <b>forschen</b>, um neue Gebäude und neue Inseln freizuschalten.",
+        "Das Banner oben führt dich Schritt für Schritt durch deine ersten Bauten.",
+        "Drei Netze verbinden alles: die <b>Straße</b> (Feststoffe), das <b>Rohr</b> (Flüssigkeiten) und das <b>Kabel</b> (Strom)."
+      ]
+    },
+    "recherche": {
+      "title": "Die Forschung",
+      "body": [
+        "Öffne das <b>Forschungs</b>-Fenster (🔬). Jeder Knoten erfordert an den Hafen gelieferte Rohstoffe, um Gebäude oder Inseln freizuschalten.",
+        "Drei Wege zur Bestätigung: <b>automatisch</b> (sobald die Rohstoffe vorhanden sind), <b>manuell</b> (Schaltfläche Bestätigen) oder <b>Lieferung</b> (ein Los per Schiff schicken).",
+        "Eine bestätigungsbereite Forschung erscheint gelb."
+      ]
+    },
+    "transport": {
+      "title": "Transport zwischen Inseln",
+      "body": [
+        "Eine neue Insel ist verfügbar! Jede Insel hat ihren <b>Hafen</b>. Verbinde deine Gebäude per Straße mit dem Hafen und konfiguriere dann die <b>Verbindungen</b> im Hafen-Fenster.",
+        "Frachter transportieren <b>Lose</b> in regelmäßigen Abständen zwischen zwei Inseln. Eine Flüssigkeit ist nur transportierbar, wenn ein <b>Rohr</b> ihre Produktion mit dem Hafen verbindet."
+      ]
+    },
+    "energie": {
+      "title": "Die Energie",
+      "body": [
+        "Manche Gebäude verbrauchen <b>Strom</b>. Du musst genug erzeugen (Windrad, Kraftwerk…), um den Bedarf zu decken.",
+        "Der Strom wird auf der <b>ganzen Insel</b> geteilt: die Bilanz (Produktion − Verbrauch) wird oben mit dem 🔋-Symbol angezeigt.",
+        "Öffne das <b>Energie</b>-Fenster, um die Details und die ungedeckte Nachfrage zu sehen."
+      ]
+    },
+    "deficit": {
+      "title": "Energiedefizit",
+      "body": [
+        "Deine Produktion deckt den Verbrauch nicht mehr: einige Gebäude werden <b>abgeschaltet</b>.",
+        "Wähle im Energie-Fenster, wie der Strom rationiert wird: nach <b>Priorität</b>, durch <b>gleichmäßige Verteilung</b> oder <b>proportional</b>.",
+        "Füge Erzeuger hinzu oder speichere den Überschuss in einem <b>Akkumulator</b>, um Spitzen abzufangen."
+      ]
+    },
+    "tuyaux": {
+      "title": "Die Flüssigkeiten",
+      "body": [
+        "Du produzierst eine <b>Flüssigkeit</b> (Wasser, Öl…). Flüssigkeiten fließen nur durch das <b>Rohr</b>-Netz, nicht über die Straße.",
+        "Um eine Flüssigkeit auf eine andere Insel zu exportieren, muss das Rohr ihre Produktion direkt mit dem <b>Hafen</b> verbinden."
+      ]
+    },
+    "reseau_sature": {
+      "title": "Netz überlastet",
+      "body": [
+        "Ein Netz transportiert mehr, als sein Durchsatz erlaubt: der Fluss wird <b>gedrosselt</b> und die betroffenen Gebäude laufen im Leerlauf.",
+        "Wähle das Netz und <b>verbessere seine Stufe</b> (V2, V3…), um den Durchsatz zu erhöhen.",
+        "Du kannst auch die <b>Flusspriorität</b> jedes Gebäudes einstellen (hoch / normal / niedrig), um das Wesentliche zuerst zu versorgen."
+      ]
+    },
+    "batiment_deconnecte": {
+      "title": "Gebäude getrennt",
+      "body": [
+        "Ein Gebäude ist platziert, aber mit <b>keinem Netz</b> verbunden: es produziert nichts und empfängt nichts.",
+        "Verbinde es per <b>Straße</b> mit dem Hafen (und je nach Bedarf per <b>Rohr</b> für Flüssigkeiten oder <b>Kabel</b> für Strom)."
+      ]
+    },
+    "jonctions": {
+      "title": "Die Kreuzungen",
+      "body": [
+        "<b>Kreuzungen</b> lassen zwei Netze auf demselben Feld kreuzen, <b>ohne sich zu verbinden</b> (z. B. eine Straße über einem Kabel).",
+        "Nur eine Art Kreuzung pro Insel. Praktisch, wenn der Platz knapp ist."
+      ]
+    },
+    "upgrade_vs_v2": {
+      "title": "Verbessern oder auf V2 wechseln?",
+      "body": [
+        "Zwei verschiedene Fortschritte existieren nebeneinander. <b>Vor Ort verbessern</b> (Verbessern-Modus) erhöht das <b>gleiche</b> Gebäude um eine Stufe: mehr Produktion auf demselben Feld.",
+        "Eine <b>V2-Version</b> (z. B. Eisenofen V2) ist ein <b>neues</b> Gebäude mit eigenem Rezept: du musst es anstelle des alten bauen.",
+        "Da der Bodenplatz begrenzt ist, ist das Verbessern vor Ort oft die beste Wahl."
+      ]
+    },
+    "accumulateur": {
+      "title": "Der Akkumulator",
+      "body": [
+        "Der <b>Akkumulator</b> speichert überschüssigen Strom, wenn du mehr als nötig erzeugst, und gibt ihn bei einem <b>Defizit</b> wieder ab.",
+        "Ideal für unregelmäßige Erzeuger oder Verbrauchsspitzen. Er kann verbessert werden, um seine Kapazität zu erhöhen."
+      ]
+    },
+    "nucleaire": {
+      "title": "Die Nuklearkette",
+      "body": [
+        "Eine lange Kette öffnet sich: Uranmine → Brechen → Yellow Cake → Anreicherung → <b>Kernkraftwerk</b>.",
+        "Das Kraftwerk muss mit dem <b>Kabel</b> verbunden sein, um Strom zu liefern, und durchgehend versorgt werden: sein <b>Brennstoff wird ständig verbraucht</b>.",
+        "Sein Anlauf ist allmählich (mehrere Minuten) — plane die Logistik im Voraus."
+      ]
+    },
+    "non_stockable": {
+      "title": "Nicht lagerbarer Rohstoff",
+      "body": [
+        "<b>Kaltwasser</b> (vom Kühler erzeugt) wird nicht gespeichert: es wird in demselben Tick verbraucht, in dem es erzeugt wird.",
+        "Der Produktionsdurchsatz muss daher <b>durchgehend</b> ausreichen; ein Überschuss geht einfach verloren, ein Mangel schaltet das versorgte Gebäude ab."
+      ]
+    },
+    "irradie": {
+      "title": "Bestrahlte Materialien & unbegrenztes Netz",
+      "body": [
+        "Das Kernkraftwerk kann Materialien <b>bestrahlen</b> (Stahlbeton, Stahl, Kabel).",
+        "Mit 10 000 Einheiten eines bestrahlten Materials wechselt ein Netz zu <b>unbegrenztem Durchsatz</b>: keine Flussgrenze mehr, nie wieder Überlastung in diesem Netz."
+      ]
+    },
+    "antenne": {
+      "title": "Die T5-Antenne",
+      "body": [
+        "Die <b>Antenne</b> verdoppelt die Produktion der <b>8 angrenzenden Felder</b> (allmähliche Steigerung bis ×3 Effekt).",
+        "Sie verbraucht durchgehend 512 kW: platziere sie in der Mitte einer Gruppe wichtiger Gebäude, um den Bonus zu maximieren."
+      ]
+    },
+    "reparer": {
+      "title": "Gelände reparieren",
+      "body": [
+        "Du kannst jetzt Hindernis-Felder <b>reparieren</b>, um sie bebaubar zu machen.",
+        "Jede Reparatur kostet mehr als die vorige: der Bodenplatz bleibt dein wertvollster Rohstoff."
+      ]
+    },
+    "etendre": {
+      "title": "Gelände erweitern",
+      "body": [
+        "Die <b>Aufschüttung</b> verwandelt ein Küstenwasser-Feld in bebaubares Land.",
+        "Wie bei der Reparatur steigt der Preis mit jeder Erweiterung. Für wirklich strategische Standorte aufheben."
+      ]
+    }
   },
-  "jonction_cable_tuyau": {
-   "name": "Kabel/Rohr-Kreuzung",
-   "label": "J-CT"
-  },
-  "mine_fer": {
-   "name": "Eisenmine V1",
-   "label": "IRON"
-  },
-  "mine_charbon": {
-   "name": "Kohlemine V1",
-   "label": "COAL"
-  },
-  "carriere": {
-   "name": "Steinbruch V1",
-   "label": "STONE"
-  },
-  "pompe_eau": {
-   "name": "Wasserpumpe V1",
-   "label": "WATER"
-  },
-  "eolienne": {
-   "name": "Windrad V1",
-   "label": "WIND"
-  },
-  "mine_cuivre": {
-   "name": "Kupfermine V1",
-   "label": "COPR"
-  },
-  "centrale_charbon": {
-   "name": "Kohlekraftwerk V1",
-   "label": "C.CO"
-  },
-  "four_fer": {
-   "name": "Eisenofen V1",
-   "label": "FURN"
-  },
-  "cimenterie": {
-   "name": "Zementwerk V1",
-   "label": "CEM"
-  },
-  "four_cuivre": {
-   "name": "Kupferofen V1",
-   "label": "F.CU"
-  },
-  "four_fer_v2": {
-   "name": "Eisenofen V2",
-   "label": "IRN2"
-  },
-  "four_cuivre_v2": {
-   "name": "Kupferofen V2",
-   "label": "CPR2"
-  },
-  "cablerie": {
-   "name": "Kabelwerk V1",
-   "label": "CABL"
-  },
-  "acierie": {
-   "name": "Stahlwerk V1",
-   "label": "STEEL"
-  },
-  "puits_petrole": {
-   "name": "Ölquelle V1",
-   "label": "OIL"
-  },
-  "raffinerie": {
-   "name": "Raffinerie V1",
-   "label": "REFY"
-  },
-  "betonniere": {
-   "name": "Betonmischer V1",
-   "label": "CONC"
-  },
-  "atelier_meca": {
-   "name": "Mech. Werkstatt V1",
-   "label": "MECH"
-  },
-  "usine_polymere": {
-   "name": "Polymerwerk V1",
-   "label": "POLY"
-  },
-  "centrale_diesel": {
-   "name": "Dieselkraftwerk V1",
-   "label": "C.DSL"
-  },
-  "circuit": {
-   "name": "Schaltkreis V1",
-   "label": "CIRC"
-  },
-  "mine_fer_v2": {
-   "name": "Eisenmine V2",
-   "label": "IRN2"
-  },
-  "mine_charbon_v2": {
-   "name": "Kohlemine V2",
-   "label": "COL2"
-  },
-  "mine_cuivre_v2": {
-   "name": "Kupfermine V2",
-   "label": "CPR2"
-  },
-  "carriere_v2": {
-   "name": "Steinbruch V2",
-   "label": "STN2"
-  },
-  "mine_or": {
-   "name": "Goldmine V1",
-   "label": "GOLD"
-  },
-  "broyeur": {
-   "name": "Brecher V1",
-   "label": "CRSH"
-  },
-  "distillerie": {
-   "name": "Destillerie V1",
-   "label": "DIST"
-  },
-  "fonderie_or": {
-   "name": "Goldhütte V1",
-   "label": "F.AU"
-  },
-  "raffineur_silicium": {
-   "name": "Silizium-Raffinerie V1",
-   "label": "R.SI"
-  },
-  "fab_processeur": {
-   "name": "Prozessorfabrik V1",
-   "label": "PROC"
-  },
-  "accumulateur": {
-   "name": "Akkumulator V1",
-   "label": "BATT"
-  },
-  "four_arc_acier": {
-   "name": "Lichtbogenofen Stahl V1",
-   "label": "ARC.S"
-  },
-  "four_arc_cable": {
-   "name": "Lichtbogenofen Kabel V1",
-   "label": "ARC.C"
-  },
-  "four_arc_piece": {
-   "name": "Lichtbogenofen Mech. Teil V1",
-   "label": "ARC.P"
-  },
-  "eolienne_offshore": {
-   "name": "Offshore-Windrad V2",
-   "label": "OFF.W"
-  },
-  "plateforme_petroliere": {
-   "name": "Ölplattform V1",
-   "label": "OIL.P"
-  },
-  "mine_uranium": {
-   "name": "Uranmine V1",
-   "label": "URAN"
-  },
-  "broyeur_uranium": {
-   "name": "Uranbrecher V1",
-   "label": "CR.U"
-  },
-  "centrale_enrichissement": {
-   "name": "Anreicherungsanlage V1",
-   "label": "ENR"
-  },
-  "refroidisseur": {
-   "name": "Kühler V1",
-   "label": "COOL"
-  },
-  "centrale_nucleaire": {
-   "name": "Kernkraftwerk V1",
-   "label": "NUC"
-  },
-  "mine_fer_v3": {
-   "name": "Eisenmine V3",
-   "label": "IRN3"
-  },
-  "mine_cuivre_v3": {
-   "name": "Kupfermine V3",
-   "label": "CPR3"
-  },
-  "carriere_v3": {
-   "name": "Steinbruch V3",
-   "label": "STN3"
-  },
-  "mine_charbon_v3": {
-   "name": "Kohlemine V3",
-   "label": "COL3"
-  },
-  "mine_or_v3": {
-   "name": "Goldmine V3",
-   "label": "GLD3"
-  },
-  "usine_moteur_nuc": {
-   "name": "Kernmotorenwerk V1",
-   "label": "ENG"
-  },
-  "antenne": {
-   "name": "Antenne T5",
-   "label": "ANT"
-  },
-  "port": {
-   "name": "Hafen",
-   "label": "PORT"
+  "ui": {
+    "Réseau introuvable": "Netz nicht gefunden",
+    "Réseaux couplés à des niveaux différents": "Netze auf unterschiedlichen Stufen gekoppelt",
+    "Déjà illimité": "Bereits unbegrenzt",
+    "Niveau maximum atteint": "Maximale Stufe erreicht",
+    "Niveau minimum atteint": "Minimale Stufe erreicht",
+    "Indisponible": "Nicht verfügbar",
+    "unités irradiées": "bestrahlte Einheiten",
+    " confirmé": " bestätigt",
+    "nœud ": "Knoten ",
+    "kW soutenus": "kW dauerhaft",
+    " importé": " importiert",
+    "port île ": "Hafen Insel ",
+    "kWh stockés": "kWh gespeichert",
+    " verrouillée": " gesperrt",
+    "Île ": "Insel ",
+    " Production — ": " Produktion — ",
+    "toutes les îles": "alle Inseln",
+    "Fermer": "Schließen",
+    "Toutes": "Alle",
+    "Conso ": "Verbr. ",
+    "⚡ Prod ": "⚡ Prod ",
+    "Net ": "Netto ",
+    "Ressource": "Rohstoff",
+    "Prod /s": "Prod /s",
+    "Conso /s": "Verbr. /s",
+    "Net /s": "Netto /s",
+    "Aucune production en cours.": "Keine laufende Produktion.",
+    "Transit entre îles": "Transit zwischen Inseln",
+    "Aucun transit en cours.": "Kein laufender Transit.",
+    " → Île ": " → Insel ",
+    "/s": "/s",
+    "Mise à jour disponible : ": "Update verfügbar: ",
+    "Options": "Optionen",
+    "Aide — toutes les astuces": "Hilfe — alle Tipps",
+    "Aide": "Hilfe",
+    "Bilan énergie de l'île — cliquer pour gérer le déficit": "Energiebilanz der Insel — zum Verwalten des Defizits klicken",
+    "Charge des accumulateurs de l'île — cliquer pour gérer l'énergie": "Akkuladung der Insel — zum Verwalten der Energie klicken",
+    "Configuration du port (commerce)": "Hafen-Konfiguration (Handel)",
+    "Port": "Hafen",
+    "Panneau Recherche": "Forschungsfenster",
+    "Recherche prête à valider !": "Forschung bereit zur Bestätigung!",
+    "Recherche": "Forschung",
+    "Réparer le port pour débloquer l'île ": "Hafen reparieren, um Insel freizuschalten ",
+    "Réparer Île ": "Insel reparieren ",
+    "Production / consommation / transit de toutes les îles": "Produktion / Verbrauch / Transit aller Inseln",
+    "Production": "Produktion",
+    "Afficher l'inventaire": "Inventar anzeigen",
+    "INVENTAIRE": "INVENTAR",
+    " — voir production / consommation": " — Produktion / Verbrauch ansehen",
+    "Inventaire de l'île (port)": "Insel-Inventar (Hafen)",
+    "Replier l'inventaire": "Inventar einklappen",
+    "— vide —": "— leer —",
+    " Réparer — Île ": " Reparieren — Insel ",
+    "Livrez les ressources requises au port pour réparer la liaison et débloquer l'île ": "Liefere die benötigten Rohstoffe an den Hafen, um die Verbindung zu reparieren und Insel freizuschalten ",
+    "Réparer l'île ": "Insel reparieren ",
+    "Stock insuffisant": "Bestand unzureichend",
+    "coût croissant": "steigende Kosten",
+    "tracé continu": "durchgehendes Zeichnen",
+    "Extraction": "Förderung",
+    "Palier 1": "Stufe 1",
+    "Palier 2": "Stufe 2",
+    "Palier 3": "Stufe 3",
+    "côte": "Küste",
+    "pétrole": "Öl",
+    "accidenté": "zerklüftet",
+    "Coût": "Kosten",
+    "Taille": "Größe",
+    "Terrain": "Gelände",
+    " /s": " /s",
+    "Entrées": "Eingänge",
+    "Sorties": "Ausgänge",
+    "Conso. élec.": "Stromverbr.",
+    "Prod. élec.": "Stromprod.",
+    "Stockage": "Speicher",
+    "batterie (élec.)": "Akku (Strom)",
+    "Exclusif": "Exklusiv",
+    "île ": "Insel ",
+    "Actions": "Aktionen",
+    "Améliorer": "Verbessern",
+    "Bâtiment": "Gebäude",
+    "Copier": "Kopieren",
+    "Démolir": "Abreißen",
+    "Réseau": "Netz",
+    "fermer ▾": "zu ▾",
+    "niveau +1": "Stufe +1",
+    "ouvrir ▴": "auf ▴",
+    "remb. 100%": "Erst. 100%",
+    "Extension de terrain": "Geländeerweiterung",
+    "Terrain accidenté": "Zerklüftetes Gelände",
+    "Extensions effectuées sur cette île": "Erweiterungen auf dieser Insel",
+    "Réparations effectuées sur cette île": "Reparaturen auf dieser Insel",
+    " Remblayer": " Aufschütten",
+    " Réparer": " Reparieren",
+    "Technologie non débloquée": "Technologie nicht freigeschaltet",
+    "Coût : ": "Kosten: ",
+    "non reliée au port (route)": "nicht mit dem Hafen verbunden (Straße)",
+    "tuyau manquant": "Rohr fehlt",
+    "câble manquant (élec.)": "Kabel fehlt (Strom)",
+    "intrants manquants": "Eingänge fehlen",
+    "élec. insuffisante (vérifier le débit du câble)": "Strom unzureichend (Kabeldurchsatz prüfen)",
+    "déconnecté": "getrennt",
+    "à l'arrêt": "gestoppt",
+    "intrants + élec. insuffisants": "Eingänge + Strom unzureichend",
+    "intrants insuffisants": "Eingänge unzureichend",
+    "réseau saturé": "Netz überlastet",
+    "élec. insuffisante": "Strom unzureichend",
+    "au ralenti": "im Leerlauf",
+    "aucun intrant": "kein Eingang",
+    "plein régime": "volle Leistung",
+    "à l'arrêt · ": "gestoppt · ",
+    " — déficit (": " — Defizit (",
+    "% dispo)": "% verf.)",
+    "Acier": "Stahl",
+    "Béton armé": "Stahlbeton",
+    "Ciment": "Zement",
+    "Câble": "Kabel",
+    "Arrêtée": "Gestoppt",
+    "Démarrage…": "Anlauf…",
+    "En marche": "In Betrieb",
+    "Arrêt…": "Abschaltung…",
+    "État": "Status",
+    "1 comb.U235 + 256 eau froide + 1 ": "1 U235-Brennst. + 256 Kaltwasser + 1 ",
+    "Sortie": "Ausgang",
+    "2048 kW + 1 ": "2048 kW + 1 ",
+    "Matériau à irradier": "Zu bestrahlendes Material",
+    "Vitesse": "Geschwindigkeit",
+    "Régime de fonctionnement réel ce tick (": "Tatsächliche Betriebsrate diesen Tick (",
+    "Réel ⚠": "Real ⚠",
+    "Consommation réelle ce tick (bridée : ": "Tatsächlicher Verbrauch diesen Tick (gedrosselt: ",
+    " /s · ": " /s · ",
+    "Production réelle ce tick (bridée : ": "Tatsächliche Produktion diesen Tick (gedrosselt: ",
+    " kWh · ": " kWh · ",
+    " kW · prévu ": " kW · erwartet ",
+    "Effet": "Effekt",
+    "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)": "×2 Produktion auf den 8 angrenzenden Feldern (Verbr. ×1→×3 schwankend)",
+    "Priorité de flux (intrants & élec.)": "Flusspriorität (Eingänge & Strom)",
+    "Basse": "Niedrig",
+    "Haute": "Hoch",
+    "Normale": "Normal",
+    "Servi en dernier : intrants ET électricité après les autres": "Zuletzt versorgt: Eingänge UND Strom nach den anderen",
+    "Servi en premier : intrants (route/tuyau) ET électricité d'abord": "Zuerst versorgt: Eingänge (Straße/Rohr) UND Strom zuerst",
+    "Servi normalement": "Normal versorgt",
+    "Amélioration → Nv.": "Verbesserung → St.",
+    "Confirmer · Coût : ": "Bestätigen · Kosten: ",
+    "Voir l'amélioration (Nv.": "Verbesserung ansehen (St.",
+    " Confirmer ": " Bestätigen ",
+    " Monter ": " Erhöhen ",
+    "Déjà au niveau de base": "Bereits auf Grundstufe",
+    "Remb. : ": "Erst.: ",
+    " Baisser ": " Senken ",
+    " autre(s) ": " weitere(s) ",
+    " sur Nv.": " auf St.",
+    " · Coût : ": " · Kosten: ",
+    "Aligner ": "Angleichen ",
+    " (Nv.": " (St.",
+    " Aligner les ": " Die  angleichen",
+    " Confirmer la démolition ?": " Abriss bestätigen?",
+    " Démolir (remb. 100%)": " Abreißen (Erst. 100%)",
+    "Niveau ": "Stufe ",
+    "Actuel": "Aktuell",
+    "Coût niv. ": "Kosten St. ",
+    "⬆ Améliorer (×": "⬆ Verbessern (×",
+    "Débloqué": "Freigeschaltet",
+    "Prêt": "Bereit",
+    "En cours": "Läuft",
+    "Verrouillé": "Gesperrt",
+    " Recherche": " Forschung",
+    "Livrer": "Liefern",
+    "Condition remplie": "Bedingung erfüllt",
+    "Confirmer": "Bestätigen",
+    "Livraison à calibrer — non activable": "Lieferung zu kalibrieren — nicht aktivierbar",
+    "Requiert : ": "Erfordert: ",
+    " Port — Île ": " Hafen — Insel ",
+    "Amélioration du transit": "Transit-Verbesserung",
+    " u)": " Stk.)",
+    "Taille des lots ×": "Losgröße ×",
+    "🔒 Réparez l'île voisine pour activer une liaison avant d'améliorer le transit.": "🔒 Repariere die Nachbarinsel, um eine Verbindung zu aktivieren, bevor du den Transit verbesserst.",
+    "Max": "Max",
+    "Liaisons": "Verbindungen",
+    "Aucune liaison active. Débloquez l'île voisine.": "Keine aktive Verbindung. Schalte die Nachbarinsel frei.",
+    " ↔ Île ": " ↔ Insel ",
+    "↔ transit continu": "↔ durchgehender Transit",
+    "Régler l'export par ressource vers l'île ": "Export pro Rohstoff zur Insel einstellen ",
+    " — tout autorisé": " — alles erlaubt",
+    "Export → Île ": "Export → Insel ",
+    " autorisé vers l'île ": " erlaubt zur Insel ",
+    " interdit vers l'île ": " gesperrt zur Insel ",
+    " — cliquer pour autoriser": " — klicken zum Erlauben",
+    " — cliquer pour interdire": " — klicken zum Sperren",
+    "Export de ": "Export von ",
+    " aucun flux sortant": " kein ausgehender Fluss",
+    "/s de ": "/s von ",
+    "Transit : ": "Transit: ",
+    "/s → Île ": "/s → Insel ",
+    " ← Île ": " ← Insel ",
+    "Reçu : ": "Erhalten: ",
+    "/s ← Île ": "/s ← Insel ",
+    "Commerce (Île ": "Handel (Insel ",
+    "Priorité": "Priorität",
+    "Proportionnel": "Proportional",
+    "Priorité : la cale est remplie de la ressource la plus prioritaire à la moins prioritaire.": "Priorität: Der Laderaum wird vom Rohstoff höchster Priorität zum niedrigsten gefüllt.",
+    "Proportionnel : la cale est répartie au prorata de la demande de chaque ressource (l'ordre ne sert qu'à départager les restes).": "Proportional: Der Laderaum wird anteilig zur Nachfrage jedes Rohstoffs verteilt (die Reihenfolge entscheidet nur über die Reste).",
+    "Cible": "Ziel",
+    "Réserve": "Reserve",
+    "Stop": "Stopp",
+    "Prio": "Prio",
+    " en stock": " auf Lager",
+    "Stock cible (quantité à importer ici)": "Zielbestand (hier zu importierende Menge)",
+    "Réserve locale (on n'exporte que le surplus au-dessus)": "Lokale Reserve (nur der Überschuss darüber wird exportiert)",
+    "Interdire l'export de cette ressource": "Export dieses Rohstoffs sperren",
+    "Cible = quantité voulue ici (import). Réserve = stock gardé localement (export du surplus uniquement). Priorité = ordre de chargement au départ.": "Ziel = hier gewünschte Menge (Import). Reserve = lokal gehaltener Bestand (nur Überschuss wird exportiert). Priorität = Ladereihenfolge bei der Abfahrt.",
+    "Équitable": "Gleichmäßig",
+    "Chaque consommateur reçoit la même quantité absolue (kW) ; le surplus non utilisé par un petit bâtiment profite aux autres. Un bâtiment qui n'atteint pas sa puissance nominale est coupé ce tick.": "Jeder Verbraucher erhält die gleiche absolute Menge (kW); der von einem kleinen Gebäude ungenutzte Überschuss kommt den anderen zugute. Ein Gebäude, das seine Nennleistung nicht erreicht, wird diesen Tick abgeschaltet.",
+    "Coupe les plus gros consommateurs d'abord pour que le reste tourne à plein régime (le moteur fonctionne en tout-ou-rien, pas de régime partiel).": "Schaltet zuerst die größten Verbraucher ab, damit der Rest mit voller Leistung läuft (der Motor arbeitet nach Alles-oder-nichts, keine Teilleistung).",
+    "⚡ Énergie — Île ": "⚡ Energie — Insel ",
+    "⚡ L'électricité circule par réseau de câbles : chaque réseau câble est un sous-réseau électrique distinct (les générateurs, consommateurs et accumulateurs qu'il relie se partagent l'énergie). Le débit du câble (V1, V2…) borne la puissance transmissible : montez-le si un réseau sature. Les totaux ci-dessous additionnent tous les réseaux de l'île.": "⚡ Strom fließt durch Kabelnetze: Jedes Kabelnetz ist ein eigenes elektrisches Teilnetz (die verbundenen Generatoren, Verbraucher und Akkus teilen sich die Energie). Der Kabeldurchsatz (V1, V2…) begrenzt die übertragbare Leistung: verbessere ihn, wenn ein Netz überlastet. Die Summen unten addieren alle Netze der Insel.",
+    "Accumulateurs": "Akkus",
+    "Batterie (décharge)": "Akku (Entladung)",
+    "Bilan réel": "Tatsächliche Bilanz",
+    "Demande non servie": "Ungedeckte Nachfrage",
+    "Demande totale": "Gesamtnachfrage",
+    "Production (générateurs)": "Produktion (Generatoren)",
+    "Mode de gestion du déficit": "Defizit-Verwaltungsmodus",
+    "Ordre de priorité (haut = servi en premier)": "Prioritätsreihenfolge (oben = zuerst versorgt)",
+    "Aucun consommateur d'énergie sur cette île.": "Kein Energieverbraucher auf dieser Insel.",
+    "Consommation": "Verbrauch",
+    "Bilan net": "Nettobilanz",
+    "Prévenir quand le stock de cette île passe sous ce seuil (0 = désactivé)": "Warnen, wenn der Bestand dieser Insel unter diese Schwelle fällt (0 = deaktiviert)",
+    "Route": "Straße",
+    "Tuyau": "Rohr",
+    " Monter": " Erhöhen",
+    " Monter A + B": " A + B erhöhen",
+    " Baisser": " Senken",
+    " Baisser A + B": " A + B senken",
+    "Débit max": "Max. Durchsatz",
+    "illimité": "unbegrenzt",
+    "Flux demandé": "Angeforderter Fluss",
+    "Demande min→max": "Nachfrage min→max",
+    "Plage de consommation : les bâtiments à conso sigmoïde/aléatoire font varier la demande élec. Dimensionnez la production pour le max.": "Verbrauchsbereich: Gebäude mit sigmoidem/zufälligem Verbrauch lassen den Strombedarf schwanken. Dimensioniere die Produktion für das Maximum.",
+    "Saturé ⚠": "Überlastet ⚠",
+    "Demande supérieure au débit max : tous les bâtiments du réseau sont ralentis à ce pourcentage": "Nachfrage übersteigt den Max.-Durchsatz: alle Gebäude des Netzes werden auf diesen Prozentsatz gedrosselt",
+    "% servi": "% versorgt",
+    "Énergie stockée dans les accumulateurs branchés sur ce réseau câble (charge / capacité).": "In den an dieses Kabelnetz angeschlossenen Akkus gespeicherte Energie (Ladung / Kapazität).",
+    "Livrée": "Geliefert",
+    "⚡ Production suffisante mais câble saturé : améliorez le débit pour tout transmettre.": "⚡ Produktion ausreichend, aber Kabel überlastet: erhöhe den Durchsatz, um alles zu übertragen.",
+    "⚡ Production insuffisante sur ce réseau câble.": "⚡ Unzureichende Produktion in diesem Kabelnetz.",
+    "Production /s": "Produktion /s",
+    "Consommation /s": "Verbrauch /s",
+    "Stock liquide accumulé dans la citerne du réseau tuyau (pétrole, eau, acide…). N'apparaît pas dans l'inventaire du port.": "Im Tank des Rohrnetzes angesammelter Flüssigkeitsbestand (Öl, Wasser, Säure…). Erscheint nicht im Hafen-Inventar.",
+    "Transit": "Transit",
+    "Tuiles": "Felder",
+    "Couplage": "Kopplung",
+    " réseaux)": " Netze)",
+    "jonction (": "Kreuzung (",
+    "Matériau d'amélioration (V": "Verbesserungsmaterial (V",
+    " Confirmer ?": " Bestätigen?",
+    "Retirer le débit illimité": "Unbegrenzten Durchsatz entfernen",
+    " — débit illimité": " — unbegrenzter Durchsatz",
+    "Confirmer ?": "Bestätigen?",
+    "Rendre illimité": "Unbegrenzt machen",
+    "Astuce": "Tipp",
+    "Ne plus afficher les astuces": "Tipps nicht mehr anzeigen",
+    "Compris": "Verstanden",
+    "Recherche terminée": "Forschung abgeschlossen",
+    "Débloque : ": "Schaltet frei: ",
+    "Voir la recherche": "Forschung ansehen",
+    "Lecture du fichier impossible.": "Datei kann nicht gelesen werden.",
+    " Emplacements de sauvegarde": " Speicherplätze",
+    "Actif": "Aktiv",
+    "Valider": "OK",
+    "Annuler": "Abbrechen",
+    "Supprimer définitivement ?": "Endgültig löschen?",
+    "Oui, supprimer": "Ja, löschen",
+    "Sauvegarder": "Speichern",
+    "Charger": "Laden",
+    "Renommer": "Umbenennen",
+    "Exporter": "Exportieren",
+    "Supprimer": "Löschen",
+    "+ Nouvelle partie": "+ Neues Spiel",
+    "⤓ Importer": "⤓ Importieren",
+    "Exporter la sauvegarde": "Spielstand exportieren",
+    "Sélectionne et copie ce texte, garde-le en lieu sûr.": "Markiere und kopiere diesen Text, bewahre ihn sicher auf.",
+    "✓ Copié dans le presse-papier. Conserve-le pour le réimporter.": "✓ In die Zwischenablage kopiert. Bewahre ihn zum Reimport auf.",
+    "⤓ Télécharger .txt": "⤓ .txt herunterladen",
+    "Cet emplacement est vide (aucune sauvegarde à exporter).": "Dieser Platz ist leer (kein Spielstand zum Exportieren).",
+    "Importer une sauvegarde": "Spielstand importieren",
+    "Charge un fichier .txt exporté (ou colle le texte) : une nouvelle partie sera créée.": "Lade eine exportierte .txt-Datei (oder füge den Text ein): ein neues Spiel wird erstellt.",
+    "📂 Charger un fichier .txt": "📂 .txt-Datei laden",
+    "Importer": "Importieren",
+    "Choisis ton mode de jeu": "Wähle deinen Spielmodus",
+    "Le mode fixe la taille des îles pour cette partie.": "Der Modus legt die Inselgröße für dieses Spiel fest.",
+    "Difficile": "Schwer",
+    "Grandes îles, plus d'espace pour construire.": "Große Inseln, mehr Platz zum Bauen.",
+    "Normal": "Normal",
+    "Îles compactes, espace limité.": "Kompakte Inseln, begrenzter Platz.",
+    "Activé": "An",
+    "Désactivé": "Aus",
+    "Vérification…": "Prüfung…",
+    "✓ Le jeu est à jour.": "✓ Das Spiel ist aktuell.",
+    "Impossible de vérifier (hors-ligne ?).": "Prüfung nicht möglich (offline?).",
+    "Télécharger la mise à jour": "Update herunterladen",
+    "Ouverture de l'installeur…": "Installer wird geöffnet…",
+    "Téléchargement… ": "Download… ",
+    "⬇ Mettre à jour maintenant": "⬇ Jetzt aktualisieren",
+    "⬆ Mise à jour disponible : ": "⬆ Update verfügbar: ",
+    "❌ Échec du téléchargement. Réessayez, ou ": "❌ Download fehlgeschlagen. Erneut versuchen, oder ",
+    "⚙ Options": "⚙ Optionen",
+    "Afficher l'efficacité (%)": "Effizienz anzeigen (%)",
+    "Afficher l'icône de déficit": "Defizit-Symbol anzeigen",
+    "Afficher les niveaux": "Stufen anzeigen",
+    "Afficher une explication à chaque nouvelle mécanique": "Bei jeder neuen Mechanik eine Erklärung anzeigen",
+    "Amélioration immédiate": "Sofort-Verbesserung",
+    "Astuces": "Tipps",
+    "Au-delà d'1 h d'absence, approxime la production (rattrapage quasi instantané)": "Ab 1 Std. Abwesenheit wird die Produktion angenähert (nahezu sofortiges Nachholen)",
+    "Calcul hors-ligne simplifié": "Vereinfachte Offline-Berechnung",
+    "En mode Améliorer, toucher un bâtiment le monte direct (sans confirmation)": "Im Verbessern-Modus wird ein Gebäude durch Antippen direkt verbessert (ohne Bestätigung)",
+    "Petit numéro de niveau en bas à gauche des bâtiments": "Kleine Stufenzahl unten links an den Gebäuden",
+    "Petite icône en haut à droite des bâtiments en déficit / panne": "Kleines Symbol oben rechts an Gebäuden mit Defizit / Ausfall",
+    "Pourcentage d'efficacité à gauche du niveau, en cas de déficit": "Effizienzprozentsatz links neben der Stufe, bei Defizit",
+    "Construction et améliorations gratuites": "Bau und Verbesserungen kostenlos",
+    "Mode développeur": "Entwicklermodus",
+    "💡 Revoir les astuces": "💡 Tipps erneut ansehen",
+    "Version": "Version",
+    " · build ": " · Build ",
+    "Vérifier les mises à jour": "Nach Updates suchen",
+    "❔ Aide & astuces": "❔ Hilfe & Tipps",
+    "Premiers pas (tutoriel île 1)": "Erste Schritte (Tutorial Insel 1)",
+    "Toutes les mécaniques": "Alle Mechaniken",
+    "Tuto ": "Tutorial ",
+    "Passer le tutoriel et tout débloquer": "Tutorial überspringen und alles freischalten",
+    "Passer": "Überspringen",
+    "🌙 Bon retour !": "🌙 Willkommen zurück!",
+    " — production récupérée :": " — Produktion nachgeholt:",
+    " — rien à produire.": " — nichts zu produzieren.",
+    "Absence : ": "Abwesenheit: ",
+    "Continuer": "Weiter",
+    "Partie ": "Spiel ",
+    "Texte invalide (JSON illisible).": "Ungültiger Text (JSON nicht lesbar).",
+    "Ce texte n'est pas une sauvegarde Archipel valide.": "Dieser Text ist kein gültiger Archipel-Spielstand.",
+    "Import ": "Import ",
+    "Partie 1": "Spiel 1",
+    " débloqué !": " freigeschaltet!",
+    "🎓 Tutoriel terminé — bonne partie !": "🎓 Tutorial abgeschlossen — viel Spaß!",
+    "Tutoriel passé — bâtiments débloqués": "Tutorial übersprungen — Gebäude freigeschaltet",
+    "Astuces désactivées": "Tipps deaktiviert",
+    "💡 Astuces activées": "💡 Tipps aktiviert",
+    "💡 Astuces réinitialisées": "💡 Tipps zurückgesetzt",
+    "❌ Tuile occupée": "❌ Feld belegt",
+    "❌ Jonction : pose sur une tuile vide ou un réseau croisé": "❌ Kreuzung: auf ein leeres Feld oder ein kreuzendes Netz setzen",
+    "❌ Terrain non autorisé": "❌ Gelände nicht erlaubt",
+    "❌ Une seule jonction de ce type par île": "❌ Nur eine Kreuzung dieses Typs pro Insel",
+    "❌ Doit toucher un réseau (route/câble/tuyau)": "❌ Muss ein Netz berühren (Straße/Kabel/Rohr)",
+    "❌ Pas de place pour le réseau croisé à côté": "❌ Kein Platz für das kreuzende Netz daneben",
+    "❌ Doit être en mer, adjacent à la côte": "❌ Muss im Meer liegen, an der Küste angrenzend",
+    "❌ Jonction : manque ": "❌ Kreuzung: fehlt ",
+    " : manque ": " : fehlt ",
+    "❌ Extension V": "❌ Erweiterung V",
+    "Rien à démolir ici": "Hier nichts abzureißen",
+    "Non améliorable (infra / port)": "Nicht verbesserbar (Infra / Hafen)",
+    "❌ Manque ": "❌ Fehlt ",
+    "❌ Technologie non débloquée": "❌ Technologie nicht freigeschaltet",
+    "🔧 Terrain réparé": "🔧 Gelände repariert",
+    "🏗 Terrain remblayé": "🏗 Gelände aufgeschüttet",
+    "⬇ Réseau → débit limité (V": "⬇ Netz → begrenzter Durchsatz (V",
+    "Réseaux couplés": "Gekoppelte Netze",
+    "∞ Réseau → débit ILLIMITÉ": "∞ Netz → UNBEGRENZTER Durchsatz",
+    "📋 Mode copie : touchez un bâtiment à copier": "📋 Kopiermodus: tippe ein Gebäude zum Kopieren an",
+    "⛰ Mode Difficile — îles compactes": "⛰ Schwerer Modus — kompakte Inseln",
+    "🗺 Mode Normal — grandes îles": "🗺 Normaler Modus — große Inseln",
+    "Île verrouillée — débloquez-la via la Recherche": "Insel gesperrt — über Forschung freischalten",
+    " débloqué": " freigeschaltet",
+    "Stock insuffisant sur cette île": "Bestand auf dieser Insel unzureichend",
+    "🛠 Port réparé — île débloquée": "🛠 Hafen repariert — Insel freigeschaltet",
+    "❌ Stock insuffisant pour la réparation": "❌ Bestand für die Reparatur unzureichend",
+    "🔒 Aucune liaison active — réparez d'abord l'île voisine": "🔒 Keine aktive Verbindung — repariere zuerst die Nachbarinsel",
+    "Transit au maximum": "Transit am Maximum",
+    "Mode dev désactivé": "Dev-Modus deaktiviert",
+    "🛠 MODE DEV activé — construction gratuite": "🛠 DEV-MODUS aktiviert — kostenloser Bau",
+    "Amélioration immédiate désactivée": "Sofort-Verbesserung deaktiviert",
+    "⬆ Amélioration immédiate activée": "⬆ Sofort-Verbesserung aktiviert",
+    "Ce bâtiment ne peut pas être copié": "Dieses Gebäude kann nicht kopiert werden",
+    "Sélectionnez un outil en bas pour construire": "Wähle unten ein Werkzeug zum Bauen",
+    "Sauvegardé": "Gespeichert",
+    "Menu construction — choisissez un bâtiment, ou « Quitter » pour fermer": "Baumenü — wähle ein Gebäude, oder „Beenden\" zum Schließen",
+    "Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer": "Netzmenü — wähle eine Infrastruktur, oder „Beenden\" zum Schließen",
+    "Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos": "Auswahlmodus — ziehen zum Navigieren, Gebäude für Infos antippen",
+    " — touchez un bâtiment (remb. 100%, un par clic) · glissez pour naviguer": " — Gebäude antippen (Erst. 100%, eines pro Tipp) · ziehen zum Navigieren",
+    " — touchez un bâtiment de production": " — ein Produktionsgebäude antippen",
+    " — touchez un bâtiment pour le sélectionner": " — Gebäude antippen zum Auswählen",
+    " — glissez pour tracer": " — ziehen zum Zeichnen",
+    " — touchez entre les deux réseaux (mêmes niveaux)": " — zwischen die beiden Netze tippen (gleiche Stufen)",
+    " — touchez une tuile valide": " — ein gültiges Feld antippen",
+    " saturée": " überlastet",
+    " saturés": " überlastet",
+    "Quitter le mode construction": "Baumodus verlassen",
+    "✕ Quitter": "✕ Beenden",
+    "⚠ MODE DEV — construction gratuite": "⚠ DEV-MODUS — kostenloser Bau",
+    "💾 Sauvegardé": "💾 Gespeichert",
+    "Rattrapage hors-ligne…": "Offline-Nachholen…",
+    "calcul de la production…": "Produktion wird berechnet…",
+    "calcul simplifié (longue absence)": "vereinfachte Berechnung (lange Abwesenheit)",
+    "Astuces désactivées — réactivables dans les options": "Tipps deaktiviert — in den Optionen reaktivierbar",
+    "Monter": "Hoch",
+    "Descendre": "Runter",
+    "Infrastructure": "Infrastruktur",
+    "Jonctions": "Kreuzungen",
+    "Énergie": "Energie",
+    "Fer-acier": "Eisen & Stahl",
+    "Cuivre": "Kupfer",
+    "Électronique": "Elektronik",
+    "Plastique et chimie": "Kunststoff & Chemie",
+    "Nucléaire": "Nuklear",
+    "Langue": "Sprache",
+    "Langue du jeu (système par défaut)": "Spielsprache (System-Standard)"
   }
- },
- "tech": {
-  "1": "Insel 1 — Verfügbar",
-  "2": "Zugang Insel 2",
-  "3": "Kupferofen V1",
-  "4": "Windrad + Kabelwerk",
-  "5": "Kohlekraftwerk + Stahlwerk",
-  "6": "Kreuzungen (3 Typen)",
-  "7": "V2-Verbesserungen",
-  "8": "Zugang Insel 3",
-  "9": "Polymerwerk",
-  "10": "Betonmischer + Mech. Werkstatt",
-  "11": "Dieselkraftwerk + Raffinerie",
-  "12": "Schaltkreis V1",
-  "13": "V2-Verbesserungen — Minen",
-  "14": "Zugang Insel 4",
-  "15": "Brecher + Destillerie",
-  "16": "Goldhütte + Si-Raffinerie",
-  "17": "Prozessorfabrik",
-  "18": "Akkumulator",
-  "19": "Lichtbogenöfen",
-  "20": "Offshore-Wind + Plattform",
-  "21": "Zugang Insel 5",
-  "22": "Uranbrecher",
-  "23": "Anreicherungsanlage + Kühler",
-  "24": "Kernkraftwerk",
-  "25": "Kernmotorenwerk V1",
-  "26": "Antenne T5",
-  "27": "Futuristisches Schiff"
- },
- "tutorial": {
-  "0": "Platziere eine Eisenmine auf einem Eisenvorkommen.",
-  "1": "Platziere einen Steinbruch auf einem Feld.",
-  "2": "Verbinde die Mine und den Steinbruch mit Straßen zum Hafen.",
-  "3": "Verbessere die Mine und den Steinbruch auf Stufe 2.",
-  "4": "Platziere eine Kohlemine und verbinde sie mit dem Hafen.",
-  "5": "Platziere einen Eisenofen und verbinde ihn mit dem Hafen.",
-  "6": "Platziere ein Zementwerk und verbinde es mit dem Hafen."
- },
- "tips": {
-  "bienvenue": {
-   "title": "Willkommen im Archipel",
-   "body": [
-    "Dein Ziel: Rohstoffe <b>fördern</b>, sie über Netze zum Hafen <b>transportieren</b>, sie zu Produkten <b>verarbeiten</b>, dann <b>liefern</b> und <b>forschen</b>, um neue Gebäude und neue Inseln freizuschalten.",
-    "Das Banner oben führt dich Schritt für Schritt durch deine ersten Bauten.",
-    "Drei Netze verbinden alles: die <b>Straße</b> (Feststoffe), das <b>Rohr</b> (Flüssigkeiten) und das <b>Kabel</b> (Strom)."
-   ]
-  },
-  "recherche": {
-   "title": "Die Forschung",
-   "body": [
-    "Öffne das <b>Forschungs</b>-Fenster (🔬). Jeder Knoten erfordert an den Hafen gelieferte Rohstoffe, um Gebäude oder Inseln freizuschalten.",
-    "Drei Wege zur Bestätigung: <b>automatisch</b> (sobald die Rohstoffe vorhanden sind), <b>manuell</b> (Schaltfläche Bestätigen) oder <b>Lieferung</b> (ein Los per Schiff schicken).",
-    "Eine bestätigungsbereite Forschung erscheint gelb."
-   ]
-  },
-  "transport": {
-   "title": "Transport zwischen Inseln",
-   "body": [
-    "Eine neue Insel ist verfügbar! Jede Insel hat ihren <b>Hafen</b>. Verbinde deine Gebäude per Straße mit dem Hafen und konfiguriere dann die <b>Verbindungen</b> im Hafen-Fenster.",
-    "Frachter transportieren <b>Lose</b> in regelmäßigen Abständen zwischen zwei Inseln. Eine Flüssigkeit ist nur transportierbar, wenn ein <b>Rohr</b> ihre Produktion mit dem Hafen verbindet."
-   ]
-  },
-  "energie": {
-   "title": "Die Energie",
-   "body": [
-    "Manche Gebäude verbrauchen <b>Strom</b>. Du musst genug erzeugen (Windrad, Kraftwerk…), um den Bedarf zu decken.",
-    "Der Strom wird auf der <b>ganzen Insel</b> geteilt: die Bilanz (Produktion − Verbrauch) wird oben mit dem 🔋-Symbol angezeigt.",
-    "Öffne das <b>Energie</b>-Fenster, um die Details und die ungedeckte Nachfrage zu sehen."
-   ]
-  },
-  "deficit": {
-   "title": "Energiedefizit",
-   "body": [
-    "Deine Produktion deckt den Verbrauch nicht mehr: einige Gebäude werden <b>abgeschaltet</b>.",
-    "Wähle im Energie-Fenster, wie der Strom rationiert wird: nach <b>Priorität</b>, durch <b>gleichmäßige Verteilung</b> oder <b>proportional</b>.",
-    "Füge Erzeuger hinzu oder speichere den Überschuss in einem <b>Akkumulator</b>, um Spitzen abzufangen."
-   ]
-  },
-  "tuyaux": {
-   "title": "Die Flüssigkeiten",
-   "body": [
-    "Du produzierst eine <b>Flüssigkeit</b> (Wasser, Öl…). Flüssigkeiten fließen nur durch das <b>Rohr</b>-Netz, nicht über die Straße.",
-    "Um eine Flüssigkeit auf eine andere Insel zu exportieren, muss das Rohr ihre Produktion direkt mit dem <b>Hafen</b> verbinden."
-   ]
-  },
-  "reseau_sature": {
-   "title": "Netz überlastet",
-   "body": [
-    "Ein Netz transportiert mehr, als sein Durchsatz erlaubt: der Fluss wird <b>gedrosselt</b> und die betroffenen Gebäude laufen im Leerlauf.",
-    "Wähle das Netz und <b>verbessere seine Stufe</b> (V2, V3…), um den Durchsatz zu erhöhen.",
-    "Du kannst auch die <b>Flusspriorität</b> jedes Gebäudes einstellen (hoch / normal / niedrig), um das Wesentliche zuerst zu versorgen."
-   ]
-  },
-  "batiment_deconnecte": {
-   "title": "Gebäude getrennt",
-   "body": [
-    "Ein Gebäude ist platziert, aber mit <b>keinem Netz</b> verbunden: es produziert nichts und empfängt nichts.",
-    "Verbinde es per <b>Straße</b> mit dem Hafen (und je nach Bedarf per <b>Rohr</b> für Flüssigkeiten oder <b>Kabel</b> für Strom)."
-   ]
-  },
-  "jonctions": {
-   "title": "Die Kreuzungen",
-   "body": [
-    "<b>Kreuzungen</b> lassen zwei Netze auf demselben Feld kreuzen, <b>ohne sich zu verbinden</b> (z. B. eine Straße über einem Kabel).",
-    "Nur eine Art Kreuzung pro Insel. Praktisch, wenn der Platz knapp ist."
-   ]
-  },
-  "upgrade_vs_v2": {
-   "title": "Verbessern oder auf V2 wechseln?",
-   "body": [
-    "Zwei verschiedene Fortschritte existieren nebeneinander. <b>Vor Ort verbessern</b> (Verbessern-Modus) erhöht das <b>gleiche</b> Gebäude um eine Stufe: mehr Produktion auf demselben Feld.",
-    "Eine <b>V2-Version</b> (z. B. Eisenofen V2) ist ein <b>neues</b> Gebäude mit eigenem Rezept: du musst es anstelle des alten bauen.",
-    "Da der Bodenplatz begrenzt ist, ist das Verbessern vor Ort oft die beste Wahl."
-   ]
-  },
-  "accumulateur": {
-   "title": "Der Akkumulator",
-   "body": [
-    "Der <b>Akkumulator</b> speichert überschüssigen Strom, wenn du mehr als nötig erzeugst, und gibt ihn bei einem <b>Defizit</b> wieder ab.",
-    "Ideal für unregelmäßige Erzeuger oder Verbrauchsspitzen. Er kann verbessert werden, um seine Kapazität zu erhöhen."
-   ]
-  },
-  "nucleaire": {
-   "title": "Die Nuklearkette",
-   "body": [
-    "Eine lange Kette öffnet sich: Uranmine → Brechen → Yellow Cake → Anreicherung → <b>Kernkraftwerk</b>.",
-    "Das Kraftwerk muss mit dem <b>Kabel</b> verbunden sein, um Strom zu liefern, und durchgehend versorgt werden: sein <b>Brennstoff wird ständig verbraucht</b>.",
-    "Sein Anlauf ist allmählich (mehrere Minuten) — plane die Logistik im Voraus."
-   ]
-  },
-  "non_stockable": {
-   "title": "Nicht lagerbarer Rohstoff",
-   "body": [
-    "<b>Kaltwasser</b> (vom Kühler erzeugt) wird nicht gespeichert: es wird in demselben Tick verbraucht, in dem es erzeugt wird.",
-    "Der Produktionsdurchsatz muss daher <b>durchgehend</b> ausreichen; ein Überschuss geht einfach verloren, ein Mangel schaltet das versorgte Gebäude ab."
-   ]
-  },
-  "irradie": {
-   "title": "Bestrahlte Materialien & unbegrenztes Netz",
-   "body": [
-    "Das Kernkraftwerk kann Materialien <b>bestrahlen</b> (Stahlbeton, Stahl, Kabel).",
-    "Mit 10 000 Einheiten eines bestrahlten Materials wechselt ein Netz zu <b>unbegrenztem Durchsatz</b>: keine Flussgrenze mehr, nie wieder Überlastung in diesem Netz."
-   ]
-  },
-  "antenne": {
-   "title": "Die T5-Antenne",
-   "body": [
-    "Die <b>Antenne</b> verdoppelt die Produktion der <b>8 angrenzenden Felder</b> (allmähliche Steigerung bis ×3 Effekt).",
-    "Sie verbraucht durchgehend 512 kW: platziere sie in der Mitte einer Gruppe wichtiger Gebäude, um den Bonus zu maximieren."
-   ]
-  },
-  "reparer": {
-   "title": "Gelände reparieren",
-   "body": [
-    "Du kannst jetzt Hindernis-Felder <b>reparieren</b>, um sie bebaubar zu machen.",
-    "Jede Reparatur kostet mehr als die vorige: der Bodenplatz bleibt dein wertvollster Rohstoff."
-   ]
-  },
-  "etendre": {
-   "title": "Gelände erweitern",
-   "body": [
-    "Die <b>Aufschüttung</b> verwandelt ein Küstenwasser-Feld in bebaubares Land.",
-    "Wie bei der Reparatur steigt der Preis mit jeder Erweiterung. Für wirklich strategische Standorte aufheben."
-   ]
-  }
- },
- "ui": {
-  "Réseau introuvable": "Netz nicht gefunden",
-  "Réseaux couplés à des niveaux différents": "Netze auf unterschiedlichen Stufen gekoppelt",
-  "Déjà illimité": "Bereits unbegrenzt",
-  "Niveau maximum atteint": "Maximale Stufe erreicht",
-  "Niveau minimum atteint": "Minimale Stufe erreicht",
-  "Indisponible": "Nicht verfügbar",
-  "unités irradiées": "bestrahlte Einheiten",
-  " confirmé": " bestätigt",
-  "nœud ": "Knoten ",
-  "kW soutenus": "kW dauerhaft",
-  " importé": " importiert",
-  "port île ": "Hafen Insel ",
-  "kWh stockés": "kWh gespeichert",
-  " verrouillée": " gesperrt",
-  "Île ": "Insel ",
-  " Production — ": " Produktion — ",
-  "toutes les îles": "alle Inseln",
-  "Fermer": "Schließen",
-  "Toutes": "Alle",
-  "Conso ": "Verbr. ",
-  "⚡ Prod ": "⚡ Prod ",
-  "Net ": "Netto ",
-  "Ressource": "Rohstoff",
-  "Prod /s": "Prod /s",
-  "Conso /s": "Verbr. /s",
-  "Net /s": "Netto /s",
-  "Aucune production en cours.": "Keine laufende Produktion.",
-  "Transit entre îles": "Transit zwischen Inseln",
-  "Aucun transit en cours.": "Kein laufender Transit.",
-  " → Île ": " → Insel ",
-  "/s": "/s",
-  "Mise à jour disponible : ": "Update verfügbar: ",
-  "Options": "Optionen",
-  "Aide — toutes les astuces": "Hilfe — alle Tipps",
-  "Aide": "Hilfe",
-  "Bilan énergie de l'île — cliquer pour gérer le déficit": "Energiebilanz der Insel — zum Verwalten des Defizits klicken",
-  "Charge des accumulateurs de l'île — cliquer pour gérer l'énergie": "Akkuladung der Insel — zum Verwalten der Energie klicken",
-  "Configuration du port (commerce)": "Hafen-Konfiguration (Handel)",
-  "Port": "Hafen",
-  "Panneau Recherche": "Forschungsfenster",
-  "Recherche prête à valider !": "Forschung bereit zur Bestätigung!",
-  "Recherche": "Forschung",
-  "Réparer le port pour débloquer l'île ": "Hafen reparieren, um Insel freizuschalten ",
-  "Réparer Île ": "Insel reparieren ",
-  "Production / consommation / transit de toutes les îles": "Produktion / Verbrauch / Transit aller Inseln",
-  "Production": "Produktion",
-  "Afficher l'inventaire": "Inventar anzeigen",
-  "INVENTAIRE": "INVENTAR",
-  " — voir production / consommation": " — Produktion / Verbrauch ansehen",
-  "Inventaire de l'île (port)": "Insel-Inventar (Hafen)",
-  "Replier l'inventaire": "Inventar einklappen",
-  "— vide —": "— leer —",
-  " Réparer — Île ": " Reparieren — Insel ",
-  "Livrez les ressources requises au port pour réparer la liaison et débloquer l'île ": "Liefere die benötigten Rohstoffe an den Hafen, um die Verbindung zu reparieren und Insel freizuschalten ",
-  "Réparer l'île ": "Insel reparieren ",
-  "Stock insuffisant": "Bestand unzureichend",
-  "coût croissant": "steigende Kosten",
-  "tracé continu": "durchgehendes Zeichnen",
-  "Extraction": "Förderung",
-  "Palier 1": "Stufe 1",
-  "Palier 2": "Stufe 2",
-  "Palier 3": "Stufe 3",
-  "côte": "Küste",
-  "pétrole": "Öl",
-  "accidenté": "zerklüftet",
-  "Coût": "Kosten",
-  "Taille": "Größe",
-  "Terrain": "Gelände",
-  " /s": " /s",
-  "Entrées": "Eingänge",
-  "Sorties": "Ausgänge",
-  "Conso. élec.": "Stromverbr.",
-  "Prod. élec.": "Stromprod.",
-  "Stockage": "Speicher",
-  "batterie (élec.)": "Akku (Strom)",
-  "Exclusif": "Exklusiv",
-  "île ": "Insel ",
-  "Actions": "Aktionen",
-  "Améliorer": "Verbessern",
-  "Bâtiment": "Gebäude",
-  "Copier": "Kopieren",
-  "Démolir": "Abreißen",
-  "Réseau": "Netz",
-  "fermer ▾": "zu ▾",
-  "niveau +1": "Stufe +1",
-  "ouvrir ▴": "auf ▴",
-  "remb. 100%": "Erst. 100%",
-  "Extension de terrain": "Geländeerweiterung",
-  "Terrain accidenté": "Zerklüftetes Gelände",
-  "Extensions effectuées sur cette île": "Erweiterungen auf dieser Insel",
-  "Réparations effectuées sur cette île": "Reparaturen auf dieser Insel",
-  " Remblayer": " Aufschütten",
-  " Réparer": " Reparieren",
-  "Technologie non débloquée": "Technologie nicht freigeschaltet",
-  "Coût : ": "Kosten: ",
-  "non reliée au port (route)": "nicht mit dem Hafen verbunden (Straße)",
-  "tuyau manquant": "Rohr fehlt",
-  "câble manquant (élec.)": "Kabel fehlt (Strom)",
-  "intrants manquants": "Eingänge fehlen",
-  "élec. insuffisante (vérifier le débit du câble)": "Strom unzureichend (Kabeldurchsatz prüfen)",
-  "déconnecté": "getrennt",
-  "à l'arrêt": "gestoppt",
-  "intrants + élec. insuffisants": "Eingänge + Strom unzureichend",
-  "intrants insuffisants": "Eingänge unzureichend",
-  "réseau saturé": "Netz überlastet",
-  "élec. insuffisante": "Strom unzureichend",
-  "au ralenti": "im Leerlauf",
-  "aucun intrant": "kein Eingang",
-  "plein régime": "volle Leistung",
-  "à l'arrêt · ": "gestoppt · ",
-  " — déficit (": " — Defizit (",
-  "% dispo)": "% verf.)",
-  "Acier": "Stahl",
-  "Béton armé": "Stahlbeton",
-  "Ciment": "Zement",
-  "Câble": "Kabel",
-  "Arrêtée": "Gestoppt",
-  "Démarrage…": "Anlauf…",
-  "En marche": "In Betrieb",
-  "Arrêt…": "Abschaltung…",
-  "État": "Status",
-  "1 comb.U235 + 256 eau froide + 1 ": "1 U235-Brennst. + 256 Kaltwasser + 1 ",
-  "Sortie": "Ausgang",
-  "2048 kW + 1 ": "2048 kW + 1 ",
-  "Matériau à irradier": "Zu bestrahlendes Material",
-  "Vitesse": "Geschwindigkeit",
-  "Régime de fonctionnement réel ce tick (": "Tatsächliche Betriebsrate diesen Tick (",
-  "Réel ⚠": "Real ⚠",
-  "Consommation réelle ce tick (bridée : ": "Tatsächlicher Verbrauch diesen Tick (gedrosselt: ",
-  " /s · ": " /s · ",
-  "Production réelle ce tick (bridée : ": "Tatsächliche Produktion diesen Tick (gedrosselt: ",
-  " kWh · ": " kWh · ",
-  " kW · prévu ": " kW · erwartet ",
-  "Effet": "Effekt",
-  "×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)": "×2 Produktion auf den 8 angrenzenden Feldern (Verbr. ×1→×3 schwankend)",
-  "Priorité de flux (intrants & élec.)": "Flusspriorität (Eingänge & Strom)",
-  "Basse": "Niedrig",
-  "Haute": "Hoch",
-  "Normale": "Normal",
-  "Servi en dernier : intrants ET électricité après les autres": "Zuletzt versorgt: Eingänge UND Strom nach den anderen",
-  "Servi en premier : intrants (route/tuyau) ET électricité d'abord": "Zuerst versorgt: Eingänge (Straße/Rohr) UND Strom zuerst",
-  "Servi normalement": "Normal versorgt",
-  "Amélioration → Nv.": "Verbesserung → St.",
-  "Confirmer · Coût : ": "Bestätigen · Kosten: ",
-  "Voir l'amélioration (Nv.": "Verbesserung ansehen (St.",
-  " Confirmer ": " Bestätigen ",
-  " Monter ": " Erhöhen ",
-  "Déjà au niveau de base": "Bereits auf Grundstufe",
-  "Remb. : ": "Erst.: ",
-  " Baisser ": " Senken ",
-  " autre(s) ": " weitere(s) ",
-  " sur Nv.": " auf St.",
-  " · Coût : ": " · Kosten: ",
-  "Aligner ": "Angleichen ",
-  " (Nv.": " (St.",
-  " Aligner les ": " Die  angleichen",
-  " Confirmer la démolition ?": " Abriss bestätigen?",
-  " Démolir (remb. 100%)": " Abreißen (Erst. 100%)",
-  "Niveau ": "Stufe ",
-  "Actuel": "Aktuell",
-  "Coût niv. ": "Kosten St. ",
-  "⬆ Améliorer (×": "⬆ Verbessern (×",
-  "Débloqué": "Freigeschaltet",
-  "Prêt": "Bereit",
-  "En cours": "Läuft",
-  "Verrouillé": "Gesperrt",
-  " Recherche": " Forschung",
-  "Livrer": "Liefern",
-  "Condition remplie": "Bedingung erfüllt",
-  "Confirmer": "Bestätigen",
-  "Livraison à calibrer — non activable": "Lieferung zu kalibrieren — nicht aktivierbar",
-  "Requiert : ": "Erfordert: ",
-  " Port — Île ": " Hafen — Insel ",
-  "Amélioration du transit": "Transit-Verbesserung",
-  " u)": " Stk.)",
-  "Taille des lots ×": "Losgröße ×",
-  "🔒 Réparez l'île voisine pour activer une liaison avant d'améliorer le transit.": "🔒 Repariere die Nachbarinsel, um eine Verbindung zu aktivieren, bevor du den Transit verbesserst.",
-  "Max": "Max",
-  "Liaisons": "Verbindungen",
-  "Aucune liaison active. Débloquez l'île voisine.": "Keine aktive Verbindung. Schalte die Nachbarinsel frei.",
-  " ↔ Île ": " ↔ Insel ",
-  "↔ transit continu": "↔ durchgehender Transit",
-  "Régler l'export par ressource vers l'île ": "Export pro Rohstoff zur Insel einstellen ",
-  " — tout autorisé": " — alles erlaubt",
-  "Export → Île ": "Export → Insel ",
-  " autorisé vers l'île ": " erlaubt zur Insel ",
-  " interdit vers l'île ": " gesperrt zur Insel ",
-  " — cliquer pour autoriser": " — klicken zum Erlauben",
-  " — cliquer pour interdire": " — klicken zum Sperren",
-  "Export de ": "Export von ",
-  " aucun flux sortant": " kein ausgehender Fluss",
-  "/s de ": "/s von ",
-  "Transit : ": "Transit: ",
-  "/s → Île ": "/s → Insel ",
-  " ← Île ": " ← Insel ",
-  "Reçu : ": "Erhalten: ",
-  "/s ← Île ": "/s ← Insel ",
-  "Commerce (Île ": "Handel (Insel ",
-  "Priorité": "Priorität",
-  "Proportionnel": "Proportional",
-  "Priorité : la cale est remplie de la ressource la plus prioritaire à la moins prioritaire.": "Priorität: Der Laderaum wird vom Rohstoff höchster Priorität zum niedrigsten gefüllt.",
-  "Proportionnel : la cale est répartie au prorata de la demande de chaque ressource (l'ordre ne sert qu'à départager les restes).": "Proportional: Der Laderaum wird anteilig zur Nachfrage jedes Rohstoffs verteilt (die Reihenfolge entscheidet nur über die Reste).",
-  "Cible": "Ziel",
-  "Réserve": "Reserve",
-  "Stop": "Stopp",
-  "Prio": "Prio",
-  " en stock": " auf Lager",
-  "Stock cible (quantité à importer ici)": "Zielbestand (hier zu importierende Menge)",
-  "Réserve locale (on n'exporte que le surplus au-dessus)": "Lokale Reserve (nur der Überschuss darüber wird exportiert)",
-  "Interdire l'export de cette ressource": "Export dieses Rohstoffs sperren",
-  "Cible = quantité voulue ici (import). Réserve = stock gardé localement (export du surplus uniquement). Priorité = ordre de chargement au départ.": "Ziel = hier gewünschte Menge (Import). Reserve = lokal gehaltener Bestand (nur Überschuss wird exportiert). Priorität = Ladereihenfolge bei der Abfahrt.",
-  "Équitable": "Gleichmäßig",
-  "Chaque consommateur reçoit la même quantité absolue (kW) ; le surplus non utilisé par un petit bâtiment profite aux autres. Un bâtiment qui n'atteint pas sa puissance nominale est coupé ce tick.": "Jeder Verbraucher erhält die gleiche absolute Menge (kW); der von einem kleinen Gebäude ungenutzte Überschuss kommt den anderen zugute. Ein Gebäude, das seine Nennleistung nicht erreicht, wird diesen Tick abgeschaltet.",
-  "Coupe les plus gros consommateurs d'abord pour que le reste tourne à plein régime (le moteur fonctionne en tout-ou-rien, pas de régime partiel).": "Schaltet zuerst die größten Verbraucher ab, damit der Rest mit voller Leistung läuft (der Motor arbeitet nach Alles-oder-nichts, keine Teilleistung).",
-  "⚡ Énergie — Île ": "⚡ Energie — Insel ",
-  "⚡ L'électricité circule par réseau de câbles : chaque réseau câble est un sous-réseau électrique distinct (les générateurs, consommateurs et accumulateurs qu'il relie se partagent l'énergie). Le débit du câble (V1, V2…) borne la puissance transmissible : montez-le si un réseau sature. Les totaux ci-dessous additionnent tous les réseaux de l'île.": "⚡ Strom fließt durch Kabelnetze: Jedes Kabelnetz ist ein eigenes elektrisches Teilnetz (die verbundenen Generatoren, Verbraucher und Akkus teilen sich die Energie). Der Kabeldurchsatz (V1, V2…) begrenzt die übertragbare Leistung: verbessere ihn, wenn ein Netz überlastet. Die Summen unten addieren alle Netze der Insel.",
-  "Accumulateurs": "Akkus",
-  "Batterie (décharge)": "Akku (Entladung)",
-  "Bilan réel": "Tatsächliche Bilanz",
-  "Demande non servie": "Ungedeckte Nachfrage",
-  "Demande totale": "Gesamtnachfrage",
-  "Production (générateurs)": "Produktion (Generatoren)",
-  "Mode de gestion du déficit": "Defizit-Verwaltungsmodus",
-  "Ordre de priorité (haut = servi en premier)": "Prioritätsreihenfolge (oben = zuerst versorgt)",
-  "Aucun consommateur d'énergie sur cette île.": "Kein Energieverbraucher auf dieser Insel.",
-  "Consommation": "Verbrauch",
-  "Bilan net": "Nettobilanz",
-  "Prévenir quand le stock de cette île passe sous ce seuil (0 = désactivé)": "Warnen, wenn der Bestand dieser Insel unter diese Schwelle fällt (0 = deaktiviert)",
-  "Route": "Straße",
-  "Tuyau": "Rohr",
-  " Monter": " Erhöhen",
-  " Monter A + B": " A + B erhöhen",
-  " Baisser": " Senken",
-  " Baisser A + B": " A + B senken",
-  "Débit max": "Max. Durchsatz",
-  "illimité": "unbegrenzt",
-  "Flux demandé": "Angeforderter Fluss",
-  "Demande min→max": "Nachfrage min→max",
-  "Plage de consommation : les bâtiments à conso sigmoïde/aléatoire font varier la demande élec. Dimensionnez la production pour le max.": "Verbrauchsbereich: Gebäude mit sigmoidem/zufälligem Verbrauch lassen den Strombedarf schwanken. Dimensioniere die Produktion für das Maximum.",
-  "Saturé ⚠": "Überlastet ⚠",
-  "Demande supérieure au débit max : tous les bâtiments du réseau sont ralentis à ce pourcentage": "Nachfrage übersteigt den Max.-Durchsatz: alle Gebäude des Netzes werden auf diesen Prozentsatz gedrosselt",
-  "% servi": "% versorgt",
-  "Énergie stockée dans les accumulateurs branchés sur ce réseau câble (charge / capacité).": "In den an dieses Kabelnetz angeschlossenen Akkus gespeicherte Energie (Ladung / Kapazität).",
-  "Livrée": "Geliefert",
-  "⚡ Production suffisante mais câble saturé : améliorez le débit pour tout transmettre.": "⚡ Produktion ausreichend, aber Kabel überlastet: erhöhe den Durchsatz, um alles zu übertragen.",
-  "⚡ Production insuffisante sur ce réseau câble.": "⚡ Unzureichende Produktion in diesem Kabelnetz.",
-  "Production /s": "Produktion /s",
-  "Consommation /s": "Verbrauch /s",
-  "Stock liquide accumulé dans la citerne du réseau tuyau (pétrole, eau, acide…). N'apparaît pas dans l'inventaire du port.": "Im Tank des Rohrnetzes angesammelter Flüssigkeitsbestand (Öl, Wasser, Säure…). Erscheint nicht im Hafen-Inventar.",
-  "Transit": "Transit",
-  "Tuiles": "Felder",
-  "Couplage": "Kopplung",
-  " réseaux)": " Netze)",
-  "jonction (": "Kreuzung (",
-  "Matériau d'amélioration (V": "Verbesserungsmaterial (V",
-  " Confirmer ?": " Bestätigen?",
-  "Retirer le débit illimité": "Unbegrenzten Durchsatz entfernen",
-  " — débit illimité": " — unbegrenzter Durchsatz",
-  "Confirmer ?": "Bestätigen?",
-  "Rendre illimité": "Unbegrenzt machen",
-  "Astuce": "Tipp",
-  "Ne plus afficher les astuces": "Tipps nicht mehr anzeigen",
-  "Compris": "Verstanden",
-  "Recherche terminée": "Forschung abgeschlossen",
-  "Débloque : ": "Schaltet frei: ",
-  "Voir la recherche": "Forschung ansehen",
-  "Lecture du fichier impossible.": "Datei kann nicht gelesen werden.",
-  " Emplacements de sauvegarde": " Speicherplätze",
-  "Actif": "Aktiv",
-  "Valider": "OK",
-  "Annuler": "Abbrechen",
-  "Supprimer définitivement ?": "Endgültig löschen?",
-  "Oui, supprimer": "Ja, löschen",
-  "Sauvegarder": "Speichern",
-  "Charger": "Laden",
-  "Renommer": "Umbenennen",
-  "Exporter": "Exportieren",
-  "Supprimer": "Löschen",
-  "+ Nouvelle partie": "+ Neues Spiel",
-  "⤓ Importer": "⤓ Importieren",
-  "Exporter la sauvegarde": "Spielstand exportieren",
-  "Sélectionne et copie ce texte, garde-le en lieu sûr.": "Markiere und kopiere diesen Text, bewahre ihn sicher auf.",
-  "✓ Copié dans le presse-papier. Conserve-le pour le réimporter.": "✓ In die Zwischenablage kopiert. Bewahre ihn zum Reimport auf.",
-  "⤓ Télécharger .txt": "⤓ .txt herunterladen",
-  "Cet emplacement est vide (aucune sauvegarde à exporter).": "Dieser Platz ist leer (kein Spielstand zum Exportieren).",
-  "Importer une sauvegarde": "Spielstand importieren",
-  "Charge un fichier .txt exporté (ou colle le texte) : une nouvelle partie sera créée.": "Lade eine exportierte .txt-Datei (oder füge den Text ein): ein neues Spiel wird erstellt.",
-  "📂 Charger un fichier .txt": "📂 .txt-Datei laden",
-  "Importer": "Importieren",
-  "Choisis ton mode de jeu": "Wähle deinen Spielmodus",
-  "Le mode fixe la taille des îles pour cette partie.": "Der Modus legt die Inselgröße für dieses Spiel fest.",
-  "Difficile": "Schwer",
-  "Grandes îles, plus d'espace pour construire.": "Große Inseln, mehr Platz zum Bauen.",
-  "Normal": "Normal",
-  "Îles compactes, espace limité.": "Kompakte Inseln, begrenzter Platz.",
-  "Activé": "An",
-  "Désactivé": "Aus",
-  "Vérification…": "Prüfung…",
-  "✓ Le jeu est à jour.": "✓ Das Spiel ist aktuell.",
-  "Impossible de vérifier (hors-ligne ?).": "Prüfung nicht möglich (offline?).",
-  "Télécharger la mise à jour": "Update herunterladen",
-  "Ouverture de l'installeur…": "Installer wird geöffnet…",
-  "Téléchargement… ": "Download… ",
-  "⬇ Mettre à jour maintenant": "⬇ Jetzt aktualisieren",
-  "⬆ Mise à jour disponible : ": "⬆ Update verfügbar: ",
-  "❌ Échec du téléchargement. Réessayez, ou ": "❌ Download fehlgeschlagen. Erneut versuchen, oder ",
-  "⚙ Options": "⚙ Optionen",
-  "Afficher l'efficacité (%)": "Effizienz anzeigen (%)",
-  "Afficher l'icône de déficit": "Defizit-Symbol anzeigen",
-  "Afficher les niveaux": "Stufen anzeigen",
-  "Afficher une explication à chaque nouvelle mécanique": "Bei jeder neuen Mechanik eine Erklärung anzeigen",
-  "Amélioration immédiate": "Sofort-Verbesserung",
-  "Astuces": "Tipps",
-  "Au-delà d'1 h d'absence, approxime la production (rattrapage quasi instantané)": "Ab 1 Std. Abwesenheit wird die Produktion angenähert (nahezu sofortiges Nachholen)",
-  "Calcul hors-ligne simplifié": "Vereinfachte Offline-Berechnung",
-  "En mode Améliorer, toucher un bâtiment le monte direct (sans confirmation)": "Im Verbessern-Modus wird ein Gebäude durch Antippen direkt verbessert (ohne Bestätigung)",
-  "Petit numéro de niveau en bas à gauche des bâtiments": "Kleine Stufenzahl unten links an den Gebäuden",
-  "Petite icône en haut à droite des bâtiments en déficit / panne": "Kleines Symbol oben rechts an Gebäuden mit Defizit / Ausfall",
-  "Pourcentage d'efficacité à gauche du niveau, en cas de déficit": "Effizienzprozentsatz links neben der Stufe, bei Defizit",
-  "Construction et améliorations gratuites": "Bau und Verbesserungen kostenlos",
-  "Mode développeur": "Entwicklermodus",
-  "💡 Revoir les astuces": "💡 Tipps erneut ansehen",
-  "Version": "Version",
-  " · build ": " · Build ",
-  "Vérifier les mises à jour": "Nach Updates suchen",
-  "❔ Aide & astuces": "❔ Hilfe & Tipps",
-  "Premiers pas (tutoriel île 1)": "Erste Schritte (Tutorial Insel 1)",
-  "Toutes les mécaniques": "Alle Mechaniken",
-  "Tuto ": "Tutorial ",
-  "Passer le tutoriel et tout débloquer": "Tutorial überspringen und alles freischalten",
-  "Passer": "Überspringen",
-  "🌙 Bon retour !": "🌙 Willkommen zurück!",
-  " — production récupérée :": " — Produktion nachgeholt:",
-  " — rien à produire.": " — nichts zu produzieren.",
-  "Absence : ": "Abwesenheit: ",
-  "Continuer": "Weiter",
-  "Partie ": "Spiel ",
-  "Texte invalide (JSON illisible).": "Ungültiger Text (JSON nicht lesbar).",
-  "Ce texte n'est pas une sauvegarde Archipel valide.": "Dieser Text ist kein gültiger Archipel-Spielstand.",
-  "Import ": "Import ",
-  "Partie 1": "Spiel 1",
-  " débloqué !": " freigeschaltet!",
-  "🎓 Tutoriel terminé — bonne partie !": "🎓 Tutorial abgeschlossen — viel Spaß!",
-  "Tutoriel passé — bâtiments débloqués": "Tutorial übersprungen — Gebäude freigeschaltet",
-  "Astuces désactivées": "Tipps deaktiviert",
-  "💡 Astuces activées": "💡 Tipps aktiviert",
-  "💡 Astuces réinitialisées": "💡 Tipps zurückgesetzt",
-  "❌ Tuile occupée": "❌ Feld belegt",
-  "❌ Jonction : pose sur une tuile vide ou un réseau croisé": "❌ Kreuzung: auf ein leeres Feld oder ein kreuzendes Netz setzen",
-  "❌ Terrain non autorisé": "❌ Gelände nicht erlaubt",
-  "❌ Une seule jonction de ce type par île": "❌ Nur eine Kreuzung dieses Typs pro Insel",
-  "❌ Doit toucher un réseau (route/câble/tuyau)": "❌ Muss ein Netz berühren (Straße/Kabel/Rohr)",
-  "❌ Pas de place pour le réseau croisé à côté": "❌ Kein Platz für das kreuzende Netz daneben",
-  "❌ Doit être en mer, adjacent à la côte": "❌ Muss im Meer liegen, an der Küste angrenzend",
-  "❌ Jonction : manque ": "❌ Kreuzung: fehlt ",
-  " : manque ": " : fehlt ",
-  "❌ Extension V": "❌ Erweiterung V",
-  "Rien à démolir ici": "Hier nichts abzureißen",
-  "Non améliorable (infra / port)": "Nicht verbesserbar (Infra / Hafen)",
-  "❌ Manque ": "❌ Fehlt ",
-  "❌ Technologie non débloquée": "❌ Technologie nicht freigeschaltet",
-  "🔧 Terrain réparé": "🔧 Gelände repariert",
-  "🏗 Terrain remblayé": "🏗 Gelände aufgeschüttet",
-  "⬇ Réseau → débit limité (V": "⬇ Netz → begrenzter Durchsatz (V",
-  "Réseaux couplés": "Gekoppelte Netze",
-  "∞ Réseau → débit ILLIMITÉ": "∞ Netz → UNBEGRENZTER Durchsatz",
-  "📋 Mode copie : touchez un bâtiment à copier": "📋 Kopiermodus: tippe ein Gebäude zum Kopieren an",
-  "⛰ Mode Difficile — îles compactes": "⛰ Schwerer Modus — kompakte Inseln",
-  "🗺 Mode Normal — grandes îles": "🗺 Normaler Modus — große Inseln",
-  "Île verrouillée — débloquez-la via la Recherche": "Insel gesperrt — über Forschung freischalten",
-  " débloqué": " freigeschaltet",
-  "Stock insuffisant sur cette île": "Bestand auf dieser Insel unzureichend",
-  "🛠 Port réparé — île débloquée": "🛠 Hafen repariert — Insel freigeschaltet",
-  "❌ Stock insuffisant pour la réparation": "❌ Bestand für die Reparatur unzureichend",
-  "🔒 Aucune liaison active — réparez d'abord l'île voisine": "🔒 Keine aktive Verbindung — repariere zuerst die Nachbarinsel",
-  "Transit au maximum": "Transit am Maximum",
-  "Mode dev désactivé": "Dev-Modus deaktiviert",
-  "🛠 MODE DEV activé — construction gratuite": "🛠 DEV-MODUS aktiviert — kostenloser Bau",
-  "Amélioration immédiate désactivée": "Sofort-Verbesserung deaktiviert",
-  "⬆ Amélioration immédiate activée": "⬆ Sofort-Verbesserung aktiviert",
-  "Ce bâtiment ne peut pas être copié": "Dieses Gebäude kann nicht kopiert werden",
-  "Sélectionnez un outil en bas pour construire": "Wähle unten ein Werkzeug zum Bauen",
-  "Sauvegardé": "Gespeichert",
-  "Menu construction — choisissez un bâtiment, ou « Quitter » pour fermer": "Baumenü — wähle ein Gebäude, oder „Beenden\" zum Schließen",
-  "Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer": "Netzmenü — wähle eine Infrastruktur, oder „Beenden\" zum Schließen",
-  "Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos": "Auswahlmodus — ziehen zum Navigieren, Gebäude für Infos antippen",
-  " — touchez un bâtiment (remb. 100%, un par clic) · glissez pour naviguer": " — Gebäude antippen (Erst. 100%, eines pro Tipp) · ziehen zum Navigieren",
-  " — touchez un bâtiment de production": " — ein Produktionsgebäude antippen",
-  " — touchez un bâtiment pour le sélectionner": " — Gebäude antippen zum Auswählen",
-  " — glissez pour tracer": " — ziehen zum Zeichnen",
-  " — touchez entre les deux réseaux (mêmes niveaux)": " — zwischen die beiden Netze tippen (gleiche Stufen)",
-  " — touchez une tuile valide": " — ein gültiges Feld antippen",
-  " saturée": " überlastet",
-  " saturés": " überlastet",
-  "Quitter le mode construction": "Baumodus verlassen",
-  "✕ Quitter": "✕ Beenden",
-  "⚠ MODE DEV — construction gratuite": "⚠ DEV-MODUS — kostenloser Bau",
-  "💾 Sauvegardé": "💾 Gespeichert",
-  "Rattrapage hors-ligne…": "Offline-Nachholen…",
-  "calcul de la production…": "Produktion wird berechnet…",
-  "calcul simplifié (longue absence)": "vereinfachte Berechnung (lange Abwesenheit)",
-  "Astuces désactivées — réactivables dans les options": "Tipps deaktiviert — in den Optionen reaktivierbar",
-  "Monter": "Hoch",
-  "Descendre": "Runter"
- }
 }
