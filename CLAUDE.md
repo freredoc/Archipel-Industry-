@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 119`, `GAME_VERSION = 'Alpha 10.94'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 120`, `GAME_VERSION = 'Alpha 10.95'`.** Changement
+  10.95 : **centrale 4 MW + jauge de puissance + lisibilité inox renforcée.** (1) **`NUC_POWER`
+  16384 → 4096** : la centrale V1 (niveau 1 / 100 %) produit **4 MW** (et ×2^upgrade : Nv.1 = 8 MW…).
+  MAJ dans le tick ET la fiche. (2) **Curseur de puissance = jauge graduée** : les 3 boutons (−/%/+)
+  sont remplacés par une **barre graduée en %** (remplissage violet `linear-gradient`, graduations
+  tous les 10 %, % centré) encadrée de boutons **−** et **+** (classes `.ip-nuc-pow`/`.ip-nuc-pm`/
+  `.ip-nuc-gauge*`). (3) **Lisibilité inox** : `--ink-dim`/`--ink-faint` encore éclaircis et neutralisés
+  (`#cbd0d9`/`#aeb3bd`, moins de teinte bleue froide) → les sous-textes du panneau Port (« X en stock »
+  `.pp-res-stock`, en-têtes `.pp-cfg-head`, labels `.pp-section-label`) et autres textes dim deviennent
+  bien lisibles sur la plaque larmée. CSS+constante, logique inchangée. Validé : `node --check` + rendu
+  Chromium (Port lisible, jauge OK). Changement
   10.94 : **recettes nucléaires + UI (lisibilité, boutons du haut).** (1) **Centrale enrichissement** :
   +`acier: 1` aux intrants (yellow_cake 8 + **acier 1** → U235 1). (2) **Centrale nucléaire — matériau
   irradié OPTIONNEL** : la centrale ne dépend plus du matériau (acier/béton/câble) pour tourner
