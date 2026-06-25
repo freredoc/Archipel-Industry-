@@ -1,7 +1,7 @@
 {
-  "build": 115,
-  "version": "Alpha 10.90",
+  "build": 116,
+  "version": "Alpha 10.91",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.90 — barre du haut en plaque inox (thème inox) (#114)"
+  "notes": "Alpha 10.91 — palette bleue → gunmetal (fin des fonds bleus en thème inox) (#115)"
 }
