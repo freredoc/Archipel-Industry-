@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 142`, `GAME_VERSION = 'Alpha 11.17'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 143`, `GAME_VERSION = 'Alpha 11.18'`.** Changement
+  11.18 : **calculateur de production intégré.** Nouveau bouton **« 🧮 Calculateur »** sous l'inventaire
+  ouvert (HUD) → ouvre `CalculatorPanel`. L'utilisateur choisit un **item** (grille de sprites, 27 items
+  produisibles) + un **débit cible /s** (`NumField`) ; le jeu déroule **toute la chaîne** : helper
+  module `computeProductionChain(item, rate)` (récursif, profondeur max 80) via `PRODUCER_OF` (producteur
+  canonique par ressource = bâtiment de BASE préféré, `energie_kw` exclue). Affiche : **bâtiments
+  nécessaires** (charge réelle `×N` + nombre à poser `→ ceil`, triés par tier via `calcBtierRank`),
+  **ressources de base à fournir** (feuilles sans producteur, rare), et **consommation électrique
+  totale** (`calcDefPower` : sigmoïde base+amp / aléatoire max / power, sommée × count → `fmtPower`).
+  State App `calcOpen`, prop `onOpenCalc`, rendu près de `ProductionPanel`. CSS `.inv-calc-btn` +
+  `.calc-*`. Lecture pure (n'affecte pas la partie). Libellés en `I18N.t` (repli fr hors-fr). Validé :
+  `node --check` (6 blocs) + CSS équilibré + Chromium (chaîne 4 acier/s = 4 acierie/32 four_fer/256
+  mine_fer/40 mine_charbon, 512 kW ; UI OK, 0 erreur). Changement
   11.17 : **centrale d'enrichissement U235 — temps de fabrication ×4 (4× plus lente).** Comme pour
   l'usine moteur nucléaire (11.14), `centrale_enrichissement` : **intrants ET sortants ÷4**
   (yellow_cake 8→2, acier 1→0,25 ; combustible_u235 1→0,25) → fabrication 4× plus lente. **Conso

@@ -91,6 +91,32 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   padding:3px 11px;cursor:pointer;display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .inv-prod-btn:hover{border-color:#5bc0ff;color:var(--ink);}
 .inv-prod-btn .ui-ico{width:15px;height:15px;}
+.inv-calc-btn{font-family:'Bebas Neue',sans-serif;font-size:.78rem;letter-spacing:.08em;
+  color:var(--ink-dim);background:var(--panel);border:1px solid var(--line);border-radius:4px;
+  padding:3px 11px;cursor:pointer;flex-shrink:0;margin-top:2px;}
+.inv-calc-btn:hover{border-color:var(--yellow);color:var(--ink);}
+.calc-items{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0 8px;}
+.calc-item{display:flex;align-items:center;justify-content:center;width:34px;height:34px;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:0;}
+.calc-item.on{border-color:var(--yellow);box-shadow:0 0 0 1px var(--yellow) inset;}
+.calc-item .inv-ico{width:22px;height:22px;}.calc-item .ik{font-size:.6rem;color:var(--ink-dim);}
+.calc-rate-row{display:flex;align-items:center;gap:8px;margin:6px 0;}
+.calc-rate-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;color:var(--ink-dim);}
+.calc-rate-input{width:96px;background:var(--panel);border:1px solid var(--line);color:var(--ink);
+  border-radius:5px;padding:3px 6px;font-family:inherit;}
+.calc-target{display:flex;align-items:center;gap:6px;margin:7px 0 2px;font-size:.92rem;color:var(--ink);}
+.calc-target .inv-ico{width:18px;height:18px;}
+.calc-power{font-family:'Barlow Condensed',sans-serif;color:#ffce54;margin:2px 0 6px;font-size:.92rem;}
+.calc-blds{display:flex;flex-direction:column;gap:3px;}
+.calc-bld{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  font-family:'Barlow Condensed',sans-serif;font-size:.84rem;}
+.calc-bld-name{display:flex;align-items:center;gap:5px;color:var(--ink);}
+.calc-bld-name .inv-ico{width:16px;height:16px;}
+.calc-bld-cnt{color:var(--ink-dim);white-space:nowrap;}
+.calc-raws{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px;}
+.calc-raw{display:flex;align-items:center;gap:3px;font-family:'Barlow Condensed',sans-serif;
+  font-size:.78rem;color:var(--ink-dim);}
+.calc-raw .inv-ico{width:14px;height:14px;}
 /* Bouton ALERTE (à droite de Production) : récap des alertes de stock en cours, orange pulsant. */
 .inv-alert-btn{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.05em;color:#ffce54;
   background:rgba(255,149,0,.16);border:1px solid var(--orange);border-radius:4px;padding:3px 10px;cursor:pointer;
@@ -4176,8 +4202,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 142;
-const GAME_VERSION = 'Alpha 11.17';
+const GAME_BUILD = 143;
+const GAME_VERSION = 'Alpha 11.18';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -7055,6 +7081,172 @@ function islandFlowAgg(game, isl) {
     cons
   };
 }
+// ===== Calculateur de production intégré =====
+// Producteur canonique de chaque ressource : pour chaque item de sortie, on retient UN bâtiment
+// qui le produit, en préférant un bâtiment de BASE (sans suffixe _vN) à une version « récompense »
+// (_v2/_v3). L'électricité (energie_kw) est traitée à part (sommée comme consommation).
+const PRODUCER_OF = (() => {
+  const map = {};
+  for (const id in BUILDINGS) {
+    const b = BUILDINGS[id];
+    if (!b || b.kind !== 'build' || !b.outputs) continue;
+    const reward = /_v\d+$/.test(id);
+    for (const out in b.outputs) {
+      if (out === 'energie_kw') continue;
+      const cur = map[out];
+      if (!cur) {
+        map[out] = id;
+        continue;
+      }
+      // Remplace une version _vN déjà retenue par un bâtiment de base.
+      if (!reward && /_v\d+$/.test(cur)) map[out] = id;
+    }
+  }
+  return map;
+})();
+const CALC_BTIER = {
+  infra: 0,
+  t0: 1,
+  t1: 2,
+  t2: 3,
+  t3: 4,
+  t4: 5
+};
+const calcBtierRank = id => {
+  const t = BUILDINGS[id] && BUILDINGS[id].tier;
+  return CALC_BTIER[t] != null ? CALC_BTIER[t] : 9;
+};
+// Conso élec. nominale d'une DÉFINITION de bâtiment (sigmoïde → base+amp, aléatoire → max, sinon power).
+function calcDefPower(id) {
+  const b = BUILDINGS[id];
+  if (!b) return 0;
+  if (b.sigmoid) return (b.sigmoid.base || 0) + (b.sigmoid.amp || 0);
+  if (b.randomP) return b.randomP.max || 0;
+  return b.power || 0;
+}
+// Déroule la chaîne de production pour obtenir `rate` unités/s de `item`. Renvoie
+// { buildings:{id:count}, raws:{item:rate}, power } (count fractionnaire = charge réelle ;
+// raws = items sans producteur connu, à fournir autrement).
+function computeProductionChain(item, rate) {
+  const buildings = {},
+    raws = {};
+  let power = 0;
+  const MAX_DEPTH = 80;
+  function need(it, r, depth) {
+    if (r <= 1e-12) return;
+    const prod = PRODUCER_OF[it];
+    const b = prod && BUILDINGS[prod];
+    const per = b && b.outputs && b.outputs[it] || 0;
+    if (!prod || per <= 0 || depth > MAX_DEPTH) {
+      raws[it] = (raws[it] || 0) + r;
+      return;
+    }
+    const count = r / per;
+    buildings[prod] = (buildings[prod] || 0) + count;
+    power += calcDefPower(prod) * count;
+    for (const k in b.inputs || {}) need(k, b.inputs[k] * count, depth + 1);
+  }
+  need(item, rate, 0);
+  return {
+    buildings,
+    raws,
+    power
+  };
+}
+// Panneau Calculateur : l'utilisateur choisit un item + un débit cible /s, le jeu déroule
+// l'ensemble des bâtiments nécessaires (charge réelle), les ressources de base à fournir et
+// la consommation électrique totale. Lecture pure (n'affecte pas la partie).
+function CalculatorPanel({
+  onClose
+}) {
+  const [item, setItem] = useState(null);
+  const [rate, setRate] = useState(1);
+  const itemsList = Object.keys(PRODUCER_OF).sort((a, b) => resTierRank(a) - resTierRank(b) || (a < b ? -1 : 1));
+  const res = item ? computeProductionChain(item, rate > 0 ? rate : 0) : null;
+  const chip = k => {
+    const ik = SPRITES_ENABLED ? itemSpriteKey(k) : null;
+    const d = ik && SPRITE_DATA[ik];
+    return d ? React.createElement("img", {
+      className: "inv-ico",
+      src: d,
+      alt: RES_SHORT[k] || k
+    }) : null;
+  };
+  const bRows = res ? Object.keys(res.buildings).sort((a, b) => calcBtierRank(a) - calcBtierRank(b) || (BUILDINGS[a].name < BUILDINGS[b].name ? -1 : 1)) : [];
+  const rawRows = res ? Object.keys(res.raws).sort((a, b) => resTierRank(a) - resTierRank(b)) : [];
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "research-backdrop",
+    onClick: onClose
+  }), React.createElement("div", {
+    className: "research-panel calc-panel"
+  }, React.createElement("div", {
+    className: "rp-head"
+  }, React.createElement("span", {
+    className: "rp-title"
+  }, "🧮 ", I18N.t("Calculateur de production")), React.createElement("button", {
+    className: "rp-close",
+    onClick: onClose,
+    title: I18N.t("Fermer")
+  }, "\xD7")), React.createElement("div", {
+    className: "rp-list"
+  }, React.createElement("div", {
+    className: "pp-section-label"
+  }, I18N.t("Produire")), React.createElement("div", {
+    className: "calc-items"
+  }, itemsList.map(k => React.createElement("button", {
+    key: k,
+    className: "calc-item" + (item === k ? " on" : ""),
+    onClick: () => setItem(k),
+    title: RES_SHORT[k] || k
+  }, chip(k) || React.createElement("span", {
+    className: "ik"
+  }, RES_SHORT[k] || k)))), React.createElement("div", {
+    className: "calc-rate-row"
+  }, React.createElement("span", {
+    className: "calc-rate-lbl"
+  }, I18N.t("Débit cible /s")), React.createElement(NumField, {
+    className: "calc-rate-input",
+    value: rate,
+    onCommit: v => setRate(v)
+  })), !item ? React.createElement("div", {
+    className: "pp-empty"
+  }, I18N.t("Choisissez un item à produire.")) : React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "calc-target"
+  }, chip(item), React.createElement("b", null, fmtRateSci(rate) + " " + (RES_SHORT[item] || item) + " /s")), React.createElement("div", {
+    className: "calc-power",
+    title: I18N.t("Consommation électrique totale de la chaîne (puissance nominale)")
+  }, "⚡ " + fmtPower(res.power)), React.createElement("div", {
+    className: "pp-section-label"
+  }, I18N.t("Bâtiments nécessaires")), bRows.length === 0 ? React.createElement("div", {
+    className: "pp-empty"
+  }, "—") : React.createElement("div", {
+    className: "calc-blds"
+  }, bRows.map(id => {
+    const sk = SPRITES_ENABLED ? buildingSpriteKey(id) : null;
+    const sd = sk && SPRITE_DATA[sk];
+    const cnt = res.buildings[id];
+    return React.createElement("div", {
+      className: "calc-bld",
+      key: id
+    }, React.createElement("span", {
+      className: "calc-bld-name"
+    }, sd && React.createElement("img", {
+      className: "inv-ico",
+      src: sd,
+      alt: ""
+    }), BUILDINGS[id].name), React.createElement("span", {
+      className: "calc-bld-cnt",
+      title: I18N.t("Charge réelle (×) et nombre de bâtiments à poser (arrondi au supérieur)")
+    }, "×" + fmtSig(cnt) + " → " + Math.ceil(cnt - 1e-9)));
+  })), rawRows.length > 0 && React.createElement("div", {
+    className: "pp-section-label"
+  }, I18N.t("Ressources de base à fournir /s")), rawRows.length > 0 && React.createElement("div", {
+    className: "calc-raws"
+  }, rawRows.map(k => React.createElement("span", {
+    className: "calc-raw",
+    key: k
+  }, chip(k), (RES_SHORT[k] || k) + " " + fmtRateSci(res.raws[k]) + "/s")))))));
+}
 // Panneau Production : prod / conso / net par ressource + bilan énergie + transit inter-îles,
 // pour une île ou toutes. Lecture live (recalculé à chaque rendu depuis game.netFlow/energy/
 // transitFlow).
@@ -7280,6 +7472,7 @@ function Hud({
   onOpenOptions,
   onOpenHelp,
   onOpenProduction,
+  onOpenCalc,
   updateInfo
 }) {
   // Bilan « réel vs demandé » : produit (générateurs + décharge batterie) − demande totale.
@@ -7442,7 +7635,15 @@ function Hud({
       title: I18N.t("Replier l'inventaire")
     }, I18N.t("INVENTAIRE")), prodBtn, alertBtn, inv.length === 0 ? React.createElement("span", {
       className: "inv-empty"
-    }, "\u2014 vide \u2014") : items);
+    }, "\u2014 vide \u2014") : items, React.createElement("span", {
+      className: "inv-break",
+      key: "calc-br"
+    }), React.createElement("button", {
+      className: "inv-calc-btn",
+      key: "calc",
+      onClick: onOpenCalc,
+      title: I18N.t("Calculateur de production : b\u00e2timents et \u00e9lectricit\u00e9 n\u00e9cessaires pour un d\u00e9bit cible")
+    }, "\ud83e\uddee ", I18N.t("Calculateur")));
   })());
 }
 // Infos de r\u00e9paration (d\u00e9blocage de l'\u00eele suivante) \u2014 ouvert depuis le bouton \u00e0 gauche
@@ -10400,6 +10601,7 @@ function App() {
   const [slotOpen, setSlotOpen] = useState(false);
   const [energyOpen, setEnergyOpen] = useState(false);
   const [prodOpen, setProdOpen] = useState(false);
+  const [calcOpen, setCalcOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [needMode, setNeedMode] = useState(false);
   const [resPop, setResPop] = useState(null);
@@ -13410,12 +13612,15 @@ function App() {
     },
     onOpenHelp: () => setHelpOpen(true),
     onOpenProduction: () => setProdOpen(true),
+    onOpenCalc: () => setCalcOpen(true),
     alertCount: activeStockAlerts(game).length,
     onOpenAlerts: () => setAlertsOpen(true),
     updateInfo: updateInfo
   }), prodOpen && React.createElement(ProductionPanel, {
     game: game,
     onClose: () => setProdOpen(false)
+  }), calcOpen && React.createElement(CalculatorPanel, {
+    onClose: () => setCalcOpen(false)
   }), alertsOpen && React.createElement(AlertsPanel, {
     game: game,
     onGo: isl => {
