@@ -1,7 +1,7 @@
 {
-  "build": 131,
-  "version": "Alpha 11.06",
+  "build": 132,
+  "version": "Alpha 11.07",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.06 — pastille batterie sous l'électricité (HUD) (#130)"
+  "notes": "Alpha 11.07 — inventaire ouvert : tout affiché + 1 tier par ligne (#131)"
 }
