@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 133`, `GAME_VERSION = 'Alpha 11.08'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 134`, `GAME_VERSION = 'Alpha 11.09'`.** Changement
+  11.09 : **export/transit du DIESEL possible.** Le diesel était **exclu du transit inter-îles** :
+  `TRADE_RESOURCES` ne retient que les ressources portées par la **route** OU listées dans
+  `TRADE_LIQUIDS` (`['petrole','acide']`). Or `CARRIER_BY_RES.diesel === 'pipe'` (depuis 10.34) et le
+  diesel n'était pas dans `TRADE_LIQUIDS` → jamais expédiable, alors même qu'il est **stocké au port**
+  (`isPortPipe`, 10.38). Fix : **ajout de `'diesel'` à `TRADE_LIQUIDS`** → il entre dans
+  `TRADE_RESOURCES` et le transit/commerce (qui lit/écrit directement le port pour toute ressource)
+  le gère sans autre changement. De plus, `tradePriorityFor` **réconcilie** désormais la liste de
+  priorité en mémoire (ajoute les ressources transitables apparues après sa création) pour que le
+  diesel soit aussi transité en mode Priorité dans les **parties déjà en cours** (le `loadSave`
+  réconciliait déjà au chargement, l.10813-10814). Diesel apparaît donc dans la config Transit du Port
+  (seuil/cible/interdit) et les flux. Validé : `node --check` (6 blocs) + rendu Chromium (diesel ∈
+  TRADE_RESOURCES, isPortPipe, 0 erreur). Changement
   11.08 : **pose de jonction LIBRE (fin des refus géométriques) + vérif sprites jonction.** (1) **Bug :
   « impossible de poser une jonction ici ».** `tryPlaceJunction` refusait la pose sur une tuile vide qui
   ne **touchait aucun réseau infra adjacent** (toast « ❌ Doit toucher un réseau ») ou quand le porteur
