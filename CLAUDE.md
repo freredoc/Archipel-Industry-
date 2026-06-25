@@ -17,7 +17,12 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 143`, `GAME_VERSION = 'Alpha 11.18'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 144`, `GAME_VERSION = 'Alpha 11.19'`.** Changement
+  11.19 : **calculateur — items limités aux ressources débloquées.** `CalculatorPanel` reçoit `game`
+  et filtre `itemsList` via `unlockedResourceSet(game)` (ressources produites par un bâtiment débloqué
+  par la recherche) → la grille « Produire » ne montre QUE les ressources débloquées (cohérent avec
+  inventaire/port). Ex. début de partie = 5 items au lieu des 27 produisibles. Prop `game` passée au
+  rendu. Validé : `node --check` (6 blocs) + Chromium (5 items en début de partie, 0 erreur). Changement
   11.18 : **calculateur de production intégré.** Nouveau bouton **« 🧮 Calculateur »** sous l'inventaire
   ouvert (HUD) → ouvre `CalculatorPanel`. L'utilisateur choisit un **item** (grille de sprites, 27 items
   produisibles) + un **débit cible /s** (`NumField`) ; le jeu déroule **toute la chaîne** : helper

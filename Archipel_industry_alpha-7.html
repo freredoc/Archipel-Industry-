@@ -4202,8 +4202,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 143;
-const GAME_VERSION = 'Alpha 11.18';
+const GAME_BUILD = 144;
+const GAME_VERSION = 'Alpha 11.19';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -7157,11 +7157,15 @@ function computeProductionChain(item, rate) {
 // l'ensemble des bâtiments nécessaires (charge réelle), les ressources de base à fournir et
 // la consommation électrique totale. Lecture pure (n'affecte pas la partie).
 function CalculatorPanel({
+  game,
   onClose
 }) {
   const [item, setItem] = useState(null);
   const [rate, setRate] = useState(1);
-  const itemsList = Object.keys(PRODUCER_OF).sort((a, b) => resTierRank(a) - resTierRank(b) || (a < b ? -1 : 1));
+  // On ne propose QUE les ressources débloquées (produites par un bâtiment débloqué par la
+  // recherche) — cohérent avec l'inventaire/port.
+  const unlocked = unlockedResourceSet(game);
+  const itemsList = Object.keys(PRODUCER_OF).filter(k => unlocked.has(k)).sort((a, b) => resTierRank(a) - resTierRank(b) || (a < b ? -1 : 1));
   const res = item ? computeProductionChain(item, rate > 0 ? rate : 0) : null;
   const chip = k => {
     const ik = SPRITES_ENABLED ? itemSpriteKey(k) : null;
@@ -13620,6 +13624,7 @@ function App() {
     game: game,
     onClose: () => setProdOpen(false)
   }), calcOpen && React.createElement(CalculatorPanel, {
+    game: game,
     onClose: () => setCalcOpen(false)
   }), alertsOpen && React.createElement(AlertsPanel, {
     game: game,
