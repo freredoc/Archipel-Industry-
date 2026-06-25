@@ -1,7 +1,7 @@
 {
-  "build": 123,
-  "version": "Alpha 10.98",
+  "build": 124,
+  "version": "Alpha 10.99",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 10.98 — fix freeze pose (Copier) + calibrage réel + bouton alerte + fonderie or→électronique (#122)"
+  "notes": "Alpha 10.99 — fix amélioration réseau (jonctions) + thème plaque métal bleue (#123)"
 }
