@@ -4175,8 +4175,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 136;
-const GAME_VERSION = 'Alpha 11.11';
+const GAME_BUILD = 137;
+const GAME_VERSION = 'Alpha 11.12';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4230,6 +4230,41 @@ function fmtRate(v) {
 // Débit /s pour les panneaux Production/Réseaux : notation scientifique (1,5e5…) dès 1e5
 // pour compacter les gros débits ; décimales fines en dessous (comme fmtRate).
 const fmtRateSci = v => Math.abs(v) >= 1e5 ? fmtInt(v, 1e5) : fmtRate(v);
+// Mantisse : entier si rond, sinon jusqu'à 2 décimales (virgule décimale française).
+const fmtSig = v => {
+  const r = Math.round(v * 100) / 100;
+  return Number.isInteger(r) ? String(r) : String(r).replace('.', ',');
+};
+// Puissance (donnée en kW) avec unité adaptée à l'ampleur : kW < 1000, MW < 1e6, GW au-delà.
+// Le signe est conservé. Renvoie la valeur + l'unité (ex. « 1,5 MW », « 4 GW », « 512 kW »).
+function fmtPower(kw) {
+  const a = Math.abs(kw);
+  if (a >= 1e6) return fmtSig(kw / 1e6) + ' GW';
+  if (a >= 1e3) return fmtSig(kw / 1e3) + ' MW';
+  return Math.round(kw) + ' kW';
+}
+// Énergie stockée (donnée en kWh) : kWh < 1000, MWh < 1e6, GWh au-delà.
+function fmtEnergy(kwh) {
+  const a = Math.abs(kwh);
+  if (a >= 1e6) return fmtSig(kwh / 1e6) + ' GWh';
+  if (a >= 1e3) return fmtSig(kwh / 1e3) + ' MWh';
+  return Math.round(kwh) + ' kWh';
+}
+// Paire « charge / capacité » (kWh) partageant une SEULE unité (celle de la capacité) pour
+// rester lisible : ex. « 0,5 / 20 MWh ».
+function fmtEnergyPair(stored, cap) {
+  const a = Math.abs(cap);
+  let div = 1,
+    u = 'kWh';
+  if (a >= 1e6) {
+    div = 1e6;
+    u = 'GWh';
+  } else if (a >= 1e3) {
+    div = 1e3;
+    u = 'MWh';
+  }
+  return fmtSig(stored / div) + ' / ' + fmtSig(cap / div) + ' ' + u;
+}
 const UPGRADE_SCALE = 2.7;
 const upgradeMult = upg => Math.pow(2, upg || 0);
 function repairCost(n) {
@@ -7102,9 +7137,9 @@ function ProductionPanel({
     className: "prod-body"
   }, React.createElement("div", {
     className: "prod-energy"
-  }, React.createElement("span", null, I18N.t("⚡ Prod "), fmtPort(enP), " kW"), React.createElement("span", null, I18N.t("Conso "), fmtPort(enD), " kW"), React.createElement("span", {
+  }, React.createElement("span", null, I18N.t("⚡ Prod "), fmtPower(enP)), React.createElement("span", null, I18N.t("Conso "), fmtPower(enD)), React.createElement("span", {
     className: 'pe-net ' + (enN >= 0 ? 'ok' : 'bad')
-  }, I18N.t("Net "), enN >= 0 ? '+' : '', fmtPort(enN), " kW")), React.createElement("div", {
+  }, I18N.t("Net "), enN >= 0 ? '+' : '', fmtPower(enN))), React.createElement("div", {
     className: "prod-table"
   }, React.createElement("div", {
     className: "prod-row prod-head"
@@ -7304,7 +7339,7 @@ function Hud({
     className: "k"
   }, "\u26A1"), React.createElement("span", {
     className: "v"
-  }, net >= 0 ? '+' : '', fmtInt(net), " kW")), accPct != null && React.createElement("div", {
+  }, net >= 0 ? '+' : '', fmtPower(net))), accPct != null && React.createElement("div", {
     className: "stock battery" + (accPct <= 15 ? ' deficit' : ' ok'),
     title: "Charge des accumulateurs de l'\xEEle \u2014 cliquer pour g\xE9rer l'\xE9nergie",
     onClick: onEnergy
@@ -7600,8 +7635,8 @@ function BuildingDetailModal({
   if (b.terrains && b.terrains.length) addRow(I18N.t('Terrain'), b.terrains.map(t => TERR_LABEL[t] || t).join(', '));
   if (b.inputs && Object.keys(b.inputs).length) addRow(I18N.t('Entrées'), resChips(b.inputs, true).concat(I18N.t(' /s')), true);
   if (Object.keys(outMat).length) addRow(I18N.t('Sorties'), resChips(outMat, true).concat(I18N.t(' /s')), true);
-  if (b.power > 0) addRow(I18N.t('Conso. élec.'), b.power + ' kW');
-  if (energyOut > 0) addRow(I18N.t('Prod. élec.'), energyOut + ' kW', true);
+  if (b.power > 0) addRow(I18N.t('Conso. élec.'), fmtPower(b.power));
+  if (energyOut > 0) addRow(I18N.t('Prod. élec.'), fmtPower(energyOut), true);
   if (b.accumulator) addRow(I18N.t('Stockage'), I18N.t('batterie (élec.)'));
   if (b.exclusiveIsland != null) addRow(I18N.t('Exclusif'), I18N.t('île ') + b.exclusiveIsland);
   return React.createElement(React.Fragment, null, React.createElement("div", {
@@ -8134,7 +8169,7 @@ function InfoPanel({
       className: "lbl"
     }, I18N.t("Sortie")), React.createElement("span", {
       className: "val io"
-    }, "⚡ " + fmtRate(NUC_POWER * upMult * realFrac) + " kW")), React.createElement("div", {
+    }, "⚡ " + fmtPower(NUC_POWER * upMult * realFrac))), React.createElement("div", {
       className: "ip-row ip-theo"
     }, React.createElement("span", {
       className: "lbl"
@@ -8146,7 +8181,7 @@ function InfoPanel({
       className: "lbl"
     }, I18N.t("Prod. théorique")), React.createElement("span", {
       className: "val io"
-    }, "⚡ " + fmtRate(NUC_POWER * upMult * frac) + " kW")), React.createElement("div", {
+    }, "⚡ " + fmtPower(NUC_POWER * upMult * frac))), React.createElement("div", {
       className: "ip-nuc-irr"
     }, React.createElement("div", {
       className: "ip-nuc-irr-hd"
@@ -8198,7 +8233,7 @@ function InfoPanel({
     const hasMat = !(chips.length === 1 && chips[0] === '—');
     const eOut = (b.outputs.energie_kw || 0) * m;
     if (eOut > 0) {
-      const elec = '⚡ ' + fmtRate(eOut) + ' kW';
+      const elec = '⚡ ' + fmtPower(eOut);
       return hasMat ? chips.concat(I18N.t(' /s · ') + elec) : [elec];
     }
     return chips.concat(I18N.t(' /s'));
@@ -8220,7 +8255,7 @@ function InfoPanel({
     const cap = accCapacity(bld);
     const st = Math.max(0, Math.min(cap, bld.stored || 0));
     const pct = cap > 0 ? Math.round(100 * st / cap) : 0;
-    return '🔋 ' + fmtInt(st) + ' / ' + fmtInt(cap) + I18N.t(' kWh · ') + pct + '%';
+    return '🔋 ' + fmtEnergyPair(st, cap) + ' · ' + pct + '%';
   })())), b.accumulator && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
@@ -8253,13 +8288,13 @@ function InfoPanel({
     // phase/valeur stockée sur le bâtiment) puis la plage prévue min→max.
     if (b.sigmoid) {
       const cur = (b.sigmoid.base + b.sigmoid.amp * (1 + Math.sin(2 * Math.PI * (bld.sigmoidT || 0) / b.sigmoid.period)) / 2) * mult;
-      return fmtRate(cur) + I18N.t(' kW · prévu ') + fmtRate(b.sigmoid.base * mult) + '→' + fmtRate((b.sigmoid.base + b.sigmoid.amp) * mult) + ' kW';
+      return fmtPower(cur) + I18N.t(' · prévu ') + fmtPower(b.sigmoid.base * mult) + '→' + fmtPower((b.sigmoid.base + b.sigmoid.amp) * mult);
     }
     if (b.randomP) {
       const cur = (bld.randomPower != null ? bld.randomPower : (b.randomP.min + b.randomP.max) / 2) * mult;
-      return fmtRate(cur) + I18N.t(' kW · prévu ') + fmtRate(b.randomP.min * mult) + '→' + fmtRate(b.randomP.max * mult) + ' kW';
+      return fmtPower(cur) + I18N.t(' · prévu ') + fmtPower(b.randomP.min * mult) + '→' + fmtPower(b.randomP.max * mult);
     }
-    return fmtRate((b.power || 0) * mult) + ' kW';
+    return fmtPower((b.power || 0) * mult);
   })())), b.antenna && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
@@ -8437,11 +8472,11 @@ function UpgradePanel({
     className: "lbl"
   }, "\xC9lec."), React.createElement("span", {
     className: "cur"
-  }, fmtInt((b.power || 0) * mult), " kW"), React.createElement("span", {
+  }, fmtPower((b.power || 0) * mult)), React.createElement("span", {
     className: "arr"
   }, "\u2192"), React.createElement("span", {
     className: "nxt"
-  }, fmtInt((b.power || 0) * nextMult), " kW"))), React.createElement("div", {
+  }, fmtPower((b.power || 0) * nextMult)))), React.createElement("div", {
     className: "up-cost"
   }, React.createElement("span", {
     className: "lbl"
@@ -8926,7 +8961,7 @@ function EnergyPanel({
     className: "pp-note"
   }, "⚡ L'\xE9lectricit\xE9 circule par r\xE9seau de c\xE2bles : chaque r\xE9seau c\xE2ble est un sous-r\xE9seau \xE9lectrique distinct (les g\xE9n\xE9rateurs, consommateurs et accumulateurs qu'il relie se partagent l'\xE9nergie). Le d\xE9bit du c\xE2ble (V1, V2…) borne la puissance transmissible : montez-le si un r\xE9seau sature. Les totaux ci-dessous additionnent tous les r\xE9seaux de l'\xEEle."), React.createElement("div", {
     className: "ep-stats"
-  }, statRow(I18N.t("Production (g\xE9n\xE9rateurs)"), fmtInt(gross) + " kW"), battery > 0.5 && statRow(I18N.t("Batterie (d\xE9charge)"), "+" + fmtInt(battery) + " kW", "var(--green)"), statRow(I18N.t("Demande totale"), fmtInt(dem) + " kW"), cut > 0.5 && statRow(I18N.t("Demande non servie"), "-" + fmtInt(cut) + " kW", '#ff8079'), statRow(I18N.t("Bilan r\xE9el"), (netE >= 0 ? '+' : '') + fmtInt(netE) + " kW", netE < -1e-6 ? '#ff8079' : 'var(--green)'), accPct != null && statRow(I18N.t("Accumulateurs"), fmtInt(accStored) + " / " + fmtInt(accCap) + I18N.t(" kWh \xB7 ") + accPct + "%"), accPct != null && React.createElement("div", {
+  }, statRow(I18N.t("Production (g\xE9n\xE9rateurs)"), fmtPower(gross)), battery > 0.5 && statRow(I18N.t("Batterie (d\xE9charge)"), "+" + fmtPower(battery), "var(--green)"), statRow(I18N.t("Demande totale"), fmtPower(dem)), cut > 0.5 && statRow(I18N.t("Demande non servie"), "-" + fmtPower(cut), '#ff8079'), statRow(I18N.t("Bilan r\xE9el"), (netE >= 0 ? '+' : '') + fmtPower(netE), netE < -1e-6 ? '#ff8079' : 'var(--green)'), accPct != null && statRow(I18N.t("Accumulateurs"), fmtEnergyPair(accStored, accCap) + " \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
     className: "ep-bar",
     key: "bar"
   }, React.createElement("i", {
@@ -8957,7 +8992,7 @@ function EnergyPanel({
     className: "ep-pos"
   }, "(", cc.r, ",", cc.c, ")"), React.createElement("span", {
     className: "ep-pow"
-  }, fmtInt(cc.power), " kW"), React.createElement("span", {
+  }, fmtPower(cc.power)), React.createElement("span", {
     className: "pp-c-pri"
   }, React.createElement("button", {
     disabled: i === consumers.length - 1,
@@ -9209,7 +9244,7 @@ function NetworkPanel({
   }, I18N.t("Demande min→max")), React.createElement("span", {
     className: "val io",
     title: I18N.t("Plage de consommation : les b\xE2timents \xE0 conso sigmo\xEFde/al\xE9atoire font varier la demande \xE9lec. Dimensionnez la production pour le max.")
-  }, fmtPort(wi.demandMin) + ' → ' + fmtPort(wi.demandMax) + ' kW')), saturatedNet && React.createElement("div", {
+  }, fmtPower(wi.demandMin) + ' → ' + fmtPower(wi.demandMax))), saturatedNet && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
@@ -9225,14 +9260,14 @@ function NetworkPanel({
     className: "lbl"
   }, I18N.t("Production")), React.createElement("span", {
     className: "val io"
-  }, fmtPort(elProd) + ' kW')), showWireAcc && React.createElement("div", {
+  }, fmtPower(elProd))), showWireAcc && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
   }, I18N.t("R\xE9serve")), React.createElement("span", {
     className: "val io",
     title: I18N.t("\xC9nergie stock\xE9e dans les accumulateurs branch\xE9s sur ce r\xE9seau c\xE2ble (charge / capacit\xE9).")
-  }, '🔋 ' + fmtPort(wi.accStored) + ' / ' + fmtPort(wi.accCap) + I18N.t(' kWh \xB7 ') + Math.round(wi.accStored / wi.accCap * 100) + '%')), isWire && wi && (cappedByThroughput || prodDeficit) && React.createElement("div", {
+  }, '🔋 ' + fmtEnergyPair(wi.accStored, wi.accCap) + ' \xB7 ' + Math.round(wi.accStored / wi.accCap * 100) + '%')), isWire && wi && (cappedByThroughput || prodDeficit) && React.createElement("div", {
     className: "ip-row" + (cappedByThroughput ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
@@ -9241,7 +9276,7 @@ function NetworkPanel({
     style: {
       color: '#ff8079'
     }
-  }, fmtPort(elDeliver) + ' kW')), isWire && cappedByThroughput && React.createElement("div", {
+  }, fmtPower(elDeliver))), isWire && cappedByThroughput && React.createElement("div", {
     className: "ip-note",
     style: {
       color: '#ffcf6b',
