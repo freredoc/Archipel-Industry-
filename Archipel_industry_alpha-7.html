@@ -438,7 +438,9 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
    Énergie `.ep-stats`, cartes Aide `.help-card`, champs `NumField`, priorité Haute/Normale/Basse…)
    utilisent `var(--panel)`/`var(--panel-2)`/`var(--line)` → ils deviennent gris d'un coup. Les
    accents de SÉLECTION (jaune/bleu/violet/vert, codés en dur) restent pour distinguer l'état actif. */
-body.theme-inox{--panel:#262931;--panel-2:#2f323b;--line:#474c57;--ink-dim:#cbd0d9;--ink-faint:#aeb3bd;}
+body.theme-inox{--panel:#262931;--panel-2:#2f323b;--line:#474c57;--ink-dim:#d6dae2;--ink-faint:#bcc1cb;}
+/* Lisibilité : ombre portée sur le texte des panneaux inox pour le détacher de la tôle larmée. */
+body.theme-inox .hud,body.theme-inox .research-panel,body.theme-inox .slot-panel,body.theme-inox .tip-popup,body.theme-inox .mode-modal,body.theme-inox .info-panel,body.theme-inox .toolbar,body.theme-inox .build-panel{text-shadow:0 1px 2px rgba(0,0,0,.55);}
 /* TOUS les panneaux/barres (haut, modaux, tooltips, fiche bâtiment, barre d'actions) = MÊME fond
    que le menu bâtiment : tôle larmée inox légère (`--tex-inox-leger` repeat) + cadre inox SANS `fill`
    → la texture « plaque » reste visible partout. Les cartes/boutons internes restent gris par-dessus
@@ -683,6 +685,17 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-close{background:none;border:none;color:var(--ink-faint);font-size:1.1rem;cursor:pointer;
   line-height:1;padding:0 2px;}
 .ip-close:hover{color:var(--ink);}
+/* Bouton de fermeture = petite CROIX dessinée (sprite-like, pixelisée), cohérente thème bleu + inox.
+   Le glyphe « × » du texte est masqué (font-size:0), la croix est tracée en pseudo-éléments. */
+.rp-close,.slot-close,.ip-close{position:relative;width:24px;height:24px;padding:0;margin-left:auto;
+  font-size:0;background:var(--panel-2);border:1px solid var(--line);border-radius:5px;flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;image-rendering:pixelated;}
+.rp-close::before,.rp-close::after,.slot-close::before,.slot-close::after,.ip-close::before,.ip-close::after{
+  content:"";position:absolute;top:50%;left:50%;width:13px;height:2px;background:var(--ink-dim);}
+.rp-close::before,.slot-close::before,.ip-close::before{transform:translate(-50%,-50%) rotate(45deg);}
+.rp-close::after,.slot-close::after,.ip-close::after{transform:translate(-50%,-50%) rotate(-45deg);}
+.rp-close:hover,.slot-close:hover,.ip-close:hover{background:rgba(255,59,48,.16);border-color:var(--red);}
+.rp-close:hover::before,.rp-close:hover::after,.slot-close:hover::before,.slot-close:hover::after,.ip-close:hover::before,.ip-close:hover::after{background:#ff6a60;}
 .ip-rows{display:flex;flex-direction:column;gap:5px;margin-bottom:11px;}
 .ip-row{display:flex;justify-content:space-between;gap:10px;font-size:.76rem;}
 .ip-row .lbl{color:var(--ink-dim);text-transform:uppercase;letter-spacing:.04em;font-size:.64rem;
@@ -3666,7 +3679,10 @@ const TOOLBAR_GROUPS = [{
   ids: ['four_fer', 'four_fer_v2', 'acierie', 'four_arc_acier', 'cimenterie', 'betonniere', 'atelier_meca', 'four_arc_piece']
 }, {
   label: 'Cuivre',
-  ids: ['four_cuivre', 'four_cuivre_v2', 'cablerie', 'four_arc_cable', 'circuit', 'broyeur', 'raffineur_silicium', 'fab_processeur']
+  ids: ['four_cuivre', 'four_cuivre_v2', 'cablerie', 'four_arc_cable']
+}, {
+  label: 'Électronique',
+  ids: ['broyeur', 'raffineur_silicium', 'circuit', 'fab_processeur']
 }, {
   label: 'Plastique et chimie',
   ids: ['usine_polymere', 'raffinerie', 'distillerie']
@@ -3963,8 +3979,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 121;
-const GAME_VERSION = 'Alpha 10.96';
+const GAME_BUILD = 122;
+const GAME_VERSION = 'Alpha 10.97';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -11174,6 +11190,13 @@ function App() {
       id,
       variant: 0
     };
+    // Une centrale fraîchement posée démarre à 0 % : le joueur la branche (câble / route / eau froide)
+    // puis monte la puissance — évite la mise en sécurité immédiate faute de refroidissement.
+    if (b.nuclear) {
+      const gn = gameRef.current;
+      if (!gn.nuclearPower) gn.nuclearPower = {};
+      gn.nuclearPower[gn.currentIsland] = 0;
+    }
     if (multi) {
       for (let dr = 0; dr < h; dr++) for (let dc = 0; dc < w; dc++) {
         if (dr === 0 && dc === 0) continue;

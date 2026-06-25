@@ -17,7 +17,21 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 121`, `GAME_VERSION = 'Alpha 10.96'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 122`, `GAME_VERSION = 'Alpha 10.97'`.** Changement
+  10.97 : **4 ajustements UI/jeu.** (1) **Lisibilité inox renforcée** : `--ink-dim`/`--ink-faint`
+  encore éclaircis (`#d6dae2`/`#bcc1cb`) + **ombre portée** (`text-shadow:0 1px 2px rgba(0,0,0,.55)`)
+  sur le texte de tous les panneaux/barres inox (`.hud`/`.research-panel`/…/`.build-panel`) → le texte
+  se détache de la tôle larmée. (2) **Bouton de fermeture = petite CROIX dessinée** (sprite-like) :
+  `.rp-close`/`.slot-close`/`.ip-close` deviennent un carré 24px (fond `--panel-2`, cadre `--line`)
+  avec une croix en pseudo-éléments (`::before`/`::after` barres rotées 45°/-45°, glyphe « × » masqué
+  via `font-size:0`) ; survol rouge. Cohérent thème bleu ET inox (via variables). (3) **Centrale posée
+  démarre à 0 %** : à la pose d'un bâtiment `nuclear`, `game.nuclearPower[currentIsland]` est forcé à
+  **0** (dans `tryPlace`) → la centrale reste à l'arrêt (ne tente pas de démarrer faute de
+  refroidissement, plus de mise en sécurité immédiate) ; le joueur branche puis monte la jauge. (4)
+  **Nouvelle catégorie « Électronique »** dans le menu Bâtiment : `broyeur`/`raffineur_silicium`/
+  `circuit`/`fab_processeur` sortent de « Cuivre » (qui garde four_cuivre/_v2 + câblerie + four_arc_cable) ;
+  `fonderie_or` reste dans « Or ». CSS + data + 1 ligne de logique. Validé : `node --check` + rendu
+  Chromium (croix visible, texte lisible). Changement
   10.96 : **ressources irradiées en T4 (inventaire) + sous-catégories « Traitement ».** (1) Les 4
   matériaux **irradiés** (`acier_irradie`/`beton_arme_irradie`/`cable_irradie`/`ciment_irradie`) passent
   de `RES_TIER` t3 → **t4** ; ajout de `t4:4` à `RES_TIER_RANK` et `t4:'T4'` à `RES_TIER_LABEL` → ils
