@@ -17,7 +17,37 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 111`, `GAME_VERSION = 'Alpha 10.86'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 113`, `GAME_VERSION = 'Alpha 10.88'`.** Changement
+  10.88 : **thème « Fond inox » rendu PLEINEMENT cohérent (PROMPT_UI_INOX).** Le 10.86 mélangeait
+  les styles (cartes restées bleu foncé sur fond tôle larmée brillante). Désormais un seul thème
+  métal gris appliqué PARTOUT, via **8 nouveaux sprites `theme_inox`** inlinés en variables CSS
+  `:root` (~2,8 Ko) : `--inox-panneau` (cadre 9-slice gunmetal `#24262e`), `--inox-btn-normal/-hover/
+  -active/-off` (4 états de bouton), `--inox-onglet-actif/-inactif` (onglets, accent or), `--tex-inox-leger`
+  (tôle larmée ATTÉNUÉE 32×32 tileable). **Application (CSS pur, scopée `body.theme-inox`)** : (1)
+  **barre du haut (`.hud`) + panneaux/cartes/tooltips** (`.research-panel/.slot-panel/.tip-popup/
+  .mode-modal/.info-panel/.toolbar`) → cadre inox PLEIN (`fill`) + texte clair `#ebeef5` ; (2) **menu
+  construction (`.build-panel`)** → fond `--tex-inox-leger` repeat + cadre inox SANS `fill` (texture
+  visible) ; labels catégorie (`.tool-group-label`) en `#c8ccd2` ; (3) **cartes de bâtiment**
+  (`.build-panel .tool-btn`) = boutons inox 4 états (override du kit bleu `--btn-*`) ; (4) **boutons
+  d'action** (`.tab-btn` : Bâtiment/Réseau/Copier/Démolir/Améliorer) = boutons inox 4 états (le nom
+  garde son indice rouge/vert) ; (5) **onglets** (`.island-tab`/`.prod-tab` : Inventaire/Production +
+  îles 1-5) = sprites onglet inox (bordure 5px pour les onglets d'île compacts). Couleurs de valeurs
+  (vert/orange/rouge des ressources) conservées via les règles plus spécifiques existantes. Le thème
+  par défaut (bleu) est inchangé (toutes les règles sont sous `body.theme-inox`). `--cadre-inox`
+  (10.86) devient inutilisé (laissé). Aucune logique de jeu touchée. Validé : `node --check` OK +
+  rendu Chromium (0 erreur console, plus aucun panneau bleu). Changement
+  10.87 : **2 corrections de bugs (chasse aux bugs).** (1) **Conversion croisement→jonction sans
+  remboursement** (`tryPlaceJunction`) : poser une jonction PAR-DESSUS un réseau infra existant
+  (`tileCarrier`) écrasait `t.building` (le réseau croisé) **sans rembourser** ses matériaux ni ses
+  améliorations → perte sèche (ex. câble V3 absorbé), aggravée en Difficile où la jonction est gratuite.
+  La démolition d'une jonction ne restitue que le coût de la jonction → asymétrie. Désormais, quand on
+  convertit un croisement, l'infra écrasée est **remboursée** (`refund(ob.cost)` + `cumulativeUpgradeCost`
+  si améliorée), hors mode dev → conservation de la matière (place/démolit redevient neutre). (2)
+  **Extrapolation hors-ligne d'une île débloquée pendant l'échauffon** (`runCatchUp`, mode simplifié
+  > 1 h) : une île dont l'accès se confirme PENDANT les 300 ticks d'échantillon reçoit un **kickstart
+  ponctuel** ; son port étant absent du `baseSnap`, le débit mesuré (`kickstart/sampleTicks`) était
+  extrapolé sur les milliers de ticks restants → stocks démesurés. Garde `if (!base[isl]) continue;`
+  → les îles apparues après le snapshot ne sont plus extrapolées. Changement
   10.86 : **option « Fond bleu / Fond inox » (ambiance des panneaux).** Nouvelle préférence `ui.theme`
   (`'bleu'` défaut | `'inox'`), persistée dans `uiPrefs` (pattern complet : newGame, serialize,
   loadSave défaut+restore, state React `theme`, sync au load + à l'ouverture des options). Sélecteur
