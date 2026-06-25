@@ -454,6 +454,12 @@ body.theme-inox .tab-btn.active,body.theme-inox .tab-btn.tab-dem.active,body.the
 body.theme-inox .island-tab,body.theme-inox .prod-tab{border:5px solid transparent;border-image:var(--inox-onglet-inactif) 8 fill / 5px stretch;border-radius:0;background:none;image-rendering:pixelated;color:#c8ccd2;}
 body.theme-inox .island-tab.active,body.theme-inox .prod-tab.active{border-image:var(--inox-onglet-actif) 8 fill / 5px stretch;background:none;color:#ffe08a;}
 body.theme-inox .island-tab:hover:not(.locked){background:none;border-color:transparent;}
+/* Barre du haut en PLAQUE INOX : l'inventaire (bande sous les pastilles) passe sur tôle larmée
+   légère, et toutes les pastilles internes (Options / ? / kW / batterie / PORT / RECH / INVENTAIRE
+   / Production / chips de ressources) passent du bleu (var(--panel)/--panel-2) au gunmetal. */
+body.theme-inox .inventory{background:var(--tex-inox-leger) repeat;border-top-color:#3a3d47;border-bottom-color:#3a3d47;image-rendering:pixelated;}
+body.theme-inox .options-btn,body.theme-inox .research-btn,body.theme-inox .stock,body.theme-inox .inv-label-btn,body.theme-inox .inv-prod-btn,body.theme-inox .inv-item,body.theme-inox .inv-count{background:#2c2f38;border-color:#4a4f5a;color:#ebeef5;}
+body.theme-inox .options-btn:hover,body.theme-inox .research-btn:hover,body.theme-inox .inv-label-btn:hover,body.theme-inox .inv-prod-btn:hover,body.theme-inox .inv-item.clickable:hover{background:#363a44;}
 .opt-theme-sel{display:flex;gap:4px;flex-shrink:0;}
 .opt-theme-btn{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.82rem;color:var(--ink-dim);background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:4px 12px;cursor:pointer;}
 .opt-theme-btn.on{background:#26264e;color:var(--yellow);border-color:var(--yellow);}
@@ -3890,8 +3896,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 114;
-const GAME_VERSION = 'Alpha 10.89';
+const GAME_BUILD = 115;
+const GAME_VERSION = 'Alpha 10.90';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
