@@ -3295,6 +3295,30 @@ const BUILDINGS = {
       uranium: 1
     }
   },
+  mine_uranium_v3: {
+    name: 'Mine Uranium V3',
+    color: '#66BB6A',
+    label: 'URA3',
+    kind: 'build',
+    tier: 't3',
+    terrains: ['resource'],
+    exclusiveIsland: 5,
+    size: [1, 1],
+    power: 0,
+    randomP: {
+      min: 8,
+      max: 64
+    },
+    cost: {
+      beton_arme: 100,
+      acier: 100,
+      cable: 100,
+      element_moteur_nuc: 1
+    },
+    outputs: {
+      uranium: 32
+    }
+  },
   broyeur_uranium: {
     name: 'Broyeur Uranium V1',
     color: '#9CCC65',
@@ -3401,7 +3425,7 @@ const BUILDINGS = {
       acier: 100,
       beton_arme: 100,
       cable: 100,
-      processeur: 10
+      element_moteur_nuc: 1
     },
     outputs: {
       minerai_fer: 32
@@ -3424,7 +3448,7 @@ const BUILDINGS = {
       acier: 100,
       beton_arme: 100,
       piece_meca: 100,
-      processeur: 10
+      element_moteur_nuc: 1
     },
     outputs: {
       minerai_cuivre: 32
@@ -3447,7 +3471,7 @@ const BUILDINGS = {
       acier: 100,
       cable: 100,
       piece_meca: 100,
-      processeur: 10
+      element_moteur_nuc: 1
     },
     outputs: {
       pierre: 32
@@ -3471,7 +3495,7 @@ const BUILDINGS = {
       acier: 100,
       beton_arme: 100,
       piece_meca: 100,
-      processeur: 10
+      element_moteur_nuc: 1
     },
     outputs: {
       charbon: 32
@@ -3495,7 +3519,7 @@ const BUILDINGS = {
       acier: 100,
       beton_arme: 100,
       cable: 100,
-      processeur: 10
+      element_moteur_nuc: 1
     },
     outputs: {
       minerai_or: 4
@@ -3609,7 +3633,7 @@ const TOOLBAR_GROUPS = [{
   ids: ['jonction_route_cable', 'jonction_route_tuyau', 'jonction_cable_tuyau']
 }, {
   label: 'Extraction',
-  ids: ['mine_fer', 'mine_charbon', 'carriere', 'pompe_eau', 'mine_cuivre', 'puits_petrole', 'mine_fer_v2', 'mine_cuivre_v2', 'carriere_v2', 'mine_charbon_v2', 'mine_or', 'plateforme_petroliere', 'mine_uranium', 'mine_fer_v3', 'mine_cuivre_v3', 'carriere_v3', 'mine_charbon_v3', 'mine_or_v3']
+  ids: ['mine_fer', 'mine_charbon', 'carriere', 'pompe_eau', 'mine_cuivre', 'puits_petrole', 'mine_fer_v2', 'mine_cuivre_v2', 'carriere_v2', 'mine_charbon_v2', 'mine_or', 'plateforme_petroliere', 'mine_uranium', 'mine_fer_v3', 'mine_cuivre_v3', 'carriere_v3', 'mine_charbon_v3', 'mine_or_v3', 'mine_uranium_v3']
 }, {
   label: 'Énergie',
   ids: ['eolienne', 'centrale_charbon', 'centrale_diesel', 'eolienne_offshore', 'accumulateur']
@@ -3906,8 +3930,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 117;
-const GAME_VERSION = 'Alpha 10.92';
+const GAME_BUILD = 118;
+const GAME_VERSION = 'Alpha 10.93';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -3975,7 +3999,7 @@ function extensionCost(n) {
     beton_arme_irradie: 100 * f
   };
 }
-const isUpgradable = id => !!(BUILDINGS[id] && BUILDINGS[id].kind === 'build' && !BUILDINGS[id].nuclear && !BUILDINGS[id].antenna);
+const isUpgradable = id => !!(BUILDINGS[id] && BUILDINGS[id].kind === 'build' && !BUILDINGS[id].antenna);
 const accCapacity = bld => (BUILDINGS[bld.id] && BUILDINGS[bld.id].capacity || 512) * Math.pow(2, bld.upgrade || 0);
 function upgradeCostFactor(buildingId, level) {
   if (buildingId === 'puits_petrole' && level >= 5) {
@@ -4877,11 +4901,20 @@ function tickIsland(game, isl) {
       r = nu.r,
       c = nu.c;
     const NUC_START = 300,
+      // 5 min de sigmoïde de calibrage
       NUC_STOP = 30,
-      NUC_POWER = 8192,
+      NUC_SAFETY = 300,
+      // 5 min de mise en sécurité (manque de refroidissement)
+      NUC_POWER = 16384,
+      // ×2 (10.93)
       NUC_COOL = 256;
     const matKey = (game.nuclearConfig && game.nuclearConfig[isl]) || 'acier';
     const irrKey = matKey + '_irradie';
+    const upMult = Math.pow(2, bld.upgrade || 0);
+    const lvlRaw = game.nuclearPower && game.nuclearPower[isl] != null ? game.nuclearPower[isl] : 10;
+    const targetFrac = Math.max(0, Math.min(10, lvlRaw)) / 10; // curseur 0..100 % par paliers de 10
+    const maxPower = NUC_POWER * upMult;
+    const targetPower = maxPower * targetFrac;
     const nb = BUILDINGS[bld.id];
     const nsz = nb && nb.size || [2, 2];
     const nh = nsz[0] || 2,
@@ -4902,86 +4935,111 @@ function tickIsland(game, isl) {
       ufRoot(wireIds[0]);
       for (let i = 1; i < wireIds.length; i++) ufUnion(wireIds[0], wireIds[i]);
     }
-    const haveRoad = roadNid != null && (port['combustible_u235'] || 0) >= 1 && (port[matKey] || 0) >= 1;
     let coldNid = null;
     for (const nid of adjacentNetworksFootprint(game, isl, r, c, nw, nh, 'pipe')) {
-      if ((nets[nid] && nets[nid].pool && nets[nid].pool['eau_froide'] || 0) >= NUC_COOL) {
+      if ((nets[nid] && nets[nid].pool && nets[nid].pool['eau_froide'] || 0) > 1e-6) {
         coldNid = nid;
         break;
       }
     }
-    const inputsPresent = haveRoad && coldNid != null && wireOk;
+    const coldAvail = coldNid != null ? (nets[coldNid].pool['eau_froide'] || 0) : 0;
+    const fuelOK = roadNid != null && (port['combustible_u235'] || 0) > 1e-6 && (port[matKey] || 0) > 1e-6;
     if (bld.nucState == null) {
       bld.nucState = 'off';
       bld.nucTimer = 0;
     }
+    if (bld.nucCur == null) bld.nucCur = bld.nucState === 'running' ? targetPower : 0;
+    if (bld.nucTo == null) bld.nucTo = targetPower;
     const prevA = bld.active,
       prevD = bld.disc;
+    const sig = x => 1 / (1 + Math.exp(-12 * (Math.max(0, Math.min(1, x)) - 0.5)));
+    // Changement de cible (curseur de puissance OU amélioration) pendant marche/calibrage →
+    // recalibrage : nouvelle sigmoïde de 5 min depuis la puissance courante (« toujours 5 min »).
+    if ((bld.nucState === 'running' || bld.nucState === 'starting') && Math.abs((bld.nucTo || 0) - targetPower) > 0.5) {
+      bld.nucFrom = bld.nucCur || 0;
+      bld.nucTo = targetPower;
+      bld.nucTimer = 0;
+      bld.nucState = 'starting';
+    }
+    const curFrac = maxPower > 0 ? (bld.nucCur || 0) / maxPower : 0;
+    const needCoolNow = NUC_COOL * upMult * curFrac;
     if (bld.nucState === 'off') {
-      if (inputsPresent) {
+      // Démarre si câble + route/matières + tuyau froid alimenté, et puissance réglée > 0.
+      if (wireOk && fuelOK && coldNid != null && coldAvail > 1e-6 && targetFrac > 0) {
         bld.nucState = 'starting';
+        bld.nucFrom = 0;
+        bld.nucTo = targetPower;
+        bld.nucTimer = 0;
+      }
+      bld.nucCur = 0;
+    } else if (bld.nucState === 'safety') {
+      // Sécurité : 5 min sans rien consommer/produire, puis redémarrage automatique (calibrage 5 min).
+      bld.nucCur = 0;
+      bld.nucTimer++;
+      if (bld.nucTimer >= NUC_SAFETY) {
+        bld.nucState = 'starting';
+        bld.nucFrom = 0;
+        bld.nucTo = targetPower;
         bld.nucTimer = 0;
       }
     } else if (bld.nucState === 'starting' || bld.nucState === 'running') {
-      if (!inputsPresent) {
+      if (coldNid == null || coldAvail < needCoolNow - 1e-6) {
+        // Manque de liquide de refroidissement → mise en sécurité + notification joueur.
+        bld.nucState = 'safety';
+        bld.nucTimer = 0;
+        bld.nucCur = 0;
+        if (!game.nucNotify) game.nucNotify = [];
+        game.nucNotify.push(isl);
+      } else if (!wireOk || !fuelOK || targetFrac === 0) {
         bld.nucState = 'stopping';
+        bld.nucFrom = bld.nucCur || 0;
         bld.nucTimer = 0;
+      } else {
+        if (bld.nucState === 'starting') {
+          bld.nucCur = (bld.nucFrom || 0) + ((bld.nucTo || 0) - (bld.nucFrom || 0)) * sig(bld.nucTimer / NUC_START);
+          bld.nucTimer++;
+          if (bld.nucTimer >= NUC_START) {
+            bld.nucState = 'running';
+            bld.nucCur = bld.nucTo || 0;
+            bld.nucTimer = 0;
+          }
+        } else {
+          bld.nucCur = targetPower;
+        }
+        // Intrants ET sorties au prorata de la puissance courante × multiplicateur d'amélioration.
+        const frac = maxPower > 0 ? (bld.nucCur || 0) / maxPower : 0;
+        if (frac > 0) {
+          port['combustible_u235'] = (port['combustible_u235'] || 0) - upMult * frac;
+          port[matKey] = (port[matKey] || 0) - upMult * frac;
+          nets[coldNid].pool['eau_froide'] = (nets[coldNid].pool['eau_froide'] || 0) - NUC_COOL * upMult * frac;
+          if (roadNid != null) {
+            const irr = upMult * frac;
+            port[irrKey] = (port[irrKey] || 0) + irr;
+            if (prod) prod[irrKey] = (prod[irrKey] || 0) + irr;
+          }
+          resChanged = true;
+        }
       }
     } else if (bld.nucState === 'stopping') {
-      if (inputsPresent) {
-        bld.nucState = 'starting';
+      bld.nucCur = (bld.nucFrom || 0) * (1 - sig(bld.nucTimer / NUC_STOP));
+      bld.nucTimer++;
+      if (bld.nucTimer >= NUC_STOP) {
+        bld.nucState = 'off';
+        bld.nucCur = 0;
         bld.nucTimer = 0;
       }
     }
-    const consumeInputs = bld.nucState === 'starting' || bld.nucState === 'running';
-    if (consumeInputs && inputsPresent) {
-      port['combustible_u235'] = (port['combustible_u235'] || 0) - 1;
-      port[matKey] = (port[matKey] || 0) - 1;
-      nets[coldNid].pool['eau_froide'] = (nets[coldNid].pool['eau_froide'] || 0) - NUC_COOL;
-      resChanged = true;
-    }
-    let nucPower = 0;
-    if (bld.nucState === 'starting') {
-      const x = bld.nucTimer / NUC_START;
-      nucPower = NUC_POWER / (1 + Math.exp(-12 * (x - 0.5)));
-    } else if (bld.nucState === 'running') {
-      nucPower = NUC_POWER;
-    } else if (bld.nucState === 'stopping') {
-      const x = 1 - bld.nucTimer / NUC_STOP;
-      nucPower = NUC_POWER / (1 + Math.exp(-12 * (x - 0.5)));
-    }
+    let nucPower = bld.nucCur || 0;
     if (nucPower < 1) nucPower = 0;
     if (nucPower > 0 && wireOk) {
       energyProduced += nucPower;
       wireProd[nucWireNid] = (wireProd[nucWireNid] || 0) + nucPower;
     }
-    if (bld.nucState === 'running' && roadNid != null) {
-      port[irrKey] = (port[irrKey] || 0) + 1;
-      if (prod) prod[irrKey] = (prod[irrKey] || 0) + 1;
-      resChanged = true;
-    }
-    // Consecutive running streak (used by the "Mines V3" tech node).
+    // Série de fonctionnement (conservée, inoffensive).
     if (bld.nucState === 'running') {
       if (!game.nucRun) game.nucRun = {};
       game.nucRun[isl] = (game.nucRun[isl] || 0) + 1;
-    } else {
-      if (game.nucRun) game.nucRun[isl] = 0;
-    }
-    if (bld.nucState === 'starting') {
-      bld.nucTimer++;
-      if (bld.nucTimer >= NUC_START) {
-        bld.nucState = 'running';
-        bld.nucTimer = 0;
-      }
-    } else if (bld.nucState === 'stopping') {
-      bld.nucTimer++;
-      if (bld.nucTimer >= NUC_STOP) {
-        bld.nucState = 'off';
-        bld.nucTimer = 0;
-      }
-    } else if (bld.nucState === 'running') {
-      bld.nucTimer++;
-    }
+    } else if (game.nucRun) game.nucRun[isl] = 0;
     bld.active = bld.nucState === 'running' || bld.nucState === 'starting';
     bld.disc = !wireOk && bld.nucState === 'off';
     if (bld.active !== prevA || bld.disc !== prevD) activeChanged = true;
@@ -5982,7 +6040,7 @@ const TECH_NODES = [{
     piece_meca: 1000
   },
   unlocks: {
-    buildings: ['centrale_nucleaire', 'mine_fer_v3', 'mine_cuivre_v3', 'carriere_v3', 'mine_charbon_v3', 'mine_or_v3']
+    buildings: ['centrale_nucleaire']
   }
 }, {
   id: 25,
@@ -5998,7 +6056,7 @@ const TECH_NODES = [{
     id: 24
   }],
   unlocks: {
-    buildings: ['usine_moteur_nuc']
+    buildings: ['usine_moteur_nuc', 'mine_fer_v3', 'mine_cuivre_v3', 'carriere_v3', 'mine_charbon_v3', 'mine_or_v3', 'mine_uranium_v3']
   }
 }, {
   id: 26,
@@ -6008,7 +6066,7 @@ const TECH_NODES = [{
   reqs: [{
     t: 'produce',
     res: 'element_moteur_nuc',
-    n: 10
+    n: 1000
   }],
   unlocks: {
     buildings: ['antenne'],
@@ -7341,6 +7399,7 @@ function InfoPanel({
   onUpgradeAll,
   onDowngrade,
   onSetNuclear,
+  onSetNucPower,
   onSetFluxPri,
   onRepair,
   onExtend
@@ -7656,24 +7715,37 @@ function InfoPanel({
     className: "ip-rows"
   }, b.nuclear && (() => {
     const matKey = (game.nuclearConfig && game.nuclearConfig[currentIsland]) || 'acier';
-    const NUC_MATS = [['ciment', 'Ciment'], ['acier', 'Acier'], ['beton_arme', 'Béton armé'], ['cable', 'Câble']];
+    const NUC_MATS = [['acier', 'Acier'], ['beton_arme', 'Béton armé'], ['cable', 'Câble']];
     const stLabels = {
       off: 'Arrêtée',
-      starting: 'Démarrage…',
+      starting: 'Calibrage…',
       running: 'En marche',
-      stopping: 'Arrêt…'
+      stopping: 'Arrêt…',
+      safety: '⚠ Sécurité'
     };
     const stColors = {
       off: 'var(--ink-dim)',
       starting: 'var(--orange)',
       running: 'var(--green)',
-      stopping: 'var(--orange)'
+      stopping: 'var(--orange)',
+      safety: 'var(--red)'
     };
     const st = bld.nucState || 'off';
     const NUC_START = 300,
-      NUC_STOP = 30;
+      NUC_STOP = 30,
+      NUC_SAFETY = 300,
+      NUC_POWER = 16384,
+      NUC_COOL = 256;
+    const upMult = Math.pow(2, upg || 0);
+    const lvl = game.nuclearPower && game.nuclearPower[currentIsland] != null ? game.nuclearPower[currentIsland] : 10;
+    const frac = Math.max(0, Math.min(10, lvl)) / 10;
+    const pct = Math.round(frac * 100);
+    const fmtN = n => {
+      const r = Math.round(n * 100) / 100;
+      return Number.isInteger(r) ? String(r) : String(r);
+    };
     let progress = '';
-    if (st === 'starting') progress = ` ${Math.round(100 * (bld.nucTimer || 0) / NUC_START)}%`;else if (st === 'stopping') progress = ` ${bld.nucTimer || 0}/${NUC_STOP}s`;
+    if (st === 'starting') progress = ` ${Math.round(100 * (bld.nucTimer || 0) / NUC_START)}%`;else if (st === 'stopping') progress = ` ${bld.nucTimer || 0}/${NUC_STOP}s`;else if (st === 'safety') progress = ` ${Math.ceil((NUC_SAFETY - (bld.nucTimer || 0)) / 60)} min`;
     return React.createElement(React.Fragment, null, React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
@@ -7684,18 +7756,35 @@ function InfoPanel({
         color: stColors[st]
       }
     }, stLabels[st] + progress)), React.createElement("div", {
+      className: "ip-nuc-sel"
+    }, React.createElement("span", {
+      className: "ip-nuc-sel-lbl"
+    }, "Puissance" + (upg > 0 ? ` · Nv.${upg} (×${upMult})` : '')), React.createElement("div", {
+      className: "ip-nuc-mats"
+    }, React.createElement("button", {
+      className: "ip-nuc-mat",
+      disabled: lvl <= 0,
+      onClick: () => onSetNucPower && onSetNucPower(currentIsland, lvl - 1)
+    }, "−"), React.createElement("button", {
+      className: "ip-nuc-mat on",
+      title: "Recalibrage 5 min à chaque changement"
+    }, pct + " %"), React.createElement("button", {
+      className: "ip-nuc-mat",
+      disabled: lvl >= 10,
+      onClick: () => onSetNucPower && onSetNucPower(currentIsland, lvl + 1)
+    }, "+"))), React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
     }, "Entrées"), React.createElement("span", {
       className: "val"
-    }, "1 comb.U235 + 256 eau froide + 1 ", RES_SHORT[matKey] || matKey, " /s")), React.createElement("div", {
+    }, fmtN(upMult * frac) + " comb.U235 + " + fmtN(NUC_COOL * upMult * frac) + " eau froide + " + fmtN(upMult * frac) + " ", RES_SHORT[matKey] || matKey, " /s")), React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
     }, "Sortie"), React.createElement("span", {
       className: "val io"
-    }, "2048 kW + 1 ", RES_SHORT[matKey + '_irradie'] || matKey + '_irradie', " /s")), React.createElement("div", {
+    }, "⚡ " + fmtRate(NUC_POWER * upMult * frac) + " kW + " + fmtN(upMult * frac) + " ", RES_SHORT[matKey + '_irradie'] || matKey + '_irradie', " /s")), React.createElement("div", {
       className: "ip-nuc-sel"
     }, React.createElement("span", {
       className: "ip-nuc-sel-lbl"
@@ -9697,6 +9786,13 @@ function App() {
         4: 'acier',
         5: 'acier'
       },
+      nuclearPower: {
+        1: 10,
+        2: 10,
+        3: 10,
+        4: 10,
+        5: 10
+      },
       nucRun: {
         1: 0,
         2: 0,
@@ -9908,6 +10004,7 @@ function App() {
           if (BUILDINGS[b.id] && BUILDINGS[b.id].nuclear) {
             pl.ns = b.nucState || 'off';
             pl.nt = b.nucTimer || 0;
+            pl.nc = b.nucCur || 0;
           }
           if (b.fluxPri === 'haute' || b.fluxPri === 'basse') pl.fp = b.fluxPri;
           placements.push(pl);
@@ -10019,6 +10116,9 @@ function App() {
       },
       nuclearConfig: {
         ...g.nuclearConfig
+      },
+      nuclearPower: {
+        ...g.nuclearPower
       },
       repairsCount: {
         ...g.repairsCount
@@ -10326,6 +10426,7 @@ function App() {
           if (BUILDINGS[p.b].nuclear) {
             t.building.nucState = p.ns || 'off';
             t.building.nucTimer = p.nt || 0;
+            t.building.nucCur = p.nc || 0;
           }
           if (p.fp === 'haute' || p.fp === 'basse') t.building.fluxPri = p.fp;
           // Re-create occupancy refs for multi-tile buildings.
@@ -10395,9 +10496,20 @@ function App() {
       4: 'acier',
       5: 'acier'
     };
-    const NUC_MATS = ['ciment', 'acier', 'beton_arme', 'cable'];
+    const NUC_MATS = ['acier', 'beton_arme', 'cable'];
     if (data.nuclearConfig) for (const id in data.nuclearConfig) {
       if (NUC_MATS.indexOf(data.nuclearConfig[id]) !== -1) g.nuclearConfig[+id] = data.nuclearConfig[id];
+    }
+    g.nuclearPower = {
+      1: 10,
+      2: 10,
+      3: 10,
+      4: 10,
+      5: 10
+    };
+    if (data.nuclearPower) for (const id in data.nuclearPower) {
+      const pv = data.nuclearPower[id] | 0;
+      if (pv >= 0 && pv <= 10) g.nuclearPower[+id] = pv;
     }
     g.nucRun = {
       1: 0,
@@ -11515,9 +11627,18 @@ function App() {
   }
   function setNuclearConfig(islandId, mat) {
     const g = gameRef.current;
-    const NUC_MATS = ['ciment', 'acier', 'beton_arme', 'cable'];
+    const NUC_MATS = ['acier', 'beton_arme', 'cable'];
     if (NUC_MATS.indexOf(mat) === -1) return;
     g.nuclearConfig[islandId] = mat;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  function setNuclearPower(islandId, lvl) {
+    const g = gameRef.current;
+    const v = Math.max(0, Math.min(10, lvl | 0));
+    if (!g.nuclearPower) g.nuclearPower = {};
+    g.nuclearPower[islandId] = v;
     bumpHud();
     markDirty();
     scheduleSave();
@@ -12594,6 +12715,11 @@ function App() {
             setResearchPending(true);
           }
         }
+        if (g.nucNotify && g.nucNotify.length) {
+          const isl = g.nucNotify.shift();
+          showToast(`☢️ Centrale Île ${isl} en SÉCURITÉ — manque de refroidissement (redémarrage auto dans 5 min)`, 'var(--red)');
+          g.nucNotify.length = 0;
+        }
         g.tickAcc -= 1;
         guard++;
       }
@@ -12849,6 +12975,7 @@ function App() {
     onUpgradeAll: (r, c) => upgradeAllSameType(r, c),
     onDowngrade: (r, c) => tryDowngrade(r, c),
     onSetNuclear: setNuclearConfig,
+    onSetNucPower: setNuclearPower,
     onSetFluxPri: setFluxPri,
     onRepair: (r, c) => tryRepair(r, c),
     onExtend: (r, c) => tryExtend(r, c)
