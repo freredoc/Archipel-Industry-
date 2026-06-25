@@ -1,7 +1,7 @@
 {
-  "build": 141,
-  "version": "Alpha 11.16",
+  "build": 142,
+  "version": "Alpha 11.17",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.16 — panneau Port : mention de l'île reliée par le transit (#140)"
+  "notes": "Alpha 11.17 — centrale enrichissement U235 : temps de fabrication ×4 (#141)"
 }
