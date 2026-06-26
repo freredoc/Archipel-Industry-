@@ -3205,7 +3205,7 @@ const BUILDINGS = {
     },
     power: 0,
     inputs: {
-      diesel: 4
+      diesel: 3
     },
     outputs: {
       energie_kw: 512
@@ -4270,8 +4270,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 164;
-const GAME_VERSION = 'Alpha 11.39';
+const GAME_BUILD = 168;
+const GAME_VERSION = 'Alpha 11.43';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5268,8 +5268,8 @@ function tickIsland(game, isl) {
       NUC_STOP = 30,
       NUC_SAFETY = 300,
       // 5 min de mise en sécurité (manque de refroidissement)
-      NUC_POWER = 4096,
-      // 4 MW à V1 niveau 1 / 100 % (×2^upgrade ensuite)
+      NUC_POWER = 6144,
+      // 6 MW à V1 niveau 1 / 100 % (×2^upgrade ensuite)
       NUC_COOL = 256;
     const matKey = (game.nuclearConfig && game.nuclearConfig[isl]) || 'acier';
     const irrKey = matKey + '_irradie';
@@ -8589,7 +8589,7 @@ function InfoPanel({
     const NUC_START = 300,
       NUC_STOP = 30,
       NUC_SAFETY = 300,
-      NUC_POWER = 4096,
+      NUC_POWER = 6144,
       NUC_COOL = 256;
     const upMult = Math.pow(2, upg || 0);
     const lvl = game.nuclearPower && game.nuclearPower[currentIsland] != null ? game.nuclearPower[currentIsland] : 10;
@@ -9623,7 +9623,6 @@ function ResPopover({
     prod,
     conso
   } = resourceRates(game, currentIsland, res);
-  const net = prod - conso;
   // Flux de transit de cette ressource pour l'île courante : export (sortant) / import (entrant).
   let exp = 0,
     imp = 0;
@@ -9633,6 +9632,8 @@ function ResPopover({
     const rr = (_tf[key] || {})[res] || 0;
     if (+parts[0] === currentIsland) exp += rr;else if (+parts[1] === currentIsland) imp += rr;
   }
+  // Bilan net RÉEL du stock : production − consommation − export (part) + import (reçu).
+  const net = prod - conso - exp + imp;
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "research-backdrop",
     style: {
@@ -13418,19 +13419,25 @@ function App() {
       const sz = buildingSize(bid);
       drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime, t.building.inFac, t.building.pwrAvg);
       // Badge « ×N » cyan (coin haut-gauche) sur un bâtiment boosté par une antenne.
-      if (t.building.antennaBuff > 1 && tile >= 22) {
+      // MÊME échelle que les badges % déficit / niveau (drawInfoBadges) : même police, même
+      // padding, même rayon — pour que ×N et le numéro de niveau soient visuellement identiques.
+      if (t.building.antennaBuff > 1 && tile >= 16) {
         const bsc = Math.max(0.5, Math.min(2, (g.ui && g.ui.badgeScale) || 1));
-        const bh = Math.max(10, tile * 0.34 * bsc),
-          bw = bh * 1.5;
+        const fs = Math.max(6, Math.round(tile * 0.16 * bsc));
+        const pad = Math.max(1, tile * 0.038 * bsc);
+        const segH = fs + pad * 2;
+        const off = Math.max(1, tile * 0.04);
+        const txt = '×' + t.building.antennaBuff;
         ctx.save();
+        ctx.font = `700 ${fs}px "DM Mono",monospace`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        const bw = ctx.measureText(txt).width + pad * 2;
+        roundRectPath(ctx, x + off, y + off, bw, segH, Math.max(1, tile * 0.045 * bsc));
         ctx.fillStyle = 'rgba(38,198,218,.92)';
-        roundRectPath(ctx, x + 2, y + 2, bw, bh, Math.max(2, bh * 0.22));
         ctx.fill();
         ctx.fillStyle = '#042027';
-        ctx.font = `700 ${Math.round(bh * 0.72)}px "Barlow Condensed",sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('×' + t.building.antennaBuff, x + 2 + bw / 2, y + 2 + bh / 2 + 1);
+        ctx.fillText(txt, x + off + pad, y + off + pad);
         ctx.restore();
       }
     }

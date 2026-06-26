@@ -17,7 +17,23 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 164`, `GAME_VERSION = 'Alpha 11.39'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 168`, `GAME_VERSION = 'Alpha 11.43'`.** Changement
+  11.43 : **popover ressource — le « Bilan net » inclut désormais le transit.** Dans le popover
+  (clic sur une ressource de l'inventaire), `net` valait `prod − conso` (transit ignoré). Désormais
+  `net = prod − conso − export + import` (export/import lus depuis `game.transitFlow`) → le bilan
+  reflète la vraie variation de stock. Ex. acide : 32 − 136 − 0 + 512 = **+408/s** (au lieu de −104).
+  Validé : `node --check` (7 blocs). Changement
+  11.42 : **badge antenne « ×N » à la MÊME échelle que le badge niveau.** Le badge cyan ×N
+  (`drawBuilding`) utilisait `tile*0.34` (police `bh*0.72`) alors que le niveau/déficit
+  (`drawInfoBadges`) utilise `tile*0.16` → ×N visiblement plus gros. Le badge ×N reprend désormais
+  EXACTEMENT la même formule (police `tile*0.16*bsc` "DM Mono", pad `*0.038`, segH `fs+pad*2`, rayon
+  `*0.045`, ancrage haut-gauche, seuil `tile>=16`) → ×N et niveau identiques. Validé : `node --check`
+  (7 blocs) + Chromium (0 erreur). Changement
+  11.41 : **centrale diesel — intrant diesel 4/s → 3/s.** `centrale_diesel` (diesel → energie_kw 512) :
+  `diesel` passe de **4 à 3** (sortie élec. inchangée). Validé : `node --check` (7 blocs). Changement
+  11.40 : **centrale nucléaire — puissance 4 MW → 6 MW.** `NUC_POWER` passe de **4096 à 6144 kW**
+  (V1 niveau 1 / 100 %, ×2^upgrade ensuite) aux 2 endroits (tick + fiche). Intrants/sorties à
+  l'échelle inchangés. Validé : `node --check` (7 blocs). Changement
   11.39 : **broyeur d'uranium — intrant acide ÷4.** `broyeur_uranium` (uranium 128 + acide → yellow_cake 1) :
   `acide` passe de **16 → 4** (uranium et sortie inchangés). Validé : `node --check` (7 blocs). Changement
   11.38 : **centrale nucléaire — répartition des matériaux irradiés (mode « une seule » ou « mix »).**
