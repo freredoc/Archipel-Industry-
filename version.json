@@ -1,7 +1,7 @@
 {
-  "build": 147,
-  "version": "Alpha 11.22",
+  "build": 148,
+  "version": "Alpha 11.23",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.22 — notation scientifique étendue aux coûts & recettes (#146)"
+  "notes": "Alpha 11.23 — tuyaux disponibles sur les îles 1 et 2 (fix déblocage) (#147)"
 }
