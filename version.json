@@ -1,7 +1,7 @@
 {
-  "build": 144,
-  "version": "Alpha 11.19",
+  "build": 145,
+  "version": "Alpha 11.20",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.19 — calculateur : items limités aux ressources débloquées (#143)"
+  "notes": "Alpha 11.20 — V1 solo retiré + calculateur réorganisé (#144)"
 }
