@@ -17,7 +17,13 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 145`, `GAME_VERSION = 'Alpha 11.20'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 146`, `GAME_VERSION = 'Alpha 11.21'`.** Changement
+  11.21 : **catégorie « Ciment & béton » + fours V2 rééquilibrés.** (1) **Menu Bâtiment** : nouvelle
+  catégorie `cement` « Ciment & béton » (ids `cimenterie`+`betonniere`) insérée **au-dessus** de
+  `steel` « Fer-acier » dans `TOOLBAR_GROUPS` ; ces 2 bâtiments sont retirés de Fer-acier. Label i18n
+  ajouté (en/es/de). (2) **Fours V2** (`four_fer_v2`, `four_cuivre_v2`) : **intrants & extrants ×8**
+  (minerai 4→32, lingot 1→8) mais **consommation électrique ×2** (power 16→32). Validé : `node --check`
+  (6 blocs) + Chromium (ordre cement→steel, recettes ×8/power ×2, 0 erreur). Changement
   11.20 : **« V1 » solo retiré des noms + calculateur réorganisé (ressources d'abord, bâtiments
   optionnels avec amélioration).** (1) **Noms** : passe `stripSoloV1()` après `I18N.applyToData` →
   retire « V1 » du nom des bâtiments SANS déclinaison (ex. « Aciérie V1 »→« Aciérie », « Pompe Eau »,
