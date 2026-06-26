@@ -17,7 +17,14 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 153`, `GAME_VERSION = 'Alpha 11.28'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 154`, `GAME_VERSION = 'Alpha 11.29'`.** Changement
+  11.29 : **les couleurs transit du build 152 (11.27) annulent et remplacent celles du build 150
+  (11.25).** Retrait du **coloriage du build 150** : le **soulignement orange/bleu des ressources de
+  l'inventaire** (`.inv-export`/`.inv-import` + prop `transitDir` du HUD) et la **teinte du nom de
+  ressource dans le Port** (`.pp-res-name.pp-export`/`.pp-import`). Conservé : le coloriage du build
+  152 — flux des **Liaisons** (`.pp-cargo-out` orange / `.pp-cargo-in` bleu) et lignes **Export/Import**
+  du popover ressource. `islandTransitDir` devient inutilisé (laissé). Validé : `node --check` (6 blocs)
+  + CSS équilibré + Chromium (0 erreur). Changement
   11.28 : **priorité de destination — défaut « île N+1 », switch agrandi.** (1) **Défaut N+1** : la
   passe normale de `tickShips` sert désormais les destinations de chaque source dans l'ordre
   DÉCROISSANT (île voisine la plus haute = N+1 d'abord) au lieu de l'ordre des SHIP_LINKS ; idem
