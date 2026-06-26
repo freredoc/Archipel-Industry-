@@ -688,6 +688,21 @@ body:not(.theme-inox) .inv-label-btn.open{border-image:var(--btn-active) 8 fill 
 .catchup-fill{height:100%;background:#4CAF50;transition:width .15s;}
 .catchup-note{font-family:'Barlow Condensed',sans-serif;font-size:.76rem;color:var(--ink-dim);}
 
+/* ── Écran de chargement (splash) ──
+   HTML STATIQUE affiché immédiatement (avant même que React/JS soit prêt) → l'utilisateur voit
+   que le jeu se lance au lieu d'un écran noir pendant le décodage + le rattrapage hors-ligne.
+   Masqué dès le 1er rendu du canvas (classe .hide). z-index sous le catchup-overlay (300). */
+#splash{position:fixed;inset:0;z-index:250;background:#0d0d1a;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;transition:opacity .45s ease;}
+#splash.hide{opacity:0;pointer-events:none;}
+#splash .sp-logo{font-size:56px;line-height:1;animation:sp-pulse 1.6s ease-in-out infinite;}
+@keyframes sp-pulse{0%,100%{transform:scale(1);opacity:.9;}50%{transform:scale(1.08);opacity:1;}}
+#splash .sp-title{font-family:'Bebas Neue','Arial Narrow',sans-serif;font-size:1.5rem;letter-spacing:.14em;
+  color:#cfe3ff;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.5);}
+#splash .sp-spin{width:38px;height:38px;border:3px solid rgba(120,150,200,.22);border-top-color:#4CAF50;
+  border-radius:50%;animation:catchspin .8s linear infinite;}
+#splash .sp-note{font-family:'Barlow Condensed','Arial',sans-serif;font-size:.92rem;letter-spacing:.05em;color:#8a93a8;}
+
 /* ── Scène (canvas + overlays) ── */
 .stage{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--bg);}
 canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshair;}
@@ -1015,6 +1030,18 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 </head>
 <body>
 <div id="root"></div>
+<!-- Splash de chargement : visible immédiatement (HTML statique), masqué au 1er rendu du jeu. -->
+<div id="splash">
+  <div class="sp-logo">🏭</div>
+  <div class="sp-title">Archipel Industry</div>
+  <div class="sp-spin"></div>
+  <div class="sp-note">Chargement…</div>
+</div>
+<script>
+// Filet de sécurité : si le jeu n'a pas pris la main au bout de 12 s (cas extrême), on masque
+// quand même le splash pour ne pas rester bloqué dessus. Le masquage normal vient de draw().
+setTimeout(function(){var s=document.getElementById('splash');if(s&&!window.__splashGone){window.__splashGone=true;s.classList.add('hide');setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s);},600);}},12000);
+</script>
 
 <!-- ════════════════════════════════════════════════════════════════
      BOOT — exécuté en JS simple (sans Babel) pour ne pas dépendre du
@@ -4234,8 +4261,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 158;
-const GAME_VERSION = 'Alpha 11.33';
+const GAME_BUILD = 159;
+const GAME_VERSION = 'Alpha 11.34';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -10791,7 +10818,7 @@ function App() {
         showLevels: true,
         showDeficitPct: true,
         showDeficitSprite: true,
-        simplifyOffline: true,
+        simplifyOffline: false,
         fastUpgrade: false,
         theme: 'bleu'
       },
@@ -10850,7 +10877,7 @@ function App() {
   const [offlineReport, setOfflineReport] = useState(null);
   // Progression du rattrapage hors-ligne (null = inactif, sinon {pct, approx}).
   const [catchUp, setCatchUp] = useState(null);
-  const [simplifyOffline, setSimplifyOffline] = useState(true);
+  const [simplifyOffline, setSimplifyOffline] = useState(false);
   const [theme, setTheme] = useState('bleu');
   // Applique l'ambiance « inox » via une classe sur <body> (CSS body.theme-inox).
   useEffect(() => {
@@ -11096,7 +11123,7 @@ function App() {
         showLevels: (g.ui && g.ui.showLevels) !== false,
         showDeficitPct: (g.ui && g.ui.showDeficitPct) !== false,
         showDeficitSprite: (g.ui && g.ui.showDeficitSprite) !== false,
-        simplifyOffline: (g.ui && g.ui.simplifyOffline) !== false,
+        simplifyOffline: !!(g.ui && g.ui.simplifyOffline),
         fastUpgrade: !!(g.ui && g.ui.fastUpgrade),
         theme: g.ui && g.ui.theme === 'inox' ? 'inox' : 'bleu'
       }
@@ -11565,7 +11592,7 @@ function App() {
       showLevels: true,
       showDeficitPct: true,
       showDeficitSprite: true,
-      simplifyOffline: true,
+      simplifyOffline: false,
       fastUpgrade: false,
       theme: 'bleu'
     };
@@ -11573,7 +11600,7 @@ function App() {
     g.ui.showLevels = up.showLevels !== false;
     g.ui.showDeficitPct = up.showDeficitPct !== false;
     g.ui.showDeficitSprite = up.showDeficitSprite !== false;
-    g.ui.simplifyOffline = up.simplifyOffline !== false;
+    g.ui.simplifyOffline = up.simplifyOffline === true;
     g.ui.fastUpgrade = !!up.fastUpgrade;
     g.ui.theme = up.theme === 'inox' ? 'inox' : 'bleu';
     return true;
@@ -11649,7 +11676,7 @@ function App() {
       onDone && onDone();
       return;
     }
-    const simplify = g.ui.simplifyOffline !== false && ticks > 3600;
+    const simplify = g.ui.simplifyOffline === true && ticks > 3600;
     const SAMPLE = 300;
     const WARM = simplify ? Math.min(ticks, 900) : ticks;
     const sampleStart = Math.max(0, WARM - SAMPLE);
@@ -13244,6 +13271,17 @@ function App() {
     drawPortExtras(ctx, ox, oy, tile);
     drawHover(ctx, ox, oy, tile);
     drawNetworkDebug(ctx, ox, oy, tile);
+    // 1er rendu effectif du jeu → on retire le splash de chargement (l'écran n'est plus noir).
+    if (!window.__splashGone) {
+      window.__splashGone = true;
+      const sp = document.getElementById('splash');
+      if (sp) {
+        sp.classList.add('hide');
+        setTimeout(() => {
+          if (sp.parentNode) sp.parentNode.removeChild(sp);
+        }, 600);
+      }
+    }
   }
   // Pontoon (left of the port) + an animated cargo boat that arrives/departs in sync
   // with the inter-island transport (ship timers).
@@ -13494,6 +13532,7 @@ function App() {
       return;
     }
     const tile = pointerToTile(e);
+    const wasMode = drag.mode;
     if (drag.mode === 'select' && drag.dist < TAP_THRESHOLD) {
       handleTap(tile, e);
     } else if (drag.mode === 'place' && !drag.panned && drag.dist < TAP_THRESHOLD && tile) {
@@ -13515,10 +13554,12 @@ function App() {
     // « N… » du réseau et l'aperçu de pose restent collés sur la dernière tuile).
     if (e.pointerType === 'touch' && g.hover) g.hover = null;
     markDirty();
-    // Save DÉBOUNCÉ (et non flushSave synchrone) : un flushSave sérialisait les 5 îles +
-    // JSON.stringify + localStorage à CHAQUE pose/tap → gel de plusieurs secondes sur une grosse
-    // partie (visible en pose répétée via Copier). tryPlace/tryDemolish planifient déjà le save.
-    scheduleSave();
+    // Sauvegarde UNIQUEMENT après une action qui modifie l'état persistant (pose / amélioration /
+    // démolition). Une simple SÉLECTION — « Copier » un bâtiment ou inspecter une tuile — ne change
+    // rien de sauvegardé : re-sérialiser les 5 îles + JSON.stringify + écriture localStorage à CE
+    // moment-là gelait le jeu plusieurs secondes au « Copier » sur une grosse partie, pour rien.
+    // (pose/amélioration/démolition planifient déjà leur propre save dans tryPlace/tryUpgrade/…)
+    if (wasMode === 'place' || wasMode === 'upgrade' || wasMode === 'demolish') scheduleSave();
     try {
       canvasRef.current.releasePointerCapture(e.pointerId);
     } catch (_) {}
@@ -13667,7 +13708,7 @@ function App() {
     setShowLevels(gameRef.current.ui.showLevels !== false);
     setShowDeficitPct(gameRef.current.ui.showDeficitPct !== false);
     setShowDeficitSprite(gameRef.current.ui.showDeficitSprite !== false);
-    setSimplifyOffline(gameRef.current.ui.simplifyOffline !== false);
+    setSimplifyOffline(gameRef.current.ui.simplifyOffline === true);
     setFastUpgrade(!!gameRef.current.ui.fastUpgrade);
     setTheme(gameRef.current.ui.theme === 'inox' ? 'inox' : 'bleu');
     layout();
@@ -13938,7 +13979,7 @@ function App() {
       setShowLevels(g.ui.showLevels !== false);
       setShowDeficitPct(g.ui.showDeficitPct !== false);
       setShowDeficitSprite(g.ui.showDeficitSprite !== false);
-      setSimplifyOffline(g.ui.simplifyOffline !== false);
+      setSimplifyOffline(g.ui.simplifyOffline === true);
       setFastUpgrade(!!g.ui.fastUpgrade);
       setTheme(g.ui.theme === 'inox' ? 'inox' : 'bleu');
       setDev(g.ui.dev);

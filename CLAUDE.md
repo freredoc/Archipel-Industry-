@@ -17,7 +17,24 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 158`, `GAME_VERSION = 'Alpha 11.33'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 159`, `GAME_VERSION = 'Alpha 11.34'`.** Changement
+  11.34 : **3 correctifs UX : hors-ligne lent par défaut + splash de chargement + « Copier » ne
+  sauvegarde plus inutilement.** (1) **Calcul hors-ligne LENT par défaut** : `simplifyOffline`
+  bascule par défaut à `false` (sémantique `=== true` partout : newGame, useState, serialize en
+  `!!`, loadSave, `runCatchUp`, sync UI). Le rattrapage > 1 h fait désormais la **simulation
+  complète** (avec barre de progression) au lieu de l'extrapolation rapide ; le mode rapide reste
+  disponible via l'option « Calcul hors-ligne simplifié ». (2) **Splash de chargement** : `<div
+  id="splash">` HTML STATIQUE (logo 🏭 + titre + spinner + « Chargement… ») affiché **immédiatement**
+  (avant React/JS) → fini l'écran noir « est-ce que ça a planté ? » pendant le décodage + le
+  rattrapage. CSS `#splash` (z-index 250, sous le catchup-overlay 300) ; masqué au **1er `draw()`**
+  réussi (`window.__splashGone`, classe `.hide` + retrait) ; filet de sécurité 12 s dans un `<script>`
+  du body (7 blocs script désormais). (3) **« Copier » ne gèle plus** : `onPointerUp` ne planifie une
+  sauvegarde QUE pour une action modifiant l'état (pose/amélioration/démolition, captées via
+  `wasMode`) ; une simple sélection (Copier / inspection) ne re-sérialise plus les 5 îles +
+  localStorage pour rien (cause la plus probable du gel de plusieurs secondes au Copier sur une
+  grosse partie ; non reproductible en environnement headless — à confirmer côté appareil). Validé :
+  `node --check` (7 blocs) + CSS équilibré + Chromium (splash présent puis retiré au 1er rendu,
+  0 erreur). Changement
   11.33 : **badges carte réduits (% déficit + niveau, ~−75 % surface).** Dans `drawInfoBadges`
   (pastilles bas-gauche d'une case), les multiplicateurs de taille sont ~divisés par 2 (font
   `tile*0.22`→`*0.11`, pad `*0.05`→`*0.025`, gap `*0.06`→`*0.03`, rayon `*0.06`→`*0.03`, plancher
