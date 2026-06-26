@@ -1,7 +1,7 @@
 {
-  "build": 164,
-  "version": "Alpha 11.39",
+  "build": 168,
+  "version": "Alpha 11.43",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Broyeur d'uranium : intrant acide ÷4 (recette yellowcake) (#163)"
+  "notes": "Nucléaire 6 MW + diesel 3/s + badge ×N à l'échelle + bilan net avec transit (#165)"
 }
