@@ -1,7 +1,7 @@
 {
-  "build": 153,
-  "version": "Alpha 11.28",
+  "build": 154,
+  "version": "Alpha 11.29",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.28 — priorité destination : défaut île N+1 + switch agrandi (#152)"
+  "notes": "Alpha 11.29 — couleurs transit : build 152 annule et remplace build 150 (#153)"
 }
