@@ -17,7 +17,25 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 159`, `GAME_VERSION = 'Alpha 11.34'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 160`, `GAME_VERSION = 'Alpha 11.35'`.** Changement
+  11.35 : **freeze « Copier » VRAIE cause trouvée (boucle de rendu qui meurt) + boost antenne visible
+  dans la fiche + badges carte agrandis.** (1) **FIX FREEZE (cause racine)** : la fonction `frame`
+  (boucle rAF) n'avait PAS de try/catch → une exception dans `draw()` (ou le tick) empêchait
+  `requestAnimationFrame(frame)` d'être atteint → **la boucle de rendu MOURAIT** ; seule la **vue de
+  l'île** gelait (le reste du thread/CSS continuait) jusqu'à ce que le « beat » la relance après
+  2500 ms + 2000 ms ≈ **~4 s** (symptôme exact rapporté : « seule la vue de l'île freeze »). `frame`
+  est désormais enveloppé `try { … } catch(log) { } finally { reprogramme TOUJOURS la frame }` → la
+  boucle survit à toute exception (la vue saute 1 frame au lieu de geler 4 s). Garde « beat » abaissé
+  (seuil 2500→1200 ms, vérif 2000→600 ms) pour relancer vite les arrêts hors-exception (perte de
+  contexte GPU…). Reproduction : la save de l'utilisateur (43 Ko, 550 bât.) + 645 bâtiments synthé.
+  → copie = ~27 ms en Chromium desktop (donc throw env.-spécifique WebView ; le try/catch corrige le
+  symptôme quoi qu'il arrive). (2) **Boost antenne dans la fiche** : l'`InfoPanel` multipliait Sortie/
+  Entrées par `upgradeMult` seul → une mine boostée affichait la MÊME production (256/s) qu'une non
+  boostée. Ajout `antBoost = bld.antennaBuff>1 ? … : 1` → Entrées/Sortie/Réel ×antBoost, ligne **Élec.**
+  « boosté ×1→×(1+N) », + **ligne « Boost antenne ×N »** (cyan). (3) **Badges carte** (% déficit +
+  niveau) : taille intermédiaire (`tile*0.16`, entre l'origine 0.22 et le trop-petit 0.11 de 11.33).
+  Validé : `node --check` (7 blocs) + CSS équilibré + Chromium (save réelle : 59 fps, splash OK,
+  0 erreur). Changement
   11.34 : **3 correctifs UX : hors-ligne lent par défaut + splash de chargement + « Copier » ne
   sauvegarde plus inutilement.** (1) **Calcul hors-ligne LENT par défaut** : `simplifyOffline`
   bascule par défaut à `false` (sémantique `=== true` partout : newGame, useState, serialize en
