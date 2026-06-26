@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 161`, `GAME_VERSION = 'Alpha 11.36'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 162`, `GAME_VERSION = 'Alpha 11.37'`.** Changement
+  11.37 : **5 sprites UI manquants intégrés + emojis remplacés.** Le pack `Archipel_sprites_COMPLET.zip`
+  (re-livré par l'utilisateur) contenait enfin `ui_production`, `ui_energie`, `ui_alerte`,
+  `ui_calculateur`, `ui_astuce` (16×16). Les 5 inlinés dans `__SPRITE_DATA__` (avant `ui_configurer`).
+  Câblage : **📊 Production** (déjà `uiIcon('production')`, sprite désormais présent), **⚡ pastille
+  énergie HUD** (`uiIcon('energie')`), **⚠ bouton alerte HUD** (`uiIcon('alerte')`), **🧮 bouton +
+  titre Calculateur** (`uiIcon('calculateur')`), **💡 « Revoir les astuces »** (`uiIcon('astuce')`).
+  Le `Archipel_sprites_COMPLET.zip` du repo est mis à jour. Restent en emoji (texte) : ⚡/⚠ en
+  préfixe de chaîne (recettes/fiches/bannières), toasts, astuces/i18n, typo. Validé : `node --check`
+  (7 blocs) + CSS équilibré + Chromium (5 sprites décodés 16×16, pastille énergie en sprite, 0 erreur).
+  Changement
   11.36 : **slider « Taille des badges » (3 d'un coup) + 2 emojis UI → sprites + audit emoji.** (1)
   **Slider** : option `ui.badgeScale` (0,5→2, défaut 1, persistée comme les autres uiPrefs) dans
   l'`OptionsModal` (helper `sliderRow`) → multiplie d'un coup la taille des 3 badges carte : **%
