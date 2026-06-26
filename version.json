@@ -1,7 +1,7 @@
 {
-  "build": 155,
-  "version": "Alpha 11.30",
+  "build": 156,
+  "version": "Alpha 11.31",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Transit : switch destination à position fixe + boutons réduits (#154)"
+  "notes": "Antenne : boost effectif, améliorable, conso 1024 kW + retours visuels (#155)"
 }
