@@ -1,7 +1,7 @@
 {
-  "build": 148,
-  "version": "Alpha 11.23",
+  "build": 149,
+  "version": "Alpha 11.24",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.23 — tuyaux disponibles sur les îles 1 et 2 (fix déblocage) (#147)"
+  "notes": "Alpha 11.24 — alerte déficit électrique + 0% batterie + vérif tech tree (#148)"
 }
