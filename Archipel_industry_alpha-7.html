@@ -4234,8 +4234,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 157;
-const GAME_VERSION = 'Alpha 11.32';
+const GAME_BUILD = 158;
+const GAME_VERSION = 'Alpha 11.33';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -12851,16 +12851,18 @@ function App() {
     if (!showLv && !showPct) return;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    const fs = Math.max(6, Math.round(tile * 0.22));
-    const pad = Math.max(1, tile * 0.05);
-    const gap = Math.max(1, tile * 0.06);
+    // Badges réduits (~50 % de la taille linéaire → ~75 % de surface en moins) : multiplicateurs
+    // divisés par ~2 (0.22→0.11, etc.) pour des pastilles % déficit / niveau plus discrètes.
+    const fs = Math.max(5, Math.round(tile * 0.11));
+    const pad = Math.max(1, tile * 0.025);
+    const gap = Math.max(1, tile * 0.03);
     const segH = fs + pad * 2;
     let bx = x + Math.max(1, tile * 0.04);
     const by = y + H - segH - Math.max(1, tile * 0.04);
     const drawSeg = (txt, bg, fg) => {
       ctx.font = `700 ${fs}px "DM Mono",monospace`;
       const bw = ctx.measureText(txt).width + pad * 2;
-      roundRectPath(ctx, bx, by, bw, segH, Math.max(1, tile * 0.06));
+      roundRectPath(ctx, bx, by, bw, segH, Math.max(1, tile * 0.03));
       ctx.fillStyle = bg;
       ctx.fill();
       ctx.fillStyle = fg;

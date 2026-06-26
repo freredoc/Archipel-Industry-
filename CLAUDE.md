@@ -17,7 +17,13 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 157`, `GAME_VERSION = 'Alpha 11.32'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 158`, `GAME_VERSION = 'Alpha 11.33'`.** Changement
+  11.33 : **badges carte réduits (% déficit + niveau, ~−75 % surface).** Dans `drawInfoBadges`
+  (pastilles bas-gauche d'une case), les multiplicateurs de taille sont ~divisés par 2 (font
+  `tile*0.22`→`*0.11`, pad `*0.05`→`*0.025`, gap `*0.06`→`*0.03`, rayon `*0.06`→`*0.03`, plancher
+  6→5 px) → pastilles **% d'efficacité (déficit)** et **numéro de niveau** ~2× plus petites
+  (≈ −75 % de surface). L'icône de panne (haut-droite) inchangée. Validé : `node --check` (6 blocs)
+  + CSS équilibré + Chromium (0 erreur). Changement
   11.32 : **antenne — intrants AUSSI boostés + conso élec. sigmoïde ×1→×3.** Ajustement du 11.31 :
   un bâtiment boosté a désormais ses **intrants ×facteur ET ses sorties ×facteur** (il « tourne plus
   vite » au lieu de produire gratuitement), et sa **conso électrique OSCILLE en sigmoïde** jusqu'à
