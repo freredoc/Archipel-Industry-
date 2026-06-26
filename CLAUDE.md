@@ -17,7 +17,15 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 146`, `GAME_VERSION = 'Alpha 11.21'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 147`, `GAME_VERSION = 'Alpha 11.22'`.** Changement
+  11.22 : **notation scientifique étendue aux coûts & recettes de la fiche bâtiment.** Les gros
+  nombres restaient en notation normale (ex. coût d'amélioration « Pièce méca 669 463 »). Désormais
+  scientifique (≥1e5) : (1) **coût d'amélioration** (`InfoPanel` `ip-cost-chips`, `fmtInt`→`fmtPort`) ;
+  (2) **coût de construction** du menu Bâtiment (`ToolButton` `tb-cost`, `fmtInt`→`fmtPort`) ; (3) **coût
+  de réparation** (`RepairModal`, `fmtInt`→`fmtPort` sur stock & coût) ; (4) **recettes** Entrées/Sortie :
+  `recipeChips` (fiche, tap) + `formatRecipe` (aperçu d'amélioration) + `resChips` (détail appui long)
+  passent `fmtRate`→`fmtRateSci` (et coût `resChips` `fmtInt`→`fmtPort`). `fmtPower` (élec.) inchangé.
+  Validé : `node --check` (6 blocs) + Chromium (669463→6,69e5, 512→512, 0 erreur). Changement
   11.21 : **catégorie « Ciment & béton » + fours V2 rééquilibrés.** (1) **Menu Bâtiment** : nouvelle
   catégorie `cement` « Ciment & béton » (ids `cimenterie`+`betonniere`) insérée **au-dessus** de
   `steel` « Fer-acier » dans `TOOLBAR_GROUPS` ; ces 2 bâtiments sont retirés de Fer-acier. Label i18n

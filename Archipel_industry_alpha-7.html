@@ -4217,8 +4217,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 146;
-const GAME_VERSION = 'Alpha 11.21';
+const GAME_BUILD = 147;
+const GAME_VERSION = 'Alpha 11.22';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4262,7 +4262,7 @@ function formatCost(cost) {
 }
 function formatRecipe(rec, mult) {
   const m = mult || 1;
-  const parts = Object.entries(rec || {}).map(([k, v]) => `${fmtRate(v * m)} ${RES_SHORT[k]}`);
+  const parts = Object.entries(rec || {}).map(([k, v]) => `${fmtRateSci(v * m)} ${RES_SHORT[k]}`);
   return parts.length ? parts.join(' + ') : '—';
 }
 function fmtRate(v) {
@@ -7735,7 +7735,7 @@ function RepairModal({
   }, Object.keys(cost).map(k => React.createElement("span", {
     className: 'rp-ci' + ((resources[k] || 0) >= cost[k] ? ' ok' : ' miss'),
     key: k
-  }, RES_SHORT[k] || k, " ", fmtInt(resources[k] || 0), "/", fmtInt(cost[k])))), React.createElement("button", {
+  }, RES_SHORT[k] || k, " ", fmtPort(resources[k] || 0), "/", fmtPort(cost[k])))), React.createElement("button", {
     className: "rp-btn",
     disabled: !canRepair,
     onClick: () => onRepair(repairInfo.node)
@@ -7823,7 +7823,7 @@ function ToolButton({
     key: k,
     className: 'tb-ci' + ((port && port[k] || 0) >= cost[k] ? '' : ' miss'),
     title: RES_SHORT[k] || k
-  }, (RES_SHORT[k] || k) + ' ' + fmtInt(cost[k])))) : React.createElement("span", {
+  }, (RES_SHORT[k] || k) + ' ' + fmtPort(cost[k])))) : React.createElement("span", {
     className: "tb-sub"
   }, sub));
 }
@@ -7884,7 +7884,7 @@ function BuildingDetailModal({
         alt: RES_SHORT[k] || k
       }), React.createElement("span", {
         className: "dr-q"
-      }, perSec ? fmtRate(obj[k]) : fmtInt(obj[k]), idata ? '' : ' ' + (RES_SHORT[k] || k))));
+      }, perSec ? fmtRateSci(obj[k]) : fmtPort(obj[k]), idata ? '' : ' ' + (RES_SHORT[k] || k))));
     }
     return out;
   };
@@ -8298,7 +8298,7 @@ function InfoPanel({
         alt: ""
       }), React.createElement("span", {
         className: "dr-q"
-      }, (RES_SHORT[k] || k) + ' ' + fmtRate((rec[k] || 0) * (mult || 1)))));
+      }, (RES_SHORT[k] || k) + ' ' + fmtRateSci((rec[k] || 0) * (mult || 1)))));
     }
     return out.length ? out : ['—'];
   };
@@ -8586,7 +8586,7 @@ function InfoPanel({
     key: k,
     className: 'ipc-ci' + ((port && port[k] || 0) >= upCost[k] ? '' : ' miss'),
     title: RES_SHORT[k] || k
-  }, (RES_SHORT[k] || k) + ' ' + fmtInt(upCost[k]))) : 'gratuit'))), upgradable && React.createElement("div", {
+  }, (RES_SHORT[k] || k) + ' ' + fmtPort(upCost[k]))) : 'gratuit'))), upgradable && React.createElement("div", {
     className: "ip-actions"
   }, React.createElement("button", {
     className: "ip-up" + (armed ? ' armed' : ''),
