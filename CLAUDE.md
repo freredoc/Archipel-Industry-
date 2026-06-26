@@ -17,7 +17,14 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 156`, `GAME_VERSION = 'Alpha 11.31'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 157`, `GAME_VERSION = 'Alpha 11.32'`.** Changement
+  11.32 : **antenne — intrants AUSSI boostés + conso élec. sigmoïde ×1→×3.** Ajustement du 11.31 :
+  un bâtiment boosté a désormais ses **intrants ×facteur ET ses sorties ×facteur** (il « tourne plus
+  vite » au lieu de produire gratuitement), et sa **conso électrique OSCILLE en sigmoïde** jusqu'à
+  ×(1+facteur) du nominal — soit **×1→×3 au niveau de base** (réintroduction de `bld.antennaSigT` /
+  période 60). `ioMul = mult × buffFac` appliqué aux entrées comme aux sorties. Fiche « Effet » MAJ
+  (`×N intrants & production · conso ×1→×(1+N) sigmoïde`) + tip. Validé : `node --check` (6 blocs) +
+  CSS équilibré + Chromium (0 erreur). Changement
   11.31 : **antenne refondue : boost effectif, améliorable, conso 1024 kW, retours visuels.** (1)
   **Boost effectif** : le pré-pass d'antenne (`tickIsland`) stocke un FACTEUR par tuile influencée
   (`buffSet[r-c] = 2^(upgrade+1)`, mémorisé dans `game.antennaBuff[isl]`) au lieu d'un booléen. Un

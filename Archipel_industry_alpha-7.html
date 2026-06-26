@@ -4234,8 +4234,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 156;
-const GAME_VERSION = 'Alpha 11.31';
+const GAME_BUILD = 157;
+const GAME_VERSION = 'Alpha 11.32';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4873,14 +4873,19 @@ function tickIsland(game, isl) {
       }
       basePower = bld.randomPower;
     }
-    // Boost d'antenne : un bâtiment de production (kind build avec sorties) posé sur une tuile
-    // influencée produit ×facteur (sorties + élec. produite) ET consomme ×facteur d'électricité.
-    // Les intrants matières restent inchangés → la production « offerte » est le bonus, payée en
-    // courant. Facteur = buffSet (2 de base, ×2 par niveau de l'antenne).
+    // Boost d'antenne : un bâtiment de production (kind build avec sorties) sur une tuile influencée
+    // tourne plus vite — INTRANTS ×facteur ET SORTIES ×facteur — et sa conso élec. OSCILLE en
+    // sigmoïde jusqu'à ×(1+facteur) du nominal (×1→×3 au niveau de base). Facteur = buffSet (2, ×2/niv).
     const buffFac = hasAntenna && buffSet[r + '-' + c] && b.outputs && !b.antenna && b.kind === 'build' ? buffSet[r + '-' + c] : 1;
+    const buffed = buffFac > 1;
     bld.antennaBuff = buffFac;
-    let power = basePower * mult * buffFac;
-    const outMul = mult * buffFac;
+    let power = basePower * mult;
+    if (buffed) {
+      bld.antennaSigT = (bld.antennaSigT || 0) + 1;
+      const nomP = nominalPower(bld);
+      power = nomP * (1 + (1 + Math.sin(2 * Math.PI * bld.antennaSigT / 60)) / 2 * buffFac);
+    }
+    const ioMul = mult * buffFac;
     if (!b.outputs && power <= 0) continue;
     const inByType = {},
       outByType = {};
@@ -4888,15 +4893,15 @@ function tickIsland(game, isl) {
     for (const k in b.inputs || {}) {
       if (k === 'energie_kw') continue;
       const ty = isPortPipe(k) ? 'pipePort' : carrierOf(k);
-      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (inByType[ty] || (inByType[ty] = {}))[k] = b.inputs[k] * mult;
+      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (inByType[ty] || (inByType[ty] = {}))[k] = b.inputs[k] * ioMul;
     }
     for (const k in b.outputs || {}) {
       if (k === 'energie_kw') {
-        energyOut += b.outputs[k] * outMul;
+        energyOut += b.outputs[k] * ioMul;
         continue;
       }
       const ty = isPortPipe(k) ? 'pipePort' : carrierOf(k);
-      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (outByType[ty] || (outByType[ty] = {}))[k] = b.outputs[k] * outMul;
+      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (outByType[ty] || (outByType[ty] = {}))[k] = b.outputs[k] * ioMul;
     }
     const hasPoolIO = inByType.road || outByType.road || inByType.pipe || outByType.pipe || inByType.pipePort || outByType.pipePort;
     let ok = true,
@@ -6663,7 +6668,7 @@ const GAME_TIPS = [{
   id: 'antenne',
   icon: '📡',
   title: 'L\'antenne T5',
-  body: ['L\'<b>antenne</b> multiplie par <b>×2</b> la production des <b>8 tuiles adjacentes</b> (et leur conso élec. ×2). Les bâtiments boostés affichent un badge <b>×2</b> et les cases influencées pulsent.', 'Elle consomme 1024 kW. <b>Améliorez-la</b> pour doubler le boost ET sa conso à chaque niveau (×4, ×8…).'],
+  body: ['L\'<b>antenne</b> fait tourner les <b>8 tuiles adjacentes</b> plus vite : <b>intrants ×2 et production ×2</b>, avec une conso élec. qui oscille jusqu\'à <b>×3</b>. Les bâtiments boostés affichent un badge <b>×2</b> et les cases influencées pulsent.', 'Elle consomme 1024 kW. <b>Améliorez-la</b> pour doubler le boost à chaque niveau (×4, ×8…).'],
   when: g => isBuildingUnlocked(g, 'antenne')
 }, {
   id: 'reparer',
@@ -8710,7 +8715,7 @@ function InfoPanel({
     className: "lbl"
   }, I18N.t("Effet")), React.createElement("span", {
     className: "val io"
-  }, "×" + Math.pow(2, upg + 1) + I18N.t(" production des 8 cases adjacentes · leur conso élec. ×") + Math.pow(2, upg + 1)))), (usesNet || drawsPower) && React.createElement("div", {
+  }, "×" + Math.pow(2, upg + 1) + I18N.t(" intrants & production des 8 cases · conso élec. ×1→×") + (1 + Math.pow(2, upg + 1)) + I18N.t(" (sigmoïde)")))), (usesNet || drawsPower) && React.createElement("div", {
     className: "ip-fluxpri"
   }, React.createElement("div", {
     className: "ip-fluxpri-lbl"
