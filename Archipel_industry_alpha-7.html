@@ -3940,9 +3940,10 @@ const isNetworkId = id => !!BUILDINGS[id] && (BUILDINGS[id].kind === 'infra' || 
 // toujours disponible. Les jonctions suivent le déblocage de leurs deux réseaux.
 function networkUnlocked(id, unlockedSet, currentIsland) {
   const has = k => !!(unlockedSet && unlockedSet.has(k));
-  // Le réseau d'eau (tuyaux) n'apparaît qu'à partir de l'île 3 : avant, aucun
-  // besoin de transport d'eau. Le câble suit le déblocage d'une éolienne.
-  const pipeOk = currentIsland >= 3;
+  // Le réseau de tuyaux apparaît dès qu'un bâtiment à liquide est débloqué par la recherche
+  // (pompe à eau OU puits de pétrole) — sur N'IMPORTE quelle île (la pompe à eau est dispo
+  // partout depuis 10.79). Le câble suit le déblocage d'une éolienne.
+  const pipeOk = has('pompe_eau') || has('puits_petrole');
   const wireOk = has('eolienne') || has('eolienne_offshore');
   switch (id) {
     case 'road':
@@ -4217,8 +4218,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 147;
-const GAME_VERSION = 'Alpha 11.22';
+const GAME_BUILD = 148;
+const GAME_VERSION = 'Alpha 11.23';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.

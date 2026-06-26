@@ -17,7 +17,14 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 147`, `GAME_VERSION = 'Alpha 11.22'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 148`, `GAME_VERSION = 'Alpha 11.23'`.** Changement
+  11.23 : **tuyaux disponibles sur les îles 1 et 2 (fix déblocage).** `networkUnlocked` gatait le
+  tuyau par `currentIsland >= 3` → impossible de poser un tuyau sur les îles 1-2 même après avoir
+  débloqué un bâtiment à liquide (incohérent avec la pompe à eau « dispo partout » depuis 10.79).
+  Désormais `pipeOk = has('pompe_eau') || has('puits_petrole')` → le réseau tuyau (et les jonctions
+  route/tuyau, câble/tuyau) apparaît dès qu'un bâtiment à liquide est débloqué par la recherche, sur
+  N'IMPORTE quelle île. Validé : `node --check` (6 blocs) + Chromium (pipe i1 sans déblocage=false,
+  avec pompe_eau=true, puits_petrole i2=true, 0 erreur). Changement
   11.22 : **notation scientifique étendue aux coûts & recettes de la fiche bâtiment.** Les gros
   nombres restaient en notation normale (ex. coût d'amélioration « Pièce méca 669 463 »). Désormais
   scientifique (≥1e5) : (1) **coût d'amélioration** (`InfoPanel` `ip-cost-chips`, `fmtInt`→`fmtPort`) ;
