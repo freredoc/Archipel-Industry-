@@ -3844,7 +3844,7 @@ const BUILDINGS = {
     size: [1, 1],
     antenna: true,
     maxPerIsland: 1,
-    power: 512,
+    power: 1024,
     cost: {
       processeur: 100,
       acier_irradie: 100,
@@ -4234,8 +4234,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 155;
-const GAME_VERSION = 'Alpha 11.30';
+const GAME_BUILD = 156;
+const GAME_VERSION = 'Alpha 11.31';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4341,7 +4341,7 @@ function extensionCost(n) {
     beton_arme_irradie: 100 * f
   };
 }
-const isUpgradable = id => !!(BUILDINGS[id] && BUILDINGS[id].kind === 'build' && !BUILDINGS[id].antenna);
+const isUpgradable = id => !!(BUILDINGS[id] && BUILDINGS[id].kind === 'build');
 const accCapacity = bld => (BUILDINGS[bld.id] && BUILDINGS[bld.id].capacity || 512) * Math.pow(2, bld.upgrade || 0);
 function upgradeCostFactor(buildingId, level) {
   if (buildingId === 'puits_petrole' && level >= 5) {
@@ -4813,23 +4813,29 @@ function tickIsland(game, isl) {
     return ids[0];
   };
   // --- Antenna buff pre-pass ---
-  // Mark the 8 tiles around each wire-connected antenna. Buffed production buildings
-  // get ×2 output and a sigmoid-oscillating power draw (×1→×3 of nominal, 60s cycle).
+  // Marque les 8 tuiles autour de chaque antenne RELIÉE AU CÂBLE avec son facteur de boost.
+  // Boost = 2 (base) ×2 par niveau d'amélioration de l'antenne (2, 4, 8…). Si deux antennes
+  // se chevauchent, la plus forte l'emporte. Le résultat est mémorisé sur `game` pour que le
+  // rendu puisse pulser ces tuiles (overlay d'influence).
   const buffSet = {};
   let hasAntenna = false;
   for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
     const bl = tiles[r][c].building;
     if (!bl || !BUILDINGS[bl.id] || !BUILDINGS[bl.id].antenna) continue;
-    // antenna is effective only if wire-connected (drives its own 512 kW too)
+    // antenna is effective only if wire-connected (drives its own 1024 kW too)
     if (adjacentNetworks(game, isl, r, c, 'wire').length === 0) continue;
     hasAntenna = true;
+    const boost = Math.pow(2, (bl.upgrade || 0) + 1);
     for (const [dr, dc] of [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]) {
       const nr = r + dr,
         nc = c + dc;
       if (nr < 0 || nc < 0 || nr >= def.rows || nc >= def.cols) continue;
-      buffSet[nr + '-' + nc] = true;
+      const bk = nr + '-' + nc;
+      if (!buffSet[bk] || boost > buffSet[bk]) buffSet[bk] = boost;
     }
   }
+  if (!game.antennaBuff) game.antennaBuff = {};
+  game.antennaBuff[isl] = buffSet;
   for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
     const bld = tiles[r][c].building;
     if (!bld) continue;
@@ -4867,17 +4873,14 @@ function tickIsland(game, isl) {
       }
       basePower = bld.randomPower;
     }
-    let power = basePower * mult;
-    // Antenna buff: applies to production buildings (those with material outputs)
-    // standing on a buffed tile. Output ×2; power draw oscillates ×1→×3 of nominal.
-    const buffed = hasAntenna && buffSet[r + '-' + c] && b.outputs && !b.antenna && b.kind === 'build';
-    bld.antennaBuff = buffed ? 2 : 1;
-    if (buffed) {
-      bld.antennaSigT = (bld.antennaSigT || 0) + 1;
-      const nomP = nominalPower(bld);
-      power = nomP + nomP * (1 + Math.sin(2 * Math.PI * bld.antennaSigT / 60)) / 2 * 2;
-    }
-    const outMul = mult * (buffed ? 2 : 1);
+    // Boost d'antenne : un bâtiment de production (kind build avec sorties) posé sur une tuile
+    // influencée produit ×facteur (sorties + élec. produite) ET consomme ×facteur d'électricité.
+    // Les intrants matières restent inchangés → la production « offerte » est le bonus, payée en
+    // courant. Facteur = buffSet (2 de base, ×2 par niveau de l'antenne).
+    const buffFac = hasAntenna && buffSet[r + '-' + c] && b.outputs && !b.antenna && b.kind === 'build' ? buffSet[r + '-' + c] : 1;
+    bld.antennaBuff = buffFac;
+    let power = basePower * mult * buffFac;
+    const outMul = mult * buffFac;
     if (!b.outputs && power <= 0) continue;
     const inByType = {},
       outByType = {};
@@ -4889,7 +4892,7 @@ function tickIsland(game, isl) {
     }
     for (const k in b.outputs || {}) {
       if (k === 'energie_kw') {
-        energyOut += b.outputs[k] * mult;
+        energyOut += b.outputs[k] * outMul;
         continue;
       }
       const ty = isPortPipe(k) ? 'pipePort' : carrierOf(k);
@@ -6660,7 +6663,7 @@ const GAME_TIPS = [{
   id: 'antenne',
   icon: '📡',
   title: 'L\'antenne T5',
-  body: ['L\'<b>antenne</b> double la production des <b>8 tuiles adjacentes</b> (montée en puissance progressive jusqu\'à ×3 d\'effet).', 'Elle consomme 512 kW en continu : placez-la au centre d\'un groupe de bâtiments clés pour maximiser le bonus.'],
+  body: ['L\'<b>antenne</b> multiplie par <b>×2</b> la production des <b>8 tuiles adjacentes</b> (et leur conso élec. ×2). Les bâtiments boostés affichent un badge <b>×2</b> et les cases influencées pulsent.', 'Elle consomme 1024 kW. <b>Améliorez-la</b> pour doubler le boost ET sa conso à chaque niveau (×4, ×8…).'],
   when: g => isBuildingUnlocked(g, 'antenne')
 }, {
   id: 'reparer',
@@ -8707,7 +8710,7 @@ function InfoPanel({
     className: "lbl"
   }, I18N.t("Effet")), React.createElement("span", {
     className: "val io"
-  }, I18N.t("×2 production sur les 8 cases adjacentes (conso ×1→×3 oscillante)")))), (usesNet || drawsPower) && React.createElement("div", {
+  }, "×" + Math.pow(2, upg + 1) + I18N.t(" production des 8 cases adjacentes · leur conso élec. ×") + Math.pow(2, upg + 1)))), (usesNet || drawsPower) && React.createElement("div", {
     className: "ip-fluxpri"
   }, React.createElement("div", {
     className: "ip-fluxpri-lbl"
@@ -8724,7 +8727,18 @@ function InfoPanel({
     className: "ip-up-ptitle"
   }, I18N.t("Amélioration → Nv."), upg + 2), React.createElement("div", {
     className: "up-rows"
-  }, previewRow(I18N.t("Entrées"), b.inputs), previewRow(I18N.t("Sortie"), b.outputs)), React.createElement("div", {
+  }, previewRow(I18N.t("Entrées"), b.inputs), previewRow(I18N.t("Sortie"), b.outputs), b.antenna && React.createElement("div", {
+    className: "up-row",
+    key: "antboost"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, I18N.t("Boost")), React.createElement("span", {
+    className: "cur"
+  }, "×" + Math.pow(2, upg + 1)), React.createElement("span", {
+    className: "arr"
+  }, "→"), React.createElement("span", {
+    className: "nxt"
+  }, "×" + Math.pow(2, upg + 2)))), React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -13179,6 +13193,46 @@ function App() {
       }
       const sz = buildingSize(bid);
       drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime, t.building.inFac, t.building.pwrAvg);
+      // Badge « ×N » cyan (coin haut-gauche) sur un bâtiment boosté par une antenne.
+      if (t.building.antennaBuff > 1 && tile >= 22) {
+        const bh = Math.max(10, tile * 0.34),
+          bw = bh * 1.5;
+        ctx.save();
+        ctx.fillStyle = 'rgba(38,198,218,.92)';
+        roundRectPath(ctx, x + 2, y + 2, bw, bh, Math.max(2, bh * 0.22));
+        ctx.fill();
+        ctx.fillStyle = '#042027';
+        ctx.font = `700 ${Math.round(bh * 0.72)}px "Barlow Condensed",sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('×' + t.building.antennaBuff, x + 2 + bw / 2, y + 2 + bh / 2 + 1);
+        ctx.restore();
+      }
+    }
+    // Overlay d'influence d'antenne : pulsation cyan légère sur chaque tuile des zones boostées
+    // (les 8 cases autour d'une antenne reliée). Le clignotement utilise l'horloge d'animation
+    // et force le redessin continu (_animPlayed) tant qu'une zone est visible.
+    const abuff = g.antennaBuff && g.antennaBuff[isl];
+    if (abuff) {
+      const tt = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+      const pulse = 0.5 + 0.5 * Math.sin(2 * Math.PI * tt / 1.6); // cycle ~1,6 s
+      ctx.save();
+      ctx.lineWidth = Math.max(1.5, tile * 0.06);
+      const inset = ctx.lineWidth / 2 + 1;
+      let drew = false;
+      for (const key in abuff) {
+        const sp = key.indexOf('-');
+        const rr = +key.slice(0, sp),
+          cc = +key.slice(sp + 1);
+        if (rr < r0 - 1 || rr > r1 + 1 || cc < c0 - 1 || cc > c1 + 1) continue;
+        const px = ox + cc * tile,
+          py = oy + rr * tile;
+        ctx.strokeStyle = 'rgba(38,198,218,' + (0.22 + 0.42 * pulse).toFixed(3) + ')';
+        ctx.strokeRect(px + inset, py + inset, tile - 2 * inset, tile - 2 * inset);
+        drew = true;
+      }
+      ctx.restore();
+      if (drew) _animPlayed = true;
     }
     drawPortExtras(ctx, ox, oy, tile);
     drawHover(ctx, ox, oy, tile);

@@ -17,7 +17,27 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 154`, `GAME_VERSION = 'Alpha 11.29'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 156`, `GAME_VERSION = 'Alpha 11.31'`.** Changement
+  11.31 : **antenne refondue : boost effectif, améliorable, conso 1024 kW, retours visuels.** (1)
+  **Boost effectif** : le pré-pass d'antenne (`tickIsland`) stocke un FACTEUR par tuile influencée
+  (`buffSet[r-c] = 2^(upgrade+1)`, mémorisé dans `game.antennaBuff[isl]`) au lieu d'un booléen. Un
+  bâtiment de production (`b.outputs && !antenna && kind build`) sur une tuile influencée a ses
+  **sorties (matières + élec.) ×facteur** et sa **conso élec. ×facteur** ; intrants matières
+  inchangés (production « offerte », payée en courant). L'ancienne conso oscillante ×1→×3
+  (`antennaSigT`/`nominalPower`) est supprimée. (2) **Antenne améliorable** : `isUpgradable` n'exclut
+  plus `antenna` → ×2 boost + ×2 conso par niveau, **coût ×2,7/niveau** (UPGRADE_SCALE standard). (3)
+  **Conso de base 512 → 1024 kW**. (4) **Retours visuels** : pulsation cyan (`#26C6DA`) sur les 8 cases
+  influencées (overlay dans `draw()`, lit `game.antennaBuff[isl]`, clignote via `performance.now()`,
+  force `_animPlayed`), + **badge « ×N »** cyan (coin haut-gauche) sur chaque bâtiment boosté
+  (`t.building.antennaBuff > 1`). (5) Fiche bâtiment : ligne « Effet » dynamique (`×2^(upg+1)
+  production… · conso ×…`) + ligne « Boost » dans l'aperçu d'amélioration ; astuce + tip MAJ. Validé :
+  `node --check` (6 blocs) + CSS équilibré + Chromium (`isUpgradable('antenne')=true`, coût ×2,7,
+  boost 2→4, 0 erreur). Changement
+  11.30 : **transit — switch destination à position fixe + boutons réduits.** Onglet « Transit île »
+  du Port : les boutons de priorité de destination ne changent plus de place (tri croissant fixe : île
+  N-1 à GAUCHE, N+1 à DROITE) ; seule la case prioritaire est remplie en orange (défaut N+1). Boutons
+  réduits (font .68rem, padding 2×9, `white-space:nowrap`). Validé : `node --check` (6 blocs) + CSS
+  équilibré + Chromium (0 erreur). Changement
   11.29 : **les couleurs transit du build 152 (11.27) annulent et remplacent celles du build 150
   (11.25).** Retrait du **coloriage du build 150** : le **soulignement orange/bleu des ressources de
   l'inventaire** (`.inv-export`/`.inv-import` + prop `transitDir` du HUD) et la **teinte du nom de
