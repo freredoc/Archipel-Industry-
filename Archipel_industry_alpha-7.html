@@ -117,6 +117,17 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .calc-raw{display:flex;align-items:center;gap:3px;font-family:'Barlow Condensed',sans-serif;
   font-size:.78rem;color:var(--ink-dim);}
 .calc-raw .inv-ico{width:14px;height:14px;}
+.calc-toggle{font-family:'Bebas Neue',sans-serif;font-size:.78rem;letter-spacing:.05em;
+  color:var(--ink-dim);background:var(--panel);border:1px solid var(--line);border-radius:5px;
+  padding:4px 10px;cursor:pointer;margin:8px 0 4px;width:100%;text-align:left;}
+.calc-toggle:hover{border-color:var(--yellow);color:var(--ink);}
+.calc-upg{display:flex;align-items:center;gap:8px;margin:4px 0 6px;}
+.calc-upg-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;color:var(--ink-dim);}
+.calc-upg-val{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;color:var(--ink);min-width:42px;text-align:center;}
+.calc-upg-pm{width:26px;height:24px;background:var(--panel-2);border:1px solid var(--line);
+  color:var(--ink);border-radius:5px;cursor:pointer;font-size:1rem;line-height:1;}
+.calc-upg-pm:hover{border-color:var(--yellow);}
+.calc-upg-pm:disabled{opacity:.4;cursor:default;}
 /* Bouton ALERTE (à droite de Production) : récap des alertes de stock en cours, orange pulsant. */
 .inv-alert-btn{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.05em;color:#ffce54;
   background:rgba(255,149,0,.16);border:1px solid var(--orange);border-radius:4px;padding:3px 10px;cursor:pointer;
@@ -4202,8 +4213,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 144;
-const GAME_VERSION = 'Alpha 11.19';
+const GAME_BUILD = 145;
+const GAME_VERSION = 'Alpha 11.20';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -6646,6 +6657,18 @@ const GAME_TIPS = [{
 // i18n — couche CONTENU (drop-in) : réécrit en place les noms de ressources/bâtiments/recherches +
 // tutoriel + astuces dans la langue active (système par défaut), AVANT tout rendu. Repli fr automatique.
 if (window.I18N) I18N.applyToData({ BUILDINGS, RES_SHORT, TECH_NODES, TUTORIAL_STEPS, GAME_TIPS });
+// « V1 » n'a de sens que s'il existe d'autres versions (V2/V3…). Pour les bâtiments SANS
+// déclinaison, on retire le « V1 » du nom affiché (ex. « Aciérie V1 » → « Aciérie »). Les
+// familles avec versions (mine_fer/_v2/_v3…) gardent leur « V1 » pour les distinguer. Fait après
+// applyToData → fonctionne dans toutes les langues (le jeton V1 est conservé tel quel par l'i18n).
+(function stripSoloV1() {
+  for (const id in BUILDINGS) {
+    const b = BUILDINGS[id];
+    if (!b || !b.name || /_v\d+$/.test(id)) continue;
+    if (BUILDINGS[id + '_v2'] || BUILDINGS[id + '_v3'] || BUILDINGS[id + '_v4']) continue;
+    b.name = b.name.replace(/\s*V1\b/i, '').trim();
+  }
+})();
 const TIP_BY_ID = {};
 for (const t of GAME_TIPS) TIP_BY_ID[t.id] = t;
 // Marque comme « déjà vues » toutes les astuces dont la condition est déjà remplie.
@@ -7125,15 +7148,18 @@ function calcDefPower(id) {
   return b.power || 0;
 }
 // Déroule la chaîne de production pour obtenir `rate` unités/s de `item`. Renvoie
-// { buildings:{id:count}, raws:{item:rate}, power } (count fractionnaire = charge réelle ;
-// raws = items sans producteur connu, à fournir autrement).
+// { buildings:{id:count}, raws:{item:rate}, power, resourceRates:{res:rate} }. `resourceRates`
+// = débit /s de CHAQUE ressource consommée dans la chaîne (hors item cible) ; count fractionnaire
+// = charge réelle ; raws = items sans producteur connu, à fournir autrement.
 function computeProductionChain(item, rate) {
   const buildings = {},
-    raws = {};
+    raws = {},
+    resourceRates = {};
   let power = 0;
   const MAX_DEPTH = 80;
   function need(it, r, depth) {
     if (r <= 1e-12) return;
+    if (depth > 0) resourceRates[it] = (resourceRates[it] || 0) + r;
     const prod = PRODUCER_OF[it];
     const b = prod && BUILDINGS[prod];
     const per = b && b.outputs && b.outputs[it] || 0;
@@ -7148,20 +7174,23 @@ function computeProductionChain(item, rate) {
   }
   need(item, rate, 0);
   return {
+    resourceRates,
     buildings,
     raws,
     power
   };
 }
-// Panneau Calculateur : l'utilisateur choisit un item + un débit cible /s, le jeu déroule
-// l'ensemble des bâtiments nécessaires (charge réelle), les ressources de base à fournir et
-// la consommation électrique totale. Lecture pure (n'affecte pas la partie).
+// Panneau Calculateur : l'utilisateur choisit un item + un débit cible /s. Par défaut le jeu
+// affiche les RESSOURCES nécessaires /s + la conso électrique ; sur demande il déroule la liste
+// des bâtiments (avec un niveau d'amélioration ajustable). Lecture pure (n'affecte pas la partie).
 function CalculatorPanel({
   game,
   onClose
 }) {
   const [item, setItem] = useState(null);
   const [rate, setRate] = useState(1);
+  const [showBlds, setShowBlds] = useState(false);
+  const [upg, setUpg] = useState(0);
   // On ne propose QUE les ressources débloquées (produites par un bâtiment débloqué par la
   // recherche) — cohérent avec l'inventaire/port.
   const unlocked = unlockedResourceSet(game);
@@ -7176,8 +7205,11 @@ function CalculatorPanel({
       alt: RES_SHORT[k] || k
     }) : null;
   };
+  // Ressources nécessaires /s (intrants + intermédiaires de toute la chaîne, hors item cible),
+  // triées du plus brut au plus raffiné.
+  const resRows = res ? Object.keys(res.resourceRates).sort((a, b) => resTierRank(a) - resTierRank(b) || (a < b ? -1 : 1)) : [];
   const bRows = res ? Object.keys(res.buildings).sort((a, b) => calcBtierRank(a) - calcBtierRank(b) || (BUILDINGS[a].name < BUILDINGS[b].name ? -1 : 1)) : [];
-  const rawRows = res ? Object.keys(res.raws).sort((a, b) => resTierRank(a) - resTierRank(b)) : [];
+  const upgDiv = Math.pow(2, upg);
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "research-backdrop",
     onClick: onClose
@@ -7221,14 +7253,37 @@ function CalculatorPanel({
     title: I18N.t("Consommation électrique totale de la chaîne (puissance nominale)")
   }, "⚡ " + fmtPower(res.power)), React.createElement("div", {
     className: "pp-section-label"
-  }, I18N.t("Bâtiments nécessaires")), bRows.length === 0 ? React.createElement("div", {
+  }, I18N.t("Ressources nécessaires /s")), resRows.length === 0 ? React.createElement("div", {
+    className: "pp-empty"
+  }, "—") : React.createElement("div", {
+    className: "calc-raws"
+  }, resRows.map(k => React.createElement("span", {
+    className: "calc-raw",
+    key: k
+  }, chip(k), (RES_SHORT[k] || k) + " " + fmtRateSci(res.resourceRates[k]) + "/s"))), React.createElement("button", {
+    className: "calc-toggle",
+    onClick: () => setShowBlds(s => !s)
+  }, (showBlds ? "▾ " : "▸ ") + I18N.t("Bâtiments nécessaires")), showBlds && React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "calc-upg"
+  }, React.createElement("span", {
+    className: "calc-upg-lbl"
+  }, I18N.t("Avec amélioration")), React.createElement("button", {
+    className: "calc-upg-pm",
+    onClick: () => setUpg(u => Math.max(0, u - 1)),
+    disabled: upg <= 0
+  }, "−"), React.createElement("span", {
+    className: "calc-upg-val"
+  }, "Nv. " + upg), React.createElement("button", {
+    className: "calc-upg-pm",
+    onClick: () => setUpg(u => Math.min(12, u + 1))
+  }, "+")), bRows.length === 0 ? React.createElement("div", {
     className: "pp-empty"
   }, "—") : React.createElement("div", {
     className: "calc-blds"
   }, bRows.map(id => {
     const sk = SPRITES_ENABLED ? buildingSpriteKey(id) : null;
     const sd = sk && SPRITE_DATA[sk];
-    const cnt = res.buildings[id];
+    const cnt = res.buildings[id] / upgDiv;
     return React.createElement("div", {
       className: "calc-bld",
       key: id
@@ -7238,18 +7293,11 @@ function CalculatorPanel({
       className: "inv-ico",
       src: sd,
       alt: ""
-    }), BUILDINGS[id].name), React.createElement("span", {
+    }), BUILDINGS[id].name + (upg > 0 ? " Nv." + upg : "")), React.createElement("span", {
       className: "calc-bld-cnt",
       title: I18N.t("Charge réelle (×) et nombre de bâtiments à poser (arrondi au supérieur)")
     }, "×" + fmtSig(cnt) + " → " + Math.ceil(cnt - 1e-9)));
-  })), rawRows.length > 0 && React.createElement("div", {
-    className: "pp-section-label"
-  }, I18N.t("Ressources de base à fournir /s")), rawRows.length > 0 && React.createElement("div", {
-    className: "calc-raws"
-  }, rawRows.map(k => React.createElement("span", {
-    className: "calc-raw",
-    key: k
-  }, chip(k), (RES_SHORT[k] || k) + " " + fmtRateSci(res.raws[k]) + "/s")))))));
+  })))))));
 }
 // Panneau Production : prod / conso / net par ressource + bilan énergie + transit inter-îles,
 // pour une île ou toutes. Lecture live (recalculé à chaque rendu depuis game.netFlow/energy/

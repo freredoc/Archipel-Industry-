@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 144`, `GAME_VERSION = 'Alpha 11.19'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 145`, `GAME_VERSION = 'Alpha 11.20'`.** Changement
+  11.20 : **« V1 » solo retiré des noms + calculateur réorganisé (ressources d'abord, bâtiments
+  optionnels avec amélioration).** (1) **Noms** : passe `stripSoloV1()` après `I18N.applyToData` →
+  retire « V1 » du nom des bâtiments SANS déclinaison (ex. « Aciérie V1 »→« Aciérie », « Pompe Eau »,
+  « Usine Moteur Nucléaire ») ; les familles avec versions (mine_fer/_v2/_v3, four_fer/_v2…) gardent
+  « V1 » pour les distinguer. Cross-langue (le jeton V1 est conservé tel quel par l'i18n).
+  (2) **Calculateur** : `computeProductionChain` renvoie aussi `resourceRates` (débit /s de chaque
+  ressource de la chaîne, hors item cible). Le panneau affiche par DÉFAUT **« Ressources nécessaires
+  /s »** (+ ⚡ conso) ; les **bâtiments** sont masqués derrière un bouton **« ▸/▾ Bâtiments
+  nécessaires »** (state `showBlds`). Quand ils sont affichés, un sélecteur **« Avec amélioration −
+  Nv. X + »** (state `upg`, 0→12) divise les comptes par `2^upg` (et suffixe « Nv.X » au nom). CSS
+  `.calc-toggle`/`.calc-upg*`. Validé : `node --check` (6 blocs) + CSS équilibré + Chromium (noms OK,
+  ressources par défaut, toggle bâtiments, Nv.1 ÷2, 0 erreur). Changement
   11.19 : **calculateur — items limités aux ressources débloquées.** `CalculatorPanel` reçoit `game`
   et filtre `itemsList` via `unlockedResourceSet(game)` (ressources produites par un bâtiment débloqué
   par la recherche) → la grille « Produire » ne montre QUE les ressources débloquées (cohérent avec
