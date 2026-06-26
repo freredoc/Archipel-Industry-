@@ -345,8 +345,8 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
   font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--ink-faint);}
 /* Switch segmenté : les destinations côte à côte, l'île prioritaire (1re) remplie en orange. */
 .pp-dest-sw{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;}
-.pp-dest-chip{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.04em;
-  padding:5px 14px;border:none;background:var(--panel);color:var(--ink-dim);cursor:pointer;}
+.pp-dest-chip{font-family:'Bebas Neue',sans-serif;font-size:.68rem;letter-spacing:.03em;white-space:nowrap;
+  padding:2px 9px;border:none;background:var(--panel);color:var(--ink-dim);cursor:pointer;}
 .pp-dest-chip+.pp-dest-chip{border-left:1px solid var(--line);}
 .pp-dest-chip.first{background:#ffae42;color:#1a1a1a;font-weight:700;}
 input.pp-c-num{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:4px;
@@ -4234,8 +4234,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 154;
-const GAME_VERSION = 'Alpha 11.29';
+const GAME_BUILD = 155;
+const GAME_VERSION = 'Alpha 11.30';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -9278,12 +9278,17 @@ function PortPanel({
       title: I18N.t("Priorité d'envoi : touchez une île pour l'envoyer en premier")
     }, I18N.t("Envoyer d'abord :"), React.createElement("span", {
       className: "pp-dest-sw"
-    }, transitDestOrder(game, currentIsland, res, destNeighbors).map((d, di) => React.createElement("button", {
-      key: d,
-      className: "pp-dest-chip" + (di === 0 ? " first" : ""),
-      onClick: () => onSetDestPriority(currentIsland, res, d),
-      title: I18N.t("Envoyer en priorité vers l'île ") + d
-    }, "Île " + d))))), React.createElement(NumField, {
+    }, (() => {
+      // Ordre d'affichage FIXE (île N-1 à gauche, N+1 à droite) — les boutons ne bougent pas.
+      // L'île prioritaire (1re de transitDestOrder) est simplement remplie en orange.
+      const prio = transitDestOrder(game, currentIsland, res, destNeighbors)[0];
+      return destNeighbors.slice().sort((a, b) => a - b).map(d => React.createElement("button", {
+        key: d,
+        className: "pp-dest-chip" + (d === prio ? " first" : ""),
+        onClick: () => onSetDestPriority(currentIsland, res, d),
+        title: I18N.t("Envoyer en priorité vers l'île ") + d
+      }, "Île " + d));
+    })()))), React.createElement(NumField, {
       className: "pp-c-num",
       value: cfg.stockCible,
       onCommit: v => onSetCfg(currentIsland, res, 'stockCible', v),
