@@ -17,7 +17,12 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 167`, `GAME_VERSION = 'Alpha 11.42'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 168`, `GAME_VERSION = 'Alpha 11.43'`.** Changement
+  11.43 : **popover ressource — le « Bilan net » inclut désormais le transit.** Dans le popover
+  (clic sur une ressource de l'inventaire), `net` valait `prod − conso` (transit ignoré). Désormais
+  `net = prod − conso − export + import` (export/import lus depuis `game.transitFlow`) → le bilan
+  reflète la vraie variation de stock. Ex. acide : 32 − 136 − 0 + 512 = **+408/s** (au lieu de −104).
+  Validé : `node --check` (7 blocs). Changement
   11.42 : **badge antenne « ×N » à la MÊME échelle que le badge niveau.** Le badge cyan ×N
   (`drawBuilding`) utilisait `tile*0.34` (police `bh*0.72`) alors que le niveau/déficit
   (`drawInfoBadges`) utilise `tile*0.16` → ×N visiblement plus gros. Le badge ×N reprend désormais

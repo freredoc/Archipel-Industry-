@@ -4270,8 +4270,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 167;
-const GAME_VERSION = 'Alpha 11.42';
+const GAME_BUILD = 168;
+const GAME_VERSION = 'Alpha 11.43';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -9623,7 +9623,6 @@ function ResPopover({
     prod,
     conso
   } = resourceRates(game, currentIsland, res);
-  const net = prod - conso;
   // Flux de transit de cette ressource pour l'île courante : export (sortant) / import (entrant).
   let exp = 0,
     imp = 0;
@@ -9633,6 +9632,8 @@ function ResPopover({
     const rr = (_tf[key] || {})[res] || 0;
     if (+parts[0] === currentIsland) exp += rr;else if (+parts[1] === currentIsland) imp += rr;
   }
+  // Bilan net RÉEL du stock : production − consommation − export (part) + import (reçu).
+  const net = prod - conso - exp + imp;
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "research-backdrop",
     style: {
