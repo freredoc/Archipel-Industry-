@@ -1,7 +1,7 @@
 {
-  "build": 145,
-  "version": "Alpha 11.20",
+  "build": 147,
+  "version": "Alpha 11.22",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.20 — V1 solo retiré + calculateur réorganisé (#144)"
+  "notes": "Alpha 11.22 — notation scientifique étendue aux coûts & recettes (#146)"
 }
