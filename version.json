@@ -1,7 +1,7 @@
 {
-  "build": 152,
-  "version": "Alpha 11.27",
+  "build": 153,
+  "version": "Alpha 11.28",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.27 — couleurs export/import Liaisons + lignes Export/Import popover (#151)"
+  "notes": "Alpha 11.28 — priorité destination : défaut île N+1 + switch agrandi (#152)"
 }
