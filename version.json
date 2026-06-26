@@ -1,7 +1,7 @@
 {
-  "build": 161,
-  "version": "Alpha 11.36",
+  "build": 162,
+  "version": "Alpha 11.37",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Slider taille des badges + Options/Aide en sprite + audit emoji (#160)"
+  "notes": "Intègre les 5 sprites UI manquants + remplace les emojis (#161)"
 }
