@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 160`, `GAME_VERSION = 'Alpha 11.35'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 161`, `GAME_VERSION = 'Alpha 11.36'`.** Changement
+  11.36 : **slider « Taille des badges » (3 d'un coup) + 2 emojis UI → sprites + audit emoji.** (1)
+  **Slider** : option `ui.badgeScale` (0,5→2, défaut 1, persistée comme les autres uiPrefs) dans
+  l'`OptionsModal` (helper `sliderRow`) → multiplie d'un coup la taille des 3 badges carte : **%
+  déficit, niveau** (`drawInfoBadges`, ×sc sur fs/pad/gap/rayon) et **boost antenne ×N** (`drawBuilding`,
+  ×sc sur bh). Handler `setBadgeScaleVal` (clampé 0,5–2). (2) **Emojis→sprites câblés** (sprite
+  existant) : bouton **Options** `⚙`→`uiIcon('configurer')`, bouton **Aide** `?`→`uiIcon('info')`.
+  (3) **Audit emoji** : le reste des emojis UI sans sprite correspondant (📊 Production, ⚡ énergie,
+  ⚠ alerte, 🧮 calculateur, 💡 astuces) → **sprites `ui_*` à créer** ; les emojis dans les toasts/
+  astuces/i18n et la typo (→ ← ⬆ ⬇ ✓) restent en emoji (texte). Validé : `node --check` (7 blocs) +
+  CSS équilibré + Chromium (slider présent, ⚙ en sprite, 0 erreur). Changement
   11.35 : **freeze « Copier » VRAIE cause trouvée (boucle de rendu qui meurt) + boost antenne visible
   dans la fiche + badges carte agrandis.** (1) **FIX FREEZE (cause racine)** : la fonction `frame`
   (boucle rAF) n'avait PAS de try/catch → une exception dans `draw()` (ou le tick) empêchait
