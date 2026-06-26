@@ -759,7 +759,13 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-nuc-irr{margin:8px 0 2px;padding:8px 9px;border:1px solid var(--line);border-radius:6px;background:rgba(126,87,194,.10);}
 .ip-nuc-irr-hd{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.04em;color:#c4a7f0;margin-bottom:5px;}
 .ip-nuc-irr-io{font-family:'DM Mono',monospace;font-size:.74rem;color:var(--ink);margin-bottom:4px;}
-.ip-nuc-irr-note{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;color:var(--ink-dim);line-height:1.2;margin-bottom:6px;}
+.ip-nuc-irr-note{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;color:var(--ink-dim);line-height:1.2;margin:6px 0 0;}
+/* Mode « mix » : un slider de poids par matériau irradié + % normalisé et débit. */
+.ip-nuc-mix{display:flex;flex-direction:column;gap:6px;margin:6px 0;}
+.ip-nuc-mix-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:7px;}
+.ip-nuc-mix-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.74rem;font-weight:600;color:var(--ink);min-width:60px;}
+.ip-nuc-mix-row input[type=range]{width:100%;accent-color:#7E57C2;cursor:pointer;}
+.ip-nuc-mix-val{font-family:'DM Mono',monospace;font-size:.64rem;color:var(--ink-dim);min-width:78px;text-align:right;white-space:nowrap;}
 /* Lignes « théorique » (cible) de la centrale : atténuées/italique pour les distinguer du réel. */
 .ip-row.ip-theo .lbl,.ip-row.ip-theo .val{opacity:.72;font-style:italic;}
 /* Curseur de puissance de la centrale : jauge graduée en % + boutons −/+. */
@@ -4264,8 +4270,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 162;
-const GAME_VERSION = 'Alpha 11.37';
+const GAME_BUILD = 163;
+const GAME_VERSION = 'Alpha 11.38';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5368,13 +5374,29 @@ function tickIsland(game, isl) {
         if (frac > 0) {
           port['combustible_u235'] = (port['combustible_u235'] || 0) - upMult * frac;
           nets[coldNid].pool['eau_froide'] = (nets[coldNid].pool['eau_froide'] || 0) - NUC_COOL * upMult * frac;
-          // Irradiation OPTIONNELLE : si le matériau (acier/béton/câble) est dispo au port, on le
-          // consomme pour produire sa version irradiée. Sinon la centrale tourne quand même (élec seule).
+          // Irradiation OPTIONNELLE : si le matériau est dispo au port, on le consomme pour produire
+          // sa version irradiée. Sinon la centrale tourne quand même (élec seule).
+          // Deux modes : « une seule ressource » (matKey) OU « mix » réparti entre acier/béton/câble
+          // selon des poids normalisés (chaque part n'est produite que si elle est payable).
           const irrAmt = upMult * frac;
-          if (roadNid != null && (port[matKey] || 0) >= irrAmt) {
-            port[matKey] = (port[matKey] || 0) - irrAmt;
-            port[irrKey] = (port[irrKey] || 0) + irrAmt;
-            if (prod) prod[irrKey] = (prod[irrKey] || 0) + irrAmt;
+          if (roadNid != null && irrAmt > 1e-12) {
+            const mix = nucMix(game, isl);
+            if (mix.on) {
+              let wsum = 0;
+              for (const mk of NUC_MAT_KEYS) wsum += mix.w[mk];
+              if (wsum > 0) for (const mk of NUC_MAT_KEYS) {
+                const want = irrAmt * mix.w[mk] / wsum;
+                if (want > 1e-12 && (port[mk] || 0) >= want) {
+                  port[mk] = (port[mk] || 0) - want;
+                  port[mk + '_irradie'] = (port[mk + '_irradie'] || 0) + want;
+                  if (prod) prod[mk + '_irradie'] = (prod[mk + '_irradie'] || 0) + want;
+                }
+              }
+            } else if ((port[matKey] || 0) >= irrAmt) {
+              port[matKey] = (port[matKey] || 0) - irrAmt;
+              port[irrKey] = (port[irrKey] || 0) + irrAmt;
+              if (prod) prod[irrKey] = (prod[irrKey] || 0) + irrAmt;
+            }
           }
           resChanged = true;
         }
@@ -5833,6 +5855,22 @@ const TUTORIAL_STEPS = [{
   goal: 'Posez une cimenterie et reliez-la au port.',
   done: g => tutConnected(g, 1, 'cimenterie')
 }];
+// Matériaux irradiables par la centrale nucléaire (clés sans le suffixe _irradie).
+const NUC_MAT_KEYS = ['acier', 'beton_arme', 'cable'];
+// Réglage de répartition des matériaux irradiés d'une île : { on, w:{acier,beton_arme,cable} }.
+// on=false → mode « une seule ressource » (game.nuclearConfig). on=true → mix selon les poids w
+// (normalisés à l'usage). Poids par défaut = 1 chacun.
+function nucMix(game, isl) {
+  const m = game.nuclearMix && game.nuclearMix[isl];
+  return {
+    on: !!(m && m.on),
+    w: {
+      acier: m && m.acier != null ? Math.max(0, m.acier) : 1,
+      beton_arme: m && m.beton_arme != null ? Math.max(0, m.beton_arme) : 1,
+      cable: m && m.cable != null ? Math.max(0, m.cable) : 1
+    }
+  };
+}
 // Bâtiments révélés jusqu'à l'étape `step` incluse.
 function tutorialRevealedSet(step) {
   const s = new Set();
@@ -8210,6 +8248,8 @@ function InfoPanel({
   onDowngrade,
   onSetNuclear,
   onSetNucPower,
+  onSetNucMixOn,
+  onSetNucMixWeight,
   onSetFluxPri,
   onRepair,
   onExtend
@@ -8529,6 +8569,8 @@ function InfoPanel({
   }, b.nuclear && (() => {
     const matKey = (game.nuclearConfig && game.nuclearConfig[currentIsland]) || 'acier';
     const NUC_MATS = [['acier', I18N.t('Acier')], ['beton_arme', I18N.t('Béton armé')], ['cable', I18N.t('Câble')]];
+    const mix = nucMix(game, currentIsland);
+    const mixSum = NUC_MAT_KEYS.reduce((a, k) => a + mix.w[k], 0) || 1;
     const stLabels = {
       off: I18N.t('Arrêtée'),
       starting: 'Calibrage…',
@@ -8632,17 +8674,49 @@ function InfoPanel({
       className: "ip-nuc-irr"
     }, React.createElement("div", {
       className: "ip-nuc-irr-hd"
-    }, "Matériau irradié (optionnel)"), React.createElement("div", {
+    }, "Matériau irradié (optionnel)"),
+    // Choix du mode : une seule ressource OU répartition (mix) entre les 3 matériaux.
+    React.createElement("div", {
+      className: "ip-nuc-mats"
+    }, React.createElement("button", {
+      className: 'ip-nuc-mat' + (!mix.on ? ' on' : ''),
+      onClick: () => onSetNucMixOn && onSetNucMixOn(currentIsland, false)
+    }, I18N.t("Une seule")), React.createElement("button", {
+      className: 'ip-nuc-mat' + (mix.on ? ' on' : ''),
+      onClick: () => onSetNucMixOn && onSetNucMixOn(currentIsland, true)
+    }, I18N.t("Mix réparti"))),
+    // MODE « une seule » : ligne IO + sélection du matériau.
+    !mix.on && React.createElement("div", {
       className: "ip-nuc-irr-io"
-    }, "− " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey] || matKey, " → + " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey + '_irradie'] || matKey + '_irradie', I18N.t(" /s")), React.createElement("div", {
-      className: "ip-nuc-irr-note"
-    }, "Produit uniquement si le matériau est livré au port — sinon la centrale fournit l'électricité seule."), React.createElement("div", {
+    }, "− " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey] || matKey, " → + " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey + '_irradie'] || matKey + '_irradie', I18N.t(" /s")),
+    !mix.on && React.createElement("div", {
       className: "ip-nuc-mats"
     }, NUC_MATS.map(([k, label]) => React.createElement("button", {
       key: k,
       className: 'ip-nuc-mat' + (matKey === k ? ' on' : ''),
       onClick: () => onSetNuclear && onSetNuclear(currentIsland, k)
-    }, label)))));
+    }, label))),
+    // MODE « mix » : un slider de poids par matériau + le % normalisé et le débit produit.
+    mix.on && React.createElement("div", {
+      className: "ip-nuc-mix"
+    }, NUC_MATS.map(([k, label]) => React.createElement("div", {
+      className: "ip-nuc-mix-row",
+      key: k
+    }, React.createElement("span", {
+      className: "ip-nuc-mix-lbl"
+    }, label), React.createElement("input", {
+      type: "range",
+      min: 0,
+      max: 100,
+      step: 5,
+      value: mix.w[k],
+      onChange: e => onSetNucMixWeight && onSetNucMixWeight(currentIsland, k, parseFloat(e.target.value))
+    }), React.createElement("span", {
+      className: "ip-nuc-mix-val"
+    }, Math.round(mix.w[k] / mixSum * 100) + "% · " + fmtN(upMult * realFrac * mix.w[k] / mixSum) + "/s")))),
+    React.createElement("div", {
+      className: "ip-nuc-irr-note"
+    }, "Produit uniquement si le matériau est livré au port — sinon la centrale fournit l'électricité seule.")));
   })(), showStatus && React.createElement("div", {
     className: "ip-row" + (speedPct < 100 ? ' capped' : '')
   }, React.createElement("span", {
@@ -10809,6 +10883,7 @@ function App() {
         4: 0,
         5: 0
       },
+      nuclearMix: {},
       nuclearConfig: {
         1: 'acier',
         2: 'acier',
@@ -11151,6 +11226,9 @@ function App() {
       },
       nuclearConfig: {
         ...g.nuclearConfig
+      },
+      nuclearMix: {
+        ...g.nuclearMix
       },
       nuclearPower: {
         ...g.nuclearPower
@@ -11544,6 +11622,16 @@ function App() {
       5: 'acier'
     };
     const NUC_MATS = ['acier', 'beton_arme', 'cable'];
+    g.nuclearMix = {};
+    if (data.nuclearMix) for (const id in data.nuclearMix) {
+      const m = data.nuclearMix[id] || {};
+      g.nuclearMix[+id] = {
+        on: !!m.on,
+        acier: Math.max(0, m.acier != null ? +m.acier : 1),
+        beton_arme: Math.max(0, m.beton_arme != null ? +m.beton_arme : 1),
+        cable: Math.max(0, m.cable != null ? +m.cable : 1)
+      };
+    }
     if (data.nuclearConfig) for (const id in data.nuclearConfig) {
       if (NUC_MATS.indexOf(data.nuclearConfig[id]) !== -1) g.nuclearConfig[+id] = data.nuclearConfig[id];
     }
@@ -12685,6 +12773,49 @@ function App() {
     const NUC_MATS = ['acier', 'beton_arme', 'cable'];
     if (NUC_MATS.indexOf(mat) === -1) return;
     g.nuclearConfig[islandId] = mat;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  // Active/désactive le mode « mix » (répartition) des matériaux irradiés sur une île.
+  function setNucMixOn(islandId, on) {
+    const g = gameRef.current;
+    if (!g.nuclearMix) g.nuclearMix = {};
+    const had = g.nuclearMix[islandId];
+    // 1re activation sans réglage préalable → parts visibles par défaut (≈ un tiers chacune).
+    const w = had ? {
+      acier: had.acier,
+      beton_arme: had.beton_arme,
+      cable: had.cable
+    } : {
+      acier: 33,
+      beton_arme: 33,
+      cable: 34
+    };
+    g.nuclearMix[islandId] = {
+      on: !!on,
+      acier: w.acier,
+      beton_arme: w.beton_arme,
+      cable: w.cable
+    };
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  // Règle le poids (0→100) d'un matériau dans le mix d'une île.
+  function setNucMixWeight(islandId, mat, w) {
+    const g = gameRef.current;
+    if (NUC_MAT_KEYS.indexOf(mat) === -1) return;
+    if (!g.nuclearMix) g.nuclearMix = {};
+    const cur = nucMix(g, islandId);
+    const next = {
+      on: true,
+      acier: cur.w.acier,
+      beton_arme: cur.w.beton_arme,
+      cable: cur.w.cable
+    };
+    next[mat] = Math.max(0, Math.min(100, +w || 0));
+    g.nuclearMix[islandId] = next;
     bumpHud();
     markDirty();
     scheduleSave();
@@ -14143,6 +14274,8 @@ function App() {
     onDowngrade: (r, c) => tryDowngrade(r, c),
     onSetNuclear: setNuclearConfig,
     onSetNucPower: setNuclearPower,
+    onSetNucMixOn: setNucMixOn,
+    onSetNucMixWeight: setNucMixWeight,
     onSetFluxPri: setFluxPri,
     onRepair: (r, c) => tryRepair(r, c),
     onExtend: (r, c) => tryExtend(r, c)
