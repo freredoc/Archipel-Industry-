@@ -17,7 +17,15 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 149`, `GAME_VERSION = 'Alpha 11.24'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 150`, `GAME_VERSION = 'Alpha 11.25'`.** Changement
+  11.25 : **câble : débit/flux en kW·MW·GW + couleurs transit (export/import) inventaire & Port.** (1)
+  Dans le `NetworkPanel` d'un **câble**, « Débit max » et « Flux demandé » sont de la PUISSANCE → passent
+  de `fmtPort(x)+' /s'` à **`fmtPower(x)`** (kW/MW/GW) quand `isWire` (route/tuyau gardent `… /s`). (2)
+  Nouveau helper `islandTransitDir(game, isl)` (net `transitFlow` → `'export'`/`'import'` par ressource).
+  L'**inventaire** (HUD, prop `transitDir`) souligne chaque ressource en **orange si exportée**, **bleu
+  si importée** (`.inv-export`/`.inv-import`, `box-shadow inset`). Le **Port** colore le nom de ressource
+  des mêmes couleurs (`.pp-res-name.pp-export`/`.pp-import`). Validé : `node --check` (6 blocs) + CSS
+  équilibré + Chromium (`fmtPower(65536)=65,54 MW`, dir import/export OK, 0 erreur). Changement
   11.24 : **alerte « déficit électrique + 0% batterie » + vérif tech tree pompe/puits.** (1) Nouvelle
   fonction `activeEnergyAlerts(game)` : une île DÉBLOQUÉE en **déficit** (`demand > produced+0.5`) ET
   **batterie vide** (`accStored <= 0` : 0% ou aucun accumulateur) génère une alerte. Comptée dans
