@@ -4270,8 +4270,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 164;
-const GAME_VERSION = 'Alpha 11.39';
+const GAME_BUILD = 165;
+const GAME_VERSION = 'Alpha 11.40';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5268,8 +5268,8 @@ function tickIsland(game, isl) {
       NUC_STOP = 30,
       NUC_SAFETY = 300,
       // 5 min de mise en sécurité (manque de refroidissement)
-      NUC_POWER = 4096,
-      // 4 MW à V1 niveau 1 / 100 % (×2^upgrade ensuite)
+      NUC_POWER = 6144,
+      // 6 MW à V1 niveau 1 / 100 % (×2^upgrade ensuite)
       NUC_COOL = 256;
     const matKey = (game.nuclearConfig && game.nuclearConfig[isl]) || 'acier';
     const irrKey = matKey + '_irradie';
@@ -8589,7 +8589,7 @@ function InfoPanel({
     const NUC_START = 300,
       NUC_STOP = 30,
       NUC_SAFETY = 300,
-      NUC_POWER = 4096,
+      NUC_POWER = 6144,
       NUC_COOL = 256;
     const upMult = Math.pow(2, upg || 0);
     const lvl = game.nuclearPower && game.nuclearPower[currentIsland] != null ? game.nuclearPower[currentIsland] : 10;
