@@ -17,7 +17,9 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 163`, `GAME_VERSION = 'Alpha 11.38'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 164`, `GAME_VERSION = 'Alpha 11.39'`.** Changement
+  11.39 : **broyeur d'uranium — intrant acide ÷4.** `broyeur_uranium` (uranium 128 + acide → yellow_cake 1) :
+  `acide` passe de **16 → 4** (uranium et sortie inchangés). Validé : `node --check` (7 blocs). Changement
   11.38 : **centrale nucléaire — répartition des matériaux irradiés (mode « une seule » ou « mix »).**
   Nouveau réglage par île `game.nuclearMix[isl] = {on, acier, beton_arme, cable}` (poids 0–100,
   persisté newGame/serialize/loadSave ; helper module `nucMix(game,isl)` + const `NUC_MAT_KEYS`).
