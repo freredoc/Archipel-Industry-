@@ -4261,8 +4261,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 159;
-const GAME_VERSION = 'Alpha 11.34';
+const GAME_BUILD = 160;
+const GAME_VERSION = 'Alpha 11.35';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -8318,6 +8318,9 @@ function InfoPanel({
   if (!bld) return null;
   const b = BUILDINGS[info.id];
   const upg = bld.upgrade || 0;
+  // Boost d'antenne en cours sur ce bâtiment (1 = aucun) : multiplie intrants & sorties affichés
+  // pour qu'une mine boostée montre BIEN une production différente d'une mine non boostée.
+  const antBoost = bld.antennaBuff > 1 ? bld.antennaBuff : 1;
   const upgradable = isUpgradable(info.id);
   const dev = game.ui && game.ui.dev;
   const port = game.port[currentIsland] || {};
@@ -8648,20 +8651,31 @@ function InfoPanel({
       fontWeight: 700
     },
     title: I18N.t("R\xE9gime de fonctionnement r\xE9el ce tick (") + speedReason + ")"
-  }, speedPct + "% · " + speedReason)), b.inputs && React.createElement("div", {
+  }, speedPct + "% · " + speedReason)), antBoost > 1 && React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, I18N.t("Boost antenne")), React.createElement("span", {
+    className: "val",
+    style: {
+      color: '#26C6DA',
+      fontWeight: 700
+    },
+    title: I18N.t("Bâtiment dans la zone d'une antenne : intrants & production ×ce facteur")
+  }, "×" + antBoost)), b.inputs && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
   }, I18N.t("Entr\xE9es")), React.createElement("span", {
     className: "val"
-  }, recipeChips(b.inputs, upgradeMult(upg), bld.inAvail).concat(I18N.t(' /s')))), b.inputs && speedPct > 0 && speedPct < 100 && React.createElement("div", {
+  }, recipeChips(b.inputs, upgradeMult(upg) * antBoost, bld.inAvail).concat(I18N.t(' /s')))), b.inputs && speedPct > 0 && speedPct < 100 && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
   }, "R\xE9el ⚠"), React.createElement("span", {
     className: "val",
     title: I18N.t("Consommation r\xE9elle ce tick (brid\xE9e : ") + speedReason + ")"
-  }, recipeChips(b.inputs, upgradeMult(upg) * speedPct / 100).concat(I18N.t(' /s')))), b.outputs && React.createElement("div", {
+  }, recipeChips(b.inputs, upgradeMult(upg) * antBoost * speedPct / 100).concat(I18N.t(' /s')))), b.outputs && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -8669,7 +8683,7 @@ function InfoPanel({
     className: "val io"
   }, (() => {
     // Sortie = matières (chips) + PRODUCTION ÉLECTRIQUE si le bâtiment en génère (energie_kw).
-    const m = upgradeMult(upg);
+    const m = upgradeMult(upg) * antBoost;
     const chips = recipeChips(b.outputs, m);
     const hasMat = !(chips.length === 1 && chips[0] === '—');
     const eOut = (b.outputs.energie_kw || 0) * m;
@@ -8685,7 +8699,7 @@ function InfoPanel({
   }, "R\xE9el \u26A0"), React.createElement("span", {
     className: "val io",
     title: I18N.t("Production r\xE9elle ce tick (brid\xE9e : ") + speedReason + ")"
-  }, recipeChips(solidOut, upgradeMult(upg) * speedPct / 100).concat(I18N.t(' /s')))), b.accumulator && React.createElement("div", {
+  }, recipeChips(solidOut, upgradeMult(upg) * antBoost * speedPct / 100).concat(I18N.t(' /s')))), b.accumulator && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -8725,6 +8739,12 @@ function InfoPanel({
     className: "val"
   }, (() => {
     const mult = upgradeMult(upg);
+    // Bâtiment boosté par une antenne : sa conso élec. oscille en sigmoïde de ×1 à ×(1+boost)
+    // du nominal (cf. tick). On affiche cette plage boostée (≠ d'une mine non boostée).
+    if (antBoost > 1) {
+      const nomP = (b.sigmoid ? b.sigmoid.base + b.sigmoid.amp : b.randomP ? b.randomP.max : b.power || 0) * mult;
+      return I18N.t('boosté ×1→×') + (1 + antBoost) + ' · ' + fmtPower(nomP) + '→' + fmtPower(nomP * (1 + antBoost));
+    }
     // Conso variable (sigmoïde/aléatoire) : on affiche la valeur ACTUELLE (depuis la
     // phase/valeur stockée sur le bâtiment) puis la plage prévue min→max.
     if (b.sigmoid) {
@@ -12878,18 +12898,17 @@ function App() {
     if (!showLv && !showPct) return;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    // Badges réduits (~50 % de la taille linéaire → ~75 % de surface en moins) : multiplicateurs
-    // divisés par ~2 (0.22→0.11, etc.) pour des pastilles % déficit / niveau plus discrètes.
-    const fs = Math.max(5, Math.round(tile * 0.11));
-    const pad = Math.max(1, tile * 0.025);
-    const gap = Math.max(1, tile * 0.03);
+    // Taille INTERMÉDIAIRE entre l'origine (0.22) et la version trop petite (0.11) : ~0.16.
+    const fs = Math.max(6, Math.round(tile * 0.16));
+    const pad = Math.max(1, tile * 0.038);
+    const gap = Math.max(1, tile * 0.045);
     const segH = fs + pad * 2;
     let bx = x + Math.max(1, tile * 0.04);
     const by = y + H - segH - Math.max(1, tile * 0.04);
     const drawSeg = (txt, bg, fg) => {
       ctx.font = `700 ${fs}px "DM Mono",monospace`;
       const bw = ctx.measureText(txt).width + pad * 2;
-      roundRectPath(ctx, bx, by, bw, segH, Math.max(1, tile * 0.03));
+      roundRectPath(ctx, bx, by, bw, segH, Math.max(1, tile * 0.045));
       ctx.fillStyle = bg;
       ctx.fill();
       ctx.fillStyle = fg;
@@ -13744,6 +13763,11 @@ function App() {
       return !!x && !(x.isContextLost && x.isContextLost());
     };
     const frame = () => {
+      // CORPS PROTÉGÉ : une exception (notamment dans draw()) ne doit JAMAIS empêcher la
+      // reprogrammation de la frame. Sinon la boucle de rendu MEURT et la vue de l'île gèle
+      // ~4 s (le temps que le « beat » la relance) — symptôme observé au « Copier ». On
+      // journalise l'erreur et on reprogramme TOUJOURS la frame suivante (voir finally).
+      try {
       const g = gameRef.current;
       const now = performance.now();
       // Pendant le rattrapage hors-ligne (simulation par morceaux), on NE tique PAS ici
@@ -13751,7 +13775,6 @@ function App() {
       if (g.catchingUp) {
         g.lastFrameTs = now;
         g.tickAcc = 0;
-        rafRef.current = requestAnimationFrame(frame);
         return;
       }
       const prev = g.lastFrameTs || now;
@@ -13807,7 +13830,14 @@ function App() {
         draw();
         g.dirty = false;
       }
-      rafRef.current = requestAnimationFrame(frame);
+      } catch (err) {
+        try {
+          if (typeof console !== 'undefined') console.error('Archipel frame error:', err);
+        } catch (_) {}
+      } finally {
+        // Reprogrammation GARANTIE de la frame, même si le corps a levé une exception.
+        rafRef.current = requestAnimationFrame(frame);
+      }
     };
     const start = () => {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
@@ -13848,10 +13878,14 @@ function App() {
       setCanvasKey(k => k + 1);
     };
     if (canvasEl) canvasEl.addEventListener('contextlost', onCtxLost);
+    // Chien de garde : si la boucle de rendu s'est arrêtée (perte de contexte GPU, retour
+    // d'arrière-plan…), on la relance vite. Seuil abaissé (1,2 s / vérif 0,6 s) pour que la vue
+    // ne reste pas figée plusieurs secondes. (Le try/finally de `frame` empêche déjà la mort
+    // par exception ; ce garde couvre les arrêts hors-exception.)
     const beat = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
-      if (performance.now() - (gameRef.current.lastFrameTs || 0) > 2500) start();
-    }, 2000);
+      if (performance.now() - (gameRef.current.lastFrameTs || 0) > 1200) start();
+    }, 600);
     return () => {
       stop();
       clearInterval(beat);
