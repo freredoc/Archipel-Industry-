@@ -1,7 +1,7 @@
 {
-  "build": 150,
-  "version": "Alpha 11.25",
+  "build": 151,
+  "version": "Alpha 11.26",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.25 — câble débit/flux en kW/MW/GW + couleurs transit inventaire & Port (#149)"
+  "notes": "Alpha 11.26 — priorité de destination du transit par ressource + sprite ressource Port (#150)"
 }
