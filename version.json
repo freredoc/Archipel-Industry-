@@ -1,7 +1,7 @@
 {
-  "build": 159,
-  "version": "Alpha 11.34",
+  "build": 160,
+  "version": "Alpha 11.35",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "UX : hors-ligne lent par défaut + splash de chargement + « Copier » sans gel (#158)"
+  "notes": "Fix freeze « Copier » (boucle de rendu) + boost antenne dans la fiche + badges agrandis (#159)"
 }
