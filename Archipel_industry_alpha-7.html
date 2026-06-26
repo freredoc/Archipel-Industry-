@@ -207,6 +207,11 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .inv-item .iv.down{color:#ff7a6e;}
 .inv-item.clickable{cursor:pointer;}
 .inv-item.clickable:hover{border-color:var(--yellow);}
+/* Transit : orange = on exporte, bleu = on importe (mêmes couleurs dans le Port). */
+.inv-item.inv-export{box-shadow:inset 0 -2px 0 #ffae42;}
+.inv-item.inv-import{box-shadow:inset 0 -2px 0 #5bc0ff;}
+.pp-res-name.pp-export{color:#ffae42;}
+.pp-res-name.pp-import{color:#5bc0ff;}
 .inv-ico{width:14px;height:14px;image-rendering:pixelated;flex-shrink:0;vertical-align:middle;}
 .ui-ico{width:16px;height:16px;image-rendering:pixelated;flex-shrink:0;vertical-align:middle;display:inline-block;}
 .tab-ico .ui-ico,.tab-ico.ui-ico{width:18px;height:18px;}
@@ -4221,8 +4226,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 149;
-const GAME_VERSION = 'Alpha 11.24';
+const GAME_BUILD = 150;
+const GAME_VERSION = 'Alpha 11.25';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -7492,6 +7497,23 @@ function activeEnergyAlerts(game) {
   out.sort((a, b) => a.isl - b.isl);
   return out;
 }
+// Direction de transit par ressource pour une île : 'export' (flux net sortant) ou 'import'
+// (flux net entrant), d'après game.transitFlow. Sert à colorer l'inventaire ET le Port
+// (orange = on exporte, bleu = on importe).
+function islandTransitDir(game, isl) {
+  const tf = game && game.transitFlow || {};
+  const net = {};
+  for (const key in tf) {
+    const parts = key.split('_');
+    const a = +parts[0],
+      b = +parts[1];
+    const rec = tf[key] || {};
+    if (a === isl) for (const r in rec) net[r] = (net[r] || 0) + rec[r];else if (b === isl) for (const r in rec) net[r] = (net[r] || 0) - rec[r];
+  }
+  const dir = {};
+  for (const r in net) dir[r] = net[r] > 1e-6 ? 'export' : net[r] < -1e-6 ? 'import' : null;
+  return dir;
+}
 // Panneau récapitulatif des alertes (électriques + stock, toutes îles). Clic sur une ligne →
 // va à l'île + ouvre le panneau Énergie (déficit) ou Port (stock).
 function AlertsPanel({
@@ -7554,6 +7576,7 @@ function Hud({
   onOpenPort,
   onEnergy,
   onResClick,
+  transitDir,
   onSelectIsland,
   onOpenResearch,
   researchPending,
@@ -7705,8 +7728,9 @@ function Hud({
       const _ikey = SPRITES_ENABLED ? itemSpriteKey(k) : null;
       const _idata = _ikey && SPRITE_DATA[_ikey];
       // Sprite + chiffre uniquement (plus de nom). Repli sur le code court si le sprite manque.
+      const _dir = transitDir && transitDir[k];
       items.push(React.createElement("span", {
-        className: "inv-item clickable",
+        className: "inv-item clickable" + (_dir === 'export' ? ' inv-export' : _dir === 'import' ? ' inv-import' : ''),
         key: k,
         onClick: e => onResClick && onResClick(k, e),
         title: (RES_SHORT[k] || k) + I18N.t(" — voir production / consommation")
@@ -8962,6 +8986,8 @@ function PortPanel({
     return (a === currentIsland || b === currentIsland) && linkActive(game, key);
   });
   const priority = tradePriorityFor(game, currentIsland);
+  // Direction de transit (orange = export, bleu = import) — mêmes couleurs que l'inventaire.
+  const transitDir = islandTransitDir(game, currentIsland);
   // Port : on n'affiche (commerce + liaisons) que les ressources débloquées par la
   // recherche ; on garde aussi celles déjà en stock pour ne rien rendre inaccessible.
   const unlockedRes = unlockedResourceSet(game);
@@ -9147,7 +9173,7 @@ function PortPanel({
     }, React.createElement("span", {
       className: "pp-c-res"
     }, React.createElement("span", {
-      className: "pp-res-name"
+      className: "pp-res-name" + (transitDir[res] === 'export' ? ' pp-export' : transitDir[res] === 'import' ? ' pp-import' : '')
     }, RES_SHORT[res] || res), React.createElement("span", {
       className: "pp-res-stock"
     }, fmtPort(islandPort[res] || 0), I18N.t(" en stock"))), React.createElement(NumField, {
@@ -9529,7 +9555,7 @@ function NetworkPanel({
     className: "lbl"
   }, I18N.t("D\xE9bit max")), React.createElement("span", {
     className: "val io"
-  }, cap === Infinity ? I18N.t('illimité') : fmtPort(cap) + I18N.t(' /s'))), React.createElement("div", {
+  }, cap === Infinity ? I18N.t('illimité') : isWire ? fmtPower(cap) : fmtPort(cap) + I18N.t(' /s'))), React.createElement("div", {
     className: "ip-row" + (saturatedNet ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
@@ -9538,7 +9564,7 @@ function NetworkPanel({
     style: saturatedNet ? {
       color: '#ff8079'
     } : undefined
-  }, fmtPort(demand) + I18N.t(' /s'))), showWireRange && React.createElement("div", {
+  }, isWire ? fmtPower(demand) : fmtPort(demand) + I18N.t(' /s'))), showWireRange && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -13681,6 +13707,7 @@ function App() {
         y: rect.bottom + 4
       });
     },
+    transitDir: islandTransitDir(game, game.currentIsland),
     onSelectIsland: switchIsland,
     onOpenResearch: () => {
       setResearchOpen(true);
