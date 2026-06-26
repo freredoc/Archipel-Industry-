@@ -4270,8 +4270,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 166;
-const GAME_VERSION = 'Alpha 11.41';
+const GAME_BUILD = 167;
+const GAME_VERSION = 'Alpha 11.42';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -13418,19 +13418,25 @@ function App() {
       const sz = buildingSize(bid);
       drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime, t.building.inFac, t.building.pwrAvg);
       // Badge « ×N » cyan (coin haut-gauche) sur un bâtiment boosté par une antenne.
-      if (t.building.antennaBuff > 1 && tile >= 22) {
+      // MÊME échelle que les badges % déficit / niveau (drawInfoBadges) : même police, même
+      // padding, même rayon — pour que ×N et le numéro de niveau soient visuellement identiques.
+      if (t.building.antennaBuff > 1 && tile >= 16) {
         const bsc = Math.max(0.5, Math.min(2, (g.ui && g.ui.badgeScale) || 1));
-        const bh = Math.max(10, tile * 0.34 * bsc),
-          bw = bh * 1.5;
+        const fs = Math.max(6, Math.round(tile * 0.16 * bsc));
+        const pad = Math.max(1, tile * 0.038 * bsc);
+        const segH = fs + pad * 2;
+        const off = Math.max(1, tile * 0.04);
+        const txt = '×' + t.building.antennaBuff;
         ctx.save();
+        ctx.font = `700 ${fs}px "DM Mono",monospace`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        const bw = ctx.measureText(txt).width + pad * 2;
+        roundRectPath(ctx, x + off, y + off, bw, segH, Math.max(1, tile * 0.045 * bsc));
         ctx.fillStyle = 'rgba(38,198,218,.92)';
-        roundRectPath(ctx, x + 2, y + 2, bw, bh, Math.max(2, bh * 0.22));
         ctx.fill();
         ctx.fillStyle = '#042027';
-        ctx.font = `700 ${Math.round(bh * 0.72)}px "Barlow Condensed",sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('×' + t.building.antennaBuff, x + 2 + bw / 2, y + 2 + bh / 2 + 1);
+        ctx.fillText(txt, x + off + pad, y + off + pad);
         ctx.restore();
       }
     }
