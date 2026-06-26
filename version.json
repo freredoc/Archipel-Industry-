@@ -1,7 +1,7 @@
 {
-  "build": 154,
-  "version": "Alpha 11.29",
+  "build": 155,
+  "version": "Alpha 11.30",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Alpha 11.29 — couleurs transit : build 152 annule et remplace build 150 (#153)"
+  "notes": "Transit : switch destination à position fixe + boutons réduits (#154)"
 }
