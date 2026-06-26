@@ -341,6 +341,13 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
 .pp-c-res{display:flex;flex-direction:column;line-height:1.1;}
 .pp-res-name{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.8rem;color:var(--ink);text-transform:capitalize;}
 .pp-res-stock{font-family:'DM Mono',monospace;font-size:.56rem;color:var(--ink-faint);}
+.pp-res-head{display:flex;align-items:center;gap:4px;}
+.pp-res-ico{width:15px;height:15px;}
+.pp-dest-pri{display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin-top:2px;
+  font-family:'Barlow Condensed',sans-serif;font-size:.62rem;color:var(--ink-faint);}
+.pp-dest-chip{font-family:'Bebas Neue',sans-serif;font-size:.62rem;padding:0 6px;border:1px solid var(--line);
+  border-radius:4px;background:var(--panel);color:var(--ink-dim);cursor:pointer;}
+.pp-dest-chip.first{border-color:#ffae42;color:#ffae42;}
 input.pp-c-num{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:4px;
   color:var(--ink);font-family:'DM Mono',monospace;font-size:.7rem;padding:3px 4px;text-align:right;}
 input.pp-c-num:focus{outline:none;border-color:var(--yellow);}
@@ -4226,8 +4233,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 150;
-const GAME_VERSION = 'Alpha 11.25';
+const GAME_BUILD = 151;
+const GAME_VERSION = 'Alpha 11.26';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -6990,11 +6997,12 @@ function transitPerSec(game, src, dest) {
 // Transfert CONTINU d'une seconde dans un sens (src → dest), en respectant priorité/proportionnel,
 // seuils, interdits et la règle anti aller-retour (via shippableQty). Dépose directement au port
 // de destination (pas de cale physique). Renvoie true si quelque chose a bougé.
-function transferLink(game, src, dest) {
-  let room = transitPerSec(game, src, dest);
-  // Mémorise le flux réel /s par ressource (affiché dans le panneau Port).
+function transferLink(game, src, dest, used) {
+  let room = transitPerSec(game, src, dest) - (used && used[src + '_' + dest] || 0);
+  // Mémorise le flux réel /s par ressource (affiché dans le panneau Port). ACCUMULÉ : le pré-pass
+  // de priorité de destination a pu déjà écrire ce tick (transitFlow est remis à zéro dans tickShips).
   if (!game.transitFlow) game.transitFlow = {};
-  const flow = game.transitFlow[src + '_' + dest] = {};
+  const flow = game.transitFlow[src + '_' + dest] || (game.transitFlow[src + '_' + dest] = {});
   if (room <= 0) return false;
   let moved = false;
   // Le mode (Priorité/Proportionnel) et l'ordre de priorité sont ceux de l'île qui REÇOIT (import,
@@ -7044,25 +7052,99 @@ function transferLink(game, src, dest) {
   }
   return moved;
 }
+// Îles voisines (liaisons SHIP_LINKS actives) vers lesquelles `src` peut exporter.
+function transitNeighbors(game, src) {
+  const out = [];
+  for (const key of SHIP_LINKS) {
+    if (!linkActive(game, key)) continue;
+    const [a, b] = key.split('-').map(Number);
+    if (a === src) out.push(b);else if (b === src) out.push(a);
+  }
+  return out;
+}
+// Ordre de priorité des destinations pour exporter `res` depuis `src` : l'ordre stocké (restreint
+// aux voisins fournis), complété par les voisins manquants en ordre croissant (défaut = ascendant).
+function transitDestOrder(game, src, res, neighbors) {
+  const stored = game.transitDestPriority && game.transitDestPriority[src] && game.transitDestPriority[src][res] || [];
+  const out = [];
+  for (const d of stored) if (neighbors.indexOf(d) !== -1 && out.indexOf(d) === -1) out.push(d);
+  for (const d of neighbors.slice().sort((a, b) => a - b)) if (out.indexOf(d) === -1) out.push(d);
+  return out;
+}
+// Promeut la destination `dest` en tête de la priorité d'export de `res` depuis `src`.
+function setTransitDestFirst(game, src, res, dest, neighbors) {
+  if (!game.transitDestPriority) game.transitDestPriority = {};
+  const m = game.transitDestPriority[src] || (game.transitDestPriority[src] = {});
+  const order = transitDestOrder(game, src, res, neighbors).filter(d => d !== dest);
+  order.unshift(dest);
+  m[res] = order;
+}
 function tickShips(game) {
   if (!game.ships) return false;
+  // Flux recalculé chaque tick : remis à zéro AVANT les deux passes (pré-pass de priorité de
+  // destination, puis transfert normal), qui ACCUMULENT toutes deux dans game.transitFlow.
+  game.transitFlow = {};
   let changed = false;
+  const dirs = [];
   for (const key of SHIP_LINKS) {
     if (!linkActive(game, key)) continue;
     const ship = game.ships[key];
-    if (!ship) continue;
-    const [a, b] = key.split('-').map(Number);
-    // Animation décorative du cargo : aller-retour visuel découplé du transfert (cale toujours
-    // vide). On fait juste avancer le timer / basculer le côté pour le dessin du sprite.
-    ship.cargo = {};
-    ship.timer = (ship.timer || 0) - 1;
-    if (ship.timer <= 0) {
-      ship.position = ship.position === 'A' ? 'B' : 'A';
-      ship.timer = SHIP_TRAVEL_TICKS;
+    if (ship) {
+      // Animation décorative du cargo : aller-retour visuel découplé du transfert (cale toujours
+      // vide). On fait juste avancer le timer / basculer le côté pour le dessin du sprite.
+      ship.cargo = {};
+      ship.timer = (ship.timer || 0) - 1;
+      if (ship.timer <= 0) {
+        ship.position = ship.position === 'A' ? 'B' : 'A';
+        ship.timer = SHIP_TRAVEL_TICKS;
+      }
     }
-    // Transfert continu dans LES DEUX sens chaque seconde (flux lissé).
-    if (transferLink(game, a, b)) changed = true;
-    if (transferLink(game, b, a)) changed = true;
+    const [a, b] = key.split('-').map(Number);
+    dirs.push([a, b]);
+    dirs.push([b, a]);
+  }
+  // Budget de transit consommé par sens (src_dest) — partagé entre le pré-pass et le transfert normal.
+  const used = {};
+  // PRÉ-PASS — priorité de destination par ressource : pour chaque source, les ressources ayant
+  // un ordre de destinations explicite (game.transitDestPriority) sont expédiées D'ABORD vers les
+  // îles dans l'ordre choisi (ex. processeur → île 5 puis île 3). Consomme surplus + budget.
+  const dp = game.transitDestPriority || {};
+  if (Object.keys(dp).length) {
+    const destsBySrc = {};
+    for (const d of dirs) (destsBySrc[d[0]] || (destsBySrc[d[0]] = [])).push(d[1]);
+    for (const s in destsBySrc) {
+      const perRes = dp[s];
+      if (!perRes) continue;
+      const neigh = destsBySrc[s];
+      for (const res in perRes) {
+        const order = perRes[res];
+        if (!order || !order.length) continue;
+        for (const dest of order) {
+          if (neigh.indexOf(dest) === -1) continue;
+          const k = s + '_' + dest;
+          const room = transitPerSec(game, +s, dest) - (used[k] || 0);
+          if (room <= 0) continue;
+          const qty = Math.min(shippableQty(game, +s, dest, res), room);
+          if (qty <= 0) continue;
+          const drawn = tradeDraw(game, +s, res, qty);
+          if (drawn <= 0) continue;
+          if (!tradeDeposit(game, dest, res, drawn)) {
+            tradeDeposit(game, +s, res, drawn);
+            continue;
+          }
+          used[k] = (used[k] || 0) + drawn;
+          const fl = game.transitFlow[k] || (game.transitFlow[k] = {});
+          fl[res] = (fl[res] || 0) + drawn;
+          if (game.techTree && game.techTree.imported) game.techTree.imported[res] = (game.techTree.imported[res] || 0) + drawn;
+          changed = true;
+        }
+      }
+    }
+  }
+  // PASSE NORMALE : transfert par liaison (respecte le mode/priorité de l'île destinataire),
+  // avec le budget déjà partiellement consommé par le pré-pass.
+  for (const d of dirs) {
+    if (transferLink(game, d[0], d[1], used)) changed = true;
   }
   return changed;
 }
@@ -8972,6 +9054,7 @@ function PortPanel({
   currentIsland,
   onClose,
   onSetCfg,
+  onSetDestPriority,
   onMovePriority,
   onSetTradeMode,
   onToggleBlock,
@@ -8988,6 +9071,8 @@ function PortPanel({
   const priority = tradePriorityFor(game, currentIsland);
   // Direction de transit (orange = export, bleu = import) — mêmes couleurs que l'inventaire.
   const transitDir = islandTransitDir(game, currentIsland);
+  // Îles voisines vers lesquelles cette île peut exporter (≥2 → choix de priorité de destination).
+  const destNeighbors = transitNeighbors(game, currentIsland);
   // Port : on n'affiche (commerce + liaisons) que les ressources débloquées par la
   // recherche ; on garde aussi celles déjà en stock pour ne rien rendre inaccessible.
   const unlockedRes = unlockedResourceSet(game);
@@ -9173,10 +9258,28 @@ function PortPanel({
     }, React.createElement("span", {
       className: "pp-c-res"
     }, React.createElement("span", {
+      className: "pp-res-head"
+    }, (() => {
+      const _ik = SPRITES_ENABLED ? itemSpriteKey(res) : null;
+      const _d = _ik && SPRITE_DATA[_ik];
+      return _d ? React.createElement("img", {
+        className: "inv-ico pp-res-ico",
+        src: _d,
+        alt: ""
+      }) : null;
+    })(), React.createElement("span", {
       className: "pp-res-name" + (transitDir[res] === 'export' ? ' pp-export' : transitDir[res] === 'import' ? ' pp-import' : '')
-    }, RES_SHORT[res] || res), React.createElement("span", {
+    }, RES_SHORT[res] || res)), React.createElement("span", {
       className: "pp-res-stock"
-    }, fmtPort(islandPort[res] || 0), I18N.t(" en stock"))), React.createElement(NumField, {
+    }, fmtPort(islandPort[res] || 0), I18N.t(" en stock")), destNeighbors.length >= 2 && React.createElement("span", {
+      className: "pp-dest-pri",
+      title: I18N.t("Priorité d'envoi : touchez une île pour l'envoyer en premier")
+    }, "→ ", transitDestOrder(game, currentIsland, res, destNeighbors).map((d, di) => React.createElement("button", {
+      key: d,
+      className: "pp-dest-chip" + (di === 0 ? " first" : ""),
+      onClick: () => onSetDestPriority(currentIsland, res, d),
+      title: I18N.t("Envoyer en priorité vers l'île ") + d
+    }, "Î" + d)))), React.createElement(NumField, {
       className: "pp-c-num",
       value: cfg.stockCible,
       onCommit: v => onSetCfg(currentIsland, res, 'stockCible', v),
@@ -10534,6 +10637,7 @@ function App() {
       tradePriority: {},
       tradeMode: {},
       tradeBlockDest: {},
+      transitDestPriority: {},
       stockAlerts: {},
       accumulators: {
         1: [],
@@ -10913,6 +11017,7 @@ function App() {
         ...g.tradeMode
       },
       tradeBlockDest: g.tradeBlockDest,
+      transitDestPriority: g.transitDestPriority,
       stockAlerts: g.stockAlerts,
       energyMode: {
         ...g.energyMode
@@ -11197,6 +11302,17 @@ function App() {
         } else for (const res in v) if (v[res]) dmap[res] = true;
         if (Object.keys(dmap).length) (g.tradeBlockDest[+sid] || (g.tradeBlockDest[+sid] = {}))[+did] = dmap;
       }
+    }
+    // Priorité de destination du transit par ressource (src -> {res: [dest,...]}).
+    g.transitDestPriority = {};
+    if (data.transitDestPriority) for (const sid in data.transitDestPriority) {
+      const perRes = data.transitDestPriority[sid] || {};
+      const m = {};
+      for (const res in perRes) {
+        const arr = (perRes[res] || []).map(Number).filter(n => !isNaN(n));
+        if (arr.length) m[res] = arr;
+      }
+      if (Object.keys(m).length) g.transitDestPriority[+sid] = m;
     }
     g.stockAlerts = {};
     g.stockAlertState = {};
@@ -12474,6 +12590,13 @@ function App() {
       const v = Math.floor(parseNum(value));
       cfg[field] = isNaN(v) || v < 0 ? 0 : v;
     }
+    bumpHud();
+    scheduleSave();
+  }
+  // Priorité de destination du transit : met `dest` en tête pour `res` exporté depuis `islandId`.
+  function setDestPriority(islandId, res, dest) {
+    const g = gameRef.current;
+    setTransitDestFirst(g, islandId, res, dest, transitNeighbors(g, islandId));
     bumpHud();
     scheduleSave();
   }
@@ -13943,6 +14066,7 @@ function App() {
     currentIsland: game.currentIsland,
     onClose: () => setPortOpen(false),
     onSetCfg: setTradeCfg,
+    onSetDestPriority: setDestPriority,
     onMovePriority: movePriority,
     onSetTradeMode: setTradeMode,
     onToggleBlock: toggleTradeBlock,
