@@ -1,7 +1,7 @@
 {
-  "build": 160,
-  "version": "Alpha 11.35",
+  "build": 161,
+  "version": "Alpha 11.36",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Fix freeze « Copier » (boucle de rendu) + boost antenne dans la fiche + badges agrandis (#159)"
+  "notes": "Slider taille des badges + Options/Aide en sprite + audit emoji (#160)"
 }
