@@ -207,11 +207,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .inv-item .iv.down{color:#ff7a6e;}
 .inv-item.clickable{cursor:pointer;}
 .inv-item.clickable:hover{border-color:var(--yellow);}
-/* Transit : orange = on exporte, bleu = on importe (mêmes couleurs dans le Port). */
-.inv-item.inv-export{box-shadow:inset 0 -2px 0 #ffae42;}
-.inv-item.inv-import{box-shadow:inset 0 -2px 0 #5bc0ff;}
-.pp-res-name.pp-export{color:#ffae42;}
-.pp-res-name.pp-import{color:#5bc0ff;}
 .inv-ico{width:14px;height:14px;image-rendering:pixelated;flex-shrink:0;vertical-align:middle;}
 .ui-ico{width:16px;height:16px;image-rendering:pixelated;flex-shrink:0;vertical-align:middle;display:inline-block;}
 .tab-ico .ui-ico,.tab-ico.ui-ico{width:18px;height:18px;}
@@ -4239,8 +4234,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 153;
-const GAME_VERSION = 'Alpha 11.28';
+const GAME_BUILD = 154;
+const GAME_VERSION = 'Alpha 11.29';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -7669,7 +7664,6 @@ function Hud({
   onOpenPort,
   onEnergy,
   onResClick,
-  transitDir,
   onSelectIsland,
   onOpenResearch,
   researchPending,
@@ -7821,9 +7815,8 @@ function Hud({
       const _ikey = SPRITES_ENABLED ? itemSpriteKey(k) : null;
       const _idata = _ikey && SPRITE_DATA[_ikey];
       // Sprite + chiffre uniquement (plus de nom). Repli sur le code court si le sprite manque.
-      const _dir = transitDir && transitDir[k];
       items.push(React.createElement("span", {
-        className: "inv-item clickable" + (_dir === 'export' ? ' inv-export' : _dir === 'import' ? ' inv-import' : ''),
+        className: "inv-item clickable",
         key: k,
         onClick: e => onResClick && onResClick(k, e),
         title: (RES_SHORT[k] || k) + I18N.t(" — voir production / consommation")
@@ -9080,8 +9073,6 @@ function PortPanel({
     return (a === currentIsland || b === currentIsland) && linkActive(game, key);
   });
   const priority = tradePriorityFor(game, currentIsland);
-  // Direction de transit (orange = export, bleu = import) — mêmes couleurs que l'inventaire.
-  const transitDir = islandTransitDir(game, currentIsland);
   // Îles voisines vers lesquelles cette île peut exporter (≥2 → choix de priorité de destination).
   const destNeighbors = transitNeighbors(game, currentIsland);
   // Port : on n'affiche (commerce + liaisons) que les ressources débloquées par la
@@ -9279,7 +9270,7 @@ function PortPanel({
         alt: ""
       }) : null;
     })(), React.createElement("span", {
-      className: "pp-res-name" + (transitDir[res] === 'export' ? ' pp-export' : transitDir[res] === 'import' ? ' pp-import' : '')
+      className: "pp-res-name"
     }, RES_SHORT[res] || res)), React.createElement("span", {
       className: "pp-res-stock"
     }, fmtPort(islandPort[res] || 0), I18N.t(" en stock")), destNeighbors.length >= 2 && React.createElement("span", {
@@ -13864,7 +13855,6 @@ function App() {
         y: rect.bottom + 4
       });
     },
-    transitDir: islandTransitDir(game, game.currentIsland),
     onSelectIsland: switchIsland,
     onOpenResearch: () => {
       setResearchOpen(true);
