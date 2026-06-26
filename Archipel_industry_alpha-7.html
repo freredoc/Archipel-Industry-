@@ -346,11 +346,14 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
 .pp-res-stock{font-family:'DM Mono',monospace;font-size:.56rem;color:var(--ink-faint);}
 .pp-res-head{display:flex;align-items:center;gap:4px;}
 .pp-res-ico{width:15px;height:15px;}
-.pp-dest-pri{display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin-top:2px;
-  font-family:'Barlow Condensed',sans-serif;font-size:.62rem;color:var(--ink-faint);}
-.pp-dest-chip{font-family:'Bebas Neue',sans-serif;font-size:.62rem;padding:0 6px;border:1px solid var(--line);
-  border-radius:4px;background:var(--panel);color:var(--ink-dim);cursor:pointer;}
-.pp-dest-chip.first{border-color:#ffae42;color:#ffae42;}
+.pp-dest-pri{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;
+  font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--ink-faint);}
+/* Switch segmenté : les destinations côte à côte, l'île prioritaire (1re) remplie en orange. */
+.pp-dest-sw{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;}
+.pp-dest-chip{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.04em;
+  padding:5px 14px;border:none;background:var(--panel);color:var(--ink-dim);cursor:pointer;}
+.pp-dest-chip+.pp-dest-chip{border-left:1px solid var(--line);}
+.pp-dest-chip.first{background:#ffae42;color:#1a1a1a;font-weight:700;}
 input.pp-c-num{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:4px;
   color:var(--ink);font-family:'DM Mono',monospace;font-size:.7rem;padding:3px 4px;text-align:right;}
 input.pp-c-num:focus{outline:none;border-color:var(--yellow);}
@@ -4236,8 +4239,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 152;
-const GAME_VERSION = 'Alpha 11.27';
+const GAME_BUILD = 153;
+const GAME_VERSION = 'Alpha 11.28';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -7066,12 +7069,13 @@ function transitNeighbors(game, src) {
   return out;
 }
 // Ordre de priorité des destinations pour exporter `res` depuis `src` : l'ordre stocké (restreint
-// aux voisins fournis), complété par les voisins manquants en ordre croissant (défaut = ascendant).
+// aux voisins fournis), complété par les voisins manquants en ordre DÉCROISSANT (défaut = île N+1
+// d'abord, c.-à-d. l'île voisine la plus haute en premier).
 function transitDestOrder(game, src, res, neighbors) {
   const stored = game.transitDestPriority && game.transitDestPriority[src] && game.transitDestPriority[src][res] || [];
   const out = [];
   for (const d of stored) if (neighbors.indexOf(d) !== -1 && out.indexOf(d) === -1) out.push(d);
-  for (const d of neighbors.slice().sort((a, b) => a - b)) if (out.indexOf(d) === -1) out.push(d);
+  for (const d of neighbors.slice().sort((a, b) => b - a)) if (out.indexOf(d) === -1) out.push(d);
   return out;
 }
 // Promeut la destination `dest` en tête de la priorité d'export de `res` depuis `src`.
@@ -7144,10 +7148,14 @@ function tickShips(game) {
       }
     }
   }
-  // PASSE NORMALE : transfert par liaison (respecte le mode/priorité de l'île destinataire),
-  // avec le budget déjà partiellement consommé par le pré-pass.
-  for (const d of dirs) {
-    if (transferLink(game, d[0], d[1], used)) changed = true;
+  // PASSE NORMALE : pour chaque source, on sert ses destinations dans l'ordre par DÉFAUT
+  // « île N+1 d'abord » (île voisine la plus haute en premier). Respecte le mode/priorité de
+  // l'île destinataire et le budget déjà consommé par le pré-pass.
+  const destsBySrc = {};
+  for (const d of dirs) (destsBySrc[d[0]] || (destsBySrc[d[0]] = [])).push(d[1]);
+  for (const s in destsBySrc) {
+    const ordered = destsBySrc[s].slice().sort((a, b) => b - a);
+    for (const dest of ordered) if (transferLink(game, +s, dest, used)) changed = true;
   }
   return changed;
 }
@@ -9277,12 +9285,14 @@ function PortPanel({
     }, fmtPort(islandPort[res] || 0), I18N.t(" en stock")), destNeighbors.length >= 2 && React.createElement("span", {
       className: "pp-dest-pri",
       title: I18N.t("Priorité d'envoi : touchez une île pour l'envoyer en premier")
-    }, "→ ", transitDestOrder(game, currentIsland, res, destNeighbors).map((d, di) => React.createElement("button", {
+    }, I18N.t("Envoyer d'abord :"), React.createElement("span", {
+      className: "pp-dest-sw"
+    }, transitDestOrder(game, currentIsland, res, destNeighbors).map((d, di) => React.createElement("button", {
       key: d,
       className: "pp-dest-chip" + (di === 0 ? " first" : ""),
       onClick: () => onSetDestPriority(currentIsland, res, d),
       title: I18N.t("Envoyer en priorité vers l'île ") + d
-    }, "Î" + d)))), React.createElement(NumField, {
+    }, "Île " + d))))), React.createElement(NumField, {
       className: "pp-c-num",
       value: cfg.stockCible,
       onCommit: v => onSetCfg(currentIsland, res, 'stockCible', v),
