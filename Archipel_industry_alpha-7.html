@@ -147,6 +147,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .alert-isl{font-family:'Bebas Neue',sans-serif;font-size:.8rem;color:var(--ink-dim);}
 .alert-res{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.86rem;text-transform:capitalize;}
 .alert-val{font-family:'DM Mono',monospace;font-size:.74rem;color:#ffb14e;}
+.alert-row.alert-energy{border-left-color:#ff5b52;}
+.alert-row.alert-energy .alert-res{color:#ff8079;text-transform:none;}
+.alert-row.alert-energy .alert-val{color:#ff8079;}
 /* Panneau Production */
 .prod-panel{width:min(560px,96vw);max-height:84vh;display:flex;flex-direction:column;}
 .prod-tabs{display:flex;flex-wrap:wrap;gap:4px;padding:8px 12px 4px;}
@@ -4218,8 +4221,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 148;
-const GAME_VERSION = 'Alpha 11.23';
+const GAME_BUILD = 149;
+const GAME_VERSION = 'Alpha 11.24';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -7470,27 +7473,47 @@ function activeStockAlerts(game) {
   out.sort((a, b) => a.isl - b.isl || resTierRank(a.res) - resTierRank(b.res));
   return out;
 }
-// Panneau récapitulatif des alertes de stock (toutes îles). Clic sur une ligne → va à l'île + Port.
+// Alertes électriques : île DÉBLOQUÉE en déficit (demande > production) ET batterie vide
+// (0% de charge, ou aucune batterie) → ses bâtiments sont coupés faute d'énergie ET de réserve.
+function activeEnergyAlerts(game) {
+  const out = [];
+  const en = game && game.energy;
+  if (!en) return out;
+  for (const isl in en) {
+    if (game.islandUnlocked && !game.islandUnlocked[isl]) continue;
+    const e = en[isl] || {};
+    const deficit = (e.demand || 0) > (e.produced || 0) + 0.5;
+    if (deficit && (e.accStored || 0) <= 0.001) out.push({
+      isl: +isl,
+      demand: e.demand || 0,
+      supply: e.produced || 0
+    });
+  }
+  out.sort((a, b) => a.isl - b.isl);
+  return out;
+}
+// Panneau récapitulatif des alertes (électriques + stock, toutes îles). Clic sur une ligne →
+// va à l'île + ouvre le panneau Énergie (déficit) ou Port (stock).
 function AlertsPanel({
   game,
   onGo,
+  onGoEnergy,
   onClose
 }) {
+  const eAlerts = activeEnergyAlerts(game);
   const alerts = activeStockAlerts(game);
-  return React.createElement("div", {
-    className: "research-panel alerts-panel"
-  }, React.createElement("div", {
-    className: "slot-head"
+  const empty = eAlerts.length === 0 && alerts.length === 0;
+  const rows = [].concat(eAlerts.map(a => React.createElement("button", {
+    key: 'e-' + a.isl,
+    className: "alert-row alert-energy",
+    onClick: () => onGoEnergy && onGoEnergy(a.isl)
   }, React.createElement("span", {
-    className: "slot-title"
-  }, "⚠️ Alertes ressources"), React.createElement("button", {
-    className: "rp-close",
-    onClick: onClose
-  }, "×")), React.createElement("div", {
-    className: "alerts-list"
-  }, alerts.length === 0 ? React.createElement("div", {
-    className: "alerts-empty"
-  }, "Aucune alerte en cours.") : alerts.map(a => React.createElement("button", {
+    className: "alert-isl"
+  }, I18N.t("Île ") + a.isl), React.createElement("span", {
+    className: "alert-res"
+  }, I18N.t("⚡ Déficit · 0% batterie")), React.createElement("span", {
+    className: "alert-val"
+  }, fmtPower(a.supply) + " / " + fmtPower(a.demand)))), alerts.map(a => React.createElement("button", {
     key: a.isl + '-' + a.res,
     className: "alert-row",
     onClick: () => onGo && onGo(a.isl)
@@ -7500,7 +7523,21 @@ function AlertsPanel({
     className: "alert-res"
   }, RES_SHORT[a.res] || a.res), React.createElement("span", {
     className: "alert-val"
-  }, fmtPort(a.stock) + " / " + fmtPort(a.thr))))));
+  }, fmtPort(a.stock) + " / " + fmtPort(a.thr)))));
+  return React.createElement("div", {
+    className: "research-panel alerts-panel"
+  }, React.createElement("div", {
+    className: "slot-head"
+  }, React.createElement("span", {
+    className: "slot-title"
+  }, "⚠️ Alertes"), React.createElement("button", {
+    className: "rp-close",
+    onClick: onClose
+  }, "×")), React.createElement("div", {
+    className: "alerts-list"
+  }, empty ? React.createElement("div", {
+    className: "alerts-empty"
+  }, "Aucune alerte en cours.") : rows));
 }
 function Hud({
   resources,
@@ -13670,7 +13707,7 @@ function App() {
     onOpenHelp: () => setHelpOpen(true),
     onOpenProduction: () => setProdOpen(true),
     onOpenCalc: () => setCalcOpen(true),
-    alertCount: activeStockAlerts(game).length,
+    alertCount: activeStockAlerts(game).length + activeEnergyAlerts(game).length,
     onOpenAlerts: () => setAlertsOpen(true),
     updateInfo: updateInfo
   }), prodOpen && React.createElement(ProductionPanel, {
@@ -13685,6 +13722,11 @@ function App() {
       switchIsland(isl);
       setAlertsOpen(false);
       setPortOpen(true);
+    },
+    onGoEnergy: isl => {
+      switchIsland(isl);
+      setAlertsOpen(false);
+      setEnergyOpen(true);
     },
     onClose: () => setAlertsOpen(false)
   }), tutorialStep >= 0 && React.createElement(TutorialBanner, {

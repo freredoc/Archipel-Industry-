@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 148`, `GAME_VERSION = 'Alpha 11.23'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 149`, `GAME_VERSION = 'Alpha 11.24'`.** Changement
+  11.24 : **alerte « déficit électrique + 0% batterie » + vérif tech tree pompe/puits.** (1) Nouvelle
+  fonction `activeEnergyAlerts(game)` : une île DÉBLOQUÉE en **déficit** (`demand > produced+0.5`) ET
+  **batterie vide** (`accStored <= 0` : 0% ou aucun accumulateur) génère une alerte. Comptée dans
+  `alertCount` du HUD (bouton ⚠ à côté de Production) et listée dans `AlertsPanel` (ligne rouge
+  `.alert-energy` « ⚡ Déficit · 0% batterie », clic → va à l'île + ouvre le panneau Énergie via
+  `onGoEnergy`). Le panneau s'intitule désormais « ⚠️ Alertes » (élec. + stock). (2) **Vérif tech
+  tree** : `puits_petrole` est débloqué par le **nœud 8 « Accès Île 3 »**, `pompe_eau` par le **nœud 9
+  « Usine Polymère »** (prérequis nœud 8) → bien au stade **île 3, pas avant** (les Excel étaient
+  périmés ; le fix tuyau 11.23 reste cohérent). Validé : `node --check` (6 blocs) + CSS équilibré +
+  Chromium (alerte déclenchée si déficit+0%, pas si batterie chargée ni surplus, 0 erreur). Changement
   11.23 : **tuyaux disponibles sur les îles 1 et 2 (fix déblocage).** `networkUnlocked` gatait le
   tuyau par `currentIsland >= 3` → impossible de poser un tuyau sur les îles 1-2 même après avoir
   débloqué un bâtiment à liquide (incohérent avec la pompe à eau « dispo partout » depuis 10.79).
