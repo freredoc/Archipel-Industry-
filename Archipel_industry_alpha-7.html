@@ -230,6 +230,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .res-pop-row .rl{color:var(--ink-dim);}
 .res-pop-row.prod .rv{color:#5fd08a;}
 .res-pop-row.conso .rv{color:#ff7a72;}
+.res-pop-row.export .rv{color:#ffae42;}
+.res-pop-row.import .rv{color:#5bc0ff;}
 .res-pop-row.net{border-top:1px solid var(--line);margin-top:3px;padding-top:4px;}
 .res-pop-row.net .rv.pos{color:#5fd08a;}
 .res-pop-row.net .rv.neg{color:#ff7a72;}
@@ -317,8 +319,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .pp-block-chip{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;padding:3px 6px;border-radius:5px;border:1px solid var(--line);background:rgba(120,200,140,.08);color:var(--green);cursor:pointer;}
 .pp-block-chip.off{border-color:#ff8079;color:#ff8079;background:rgba(255,128,121,.1);}
 .pp-cargo{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px;}
-.pp-cargo-item{font-family:'DM Mono',monospace;font-size:.66rem;color:#8fd0ff;}
-.pp-cargo-item.pp-cargo-in{color:#9ee29f;}
+.pp-cargo-item{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-dim);}
+.pp-cargo-item.pp-cargo-out{color:#ffae42;}
+.pp-cargo-item.pp-cargo-in{color:#5bc0ff;}
 .pp-cargo-empty{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-faint);}
 .pp-cargo-spr{width:12px;height:12px;vertical-align:-2px;image-rendering:pixelated;image-rendering:crisp-edges;}
 .pp-cargo-ico{width:16px;height:16px;vertical-align:-4px;image-rendering:pixelated;image-rendering:crisp-edges;}
@@ -4233,8 +4236,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 151;
-const GAME_VERSION = 'Alpha 11.26';
+const GAME_BUILD = 152;
+const GAME_VERSION = 'Alpha 11.27';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -9204,7 +9207,7 @@ function PortPanel({
       const lf = game.transitFlow && game.transitFlow[currentIsland + '_' + other] || {};
       const rate = lf[res] || 0;
       return React.createElement("span", {
-        className: "pp-cargo-item",
+        className: "pp-cargo-item pp-cargo-out",
         key: res,
         title: I18N.t("Transit : ") + fmtPort(rate) + I18N.t("/s de ") + (RES_SHORT[res] || res) + " \u2192 \u00cele " + other
       }, idata ? React.createElement("img", {
@@ -9472,6 +9475,15 @@ function ResPopover({
     conso
   } = resourceRates(game, currentIsland, res);
   const net = prod - conso;
+  // Flux de transit de cette ressource pour l'île courante : export (sortant) / import (entrant).
+  let exp = 0,
+    imp = 0;
+  const _tf = game.transitFlow || {};
+  for (const key in _tf) {
+    const parts = key.split('_');
+    const rr = (_tf[key] || {})[res] || 0;
+    if (+parts[0] === currentIsland) exp += rr;else if (+parts[1] === currentIsland) imp += rr;
+  }
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "research-backdrop",
     style: {
@@ -9505,6 +9517,18 @@ function ResPopover({
   }, I18N.t("Consommation")), React.createElement("span", {
     className: "rv"
   }, "\u2212", fmtRate(conso), I18N.t(" /s"))), React.createElement("div", {
+    className: "res-pop-row export"
+  }, React.createElement("span", {
+    className: "rl"
+  }, I18N.t("Export")), React.createElement("span", {
+    className: "rv"
+  }, "\u2192 ", fmtRateSci(exp), I18N.t(" /s"))), React.createElement("div", {
+    className: "res-pop-row import"
+  }, React.createElement("span", {
+    className: "rl"
+  }, I18N.t("Import")), React.createElement("span", {
+    className: "rv"
+  }, "\u2190 ", fmtRateSci(imp), I18N.t(" /s"))), React.createElement("div", {
     className: "res-pop-row net"
   }, React.createElement("span", {
     className: "rl"
