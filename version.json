@@ -3,5 +3,5 @@
   "version": "Alpha 12.3",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Fix sprites : conduit relié aux bâtiments, plus de barre noire sur la centrale, sprite de réseau dans le panneau d'amélioration"
+  "notes": "Merge pull request #170 — Fix sprites (conduit/bâtiments, barre noire, panneau réseau)"
 }
