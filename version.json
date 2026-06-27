@@ -3,5 +3,5 @@
   "version": "Alpha 12.1",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Bouton Passer pendant le calcul hors-ligne + bouton Alerte réduit ~20%"
+  "notes": "Merge pull request #168 — UI : Passer (calcul hors-ligne) + bouton Alerte réduit"
 }
