@@ -1,7 +1,7 @@
 {
-  "build": 173,
-  "version": "Alpha 12.2",
+  "build": 174,
+  "version": "Alpha 12.3",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Merge pull request #169 — Mise à jour de l'ensemble des sprites (conduit, tour, icônes)"
+  "notes": "Fix sprites : conduit relié aux bâtiments, plus de barre noire sur la centrale, sprite de réseau dans le panneau d'amélioration"
 }
