@@ -1,7 +1,7 @@
 {
-  "build": 168,
-  "version": "Alpha 11.43",
+  "build": 170,
+  "version": "Alpha 11.45",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Nucléaire 6 MW + diesel 3/s + badge ×N à l'échelle + bilan net avec transit (#165)"
+  "notes": "Mode auto irradiés + 3 boutons + Production plus petite + croix sticky + pas de récap <5min (#166)"
 }
