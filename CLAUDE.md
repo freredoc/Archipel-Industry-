@@ -17,7 +17,16 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 173`, `GAME_VERSION = 'Alpha 12.2'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 174`, `GAME_VERSION = 'Alpha 12.3'`, `SAVE_VERSION = 14`.**
+  Changement 12.3 : **3 correctifs de sprites (retours visuels).** (1) **Conduit relié aux bâtiments** :
+  le masque de connexion du conduit (`drawBuilding`/branche conduit) ajoute désormais une branche vers
+  tout bâtiment **à chaleur** (`heatCap` : centrale/usine/antenne) ou **tour** (`tour`) adjacent → le
+  sprite `conduit_v{niv}_{masque}` pointe vers eux (fini les extrémités « ouvertes »). (2) **Plus de barre
+  noire sur la centrale** : la jauge de chaleur sur la tuile ne dessine plus son fond sombre quand la
+  chaleur est nulle (seuil `hf>0.005`) — elle n'apparaît qu'en présence de chaleur (signal d'alerte).
+  (3) **Sprite de réseau dans le panneau d'amélioration** : l'en-tête du `NetworkPanel` (clic sur une
+  route/câble/tuyau/conduit) affiche le **sprite représentatif** (`{prefixe}_v{niv}_15_NESO`) au lieu d'un
+  carré de couleur (repli swatch si sprite absent). Validé : `node --check` (7 blocs) + boot jsdom 0 erreur.
   Changement 12.2 : **mise à jour de l'ensemble des sprites (pack `Archipel_sprites_COMPLET`).** Le pack
   livre enfin l'art des nouveautés 12.0. Re-sync de `__SPRITE_DATA__` (objet principal) depuis le pack :
   354 clés existantes rafraîchies/conservées + **69 ajoutées** — les **64 tuiles de conduit**

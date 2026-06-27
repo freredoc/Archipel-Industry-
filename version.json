@@ -1,7 +1,7 @@
 {
-  "build": 173,
-  "version": "Alpha 12.2",
+  "build": 174,
+  "version": "Alpha 12.3",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Sprites mis à jour : conduit de chaleur (tuiles connectées), tour aéroréfrigérante, icônes chaleur/modes antenne"
+  "notes": "Fix sprites : conduit relié aux bâtiments, plus de barre noire sur la centrale, sprite de réseau dans le panneau d'amélioration"
 }

@@ -4322,8 +4322,8 @@ const SAVE_VERSION = 14;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 173;
-const GAME_VERSION = 'Alpha 12.2';
+const GAME_BUILD = 174;
+const GAME_VERSION = 'Alpha 12.3';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -10156,12 +10156,25 @@ function NetworkPanel({
     }
   }, React.createElement("div", {
     className: "ip-head"
-  }, React.createElement("span", {
-    className: "ip-swatch",
-    style: {
-      background: TYPE_COLOR[netObj.type] || '#777'
-    }
-  }), React.createElement("span", {
+  }, (() => {
+    // Vignette = sprite représentatif du réseau (tuile pleinement connectée au niveau courant),
+    // au lieu d'un simple carré de couleur.
+    const pfx = NET_PREFIX[netObj.type];
+    const svl = netObj.type === 'conduit' ? Math.min(lvl, 4) : unlimited ? 4 : Math.min(lvl, 3);
+    const sk = pfx ? pfx + '_v' + svl + '_15_NESO' : null;
+    const sd = SPRITES_ENABLED && sk && SPRITE_DATA[sk];
+    return sd ? React.createElement("img", {
+      className: "ip-sprite",
+      src: sd,
+      alt: "",
+      draggable: false
+    }) : React.createElement("span", {
+      className: "ip-swatch",
+      style: {
+        background: TYPE_COLOR[netObj.type] || '#777'
+      }
+    });
+  })(), React.createElement("span", {
     className: "ip-name"
   }, TYPE_NAME[netObj.type] || netObj.type), React.createElement("span", {
     className: "ip-level"
@@ -13747,7 +13760,17 @@ function App() {
       // repli vectoriel cuivre, puis TEINTE DE CHALEUR dynamique (cuivre → rouge vif) en canvas,
       // proportionnelle au flux réellement transporté dans ce segment (game.conduitLoad).
       if (bid === 'conduit') {
-        const mask = netConnectMask(tiles, r, c, ['conduit']);
+        let mask = netConnectMask(tiles, r, c, ['conduit']);
+        // Le conduit se raccorde visuellement aux bâtiments À CHALEUR (centrale/usine/antenne) et
+        // aux TOURS adjacents → on ajoute une branche vers eux (sinon le conduit semble « ouvert »).
+        for (const [dr, dc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
+          let nt = tiles[r + dr] && tiles[r + dr][c + dc];
+          if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
+          if (nt && nt.building) {
+            const nb = BUILDINGS[nt.building.id];
+            if (nb && (nb.heatCap || nb.tour)) mask |= bit;
+          }
+        }
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
         const slvl = Math.max(1, Math.min(lvl, 4));
@@ -13912,8 +13935,10 @@ function App() {
       // Jauge de chaleur (sources) : barre fine en haut de la tuile, % du plafond de trip.
       // Vert < 50 %, orange 50-80 %, rouge clignotant 80-100 %. Post-effet rouge si endommagé.
       const hcap = bdef && bdef.heatCap || 0;
-      if (hcap > 0 && tile >= 16) {
-        const hf = Math.max(0, Math.min(1, (t.building.heat || 0) / hcap));
+      const hf0 = hcap > 0 ? Math.max(0, Math.min(1, (t.building.heat || 0) / hcap)) : 0;
+      // Jauge seulement s'il y a de la chaleur (évite une barre noire vide à 0 MJ).
+      if (hcap > 0 && hf0 > 0.005 && tile >= 16) {
+        const hf = hf0;
         const bw = sz.w * tile,
           pad = Math.max(1, tile * 0.06),
           gw = bw - 2 * pad,
