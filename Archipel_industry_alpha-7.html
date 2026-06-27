@@ -129,10 +129,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .calc-upg-pm:hover{border-color:var(--yellow);}
 .calc-upg-pm:disabled{opacity:.4;cursor:default;}
 /* Bouton ALERTE (à droite de Production) : récap des alertes de stock en cours, orange pulsant. */
-.inv-alert-btn{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.05em;color:#ffce54;
-  background:rgba(255,149,0,.16);border:1px solid var(--orange);border-radius:4px;padding:3px 10px;cursor:pointer;
-  display:flex;align-items:center;gap:6px;flex-shrink:0;animation:alertpulse 1.4s ease-in-out infinite;}
+/* Bouton ALERTE : ~20 % plus petit que le bouton Production (.78rem/15px → .62rem/12px). */
+.inv-alert-btn{font-family:'Bebas Neue',sans-serif;font-size:.62rem;letter-spacing:.05em;color:#ffce54;
+  background:rgba(255,149,0,.16);border:1px solid var(--orange);border-radius:4px;padding:2px 8px;cursor:pointer;
+  display:flex;align-items:center;gap:4px;flex-shrink:0;animation:alertpulse 1.4s ease-in-out infinite;}
 .inv-alert-btn:hover{background:rgba(255,149,0,.30);}
+.inv-alert-btn .ui-ico{width:12px;height:12px;}
 .inv-alert-btn .inv-count{background:var(--red);color:#fff;}
 @keyframes alertpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,149,0,0);}50%{box-shadow:0 0 0 3px rgba(255,149,0,.35);}}
 /* Panneau récapitulatif des alertes. */
@@ -741,7 +743,10 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   box-shadow:0 -6px 18px rgba(0,0,0,.45);transition:opacity .08s;}
 .info-panel::-webkit-scrollbar{width:6px;}
 .info-panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
-.ip-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+/* En-tête de la fiche bâtiment COLLÉE en haut du panneau défilant → la croix de fermeture
+   (en haut à droite) reste TOUJOURS visible, même sur une fiche longue (ex. centrale nucléaire). */
+.ip-head{display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:3;
+  background:var(--panel);margin:-11px -14px 8px;padding:11px 14px 7px;border-bottom:1px solid var(--line);}
 .ip-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0;border:1px solid rgba(255,255,255,.15);}
 .ip-sprite{width:20px;height:20px;flex-shrink:0;image-rendering:pixelated;image-rendering:crisp-edges;}
 .ip-name{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.04em;
@@ -751,7 +756,7 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-actions{display:flex;gap:6px;margin-bottom:8px;}
 .ip-nuc-sel{margin:6px 0 2px;padding-top:6px;border-top:1px solid var(--line);}
 .ip-nuc-sel-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.74rem;color:var(--ink-dim);display:block;margin-bottom:4px;}
-.ip-nuc-mats{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.ip-nuc-mats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;}
 .ip-nuc-mat{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:5px 6px;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;}
 .ip-nuc-mat.on{background:#7E57C2;color:#fff;border-color:#7E57C2;}
 .ip-nuc-mat:hover{border-color:#7E57C2;}
@@ -766,6 +771,9 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-nuc-mix-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.74rem;font-weight:600;color:var(--ink);min-width:60px;}
 .ip-nuc-mix-row input[type=range]{width:100%;accent-color:#7E57C2;cursor:pointer;}
 .ip-nuc-mix-val{font-family:'DM Mono',monospace;font-size:.64rem;color:var(--ink-dim);min-width:78px;text-align:right;white-space:nowrap;}
+/* Mode « auto » : barre de répartition en lecture seule (pas de slider). */
+.ip-nuc-mix-auto-bar{display:block;width:100%;height:7px;background:var(--panel-2);border-radius:4px;overflow:hidden;}
+.ip-nuc-mix-auto-fill{display:block;height:100%;background:#7E57C2;transition:width .25s;}
 /* Lignes « théorique » (cible) de la centrale : atténuées/italique pour les distinguer du réel. */
 .ip-row.ip-theo .lbl,.ip-row.ip-theo .val{opacity:.72;font-style:italic;}
 /* Curseur de puissance de la centrale : jauge graduée en % + boutons −/+. */
@@ -4270,8 +4278,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 168;
-const GAME_VERSION = 'Alpha 11.43';
+const GAME_BUILD = 169;
+const GAME_VERSION = 'Alpha 11.44';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5375,27 +5383,26 @@ function tickIsland(game, isl) {
           port['combustible_u235'] = (port['combustible_u235'] || 0) - upMult * frac;
           nets[coldNid].pool['eau_froide'] = (nets[coldNid].pool['eau_froide'] || 0) - NUC_COOL * upMult * frac;
           // Irradiation OPTIONNELLE : si le matériau est dispo au port, on le consomme pour produire
-          // sa version irradiée. Sinon la centrale tourne quand même (élec seule).
-          // Deux modes : « une seule ressource » (matKey) OU « mix » réparti entre acier/béton/câble
-          // selon des poids normalisés (chaque part n'est produite que si elle est payable).
+          // sa version irradiée. Sinon la centrale tourne quand même (élec seule). 3 modes unifiés
+          // par un jeu de POIDS (normalisés) : 'single' (1 sur matKey), 'mix' (poids manuels),
+          // 'auto' (équilibrage selon les stocks). Chaque part n'est produite que si elle est payable.
           const irrAmt = upMult * frac;
           if (roadNid != null && irrAmt > 1e-12) {
             const mix = nucMix(game, isl);
-            if (mix.on) {
-              let wsum = 0;
-              for (const mk of NUC_MAT_KEYS) wsum += mix.w[mk];
-              if (wsum > 0) for (const mk of NUC_MAT_KEYS) {
-                const want = irrAmt * mix.w[mk] / wsum;
-                if (want > 1e-12 && (port[mk] || 0) >= want) {
-                  port[mk] = (port[mk] || 0) - want;
-                  port[mk + '_irradie'] = (port[mk + '_irradie'] || 0) + want;
-                  if (prod) prod[mk + '_irradie'] = (prod[mk + '_irradie'] || 0) + want;
-                }
+            let wmap;
+            if (mix.mode === 'mix') wmap = mix.w;else if (mix.mode === 'auto') wmap = nucAutoWeights(port);else {
+              wmap = {};
+              for (const mk of NUC_MAT_KEYS) wmap[mk] = mk === matKey ? 1 : 0;
+            }
+            let wsum = 0;
+            for (const mk of NUC_MAT_KEYS) wsum += wmap[mk];
+            if (wsum > 0) for (const mk of NUC_MAT_KEYS) {
+              const want = irrAmt * wmap[mk] / wsum;
+              if (want > 1e-12 && (port[mk] || 0) >= want) {
+                port[mk] = (port[mk] || 0) - want;
+                port[mk + '_irradie'] = (port[mk + '_irradie'] || 0) + want;
+                if (prod) prod[mk + '_irradie'] = (prod[mk + '_irradie'] || 0) + want;
               }
-            } else if ((port[matKey] || 0) >= irrAmt) {
-              port[matKey] = (port[matKey] || 0) - irrAmt;
-              port[irrKey] = (port[irrKey] || 0) + irrAmt;
-              if (prod) prod[irrKey] = (prod[irrKey] || 0) + irrAmt;
             }
           }
           resChanged = true;
@@ -5857,19 +5864,38 @@ const TUTORIAL_STEPS = [{
 }];
 // Matériaux irradiables par la centrale nucléaire (clés sans le suffixe _irradie).
 const NUC_MAT_KEYS = ['acier', 'beton_arme', 'cable'];
-// Réglage de répartition des matériaux irradiés d'une île : { on, w:{acier,beton_arme,cable} }.
-// on=false → mode « une seule ressource » (game.nuclearConfig). on=true → mix selon les poids w
-// (normalisés à l'usage). Poids par défaut = 1 chacun.
+// Réglage de répartition des matériaux irradiés d'une île : { mode, w:{acier,beton_arme,cable} }.
+// mode : 'single' (une seule ressource, game.nuclearConfig) | 'mix' (poids manuels w, normalisés) |
+// 'auto' (équilibrage automatique : on produit davantage du matériau irradié le moins en stock).
+// Rétro-compat : ancien champ booléen `on` (true → 'mix'). Poids par défaut = 1 chacun.
 function nucMix(game, isl) {
   const m = game.nuclearMix && game.nuclearMix[isl];
+  let mode = 'single';
+  if (m) {
+    if (m.mode === 'mix' || m.mode === 'auto' || m.mode === 'single') mode = m.mode;else if (m.on) mode = 'mix';
+  }
   return {
-    on: !!(m && m.on),
+    mode: mode,
+    on: mode !== 'single',
     w: {
       acier: m && m.acier != null ? Math.max(0, m.acier) : 1,
       beton_arme: m && m.beton_arme != null ? Math.max(0, m.beton_arme) : 1,
       cable: m && m.cable != null ? Math.max(0, m.cable) : 1
     }
   };
+}
+// Poids d'équilibrage AUTO pour une île : favorise le matériau irradié dont le stock (port) est
+// le plus bas → poids = (stock max − stock du matériau) + 1 (répartition égale si tous égaux).
+function nucAutoWeights(port) {
+  let mx = 0;
+  const st = {};
+  for (const k of NUC_MAT_KEYS) {
+    st[k] = (port && port[k + '_irradie']) || 0;
+    if (st[k] > mx) mx = st[k];
+  }
+  const w = {};
+  for (const k of NUC_MAT_KEYS) w[k] = mx - st[k] + 1;
+  return w;
 }
 // Bâtiments révélés jusqu'à l'étape `step` incluse.
 function tutorialRevealedSet(step) {
@@ -8248,7 +8274,7 @@ function InfoPanel({
   onDowngrade,
   onSetNuclear,
   onSetNucPower,
-  onSetNucMixOn,
+  onSetNucMode,
   onSetNucMixWeight,
   onSetFluxPri,
   onRepair,
@@ -8571,6 +8597,9 @@ function InfoPanel({
     const NUC_MATS = [['acier', I18N.t('Acier')], ['beton_arme', I18N.t('Béton armé')], ['cable', I18N.t('Câble')]];
     const mix = nucMix(game, currentIsland);
     const mixSum = NUC_MAT_KEYS.reduce((a, k) => a + mix.w[k], 0) || 1;
+    // Poids d'équilibrage AUTO (live, selon les stocks irradiés au port de l'île).
+    const autoW = nucAutoWeights(game.port[currentIsland] || {});
+    const autoSum = NUC_MAT_KEYS.reduce((a, k) => a + autoW[k], 0) || 1;
     const stLabels = {
       off: I18N.t('Arrêtée'),
       starting: 'Calibrage…',
@@ -8675,21 +8704,19 @@ function InfoPanel({
     }, React.createElement("div", {
       className: "ip-nuc-irr-hd"
     }, "Matériau irradié (optionnel)"),
-    // Choix du mode : une seule ressource OU répartition (mix) entre les 3 matériaux.
+    // Choix du mode (3 boutons à suivre) : une seule ressource / mix manuel / équilibrage auto.
     React.createElement("div", {
       className: "ip-nuc-mats"
-    }, React.createElement("button", {
-      className: 'ip-nuc-mat' + (!mix.on ? ' on' : ''),
-      onClick: () => onSetNucMixOn && onSetNucMixOn(currentIsland, false)
-    }, I18N.t("Une seule")), React.createElement("button", {
-      className: 'ip-nuc-mat' + (mix.on ? ' on' : ''),
-      onClick: () => onSetNucMixOn && onSetNucMixOn(currentIsland, true)
-    }, I18N.t("Mix réparti"))),
-    // MODE « une seule » : ligne IO + sélection du matériau.
-    !mix.on && React.createElement("div", {
+    }, [['single', I18N.t("Une seule")], ['mix', I18N.t("Mix réparti")], ['auto', I18N.t("Auto")]].map(([mk, label]) => React.createElement("button", {
+      key: mk,
+      className: 'ip-nuc-mat' + (mix.mode === mk ? ' on' : ''),
+      onClick: () => onSetNucMode && onSetNucMode(currentIsland, mk)
+    }, label))),
+    // MODE « une seule » : ligne IO + sélection du matériau (3 boutons à suivre).
+    mix.mode === 'single' && React.createElement("div", {
       className: "ip-nuc-irr-io"
     }, "− " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey] || matKey, " → + " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey + '_irradie'] || matKey + '_irradie', I18N.t(" /s")),
-    !mix.on && React.createElement("div", {
+    mix.mode === 'single' && React.createElement("div", {
       className: "ip-nuc-mats"
     }, NUC_MATS.map(([k, label]) => React.createElement("button", {
       key: k,
@@ -8697,7 +8724,7 @@ function InfoPanel({
       onClick: () => onSetNuclear && onSetNuclear(currentIsland, k)
     }, label))),
     // MODE « mix » : un slider de poids par matériau + le % normalisé et le débit produit.
-    mix.on && React.createElement("div", {
+    mix.mode === 'mix' && React.createElement("div", {
       className: "ip-nuc-mix"
     }, NUC_MATS.map(([k, label]) => React.createElement("div", {
       className: "ip-nuc-mix-row",
@@ -8714,6 +8741,27 @@ function InfoPanel({
     }), React.createElement("span", {
       className: "ip-nuc-mix-val"
     }, Math.round(mix.w[k] / mixSum * 100) + "% · " + fmtN(upMult * realFrac * mix.w[k] / mixSum) + "/s")))),
+    // MODE « auto » : répartition calculée (lecture seule) pour équilibrer les stocks irradiés.
+    mix.mode === 'auto' && React.createElement("div", {
+      className: "ip-nuc-mix"
+    }, NUC_MATS.map(([k, label]) => React.createElement("div", {
+      className: "ip-nuc-mix-row auto",
+      key: k
+    }, React.createElement("span", {
+      className: "ip-nuc-mix-lbl"
+    }, label), React.createElement("span", {
+      className: "ip-nuc-mix-auto-bar"
+    }, React.createElement("span", {
+      className: "ip-nuc-mix-auto-fill",
+      style: {
+        width: Math.round(autoW[k] / autoSum * 100) + '%'
+      }
+    })), React.createElement("span", {
+      className: "ip-nuc-mix-val"
+    }, Math.round(autoW[k] / autoSum * 100) + "% · " + fmtN(upMult * realFrac * autoW[k] / autoSum) + "/s")))),
+    mix.mode === 'auto' && React.createElement("div", {
+      className: "ip-nuc-irr-note"
+    }, "Équilibrage automatique : on produit davantage du matériau irradié dont le stock est le plus bas."),
     React.createElement("div", {
       className: "ip-nuc-irr-note"
     }, "Produit uniquement si le matériau est livré au port — sinon la centrale fournit l'électricité seule.")));
@@ -11626,8 +11674,10 @@ function App() {
     g.nuclearMix = {};
     if (data.nuclearMix) for (const id in data.nuclearMix) {
       const m = data.nuclearMix[id] || {};
+      // Rétro-compat : ancien booléen `on` (true → 'mix').
+      const mode = m.mode === 'mix' || m.mode === 'auto' || m.mode === 'single' ? m.mode : m.on ? 'mix' : 'single';
       g.nuclearMix[+id] = {
-        on: !!m.on,
+        mode: mode,
         acier: Math.max(0, m.acier != null ? +m.acier : 1),
         beton_arme: Math.max(0, m.beton_arme != null ? +m.beton_arme : 1),
         cable: Math.max(0, m.cable != null ? +m.cable : 1)
@@ -11770,7 +11820,8 @@ function App() {
     g.lastActiveTs = Date.now();
     g.catchingUp = false;
     setCatchUp(null);
-    if (elapsedSec >= 60) {
+    // Pas de récap de rattrapage hors-ligne pour une absence < 5 min (trop court / inutile).
+    if (elapsedSec >= 300) {
       const after = sumPortAll(g);
       const gains = [];
       for (const k in after) {
@@ -12778,13 +12829,14 @@ function App() {
     markDirty();
     scheduleSave();
   }
-  // Active/désactive le mode « mix » (répartition) des matériaux irradiés sur une île.
-  function setNucMixOn(islandId, on) {
+  // Choisit le mode de production des matériaux irradiés d'une île : 'single' | 'mix' | 'auto'.
+  function setNucMode(islandId, mode) {
     const g = gameRef.current;
+    if (['single', 'mix', 'auto'].indexOf(mode) === -1) return;
     if (!g.nuclearMix) g.nuclearMix = {};
     const had = g.nuclearMix[islandId];
-    // 1re activation sans réglage préalable → parts visibles par défaut (≈ un tiers chacune).
-    const w = had ? {
+    // Parts manuelles visibles par défaut (≈ un tiers chacune) à la 1re activation du mix.
+    const w = had && had.acier != null ? {
       acier: had.acier,
       beton_arme: had.beton_arme,
       cable: had.cable
@@ -12794,7 +12846,7 @@ function App() {
       cable: 34
     };
     g.nuclearMix[islandId] = {
-      on: !!on,
+      mode: mode,
       acier: w.acier,
       beton_arme: w.beton_arme,
       cable: w.cable
@@ -12803,14 +12855,14 @@ function App() {
     markDirty();
     scheduleSave();
   }
-  // Règle le poids (0→100) d'un matériau dans le mix d'une île.
+  // Règle le poids (0→100) d'un matériau dans le mix manuel d'une île (force le mode 'mix').
   function setNucMixWeight(islandId, mat, w) {
     const g = gameRef.current;
     if (NUC_MAT_KEYS.indexOf(mat) === -1) return;
     if (!g.nuclearMix) g.nuclearMix = {};
     const cur = nucMix(g, islandId);
     const next = {
-      on: true,
+      mode: 'mix',
       acier: cur.w.acier,
       beton_arme: cur.w.beton_arme,
       cable: cur.w.cable
@@ -14281,7 +14333,7 @@ function App() {
     onDowngrade: (r, c) => tryDowngrade(r, c),
     onSetNuclear: setNuclearConfig,
     onSetNucPower: setNuclearPower,
-    onSetNucMixOn: setNucMixOn,
+    onSetNucMode: setNucMode,
     onSetNucMixWeight: setNucMixWeight,
     onSetFluxPri: setFluxPri,
     onRepair: (r, c) => tryRepair(r, c),
