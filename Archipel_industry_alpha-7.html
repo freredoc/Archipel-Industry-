@@ -2551,7 +2551,8 @@ function coastTransitionTri(tiles, def, r, c) {
 const NET_PREFIX = {
   road: 'route',
   pipe: 'tuyau',
-  wire: 'cable'
+  wire: 'cable',
+  conduit: 'conduit'
 };
 // 4-dir bitmask order matching delivered sprites: N=1, E=2, S=4, O(W)=8.
 // Suffix letters use N/E/S/O. Build the lookup from mask value -> "NN_LETTERS".
@@ -2691,8 +2692,9 @@ function buildingConnectsCarrier(buildingId, carrier) {
         res = true;
         break;
       }
-      // nuclear plant has no declared I/O but uses road (materials) + pipe (cold water)
-      if (!res && b.nuclear) res = carrier === 'road' || carrier === 'pipe';
+      // nuclear plant has no declared I/O but uses road (materials) ; le refroidissement
+      // passe désormais par la chaleur (conduit), plus par le tuyau.
+      if (!res && b.nuclear) res = carrier === 'road';
     }
   }
   _connectsCache[ck] = res;
@@ -2773,6 +2775,21 @@ const BUILDINGS = {
     terrains: ['land', 'resource', 'coast'],
     size: [1, 1],
     cost: {},
+    power: 0
+  },
+  conduit: {
+    name: 'Conduit de chaleur',
+    color: '#B87333',
+    label: '',
+    kind: 'infra',
+    tier: 'infra',
+    heat: true,
+    terrains: ['land', 'resource', 'coast'],
+    size: [1, 1],
+    cost: {
+      lingot_cuivre: 1000,
+      polymere: 500
+    },
     power: 0
   },
   jonction_route_cable: {
@@ -3691,25 +3708,22 @@ const BUILDINGS = {
       combustible_u235: 0.25
     }
   },
-  refroidisseur: {
-    name: 'Refroidisseur V1',
-    color: '#4DD0E1',
-    label: 'REFR',
+  tour_aerorefrigerante: {
+    name: 'Tour aéroréfrigérante',
+    color: '#90A4AE',
+    label: 'TOUR',
     kind: 'build',
     tier: 't3',
-    terrains: ['land', 'resource'],
+    tour: true,
+    terrains: ['land', 'resource', 'coast'],
     size: [1, 1],
-    power: 128,
+    power: 0,
     cost: {
-      acier: 100,
-      beton_arme: 80,
-      cable: 60
+      beton_arme: 1000,
+      lingot_fer: 500
     },
     inputs: {
       eau: 256
-    },
-    outputs: {
-      eau_froide: 128
     }
   },
   centrale_nucleaire: {
@@ -3722,6 +3736,7 @@ const BUILDINGS = {
     exclusiveIsland: 5,
     size: [2, 2],
     nuclear: true,
+    heatCap: 10,
     maxPerIsland: 1,
     power: 0,
     cost: {
@@ -3858,6 +3873,7 @@ const BUILDINGS = {
     exclusiveIsland: 5,
     size: [1, 1],
     power: 0,
+    heatCap: 2,
     randomP: {
       min: 64,
       max: 512
@@ -3886,6 +3902,7 @@ const BUILDINGS = {
     terrains: ['land', 'resource', 'coast'],
     size: [1, 1],
     antenna: true,
+    heatCap: 10,
     maxPerIsland: 1,
     power: 1024,
     cost: {
@@ -3951,7 +3968,7 @@ const TIER_ACCENT = {
 const TOOLBAR_GROUPS = [{
   key: 'infra',
   label: 'Infrastructure',
-  ids: ['road', 'pipe', 'wire']
+  ids: ['road', 'pipe', 'wire', 'conduit']
 }, {
   key: 'junction',
   label: 'Jonctions',
@@ -3987,7 +4004,7 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'nuclear',
   label: 'Nucléaire',
-  ids: ['broyeur_uranium', 'centrale_enrichissement', 'refroidisseur', 'centrale_nucleaire', 'usine_moteur_nuc', 'antenne']
+  ids: ['broyeur_uranium', 'centrale_enrichissement', 'centrale_nucleaire', 'tour_aerorefrigerante', 'usine_moteur_nuc', 'antenne']
 }];
 // Onglet « Réseau » (infra + jonctions) séparé de l'onglet « Bâtiment ». Filtres sur la CLÉ stable
 // (pas le label, qui est traduit par l'i18n).
@@ -4004,6 +4021,8 @@ function networkUnlocked(id, unlockedSet, currentIsland) {
   // partout depuis 10.79). Le câble suit le déblocage d'une éolienne.
   const pipeOk = has('pompe_eau') || has('puits_petrole');
   const wireOk = has('eolienne') || has('eolienne_offshore');
+  // Le conduit de chaleur apparaît dès que le nucléaire (centrale OU tour) est débloqué.
+  const heatOk = has('centrale_nucleaire') || has('tour_aerorefrigerante');
   switch (id) {
     case 'road':
       return true;
@@ -4011,6 +4030,8 @@ function networkUnlocked(id, unlockedSet, currentIsland) {
       return pipeOk;
     case 'wire':
       return wireOk;
+    case 'conduit':
+      return heatOk;
     case 'jonction_route_cable':
       return wireOk;
     case 'jonction_route_tuyau':
@@ -4150,8 +4171,21 @@ const NETWORK_UPGRADE_COST = {
     3: {
       acier: 100
     }
+  },
+  // Conduit de chaleur : montée ×10 par palier (cuivre + polymère), débit ×2 par palier.
+  conduit: {
+    1: {
+      lingot_cuivre: 10000,
+      polymere: 5000
+    },
+    2: {
+      lingot_cuivre: 100000,
+      polymere: 50000
+    }
   }
 };
+// Débit d'un conduit de chaleur (MJ/s) PAR TUILE selon le niveau : V1=1, V2=2, V3=4… (×2/palier).
+const conduitDebit = level => 1 * Math.pow(2, (level || 1) - 1);
 // Matériaux des paliers élevés (niveau 3 → 4 et au-delà), par type de réseau.
 //  - cheap   : matériau « volume » (toujours dispo), base 800.
 //  - premium : matériau raffiné (base 100) — nécessite de l'avoir débloqué.
@@ -4182,6 +4216,11 @@ const NETWORK_UNLIMITED_COST = 10000;
 // (cheap/premium), coût ×4 par niveau — toujours croissant, sans fin.
 function networkUnitCost(type, level, payMat) {
   const tbl = NETWORK_UPGRADE_COST[type] || {};
+  // Conduit : coût ×10 par palier, sans choix de matériau ni état illimité.
+  if (type === 'conduit') return {
+    lingot_cuivre: 1000 * Math.pow(10, level),
+    polymere: 500 * Math.pow(10, level)
+  };
   if (level < 3) return tbl[level] || {};
   const m = NETWORK_HI_MATS[type];
   if (!m) return tbl[level] || {};
@@ -4273,12 +4312,12 @@ function ensureSlotsInitialized() {
   }
   return active;
 }
-const SAVE_VERSION = 13;
+const SAVE_VERSION = 14;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 170;
-const GAME_VERSION = 'Alpha 11.45';
+const GAME_BUILD = 171;
+const GAME_VERSION = 'Alpha 12.0';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4706,6 +4745,169 @@ function networkTileCount(game, islandId, networkId) {
   }
   return n;
 }
+// ============ CHALEUR / REFROIDISSEMENT ============
+// Ratio chaleur : 0,25 MJ/s émis par MW (puissance interne en kW → /1000 puis ×0,25).
+const HEAT_PER_MW = 0.25;
+// Coût TOTAL cumulé d'un bâtiment = coût de construction + toutes les améliorations payées.
+// Sert à calculer la pénalité de réparation (20 %) après une surchauffe (trip).
+function buildingTotalCost(bld) {
+  const b = bld && BUILDINGS[bld.id];
+  if (!b) return {};
+  const out = {};
+  for (const k in b.cost || {}) out[k] = (out[k] || 0) + b.cost[k];
+  const cum = cumulativeUpgradeCost(b.cost, bld.upgrade || 0, bld.id);
+  for (const k in cum) out[k] = (out[k] || 0) + cum[k];
+  return out;
+}
+const heatCapOf = bld => bld && BUILDINGS[bld.id] && BUILDINGS[bld.id].heatCap || 0;
+// Nombre de tuiles de conduit du réseau `nid` adjacentes à l'emprise WxH ancrée en (r,c).
+function condTilesForNet(game, islandId, r, c, w, h, nid) {
+  const def = defById(islandId),
+    tiles = game.islands[islandId];
+  if (!def || !tiles) return 0;
+  let n = 0;
+  const inside = (rr, cc) => rr >= r && rr < r + h && cc >= c && cc < c + w;
+  for (let dr = 0; dr < h; dr++) for (let dc = 0; dc < w; dc++) {
+    for (const [er, ec] of DIRS4) {
+      const nr = r + dr + er,
+        nc = c + dc + ec;
+      if (nr < 0 || nc < 0 || nr >= def.rows || nc >= def.cols) continue;
+      if (inside(nr, nc)) continue;
+      const t = tiles[nr][nc];
+      if (t && t.building && t.building.id === 'conduit' && t.networkId === nid) n++;
+    }
+  }
+  return n;
+}
+// Passe « chaleur » d'une île, exécutée à chaque tick après l'énergie. Modèle de STOCK :
+// chaque source (centrale/usine moteur/antenne en productivité) accumule b.heat (MJ) via son
+// émission ; les tours aéroréfrigérantes reliées par conduit absorbent (limité par le débit du
+// conduit par tuile, et par leur conso d'eau). Au plafond → trip (arrêt + état endommagé).
+function processHeat(game, isl) {
+  const def = defById(isl),
+    tiles = game.islands[isl];
+  if (!def || !tiles) return;
+  const nets = game.networks[isl] || {};
+  const port = game.port[isl] || (game.port[isl] = {});
+  if (!game.conduitLoad) game.conduitLoad = {};
+  game.conduitLoad[isl] = {};
+  const load = game.conduitLoad[isl];
+  const sources = [],
+    tours = [];
+  for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
+    const bld = tiles[r][c].building;
+    if (!bld) continue;
+    const b = BUILDINGS[bld.id];
+    if (!b) continue;
+    if (b.tour) tours.push({ bld, r, c });else if (b.heatCap) sources.push({ bld, r, c });
+  }
+  // 1) Émission : on ajoute la chaleur produite ce tick (gelée si endommagé).
+  for (const s of sources) {
+    const bld = s.bld;
+    if (bld.heat == null) bld.heat = 0;
+    if (bld.damaged) {
+      bld.dmgTimer = (bld.dmgTimer || 0) + 1;
+      if (bld.dmgTimer === 300) {
+        if (!game.heatRepairReady) game.heatRepairReady = [];
+        game.heatRepairReady.push({ isl, id: bld.id });
+      }
+      continue;
+    }
+    bld.heat += bld.heatEmit || 0;
+  }
+  // 2) Tours : conso d'eau (port si tuyau relié au port, sinon pool tuyau) → absorption dispo.
+  for (const to of tours) {
+    const bld = to.bld,
+      up = Math.pow(2, bld.upgrade || 0);
+    const need = 256 * up,
+      absorbCap = 0.768 * up;
+    const pipeIds = adjacentNetworksFootprint(game, isl, to.r, to.c, 1, 1, 'pipe');
+    let drawn = 0,
+      pnid = null;
+    for (const nid of pipeIds) if (nets[nid] && nets[nid].connected) { pnid = nid; break; }
+    if (pnid != null) {
+      const avail = port['eau'] || 0;
+      drawn = Math.min(need, avail);
+      port['eau'] = avail - drawn;
+    } else {
+      for (const nid of pipeIds) {
+        const pl = nets[nid] && nets[nid].pool;
+        if (pl && (pl['eau'] || 0) > 1e-9) {
+          const avail = pl['eau'] || 0;
+          drawn = Math.min(need, avail);
+          pl['eau'] = avail - drawn;
+          break;
+        }
+      }
+    }
+    const wf = need > 0 ? drawn / need : 0;
+    to.absorb = absorbCap * wf;
+    bld.regime = wf;
+    bld.active = wf > 0;
+    bld.heat = 0;
+    to.condIds = adjacentNetworksFootprint(game, isl, to.r, to.c, 1, 1, 'conduit');
+  }
+  // 3) Réseaux de conduit : offre (tours) vs demande (sources), bornée par le débit/tuile.
+  const condNets = {};
+  for (const nid in nets) if (nets[nid] && nets[nid].type === 'conduit') condNets[nid] = {
+    supply: 0,
+    debit: conduitDebit(nets[nid].level || 1),
+    sources: []
+  };
+  for (const to of tours) {
+    if (!(to.absorb > 0) || !to.condIds || !to.condIds.length) continue;
+    const nid = to.condIds[0];
+    if (condNets[nid]) condNets[nid].supply += to.absorb;
+  }
+  for (const s of sources) {
+    const bld = s.bld;
+    if (bld.damaged) continue;
+    const b = BUILDINGS[bld.id],
+      sz = b.size || [1, 1];
+    const condIds = adjacentNetworksFootprint(game, isl, s.r, s.c, sz[1] || 1, sz[0] || 1, 'conduit');
+    for (const nid of condIds) {
+      if (!condNets[nid]) continue;
+      const cap = condNets[nid].debit * condTilesForNet(game, isl, s.r, s.c, sz[1] || 1, sz[0] || 1, nid);
+      condNets[nid].sources.push({ bld, cap });
+    }
+  }
+  for (const nid in condNets) {
+    const cn = condNets[nid];
+    let demand = 0;
+    const items = [];
+    for (const it of cn.sources) {
+      const want = Math.min(it.bld.heat || 0, it.cap);
+      if (want > 0) {
+        items.push({ bld: it.bld, want });
+        demand += want;
+      }
+    }
+    if (demand <= 0) {
+      load[nid] = 0;
+      continue;
+    }
+    const frac = Math.min(1, cn.supply / demand);
+    for (const o of items) o.bld.heat = Math.max(0, (o.bld.heat || 0) - o.want * frac);
+    const carried = Math.min(cn.supply, demand);
+    load[nid] = Math.min(1, carried / Math.max(1e-9, cn.debit));
+  }
+  // 4) Trip : toute source au plafond s'arrête et passe en état endommagé (réparation 20 %).
+  for (const s of sources) {
+    const bld = s.bld,
+      cap = heatCapOf(bld);
+    if (bld.damaged || cap <= 0) continue;
+    if ((bld.heat || 0) >= cap - 1e-9) {
+      bld.heat = cap;
+      bld.damaged = true;
+      bld.dmgTimer = 0;
+      bld.active = false;
+      bld.nucState = 'off';
+      bld.nucCur = 0;
+      if (!game.heatTrip) game.heatTrip = [];
+      game.heatTrip.push({ isl, id: bld.id });
+    }
+  }
+}
 // Combined upgrade cost (going from current level to current+1) for a network and
 // all networks coupled to it via junctions. dir = +1 (upgrade) or -1 (downgrade).
 // Returns { cost, ids, fromLevel, blocked, reason } where cost is the total resources.
@@ -4856,33 +5058,58 @@ function tickIsland(game, isl) {
     return ids[0];
   };
   // --- Antenna buff pre-pass ---
-  // Marque les 8 tuiles autour de chaque antenne RELIÉE AU CÂBLE avec son facteur de boost.
-  // Boost = 2 (base) ×2 par niveau d'amélioration de l'antenne (2, 4, 8…). Si deux antennes
-  // se chevauchent, la plus forte l'emporte. Le résultat est mémorisé sur `game` pour que le
-  // rendu puisse pulser ces tuiles (overlay d'influence).
-  const buffSet = {};
-  let hasAntenna = false;
+  // L'antenne a 2 modes (toggle joueur) + 1 état subi :
+  //  • VITESSE (défaut) : ×2 intrants & sortants sur 8 cases, conso ×3 sigmoïde, AUCUNE chaleur.
+  //  • PRODUCTIVITÉ : vitesse −50 % ET intrants ÷2 ; conso élec. des voisins INCHANGÉE (×3),
+  //    chaleur émise par l'antenne = 0,25 MJ/s × (MW consommés EN PLUS par les voisins).
+  //  • SURCHAUFFE (endommagé) : l'antenne s'arrête, mais en mode productivité le debuff voisins
+  //    RESTE appliqué pendant les 5 min (gel de l'accumulation de chaleur côté antenne).
+  // buffSet[bk] = facteur de boost VITESSE ; debuffSet[bk] = facteur des voisins en PRODUCTIVITÉ.
+  const antMode = game.antennaMode && game.antennaMode[isl] === 'prod' ? 'prod' : 'speed';
+  const buffSet = {},
+    debuffSet = {};
+  let hasAntenna = false,
+    antBld = null;
   for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
     const bl = tiles[r][c].building;
     if (!bl || !BUILDINGS[bl.id] || !BUILDINGS[bl.id].antenna) continue;
     // antenna is effective only if wire-connected (drives its own 1024 kW too)
     if (adjacentNetworks(game, isl, r, c, 'wire').length === 0) continue;
-    hasAntenna = true;
+    antBld = bl;
+    // VITESSE : zone active seulement si l'antenne n'est PAS endommagée.
+    // PRODUCTIVITÉ : zone (debuff) active aussi pendant la surchauffe (debuff persiste 5 min).
     const boost = Math.pow(2, (bl.upgrade || 0) + 1);
+    const speedOn = antMode === 'speed' && !bl.damaged;
+    const prodOn = antMode === 'prod';
+    if (speedOn || prodOn) hasAntenna = true;
     for (const [dr, dc] of [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]) {
       const nr = r + dr,
         nc = c + dc;
       if (nr < 0 || nc < 0 || nr >= def.rows || nc >= def.cols) continue;
       const bk = nr + '-' + nc;
-      if (!buffSet[bk] || boost > buffSet[bk]) buffSet[bk] = boost;
+      if (speedOn && (!buffSet[bk] || boost > buffSet[bk])) buffSet[bk] = boost;
+      if (prodOn && (!debuffSet[bk] || boost > debuffSet[bk])) debuffSet[bk] = boost;
     }
   }
   if (!game.antennaBuff) game.antennaBuff = {};
   game.antennaBuff[isl] = buffSet;
+  // Accumulateur de « MW consommés en plus » par les voisins du fait du buff (mode productivité).
+  let antExtraKw = 0;
   for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
     const bld = tiles[r][c].building;
     if (!bld) continue;
     const b = BUILDINGS[bld.id];
+    // Bâtiment ENDOMMAGÉ (surchauffe) : arrêté pendant ≥5 min, ne consomme/produit rien.
+    // Exception : la centrale est gérée dans nucList (qui teste aussi bld.damaged).
+    if (bld.damaged && !b.nuclear) {
+      const pA0 = bld.active;
+      bld.active = false;
+      bld.disc = false;
+      bld.discReason = 'heat';
+      bld.heatEmit = 0;
+      if (bld.active !== pA0) activeChanged = true;
+      continue;
+    }
     if (b.accumulator) {
       const asz = b.size || [1, 1];
       accList.push({
@@ -4894,8 +5121,7 @@ function tickIsland(game, isl) {
       continue;
     }
     if (b.nuclear) {
-      // Deferred: processed after refroidisseur outputs are deposited this tick,
-      // so the plant sees cold water produced in the same tick (non-storable).
+      // Traité dans nucList (après le dépôt des ressources) ; refroidissement par chaleur.
       nucList.push({
         bld,
         r,
@@ -4919,16 +5145,25 @@ function tickIsland(game, isl) {
     // Boost d'antenne : un bâtiment de production (kind build avec sorties) sur une tuile influencée
     // tourne plus vite — INTRANTS ×facteur ET SORTIES ×facteur — et sa conso élec. OSCILLE en
     // sigmoïde jusqu'à ×(1+facteur) du nominal (×1→×3 au niveau de base). Facteur = buffSet (2, ×2/niv).
-    const buffFac = hasAntenna && buffSet[r + '-' + c] && b.outputs && !b.antenna && b.kind === 'build' ? buffSet[r + '-' + c] : 1;
-    const buffed = buffFac > 1;
-    bld.antennaBuff = buffFac;
+    const eligible = b.outputs && !b.antenna && b.kind === 'build';
+    const speedFac = hasAntenna && eligible && buffSet[r + '-' + c] ? buffSet[r + '-' + c] : 1;
+    const prodFac = eligible && debuffSet[r + '-' + c] ? debuffSet[r + '-' + c] : 1;
+    const buffed = speedFac > 1;
+    const debuffed = prodFac > 1;
+    bld.antennaBuff = speedFac;
     let power = basePower * mult;
-    if (buffed) {
+    // Conso élec. boostée (sigmoïde ×1→×(1+facteur)) : IDENTIQUE en vitesse ET en productivité —
+    // un voisin ralenti consomme toujours autant (calcul AVANT le ralentissement). On accumule
+    // la conso « en plus » du nominal pour la chaleur de l'antenne en mode productivité.
+    if (buffed || debuffed) {
       bld.antennaSigT = (bld.antennaSigT || 0) + 1;
       const nomP = nominalPower(bld);
-      power = nomP * (1 + (1 + Math.sin(2 * Math.PI * bld.antennaSigT / 60)) / 2 * buffFac);
+      const fac = buffed ? speedFac : prodFac;
+      power = nomP * (1 + (1 + Math.sin(2 * Math.PI * bld.antennaSigT / 60)) / 2 * fac);
+      if (debuffed) antExtraKw += Math.max(0, power - nomP);
     }
-    const ioMul = mult * buffFac;
+    // Intrants & sortants : ×facteur en VITESSE, ÷2 (×0,5) en PRODUCTIVITÉ.
+    const ioMul = mult * (buffed ? speedFac : debuffed ? 0.5 : 1);
     if (!b.outputs && power <= 0) continue;
     const inByType = {},
       outByType = {};
@@ -5073,6 +5308,7 @@ function tickIsland(game, isl) {
       bld.active = false;
       bld.disc = disc;
       bld.discReason = discReason;
+      bld.heatEmit = 0;
       if (bld.active !== prevA || bld.disc !== prevD) activeChanged = true;
       continue;
     }
@@ -5085,6 +5321,8 @@ function tickIsland(game, isl) {
     bld.inFac = inFac;
     bld.inAvail = inAvail;
     bld.regime = regime;
+    // Émission de chaleur de l'usine moteur nucléaire (2 MJ/s au régime nominal).
+    if (b.heatCap) bld.heatEmit = bld.id === 'usine_moteur_nuc' ? 2 * regime : 0;
     // Plus AUCUN intrant → arrêt franc (on saute le bâtiment). On NE saute PAS sur un déficit
     // d'élec. (pwrF bas) : le bâtiment doit rester dans energyConsumers pour que la boucle énergie
     // compte sa demande et fasse converger pwrAvg (sinon oscillation/blocage). Sa production sera
@@ -5155,6 +5393,8 @@ function tickIsland(game, isl) {
       regime
     });
   }
+  // Chaleur de l'antenne (mode PRODUCTIVITÉ) : 0,25 MJ/s par MW consommé EN PLUS par les voisins.
+  if (antBld) antBld.heatEmit = antMode === 'prod' && !antBld.damaged ? HEAT_PER_MW * antExtraKw / 1000 : 0;
   // Per-network throughput factor based on each network's level cap.
   const netFactor = {};
   const saturated = [];
@@ -5265,11 +5505,21 @@ function tickIsland(game, isl) {
       }
     }
   }
-  // --- Nuclear plants: processed after cold water is deposited this tick ---
+  // --- Nuclear plants (refroidissement par chaleur : voir processHeat) ---
   for (const nu of nucList) {
     const bld = nu.bld,
       r = nu.r,
       c = nu.c;
+    // Centrale ENDOMMAGÉE (surchauffe) : arrêtée tant qu'elle n'est pas réparée (20 % du coût).
+    if (bld.damaged) {
+      bld.active = false;
+      bld.disc = false;
+      bld.discReason = 'heat';
+      bld.nucState = 'off';
+      bld.nucCur = 0;
+      bld.heatEmit = 0;
+      continue;
+    }
     const NUC_START = 300,
       // 5 min de sigmoïde de calibrage
       NUC_STOP = 30,
@@ -5305,14 +5555,6 @@ function tickIsland(game, isl) {
       ufRoot(wireIds[0]);
       for (let i = 1; i < wireIds.length; i++) ufUnion(wireIds[0], wireIds[i]);
     }
-    let coldNid = null;
-    for (const nid of adjacentNetworksFootprint(game, isl, r, c, nw, nh, 'pipe')) {
-      if ((nets[nid] && nets[nid].pool && nets[nid].pool['eau_froide'] || 0) > 1e-6) {
-        coldNid = nid;
-        break;
-      }
-    }
-    const coldAvail = coldNid != null ? (nets[coldNid].pool['eau_froide'] || 0) : 0;
     const fuelOK = roadNid != null && (port['combustible_u235'] || 0) > 1e-6;
     if (bld.nucState == null) {
       bld.nucState = 'off';
@@ -5331,11 +5573,9 @@ function tickIsland(game, isl) {
       bld.nucTimer = 0;
       bld.nucState = 'starting';
     }
-    const curFrac = maxPower > 0 ? (bld.nucCur || 0) / maxPower : 0;
-    const needCoolNow = NUC_COOL * upMult * curFrac;
     if (bld.nucState === 'off') {
-      // Démarre si câble + route/matières + tuyau froid alimenté, et puissance réglée > 0.
-      if (wireOk && fuelOK && coldNid != null && coldAvail > 1e-6 && targetFrac > 0) {
+      // Démarre si câble + route/combustible, et puissance réglée > 0.
+      if (wireOk && fuelOK && targetFrac > 0) {
         bld.nucState = 'starting';
         bld.nucFrom = 0;
         bld.nucTo = targetPower;
@@ -5343,7 +5583,7 @@ function tickIsland(game, isl) {
       }
       bld.nucCur = 0;
     } else if (bld.nucState === 'safety') {
-      // Sécurité : 5 min sans rien consommer/produire, puis redémarrage automatique (calibrage 5 min).
+      // Compat saves : ancien état « sécurité » → redémarrage automatique après 5 min.
       bld.nucCur = 0;
       bld.nucTimer++;
       if (bld.nucTimer >= NUC_SAFETY) {
@@ -5353,14 +5593,7 @@ function tickIsland(game, isl) {
         bld.nucTimer = 0;
       }
     } else if (bld.nucState === 'starting' || bld.nucState === 'running') {
-      if (coldNid == null || coldAvail < needCoolNow - 1e-6) {
-        // Manque de liquide de refroidissement → mise en sécurité + notification joueur.
-        bld.nucState = 'safety';
-        bld.nucTimer = 0;
-        bld.nucCur = 0;
-        if (!game.nucNotify) game.nucNotify = [];
-        game.nucNotify.push(isl);
-      } else if (!wireOk || !fuelOK || targetFrac === 0) {
+      if (!wireOk || !fuelOK || targetFrac === 0) {
         bld.nucState = 'stopping';
         bld.nucFrom = bld.nucCur || 0;
         bld.nucTimer = 0;
@@ -5380,7 +5613,6 @@ function tickIsland(game, isl) {
         const frac = maxPower > 0 ? (bld.nucCur || 0) / maxPower : 0;
         if (frac > 0) {
           port['combustible_u235'] = (port['combustible_u235'] || 0) - upMult * frac;
-          nets[coldNid].pool['eau_froide'] = (nets[coldNid].pool['eau_froide'] || 0) - NUC_COOL * upMult * frac;
           // Irradiation OPTIONNELLE : si le matériau est dispo au port, on le consomme pour produire
           // sa version irradiée. Sinon la centrale tourne quand même (élec seule). 3 modes unifiés
           // par un jeu de POIDS (normalisés) : 'single' (1 sur matKey), 'mix' (poids manuels),
@@ -5422,6 +5654,8 @@ function tickIsland(game, isl) {
       energyProduced += nucPower;
       wireProd[nucWireNid] = (wireProd[nucWireNid] || 0) + nucPower;
     }
+    // Chaleur émise : 0,25 MJ/s par MW (6144 kW → 1,536 MJ/s à pleine puissance V1).
+    bld.heatEmit = (bld.nucCur || 0) * HEAT_PER_MW / 1000;
     // Série de fonctionnement (conservée, inoffensive).
     if (bld.nucState === 'running') {
       if (!game.nucRun) game.nucRun = {};
@@ -5726,6 +5960,8 @@ function tickIsland(game, isl) {
     const on = cc.bld.active === false ? 0 : 1;
     cc.bld.pwrAvg = cc.bld.pwrAvg == null ? on : cc.bld.pwrAvg + (on - cc.bld.pwrAvg) * 0.12;
   }
+  // Refroidissement (stock de chaleur) : tours + conduits absorbent la chaleur des sources.
+  processHeat(game, isl);
   const balance = supply - consumed;
   game.accumulators[isl] = accList.map(a => ({
     capacity: a.capacity,
@@ -6436,7 +6672,7 @@ const TECH_NODES = [{
   }
 }, {
   id: 23,
-  name: 'Centrale Enrichissement + Refroidisseur',
+  name: 'Centrale Enrichissement',
   prereq: 22,
   mode: 'auto',
   reqs: [{
@@ -6445,21 +6681,17 @@ const TECH_NODES = [{
     n: 100
   }],
   unlocks: {
-    buildings: ['centrale_enrichissement', 'refroidisseur']
+    buildings: ['centrale_enrichissement']
   }
 }, {
   id: 24,
-  name: 'Centrale Nucléaire',
+  name: 'Centrale Nucléaire + Tour aéroréfrigérante',
   prereq: 23,
   mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'combustible_u235',
     n: 5
-  }, {
-    t: 'build',
-    id: 'refroidisseur',
-    n: 1
   }],
   delivery: {
     acier: 1000,
@@ -6468,7 +6700,7 @@ const TECH_NODES = [{
     piece_meca: 1000
   },
   unlocks: {
-    buildings: ['centrale_nucleaire']
+    buildings: ['centrale_nucleaire', 'tour_aerorefrigerante']
   }
 }, {
   id: 25,
@@ -6746,11 +6978,11 @@ const GAME_TIPS = [{
   body: ['Une longue chaîne s\'ouvre : mine d\'uranium → broyage → yellow cake → enrichissement → <b>Centrale Nucléaire</b>.', 'La centrale doit être reliée au <b>câble</b> pour fournir de l\'électricité, et alimentée en continu : son <b>combustible se consomme en permanence</b>.', 'Son démarrage est progressif (plusieurs minutes) — prévoyez la logistique à l\'avance.'],
   when: g => isBuildingUnlocked(g, 'mine_uranium')
 }, {
-  id: 'non_stockable',
-  icon: '💧',
-  title: 'Ressource non stockable',
-  body: ['L\'<b>eau froide</b> (produite par le refroidisseur) ne se stocke pas : elle est consommée dans le tick même où elle est produite.', 'Le débit de production doit donc être suffisant <b>en continu</b> ; un surplus est simplement perdu, un manque coupe le bâtiment alimenté.'],
-  when: g => tipAnyPlaced(g, ['refroidisseur'])
+  id: 'chaleur_nuc',
+  icon: '🔥',
+  title: 'Chaleur & refroidissement',
+  body: ['La <b>centrale nucléaire</b>, l\'<b>usine moteur</b> et l\'<b>antenne</b> (mode productivité) accumulent de la <b>chaleur</b> (MJ). Reliez-les par un <b>conduit de chaleur</b> à des <b>tours aéroréfrigérantes</b> (qui consomment de l\'eau) pour l\'évacuer.', 'Si la chaleur atteint le plafond → <b>surchauffe</b> : arrêt 5 min, puis réparation (20 % du coût total). Le conduit n\'est pas franchissable et plafonne le débit par tuile : ramifiez vers plusieurs tours.'],
+  when: g => tipAnyPlaced(g, ['centrale_nucleaire', 'usine_moteur_nuc', 'tour_aerorefrigerante'])
 }, {
   id: 'irradie',
   icon: '♻️',
@@ -8003,8 +8235,9 @@ function ToolButton({
   // en rouge, les autres restent normales. Infra (tracé continu) et jonctions à coût
   // croissant gardent leur libellé texte.
   const cost = b.cost;
-  const showCostChips = b.kind !== 'infra' && !(b.kind === 'junction' && CURRENT_MODE === 'normal') && cost && Object.keys(cost).length > 0;
-  const sub = b.kind === 'infra' ? I18N.t('tracé continu') : b.kind === 'junction' && CURRENT_MODE === 'normal' ? I18N.t('coût croissant') : formatCost(b.cost) || 'gratuit';
+  // Le conduit (infra) a un coût PAR TUILE : on affiche ses pastilles (≠ route/câble/tuyau gratuits).
+  const showCostChips = (b.kind !== 'infra' || id === 'conduit') && !(b.kind === 'junction' && CURRENT_MODE === 'normal') && cost && Object.keys(cost).length > 0;
+  const sub = id === 'conduit' ? formatCost(b.cost) + I18N.t(' /tuile') : b.kind === 'infra' ? I18N.t('tracé continu') : b.kind === 'junction' && CURRENT_MODE === 'normal' ? I18N.t('coût croissant') : formatCost(b.cost) || 'gratuit';
   const skey = SPRITES_ENABLED ? buildingSpriteKey(id) : null;
   const sdata = skey && SPRITE_DATA[skey];
   // Appui long (~450 ms) → fiche détaillée du bâtiment ; un appui court le sélectionne.
@@ -8276,6 +8509,8 @@ function InfoPanel({
   onSetNucMode,
   onSetNucMixWeight,
   onSetFluxPri,
+  onSetAntMode,
+  onHeatRepair,
   onRepair,
   onExtend
 }) {
@@ -8680,25 +8915,25 @@ function InfoPanel({
       className: "lbl"
     }, I18N.t("Entrées")), React.createElement("span", {
       className: "val"
-    }, fmtN(upMult * realFrac) + " comb.U235 + " + fmtN(NUC_COOL * upMult * realFrac) + " eau froide /s")), React.createElement("div", {
+    }, fmtN(upMult * realFrac) + " comb.U235 + " + fmtN(upMult * realFrac) + " " + (RES_SHORT[matKey] || matKey) + " /s")), React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
     }, I18N.t("Sortie")), React.createElement("span", {
       className: "val io"
-    }, "⚡ " + fmtPower(NUC_POWER * upMult * realFrac))), React.createElement("div", {
+    }, "⚡ " + fmtPower(NUC_POWER * upMult * realFrac) + " · 🔥 " + fmtN(NUC_POWER * upMult * realFrac * 0.25 / 1000) + " MJ/s")), React.createElement("div", {
       className: "ip-row ip-theo"
     }, React.createElement("span", {
       className: "lbl"
     }, I18N.t("Conso. théorique")), React.createElement("span", {
       className: "val"
-    }, fmtN(upMult * frac) + " comb.U235 + " + fmtN(NUC_COOL * upMult * frac) + " eau froide /s")), React.createElement("div", {
+    }, fmtN(upMult * frac) + " comb.U235 + " + fmtN(upMult * frac) + " " + (RES_SHORT[matKey] || matKey) + " /s")), React.createElement("div", {
       className: "ip-row ip-theo"
     }, React.createElement("span", {
       className: "lbl"
     }, I18N.t("Prod. théorique")), React.createElement("span", {
       className: "val io"
-    }, "⚡ " + fmtPower(NUC_POWER * upMult * frac))), React.createElement("div", {
+    }, "⚡ " + fmtPower(NUC_POWER * upMult * frac) + " · 🔥 " + fmtN(NUC_POWER * upMult * frac * 0.25 / 1000) + " MJ/s")), React.createElement("div", {
       className: "ip-nuc-irr"
     }, React.createElement("div", {
       className: "ip-nuc-irr-hd"
@@ -8764,7 +8999,62 @@ function InfoPanel({
     React.createElement("div", {
       className: "ip-nuc-irr-note"
     }, "Produit uniquement si le matériau est livré au port — sinon la centrale fournit l'électricité seule.")));
-  })(), showStatus && React.createElement("div", {
+  })(), b.heatCap && (() => {
+    // Jauge de chaleur (% du plafond de trip) + bouton de réparation (20 % du coût total).
+    const cap = b.heatCap;
+    const heat = Math.max(0, Math.min(cap, bld.heat || 0));
+    const hf = cap > 0 ? heat / cap : 0;
+    const pct = Math.round(hf * 100);
+    const col = hf < 0.5 ? 'var(--green)' : hf < 0.8 ? 'var(--orange)' : 'var(--red)';
+    const fmtH = n => String(Math.round(n * 100) / 100).replace('.', ',');
+    const dmg = !!bld.damaged;
+    const canRep = dmg && (bld.dmgTimer || 0) >= 300;
+    const repCost = buildingTotalCost(bld);
+    const repPay = {};
+    for (const k in repCost) {
+      const v = Math.ceil(repCost[k] * 0.2);
+      if (v > 0) repPay[k] = v;
+    }
+    const afford = dev || Object.keys(repPay).every(k => (port[k] || 0) >= repPay[k]);
+    const remain = Math.max(0, 300 - (bld.dmgTimer || 0));
+    return React.createElement(React.Fragment, null, React.createElement("div", {
+      className: "ip-row"
+    }, React.createElement("span", {
+      className: "lbl"
+    }, uiIcon('chaleur', "\u{1F525}"), I18N.t(" Chaleur")), React.createElement("span", {
+      className: "val",
+      style: {
+        color: col,
+        fontWeight: 700
+      }
+    }, fmtH(heat) + " / " + cap + " MJ · " + pct + "%")), dmg && React.createElement("div", {
+      className: "ip-row"
+    }, React.createElement("span", {
+      className: "lbl"
+    }, I18N.t("État")), React.createElement("span", {
+      className: "val",
+      style: {
+        color: 'var(--red)',
+        fontWeight: 700
+      }
+    }, canRep ? I18N.t("Endommagé — réparable") : I18N.t("Surchauffe — ") + Math.ceil(remain / 60) + " min")), dmg && React.createElement("button", {
+      className: "ip-demolish",
+      disabled: !canRep || !afford,
+      onClick: () => onHeatRepair && onHeatRepair(info.r, info.c),
+      title: I18N.t("Réparation : 20 % du coût total cumulé")
+    }, uiIcon('reparation', "\u{1F527}"), I18N.t(" Réparer (20 % : ") + (formatCost(repPay) || 'gratuit') + ")"));
+  })(), b.antenna && React.createElement("div", {
+    className: "ip-fluxpri"
+  }, React.createElement("div", {
+    className: "ip-fluxpri-lbl"
+  }, I18N.t("Mode antenne")), React.createElement("div", {
+    className: "ip-fluxpri-btns"
+  }, [['speed', I18N.t('Vitesse')], ['prod', I18N.t('Productivité')]].map(([k, label]) => React.createElement("button", {
+    key: k,
+    className: 'ip-fluxpri-btn' + ((game.antennaMode && game.antennaMode[currentIsland] || 'speed') === k ? ' on' : ''),
+    onClick: () => onSetAntMode && onSetAntMode(currentIsland, k),
+    title: k === 'speed' ? I18N.t("×2 intrants & production · aucune chaleur") : I18N.t("Vitesse −50 % & intrants ÷2 · émet de la chaleur (conduit + tour)")
+  }, label)))), showStatus && React.createElement("div", {
     className: "ip-row" + (speedPct < 100 ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
@@ -9802,8 +10092,10 @@ function NetworkPanel({
   // Câble : le débit affiché est celui de la COMPOSANTE électrique (somme des câbles fusionnés),
   // pas du seul réseau cliqué — cohérent avec « puiser sur tous les câbles adjacents ».
   const isWire = netObj.type === 'wire';
+  // Conduit de chaleur : le « débit » est en MJ/s PAR TUILE (conduitDebit), pas un débit de ressources.
+  const isConduit = netObj.type === 'conduit';
   const wi = isWire && game.wireInfo && game.wireInfo[currentIsland] && game.wireInfo[currentIsland][net.networkId] || null;
-  const cap = isWire && wi ? wi.cap : unlimited ? Infinity : networkThroughput(lvl);
+  const cap = isConduit ? conduitDebit(lvl) : isWire && wi ? wi.cap : unlimited ? Infinity : networkThroughput(lvl);
   const tiles = networkTileCount(game, currentIsland, net.networkId);
   const dev = game.ui && game.ui.dev;
   const port = game.port[currentIsland] || {};
@@ -9879,7 +10171,7 @@ function NetworkPanel({
     className: "lbl"
   }, I18N.t("D\xE9bit max")), React.createElement("span", {
     className: "val io"
-  }, cap === Infinity ? I18N.t('illimité') : isWire ? fmtPower(cap) : fmtPort(cap) + I18N.t(' /s'))), React.createElement("div", {
+  }, cap === Infinity ? I18N.t('illimité') : isConduit ? fmtPort(cap) + I18N.t(' MJ/s/tuile') : isWire ? fmtPower(cap) : fmtPort(cap) + I18N.t(' /s'))), React.createElement("div", {
     className: "ip-row" + (saturatedNet ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
@@ -10946,6 +11238,14 @@ function App() {
         4: 10,
         5: 10
       },
+      antennaMode: {
+        1: 'speed',
+        2: 'speed',
+        3: 'speed',
+        4: 'speed',
+        5: 'speed'
+      },
+      conduitLoad: {},
       nucRun: {
         1: 0,
         2: 0,
@@ -11163,6 +11463,12 @@ function App() {
             pl.nt = b.nucTimer || 0;
             pl.nc = b.nucCur || 0;
           }
+          // Chaleur (stock MJ) + état endommagé (surchauffe) — sources de chaleur uniquement.
+          if (b.heat) pl.h = b.heat;
+          if (b.damaged) {
+            pl.dmg = 1;
+            pl.dt = b.dmgTimer || 0;
+          }
           if (b.fluxPri === 'haute' || b.fluxPri === 'basse') pl.fp = b.fluxPri;
           placements.push(pl);
         }
@@ -11280,6 +11586,9 @@ function App() {
       },
       nuclearPower: {
         ...g.nuclearPower
+      },
+      antennaMode: {
+        ...g.antennaMode
       },
       repairsCount: {
         ...g.repairsCount
@@ -11428,7 +11737,7 @@ function App() {
     } catch (e) {
       return false;
     }
-    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].indexOf(data.version) === -1) return false;
+    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].indexOf(data.version) === -1) return false;
     const g = gameRef.current;
     // Extension des mers (v11) : les îles sont désormais entourées de SEA_PAD tuiles d'eau.
     // Les sauvegardes antérieures (coordonnées non décalées) sont translatées de +SEA_PAD.
@@ -11601,6 +11910,14 @@ function App() {
             t.building.nucTimer = p.nt || 0;
             t.building.nucCur = p.nc || 0;
           }
+          // Chaleur (MJ) + état endommagé (surchauffe). Migration : bâtiments < v14 → heat 0.
+          if (BUILDINGS[p.b].heatCap) {
+            t.building.heat = Math.max(0, +p.h || 0);
+            if (p.dmg) {
+              t.building.damaged = true;
+              t.building.dmgTimer = Math.max(0, +p.dt || 0);
+            }
+          }
           if (p.fp === 'haute' || p.fp === 'basse') t.building.fluxPri = p.fp;
           // Re-create occupancy refs for multi-tile buildings.
           const sz = BUILDINGS[p.b].size || [1, 1];
@@ -11696,6 +12013,17 @@ function App() {
       const pv = data.nuclearPower[id] | 0;
       if (pv >= 0 && pv <= 10) g.nuclearPower[+id] = pv;
     }
+    g.antennaMode = {
+      1: 'speed',
+      2: 'speed',
+      3: 'speed',
+      4: 'speed',
+      5: 'speed'
+    };
+    if (data.antennaMode) for (const id in data.antennaMode) {
+      if (data.antennaMode[id] === 'prod') g.antennaMode[+id] = 'prod';
+    }
+    g.conduitLoad = {};
     g.nucRun = {
       1: 0,
       2: 0,
@@ -12294,7 +12622,14 @@ function App() {
       }
     }
     const dev = gameRef.current.ui.dev;
-    const costToPay = extCost || b.cost;
+    // Le conduit a un coût de base PAR TUILE (≠ route/câble/tuyau, gratuits en V1) : on paie
+    // toujours ce coût, + le rattrapage de niveau si on rejoint un conduit déjà amélioré.
+    let costToPay;
+    if (id === 'conduit') {
+      costToPay = {};
+      for (const k in b.cost) costToPay[k] = (costToPay[k] || 0) + b.cost[k];
+      if (extCost) for (const k in extCost) costToPay[k] = (costToPay[k] || 0) + extCost[k];
+    } else costToPay = extCost || b.cost;
     if (!dev) {
       const miss = missingFor(costToPay);
       if (miss.length) {
@@ -12881,6 +13216,51 @@ function App() {
     markDirty();
     scheduleSave();
   }
+  // Mode de l'antenne : 'speed' (vitesse, défaut) ou 'prod' (productivité, émet de la chaleur).
+  function setAntennaMode(islandId, mode) {
+    const g = gameRef.current;
+    if (mode !== 'speed' && mode !== 'prod') return;
+    if (!g.antennaMode) g.antennaMode = {};
+    g.antennaMode[islandId] = mode;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  // Réparation d'un bâtiment endommagé par surchauffe : paie 20 % du coût TOTAL cumulé
+  // (construction + améliorations). C'est l'unique pénalité ; remet la chaleur à 0 et redémarre.
+  function tryHeatRepair(r, c) {
+    const g = gameRef.current;
+    const tiles = g.islands[g.currentIsland];
+    const bld = tiles && tiles[r] && tiles[r][c] && tiles[r][c].building;
+    if (!bld || !bld.damaged) return false;
+    if ((bld.dmgTimer || 0) < 300) {
+      showToast(I18N.t('⏳ Réparation possible après 5 min de refroidissement'), 'var(--orange)');
+      return false;
+    }
+    const repCost = buildingTotalCost(bld);
+    const pay20 = {};
+    for (const k in repCost) {
+      const v = Math.ceil(repCost[k] * 0.2);
+      if (v > 0) pay20[k] = v;
+    }
+    if (!g.ui.dev) {
+      const miss = missingFor(pay20);
+      if (miss.length) {
+        showToast(I18N.t('❌ Réparation : manque ') + miss.join(', '), 'var(--red)');
+        return false;
+      }
+      pay(pay20);
+    }
+    bld.damaged = false;
+    bld.dmgTimer = 0;
+    bld.heat = 0;
+    if (BUILDINGS[bld.id] && BUILDINGS[bld.id].nuclear) bld.nucState = 'off';
+    bumpHud();
+    markDirty();
+    scheduleSave();
+    showToast(I18N.t('🔧 Réparé — ') + (formatCost(pay20) || 'gratuit'), 'var(--green)');
+    return true;
+  }
   function setFluxPri(r, c, pri) {
     const g = gameRef.current;
     if (['haute', 'normale', 'basse'].indexOf(pri) === -1) return;
@@ -13350,6 +13730,34 @@ function App() {
         y = oy + r * tile;
       const bid = t.building.id;
       const bdef = BUILDINGS[bid];
+      // Conduit de chaleur : rendu vectoriel connection-aware (bitmask) + TEINTE DE CHALEUR
+      // dynamique (du cuivre neutre au rouge vif) selon le flux réellement transporté (conduitLoad).
+      if (bid === 'conduit') {
+        const mask = netConnectMask(tiles, r, c, ['conduit']);
+        const loadV = g.conduitLoad && g.conduitLoad[isl] && g.conduitLoad[isl][t.networkId] || 0;
+        const f = Math.max(0, Math.min(1, loadV));
+        const base = [184, 115, 51],
+          hot = [255, 60, 30];
+        const col = 'rgb(' + base.map((v, i) => Math.round(v + (hot[i] - v) * f)).join(',') + ')';
+        const cx = x + tile / 2,
+          cy = y + tile / 2,
+          th = Math.max(3, tile * 0.30);
+        ctx.fillStyle = col;
+        roundRectPath(ctx, cx - th / 2, cy - th / 2, th, th, th * 0.2);
+        ctx.fill();
+        if (mask & 1) ctx.fillRect(cx - th / 2, y, th, tile / 2);
+        if (mask & 4) ctx.fillRect(cx - th / 2, cy, th, tile / 2);
+        if (mask & 8) ctx.fillRect(x, cy - th / 2, tile / 2, th);
+        if (mask & 2) ctx.fillRect(cx, cy - th / 2, tile / 2, th);
+        if (f >= 0.8) {
+          const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 200;
+          ctx.strokeStyle = 'rgba(255,90,40,' + (0.35 + 0.4 * Math.abs(Math.sin(now))).toFixed(3) + ')';
+          ctx.lineWidth = Math.max(1, tile * 0.05);
+          ctx.strokeRect(x + 2, y + 2, tile - 4, tile - 4);
+          _animPlayed = true;
+        }
+        continue;
+      }
       // Network sprites (route/tuyau/cable): connection-aware tile by bitmask + level.
       if (SPRITES_ENABLED && bdef && bdef.kind === 'infra' && NET_PREFIX[bid]) {
         const carrier = bid === 'road' ? 'road' : bid === 'pipe' ? 'pipe' : 'wire';
@@ -13469,6 +13877,35 @@ function App() {
       }
       const sz = buildingSize(bid);
       drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime, t.building.inFac, t.building.pwrAvg);
+      // Jauge de chaleur (sources) : barre fine en haut de la tuile, % du plafond de trip.
+      // Vert < 50 %, orange 50-80 %, rouge clignotant 80-100 %. Post-effet rouge si endommagé.
+      const hcap = bdef && bdef.heatCap || 0;
+      if (hcap > 0 && tile >= 16) {
+        const hf = Math.max(0, Math.min(1, (t.building.heat || 0) / hcap));
+        const bw = sz.w * tile,
+          pad = Math.max(1, tile * 0.06),
+          gw = bw - 2 * pad,
+          gh = Math.max(2, tile * 0.07),
+          gx = x + pad,
+          gy = y + pad;
+        ctx.fillStyle = 'rgba(10,10,18,.66)';
+        ctx.fillRect(gx, gy, gw, gh);
+        let hcol = hf < 0.5 ? '#5ED66B' : hf < 0.8 ? '#FFB300' : '#FF3B2F';
+        if (hf >= 0.8) {
+          const nw2 = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 220;
+          if (Math.sin(nw2) < 0) hcol = 'rgba(255,59,47,.35)';
+          _animPlayed = true;
+        }
+        ctx.fillStyle = hcol;
+        ctx.fillRect(gx, gy, gw * hf, gh);
+      }
+      if (t.building.damaged) {
+        const nw3 = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+        const blink = 0.30 + 0.35 * Math.abs(Math.sin(2 * Math.PI * nw3 / 0.8));
+        ctx.fillStyle = 'rgba(255,40,30,' + blink.toFixed(3) + ')';
+        ctx.fillRect(x, y, sz.w * tile, sz.h * tile);
+        _animPlayed = true;
+      }
       // Badge « ×N » cyan (coin haut-gauche) sur un bâtiment boosté par une antenne.
       // MÊME échelle que les badges % déficit / niveau (drawInfoBadges) : même police, même
       // padding, même rayon — pour que ×N et le numéro de niveau soient visuellement identiques.
@@ -14045,6 +14482,18 @@ function App() {
           showToast(`☢️ Centrale Île ${isl} en SÉCURITÉ — manque de refroidissement (redémarrage auto dans 5 min)`, 'var(--red)');
           g.nucNotify.length = 0;
         }
+        // Surchauffe (trip) : un bâtiment à chaleur a atteint son plafond → arrêt 5 min.
+        if (g.heatTrip && g.heatTrip.length) {
+          const ev = g.heatTrip.shift();
+          const nm = BUILDINGS[ev.id] && BUILDINGS[ev.id].name || ev.id;
+          showToast(`🔥 ${nm} (Île ${ev.isl}) en SURCHAUFFE — arrêt 5 min`, 'var(--red)');
+        }
+        // Réparation possible : 20 % du coût total cumulé.
+        if (g.heatRepairReady && g.heatRepairReady.length) {
+          const ev = g.heatRepairReady.shift();
+          const nm = BUILDINGS[ev.id] && BUILDINGS[ev.id].name || ev.id;
+          showToast(`🔧 ${nm} (Île ${ev.isl}) réparable : 20 % du coût total`, 'var(--orange)');
+        }
         g.tickAcc -= 1;
         guard++;
       }
@@ -14335,6 +14784,8 @@ function App() {
     onSetNucMode: setNucMode,
     onSetNucMixWeight: setNucMixWeight,
     onSetFluxPri: setFluxPri,
+    onSetAntMode: setAntennaMode,
+    onHeatRepair: (r, c) => tryHeatRepair(r, c),
     onRepair: (r, c) => tryRepair(r, c),
     onExtend: (r, c) => tryExtend(r, c)
   }), upgrade && React.createElement(UpgradePanel, {
@@ -14516,6 +14967,15 @@ function App() {
       scheduleSave();
     }
   }));
+}
+// Hook de test (inoffensif) : expose quelques helpers internes pour le smoke test jsdom.
+if (typeof window !== 'undefined') {
+  window.__heat = {
+    BUILDINGS, defById, ISLAND_TERRAINS, buildIslandTiles, rebuildNetworks,
+    processHeat, conduitDebit, buildingTotalCost,
+    applyGameMode: typeof applyGameMode === 'function' ? applyGameMode : null,
+    adjacentNetworksFootprint
+  };
 }
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
 </script>
