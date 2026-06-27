@@ -1,7 +1,7 @@
 {
-  "build": 175,
-  "version": "Alpha 12.4",
+  "build": 176,
+  "version": "Alpha 12.5",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Fix : suppression de la bande vide en haut de la fiche bâtiment (en-tête collé au bord)"
+  "notes": "Fix : la tour aérorefrigerante n'affiche plus une icône de déficit électrique (elle fonctionne à l'eau) — icône intrants/eau à la place"
 }

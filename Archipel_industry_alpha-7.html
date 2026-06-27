@@ -4322,8 +4322,8 @@ const SAVE_VERSION = 14;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 175;
-const GAME_VERSION = 'Alpha 12.4';
+const GAME_BUILD = 176;
+const GAME_VERSION = 'Alpha 12.5';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4849,7 +4849,13 @@ function processHeat(game, isl) {
     const wf = need > 0 ? drawn / need : 0;
     to.absorb = absorbCap * wf;
     bld.regime = wf;
+    // La tour fonctionne à l'EAU (pas d'électricité) : on renseigne inFac/pwrAvg pour que l'icône
+    // de déficit affiche « intrants » (eau) et JAMAIS « courant » (sprite électrique trompeur).
+    bld.inFac = wf;
+    bld.pwrAvg = 1;
     bld.active = wf > 0;
+    bld.disc = false;
+    bld.discReason = wf > 0 ? null : 'input';
     bld.heat = 0;
     to.condIds = adjacentNetworksFootprint(game, isl, to.r, to.c, 1, 1, 'conduit');
   }
