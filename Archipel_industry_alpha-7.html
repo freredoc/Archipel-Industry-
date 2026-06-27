@@ -86,11 +86,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   padding:3px 12px;cursor:pointer;display:flex;align-items:center;gap:7px;flex-shrink:0;}
 .inv-label-btn:hover{border-color:var(--yellow);color:var(--ink);}
 /* Bouton Production (à droite d'INVENTAIRE) */
-.inv-prod-btn{font-family:'Bebas Neue',sans-serif;font-size:.78rem;letter-spacing:.08em;
+/* Bouton Production ~20 % plus petit (.78rem/15px → .62rem/12px). */
+.inv-prod-btn{font-family:'Bebas Neue',sans-serif;font-size:.62rem;letter-spacing:.08em;
   color:var(--ink-dim);background:var(--panel);border:1px solid var(--line);border-radius:4px;
-  padding:3px 11px;cursor:pointer;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+  padding:2px 9px;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;}
 .inv-prod-btn:hover{border-color:#5bc0ff;color:var(--ink);}
-.inv-prod-btn .ui-ico{width:15px;height:15px;}
+.inv-prod-btn .ui-ico{width:12px;height:12px;}
 .inv-calc-btn{font-family:'Bebas Neue',sans-serif;font-size:.78rem;letter-spacing:.08em;
   color:var(--ink-dim);background:var(--panel);border:1px solid var(--line);border-radius:4px;
   padding:3px 11px;cursor:pointer;flex-shrink:0;margin-top:2px;}
@@ -129,12 +130,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .calc-upg-pm:hover{border-color:var(--yellow);}
 .calc-upg-pm:disabled{opacity:.4;cursor:default;}
 /* Bouton ALERTE (à droite de Production) : récap des alertes de stock en cours, orange pulsant. */
-/* Bouton ALERTE : ~20 % plus petit que le bouton Production (.78rem/15px → .62rem/12px). */
-.inv-alert-btn{font-family:'Bebas Neue',sans-serif;font-size:.62rem;letter-spacing:.05em;color:#ffce54;
-  background:rgba(255,149,0,.16);border:1px solid var(--orange);border-radius:4px;padding:2px 8px;cursor:pointer;
-  display:flex;align-items:center;gap:4px;flex-shrink:0;animation:alertpulse 1.4s ease-in-out infinite;}
+.inv-alert-btn{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.05em;color:#ffce54;
+  background:rgba(255,149,0,.16);border:1px solid var(--orange);border-radius:4px;padding:3px 10px;cursor:pointer;
+  display:flex;align-items:center;gap:6px;flex-shrink:0;animation:alertpulse 1.4s ease-in-out infinite;}
 .inv-alert-btn:hover{background:rgba(255,149,0,.30);}
-.inv-alert-btn .ui-ico{width:12px;height:12px;}
 .inv-alert-btn .inv-count{background:var(--red);color:#fff;}
 @keyframes alertpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,149,0,0);}50%{box-shadow:0 0 0 3px rgba(255,149,0,.35);}}
 /* Panneau récapitulatif des alertes. */
@@ -4278,8 +4277,8 @@ const SAVE_VERSION = 13;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 169;
-const GAME_VERSION = 'Alpha 11.44';
+const GAME_BUILD = 170;
+const GAME_VERSION = 'Alpha 11.45';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
