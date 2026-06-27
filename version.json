@@ -3,5 +3,5 @@
   "version": "Alpha 12.6",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Fix : l'animation de la centrale nucléaire utilisait l'ancien art (sprite qui changeait pendant 1s) — sheet d'animation resynchronisée"
+  "notes": "Merge pull request #173 — Fix animation centrale nucléaire (ancien sprite)"
 }
