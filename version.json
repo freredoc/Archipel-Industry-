@@ -1,7 +1,7 @@
 {
-  "build": 176,
-  "version": "Alpha 12.5",
+  "build": 177,
+  "version": "Alpha 12.6",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Fix : la tour aérorefrigerante n'affiche plus une icône de déficit électrique (elle fonctionne à l'eau) — icône intrants/eau à la place"
+  "notes": "Fix : l'animation de la centrale nucléaire utilisait l'ancien art (sprite qui changeait pendant 1s) — sheet d'animation resynchronisée"
 }
