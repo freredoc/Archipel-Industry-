@@ -2132,6 +2132,7 @@ const RES_SHORT = {
   beton_arme_irradie: 'béton irr.',
   cable_irradie: 'câble irr.',
   ciment_irradie: 'ciment irr.',
+  plutonium: 'plutonium',
   element_moteur_nuc: 'élém.moteur'
 };
 // Tier of each resource (derived from the lowest-tier building that produces it).
@@ -2167,7 +2168,8 @@ const RES_TIER = {
   acier_irradie: 't4',
   beton_arme_irradie: 't4',
   cable_irradie: 't4',
-  ciment_irradie: 't4'
+  ciment_irradie: 't4',
+  plutonium: 't4'
 };
 const RES_TIER_RANK = {
   t0: 0,
@@ -2219,6 +2221,7 @@ const CARRIER_BY_RES = {
   beton_arme_irradie: 'road',
   cable_irradie: 'road',
   ciment_irradie: 'road',
+  plutonium: 'road',
   element_moteur_nuc: 'road',
   energie_kw: 'wire'
 };
@@ -3890,7 +3893,7 @@ const BUILDINGS = {
       cable_irradie: 200
     },
     inputs: {
-      combustible_u235: 0.1,
+      plutonium: 0.1,
       piece_meca: 5,
       processeur: 1,
       polymere: 5
@@ -4322,8 +4325,8 @@ const SAVE_VERSION = 14;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 180;
-const GAME_VERSION = 'Alpha 12.9';
+const GAME_BUILD = 181;
+const GAME_VERSION = 'Alpha 13.0';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4389,6 +4392,13 @@ function fmtPower(kw) {
   if (a >= 1e6) return fmtSig(kw / 1e6) + ' GW';
   if (a >= 1e3) return fmtSig(kw / 1e3) + ' MW';
   return Math.round(kw) + ' kW';
+}
+// Chaleur (donnée en MJ) : MJ < 1000, GJ au-delà — 2 décimales (entier si rond), virgule fr,
+// comme l'électricité. Renvoie valeur + unité (« 1,54 MJ », « 3,07 MJ », « 1,5 GJ »).
+function fmtHeat(mj) {
+  const a = Math.abs(mj);
+  if (a >= 1e3) return fmtSig(mj / 1e3) + ' GJ';
+  return fmtSig(mj) + ' MJ';
 }
 // Énergie stockée (donnée en kWh) : kWh < 1000, MWh < 1e6, GWh au-delà.
 function fmtEnergy(kwh) {
@@ -5664,13 +5674,20 @@ function tickIsland(game, isl) {
               for (const mk of NUC_MAT_KEYS) wmap[mk] = mk === matKey ? 1 : 0;
             }
             let wsum = 0;
-            for (const mk of NUC_MAT_KEYS) wsum += wmap[mk];
+            for (const mk of NUC_MAT_KEYS) wsum += wmap[mk] || 0;
             if (wsum > 0) for (const mk of NUC_MAT_KEYS) {
-              const want = irrAmt * wmap[mk] / wsum;
-              if (want > 1e-12 && (port[mk] || 0) >= want) {
-                port[mk] = (port[mk] || 0) - want;
-                port[mk + '_irradie'] = (port[mk + '_irradie'] || 0) + want;
-                if (prod) prod[mk + '_irradie'] = (prod[mk + '_irradie'] || 0) + want;
+              const want = irrAmt * (wmap[mk] || 0) / wsum;
+              if (want <= 1e-12) continue;
+              const baseK = nucBaseKey(mk),
+                outK = nucOutKey(mk);
+              if (baseK == null) {
+                // Plutonium : aucun matériau de base à consommer (le réacteur le « breed »).
+                port[outK] = (port[outK] || 0) + want;
+                if (prod) prod[outK] = (prod[outK] || 0) + want;
+              } else if ((port[baseK] || 0) >= want) {
+                port[baseK] = (port[baseK] || 0) - want;
+                port[outK] = (port[outK] || 0) + want;
+                if (prod) prod[outK] = (prod[outK] || 0) + want;
               }
             }
           }
@@ -6135,8 +6152,12 @@ const TUTORIAL_STEPS = [{
   goal: 'Posez une cimenterie et reliez-la au port.',
   done: g => tutConnected(g, 1, 'cimenterie')
 }];
-// Matériaux irradiables par la centrale nucléaire (clés sans le suffixe _irradie).
-const NUC_MAT_KEYS = ['acier', 'beton_arme', 'cable'];
+// Productions « nucléaires » de la centrale (4 options, mêmes ratios) : les 3 matériaux irradiés
+// (consomment leur base au port) + le PLUTONIUM (produit sans matériau de base — combustible du
+// moteur nucléaire). `nucOutKey` = ressource produite, `nucBaseKey` = matériau consommé (null = aucun).
+const NUC_MAT_KEYS = ['acier', 'beton_arme', 'cable', 'plutonium'];
+const nucOutKey = k => k === 'plutonium' ? 'plutonium' : k + '_irradie';
+const nucBaseKey = k => k === 'plutonium' ? null : k;
 // Réglage de répartition des matériaux irradiés d'une île : { mode, w:{acier,beton_arme,cable} }.
 // mode : 'single' (une seule ressource, game.nuclearConfig) | 'mix' (poids manuels w, normalisés) |
 // 'auto' (équilibrage automatique : on produit davantage du matériau irradié le moins en stock).
@@ -6153,7 +6174,8 @@ function nucMix(game, isl) {
     w: {
       acier: m && m.acier != null ? Math.max(0, m.acier) : 1,
       beton_arme: m && m.beton_arme != null ? Math.max(0, m.beton_arme) : 1,
-      cable: m && m.cable != null ? Math.max(0, m.cable) : 1
+      cable: m && m.cable != null ? Math.max(0, m.cable) : 1,
+      plutonium: m && m.plutonium != null ? Math.max(0, m.plutonium) : 1
     }
   };
 }
@@ -6163,7 +6185,7 @@ function nucAutoWeights(port) {
   let mx = 0;
   const st = {};
   for (const k of NUC_MAT_KEYS) {
-    st[k] = (port && port[k + '_irradie']) || 0;
+    st[k] = (port && port[nucOutKey(k)]) || 0;
     if (st[k] > mx) mx = st[k];
   }
   const w = {};
@@ -8866,7 +8888,7 @@ function InfoPanel({
     className: "ip-rows"
   }, b.nuclear && (() => {
     const matKey = (game.nuclearConfig && game.nuclearConfig[currentIsland]) || 'acier';
-    const NUC_MATS = [['acier', I18N.t('Acier')], ['beton_arme', I18N.t('Béton armé')], ['cable', I18N.t('Câble')]];
+    const NUC_MATS = [['acier', I18N.t('Acier')], ['beton_arme', I18N.t('Béton armé')], ['cable', I18N.t('Câble')], ['plutonium', I18N.t('Plutonium')]];
     const mix = nucMix(game, currentIsland);
     const mixSum = NUC_MAT_KEYS.reduce((a, k) => a + mix.w[k], 0) || 1;
     // Poids d'équilibrage AUTO (live, selon les stocks irradiés au port de l'île).
@@ -8953,7 +8975,7 @@ function InfoPanel({
       className: "lbl"
     }, I18N.t("Entrées")), React.createElement("span", {
       className: "val"
-    }, fmtN(upMult * realFrac) + " comb.U235 + " + fmtN(upMult * realFrac) + " " + (RES_SHORT[matKey] || matKey) + " /s")), React.createElement("div", {
+    }, fmtN(upMult * realFrac) + " comb.U235" + (nucBaseKey(matKey) ? " + " + fmtN(upMult * realFrac) + " " + (RES_SHORT[nucBaseKey(matKey)] || nucBaseKey(matKey)) : "") + " /s")), React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
@@ -8965,7 +8987,7 @@ function InfoPanel({
       className: "lbl"
     }, I18N.t("Conso. théorique")), React.createElement("span", {
       className: "val"
-    }, fmtN(upMult * frac) + " comb.U235 + " + fmtN(upMult * frac) + " " + (RES_SHORT[matKey] || matKey) + " /s")), React.createElement("div", {
+    }, fmtN(upMult * frac) + " comb.U235" + (nucBaseKey(matKey) ? " + " + fmtN(upMult * frac) + " " + (RES_SHORT[nucBaseKey(matKey)] || nucBaseKey(matKey)) : "") + " /s")), React.createElement("div", {
       className: "ip-row ip-theo"
     }, React.createElement("span", {
       className: "lbl"
@@ -8975,7 +8997,7 @@ function InfoPanel({
       className: "ip-nuc-irr"
     }, React.createElement("div", {
       className: "ip-nuc-irr-hd"
-    }, "Matériau irradié (optionnel)"),
+    }, "Production nucléaire (optionnel) : irradiés / plutonium"),
     // Choix du mode (3 boutons à suivre) : une seule ressource / mix manuel / équilibrage auto.
     React.createElement("div", {
       className: "ip-nuc-mats"
@@ -8987,7 +9009,7 @@ function InfoPanel({
     // MODE « une seule » : ligne IO + sélection du matériau (3 boutons à suivre).
     mix.mode === 'single' && React.createElement("div", {
       className: "ip-nuc-irr-io"
-    }, "− " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey] || matKey, " → + " + fmtN(upMult * realFrac) + " ", RES_SHORT[matKey + '_irradie'] || matKey + '_irradie', I18N.t(" /s")),
+    }, (nucBaseKey(matKey) ? "− " + fmtN(upMult * realFrac) + " " + (RES_SHORT[nucBaseKey(matKey)] || nucBaseKey(matKey)) + " → " : "") + "+ " + fmtN(upMult * realFrac) + " " + (RES_SHORT[nucOutKey(matKey)] || nucOutKey(matKey)) + I18N.t(" /s")),
     mix.mode === 'single' && React.createElement("div", {
       className: "ip-nuc-mats"
     }, NUC_MATS.map(([k, label]) => React.createElement("button", {
@@ -9036,7 +9058,7 @@ function InfoPanel({
     }, "Équilibrage automatique : on produit davantage du matériau irradié dont le stock est le plus bas."),
     React.createElement("div", {
       className: "ip-nuc-irr-note"
-    }, "Produit uniquement si le matériau est livré au port — sinon la centrale fournit l'électricité seule.")));
+    }, "Irradiés : produits seulement si le matériau de base (acier/béton/câble) est au port. Plutonium : produit sans matériau de base (combustible du moteur nucléaire).")));
   })(), b.heatCap && (() => {
     // Jauge de chaleur (% du plafond de trip) + bouton de réparation (20 % du coût total).
     const cap = b.heatCap;
@@ -10266,7 +10288,7 @@ function NetworkPanel({
   }, isConduit ? I18N.t("Débit total") : I18N.t("D\xE9bit max")), React.createElement("span", {
     className: "val io",
     title: isConduit ? I18N.t("Tuiles × débit/tuile : chaleur qui peut entrer ET sortir par seconde") : undefined
-  }, cap === Infinity ? I18N.t('illimité') : isConduit ? fmtPort(cap) + I18N.t(' MJ/s') : isWire ? fmtPower(cap) : fmtPort(cap) + I18N.t(' /s'))), isConduit && React.createElement("div", {
+  }, cap === Infinity ? I18N.t('illimité') : isConduit ? fmtHeat(cap) + "/s" : isWire ? fmtPower(cap) : fmtPort(cap) + I18N.t(' /s'))), isConduit && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -10276,7 +10298,7 @@ function NetworkPanel({
       color: condStore > 0.8 * cap ? '#ff8079' : undefined
     },
     title: I18N.t("Chaleur tamponnée dans le conduit (capacité = tuiles × débit/tuile)")
-  }, fmtPort(condStore) + " / " + fmtPort(cap) + " MJ")), isConduit && React.createElement("div", {
+  }, fmtHeat(condStore) + " / " + fmtHeat(cap))), isConduit && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -10286,7 +10308,7 @@ function NetworkPanel({
       color: condFlow > 0.001 ? 'var(--green)' : 'var(--ink-dim)'
     },
     title: I18N.t("Chaleur réellement évacuée vers les tours ce tick")
-  }, fmtPort(condFlow) + " MJ/s")), !isConduit && React.createElement("div", {
+  }, fmtHeat(condFlow) + "/s")), !isConduit && React.createElement("div", {
     className: "ip-row" + (saturatedNet ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
@@ -10367,7 +10389,7 @@ function NetworkPanel({
   }, I18N.t("R\xE9serve")), React.createElement("span", {
     className: "val io",
     title: "Stock liquide accumul\xE9 dans la citerne du r\xE9seau tuyau (p\xE9trole, eau, acide…). N'appara\xEEt pas dans l'inventaire du port."
-  }, fmtPool(poolEntries))), !isWire && !prodEntries.length && !consEntries.length && !poolEntries.length && React.createElement("div", {
+  }, fmtPool(poolEntries))), !isWire && !isConduit && !prodEntries.length && !consEntries.length && !poolEntries.length && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -12104,17 +12126,18 @@ function App() {
       4: 'acier',
       5: 'acier'
     };
-    const NUC_MATS = ['acier', 'beton_arme', 'cable'];
+    const NUC_MATS = ['acier', 'beton_arme', 'cable', 'plutonium'];
     g.nuclearMix = {};
     if (data.nuclearMix) for (const id in data.nuclearMix) {
       const m = data.nuclearMix[id] || {};
-      // Rétro-compat : ancien booléen `on` (true → 'mix').
+      // Rétro-compat : ancien booléen `on` (true → 'mix'). plutonium absent < build 181 → poids 1.
       const mode = m.mode === 'mix' || m.mode === 'auto' || m.mode === 'single' ? m.mode : m.on ? 'mix' : 'single';
       g.nuclearMix[+id] = {
         mode: mode,
         acier: Math.max(0, m.acier != null ? +m.acier : 1),
         beton_arme: Math.max(0, m.beton_arme != null ? +m.beton_arme : 1),
-        cable: Math.max(0, m.cable != null ? +m.cable : 1)
+        cable: Math.max(0, m.cable != null ? +m.cable : 1),
+        plutonium: Math.max(0, m.plutonium != null ? +m.plutonium : 1)
       };
     }
     if (data.nuclearConfig) for (const id in data.nuclearConfig) {
@@ -13280,8 +13303,7 @@ function App() {
   }
   function setNuclearConfig(islandId, mat) {
     const g = gameRef.current;
-    const NUC_MATS = ['acier', 'beton_arme', 'cable'];
-    if (NUC_MATS.indexOf(mat) === -1) return;
+    if (NUC_MAT_KEYS.indexOf(mat) === -1) return;
     g.nuclearConfig[islandId] = mat;
     bumpHud();
     markDirty();
@@ -13297,17 +13319,20 @@ function App() {
     const w = had && had.acier != null ? {
       acier: had.acier,
       beton_arme: had.beton_arme,
-      cable: had.cable
+      cable: had.cable,
+      plutonium: had.plutonium != null ? had.plutonium : 0
     } : {
-      acier: 33,
-      beton_arme: 33,
-      cable: 34
+      acier: 25,
+      beton_arme: 25,
+      cable: 25,
+      plutonium: 25
     };
     g.nuclearMix[islandId] = {
       mode: mode,
       acier: w.acier,
       beton_arme: w.beton_arme,
-      cable: w.cable
+      cable: w.cable,
+      plutonium: w.plutonium
     };
     bumpHud();
     markDirty();
@@ -13323,7 +13348,8 @@ function App() {
       mode: 'mix',
       acier: cur.w.acier,
       beton_arme: cur.w.beton_arme,
-      cable: cur.w.cable
+      cable: cur.w.cable,
+      plutonium: cur.w.plutonium
     };
     next[mat] = Math.max(0, Math.min(100, +w || 0));
     g.nuclearMix[islandId] = next;

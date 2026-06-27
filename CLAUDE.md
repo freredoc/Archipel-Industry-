@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 180`, `GAME_VERSION = 'Alpha 12.9'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 181`, `GAME_VERSION = 'Alpha 13.0'`, `SAVE_VERSION = 14`.**
+  Changement 13.0 : **plutonium + chaleur en MJ/GJ.** (1) **Plutonium** (nouvelle ressource t4, road,
+  pas encore de sprite → repli code) : la **centrale** peut le produire comme **4e option** de
+  `NUC_MAT_KEYS` (`['acier','beton_arme','cable','plutonium']`), **même ratio** que les irradiés
+  (1/s à V1·100 %), mais **sans matériau de base** (helpers `nucBaseKey`=null/`nucOutKey`='plutonium' ;
+  le réacteur le « breed »). Les 3 modes (single/mix/auto) et l'auto-équilibrage gèrent les 4 clés ;
+  sélecteur de fiche à 4 boutons. (2) **Moteur nucléaire** : recette `combustible_u235`→**`plutonium`**
+  (0,1/s). (3) **Affichage chaleur** : nouveau `fmtHeat(mj)` (MJ < 1000, **GJ** au-delà, 2 décimales fr
+  comme l'électricité) appliqué au **panneau conduit** (Débit total / Stockage / Flux évacué) ; ligne
+  « Transit : aucun » masquée pour le conduit. Persistance : poids `plutonium` ajouté à `nuclearMix`
+  (migration : absent < 181 → 1) ; `SAVE_VERSION` inchangé (rétro-compat). **Reste (déféré)** : glitch
+  esthétique des **jonctions** quand un réseau traverse un bâtiment (besoin d'un repro précis).
+  `node --check` (7 blocs) + boot jsdom + smoke chaleur OK.
   Changement 12.9 : **conduit = TAMPON thermique + flux affiché + coûts réduits.** (1) **Modèle conduit
   refondu** (demande utilisateur) : un réseau conduit de **N tuiles** stocke **N×débit MJ** et a un **débit
   TOTAL** (entrée comme sortie) de **N×débit MJ/s** (V1 : 10 tuiles → 10 MJ stockés, 10 MJ/s). Plus de

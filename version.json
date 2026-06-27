@@ -1,7 +1,7 @@
 {
-  "build": 180,
-  "version": "Alpha 12.9",
+  "build": 181,
+  "version": "Alpha 13.0",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Merge pull request #176 — Conduit tampon thermique + flux + coûts réduits"
+  "notes": "Plutonium : la centrale en produit (4e option, meme ratio) ; le moteur nucleaire en consomme (remplace l'U235). Chaleur affichee en MJ/GJ avec 2 decimales."
 }
