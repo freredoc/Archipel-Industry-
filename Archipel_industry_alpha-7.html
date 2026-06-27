@@ -130,10 +130,11 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .calc-upg-pm:hover{border-color:var(--yellow);}
 .calc-upg-pm:disabled{opacity:.4;cursor:default;}
 /* Bouton ALERTE (à droite de Production) : récap des alertes de stock en cours, orange pulsant. */
-.inv-alert-btn{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.05em;color:#ffce54;
-  background:rgba(255,149,0,.16);border:1px solid var(--orange);border-radius:4px;padding:3px 10px;cursor:pointer;
-  display:flex;align-items:center;gap:6px;flex-shrink:0;animation:alertpulse 1.4s ease-in-out infinite;}
+.inv-alert-btn{font-family:'Bebas Neue',sans-serif;font-size:.66rem;letter-spacing:.05em;color:#ffce54;
+  background:rgba(255,149,0,.16);border:1px solid var(--orange);border-radius:4px;padding:2px 8px;cursor:pointer;
+  display:flex;align-items:center;gap:5px;flex-shrink:0;animation:alertpulse 1.4s ease-in-out infinite;}
 .inv-alert-btn:hover{background:rgba(255,149,0,.30);}
+.inv-alert-btn .ui-ico{width:12px;height:12px;}
 .inv-alert-btn .inv-count{background:var(--red);color:#fff;}
 @keyframes alertpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,149,0,0);}50%{box-shadow:0 0 0 3px rgba(255,149,0,.35);}}
 /* Panneau récapitulatif des alertes. */
@@ -691,6 +692,10 @@ body:not(.theme-inox) .inv-label-btn.open{border-image:var(--btn-active) 8 fill 
 .catchup-bar{width:200px;height:8px;background:var(--panel-2);border-radius:4px;overflow:hidden;}
 .catchup-fill{height:100%;background:#4CAF50;transition:width .15s;}
 .catchup-note{font-family:'Barlow Condensed',sans-serif;font-size:.76rem;color:var(--ink-dim);}
+.catchup-skip{margin-top:6px;font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.06em;
+  color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:6px;
+  padding:5px 16px;cursor:pointer;}
+.catchup-skip:hover{border-color:#5bc0ff;color:#fff;}
 
 /* ── Écran de chargement (splash) ──
    HTML STATIQUE affiché immédiatement (avant même que React/JS soit prêt) → l'utilisateur voit
@@ -4316,8 +4321,8 @@ const SAVE_VERSION = 14;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 171;
-const GAME_VERSION = 'Alpha 12.0';
+const GAME_BUILD = 172;
+const GAME_VERSION = 'Alpha 12.1';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -11346,6 +11351,8 @@ function App() {
   const [offlineReport, setOfflineReport] = useState(null);
   // Progression du rattrapage hors-ligne (null = inactif, sinon {pct, approx}).
   const [catchUp, setCatchUp] = useState(null);
+  // Drapeau « Passer » du rattrapage hors-ligne : interrompt la simulation et entre dans le jeu.
+  const catchUpSkipRef = useRef(false);
   const [simplifyOffline, setSimplifyOffline] = useState(false);
   const [theme, setTheme] = useState('bleu');
   // Applique l'ambiance « inox » via une classe sur <body> (CSS body.theme-inox).
@@ -12200,6 +12207,7 @@ function App() {
     let done = 0;
     let baseSnap = null;
     g.catchingUp = true;
+    catchUpSkipRef.current = false;
     setCatchUp({
       pct: 0,
       approx: simplify
@@ -12207,21 +12215,25 @@ function App() {
     const step = () => {
       const t0 = performance.now();
       while (done < WARM && performance.now() - t0 < 80) {
+        if (catchUpSkipRef.current) break;
         if (simplify && done === sampleStart && baseSnap == null) baseSnap = snapshotPort(g);
         onTick(g);
         tickShips(g);
         done++;
       }
+      // « Passer » : on arrête la simulation et on entre dans le jeu avec ce qui est calculé
+      // (production restante hors-ligne abandonnée — choix explicite du joueur).
+      const skipped = catchUpSkipRef.current;
       setCatchUp({
-        pct: Math.min(99, Math.round(100 * done / ticks)),
+        pct: skipped ? 100 : Math.min(99, Math.round(100 * done / ticks)),
         approx: simplify
       });
-      if (done < WARM) {
+      if (!skipped && done < WARM) {
         setTimeout(step, 0);
         return;
       }
       // Échauffon terminé → extrapolation du reste au débit moyen (mode simplifié).
-      if (simplify && ticks > WARM) {
+      if (!skipped && simplify && ticks > WARM) {
         const remaining = ticks - WARM;
         const sampleTicks = Math.min(SAMPLE, WARM) || 1;
         const base = baseSnap || before;
@@ -14910,7 +14922,13 @@ function App() {
     }
   })), React.createElement("div", {
     className: "catchup-note"
-  }, catchUp.approx ? I18N.t("calcul simplifié (longue absence)") : I18N.t("calcul de la production…")))), offlineReport && React.createElement(OfflineModal, {
+  }, catchUp.approx ? I18N.t("calcul simplifié (longue absence)") : I18N.t("calcul de la production…")), React.createElement("button", {
+    className: "catchup-skip",
+    onClick: () => {
+      catchUpSkipRef.current = true;
+    },
+    title: I18N.t("Entrer dans le jeu maintenant (le reste du calcul hors-ligne est abandonné)")
+  }, I18N.t("Passer")))), offlineReport && React.createElement(OfflineModal, {
     report: offlineReport,
     onClose: () => setOfflineReport(null)
   }), portOpen && React.createElement(PortPanel, {
