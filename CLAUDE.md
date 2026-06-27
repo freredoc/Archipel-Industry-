@@ -17,7 +17,13 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 174`, `GAME_VERSION = 'Alpha 12.3'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 175`, `GAME_VERSION = 'Alpha 12.4'`, `SAVE_VERSION = 14`.**
+  Changement 12.4 : **fix bande vide en haut de la fiche bâtiment.** L'en-tête `.ip-head` (sticky,
+  `margin-top:-11px` censé absorber le `padding-top` du panneau) ne remontait PAS sous le cadre 9-slice
+  (`border:8px`+`border-image`) → bande vide d'~19 px (≈38 px en ×2) au-dessus du titre. Fix : `.info-panel`
+  `padding-top:11px→0` et `.ip-head` `margin-top:-11px→0` (padding interne 11→9) → l'en-tête est collé au
+  bord supérieur (juste sous le cadre), plus de bande. Diagnostiqué/validé au pixel via Chromium
+  (`head.top` 19→8 px). `node --check` (7 blocs) + boot jsdom OK.
   Changement 12.3 : **3 correctifs de sprites (retours visuels).** (1) **Conduit relié aux bâtiments** :
   le masque de connexion du conduit (`drawBuilding`/branche conduit) ajoute désormais une branche vers
   tout bâtiment **à chaleur** (`heatCap` : centrale/usine/antenne) ou **tour** (`tour`) adjacent → le
