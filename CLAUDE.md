@@ -17,7 +17,12 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 171`, `GAME_VERSION = 'Alpha 12.0'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 172`, `GAME_VERSION = 'Alpha 12.1'`, `SAVE_VERSION = 14`.**
+  Changement 12.1 : **2 ajustements UI.** (1) **Bouton « Passer » pendant le calcul hors-ligne** :
+  l'overlay `.catchup-overlay` reçoit un bouton `.catchup-skip` (drapeau `catchUpSkipRef`) qui interrompt
+  la boucle `step()` de `runCatchUp` et entre dans le jeu immédiatement (production restante hors-ligne
+  abandonnée, sans extrapolation). (2) **Bouton Alerte réduit ~20 %** (`.inv-alert-btn` .82→.66rem,
+  padding 3×10→2×8, gap 6→5, icône 12px). Validé : `node --check` (7 blocs) + boot jsdom sans erreur.
   Changement 12.0 : **refonte complète du refroidissement nucléaire — la chaleur est un STOCK interne
   par bâtiment (MJ), plus un flux.** (1) **Modèle** : helper module `processHeat(game, isl)` appelé chaque
   tick (après l'énergie). Chaque source a `bld.heat` (MJ) + `bld.heatEmit` (émission/tick) ; elle monte

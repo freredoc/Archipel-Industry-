@@ -1,7 +1,7 @@
 {
-  "build": 171,
-  "version": "Alpha 12.0",
+  "build": 172,
+  "version": "Alpha 12.1",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Merge pull request #167 from freredoc/claude/archipel-nuclear-cooling-220xi0"
+  "notes": "Bouton Passer pendant le calcul hors-ligne + bouton Alerte réduit ~20%"
 }
