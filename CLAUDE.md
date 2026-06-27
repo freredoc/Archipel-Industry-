@@ -17,7 +17,39 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 170`, `GAME_VERSION = 'Alpha 11.45'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 171`, `GAME_VERSION = 'Alpha 12.0'`, `SAVE_VERSION = 14`.**
+  Changement 12.0 : **refonte complète du refroidissement nucléaire — la chaleur est un STOCK interne
+  par bâtiment (MJ), plus un flux.** (1) **Modèle** : helper module `processHeat(game, isl)` appelé chaque
+  tick (après l'énergie). Chaque source a `bld.heat` (MJ) + `bld.heatEmit` (émission/tick) ; elle monte
+  quand émission > absorption, descend sinon, bornée à 0 ; au plafond → **trip**. `bld.heatEmit` calculé :
+  centrale `nucCur×0,25/1000` (6144 kW → 1,536 MJ/s), usine moteur `2×regime`, antenne (prod) `0,25×MW
+  consommés EN PLUS par les voisins`. Plafonds (`heatCap`) : centrale 10, usine 2, antenne 10. (2) **Centrale**
+  : `NUC_POWER=6144`, **eau froide SUPPRIMÉE** (intrants = 1 comb.U235 + 1 matériau/s ; sorties = 6144 MW +
+  1 matériau irradié + 1,536 MJ/s). Plus de mise en sécurité par manque d'eau (refroidissement = chaleur).
+  (3) **Bâtiment `refroidisseur` SUPPRIMÉ** (BUILDINGS/TOOLBAR/TECH ; nœud 23 = enrichissement seul, nœud 24
+  sans condition build refroidisseur). `eau_froide` n'est plus produite/consommée (defs laissées, inertes).
+  (4) **Nouveau bâtiment `tour_aerorefrigerante`** (1×1, absorbe 0,768 MJ/s, consomme 256 eau/s via tuyau,
+  coût 1000 béton armé + 500 lingot fer, upgradable ×2 absorption / ×2 eau / ×2,7 coût, nœud 24). 2 tours V1
+  = 1 centrale. (5) **Nouveau réseau infra `conduit`** (carrier 'heat') : transporte la chaleur, débit
+  `conduitDebit(lvl)` = 1/2/4 MJ/s/tuile (×2/palier), coût base 1000 cuivre + 500 polymère/tuile, upgrade
+  ×10/palier (`networkUnitCost` cas spécial). **Ramifiable** (flood-fill), **NON traversable** (aucune
+  jonction conduit ; pose interdite sur/par un autre réseau). Le débit par tuile force à **splitter** vers
+  2 tours (`condTilesForNet` = nb de tuiles conduit face à la source). Rendu canvas vectoriel cuivre +
+  **teinte de chaleur dynamique** (cuivre→rouge selon `game.conduitLoad[isl][nid]`). (6) **Usine moteur**
+  émet 2 MJ/s (cap 2), raccordable au conduit. (7) **Antenne 3 états** (`game.antennaMode[isl]`) : VITESSE
+  (défaut, ×2 I/O, conso ×3 sigmoïde, 0 chaleur), PRODUCTIVITÉ (vitesse −50 % & intrants ÷2, conso voisins
+  identique, émet chaleur), SURCHAUFFE (subi : arrêt, chaleur gelée, debuff voisins persiste 5 min). Toggle
+  dans la fiche (`onSetAntMode`). (8) **Trip commun** (`§7`) : au plafond → arrêt + état endommagé ≥5 min ;
+  **redémarrage = payer 20 % du coût TOTAL cumulé** (`buildingTotalCost` = construction + upgrades ; calculé
+  à la volée, pas de champ stocké). Handler `tryHeatRepair`. Post-effet canvas (teinte rouge clignotante,
+  pas de sprite). (9) **UI** : jauge de chaleur sur la tuile (barre %, vert<50/orange<80/rouge clignotant) +
+  dans la fiche (`b.heatCap`), toasts au trip et à la réparation possible (`game.heatTrip`/`heatRepairReady`),
+  `NetworkPanel` conduit (débit MJ/s/tuile). (10) **Persistance** : `SAVE_VERSION 13→14`, sérialise
+  `pl.h`/`pl.dmg`/`pl.dt` + `antennaMode` ; migration : refroidisseur posé = **droppé** au chargement
+  (BUILDINGS sans entrée → `continue`), bâtiments existants `heat=0`. Validé : `node --check` (7 blocs) +
+  smoke jsdom (boot sans erreur ; centrale + 2 tours + conduit → chaleur bornée/stabilisée ; coupure eau →
+  trip à 10 MJ tick 6 ; 20 % = acier 1600… ; chaleur gelée endommagée) + migration v13-avec-refroidisseur OK.
+  Changement
   11.45 : **correction taille boutons HUD : c'est PRODUCTION qui rétrécit, pas Alerte.** Le 11.44 avait
   réduit le bouton Alerte par erreur. Remis l'alerte à sa taille d'origine (.82rem) et réduit le
   **bouton Production de ~20 %** (`.inv-prod-btn` .78→.62rem, icône 15→12px, padding/gap réduits).
