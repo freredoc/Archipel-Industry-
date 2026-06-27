@@ -17,7 +17,16 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 181`, `GAME_VERSION = 'Alpha 13.0'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 182`, `GAME_VERSION = 'Alpha 13.1'`, `SAVE_VERSION = 14`.**
+  Changement 13.1 : **intégration des nouveaux sprites du pack (re-livré).** 157 sprites inlinés dans
+  `__SPRITE_DATA__` : **`item_plutonium`** (icône plutonium, auto-câblée via `itemSpriteKey` →
+  inventaire/recettes/fiches) ; **144 sprites de conduit « chauffe »** (`conduit_v{1..3}_{masque}_chauffe{1,2,3}`)
+  = art de chaleur par **niveau de remplissage du tampon** : la branche conduit du `drawBuilding` choisit
+  `_chauffe1` (f≥0,25), `_chauffe2` (f≥0,5), `_chauffe3` (f≥0,8) sinon le sprite de base (repli vectoriel +
+  teinte canvas pour V4 sans variante) → plus de teinte rouge canvas quand le sprite existe ; + `fx_boost`,
+  `ile_1..5`/`ile_N_gris` (sélecteur d'île), `tile_i3_petrole` (inlinés, dispo — câblage UI à suivre).
+  `Archipel_sprites_COMPLET.zip` du repo mis à jour. `node --check` (7 blocs) + boot jsdom (sprites
+  présents/décodés, 0 erreur) + smoke chaleur OK.
   Changement 13.0 : **plutonium + chaleur en MJ/GJ.** (1) **Plutonium** (nouvelle ressource t4, road,
   pas encore de sprite → repli code) : la **centrale** peut le produire comme **4e option** de
   `NUC_MAT_KEYS` (`['acier','beton_arme','cable','plutonium']`), **même ratio** que les irradiés
