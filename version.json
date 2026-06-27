@@ -3,5 +3,5 @@
   "version": "Alpha 12.5",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Fix : la tour aérorefrigerante n'affiche plus une icône de déficit électrique (elle fonctionne à l'eau) — icône intrants/eau à la place"
+  "notes": "Merge pull request #172 — Fix icône électrique sur la tour aéroréfrigérante"
 }
