@@ -3742,7 +3742,7 @@ const BUILDINGS = {
     exclusiveIsland: 5,
     size: [2, 2],
     nuclear: true,
-    heatCap: 10,
+    heatCap: 20,
     maxPerIsland: 1,
     power: 0,
     cost: {
@@ -3879,7 +3879,7 @@ const BUILDINGS = {
     exclusiveIsland: 5,
     size: [1, 1],
     power: 0,
-    heatCap: 6,
+    heatCap: 10,
     randomP: {
       min: 64,
       max: 512
@@ -4322,8 +4322,8 @@ const SAVE_VERSION = 14;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 178;
-const GAME_VERSION = 'Alpha 12.7';
+const GAME_BUILD = 179;
+const GAME_VERSION = 'Alpha 12.8';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4811,6 +4811,7 @@ function processHeat(game, isl) {
   for (const s of sources) {
     const bld = s.bld;
     if (bld.heat == null) bld.heat = 0;
+    bld.heatCool = 0; // refroidissement reçu ce tick (MJ/s) — pour la fiche
     if (bld.damaged) {
       bld.dmgTimer = (bld.dmgTimer || 0) + 1;
       if (bld.dmgTimer === 300) {
@@ -4858,18 +4859,25 @@ function processHeat(game, isl) {
     bld.discReason = wf > 0 ? null : 'input';
     bld.heat = 0;
     to.condIds = adjacentNetworksFootprint(game, isl, to.r, to.c, 1, 1, 'conduit');
+    // Diagnostic fiche : la tour est-elle reliée à un conduit ? combien absorbe-t-elle ?
+    bld.onConduit = to.condIds.length > 0;
+    bld.heatAbsorb = 0;
   }
   // 3) Réseaux de conduit : offre (tours) vs demande (sources), bornée par le débit/tuile.
   const condNets = {};
   for (const nid in nets) if (nets[nid] && nets[nid].type === 'conduit') condNets[nid] = {
     supply: 0,
     debit: conduitDebit(nets[nid].level || 1),
-    sources: []
+    sources: [],
+    towers: []
   };
   for (const to of tours) {
     if (!(to.absorb > 0) || !to.condIds || !to.condIds.length) continue;
     const nid = to.condIds[0];
-    if (condNets[nid]) condNets[nid].supply += to.absorb;
+    if (condNets[nid]) {
+      condNets[nid].supply += to.absorb;
+      condNets[nid].towers.push(to);
+    }
   }
   for (const s of sources) {
     const bld = s.bld;
@@ -4899,8 +4907,14 @@ function processHeat(game, isl) {
       continue;
     }
     const frac = Math.min(1, cn.supply / demand);
-    for (const o of items) o.bld.heat = Math.max(0, (o.bld.heat || 0) - o.want * frac);
+    for (const o of items) {
+      const rem = o.want * frac;
+      o.bld.heat = Math.max(0, (o.bld.heat || 0) - rem);
+      o.bld.heatCool = (o.bld.heatCool || 0) + rem;
+    }
     const carried = Math.min(cn.supply, demand);
+    // Attribue la chaleur réellement évacuée aux tours du réseau (au prorata de leur absorption).
+    if (cn.supply > 1e-9) for (const to of cn.towers) to.bld.heatAbsorb = (to.bld.heatAbsorb || 0) + to.absorb * (carried / cn.supply);
     load[nid] = Math.min(1, carried / Math.max(1e-9, cn.debit));
   }
   // 4) Trip : toute source au plafond s'arrête et passe en état endommagé (réparation 20 %).
@@ -9040,7 +9054,18 @@ function InfoPanel({
         color: col,
         fontWeight: 700
       }
-    }, fmtH(heat) + " / " + cap + " MJ · " + pct + "%")), dmg && React.createElement("div", {
+    }, fmtH(heat) + " / " + cap + " MJ · " + pct + "%")), React.createElement("div", {
+      className: "ip-row"
+    }, React.createElement("span", {
+      className: "lbl"
+    }, I18N.t("Bilan chaleur")), React.createElement("span", {
+      className: "val",
+      style: {
+        color: (bld.heatCool || 0) + 1e-6 >= (bld.heatEmit || 0) ? 'var(--green)' : 'var(--orange)',
+        fontWeight: 700
+      },
+      title: I18N.t("Chaleur émise vs évacuée par les conduits/tours ce tick. Si évacué < émis, la chaleur monte : ajoutez des tours (avec eau) reliées par conduit.")
+    }, "+" + fmtH(bld.heatEmit || 0) + I18N.t(" émis · −") + fmtH(bld.heatCool || 0) + I18N.t(" évacué /s"))), dmg && React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
@@ -9056,6 +9081,35 @@ function InfoPanel({
       onClick: () => onHeatRepair && onHeatRepair(info.r, info.c),
       title: I18N.t("Réparation : 20 % du coût total cumulé")
     }, uiIcon('reparation', "\u{1F527}"), I18N.t(" Réparer (20 % : ") + (formatCost(repPay) || 'gratuit') + ")"));
+  })(), b.tour && (() => {
+    // Diagnostic tour : eau (régime), raccordement au conduit, chaleur réellement évacuée.
+    const up = Math.pow(2, bld.upgrade || 0);
+    const wf = bld.regime != null ? bld.regime : 0;
+    const onC = !!bld.onConduit;
+    const absorb = bld.heatAbsorb || 0;
+    const capA = 0.768 * up;
+    const fH = n => String(Math.round(n * 100) / 100).replace('.', ',');
+    return React.createElement(React.Fragment, null, React.createElement("div", {
+      className: "ip-row"
+    }, React.createElement("span", {
+      className: "lbl"
+    }, uiIcon('chaleur', "\u{1F525}"), I18N.t(" Refroidissement")), React.createElement("span", {
+      className: "val",
+      style: {
+        color: onC && absorb > 0.001 ? 'var(--green)' : 'var(--orange)',
+        fontWeight: 700
+      },
+      title: I18N.t("La tour doit toucher un CONDUIT (réseau cuivre, chaleur) ET un tuyau d'eau pour évacuer la chaleur d'une source. Sinon elle ne refroidit rien.")
+    }, onC ? fH(absorb) + " / " + fH(capA) + I18N.t(" MJ/s évacués") : I18N.t("⚠ pas relié à un conduit"))), React.createElement("div", {
+      className: "ip-row"
+    }, React.createElement("span", {
+      className: "lbl"
+    }, I18N.t("Eau")), React.createElement("span", {
+      className: "val",
+      style: {
+        color: wf >= 0.995 ? 'var(--green)' : 'var(--orange)'
+      }
+    }, Math.round(wf * 100) + "% · " + 256 * up + I18N.t(" eau/s"))));
   })(), b.antenna && React.createElement("div", {
     className: "ip-fluxpri"
   }, React.createElement("div", {

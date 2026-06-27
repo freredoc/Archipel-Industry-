@@ -1,7 +1,7 @@
 {
-  "build": 178,
-  "version": "Alpha 12.7",
+  "build": 179,
+  "version": "Alpha 12.8",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Merge pull request #174 — Équilibrage chaleur usine moteur nucléaire"
+  "notes": "Chaleur : plafonds 20 (centrale) / 10 (usine) + diagnostics dans les fiches (bilan emis/evacue, raccord conduit, eau de la tour)"
 }
