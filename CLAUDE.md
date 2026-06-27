@@ -17,7 +17,21 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 172`, `GAME_VERSION = 'Alpha 12.1'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 173`, `GAME_VERSION = 'Alpha 12.2'`, `SAVE_VERSION = 14`.**
+  Changement 12.2 : **mise à jour de l'ensemble des sprites (pack `Archipel_sprites_COMPLET`).** Le pack
+  livre enfin l'art des nouveautés 12.0. Re-sync de `__SPRITE_DATA__` (objet principal) depuis le pack :
+  354 clés existantes rafraîchies/conservées + **69 ajoutées** — les **64 tuiles de conduit**
+  (`conduit_v1..v4_00..15_*`, auto-tiling par bitmask), `bat_tour_aerorefrigerante` + `tour_aerorefrigerante`,
+  `ui_chaleur`, `ui_mode_vitesse`, `ui_mode_productivite`. `ui_reparation`/`ui_sauvegarde` (hors pack)
+  préservés. (Le bloc d'assignations `__SPRITE_DATA__["…"]=` route/tuyau/câble/côte reste intact → 531
+  clés au total au runtime.) **Câblage** : (1) le **conduit** se rend désormais via le sprite
+  connection-aware `conduit_v{niv}_{masque}` (repli vectoriel cuivre si absent) + teinte de chaleur
+  rouge proportionnelle au flux ; (2) **tour** rendue via `bat_tour_aerorefrigerante` ; (3) icône du menu
+  Réseau du conduit (`BLD_SPRITE_OVERRIDE.conduit = conduit_v1_15_NESO`) ; (4) le toggle d'antenne affiche
+  les icônes `ui_mode_vitesse`/`ui_mode_productivite` ; (5) jauge/fiche de chaleur utilisent `ui_chaleur`.
+  Anim du `tour_aerorefrigerante_sheet` NON intégrée (aucune entrée dans `animations_manifest.csv` → rendu
+  statique, voulu). Validé : `node --check` (7 blocs) + boot jsdom (sprites présents/décodés, 0 erreur) +
+  smoke chaleur + migration v13 OK.
   Changement 12.1 : **2 ajustements UI.** (1) **Bouton « Passer » pendant le calcul hors-ligne** :
   l'overlay `.catchup-overlay` reçoit un bouton `.catchup-skip` (drapeau `catchUpSkipRef`) qui interrompt
   la boucle `step()` de `runCatchUp` et entre dans le jeu immédiatement (production restante hors-ligne
