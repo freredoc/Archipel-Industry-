@@ -2794,7 +2794,7 @@ const BUILDINGS = {
     size: [1, 1],
     cost: {
       lingot_cuivre: 1000,
-      polymere: 500
+      polymere: 100
     },
     power: 0
   },
@@ -3725,8 +3725,8 @@ const BUILDINGS = {
     size: [1, 1],
     power: 0,
     cost: {
-      beton_arme: 1000,
-      lingot_fer: 500
+      beton_arme: 250,
+      lingot_fer: 125
     },
     inputs: {
       eau: 256
@@ -4182,11 +4182,11 @@ const NETWORK_UPGRADE_COST = {
   conduit: {
     1: {
       lingot_cuivre: 10000,
-      polymere: 5000
+      polymere: 1000
     },
     2: {
       lingot_cuivre: 100000,
-      polymere: 50000
+      polymere: 10000
     }
   }
 };
@@ -4225,7 +4225,7 @@ function networkUnitCost(type, level, payMat) {
   // Conduit : coût ×10 par palier, sans choix de matériau ni état illimité.
   if (type === 'conduit') return {
     lingot_cuivre: 1000 * Math.pow(10, level),
-    polymere: 500 * Math.pow(10, level)
+    polymere: 100 * Math.pow(10, level)
   };
   if (level < 3) return tbl[level] || {};
   const m = NETWORK_HI_MATS[type];
@@ -4322,8 +4322,8 @@ const SAVE_VERSION = 14;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 179;
-const GAME_VERSION = 'Alpha 12.8';
+const GAME_BUILD = 180;
+const GAME_VERSION = 'Alpha 12.9';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -4559,6 +4559,8 @@ function rebuildNetworks(game, islandId) {
       addInto(newNets[target].pool, oldNets[oldId] && oldNets[oldId].pool || {});
       const oldLvl = oldNets[oldId] && oldNets[oldId].level || 1;
       if (oldLvl > newNets[target].level) newNets[target].level = oldLvl;
+      // Conserve le tampon thermique du conduit au travers d'un rebuild (pose/démolition d'infra).
+      if (oldNets[oldId] && oldNets[oldId].heatStore) newNets[target].heatStore = (newNets[target].heatStore || 0) + oldNets[oldId].heatStore;
     }
   }
   // ── Règle « traversée » : un bâtiment qui se raccorde au CÂBLE (élec.) ou au TUYAU
@@ -4863,21 +4865,25 @@ function processHeat(game, isl) {
     bld.onConduit = to.condIds.length > 0;
     bld.heatAbsorb = 0;
   }
-  // 3) Réseaux de conduit : offre (tours) vs demande (sources), bornée par le débit/tuile.
+  // 3) Réseaux de conduit = TAMPONS thermiques. Capacité de stockage = tuiles × débit (MJ) ;
+  //    débit TOTAL (entrée ET sortie) = tuiles × débit (MJ/s). Ex. conduit V1 de 10 tuiles :
+  //    stocke 10 MJ et laisse passer 10 MJ/s. La chaleur entre depuis les sources (≤ débit, ≤ espace
+  //    libre), est stockée, puis est évacuée par les tours (≤ débit, ≤ stock, ≤ absorption des tours).
+  if (!game.conduitFlow) game.conduitFlow = {};
+  game.conduitFlow[isl] = {};
+  const flow = game.conduitFlow[isl];
   const condNets = {};
-  for (const nid in nets) if (nets[nid] && nets[nid].type === 'conduit') condNets[nid] = {
-    supply: 0,
-    debit: conduitDebit(nets[nid].level || 1),
-    sources: [],
-    towers: []
-  };
+  for (const nid in nets) {
+    if (!nets[nid] || nets[nid].type !== 'conduit') continue;
+    const tc = networkTileCount(game, isl, +nid);
+    const through = tc * conduitDebit(nets[nid].level || 1);
+    if (nets[nid].heatStore == null) nets[nid].heatStore = 0;
+    condNets[nid] = { net: nets[nid], cap: through, through, sources: [], towers: [] };
+  }
   for (const to of tours) {
     if (!(to.absorb > 0) || !to.condIds || !to.condIds.length) continue;
     const nid = to.condIds[0];
-    if (condNets[nid]) {
-      condNets[nid].supply += to.absorb;
-      condNets[nid].towers.push(to);
-    }
+    if (condNets[nid]) condNets[nid].towers.push(to);
   }
   for (const s of sources) {
     const bld = s.bld;
@@ -4885,37 +4891,42 @@ function processHeat(game, isl) {
     const b = BUILDINGS[bld.id],
       sz = b.size || [1, 1];
     const condIds = adjacentNetworksFootprint(game, isl, s.r, s.c, sz[1] || 1, sz[0] || 1, 'conduit');
-    for (const nid of condIds) {
-      if (!condNets[nid]) continue;
-      const cap = condNets[nid].debit * condTilesForNet(game, isl, s.r, s.c, sz[1] || 1, sz[0] || 1, nid);
-      condNets[nid].sources.push({ bld, cap });
-    }
+    for (const nid of condIds) if (condNets[nid]) condNets[nid].sources.push(bld);
   }
   for (const nid in condNets) {
     const cn = condNets[nid];
-    let demand = 0;
-    const items = [];
-    for (const it of cn.sources) {
-      const want = Math.min(it.bld.heat || 0, it.cap);
-      if (want > 0) {
-        items.push({ bld: it.bld, want });
-        demand += want;
+    let store = cn.net.heatStore || 0;
+    // ENTRÉE : les sources poussent leur chaleur dans le tampon (≤ débit total, ≤ espace libre).
+    let inBudget = cn.through,
+      inflow = 0;
+    for (const sb of cn.sources) {
+      const space = cn.cap - store;
+      if (space <= 1e-9 || inBudget <= 1e-9) break;
+      const push = Math.min(sb.heat || 0, inBudget, space);
+      if (push > 0) {
+        sb.heat -= push;
+        sb.heatCool = (sb.heatCool || 0) + push;
+        store += push;
+        inBudget -= push;
+        inflow += push;
       }
     }
-    if (demand <= 0) {
-      load[nid] = 0;
-      continue;
+    // SORTIE : les tours évacuent le tampon (≤ débit total, ≤ stock, ≤ absorption de chaque tour).
+    let outBudget = cn.through,
+      outflow = 0;
+    for (const to of cn.towers) {
+      if (store <= 1e-9 || outBudget <= 1e-9) break;
+      const pull = Math.min(to.absorb, store, outBudget);
+      if (pull > 0) {
+        store -= pull;
+        outBudget -= pull;
+        outflow += pull;
+        to.bld.heatAbsorb = (to.bld.heatAbsorb || 0) + pull;
+      }
     }
-    const frac = Math.min(1, cn.supply / demand);
-    for (const o of items) {
-      const rem = o.want * frac;
-      o.bld.heat = Math.max(0, (o.bld.heat || 0) - rem);
-      o.bld.heatCool = (o.bld.heatCool || 0) + rem;
-    }
-    const carried = Math.min(cn.supply, demand);
-    // Attribue la chaleur réellement évacuée aux tours du réseau (au prorata de leur absorption).
-    if (cn.supply > 1e-9) for (const to of cn.towers) to.bld.heatAbsorb = (to.bld.heatAbsorb || 0) + to.absorb * (carried / cn.supply);
-    load[nid] = Math.min(1, carried / Math.max(1e-9, cn.debit));
+    cn.net.heatStore = Math.max(0, store);
+    flow[nid] = outflow; // MJ/s réellement évacués (affiché dans le panneau réseau)
+    load[nid] = Math.min(1, store / Math.max(1e-9, cn.cap)); // teinte = remplissage du tampon
   }
   // 4) Trip : toute source au plafond s'arrête et passe en état endommagé (réparation 20 %).
   for (const s of sources) {
@@ -10159,11 +10170,14 @@ function NetworkPanel({
   // Câble : le débit affiché est celui de la COMPOSANTE électrique (somme des câbles fusionnés),
   // pas du seul réseau cliqué — cohérent avec « puiser sur tous les câbles adjacents ».
   const isWire = netObj.type === 'wire';
-  // Conduit de chaleur : le « débit » est en MJ/s PAR TUILE (conduitDebit), pas un débit de ressources.
+  // Conduit de chaleur = tampon thermique : capacité de stockage ET débit total = tuiles × débit/tuile.
   const isConduit = netObj.type === 'conduit';
   const wi = isWire && game.wireInfo && game.wireInfo[currentIsland] && game.wireInfo[currentIsland][net.networkId] || null;
-  const cap = isConduit ? conduitDebit(lvl) : isWire && wi ? wi.cap : unlimited ? Infinity : networkThroughput(lvl);
   const tiles = networkTileCount(game, currentIsland, net.networkId);
+  const condThrough = isConduit ? tiles * conduitDebit(lvl) : 0;
+  const condStore = isConduit ? net.heatStore || 0 : 0;
+  const condFlow = isConduit && game.conduitFlow && game.conduitFlow[currentIsland] ? game.conduitFlow[currentIsland][net.networkId] || 0 : 0;
+  const cap = isConduit ? condThrough : isWire && wi ? wi.cap : unlimited ? Infinity : networkThroughput(lvl);
   const dev = game.ui && game.ui.dev;
   const port = game.port[currentIsland] || {};
   // Paliers à choix de matériau : à partir du niveau 3 (vers V4+).
@@ -10249,9 +10263,30 @@ function NetworkPanel({
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, I18N.t("D\xE9bit max")), React.createElement("span", {
-    className: "val io"
-  }, cap === Infinity ? I18N.t('illimité') : isConduit ? fmtPort(cap) + I18N.t(' MJ/s/tuile') : isWire ? fmtPower(cap) : fmtPort(cap) + I18N.t(' /s'))), React.createElement("div", {
+  }, isConduit ? I18N.t("Débit total") : I18N.t("D\xE9bit max")), React.createElement("span", {
+    className: "val io",
+    title: isConduit ? I18N.t("Tuiles × débit/tuile : chaleur qui peut entrer ET sortir par seconde") : undefined
+  }, cap === Infinity ? I18N.t('illimité') : isConduit ? fmtPort(cap) + I18N.t(' MJ/s') : isWire ? fmtPower(cap) : fmtPort(cap) + I18N.t(' /s'))), isConduit && React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, I18N.t("Stockage")), React.createElement("span", {
+    className: "val io",
+    style: {
+      color: condStore > 0.8 * cap ? '#ff8079' : undefined
+    },
+    title: I18N.t("Chaleur tamponnée dans le conduit (capacité = tuiles × débit/tuile)")
+  }, fmtPort(condStore) + " / " + fmtPort(cap) + " MJ")), isConduit && React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, uiIcon('chaleur', "\u{1F525}"), I18N.t(" Flux évacué")), React.createElement("span", {
+    className: "val io",
+    style: {
+      color: condFlow > 0.001 ? 'var(--green)' : 'var(--ink-dim)'
+    },
+    title: I18N.t("Chaleur réellement évacuée vers les tours ce tick")
+  }, fmtPort(condFlow) + " MJ/s")), !isConduit && React.createElement("div", {
     className: "ip-row" + (saturatedNet ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
@@ -11326,6 +11361,7 @@ function App() {
         5: 'speed'
       },
       conduitLoad: {},
+      conduitFlow: {},
       nucRun: {
         1: 0,
         2: 0,
@@ -12106,6 +12142,7 @@ function App() {
       if (data.antennaMode[id] === 'prod') g.antennaMode[+id] = 'prod';
     }
     g.conduitLoad = {};
+    g.conduitFlow = {};
     g.nucRun = {
       1: 0,
       2: 0,

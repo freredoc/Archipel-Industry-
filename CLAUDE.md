@@ -17,7 +17,20 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 179`, `GAME_VERSION = 'Alpha 12.8'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 180`, `GAME_VERSION = 'Alpha 12.9'`, `SAVE_VERSION = 14`.**
+  Changement 12.9 : **conduit = TAMPON thermique + flux affiché + coûts réduits.** (1) **Modèle conduit
+  refondu** (demande utilisateur) : un réseau conduit de **N tuiles** stocke **N×débit MJ** et a un **débit
+  TOTAL** (entrée comme sortie) de **N×débit MJ/s** (V1 : 10 tuiles → 10 MJ stockés, 10 MJ/s). Plus de
+  bottleneck « par tuile d'interface » / obligation de splitter. `processHeat` : `net.heatStore` (MJ
+  tamponnés, conservé au rebuild via oldToNew), les sources poussent leur chaleur dans le tampon (≤ débit
+  total, ≤ espace libre → `heatCool`), les tours l'évacuent (≤ débit total, ≤ stock, ≤ absorption →
+  `heatAbsorb`). La **teinte** du conduit suit le **remplissage du tampon** (`store/cap`, rouge si proche
+  plein). `game.conduitFlow[isl][nid]` = MJ/s réellement évacués. (2) **Panneau réseau conduit** (clic) :
+  lignes **« Débit total N MJ/s »**, **« Stockage X / N MJ »**, **« 🔥 Flux évacué Y MJ/s »**. (3) **Coûts**
+  : polymère du conduit **÷5** (base 500→100/tuile ; upgrade ×10/palier inchangé sur la base réduite),
+  **tour ÷4** (béton 1000→250, lingot fer 500→125, avant ×8 du palier T3). (4) **Calibrage centrale** : la
+  chaleur EST émise pendant la rampe sigmoïde (`heatEmit = nucCur×0,25/1000`) ; le « Bilan chaleur » de la
+  fiche (12.8) la rend visible. `node --check` (7 blocs) + smoke (flux 1,536 MJ/s) + test tour OK.
   Changement 12.8 : **plafonds de chaleur relevés + DIAGNOSTICS de refroidissement dans les fiches.**
   (1) **Plafonds** : centrale `heatCap` 10→**20**, usine 6→**10** (demande utilisateur, plus de marge).
   (2) **`processHeat` trace** désormais, par bâtiment : `bld.heatCool` (MJ/s réellement évacués sur une
