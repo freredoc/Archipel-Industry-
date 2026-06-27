@@ -17,7 +17,24 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 168`, `GAME_VERSION = 'Alpha 11.43'`.** Changement
+- **État au dernier passage : `GAME_BUILD = 170`, `GAME_VERSION = 'Alpha 11.45'`.** Changement
+  11.45 : **correction taille boutons HUD : c'est PRODUCTION qui rétrécit, pas Alerte.** Le 11.44 avait
+  réduit le bouton Alerte par erreur. Remis l'alerte à sa taille d'origine (.82rem) et réduit le
+  **bouton Production de ~20 %** (`.inv-prod-btn` .78→.62rem, icône 15→12px, padding/gap réduits).
+  Validé : `node --check` (7 blocs) + CSS équilibré. Changement
+  11.44 : **5 ajustements UI/nucléaire.** (1) **Mode AUTO des matériaux irradiés** : `nuclearMix[isl]`
+  passe d'un booléen `on` à un `mode` ('single'|'mix'|'auto', rétro-compat `on`→'mix'). Le tick unifie
+  les 3 modes par un jeu de POIDS normalisés (`single`=1 sur matKey, `mix`=poids manuels, `auto`=
+  `nucAutoWeights` = `(stockMax − stock_irr)+1` → produit davantage du matériau irradié le moins en
+  stock). Handler `setNucMode` (remplace `setNucMixOn`). (2) **Sélecteur nucléaire à 3 boutons à
+  suivre** : `.ip-nuc-mats` passe en 3 colonnes (mode Une seule/Mix/Auto ET matériaux Acier/Béton/
+  Câble, fini le 2+1). Mode auto = affichage lecture seule (barre + %·débit). (3) **Bouton ALERTE
+  ~20 % plus petit** que Production (`.inv-alert-btn` .82→.62rem, icône 12px, padding réduit). (4)
+  **Croix de fermeture TOUJOURS visible** : `.ip-head` de la fiche bâtiment devient `position:sticky;
+  top:0` → la × reste en haut à droite même sur une fiche longue (centrale). (5) **Pas de récap de
+  rattrapage hors-ligne < 5 min** : seuil `finishCatchUp` 60→300 s. Validé : `node --check` (7 blocs)
+  + CSS équilibré + Chromium (save réelle : 3 modes, auto 50/0/50 selon stocks, × visible après scroll,
+  0 erreur). Changement
   11.43 : **popover ressource — le « Bilan net » inclut désormais le transit.** Dans le popover
   (clic sur une ressource de l'inventaire), `net` valait `prod − conso` (transit ignoré). Désormais
   `net = prod − conso − export + import` (export/import lus depuis `game.transitFlow`) → le bilan
