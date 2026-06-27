@@ -17,7 +17,14 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 177`, `GAME_VERSION = 'Alpha 12.6'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 178`, `GAME_VERSION = 'Alpha 12.7'`, `SAVE_VERSION = 14`.**
+  Changement 12.7 : **équilibrage usine moteur nucléaire (trop fragile).** Elle émettait 2 MJ/s pour un
+  plafond de 2 MJ → trip en ~1-2 s ; pire, une tuile de conduit V1 ne porte que 1 MJ/s, donc même bien
+  branchée elle ne pouvait PAS évacuer ses 2 MJ/s sans splitter. Désormais **émission 2→1 MJ/s** et
+  **plafond `heatCap` 2→6 MJ** : évacuable par **UNE ligne de conduit V1 + 2 tours** (1 MJ/s shed = émission),
+  et ~6 s de marge avant trip si non refroidie. (Rappel : sans **conduit** reliant l'usine aux tours, la
+  chaleur n'a nulle part où aller → trip ; relier les tours à l'eau ne suffit pas.) `node --check` (7 blocs)
+  + smoke chaleur OK.
   Changement 12.6 : **fix « ancien sprite de centrale pendant 1 s ».** En 12.2 seul le sprite STATIQUE
   `bat_centrale_nucleaire` (`__SPRITE_DATA__`) avait été rafraîchi, PAS la sheet d'animation
   `__ANIM_DATA__['centrale_nucleaire']` (256×64) → la centrale en marche (animée) montrait l'ancien art,

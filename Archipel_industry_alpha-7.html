@@ -3879,7 +3879,7 @@ const BUILDINGS = {
     exclusiveIsland: 5,
     size: [1, 1],
     power: 0,
-    heatCap: 2,
+    heatCap: 6,
     randomP: {
       min: 64,
       max: 512
@@ -4322,8 +4322,8 @@ const SAVE_VERSION = 14;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 177;
-const GAME_VERSION = 'Alpha 12.6';
+const GAME_BUILD = 178;
+const GAME_VERSION = 'Alpha 12.7';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5333,8 +5333,9 @@ function tickIsland(game, isl) {
     bld.inFac = inFac;
     bld.inAvail = inAvail;
     bld.regime = regime;
-    // Émission de chaleur de l'usine moteur nucléaire (2 MJ/s au régime nominal).
-    if (b.heatCap) bld.heatEmit = bld.id === 'usine_moteur_nuc' ? 2 * regime : 0;
+    // Émission de chaleur de l'usine moteur nucléaire : 1 MJ/s au régime nominal → évacuable par
+    // UNE ligne de conduit V1 (1 MJ/s/tuile) + 2 tours, sans devoir splitter (bâtiment 1×1).
+    if (b.heatCap) bld.heatEmit = bld.id === 'usine_moteur_nuc' ? 1 * regime : 0;
     // Plus AUCUN intrant → arrêt franc (on saute le bâtiment). On NE saute PAS sur un déficit
     // d'élec. (pwrF bas) : le bâtiment doit rester dans energyConsumers pour que la boucle énergie
     // compte sa demande et fasse converger pwrAvg (sinon oscillation/blocage). Sa production sera
