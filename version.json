@@ -3,5 +3,5 @@
   "version": "Alpha 12.2",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Sprites mis à jour : conduit de chaleur (tuiles connectées), tour aéroréfrigérante, icônes chaleur/modes antenne"
+  "notes": "Merge pull request #169 — Mise à jour de l'ensemble des sprites (conduit, tour, icônes)"
 }
