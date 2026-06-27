@@ -3,5 +3,5 @@
   "version": "Alpha 12.7",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Equilibrage : usine moteur nucleaire moins fragile (chaleur 2->1 MJ/s, plafond 2->6 MJ) — refroidissable par 1 ligne de conduit + 2 tours"
+  "notes": "Merge pull request #174 — Équilibrage chaleur usine moteur nucléaire"
 }
