@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 178`, `GAME_VERSION = 'Alpha 12.7'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 179`, `GAME_VERSION = 'Alpha 12.8'`, `SAVE_VERSION = 14`.**
+  Changement 12.8 : **plafonds de chaleur relevés + DIAGNOSTICS de refroidissement dans les fiches.**
+  (1) **Plafonds** : centrale `heatCap` 10→**20**, usine 6→**10** (demande utilisateur, plus de marge).
+  (2) **`processHeat` trace** désormais, par bâtiment : `bld.heatCool` (MJ/s réellement évacués sur une
+  source), `bld.onConduit` (la tour touche-t-elle un conduit ?) et `bld.heatAbsorb` (MJ/s qu'une tour
+  évacue effectivement, au prorata sur son réseau). (3) **Fiches** : la source (centrale/usine/antenne)
+  affiche une ligne **« Bilan chaleur : +X émis · −Y évacué /s »** (vert si évacué≥émis, orange sinon) →
+  on voit immédiatement si le refroidissement suit ; la **tour** affiche **« Refroidissement : a/cap MJ/s
+  évacués »** (ou **« ⚠ pas relié à un conduit »** en orange si `!onConduit`) + **« Eau : N% »**. Le
+  mécanisme lui-même est CORRECT (vérifié jsdom : centrale + conduit + 2 tours alimentées en eau sur le
+  MÊME réseau conduit → chaleur stabilisée, heatCool=1,536=émission) ; le problème de l'utilisateur venait
+  d'un raccordement (tour pas sur le conduit, ou eau insuffisante) — désormais visible dans la fiche.
+  `node --check` (7 blocs) + smoke chaleur + test tour OK.
   Changement 12.7 : **équilibrage usine moteur nucléaire (trop fragile).** Elle émettait 2 MJ/s pour un
   plafond de 2 MJ → trip en ~1-2 s ; pire, une tuile de conduit V1 ne porte que 1 MJ/s, donc même bien
   branchée elle ne pouvait PAS évacuer ses 2 MJ/s sans splitter. Désormais **émission 2→1 MJ/s** et
