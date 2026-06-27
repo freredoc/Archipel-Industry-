@@ -3,5 +3,5 @@
   "version": "Alpha 12.8",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Chaleur : plafonds 20 (centrale) / 10 (usine) + diagnostics dans les fiches (bilan emis/evacue, raccord conduit, eau de la tour)"
+  "notes": "Merge pull request #175 — Chaleur : plafonds 20/10 + diagnostics fiches"
 }
