@@ -3,5 +3,5 @@
   "version": "Alpha 13.1",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Nouveaux sprites : icone plutonium + conduit chauffe (art de chaleur par niveau de remplissage) + ile_/fx_boost inlines."
+  "notes": "Merge pull request #178 — Sprites plutonium + conduit chauffe"
 }
