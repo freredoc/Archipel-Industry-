@@ -1,7 +1,7 @@
 {
-  "build": 174,
-  "version": "Alpha 12.3",
+  "build": 175,
+  "version": "Alpha 12.4",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Fix sprites : conduit relié aux bâtiments, plus de barre noire sur la centrale, sprite de réseau dans le panneau d'amélioration"
+  "notes": "Fix : suppression de la bande vide en haut de la fiche bâtiment (en-tête collé au bord)"
 }
