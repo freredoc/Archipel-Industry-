@@ -17,7 +17,13 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 176`, `GAME_VERSION = 'Alpha 12.5'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 177`, `GAME_VERSION = 'Alpha 12.6'`, `SAVE_VERSION = 14`.**
+  Changement 12.6 : **fix « ancien sprite de centrale pendant 1 s ».** En 12.2 seul le sprite STATIQUE
+  `bat_centrale_nucleaire` (`__SPRITE_DATA__`) avait été rafraîchi, PAS la sheet d'animation
+  `__ANIM_DATA__['centrale_nucleaire']` (256×64) → la centrale en marche (animée) montrait l'ancien art,
+  le statique le nouveau. Re-sync des 3 sheets d'anim qui différaient du pack : `centrale_nucleaire`
+  (+ `tile_i1_land_breeze`, `tile_i1_water_breeze`). Vérifié au pixel (Pillow) : **frame 0 de la nouvelle
+  sheet == sprite statique** → plus de saut/flicker. `node --check` (7 blocs) + boot jsdom OK.
   Changement 12.5 : **fix icône électrique trompeuse sur la tour aéroréfrigérante.** La tour (qui ne
   consomme QUE de l'eau) affichait l'icône de déficit `etat_courant` (⚡) car `processHeat` posait
   `bld.regime`/`active` mais PAS `bld.inFac`/`bld.pwrAvg` → `drawBuilding` repliait la cause de déficit
