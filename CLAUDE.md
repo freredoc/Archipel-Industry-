@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 186`, `GAME_VERSION = 'Alpha 13.5'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 187`, `GAME_VERSION = 'Alpha 13.6'`, `SAVE_VERSION = 14`.**
+  Changement 13.6 : **fiche d'un bâtiment boosté = mode productivité visible.** La fiche d'un bâtiment
+  dans la zone d'une antenne ne montrait l'effet QUE en mode vitesse (ligne « Boost antenne ×N »,
+  intrants/sorties ×N) ; en **productivité** elle restait sur les valeurs normales (×1). Le tick repose
+  désormais un drapeau d'affichage `bld.antennaProd` (= facteur de la zone prod, 1 sinon ; **mécanique
+  inchangée**). L'`InfoPanel` calcule `antIoMul` (×N en vitesse, **×0,5 en productivité**, ×1 sinon) et
+  `antElecFac` (= max(vitesse, prod) → boost élec ×1→×(1+fac) dans les DEUX modes) : les lignes
+  **Entrées/Sortie/Réel** utilisent `antIoMul`, la ligne **« Boost antenne ×N »** devient **« Productivité
+  ×0,5 (ralenti) »** en mode prod, et **Élec.** affiche « boosté ×1→×(1+fac) » aussi en prod. `node
+  --check` (7 blocs) + Chromium (four_fer : aucun→8/1 · vitesse→16/2 « Boost ×2 » · prod→4/0,5
+  « Productivité ×0,5 », élec boosté dans les 2 ; 0 erreur) OK.
   Changement 13.5 : **plafond plutonium (mode auto) + fiche antenne mode-aware.** (1) **Plafond
   plutonium** : `game.nuclearMix[isl].plutoCap` (0 = illimité, persisté newGame/serialize/loadSave).
   `nucMix` renvoie `plutoCap` ; `nucAutoWeights(port, plutoCap)` met le poids plutonium à **0** dès que
