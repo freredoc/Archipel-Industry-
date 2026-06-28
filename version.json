@@ -1,7 +1,7 @@
 {
-  "build": 185,
-  "version": "Alpha 13.4",
+  "build": 186,
+  "version": "Alpha 13.5",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Build 185 (Alpha 13.4) — sprite tour aéroréfrigérante mis à jour (#181)"
+  "notes": "Centrale mode auto : plafond de plutonium (X) + fiche antenne qui reflete enfin le mode productivite (plus de x2 fige)."
 }
