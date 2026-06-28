@@ -54,6 +54,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .island-tab.active{background:#26264e;color:var(--yellow);border-color:var(--yellow);}
 .island-tab.locked{opacity:.4;cursor:not-allowed;}
 .island-tab .lock{font-size:.72rem;}
+.island-tab-ico{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;display:block;pointer-events:none;}
+.island-mini-ico{width:16px;height:16px;object-fit:contain;image-rendering:pixelated;vertical-align:middle;margin-right:3px;pointer-events:none;}
 @media (max-width:560px){.island-tab{flex:0 1 26px;width:26px;height:26px;font-size:.78rem;}.island-tabs{gap:2px;}}
 @media (max-width:380px){.island-tab{flex:1 1 0;width:auto;}}
 /* Pastilles ⚡ électricité et 🔋 batterie EMPILÉES (batterie sous l'électricité). */
@@ -2628,6 +2630,17 @@ function uiIcon(name, fallback, cls) {
   });
   return fallback;
 }
+// Petite icône d'île (sprite ile_N) pour l'UI (onglets transit/production) ; repli null si absent.
+function islandIcon(id, cls) {
+  const data = SPRITES_ENABLED && SPRITE_DATA['ile_' + id];
+  if (!data) return null;
+  return React.createElement("img", {
+    className: 'island-mini-ico' + (cls ? ' ' + cls : ''),
+    src: data,
+    alt: '',
+    draggable: false
+  });
+}
 // Petite icône cargo (sprite bateau_cargo) pour l'UI ; repli sur l'emoji 🚢 si le sprite manque.
 function cargoSprite() {
   const d = SPRITES_ENABLED && SPRITE_DATA['bateau_cargo'];
@@ -4325,8 +4338,8 @@ const SAVE_VERSION = 14;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 182;
-const GAME_VERSION = 'Alpha 13.1';
+const GAME_BUILD = 183;
+const GAME_VERSION = 'Alpha 13.2';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -7569,6 +7582,18 @@ function IslandSelector({
     className: "island-tabs"
   }, ids.map(id => {
     const locked = !isUnlocked(id);
+    // Sprite d'\u00EEle : `ile_N` quand d\u00E9verrouill\u00E9e, `ile_N_gris` quand verrouill\u00E9e (repli
+    // sur le num\u00E9ro / l'emoji cadenas si le sprite manque).
+    const spKey = locked ? 'ile_' + id + '_gris' : 'ile_' + id;
+    const spData = SPRITES_ENABLED && SPRITE_DATA[spKey];
+    const label = spData ? React.createElement("img", {
+      className: "island-tab-ico",
+      src: spData,
+      alt: I18N.t("\xCEle ") + id,
+      draggable: false
+    }) : locked ? React.createElement("span", {
+      className: "lock"
+    }, "\uD83D\uDD12") : id;
     return React.createElement("button", {
       key: id,
       className: 'island-tab' + (id === current ? ' active' : '') + (locked ? ' locked' : ''),
@@ -7577,9 +7602,7 @@ function IslandSelector({
       onClick: () => {
         if (!locked && id !== current) onSelect(id);
       }
-    }, locked ? React.createElement("span", {
-      className: "lock"
-    }, "\uD83D\uDD12") : id);
+    }, label);
   }));
 }
 // Agrège prod/conso (/s) par ressource sur TOUS les réseaux d'une île (route+tuyau+pipePort),
@@ -7872,7 +7895,7 @@ function ProductionPanel({
     key: id,
     className: 'prod-tab' + (sel === id ? ' active' : ''),
     onClick: () => setSel(id)
-  }, I18N.t("Île "), id))), React.createElement("div", {
+  }, islandIcon(id), I18N.t("Île "), id))), React.createElement("div", {
     className: "prod-body"
   }, React.createElement("div", {
     className: "prod-energy"
@@ -9909,7 +9932,7 @@ function PortPanel({
       key: f.src + '_' + f.dest
     }, React.createElement("div", {
       className: "pp-arch-head"
-    }, I18N.t("\xCEle ") + f.src + " → " + I18N.t("\xCEle ") + f.dest), f.res.map(rr => {
+    }, islandIcon(f.src), I18N.t("\xCEle ") + f.src + " ", " → ", islandIcon(f.dest), " " + I18N.t("\xCEle ") + f.dest), f.res.map(rr => {
       const ik = SPRITES_ENABLED ? itemSpriteKey(rr.res) : null;
       const idata = ik && SPRITE_DATA[ik];
       return React.createElement("div", {
@@ -13924,7 +13947,8 @@ function App() {
           if (mask & 4) ctx.fillRect(cx - th / 2, cy, th, tile / 2);
           if (mask & 8) ctx.fillRect(x, cy - th / 2, tile / 2, th);
           if (mask & 2) ctx.fillRect(cx, cy - th / 2, tile / 2, th);
-          if (f > 0.02) {
+          // Pas de teinte rouge canvas sur le V4 (réservé à l'art « chauffe » des niveaux ≤ 3).
+          if (f > 0.02 && slvl <= 3) {
             ctx.save();
             ctx.globalAlpha = Math.min(0.72, f * 0.72);
             ctx.fillStyle = 'rgb(255,55,25)';
@@ -14057,6 +14081,37 @@ function App() {
           drawSprite(ctx, NET_PREFIX[carrier] + '_v' + (stubUnl[carrier] ? 4 : Math.min(stubLvl[carrier], 3)) + '_' + NET_MASK_SUFFIX[mask], x, y, tile, tile);
         }
       }
+      // Stub CONDUIT sous un bâtiment À CHALEUR (centrale/usine/antenne) ou une TOUR : prolonge
+      // le conduit adjacent sous la tuile du bâtiment pour qu'il « rentre » visuellement dedans
+      // (sinon le conduit s'arrête au bord et semble ne pas se connecter). Dessiné AVANT le sprite
+      // du bâtiment (comme les stubs route/tuyau/câble) → visible uniquement sur le bord raccordé.
+      if (SPRITES_ENABLED && bdef && (bdef.heatCap || bdef.tour)) {
+        let cmask = 0,
+          clvl = 1,
+          cload = 0;
+        for (const [dr, dc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
+          let nt = tiles[r + dr] && tiles[r + dr][c + dc];
+          if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
+          if (!nt || !nt.building || nt.building.id !== 'conduit') continue;
+          cmask |= bit;
+          const nnet = g.networks[isl] && g.networks[isl][nt.networkId];
+          if (nnet && (nnet.level || 1) > clvl) clvl = nnet.level;
+          const lv = g.conduitLoad && g.conduitLoad[isl] && g.conduitLoad[isl][nt.networkId] || 0;
+          if (lv > cload) cload = lv;
+        }
+        if (cmask) {
+          const cslvl = Math.max(1, Math.min(clvl, 4));
+          const cbase = 'conduit_v' + cslvl + '_' + NET_MASK_SUFFIX[cmask];
+          const cf = Math.max(0, Math.min(1, cload));
+          let cdrew = false;
+          if (cslvl <= 3 && cf >= 0.25) {
+            const ch = cf >= 0.8 ? 3 : cf >= 0.5 ? 2 : 1;
+            cdrew = drawSprite(ctx, cbase + '_chauffe' + ch, x, y, tile, tile);
+            _animPlayed = true;
+          }
+          if (!cdrew) drawSprite(ctx, cbase, x, y, tile, tile);
+        }
+      }
       const sz = buildingSize(bid);
       drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime, t.building.inFac, t.building.pwrAvg);
       // Jauge de chaleur (sources) : barre fine en haut de la tuile, % du plafond de trip.
@@ -14133,6 +14188,12 @@ function App() {
           py = oy + rr * tile;
         ctx.strokeStyle = 'rgba(38,198,218,' + (0.22 + 0.42 * pulse).toFixed(3) + ')';
         ctx.strokeRect(px + inset, py + inset, tile - 2 * inset, tile - 2 * inset);
+        // Effet de boost (sprite fx_boost) pulsé par-dessus la case influencée.
+        if (SPRITES_ENABLED) {
+          ctx.globalAlpha = 0.30 + 0.50 * pulse;
+          drawSprite(ctx, 'fx_boost', px, py, tile, tile);
+          ctx.globalAlpha = 1;
+        }
         drew = true;
       }
       ctx.restore();
