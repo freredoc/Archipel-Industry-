@@ -1,7 +1,7 @@
 {
-  "build": 184,
-  "version": "Alpha 13.3",
+  "build": 185,
+  "version": "Alpha 13.4",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Build 184 (Alpha 13.3) — antenne : retrait du liseré cyan (#180)"
+  "notes": "Sprite de la tour aerorefrigerante mis a jour (nouvelle art du pack)."
 }
