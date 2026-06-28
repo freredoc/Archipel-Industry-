@@ -17,7 +17,18 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 188`, `GAME_VERSION = 'Alpha 13.7'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 189`, `GAME_VERSION = 'Alpha 13.8'`, `SAVE_VERSION = 14`.**
+  Changement 13.8 : **sprite de boost rouge/bleu + bilan électrique honnête (hors batterie).** (1)
+  **Sprites de boost colorés** : le pack a livré `fx_boost` (BLEU) re-livré + **`fx_boost_productivite`
+  (ROUGE)**. L'overlay d'influence d'antenne dessine `fx_boost` (bleu) sur la zone VITESSE et
+  `fx_boost_productivite` (rouge) sur la zone PRODUCTIVITÉ (les badges `ui_mode_*` retirés — la couleur
+  du glow suffit). (2) **Bilan électrique honnête** : le HUD (pastille ⚡), le `ProductionPanel` (⚡ Net)
+  et l'`EnergyPanel` (« Bilan réel ») calculaient le bilan = **`produced` − demande**, or `produced`
+  inclut la **décharge batterie** → bilan trompeur (positif alors que la batterie baisse, ou inversement).
+  Désormais le bilan = **`gross` (génération RÉELLE des générateurs, hors batterie) − demande** : POSITIF
+  = surplus → la batterie se charge ; NÉGATIF = déficit → la batterie se décharge. La contribution
+  batterie reste affichée à part dans l'`EnergyPanel` (ligne « Batterie (décharge) »). `node --check`
+  (7 blocs) + Chromium (fx_boost & fx_boost_productivite décodés 32×32, 0 erreur) OK.
   Changement 13.7 : **productivité antenne = vrais intrants ÷2 + sprites de boost distincts + équilibrage.**
   (1) **Productivité = intrants ÷2** : en mode productivité, un bâtiment boosté a sa **sortie ×0,5**
   (ralenti) MAIS ses **intrants ×0,25** (ralenti + ÷2) → **moitié moins de matières par unité produite**

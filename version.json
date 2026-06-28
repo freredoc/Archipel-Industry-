@@ -1,7 +1,7 @@
 {
-  "build": 188,
-  "version": "Alpha 13.7",
+  "build": 189,
+  "version": "Alpha 13.8",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Productivite antenne : intrants reellement divises par 2 (moitie moins de matieres). Sprites de boost distincts vitesse/productivite. Equilibrage : mines V2 -30%, fours V2 -50%, eolienne offshore -20%, conso plateforme petroliere x8."
+  "notes": "Boost antenne : sprite ROUGE en productivite, BLEU en vitesse. Bilan electrique = generation reelle - demande (hors batterie) : positif = batterie charge, negatif = batterie decharge (fini le bilan trompeur)."
 }
