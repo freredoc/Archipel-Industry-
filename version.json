@@ -3,5 +3,5 @@
   "version": "Alpha 13.6",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Fiche d'un batiment booste : le mode productivite de l'antenne s'affiche enfin (intrants/sorties x0,5 + conso boostee), plus seulement le x2 du mode vitesse."
+  "notes": "Build 187 (Alpha 13.6) — fiche bâtiment boosté : mode productivité visible (#183)"
 }
