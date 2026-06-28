@@ -17,7 +17,18 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 185`, `GAME_VERSION = 'Alpha 13.4'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 186`, `GAME_VERSION = 'Alpha 13.5'`, `SAVE_VERSION = 14`.**
+  Changement 13.5 : **plafond plutonium (mode auto) + fiche antenne mode-aware.** (1) **Plafond
+  plutonium** : `game.nuclearMix[isl].plutoCap` (0 = illimité, persisté newGame/serialize/loadSave).
+  `nucMix` renvoie `plutoCap` ; `nucAutoWeights(port, plutoCap)` met le poids plutonium à **0** dès que
+  le stock port ≥ plutoCap → l'équilibrage auto se reporte sur les irradiés. Champ **NumField** dans la
+  section auto de la fiche centrale (`.ip-nuc-cap`, hint « stock / cap »), handler `setNucPlutoCap`
+  (prop `onSetNucPlutoCap`) ; `setNucMode`/`setNucMixWeight` préservent `plutoCap`. (2) **Fiche antenne**
+  : la ligne **« Effet »** était figée sur « ×2 intrants & production » même en mode productivité.
+  Elle est désormais **mode-aware** (lit `game.antennaMode[isl]`) : VITESSE → « ×N intrants &
+  production… » ; PRODUCTIVITÉ → « Productivité : vitesse −50 % & intrants ÷2 · émet de la chaleur… ».
+  **Mécanique de l'antenne inchangée** (demande utilisateur). `node --check` (7 blocs) + Chromium (cap :
+  plutonium 100 %→0 % au-delà du plafond ; fiche antenne speed≠prod ; 0 erreur) OK.
   Changement 13.4 : **sprite de la tour aéroréfrigérante mis à jour.** Le pack a re-livré
   `tour_aerorefrigerante.png` (474 o, nouvelle art). L'inlining était périmé : `bat_tour_aerorefrigerante`
   ET `tour_aerorefrigerante` portaient l'ancien art (md5 02cb…). Les 2 clés ré-inlinées avec la nouvelle
