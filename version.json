@@ -1,7 +1,7 @@
 {
-  "build": 187,
-  "version": "Alpha 13.6",
+  "build": 188,
+  "version": "Alpha 13.7",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Build 187 (Alpha 13.6) — fiche bâtiment boosté : mode productivité visible (#183)"
+  "notes": "Productivite antenne : intrants reellement divises par 2 (moitie moins de matieres). Sprites de boost distincts vitesse/productivite. Equilibrage : mines V2 -30%, fours V2 -50%, eolienne offshore -20%, conso plateforme petroliere x8."
 }
