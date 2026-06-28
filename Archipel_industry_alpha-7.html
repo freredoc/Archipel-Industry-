@@ -4342,8 +4342,8 @@ const SAVE_VERSION = 14;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 186;
-const GAME_VERSION = 'Alpha 13.5';
+const GAME_BUILD = 187;
+const GAME_VERSION = 'Alpha 13.6';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5215,6 +5215,9 @@ function tickIsland(game, isl) {
     const buffed = speedFac > 1;
     const debuffed = prodFac > 1;
     bld.antennaBuff = speedFac;
+    // Drapeau d'AFFICHAGE pour la fiche (la mécanique reste pilotée par ioMul plus bas) : facteur de
+    // la zone de PRODUCTIVITÉ (1 si non concerné). Permet à l'InfoPanel de montrer l'effet productivité.
+    bld.antennaProd = debuffed ? prodFac : 1;
     let power = basePower * mult;
     // Conso élec. boostée (sigmoïde ×1→×(1+facteur)) : IDENTIQUE en vitesse ET en productivité —
     // un voisin ralenti consomme toujours autant (calcul AVANT le ralentissement). On accumule
@@ -8718,6 +8721,12 @@ function InfoPanel({
   // Boost d'antenne en cours sur ce bâtiment (1 = aucun) : multiplie intrants & sorties affichés
   // pour qu'une mine boostée montre BIEN une production différente d'une mine non boostée.
   const antBoost = bld.antennaBuff > 1 ? bld.antennaBuff : 1;
+  // Effet PRODUCTIVITÉ sur ce bâtiment (zone d'une antenne en mode prod) : intrants & sorties ×0,5
+  // (ralenti), conso élec. boostée ×1→×(1+facteur). antIoMul = multiplicateur affiché des recettes
+  // (×N en vitesse, ×0,5 en productivité, ×1 sinon) ; antElecFac = facteur du boost élec (les 2 modes).
+  const antProd = bld.antennaProd > 1 ? bld.antennaProd : 1;
+  const antIoMul = antBoost > 1 ? antBoost : antProd > 1 ? 0.5 : 1;
+  const antElecFac = Math.max(antBoost, antProd);
   const upgradable = isUpgradable(info.id);
   const dev = game.ui && game.ui.dev;
   const port = game.port[currentIsland] || {};
@@ -9211,31 +9220,31 @@ function InfoPanel({
       fontWeight: 700
     },
     title: I18N.t("R\xE9gime de fonctionnement r\xE9el ce tick (") + speedReason + ")"
-  }, speedPct + "% · " + speedReason)), antBoost > 1 && React.createElement("div", {
+  }, speedPct + "% · " + speedReason)), (antBoost > 1 || antProd > 1) && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, I18N.t("Boost antenne")), React.createElement("span", {
+  }, antBoost > 1 ? I18N.t("Boost antenne") : I18N.t("Productivité")), React.createElement("span", {
     className: "val",
     style: {
       color: '#26C6DA',
       fontWeight: 700
     },
-    title: I18N.t("Bâtiment dans la zone d'une antenne : intrants & production ×ce facteur")
-  }, "×" + antBoost)), b.inputs && React.createElement("div", {
+    title: antBoost > 1 ? I18N.t("Bâtiment dans la zone d'une antenne : intrants & production ×ce facteur") : I18N.t("Bâtiment dans la zone d'une antenne en PRODUCTIVITÉ : intrants & production ×0,5 (ralenti), mais conso élec. boostée")
+  }, antBoost > 1 ? "×" + antBoost : I18N.t("×0,5 (ralenti)"))), b.inputs && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
   }, I18N.t("Entr\xE9es")), React.createElement("span", {
     className: "val"
-  }, recipeChips(b.inputs, upgradeMult(upg) * antBoost, bld.inAvail).concat(I18N.t(' /s')))), b.inputs && speedPct > 0 && speedPct < 100 && React.createElement("div", {
+  }, recipeChips(b.inputs, upgradeMult(upg) * antIoMul, bld.inAvail).concat(I18N.t(' /s')))), b.inputs && speedPct > 0 && speedPct < 100 && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
   }, "R\xE9el ⚠"), React.createElement("span", {
     className: "val",
     title: I18N.t("Consommation r\xE9elle ce tick (brid\xE9e : ") + speedReason + ")"
-  }, recipeChips(b.inputs, upgradeMult(upg) * antBoost * speedPct / 100).concat(I18N.t(' /s')))), b.outputs && React.createElement("div", {
+  }, recipeChips(b.inputs, upgradeMult(upg) * antIoMul * speedPct / 100).concat(I18N.t(' /s')))), b.outputs && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -9243,7 +9252,7 @@ function InfoPanel({
     className: "val io"
   }, (() => {
     // Sortie = matières (chips) + PRODUCTION ÉLECTRIQUE si le bâtiment en génère (energie_kw).
-    const m = upgradeMult(upg) * antBoost;
+    const m = upgradeMult(upg) * antIoMul;
     const chips = recipeChips(b.outputs, m);
     const hasMat = !(chips.length === 1 && chips[0] === '—');
     const eOut = (b.outputs.energie_kw || 0) * m;
@@ -9259,7 +9268,7 @@ function InfoPanel({
   }, "R\xE9el \u26A0"), React.createElement("span", {
     className: "val io",
     title: I18N.t("Production r\xE9elle ce tick (brid\xE9e : ") + speedReason + ")"
-  }, recipeChips(solidOut, upgradeMult(upg) * antBoost * speedPct / 100).concat(I18N.t(' /s')))), b.accumulator && React.createElement("div", {
+  }, recipeChips(solidOut, upgradeMult(upg) * antIoMul * speedPct / 100).concat(I18N.t(' /s')))), b.accumulator && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -9301,9 +9310,9 @@ function InfoPanel({
     const mult = upgradeMult(upg);
     // Bâtiment boosté par une antenne : sa conso élec. oscille en sigmoïde de ×1 à ×(1+boost)
     // du nominal (cf. tick). On affiche cette plage boostée (≠ d'une mine non boostée).
-    if (antBoost > 1) {
+    if (antElecFac > 1) {
       const nomP = (b.sigmoid ? b.sigmoid.base + b.sigmoid.amp : b.randomP ? b.randomP.max : b.power || 0) * mult;
-      return I18N.t('boosté ×1→×') + (1 + antBoost) + ' · ' + fmtPower(nomP) + '→' + fmtPower(nomP * (1 + antBoost));
+      return I18N.t('boosté ×1→×') + (1 + antElecFac) + ' · ' + fmtPower(nomP) + '→' + fmtPower(nomP * (1 + antElecFac));
     }
     // Conso variable (sigmoïde/aléatoire) : on affiche la valeur ACTUELLE (depuis la
     // phase/valeur stockée sur le bâtiment) puis la plage prévue min→max.
