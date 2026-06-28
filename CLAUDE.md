@@ -17,7 +17,22 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 182`, `GAME_VERSION = 'Alpha 13.1'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 183`, `GAME_VERSION = 'Alpha 13.2'`, `SAVE_VERSION = 14`.**
+  Changement 13.2 : **câblage des sprites livrés en 13.1 (5 retours visuels).** (1) **Conduits qui
+  « rentrent » dans les bâtiments** : nouvelle branche de `draw()` (avant `drawBuilding`) qui dessine un
+  **stub conduit** SOUS tout bâtiment à chaleur (`heatCap`) ou tour (`tour`) — masque vers les tuiles
+  conduit adjacentes, sprite `conduit_v{slvl}_{masque}` (variante `_chauffe{1,2,3}` selon le
+  remplissage `conduitLoad` du réseau voisin) → le conduit ne s'arrête plus au bord, il pénètre la tuile
+  (miroir des stubs route/tuyau/câble). (2) **Plus de teinte rouge canvas sur le V4** : le repli
+  vectoriel cuivre ne pose plus la teinte rouge proportionnelle au flux quand `slvl > 3` (réservée à
+  l'art « chauffe » des niveaux ≤ 3). (3) **Effet boost antenne** : l'overlay d'influence d'antenne
+  dessine désormais le sprite **`fx_boost`** (alpha pulsé 0,30→0,80) sur chaque case influencée, en plus
+  du liseré cyan. (4) **Boutons d'île = sprites** : `IslandSelector` rend `ile_N` (déverrouillée) /
+  `ile_N_gris` (verrouillée) au lieu du chiffre/cadenas (repli chiffre/🔒 si sprite absent ; CSS
+  `.island-tab-ico`). (5) **Sprites d'île dans les onglets** : helper `islandIcon(id)` (sprite `ile_N`,
+  CSS `.island-mini-ico` 16px) ajouté aux **onglets du panneau Production** (Île 1-5) et aux **en-têtes
+  de l'onglet « Transit archipel »** du Port (Île src → Île dest). `node --check` (7 blocs) + smoke
+  chaleur + boot Chromium (5 onglets d'île en sprite, 0 erreur) OK.
   Changement 13.1 : **intégration des nouveaux sprites du pack (re-livré).** 157 sprites inlinés dans
   `__SPRITE_DATA__` : **`item_plutonium`** (icône plutonium, auto-câblée via `itemSpriteKey` →
   inventaire/recettes/fiches) ; **144 sprites de conduit « chauffe »** (`conduit_v{1..3}_{masque}_chauffe{1,2,3}`)
