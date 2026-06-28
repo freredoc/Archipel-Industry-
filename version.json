@@ -1,7 +1,7 @@
 {
-  "build": 183,
-  "version": "Alpha 13.2",
+  "build": 184,
+  "version": "Alpha 13.3",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Build 183 (Alpha 13.2) — câblage sprites (#179)"
+  "notes": "Antenne : retrait du lisere cyan, seul l'effet de boost (fx_boost) reste sur les cases influencees."
 }

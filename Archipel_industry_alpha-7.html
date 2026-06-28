@@ -4338,8 +4338,8 @@ const SAVE_VERSION = 14;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 183;
-const GAME_VERSION = 'Alpha 13.2';
+const GAME_BUILD = 184;
+const GAME_VERSION = 'Alpha 13.3';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -14168,16 +14168,14 @@ function App() {
         ctx.restore();
       }
     }
-    // Overlay d'influence d'antenne : pulsation cyan légère sur chaque tuile des zones boostées
-    // (les 8 cases autour d'une antenne reliée). Le clignotement utilise l'horloge d'animation
-    // et force le redessin continu (_animPlayed) tant qu'une zone est visible.
+    // Overlay d'influence d'antenne : effet de boost pulsé (sprite fx_boost) sur chaque tuile des
+    // zones boostées (les 8 cases autour d'une antenne reliée). Le clignotement utilise l'horloge
+    // d'animation et force le redessin continu (_animPlayed) tant qu'une zone est visible.
     const abuff = g.antennaBuff && g.antennaBuff[isl];
     if (abuff) {
       const tt = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
       const pulse = 0.5 + 0.5 * Math.sin(2 * Math.PI * tt / 1.6); // cycle ~1,6 s
       ctx.save();
-      ctx.lineWidth = Math.max(1.5, tile * 0.06);
-      const inset = ctx.lineWidth / 2 + 1;
       let drew = false;
       for (const key in abuff) {
         const sp = key.indexOf('-');
@@ -14186,8 +14184,6 @@ function App() {
         if (rr < r0 - 1 || rr > r1 + 1 || cc < c0 - 1 || cc > c1 + 1) continue;
         const px = ox + cc * tile,
           py = oy + rr * tile;
-        ctx.strokeStyle = 'rgba(38,198,218,' + (0.22 + 0.42 * pulse).toFixed(3) + ')';
-        ctx.strokeRect(px + inset, py + inset, tile - 2 * inset, tile - 2 * inset);
         // Effet de boost (sprite fx_boost) pulsé par-dessus la case influencée.
         if (SPRITES_ENABLED) {
           ctx.globalAlpha = 0.30 + 0.50 * pulse;
