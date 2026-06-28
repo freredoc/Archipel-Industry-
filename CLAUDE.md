@@ -17,7 +17,21 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 187`, `GAME_VERSION = 'Alpha 13.6'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 188`, `GAME_VERSION = 'Alpha 13.7'`, `SAVE_VERSION = 14`.**
+  Changement 13.7 : **productivité antenne = vrais intrants ÷2 + sprites de boost distincts + équilibrage.**
+  (1) **Productivité = intrants ÷2** : en mode productivité, un bâtiment boosté a sa **sortie ×0,5**
+  (ralenti) MAIS ses **intrants ×0,25** (ralenti + ÷2) → **moitié moins de matières par unité produite**
+  (le vrai intérêt du mode). Tick : `ioMul` scindé en `inMul` (×0,25 en prod) / `outMul` (×0,5). Fiche :
+  `antInMul`/`antOutMul`, ligne « Productivité » = « intrants ÷2 · sortie ×0,5 ». (2) **Sprites de boost
+  distincts** : la zone d'influence affiche désormais l'effet **dans les DEUX modes** (`game.antennaProdZone`
+  exposé par le tick) avec un **badge de mode** (`ui_mode_vitesse` en vitesse, `ui_mode_productivite` en
+  productivité, coin haut-droit) + lueur `fx_boost`. (3) **Équilibrage** : mines V2 (fer/charbon/cuivre/
+  carrière) coût **−30 %** (100/80/40 → 70/56/28) ; fours V2 fer & cuivre coût **−50 %** (cable/acier 200→100,
+  ciment 100→50) ; éolienne offshore coût **−20 %** (150/100/80 → 120/80/64) ; **conso élec. plateforme
+  pétrolière ×8** (4 → 32). (4) **Vérif** : l'accélération du coût d'amélioration du **puits de pétrole**
+  est correcte (special-case `upgradeCostFactor` : facteur 53→159→526→1910… au-delà du niveau 5 → ramp très
+  fort, inchangé). `node --check` (7 blocs) + smoke chaleur + Chromium (four_fer prod : intrants ÷4 base /
+  sortie ÷2 ; speed ×2 ; 0 erreur) OK.
   Changement 13.6 : **fiche d'un bâtiment boosté = mode productivité visible.** La fiche d'un bâtiment
   dans la zone d'une antenne ne montrait l'effet QUE en mode vitesse (ligne « Boost antenne ×N »,
   intrants/sorties ×N) ; en **productivité** elle restait sur les valeurs normales (×1). Le tick repose

@@ -3054,8 +3054,8 @@ const BUILDINGS = {
     needRoad: true,
     size: [1, 1],
     cost: {
-      cable: 200,
-      ciment: 100
+      cable: 100,
+      ciment: 50
     },
     power: 32,
     inputs: {
@@ -3075,8 +3075,8 @@ const BUILDINGS = {
     needRoad: true,
     size: [1, 1],
     cost: {
-      acier: 200,
-      ciment: 100
+      acier: 100,
+      ciment: 50
     },
     power: 32,
     inputs: {
@@ -3300,9 +3300,9 @@ const BUILDINGS = {
     size: [1, 1],
     power: 16,
     cost: {
-      acier: 100,
-      beton_arme: 80,
-      cable: 40
+      acier: 70,
+      beton_arme: 56,
+      cable: 28
     },
     outputs: {
       minerai_fer: 16
@@ -3319,9 +3319,9 @@ const BUILDINGS = {
     size: [1, 1],
     power: 16,
     cost: {
-      acier: 100,
-      beton_arme: 80,
-      cable: 40
+      acier: 70,
+      beton_arme: 56,
+      cable: 28
     },
     outputs: {
       charbon: 16
@@ -3338,9 +3338,9 @@ const BUILDINGS = {
     power: 16,
     exclusiveIsland: 2,
     cost: {
-      acier: 100,
-      beton_arme: 80,
-      polymere: 40
+      acier: 70,
+      beton_arme: 56,
+      polymere: 28
     },
     outputs: {
       minerai_cuivre: 16
@@ -3356,9 +3356,9 @@ const BUILDINGS = {
     size: [1, 1],
     power: 16,
     cost: {
-      acier: 100,
-      beton_arme: 80,
-      cable: 40
+      acier: 70,
+      beton_arme: 56,
+      cable: 28
     },
     outputs: {
       pierre: 16
@@ -3613,9 +3613,9 @@ const BUILDINGS = {
     size: [1, 1],
     power: 0,
     cost: {
-      acier: 150,
-      beton_arme: 100,
-      cable: 80
+      acier: 120,
+      beton_arme: 80,
+      cable: 64
     },
     outputs: {
       energie_kw: 128
@@ -3630,7 +3630,7 @@ const BUILDINGS = {
     terrains: ['water'],
     needCoastAdj: true,
     size: [1, 1],
-    power: 4,
+    power: 32,
     exclusiveIsland: 3,
     cost: {
       acier: 200,
@@ -4342,8 +4342,8 @@ const SAVE_VERSION = 14;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 187;
-const GAME_VERSION = 'Alpha 13.6';
+const GAME_BUILD = 188;
+const GAME_VERSION = 'Alpha 13.7';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -5157,6 +5157,10 @@ function tickIsland(game, isl) {
   }
   if (!game.antennaBuff) game.antennaBuff = {};
   game.antennaBuff[isl] = buffSet;
+  // Zone de PRODUCTIVITÉ (tuiles influencées par une antenne en mode prod) → l'overlay de boost
+  // l'utilise pour afficher l'effet AUSSI en productivité (avec un sprite distinct de la vitesse).
+  if (!game.antennaProdZone) game.antennaProdZone = {};
+  game.antennaProdZone[isl] = debuffSet;
   // Accumulateur de « MW consommés en plus » par les voisins du fait du buff (mode productivité).
   let antExtraKw = 0;
   for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
@@ -5229,8 +5233,14 @@ function tickIsland(game, isl) {
       power = nomP * (1 + (1 + Math.sin(2 * Math.PI * bld.antennaSigT / 60)) / 2 * fac);
       if (debuffed) antExtraKw += Math.max(0, power - nomP);
     }
-    // Intrants & sortants : ×facteur en VITESSE, ÷2 (×0,5) en PRODUCTIVITÉ.
-    const ioMul = mult * (buffed ? speedFac : debuffed ? 0.5 : 1);
+    // Intrants & sortants.
+    //  • VITESSE : ×facteur sur les DEUX (proportionnel → débit brut ×facteur).
+    //  • PRODUCTIVITÉ : la machine tourne à mi-vitesse → SORTIE ×0,5 ; et les INTRANTS sont EN PLUS
+    //    divisés par 2 → ×0,25. On consomme donc MOITIÉ MOINS de matières par unité produite =
+    //    le vrai intérêt du mode (au prix de la chaleur émise + conso élec. boostée). Tooltip du
+    //    toggle : « Vitesse −50 % & intrants ÷2 ».
+    const outMul = mult * (buffed ? speedFac : debuffed ? 0.5 : 1);
+    const inMul = mult * (buffed ? speedFac : debuffed ? 0.25 : 1);
     if (!b.outputs && power <= 0) continue;
     const inByType = {},
       outByType = {};
@@ -5238,15 +5248,15 @@ function tickIsland(game, isl) {
     for (const k in b.inputs || {}) {
       if (k === 'energie_kw') continue;
       const ty = isPortPipe(k) ? 'pipePort' : carrierOf(k);
-      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (inByType[ty] || (inByType[ty] = {}))[k] = b.inputs[k] * ioMul;
+      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (inByType[ty] || (inByType[ty] = {}))[k] = b.inputs[k] * inMul;
     }
     for (const k in b.outputs || {}) {
       if (k === 'energie_kw') {
-        energyOut += b.outputs[k] * ioMul;
+        energyOut += b.outputs[k] * outMul;
         continue;
       }
       const ty = isPortPipe(k) ? 'pipePort' : carrierOf(k);
-      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (outByType[ty] || (outByType[ty] = {}))[k] = b.outputs[k] * ioMul;
+      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (outByType[ty] || (outByType[ty] = {}))[k] = b.outputs[k] * outMul;
     }
     const hasPoolIO = inByType.road || outByType.road || inByType.pipe || outByType.pipe || inByType.pipePort || outByType.pipePort;
     let ok = true,
@@ -8721,11 +8731,13 @@ function InfoPanel({
   // Boost d'antenne en cours sur ce bâtiment (1 = aucun) : multiplie intrants & sorties affichés
   // pour qu'une mine boostée montre BIEN une production différente d'une mine non boostée.
   const antBoost = bld.antennaBuff > 1 ? bld.antennaBuff : 1;
-  // Effet PRODUCTIVITÉ sur ce bâtiment (zone d'une antenne en mode prod) : intrants & sorties ×0,5
-  // (ralenti), conso élec. boostée ×1→×(1+facteur). antIoMul = multiplicateur affiché des recettes
-  // (×N en vitesse, ×0,5 en productivité, ×1 sinon) ; antElecFac = facteur du boost élec (les 2 modes).
+  // Effet PRODUCTIVITÉ sur ce bâtiment (zone d'une antenne en mode prod) : SORTIE ×0,5 (ralenti) mais
+  // INTRANTS ×0,25 (ralenti + ÷2) → moitié moins de matières par unité produite. En VITESSE, intrants
+  // & sorties ×N. antInMul/antOutMul = multiplicateurs affichés des recettes ; antElecFac = facteur du
+  // boost de conso élec. (×1→×(1+fac), actif dans les DEUX modes).
   const antProd = bld.antennaProd > 1 ? bld.antennaProd : 1;
-  const antIoMul = antBoost > 1 ? antBoost : antProd > 1 ? 0.5 : 1;
+  const antInMul = antBoost > 1 ? antBoost : antProd > 1 ? 0.25 : 1;
+  const antOutMul = antBoost > 1 ? antBoost : antProd > 1 ? 0.5 : 1;
   const antElecFac = Math.max(antBoost, antProd);
   const upgradable = isUpgradable(info.id);
   const dev = game.ui && game.ui.dev;
@@ -9230,21 +9242,21 @@ function InfoPanel({
       color: '#26C6DA',
       fontWeight: 700
     },
-    title: antBoost > 1 ? I18N.t("Bâtiment dans la zone d'une antenne : intrants & production ×ce facteur") : I18N.t("Bâtiment dans la zone d'une antenne en PRODUCTIVITÉ : intrants & production ×0,5 (ralenti), mais conso élec. boostée")
-  }, antBoost > 1 ? "×" + antBoost : I18N.t("×0,5 (ralenti)"))), b.inputs && React.createElement("div", {
+    title: antBoost > 1 ? I18N.t("Bâtiment dans la zone d'une antenne : intrants & production ×ce facteur") : I18N.t("Bâtiment dans la zone d'une antenne en PRODUCTIVITÉ : sortie ×0,5 (ralenti) mais intrants ÷2 (×0,25) → moitié moins de matières par unité produite ; conso élec. boostée")
+  }, antBoost > 1 ? "×" + antBoost : I18N.t("intrants ÷2 · sortie ×0,5"))), b.inputs && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
   }, I18N.t("Entr\xE9es")), React.createElement("span", {
     className: "val"
-  }, recipeChips(b.inputs, upgradeMult(upg) * antIoMul, bld.inAvail).concat(I18N.t(' /s')))), b.inputs && speedPct > 0 && speedPct < 100 && React.createElement("div", {
+  }, recipeChips(b.inputs, upgradeMult(upg) * antInMul, bld.inAvail).concat(I18N.t(' /s')))), b.inputs && speedPct > 0 && speedPct < 100 && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
   }, "R\xE9el ⚠"), React.createElement("span", {
     className: "val",
     title: I18N.t("Consommation r\xE9elle ce tick (brid\xE9e : ") + speedReason + ")"
-  }, recipeChips(b.inputs, upgradeMult(upg) * antIoMul * speedPct / 100).concat(I18N.t(' /s')))), b.outputs && React.createElement("div", {
+  }, recipeChips(b.inputs, upgradeMult(upg) * antInMul * speedPct / 100).concat(I18N.t(' /s')))), b.outputs && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -9252,7 +9264,7 @@ function InfoPanel({
     className: "val io"
   }, (() => {
     // Sortie = matières (chips) + PRODUCTION ÉLECTRIQUE si le bâtiment en génère (energie_kw).
-    const m = upgradeMult(upg) * antIoMul;
+    const m = upgradeMult(upg) * antOutMul;
     const chips = recipeChips(b.outputs, m);
     const hasMat = !(chips.length === 1 && chips[0] === '—');
     const eOut = (b.outputs.energie_kw || 0) * m;
@@ -9268,7 +9280,7 @@ function InfoPanel({
   }, "R\xE9el \u26A0"), React.createElement("span", {
     className: "val io",
     title: I18N.t("Production r\xE9elle ce tick (brid\xE9e : ") + speedReason + ")"
-  }, recipeChips(solidOut, upgradeMult(upg) * antIoMul * speedPct / 100).concat(I18N.t(' /s')))), b.accumulator && React.createElement("div", {
+  }, recipeChips(solidOut, upgradeMult(upg) * antOutMul * speedPct / 100).concat(I18N.t(' /s')))), b.accumulator && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -14231,26 +14243,43 @@ function App() {
     // zones boostées (les 8 cases autour d'une antenne reliée). Le clignotement utilise l'horloge
     // d'animation et force le redessin continu (_animPlayed) tant qu'une zone est visible.
     const abuff = g.antennaBuff && g.antennaBuff[isl];
-    if (abuff) {
+    const aprod = g.antennaProdZone && g.antennaProdZone[isl];
+    if (abuff || aprod) {
       const tt = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
       const pulse = 0.5 + 0.5 * Math.sin(2 * Math.PI * tt / 1.6); // cycle ~1,6 s
       ctx.save();
       let drew = false;
-      for (const key in abuff) {
-        const sp = key.indexOf('-');
-        const rr = +key.slice(0, sp),
-          cc = +key.slice(sp + 1);
-        if (rr < r0 - 1 || rr > r1 + 1 || cc < c0 - 1 || cc > c1 + 1) continue;
-        const px = ox + cc * tile,
-          py = oy + rr * tile;
-        // Effet de boost (sprite fx_boost) pulsé par-dessus la case influencée.
-        if (SPRITES_ENABLED) {
-          ctx.globalAlpha = 0.30 + 0.50 * pulse;
+      // Dessine l'effet de boost sur chaque case d'une zone, avec un sprite de MODE distinct
+      // (badge coin haut-droit) : `ui_mode_vitesse` en vitesse, `ui_mode_productivite` en productivité.
+      const drawZone = (zone, modeSprite) => {
+        if (!zone) return;
+        for (const key in zone) {
+          const sp = key.indexOf('-');
+          const rr = +key.slice(0, sp),
+            cc = +key.slice(sp + 1);
+          if (rr < r0 - 1 || rr > r1 + 1 || cc < c0 - 1 || cc > c1 + 1) continue;
+          const px = ox + cc * tile,
+            py = oy + rr * tile;
+          if (!SPRITES_ENABLED) {
+            drew = true;
+            continue;
+          }
+          // Lueur de boost (fx_boost) pulsée, pleine case.
+          ctx.globalAlpha = 0.25 + 0.45 * pulse;
           drawSprite(ctx, 'fx_boost', px, py, tile, tile);
+          // Badge de mode (sprite distinct vitesse/productivité), coin haut-droit, pour ne pas
+          // masquer le bâtiment de la case.
+          if (tile >= 16) {
+            const bs = Math.max(8, tile * 0.42);
+            ctx.globalAlpha = 0.65 + 0.30 * pulse;
+            drawSprite(ctx, modeSprite, px + tile - bs - tile * 0.04, py + tile * 0.04, bs, bs);
+          }
           ctx.globalAlpha = 1;
+          drew = true;
         }
-        drew = true;
-      }
+      };
+      drawZone(abuff, 'ui_mode_vitesse');
+      drawZone(aprod, 'ui_mode_productivite');
       ctx.restore();
       if (drew) _animPlayed = true;
     }
