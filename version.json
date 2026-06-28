@@ -3,5 +3,5 @@
   "version": "Alpha 13.8",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Boost antenne : sprite ROUGE en productivite, BLEU en vitesse. Bilan electrique = generation reelle - demande (hors batterie) : positif = batterie charge, negatif = batterie decharge (fini le bilan trompeur)."
+  "notes": "Build 189 (Alpha 13.8) — boost rouge/bleu + bilan électrique hors batterie (#185)"
 }
