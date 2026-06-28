@@ -3,5 +3,5 @@
   "version": "Alpha 13.5",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Centrale mode auto : plafond de plutonium (X) + fiche antenne qui reflete enfin le mode productivite (plus de x2 fige)."
+  "notes": "Build 186 (Alpha 13.5) — plafond plutonium + fiche antenne mode-aware (#182)"
 }
