@@ -1,7 +1,7 @@
 {
-  "build": 183,
-  "version": "Alpha 13.2",
+  "build": 184,
+  "version": "Alpha 13.3",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Conduits qui rentrent dans les batiments + plus de teinte rouge sur V4 + effet boost antenne (fx_boost) + sprites d'ile sur les boutons d'ile et les onglets transit/production."
+  "notes": "Antenne : retrait du lisere cyan, seul l'effet de boost (fx_boost) reste sur les cases influencees."
 }
