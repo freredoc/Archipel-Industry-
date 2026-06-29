@@ -12689,6 +12689,12 @@ function App() {
   // échauffon puis on EXTRAPOLE le reste au débit moyen mesuré (rattrapage quasi instantané).
   function runCatchUp(elapsedSec, onDone) {
     const g = gameRef.current;
+    // [FAST MODE] mode hors-ligne DÉSACTIVÉ : aucun rattrapage du temps écoulé hors-jeu.
+    // Le jeu n'avance qu'en étant ouvert — sinon la mesure de durée d'une partie (en ×10)
+    // serait faussée par la production hors-ligne. Couvre les 2 chemins (reprise + chargement).
+    onDone && onDone();
+    return;
+    /* eslint-disable no-unreachable */
     const ticks = Math.min(Math.floor(elapsedSec), OFFLINE_MAX_TICKS);
     if (ticks < 1) {
       onDone && onDone();
