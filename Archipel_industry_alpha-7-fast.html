@@ -682,11 +682,14 @@ body:not(.theme-inox) .inv-label-btn.open{border-image:var(--btn-active) 8 fill 
 @media (max-width:420px){.offline-gains{grid-template-columns:1fr;}}
 /* ── Overlay de rattrapage hors-ligne (barre de progression, pas d'écran noir) ── */
 /* [FAST MODE] chrono temps de jeu — overlay discret, coin bas-gauche (au-dessus de la barre d'action) */
-.fast-chrono{position:fixed;left:6px;bottom:64px;z-index:200;pointer-events:none;
+.fast-chrono{position:fixed;left:6px;bottom:64px;z-index:200;cursor:pointer;
   font-family:'DM Mono',monospace;font-size:.82rem;font-weight:600;letter-spacing:.5px;
-  color:#cfe8ff;background:rgba(8,14,26,.72);border:1px solid rgba(120,160,210,.35);
-  border-radius:7px;padding:3px 9px;box-shadow:0 2px 8px rgba(0,0,0,.45);white-space:nowrap;}
-.fast-chrono.fast{color:#ffe08a;border-color:rgba(255,200,90,.5);}
+  color:#cfe8ff;background:rgba(8,14,26,.78);border:1px solid rgba(120,160,210,.45);
+  border-radius:7px;padding:4px 10px;box-shadow:0 2px 8px rgba(0,0,0,.45);white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.fast-chrono:hover{border-color:rgba(150,190,240,.7);}
+.fast-chrono:active{transform:translateY(1px);}
+.fast-chrono.fast{color:#ffe08a;border-color:rgba(255,200,90,.6);background:rgba(40,30,8,.78);}
 .catchup-overlay{position:fixed;inset:0;z-index:300;background:rgba(8,12,20,.93);
   display:flex;align-items:center;justify-content:center;}
 .catchup-box{display:flex;flex-direction:column;align-items:center;gap:12px;padding:26px 30px;
@@ -15407,10 +15410,11 @@ function App() {
   }
   return React.createElement("div", {
     className: "app"
-  }, React.createElement("div", {
+  }, React.createElement("button", {
     className: "fast-chrono" + ((timeScale || 1) > 1 ? " fast" : ""),
-    title: "Chrono mode rapide : temps de JEU cumulé (secondes in-game, sauvegardé). Sert à mesurer la durée d'une partie."
-  }, "⏱ " + fmtClock(playSecs) + ((timeScale || 1) > 1 ? "  ⏩" + timeScale + "×" : "")), React.createElement(Hud, {
+    onClick: toggleFastMode,
+    title: "Chrono : temps de JEU cumulé (secondes in-game, sauvegardé). Cliquer pour basculer la vitesse 1× / 10× (le son est coupé en 10×)."
+  }, "⏱ " + fmtClock(playSecs) + "  " + ((timeScale || 1) > 1 ? "⏩10×" : "▶1×")), React.createElement(Hud, {
     resources: game.port[game.currentIsland] || {},
     unlockedRes: unlockedResourceSet(game),
     invTrends: invTrends,
