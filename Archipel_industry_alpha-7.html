@@ -4342,8 +4342,8 @@ const SAVE_VERSION = 15;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 190;
-const GAME_VERSION = 'Alpha 13.9';
+const GAME_BUILD = 191;
+const GAME_VERSION = 'Alpha 13.10';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -8847,7 +8847,7 @@ function Toolbar({
     className: "toolbar-wrap"
   }, detailId && React.createElement(BuildingDetailModal, {
     id: detailId,
-    onClose: () => setDetailId(null)
+    onClose: () => { SFX.play('panelClose'); setDetailId(null); }
   }), buildOpen && React.createElement("div", {
     className: "build-panel"
   }, renderGroups(BUILD_GROUPS)), netOpen && React.createElement("div", {
@@ -13565,6 +13565,7 @@ function App() {
     // d'action (copier/démolir/améliorer) se désactivent en les re-touchant.
     const toggles = id === COPY || id === DEMOLISH || id === UPGRADE;
     const next = id === cur && toggles ? null : id;
+    SFX.play(next === null ? 'deselect' : 'selectBuilding');
     gameRef.current.ui.tool = next;
     setToolState(next);
     setInfo(null);
@@ -15005,12 +15006,14 @@ function App() {
       return;
     }
     if (t.building.id === 'port') {
+      SFX.play('panelOpen');
       setInfo(null);
       setNetwork(null);
       setPortOpen(true);
       return;
     }
     if (BUILDINGS[t.building.id] && BUILDINGS[t.building.id].kind === 'infra') {
+      SFX.play('panelOpen');
       setInfo(null);
       openNetwork(tr, tc);
       return;
@@ -15025,6 +15028,7 @@ function App() {
       oy = cam.baseY - cam.y;
     const x = ox + tc * cam.tile + cam.tile;
     const y = oy + tr * cam.tile;
+    SFX.play('click');
     setInfo({
       r: tr,
       c: tc,
@@ -15336,10 +15340,11 @@ function App() {
     islandUnlocked: game.islandUnlocked,
     repairInfo: repairInfo,
     onRepair: repairIsland,
-    onShowRepair: () => setRepairOpen(true),
-    onOpenPort: () => setPortOpen(true),
-    onEnergy: () => setEnergyOpen(true),
+    onShowRepair: () => { SFX.play('panelOpen'); setRepairOpen(true); },
+    onOpenPort: () => { SFX.play('panelOpen'); setPortOpen(true); },
+    onEnergy: () => { SFX.play('panelOpen'); setEnergyOpen(true); },
     onResClick: (k, e) => {
+      SFX.play('click');
       const rect = e.currentTarget.getBoundingClientRect();
       setResPop({
         res: k,
@@ -15349,6 +15354,7 @@ function App() {
     },
     onSelectIsland: switchIsland,
     onOpenResearch: () => {
+      SFX.play('panelOpen');
       setResearchOpen(true);
       setResearchPending(false);
     },
@@ -15356,9 +15362,13 @@ function App() {
     dev: dev,
     onToggleDev: toggleDev,
     saveLabel: saveLabel(),
-    onSave: () => setSlotOpen(true),
+    onSave: () => { SFX.play('panelOpen'); setSlotOpen(true); },
     invOpen: invOpen,
-    onToggleInv: () => setInvOpen(o => !o),
+    onToggleInv: () => {
+      const opening = !invOpen;
+      SFX.play(opening ? 'panelOpen' : 'panelClose');
+      setInvOpen(opening);
+    },
     onOpenOptions: () => {
       SFX.unlock(); // 1er geste possible si l'utilisateur ouvre un menu avant de toucher le canvas
       SFX.play('panelOpen');
@@ -15375,18 +15385,18 @@ function App() {
       setDev(g.ui.dev);
       setOptionsOpen(true);
     },
-    onOpenHelp: () => setHelpOpen(true),
-    onOpenProduction: () => setProdOpen(true),
-    onOpenCalc: () => setCalcOpen(true),
+    onOpenHelp: () => { SFX.play('panelOpen'); setHelpOpen(true); },
+    onOpenProduction: () => { SFX.play('panelOpen'); setProdOpen(true); },
+    onOpenCalc: () => { SFX.play('panelOpen'); setCalcOpen(true); },
     alertCount: activeStockAlerts(game).length + activeEnergyAlerts(game).length,
-    onOpenAlerts: () => setAlertsOpen(true),
+    onOpenAlerts: () => { SFX.play('panelOpen'); setAlertsOpen(true); },
     updateInfo: updateInfo
   }), prodOpen && React.createElement(ProductionPanel, {
     game: game,
-    onClose: () => setProdOpen(false)
+    onClose: () => { SFX.play('panelClose'); setProdOpen(false); }
   }), calcOpen && React.createElement(CalculatorPanel, {
     game: game,
-    onClose: () => setCalcOpen(false)
+    onClose: () => { SFX.play('panelClose'); setCalcOpen(false); }
   }), alertsOpen && React.createElement(AlertsPanel, {
     game: game,
     onGo: isl => {
@@ -15399,7 +15409,7 @@ function App() {
       setAlertsOpen(false);
       setEnergyOpen(true);
     },
-    onClose: () => setAlertsOpen(false)
+    onClose: () => { SFX.play('panelClose'); setAlertsOpen(false); }
   }), tutorialStep >= 0 && React.createElement(TutorialBanner, {
     step: tutorialStep,
     total: TUTORIAL_STEPS.length,
@@ -15449,7 +15459,7 @@ function App() {
     game: game,
     currentIsland: game.currentIsland,
     stageRef: stageRef,
-    onClose: () => setInfo(null),
+    onClose: () => { SFX.play('panelClose'); setInfo(null); },
     onDemolish: () => tryDemolish(info.r, info.c, true),
     onUpgrade: (r, c) => tryUpgrade(r, c),
     onUpgradeAll: (r, c) => upgradeAllSameType(r, c),
@@ -15469,14 +15479,14 @@ function App() {
     game: game,
     currentIsland: game.currentIsland,
     stageRef: stageRef,
-    onClose: () => setUpgrade(null),
+    onClose: () => { SFX.play('panelClose'); setUpgrade(null); },
     onUpgrade: (r, c) => tryUpgrade(r, c)
   }), network && React.createElement(NetworkPanel, {
     net: network,
     game: game,
     currentIsland: game.currentIsland,
     stageRef: stageRef,
-    onClose: () => setNetwork(null),
+    onClose: () => { SFX.play('panelClose'); setNetwork(null); },
     onUpgrade: (r, c, payMat) => {
       if (changeNetworkLevel(r, c, +1, payMat)) openNetwork(r, c);
     },
@@ -15494,6 +15504,7 @@ function App() {
     buildOpen: buildOpen,
     onToggleBuild: () => {
       const opening = !buildOpen;
+      SFX.play(opening ? 'panelOpen' : 'panelClose');
       setNetOpen(false);
       setBuildOpen(opening);
       // Ouvrir un panneau désactive l'outil d'action en cours (Démolir/Améliorer/
@@ -15503,6 +15514,7 @@ function App() {
     netOpen: netOpen,
     onToggleNet: () => {
       const opening = !netOpen;
+      SFX.play(opening ? 'panelOpen' : 'panelClose');
       setBuildOpen(false);
       setNetOpen(opening);
       if (opening) deselectAll();
@@ -15515,6 +15527,7 @@ function App() {
     onDeliver: doDeliver,
     onConfirm: doConfirm,
     onClose: () => {
+      SFX.play('panelClose');
       setResearchOpen(false);
       setResearchPending(hasPendingResearch(gameRef.current));
     }
@@ -15574,7 +15587,7 @@ function App() {
     },
     updateInfo: updateInfo
   }), helpOpen && React.createElement(HelpPanel, {
-    onClose: () => setHelpOpen(false)
+    onClose: () => { SFX.play('panelClose'); setHelpOpen(false); }
   }), catchUp && React.createElement("div", {
     className: "catchup-overlay"
   }, React.createElement("div", {
@@ -15606,7 +15619,7 @@ function App() {
   }), portOpen && React.createElement(PortPanel, {
     game: game,
     currentIsland: game.currentIsland,
-    onClose: () => setPortOpen(false),
+    onClose: () => { SFX.play('panelClose'); setPortOpen(false); },
     onSetCfg: setTradeCfg,
     onSetDestPriority: setDestPriority,
     onMovePriority: movePriority,
@@ -15620,13 +15633,13 @@ function App() {
       repairIsland(node);
       setRepairOpen(false);
     },
-    onClose: () => setRepairOpen(false)
+    onClose: () => { SFX.play('panelClose'); setRepairOpen(false); }
   }), energyOpen && React.createElement(EnergyPanel, {
     game: game,
     currentIsland: game.currentIsland,
     onSetMode: setEnergyMode,
     onMovePriority: moveEnergyPriority,
-    onClose: () => setEnergyOpen(false)
+    onClose: () => { SFX.play('panelClose'); setEnergyOpen(false); }
   }), needMode && React.createElement(ModeModal, {
     onChoose: chooseMode
   }), resPop && React.createElement(ResPopover, {

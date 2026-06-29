@@ -17,7 +17,20 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 190`, `GAME_VERSION = 'Alpha 13.9'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 191`, `GAME_VERSION = 'Alpha 13.10'`, `SAVE_VERSION = 15`.**
+  Changement 13.10 : **sons sur TOUS les boutons d'UI (suite du 13.9).** Le 13.9 ne sonnait pas sur les
+  boutons du HAUT (sauf Options), les boutons du BAS, ni à l'ouverture/fermeture des fenêtres et de la
+  fiche bâtiment. Câblage au niveau des handlers App (pas dans les composants) : (1) **barre du bas** :
+  `selectTool` (`selectBuilding` à la sélection / `deselect` à la désélection — couvre Copier/Démolir/
+  Améliorer + palette), `onToggleBuild`/`onToggleNet` (`panelOpen`/`panelClose`). (2) **barre du haut** :
+  `onOpenPort`/`onEnergy`/`onShowRepair`/`onOpenResearch`/`onSave`/`onOpenHelp`/`onOpenProduction`/
+  `onOpenCalc`/`onOpenAlerts` (`panelOpen`), `onToggleInv` (`panelOpen`/`panelClose` selon l'état),
+  `onResClick` (`click`). (3) **fiche bâtiment** : tap d'un bâtiment → `click` (ouverture), tap d'un
+  port → `panelOpen`, tap d'une infra → `panelOpen` (ouverture du `NetworkPanel`). (4) **fermeture des
+  fenêtres** : `panelClose` ajouté à l'`onClose` (bouton ×) de Production/Calculateur/Alertes/InfoPanel/
+  UpgradePanel/NetworkPanel/Aide/Port/Réparation/Énergie/Recherche/BuildingDetailModal. Les `setInfo(null)`
+  collatéraux (switchIsland, selectTool) ne sonnent PAS (évite le doublon — ils ont déjà leur son).
+  `node --check` (7 blocs) OK. Build 190→191.
   Changement 13.9 : **intégration du système audio (SFX, synthèse procédurale Web Audio).** Le module
   `sfx_module.js` (44 sons one-shot + `placeC` en réserve) est inliné au niveau module (const `SFX`,
   juste après `VERSION_URL`, hors React, une seule instance) — **single-file, offline, zéro fichier/CDN**
