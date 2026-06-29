@@ -4338,13 +4338,269 @@ function ensureSlotsInitialized() {
   }
   return active;
 }
-const SAVE_VERSION = 14;
+const SAVE_VERSION = 15;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 189;
-const GAME_VERSION = 'Alpha 13.8';
+const GAME_BUILD = 190;
+const GAME_VERSION = 'Alpha 13.9';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
+/* ============================================================================
+   ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
+   Synthèse procédurale Web Audio. Aucun fichier, aucun CDN, offline-first.
+   Module-level (une seule instance, hors de tout composant React).
+   ============================================================================ */
+const SFX = (() => {
+  let ctx = null, master = null, volume = 0.55, noiseBuf = null;
+  let enabled = true;            // mute global (persisté dans la save)
+  const _last = {};             // horodatage du dernier déclenchement par son (cooldown)
+  // Sons d'alerte : à jouer via SFX.playThrottled(...) pour éviter la répétition au tick.
+  const ALERTS = ['powerAlert','fuelLow','stockFull','noInput','importBlocked'];
+
+  function ensure(){
+    if(!ctx){
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      master = ctx.createGain(); master.gain.value = volume; master.connect(ctx.destination);
+    }
+    if(ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function setVolume(v){ volume = v; if(master) master.gain.value = v; }
+
+  function noiseBuffer(){
+    if(!noiseBuf){
+      const len = ctx.sampleRate;
+      noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for(let i=0;i<len;i++) d[i] = Math.random()*2 - 1;
+    }
+    return noiseBuf;
+  }
+
+  // Oscillateur + enveloppe percussive
+  function tone({type='sine', freq=440, freqEnd=null, t0=0, attack=0.005, decay=0.08, peak=0.5}){
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t0);
+    if(freqEnd) o.frequency.exponentialRampToValueAtTime(Math.max(1,freqEnd), t0 + attack + decay);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + attack + decay);
+    o.connect(g); g.connect(master);
+    o.start(t0); o.stop(t0 + attack + decay + 0.02);
+  }
+
+  // Salve de bruit filtrée
+  function noise({t0=0, dur=0.1, peak=0.4, type='lowpass', freq=1000, q=1}){
+    const src = ctx.createBufferSource(); src.buffer = noiseBuffer();
+    const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(f); f.connect(g); g.connect(master);
+    src.start(t0); src.stop(t0 + dur + 0.02);
+  }
+
+  // Woosh : bruit avec filtre qui balaye (transitions, carte)
+  function woosh({t0=0, dur=0.2, f1=300, f2=1600, peak=0.22, type='bandpass', q=0.8}){
+    const src = ctx.createBufferSource(); src.buffer = noiseBuffer(); src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = type; f.Q.value = q;
+    f.frequency.setValueAtTime(f1, t0); f.frequency.exponentialRampToValueAtTime(Math.max(1,f2), t0+dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(peak, t0+dur*0.3);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    src.connect(f); f.connect(g); g.connect(master);
+    src.start(t0); src.stop(t0+dur+0.02);
+  }
+
+  /* ---------------- LES SONS ---------------- */
+  const S = {
+    /* --- Interface --- */
+    click(){ const t=ctx.currentTime;
+      tone({type:'square', freq:1100, freqEnd:900, t0:t, attack:0.001, decay:0.035, peak:0.22}); },
+    clickAlt(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:520, freqEnd:380, t0:t, attack:0.001, decay:0.05, peak:0.22}); },
+    panelOpen(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:380, freqEnd:880, t0:t, attack:0.005, decay:0.085, peak:0.3}); },
+    panelClose(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:880, freqEnd:360, t0:t, attack:0.005, decay:0.085, peak:0.3}); },
+    tabSwitch(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:720, freqEnd:760, t0:t, attack:0.002, decay:0.045, peak:0.2}); },
+    tabHover(){ const t=ctx.currentTime;
+      tone({type:'sine', freq:1400, t0:t, attack:0.001, decay:0.018, peak:0.08}); },
+    selectBuilding(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:560, t0:t, attack:0.002, decay:0.04, peak:0.18});
+      noise({t0:t, dur:0.02, peak:0.1, type:'highpass', freq:3000}); },
+    deselect(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:480, freqEnd:300, t0:t, attack:0.001, decay:0.05, peak:0.18}); },
+    toggleOn(){ const t=ctx.currentTime;
+      tone({type:'square', freq:760, freqEnd:1020, t0:t, attack:0.002, decay:0.06, peak:0.16}); },
+    toggleOff(){ const t=ctx.currentTime;
+      tone({type:'square', freq:620, freqEnd:420, t0:t, attack:0.002, decay:0.06, peak:0.16}); },
+    notify(){ const t=ctx.currentTime;
+      tone({type:'sine', freq:680, freqEnd:880, t0:t, attack:0.003, decay:0.08, peak:0.22}); },
+    mapOpen(){ const t=ctx.currentTime;
+      woosh({t0:t, dur:0.22, f1:260, f2:1600, peak:0.22});
+      tone({type:'sine', freq:520, t0:t+0.08, attack:0.01, decay:0.12, peak:0.12}); },
+    islandTransition(){ const t=ctx.currentTime;
+      woosh({t0:t, dur:0.3, f1:200, f2:1400, peak:0.24});
+      tone({type:'triangle', freq:392, t0:t+0.12, attack:0.02, decay:0.25, peak:0.18});
+      tone({type:'sine',     freq:588, t0:t+0.12, attack:0.02, decay:0.25, peak:0.1}); },
+
+    /* --- Pose & Construction --- */
+    place(){ const t=ctx.currentTime;
+      tone({type:'sine',     freq:200, freqEnd:90,  t0:t, attack:0.002, decay:0.12, peak:0.6});
+      tone({type:'triangle', freq:430, freqEnd:300, t0:t, attack:0.001, decay:0.05, peak:0.22});
+      noise({t0:t, dur:0.03, peak:0.28, type:'lowpass', freq:2600}); },
+    placeHeavy(){ const t=ctx.currentTime;
+      tone({type:'sine',     freq:150, freqEnd:60,  t0:t, attack:0.003, decay:0.2, peak:0.7});
+      tone({type:'triangle', freq:320, freqEnd:220, t0:t, attack:0.001, decay:0.07, peak:0.2});
+      noise({t0:t, dur:0.05, peak:0.3, type:'lowpass', freq:2000});
+      noise({t0:t+0.01, dur:0.12, peak:0.18, type:'lowpass', freq:700, q:0.6}); },
+    invalid(){ const t=ctx.currentTime;
+      tone({type:'square', freq:150, t0:t, attack:0.003, decay:0.16, peak:0.26});
+      tone({type:'square', freq:139, t0:t, attack:0.003, decay:0.16, peak:0.22}); },
+    demolish(){ const t=ctx.currentTime;
+      noise({t0:t, dur:0.16, peak:0.5, type:'lowpass', freq:1100, q:0.7});
+      tone({type:'sine', freq:120, freqEnd:55, t0:t, attack:0.002, decay:0.14, peak:0.4}); },
+    upgrade(){ const t=ctx.currentTime; const n=[523,659,784];
+      n.forEach((f,i)=> tone({type:'triangle', freq:f, t0:t+i*0.06, attack:0.003, decay:0.1, peak:0.3})); },
+    // réserve : broum bam calé sur la voix (~0.84s), mis de côté au profit du thock
+    placeC(){ const t=ctx.currentTime;
+      tone({type:'sine',     freq:160, freqEnd:62,  t0:t, attack:0.002, decay:0.24, peak:0.7});
+      tone({type:'triangle', freq:220, freqEnd:110, t0:t, attack:0.001, decay:0.08, peak:0.25});
+      noise({t0:t, dur:0.18, peak:0.3, type:'lowpass', freq:320, q:0.7});
+      noise({t0:t, dur:0.03, peak:0.32, type:'lowpass', freq:2200});
+      const tb=t+0.55;
+      tone({type:'sine', freq:200, freqEnd:58, t0:tb, attack:0.001, decay:0.26, peak:0.8});
+      noise({t0:tb, dur:0.04, peak:0.45, type:'lowpass', freq:2200});
+      tone({type:'sine', freq:90,  freqEnd:45, t0:tb, attack:0.002, decay:0.28, peak:0.34}); },
+
+    /* --- Réseaux --- */
+    road(){ const t=ctx.currentTime;
+      noise({t0:t, dur:0.05, peak:0.32, type:'bandpass', freq:1400, q:1.2});
+      tone({type:'triangle', freq:260, t0:t, attack:0.001, decay:0.03, peak:0.14}); },
+    cable(){ const t=ctx.currentTime;
+      noise({t0:t, dur:0.04, peak:0.24, type:'bandpass', freq:1200, q:1});
+      for(let i=0;i<4;i++) noise({t0:t+0.01+i*0.014, dur:0.012, peak:0.16, type:'highpass', freq:3600}); },
+    pipe(){ const t=ctx.currentTime;
+      tone({type:'sine', freq:300, freqEnd:175, t0:t, attack:0.002, decay:0.09, peak:0.4});
+      noise({t0:t, dur:0.05, peak:0.1, type:'bandpass', freq:500, q:3}); },
+    junction(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:600, t0:t,      attack:0.001, decay:0.025, peak:0.18});
+      tone({type:'triangle', freq:760, t0:t+0.05, attack:0.001, decay:0.025, peak:0.18}); },
+    networkSplit(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:560, freqEnd:360, t0:t, attack:0.002, decay:0.14, peak:0.2}); },
+    upgradeNetwork(){ const t=ctx.currentTime;
+      [440,587].forEach((f,i)=> tone({type:'triangle', freq:f, t0:t+i*0.06, attack:0.003, decay:0.09, peak:0.22})); },
+
+    /* --- Progression --- */
+    nodeReady(){ const t=ctx.currentTime;
+      tone({type:'sine', freq:659, t0:t,      attack:0.01, decay:0.18, peak:0.18});
+      tone({type:'sine', freq:988, t0:t+0.02, attack:0.01, decay:0.16, peak:0.1}); },
+    unlock(){ const t=ctx.currentTime; const n=[392,523,659,784];
+      n.forEach((f,i)=>{
+        tone({type:'square', freq:f, t0:t+i*0.07, attack:0.004, decay:0.12, peak:0.16});
+        tone({type:'sine',   freq:f, t0:t+i*0.07, attack:0.004, decay:0.14, peak:0.22}); });
+      tone({type:'sine', freq:1047, t0:t+0.29, attack:0.01, decay:0.26, peak:0.24}); },
+    delivery(){ const t=ctx.currentTime;
+      tone({type:'sine', freq:880,  t0:t,       attack:0.002, decay:0.18, peak:0.22});
+      tone({type:'sine', freq:1320, t0:t+0.005, attack:0.002, decay:0.22, peak:0.12}); },
+    buildingUnlock(){ const t=ctx.currentTime;
+      [587,784].forEach((f,i)=>{
+        tone({type:'triangle', freq:f,   t0:t+i*0.08, attack:0.003, decay:0.14, peak:0.2});
+        tone({type:'sine',     freq:f*2, t0:t+i*0.08, attack:0.003, decay:0.1,  peak:0.08}); }); },
+    boatUnlock(){ const t=ctx.currentTime;
+      [523,659,880].forEach((f,i)=> tone({type:'sine', freq:f, t0:t+i*0.07, attack:0.004, decay:0.2, peak:0.18})); },
+    prodMilestone(){ const t=ctx.currentTime;
+      tone({type:'sine', freq:784, freqEnd:1046, t0:t, attack:0.003, decay:0.1, peak:0.2}); },
+    // DÉBLOCAGE ÎLE ★ — version longue & gratifiante (~1.5s) : arpège + suspension -> résolution majeure ample
+    islandUnlock(){ const t=ctx.currentTime;
+      [261.63,329.63,392.00,523.25,659.25].forEach((f,i)=>
+        tone({type:'triangle', freq:f, t0:t+i*0.08, attack:0.004, decay:0.18, peak:0.2}));
+      const t1=t+0.42;                              // accord suspendu (sous-dominante)
+      [349.23,440,523.25].forEach(f=> tone({type:'triangle', freq:f, t0:t1, attack:0.012, decay:0.4, peak:0.14}));
+      const t2=t+0.72;                              // résolution majeure tenue
+      [392,523.25,659.25,783.99].forEach(f=>{
+        tone({type:'sine',     freq:f, t0:t2, attack:0.012, decay:0.75, peak:0.2});
+        tone({type:'triangle', freq:f, t0:t2, attack:0.012, decay:0.6,  peak:0.11}); });
+      tone({type:'sine', freq:130.81, t0:t2, attack:0.008, decay:0.8, peak:0.42});   // basse
+      tone({type:'sine', freq:196,    t0:t2, attack:0.008, decay:0.5, peak:0.16});
+      [1046.50,1318.51,1567.98,2093].forEach((f,i)=>                                  // sparkle prolongé
+        tone({type:'sine', freq:f, t0:t2+0.06+i*0.06, attack:0.002, decay:0.28, peak:0.11})); },
+    // ENDGAME / ÎLE 6 ★★ — le plus solennel (~1.4s)
+    endgameUnlock(){ const t=ctx.currentTime;
+      [196,293.66,392].forEach(f=> tone({type:'triangle', freq:f, t0:t, attack:0.02, decay:0.5, peak:0.16}));
+      const tc=t+0.45;
+      [261.63,392,523.25,659.25].forEach(f=>{
+        tone({type:'sine',     freq:f, t0:tc, attack:0.015, decay:0.8, peak:0.18});
+        tone({type:'triangle', freq:f, t0:tc, attack:0.015, decay:0.6, peak:0.1}); });
+      tone({type:'sine', freq:130.81, t0:tc, attack:0.01, decay:0.85, peak:0.45});
+      tone({type:'sine', freq:65.41,  t0:tc, attack:0.01, decay:0.7,  peak:0.3});
+      [1046,1318,1568,2093].forEach((f,i)=>
+        tone({type:'sine', freq:f, t0:tc+0.08+i*0.06, attack:0.002, decay:0.25, peak:0.1})); },
+
+    /* --- Alertes --- */
+    powerAlert(){ const t=ctx.currentTime;
+      const beep=(t0)=>{
+        tone({type:'square', freq:233, freqEnd:185, t0:t0, attack:0.004, decay:0.14, peak:0.2});
+        tone({type:'sine',   freq:116, freqEnd:92,  t0:t0, attack:0.004, decay:0.14, peak:0.18}); };
+      beep(t); beep(t+0.2); },
+    stockFull(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:330, t0:t,      attack:0.004, decay:0.12, peak:0.18});
+      tone({type:'triangle', freq:330, t0:t+0.16, attack:0.004, decay:0.12, peak:0.16}); },
+    noInput(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:440, freqEnd:392, t0:t, attack:0.002, decay:0.07, peak:0.16}); },
+    fuelLow(){ const t=ctx.currentTime;
+      const beep=(t0)=>{ tone({type:'square', freq:180, freqEnd:150, t0:t0, attack:0.004, decay:0.16, peak:0.2});
+                         tone({type:'sine', freq:90, t0:t0, attack:0.004, decay:0.16, peak:0.16}); };
+      beep(t); beep(t+0.22); beep(t+0.44); },
+    importBlocked(){ const t=ctx.currentTime;
+      tone({type:'square', freq:400, freqEnd:240, t0:t, attack:0.003, decay:0.16, peak:0.18}); },
+    normalRestored(){ const t=ctx.currentTime;
+      tone({type:'sine', freq:523, freqEnd:659, t0:t, attack:0.01, decay:0.22, peak:0.16}); },
+
+    /* --- Système & slots --- */
+    save(){ const t=ctx.currentTime;
+      tone({type:'sine', freq:660, t0:t,      attack:0.004, decay:0.07, peak:0.24});
+      tone({type:'sine', freq:990, t0:t+0.08, attack:0.004, decay:0.09, peak:0.27}); },
+    load(){ const t=ctx.currentTime;
+      tone({type:'sine', freq:440, freqEnd:660, t0:t, attack:0.006, decay:0.16, peak:0.2}); },
+    slotCreate(){ const t=ctx.currentTime;
+      tone({type:'sine', freq:600, freqEnd:840, t0:t, attack:0.003, decay:0.09, peak:0.2}); },
+    slotDelete(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:380, freqEnd:200, t0:t, attack:0.002, decay:0.14, peak:0.2});
+      noise({t0:t, dur:0.06, peak:0.15, type:'lowpass', freq:1200}); },
+    errorGeneric(){ const t=ctx.currentTime;
+      tone({type:'square', freq:160, t0:t, attack:0.003, decay:0.12, peak:0.22});
+      tone({type:'square', freq:151, t0:t, attack:0.003, decay:0.12, peak:0.18}); },
+    titleSting(){ const t=ctx.currentTime;
+      [392,523,659].forEach((f,i)=> tone({type:'triangle', freq:f, t0:t+i*0.1, attack:0.006, decay:0.3, peak:0.18}));
+      tone({type:'sine', freq:1046, t0:t+0.32, attack:0.01, decay:0.4, peak:0.14}); },
+  };
+
+  // Joue immédiatement (respecte le mute). Crée/reprend le contexte si besoin.
+  // ensure() est dans le try/catch : un environnement sans Web Audio (jsdom, vieille
+  // WebView) ne doit JAMAIS interrompre le jeu (l'audio échoue en silence).
+  function play(name){
+    if(!enabled) return;
+    try { ensure(); if(S[name]) S[name](); } catch(e){ /* audio indispo : on n'interrompt jamais le jeu */ }
+  }
+  // Joue avec cooldown : ignore l'appel si le même son a sonné il y a moins de minMs.
+  function playThrottled(name, minMs=1500){
+    const now = (typeof performance!=='undefined' ? performance.now() : Date.now());
+    if(_last[name] && (now - _last[name]) < minMs) return;
+    _last[name] = now;
+    play(name);
+  }
+  function setEnabled(v){ enabled = !!v; }
+  function isEnabled(){ return enabled; }
+  function getVolume(){ return volume; }
+  function unlock(){ try { ensure(); } catch(e){} }   // à appeler au 1er geste utilisateur (mobile)
+
+  return { play, playThrottled, unlock, setEnabled, isEnabled, setVolume, getVolume,
+           ALERTS, names:Object.keys(S) };
+})();
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
 const NATIVE_UPDATER = typeof window !== 'undefined' && window.ArchipelNative && typeof window.ArchipelNative.update === 'function';
@@ -6918,6 +7174,8 @@ function applyUnlocks(game, def) {
       const port = game.port[isl] || (game.port[isl] = {});
       for (const k in ISLAND_KICKSTART[isl]) port[k] = (port[k] || 0) + ISLAND_KICKSTART[isl][k];
     }
+    // Jingle de déblocage (une seule fois) : île finale (5) = endgame, sinon île standard.
+    if (!wasUnlocked) SFX.play(isl >= 5 ? 'endgameUnlock' : 'islandUnlock');
   }
   if (u.boats) game.boats = (game.boats || 0) + u.boats;
 }
@@ -7179,6 +7437,7 @@ function evaluateTechTree(game) {
         node.notified = true;
         if (!game.researchReady) game.researchReady = [];
         game.researchReady.push(def.id);
+        SFX.play('nodeReady');
         changed = true;
       }
     } else if (node.status === 'condition_ok' && node.notified) {
@@ -7196,6 +7455,7 @@ function techConfirm(game, id) {
   applyUnlocks(game, def);
   if (!game.researchNotify) game.researchNotify = [];
   game.researchNotify.push(def.id);
+  SFX.play('unlock');
   return true;
 }
 function techDeliver(game, id) {
@@ -7209,6 +7469,7 @@ function techDeliver(game, id) {
   applyUnlocks(game, def);
   if (!game.researchNotify) game.researchNotify = [];
   game.researchNotify.push(def.id);
+  SFX.play('delivery');
   return true;
 }
 // Au moins une recherche est « prête » et réellement validable par le joueur
@@ -10982,6 +11243,10 @@ function OptionsModal({
   simplifyOffline,
   fastUpgrade,
   tipsEnabled,
+  audioEnabled,
+  audioVolume,
+  onToggleAudio,
+  onSetAudioVolume,
   theme,
   onSetTheme,
   onToggleFastUpgrade,
@@ -11165,7 +11430,7 @@ function OptionsModal({
   }, I18N.available().map(code => React.createElement("option", {
     key: code,
     value: code
-  }, I18N.names[code])))), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), React.createElement("button", {
+  }, I18N.names[code])))), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Sons"), I18N.t("Effets sonores du jeu (pose, am\xE9lioration, alertes…)"), audioEnabled !== false, onToggleAudio), sliderRow(I18N.t("Volume"), I18N.t("Volume des effets sonores"), audioVolume == null ? 0.55 : audioVolume, 0, 1, 0.05, v => onSetAudioVolume && onSetAudioVolume(v), v => Math.round(v * 100) + '%'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onResetTips
   }, uiIcon('astuce', "💡"), I18N.t(" Revoir les astuces")), toggleRow(I18N.t("Mode d\xE9veloppeur"), I18N.t("Construction et am\xE9liorations gratuites"), dev, onToggleDev, 'dev'), React.createElement("button", {
@@ -11527,6 +11792,8 @@ function App() {
       },
       tipsSeen: {},
       tipsEnabled: true,
+      audioEnabled: true,
+      audioVolume: 0.55,
       mode: 'difficile',
       saveTimer: null
     };
@@ -11606,6 +11873,8 @@ function App() {
   const [badgeScale, setBadgeScale] = useState(1);
   const [fastUpgrade, setFastUpgrade] = useState(false);
   const [tipsEnabled, setTipsEnabled] = useState(true);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [audioVolume, setAudioVolume] = useState(0.55);
   const [canvasKey, setCanvasKey] = useState(0);
   const rafRef = useRef(null);
   const [, bumpHud] = useReducer(c => c + 1, 0);
@@ -11819,6 +12088,10 @@ function App() {
         ...g.tipsSeen
       },
       tipsEnabled: g.tipsEnabled !== false,
+      audio: {
+        enabled: g.audioEnabled !== false,
+        volume: g.audioVolume == null ? 0.55 : g.audioVolume
+      },
       // Préférences d'affichage (Options) — persistées pour survivre aux mises à jour.
       uiPrefs: {
         showLevels: (g.ui && g.ui.showLevels) !== false,
@@ -11872,6 +12145,7 @@ function App() {
     slotSwitchTo(id);
   }
   function slotCreate(name) {
+    SFX.play('slotCreate');
     flushSave();
     const id = newSlotId();
     const index = readSlotIndex();
@@ -11919,6 +12193,7 @@ function App() {
     bumpHud();
   }
   function slotDelete(id) {
+    SFX.play('slotDelete');
     let index = readSlotIndex();
     const wasActive = id === getActiveSlotId();
     index = index.filter(s => s.id !== id);
@@ -11956,7 +12231,7 @@ function App() {
     } catch (e) {
       return false;
     }
-    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].indexOf(data.version) === -1) return false;
+    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].indexOf(data.version) === -1) return false;
     const g = gameRef.current;
     // Extension des mers (v11) : les îles sont désormais entourées de SEA_PAD tuiles d'eau.
     // Les sauvegardes antérieures (coordonnées non décalées) sont translatées de +SEA_PAD.
@@ -12321,6 +12596,11 @@ function App() {
       ...data.tipsSeen
     } : {};
     g.tipsEnabled = data.tipsEnabled !== false;
+    // Réglages audio (guards : une save < v15 sans bloc `audio` reprend les défauts).
+    g.audioEnabled = data.audio ? (data.audio.enabled !== false) : true;
+    g.audioVolume = (data.audio && typeof data.audio.volume === 'number') ? data.audio.volume : 0.55;
+    SFX.setEnabled(g.audioEnabled);
+    SFX.setVolume(g.audioVolume);
     // Restaure les préférences d'affichage (Options) sauvegardées.
     if (!g.ui) g.ui = {
       tool: null,
@@ -12487,7 +12767,7 @@ function App() {
       g.tutorial.step++;
       changed = true;
       const st = TUTORIAL_STEPS[g.tutorial.step];
-      if (st) for (const id of st.reveal) showToast('🔓 ' + (BUILDINGS[id] ? BUILDINGS[id].name : id) + I18N.t(' débloqué !'), 'var(--green)');
+      if (st) for (const id of st.reveal) { showToast('🔓 ' + (BUILDINGS[id] ? BUILDINGS[id].name : id) + I18N.t(' débloqué !'), 'var(--green)'); SFX.play('buildingUnlock'); }
     }
     if (g.tutorial.step >= TUTORIAL_STEPS.length) {
       g.tutorial.active = false;
@@ -12562,7 +12842,29 @@ function App() {
         if (below && !state[res]) {
           state[res] = true;
           showToast(`⚠️ Île ${islStr} — ${RES_SHORT[res] || res} bas : ${fmtInt(pool[res] || 0)} < ${fmtInt(t)}`, 'var(--orange)');
+          SFX.playThrottled('stockFull', 6000);
         } else if (!below && state[res]) state[res] = false;
+      }
+    }
+  }
+  // Son d'alerte électrique : bip UNIQUEMENT à la transition (entrée en déficit batterie vide),
+  // pas à chaque tick ; jingle « retour normal » quand l'alerte se résout.
+  function checkEnergyAlerts() {
+    const g = gameRef.current;
+    if (!g.energyAlertState) g.energyAlertState = {};
+    const state = g.energyAlertState;
+    const active = {};
+    for (const a of activeEnergyAlerts(g)) active[a.isl] = true;
+    for (const isl in active) {
+      if (!state[isl]) {
+        state[isl] = true;
+        SFX.playThrottled('powerAlert', 8000);
+      }
+    }
+    for (const isl in state) {
+      if (state[isl] && !active[isl]) {
+        state[isl] = false;
+        SFX.play('normalRestored');
       }
     }
   }
@@ -12571,6 +12873,26 @@ function App() {
     g.tipsEnabled = g.tipsEnabled === false;
     setTipsEnabled(g.tipsEnabled);
     showToast(g.tipsEnabled ? I18N.t('💡 Astuces activées') : I18N.t('Astuces désactivées'), 'var(--ink-dim)');
+    markDirty();
+    scheduleSave();
+  }
+  function toggleAudio() {
+    const g = gameRef.current;
+    const next = !(g.audioEnabled !== false);
+    g.audioEnabled = next;
+    SFX.setEnabled(next);
+    setAudioEnabled(next);
+    SFX.play(next ? 'toggleOn' : 'toggleOff'); // toggleOn ne sonnera que si on vient d'activer
+    markDirty();
+    scheduleSave();
+  }
+  function setAudioVolumeVal(v) {
+    const g = gameRef.current;
+    const vol = Math.max(0, Math.min(1, v));
+    g.audioVolume = vol;
+    SFX.setVolume(vol);
+    setAudioVolume(vol);
+    SFX.playThrottled('place', 140); // son témoin pour donner le niveau pendant le réglage
     markDirty();
     scheduleSave();
   }
@@ -12706,22 +13028,22 @@ function App() {
     // couplés (on convertit alors ce croisement en jonction).
     let tileCarrier = null;
     if (t.occupied) {
-      if (verbose) showToast(I18N.t('❌ Tuile occupée'), 'var(--red)');
+      if (verbose) { showToast(I18N.t('❌ Tuile occupée'), 'var(--red)'); SFX.play('invalid'); }
       return false;
     }
     if (t.building) {
       const tb = BUILDINGS[t.building.id];
       if (tb && tb.kind === 'infra' && (t.building.id === typeA || t.building.id === typeB)) tileCarrier = t.building.id;else {
-        if (verbose) showToast(I18N.t('❌ Jonction : pose sur une tuile vide ou un réseau croisé'), 'var(--red)');
+        if (verbose) { showToast(I18N.t('❌ Jonction : pose sur une tuile vide ou un réseau croisé'), 'var(--red)'); SFX.play('invalid'); }
         return false;
       }
     } else if (!b.terrains.includes(t.terrain)) {
-      if (verbose) showToast(I18N.t('❌ Terrain non autorisé'), 'var(--red)');
+      if (verbose) { showToast(I18N.t('❌ Terrain non autorisé'), 'var(--red)'); SFX.play('invalid'); }
       return false;
     }
     // Difficile : 1 jonction/type/île. Normal : illimité (coût croissant).
     if (g.mode !== 'normal' && countJunctions(g, isl, id) >= 1) {
-      if (verbose) showToast(I18N.t('❌ Une seule jonction de ce type par île'), 'var(--red)');
+      if (verbose) { showToast(I18N.t('❌ Une seule jonction de ce type par île'), 'var(--red)'); SFX.play('invalid'); }
       return false;
     }
     // Porteurs présents (sur la tuile ou via un réseau adjacent). La pose est LIBRE
@@ -12762,7 +13084,7 @@ function App() {
     if (!dev) {
       const miss = missingFor(cost);
       if (miss.length) {
-        if (verbose) showToast(I18N.t('❌ Jonction : manque ') + miss.join(', '), 'var(--red)');
+        if (verbose) { showToast(I18N.t('❌ Jonction : manque ') + miss.join(', '), 'var(--red)'); SFX.play('invalid'); }
         return false;
       }
       pay(cost);
@@ -12789,6 +13111,7 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
+    SFX.play('junction');
     if (verbose) showToast(`✓ ${b.name}` + (Object.keys(cost).length ? ` — ${formatCost(cost)}` : ''), 'var(--green)');
     return true;
   }
@@ -12807,23 +13130,23 @@ function App() {
     const multi = h > 1 || w > 1;
     if (multi) {
       if (!footprintFree(r, c, id)) {
-        if (verbose) showToast(`❌ ${b.name} : besoin de ${h}×${w} tuiles libres (même terrain)`, 'var(--red)');
+        if (verbose) { showToast(`❌ ${b.name} : besoin de ${h}×${w} tuiles libres (même terrain)`, 'var(--red)'); SFX.play('invalid'); }
         return false;
       }
     } else if (!b.terrains.includes(t.terrain)) {
-      if (verbose) showToast(`❌ ${b.name} : terrain non autorisé`, 'var(--red)');
+      if (verbose) { showToast(`❌ ${b.name} : terrain non autorisé`, 'var(--red)'); SFX.play('invalid'); }
       return false;
     }
     // Pose autorisée sans route adjacente (cf. canPlace) : le bâtiment se posera
     // déconnecté et se reliera dès qu'une route le touchera.
     if (b.needCoastAdj && !hasAdjacentCoast(r, c)) {
-      if (verbose) showToast(I18N.t('❌ Doit être en mer, adjacent à la côte'), 'var(--red)');
+      if (verbose) { showToast(I18N.t('❌ Doit être en mer, adjacent à la côte'), 'var(--red)'); SFX.play('invalid'); }
       return false;
     }
     if (b.maxPerIsland != null) {
       const g = gameRef.current;
       if (countBuildings(g, id) >= b.maxPerIsland) {
-        if (verbose) showToast(`❌ ${b.name} : une seule par île`, 'var(--red)');
+        if (verbose) { showToast(`❌ ${b.name} : une seule par île`, 'var(--red)'); SFX.play('invalid'); }
         return false;
       }
     }
@@ -12860,7 +13183,7 @@ function App() {
     if (!dev) {
       const miss = missingFor(costToPay);
       if (miss.length) {
-        if (verbose) showToast(I18N.t('❌ Extension V') + joinLvl + I18N.t(' : manque ') + miss.join(', '), 'var(--red)');
+        if (verbose) { showToast(I18N.t('❌ Extension V') + joinLvl + I18N.t(' : manque ') + miss.join(', '), 'var(--red)'); SFX.play('invalid'); }
         return false;
       }
       pay(costToPay);
@@ -12889,6 +13212,13 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
+    // Son de pose : réseau (route/câble/tuyau/conduit) selon le carrier, sinon
+    // place (1×1) / placeHeavy (footprint > 1 tuile).
+    if (b.kind === 'infra') {
+      SFX.play(id === 'road' ? 'road' : id === 'wire' ? 'cable' : 'pipe');
+    } else {
+      SFX.play(multi ? 'placeHeavy' : 'place');
+    }
     if (verbose && b.kind !== 'infra') showToast(`✓ ${b.name}`, 'var(--green)');
     else if (verbose && extCost) showToast(`✓ ${b.name} V${joinLvl} — ${formatCost(extCost)}`, 'var(--green)');
     return true;
@@ -12952,6 +13282,7 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
+    SFX.play('demolish');
     if (verbose) showToast(`♻ ${b.name} démoli — remboursé`, 'var(--green)');
     setInfo(prev => prev && prev.r === r && prev.c === c ? null : prev);
     setUpgrade(prev => prev && prev.r === r && prev.c === c ? null : prev);
@@ -13002,6 +13333,7 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
+    SFX.play('upgrade');
     showToast(`⬆ ${b.name} → Nv.${lvl + 2}`, 'var(--green)');
     return true;
   }
@@ -13046,6 +13378,7 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
+    SFX.play('upgrade');
     showToast(`⬆ ${targets.length} × ${b.name} alignés au Nv.${target + 1}`, 'var(--green)');
     return true;
   }
@@ -13194,6 +13527,7 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
+    if (dir > 0) SFX.play('upgradeNetwork');
     const label = info.ids.length > 1 ? I18N.t('Réseaux couplés') : I18N.t('Réseau');
     showToast(`${dir > 0 ? '⬆' : '⬇'} ${label} → V${info.toLevel}`, dir > 0 ? 'var(--green)' : 'var(--ink-dim)');
     return true;
@@ -13286,8 +13620,10 @@ function App() {
     if (id === g.currentIsland) return;
     if (!g.islandUnlocked[id]) {
       showToast(I18N.t('Île verrouillée — débloquez-la via la Recherche'), 'var(--red)');
+      SFX.play('invalid');
       return;
     }
+    SFX.play('islandTransition');
     onIslandChange(g, id);
     setResPop(null);
     setNetwork(null);
@@ -14417,6 +14753,7 @@ function App() {
     applyZoom((cam.zoom || 1) * factor, cx, cy);
   }
   function onPointerDown(e) {
+    SFX.unlock();   // idempotent ; crée/reprend l'AudioContext au 1er contact
     e.preventDefault();
     const canvas = canvasRef.current;
     try {
@@ -14717,6 +15054,10 @@ function App() {
     // de bienvenue s'affichera naturellement à la première frame.
     if (loaded) primeTipsSeen(gameRef.current);
     setTipsEnabled(gameRef.current.tipsEnabled !== false);
+    setAudioEnabled(gameRef.current.audioEnabled !== false);
+    setAudioVolume(gameRef.current.audioVolume == null ? 0.55 : gameRef.current.audioVolume);
+    SFX.setEnabled(gameRef.current.audioEnabled !== false);
+    SFX.setVolume(gameRef.current.audioVolume == null ? 0.55 : gameRef.current.audioVolume);
     // Synchronise l'état React des préférences d'affichage avec la sauvegarde.
     setShowLevels(gameRef.current.ui.showLevels !== false);
     setShowDeficitPct(gameRef.current.ui.showDeficitPct !== false);
@@ -14808,12 +15149,14 @@ function App() {
           const isl = g.nucNotify.shift();
           showToast(`☢️ Centrale Île ${isl} en SÉCURITÉ — manque de refroidissement (redémarrage auto dans 5 min)`, 'var(--red)');
           g.nucNotify.length = 0;
+          SFX.playThrottled('fuelLow', 8000);
         }
         // Surchauffe (trip) : un bâtiment à chaleur a atteint son plafond → arrêt 5 min.
         if (g.heatTrip && g.heatTrip.length) {
           const ev = g.heatTrip.shift();
           const nm = BUILDINGS[ev.id] && BUILDINGS[ev.id].name || ev.id;
           showToast(`🔥 ${nm} (Île ${ev.isl}) en SURCHAUFFE — arrêt 5 min`, 'var(--red)');
+          SFX.playThrottled('powerAlert', 4000);
         }
         // Réparation possible : 20 % du coût total cumulé.
         if (g.heatRepairReady && g.heatRepairReady.length) {
@@ -14828,6 +15171,7 @@ function App() {
       checkTutorial();
       checkTips();
       checkStockAlerts();
+      checkEnergyAlerts();
       // Keep redrawing smoothly while a cargo boat is animating near the current port.
       if (boatActiveNearPort(g)) g.dirty = true;
       // Anim de bâtiments rendue à la frame précédente → on continue de redessiner pour les jouer.
@@ -15016,6 +15360,8 @@ function App() {
     invOpen: invOpen,
     onToggleInv: () => setInvOpen(o => !o),
     onOpenOptions: () => {
+      SFX.unlock(); // 1er geste possible si l'utilisateur ouvre un menu avant de toucher le canvas
+      SFX.play('panelOpen');
       const g = gameRef.current;
       setShowLevels(g.ui.showLevels !== false);
       setShowDeficitPct(g.ui.showDeficitPct !== false);
@@ -15024,6 +15370,8 @@ function App() {
       setSimplifyOffline(g.ui.simplifyOffline === true);
       setFastUpgrade(!!g.ui.fastUpgrade);
       setTheme(g.ui.theme === 'inox' ? 'inox' : 'bleu');
+      setAudioEnabled(g.audioEnabled !== false);
+      setAudioVolume(g.audioVolume == null ? 0.55 : g.audioVolume);
       setDev(g.ui.dev);
       setOptionsOpen(true);
     },
@@ -15187,6 +15535,7 @@ function App() {
     onImport: text => slotImport(text),
     onSaveNow: () => {
       writeSave();
+      SFX.play('save');
       showToast(I18N.t('💾 Sauvegardé'), 'var(--green)');
       setSlotOpen(false);
       setOptionsOpen(true);
@@ -15199,6 +15548,10 @@ function App() {
     simplifyOffline: simplifyOffline,
     fastUpgrade: fastUpgrade,
     tipsEnabled: tipsEnabled,
+    audioEnabled: audioEnabled,
+    audioVolume: audioVolume,
+    onToggleAudio: toggleAudio,
+    onSetAudioVolume: setAudioVolumeVal,
     theme: theme,
     onSetTheme: chooseTheme,
     onToggleFastUpgrade: toggleFastUpgrade,
@@ -15215,7 +15568,10 @@ function App() {
       setOptionsOpen(false);
       setSlotOpen(true);
     },
-    onClose: () => setOptionsOpen(false),
+    onClose: () => {
+      SFX.play('panelClose');
+      setOptionsOpen(false);
+    },
     updateInfo: updateInfo
   }), helpOpen && React.createElement(HelpPanel, {
     onClose: () => setHelpOpen(false)
