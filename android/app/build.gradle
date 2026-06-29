@@ -12,13 +12,17 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId 'fr.archipel.industry'
+        // applicationId / libellé surchargeables (-PappId / -PappLabel) pour produire
+        // un APK PARALLÈLE (mode rapide) installable À CÔTÉ de l'app principale.
+        // Défauts = valeurs d'origine → le build principal est inchangé.
+        applicationId (project.findProperty('appId') ?: 'fr.archipel.industry')
         minSdk 26
         targetSdk 34
         // versionCode/versionName injectés par la CI (-Pvcode/-Pvname) depuis
         // GAME_BUILD / GAME_VERSION ; valeurs par défaut pour un build local.
         versionCode = (project.findProperty('vcode') ?: '1').toString().toInteger()
         versionName = (project.findProperty('vname') ?: '1.0').toString()
+        manifestPlaceholders = [appLabel: (project.findProperty('appLabel') ?: 'Archipel Industry')]
     }
 
     signingConfigs {
