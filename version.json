@@ -1,7 +1,7 @@
 {
-  "build": 189,
-  "version": "Alpha 13.8",
+  "build": 190,
+  "version": "Alpha 13.9",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Build 189 (Alpha 13.8) — boost rouge/bleu + bilan électrique hors batterie (#185)"
+  "notes": "Merge pull request #186 from freredoc/claude/new-session-c9c7sl"
 }
