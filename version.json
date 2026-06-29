@@ -3,5 +3,5 @@
   "version": "Alpha 13.11",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Merge pull request #187 — Audio : sons UI complets + downgrade"
+  "notes": "Mode rapide ×10 (build de test) + APK parallèle (#188)"
 }
