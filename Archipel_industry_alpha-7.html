@@ -4342,8 +4342,8 @@ const SAVE_VERSION = 15;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 191;
-const GAME_VERSION = 'Alpha 13.10';
+const GAME_BUILD = 192;
+const GAME_VERSION = 'Alpha 13.11';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -4465,6 +4465,9 @@ const SFX = (() => {
       tone({type:'sine', freq:120, freqEnd:55, t0:t, attack:0.002, decay:0.14, peak:0.4}); },
     upgrade(){ const t=ctx.currentTime; const n=[523,659,784];
       n.forEach((f,i)=> tone({type:'triangle', freq:f, t0:t+i*0.06, attack:0.003, decay:0.1, peak:0.3})); },
+    // baisse de niveau bâtiment : arpège DESCENDANT, plus mat (régression volontaire, pas une erreur)
+    downgrade(){ const t=ctx.currentTime; const n=[659,523,392];
+      n.forEach((f,i)=> tone({type:'triangle', freq:f, t0:t+i*0.06, attack:0.003, decay:0.1, peak:0.24})); },
     // réserve : broum bam calé sur la voix (~0.84s), mis de côté au profit du thock
     placeC(){ const t=ctx.currentTime;
       tone({type:'sine',     freq:160, freqEnd:62,  t0:t, attack:0.002, decay:0.24, peak:0.7});
@@ -4493,6 +4496,8 @@ const SFX = (() => {
       tone({type:'triangle', freq:560, freqEnd:360, t0:t, attack:0.002, decay:0.14, peak:0.2}); },
     upgradeNetwork(){ const t=ctx.currentTime;
       [440,587].forEach((f,i)=> tone({type:'triangle', freq:f, t0:t+i*0.06, attack:0.003, decay:0.09, peak:0.22})); },
+    downgradeNetwork(){ const t=ctx.currentTime;
+      [587,440].forEach((f,i)=> tone({type:'triangle', freq:f, t0:t+i*0.06, attack:0.003, decay:0.09, peak:0.18})); },
 
     /* --- Progression --- */
     nodeReady(){ const t=ctx.currentTime;
@@ -13393,6 +13398,7 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
+    SFX.play('downgrade');
     showToast(`⬇ ${b.name} → Nv.${lvl}`, 'var(--ink-dim)');
     return true;
   }
@@ -13505,6 +13511,7 @@ function App() {
       bumpHud();
       markDirty();
       scheduleSave();
+      SFX.play('downgradeNetwork');
       showToast(I18N.t('⬇ Réseau → débit limité (V') + info.fromLevel + ')', 'var(--ink-dim)');
       return true;
     }
@@ -13527,7 +13534,7 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
-    if (dir > 0) SFX.play('upgradeNetwork');
+    SFX.play(dir > 0 ? 'upgradeNetwork' : 'downgradeNetwork');
     const label = info.ids.length > 1 ? I18N.t('Réseaux couplés') : I18N.t('Réseau');
     showToast(`${dir > 0 ? '⬆' : '⬇'} ${label} → V${info.toLevel}`, dir > 0 ? 'var(--green)' : 'var(--ink-dim)');
     return true;

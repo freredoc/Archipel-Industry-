@@ -17,7 +17,13 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 191`, `GAME_VERSION = 'Alpha 13.10'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 192`, `GAME_VERSION = 'Alpha 13.11'`, `SAVE_VERSION = 15`.**
+  Changement 13.11 : **2 sons de baisse de niveau (downgrade).** Le module SFX gagne `downgrade`
+  (arpège DESCENDANT mat, bâtiment) et `downgradeNetwork` (réseau) — inlinés après `upgrade`/
+  `upgradeNetwork` (47 noms au total). Branchements : `tryDowngrade` → `downgrade` ; `changeNetworkLevel`
+  (dir<0) → `downgradeNetwork` (les DEUX chemins : baisse de niveau normale ET retrait du statut illimité
+  « débit limité »). `node --check` (7 blocs) + smoke jsdom (47 noms, `downgrade`/`downgradeNetwork`
+  présents et joués sans throw, build 192) OK. Build 191→192.
   Changement 13.10 : **sons sur TOUS les boutons d'UI (suite du 13.9).** Le 13.9 ne sonnait pas sur les
   boutons du HAUT (sauf Options), les boutons du BAS, ni à l'ouverture/fermeture des fenêtres et de la
   fiche bâtiment. Câblage au niveau des handlers App (pas dans les composants) : (1) **barre du bas** :
