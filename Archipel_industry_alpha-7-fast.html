@@ -681,6 +681,12 @@ body:not(.theme-inox) .inv-label-btn.open{border-image:var(--btn-active) 8 fill 
 .offline-ok:hover{background:rgba(76,175,80,.16);}
 @media (max-width:420px){.offline-gains{grid-template-columns:1fr;}}
 /* ── Overlay de rattrapage hors-ligne (barre de progression, pas d'écran noir) ── */
+/* [FAST MODE] chrono temps de jeu — overlay discret, coin bas-gauche (au-dessus de la barre d'action) */
+.fast-chrono{position:fixed;left:6px;bottom:64px;z-index:200;pointer-events:none;
+  font-family:'DM Mono',monospace;font-size:.82rem;font-weight:600;letter-spacing:.5px;
+  color:#cfe8ff;background:rgba(8,14,26,.72);border:1px solid rgba(120,160,210,.35);
+  border-radius:7px;padding:3px 9px;box-shadow:0 2px 8px rgba(0,0,0,.45);white-space:nowrap;}
+.fast-chrono.fast{color:#ffe08a;border-color:rgba(255,200,90,.5);}
 .catchup-overlay{position:fixed;inset:0;z-index:300;background:rgba(8,12,20,.93);
   display:flex;align-items:center;justify-content:center;}
 .catchup-box{display:flex;flex-direction:column;align-items:center;gap:12px;padding:26px 30px;
@@ -4635,6 +4641,18 @@ const fmtInt = (n, thresh) => {
 // Format « port » : notation scientifique (1,5e5, 1e6…) dès 1e5 pour compacter les
 // gros stocks affichés dans l'inventaire et le panneau Port.
 const fmtPort = n => fmtInt(n, 1e5);
+// [FAST MODE] formate un nombre de secondes de jeu en chrono HH:MM:SS (jours préfixés si ≥ 24 h).
+function fmtClock(totalSec) {
+  let s = Math.max(0, Math.floor(totalSec || 0));
+  const d = Math.floor(s / 86400);
+  s -= d * 86400;
+  const h = Math.floor(s / 3600);
+  s -= h * 3600;
+  const m = Math.floor(s / 60);
+  s -= m * 60;
+  const pad = n => (n < 10 ? '0' : '') + n;
+  return (d > 0 ? d + 'j ' : '') + pad(h) + ':' + pad(m) + ':' + pad(s);
+}
 // Parse une saisie numérique acceptant la notation scientifique et la virgule
 // française : « 1e6 », « 2,43e8 », « 2.43e8 », « 1000000 » -> nombre (NaN sinon).
 function parseNum(s) {
@@ -6334,6 +6352,10 @@ function onTick(game) {
   // Garde le mode courant à jour au niveau module (flux ÷8 / transit ÷10 en Difficile),
   // quel que soit le chemin de chargement de la partie.
   CURRENT_MODE = game.mode === 'normal' ? 'normal' : 'difficile';
+  // [FAST MODE] chrono : chaque tick = 1 seconde de temps de JEU (indépendant de la
+  // vitesse réelle ×timeScale). Le hors-ligne étant désactivé, onTick n'est appelé
+  // que par la boucle live → ce compteur mesure le vrai temps de jeu actif.
+  game.playTicks = (game.playTicks || 0) + 1;
   let cur = {
     resChanged: false,
     activeChanged: false,
@@ -11793,6 +11815,7 @@ function App() {
       tickAcc: 0,
       timeScale: 1,        // [FAST MODE] 1 = normal, 10 = rapide (RAM only, non persisté)
       _sfxPrev: null,      // [FAST MODE] mémorise l'état audio avant coupure auto
+      playTicks: 0,        // [FAST MODE] chrono : temps de JEU cumulé en ticks (= secondes in-game), persisté
       lastFrameTs: 0,
       lastSave: 0,
       tutorial: {
@@ -11884,6 +11907,8 @@ function App() {
   const [tipsEnabled, setTipsEnabled] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [timeScale, setTimeScale] = useState(1); // [FAST MODE] 1× ou 10× (debug, RAM only)
+  const [playSecs, setPlaySecs] = useState(0);   // [FAST MODE] chrono affiché (secondes de jeu)
+  const playSecsRef = useRef(0);                  // [FAST MODE] dernière valeur poussée (anti-spam render)
   const [audioVolume, setAudioVolume] = useState(0.55);
   const [canvasKey, setCanvasKey] = useState(0);
   const rafRef = useRef(null);
@@ -12046,6 +12071,7 @@ function App() {
     return {
       version: SAVE_VERSION,
       savedAt: Date.now(),
+      playTicks: g.playTicks || 0, // [FAST MODE] chrono temps de jeu cumulé (additif, save < champ → 0)
       mode: g.mode === 'normal' ? 'normal' : 'difficile',
       tutorial: g.tutorial ? {
         active: !!g.tutorial.active,
@@ -12289,6 +12315,7 @@ function App() {
       };
     }
     g.currentIsland = data.currentIsland || 1;
+    g.playTicks = data.playTicks || 0; // [FAST MODE] restaure le chrono (0 si save antérieure)
     const savedStatus = {};
     if (data.techTree && data.techTree.nodes) for (const n of data.techTree.nodes) savedStatus[n.id] = n.status;
     g.techTree = {
@@ -15215,6 +15242,11 @@ function App() {
         g.tickAcc -= 1;
         guard++;
       }
+      // [FAST MODE] pousse le chrono à l'UI quand la seconde de jeu change (anti-spam render).
+      if ((g.playTicks || 0) !== playSecsRef.current) {
+        playSecsRef.current = g.playTicks || 0;
+        setPlaySecs(playSecsRef.current);
+      }
       g.animClock = (g.animClock || 0) + 1;
       checkTutorial();
       checkTips();
@@ -15375,7 +15407,10 @@ function App() {
   }
   return React.createElement("div", {
     className: "app"
-  }, React.createElement(Hud, {
+  }, React.createElement("div", {
+    className: "fast-chrono" + ((timeScale || 1) > 1 ? " fast" : ""),
+    title: "Chrono mode rapide : temps de JEU cumulé (secondes in-game, sauvegardé). Sert à mesurer la durée d'une partie."
+  }, "⏱ " + fmtClock(playSecs) + ((timeScale || 1) > 1 ? "  ⏩" + timeScale + "×" : "")), React.createElement(Hud, {
     resources: game.port[game.currentIsland] || {},
     unlockedRes: unlockedResourceSet(game),
     invTrends: invTrends,
