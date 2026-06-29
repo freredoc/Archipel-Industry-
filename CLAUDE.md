@@ -17,7 +17,29 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 189`, `GAME_VERSION = 'Alpha 13.8'`, `SAVE_VERSION = 14`.**
+- **État au dernier passage : `GAME_BUILD = 190`, `GAME_VERSION = 'Alpha 13.9'`, `SAVE_VERSION = 15`.**
+  Changement 13.9 : **intégration du système audio (SFX, synthèse procédurale Web Audio).** Le module
+  `sfx_module.js` (44 sons one-shot + `placeC` en réserve) est inliné au niveau module (const `SFX`,
+  juste après `VERSION_URL`, hors React, une seule instance) — **single-file, offline, zéro fichier/CDN**
+  (synthèse à la volée). (1) **Déblocage mobile** : `SFX.unlock()` en tête de `onPointerDown` (canvas) +
+  à l'ouverture des Options (1er geste atteignable). (2) **Branchements** : `tryPlace` (place/placeHeavy
+  selon footprint ; road/cable/pipe selon le carrier infra ; `invalid` sur chaque échec verbeux),
+  `tryPlaceJunction` (`junction`/`invalid`), `tryDemolish` (`demolish`), `tryUpgrade`+`upgradeAllSameType`
+  (`upgrade`), `changeNetworkLevel` (`upgradeNetwork` à la montée), tech tree (`nodeReady` à la transition
+  « prêt », `unlock` sur `techConfirm`, `delivery` sur `techDeliver`), révélation tuto (`buildingUnlock`),
+  `applyUnlocks` (`islandUnlock`, ou `endgameUnlock` pour l'île finale 5, une fois via la garde
+  `wasUnlocked`), changement d'île (`islandTransition`), Options (`panelOpen`/`panelClose`), slots
+  (`save`/`slotCreate`/`slotDelete`). (3) **Alertes anti-spam** (transition d'état + `playThrottled`) :
+  `checkEnergyAlerts` (nouveau, dérivé de `activeEnergyAlerts` : `powerAlert` à l'entrée en déficit,
+  `normalRestored` à la résolution), `checkStockAlerts` (`stockFull`), centrale en sécurité (`fuelLow`),
+  surchauffe (`powerAlert`). (4) **Persistance** : `SAVE_VERSION 14→15` (+15 à la whitelist `loadSave`),
+  défauts `audioEnabled:true`/`audioVolume:0.55` (newGame), bloc `audio:{enabled,volume}` dans
+  `serialize`, restauration avec guards dans `loadSave` (save < v15 → défauts). (5) **UI Options** :
+  toggle « Sons » + slider « Volume » (pattern `tipsEnabled`, miroir `gameRef` + état React, son témoin
+  `place` throttlé au réglage). (6) **Robustesse** : `play()` enveloppe `ensure()` dans son try/catch →
+  un environnement sans Web Audio (jsdom, vieille WebView) n'interrompt JAMAIS le jeu. `node --check`
+  (7 blocs) + smoke jsdom (SFX=object/45 noms, play() sans throw, GAME_BUILD 190 ; save v15 sérialise le
+  bloc audio ; rétro-compat save v14 → défauts ; cycle save audio off/vol 0,3 → restauré ; 0 erreur) OK.
   Changement 13.8 : **sprite de boost rouge/bleu + bilan électrique honnête (hors batterie).** (1)
   **Sprites de boost colorés** : le pack a livré `fx_boost` (BLEU) re-livré + **`fx_boost_productivite`
   (ROUGE)**. L'overlay d'influence d'antenne dessine `fx_boost` (bleu) sur la zone VITESSE et
