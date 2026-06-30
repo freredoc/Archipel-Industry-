@@ -17,7 +17,22 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 193`, `GAME_VERSION = 'Alpha 13.12'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 194`, `GAME_VERSION = 'Alpha 13.13'`, `SAVE_VERSION = 15`.**
+  Changement 13.13 : **amélioration réseau = matériau AUTOMATIQUE (cheap → premium) + câble ×4.**
+  Demande utilisateur. (1) **Matériau d'amélioration auto (paliers V3+)** : le bouton « Monter » du
+  `NetworkPanel` ne propose plus de **sélecteur manuel** cheap/premium ; il paie **par défaut en
+  « cheap »** (route → ciment, tuyau → lingot de fer, câble → câble) et **bascule automatiquement** sur
+  le **« premium »** (route → béton armé, tuyau → acier) si le stock du port ne suffit pas pour le cheap.
+  Le câble n'a pas de premium → reste sur son unique matériau. Implémenté dans le panneau : `effPay`
+  calculé via deux appels `networkLevelChange(+1,'cheap')` / `(+1,'premium')` + test d'`affordCost` sur
+  `game.port`. State `payMat`/`setPayMat` et bloc UI `.ip-fluxpri` du sélecteur **supprimés** ; le coût
+  réel (matériau choisi) reste visible dans le sous-label du bouton. (2) **Capacité câble ×4** :
+  `networkThroughput(level, type)` prend désormais le **type** de réseau et multiplie par
+  `WIRE_CAP_MULT = 4` quand `type === 'wire'` → le câble transporte 4× plus de puissance à niveau égal
+  (route/tuyau inchangés). Les 4 appelants passent le type (`net.type`/`no.type`/`netObj.type`) ; la
+  composante électrique (`poolCap`) et le panneau (`wi.cap`) en héritent. `node --check` (7 blocs) +
+  Chromium (ratio câble/route = 4 ; auto-fallback : ciment riche→ciment, sans ciment + béton→béton armé,
+  ni l'un ni l'autre→bloqué ; 0 erreur, build 194) OK. Build 193→194.
   Changement 13.12 : **jonctions = MÉLANGE de versions de réseaux (chaque porteur garde son niveau).**
   Demande utilisateur : une jonction peut désormais relier deux réseaux de **niveaux différents** (ex.
   route V1 × câble V2) et chaque porteur s'améliore **indépendamment** (améliorer le câble n'améliore que

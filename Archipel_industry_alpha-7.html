@@ -4161,7 +4161,9 @@ const NETWORK_THROUGHPUT = {
 // (amélioration « infinie »). N=1:128, 2:1024, 3:8192, 4:65536, 5:524288, 6:4194304, …
 // En mode Difficile, tous les débits sont divisés par 2 (économie plus tendue) :
 // N=1:64, 2:512, 3:4096, …
-const networkThroughput = level => 128 * Math.pow(8, (level || 1) - 1) / (isDifficileMode() ? 2 : 1);
+// Le CÂBLE (électricité) a une capacité ×4 par rapport à la route/au tuyau (WIRE_CAP_MULT).
+const WIRE_CAP_MULT = 4;
+const networkThroughput = (level, type) => 128 * Math.pow(8, (level || 1) - 1) / (isDifficileMode() ? 2 : 1) * (type === 'wire' ? WIRE_CAP_MULT : 1);
 const NETWORK_MAX_LEVEL = 99;
 // Per-tile upgrade cost for going from (level) to (level+1), by infra type.
 const NETWORK_UPGRADE_COST = {
@@ -4342,8 +4344,8 @@ const SAVE_VERSION = 15;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 193;
-const GAME_VERSION = 'Alpha 13.12';
+const GAME_BUILD = 194;
+const GAME_VERSION = 'Alpha 13.13';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -5739,7 +5741,7 @@ function tickIsland(game, isl) {
   const saturated = [];
   for (const nid in netDemand) {
     const net = nets[nid];
-    const cap = net ? net.unlimited ? Infinity : networkThroughput(net.level) : NETWORK_THROUGHPUT[1];
+    const cap = net ? net.unlimited ? Infinity : networkThroughput(net.level, net.type) : NETWORK_THROUGHPUT[1];
     const demand = netDemand[nid];
     const fct = demand > cap ? cap / demand : 1;
     netFactor[nid] = fct;
@@ -5757,7 +5759,7 @@ function tickIsland(game, isl) {
   const tierFactor = {};
   for (const nid in netDemand) {
     const net = nets[nid];
-    const cap = net ? net.unlimited ? Infinity : networkThroughput(net.level) : NETWORK_THROUGHPUT[1];
+    const cap = net ? net.unlimited ? Infinity : networkThroughput(net.level, net.type) : NETWORK_THROUGHPUT[1];
     if (!(netDemand[nid] > cap)) continue;
     const td = netTierDemand[nid] || {};
     let remaining = cap;
@@ -6168,7 +6170,7 @@ function tickIsland(game, isl) {
     let cap = 0;
     for (const nid of rootNids[root]) {
       const no = nets[nid];
-      cap += no && no.unlimited ? Infinity : networkThroughput(no ? no.level : 1);
+      cap += no && no.unlimited ? Infinity : networkThroughput(no ? no.level : 1, no ? no.type : 'wire');
     }
     poolCap[root] = cap;
   }
@@ -10495,8 +10497,6 @@ function NetworkPanel({
   });
   // Confirmation en 2 temps avant de monter/baisser le niveau du réseau.
   const [armed, setArmed] = useState(null); // 'up' | 'down' | 'unl' | null
-  // Choix du matériau de paiement pour les paliers V3+ (route/tuyau) : 'cheap' | 'premium'.
-  const [payMat, setPayMat] = useState('cheap');
   useEffect(() => {
     setArmed(null);
   }, [net.networkId]);
@@ -10544,14 +10544,26 @@ function NetworkPanel({
   const condThrough = isConduit ? tiles * conduitDebit(lvl) : 0;
   const condStore = isConduit ? net.heatStore || 0 : 0;
   const condFlow = isConduit && game.conduitFlow && game.conduitFlow[currentIsland] ? game.conduitFlow[currentIsland][net.networkId] || 0 : 0;
-  const cap = isConduit ? condThrough : isWire && wi ? wi.cap : unlimited ? Infinity : networkThroughput(lvl);
+  const cap = isConduit ? condThrough : isWire && wi ? wi.cap : unlimited ? Infinity : networkThroughput(lvl, netObj.type);
   const dev = game.ui && game.ui.dev;
   const port = game.port[currentIsland] || {};
   // Paliers à choix de matériau : à partir du niveau 3 (vers V4+).
   const hiMats = NETWORK_HI_MATS[netObj.type] || {};
   const matChoice = lvl >= 3 && !unlimited;
   const hasPremium = !!hiMats.premium;
-  const effPay = matChoice && hasPremium ? payMat : 'cheap';
+  // Matériau d'amélioration AUTOMATIQUE (paliers V3+) : on paie en « cheap » (ciment pour la
+  // route, lingot de fer pour le tuyau, câble pour le câble) PAR DÉFAUT ; si le stock du port
+  // ne suffit pas, on bascule automatiquement sur le « premium » (béton armé / acier). Le câble
+  // n'a pas de premium → il reste toujours sur son unique matériau.
+  const affordCost = c => dev || Object.keys(c || {}).every(k => (port[k] || 0) >= c[k]);
+  let effPay = 'cheap';
+  if (matChoice && hasPremium && !dev) {
+    const cheapInfo = networkLevelChange(game, currentIsland, net.networkId, +1, 'cheap');
+    if (cheapInfo.blocked || !affordCost(cheapInfo.cost)) {
+      const premInfo = networkLevelChange(game, currentIsland, net.networkId, +1, 'premium');
+      if (!premInfo.blocked && affordCost(premInfo.cost)) effPay = 'premium';
+    }
+  }
   const upInfo = networkLevelChange(game, currentIsland, net.networkId, +1, effPay);
   const downInfo = networkLevelChange(game, currentIsland, net.networkId, -1);
   const unlInfo = networkUnlimitedInfo(game, currentIsland, net.networkId);
@@ -10752,20 +10764,7 @@ function NetworkPanel({
     className: "lbl"
   }, I18N.t("Couplage")), React.createElement("span", {
     className: "val"
-  }, I18N.t("jonction ("), (upInfo.ids || downInfo.ids).length, I18N.t(" réseaux)")))), React.createElement(React.Fragment, null, matChoice && hasPremium && React.createElement("div", {
-    className: "ip-fluxpri"
-  }, React.createElement("div", {
-    className: "ip-fluxpri-lbl"
-  }, I18N.t("Matériau d'amélioration (V"), lvl + 1, ")"), React.createElement("div", {
-    className: "ip-fluxpri-btns",
-    style: {
-      gridTemplateColumns: '1fr 1fr'
-    }
-  }, [['cheap', matLabel(hiMats.cheap)], ['premium', matLabel(hiMats.premium)]].map(([m, label]) => React.createElement("button", {
-    key: m,
-    className: 'ip-fluxpri-btn' + (effPay === m ? ' on' : ''),
-    onClick: () => setPayMat(m)
-  }, label)))), React.createElement("div", {
+  }, I18N.t("jonction ("), (upInfo.ids || downInfo.ids).length, I18N.t(" réseaux)")))), React.createElement(React.Fragment, null, React.createElement("div", {
     className: "ip-actions"
   }, React.createElement("button", {
     className: "ip-up" + (armed === 'up' ? ' armed' : ''),
