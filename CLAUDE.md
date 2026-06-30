@@ -17,7 +17,23 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 194`, `GAME_VERSION = 'Alpha 13.13'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 195`, `GAME_VERSION = 'Alpha 13.14'`, `SAVE_VERSION = 15`.**
+  Changement 13.14 : **jonction posable directement sur un réseau + sprite de réparation d'île
+  permanent avec notification.** Demande utilisateur. (1) **Pose de jonction sur un réseau** :
+  `canPlace`/`tryPlaceJunction` autorisaient la pose par-dessus un réseau infra **seulement** si
+  c'était l'un des deux porteurs couplés (`b.junction.indexOf(id)!==-1`). Désormais on peut poser une
+  jonction directement sur **N'IMPORTE QUEL** réseau infra (route/tuyau/câble) : si c'est un porteur
+  couplé il est **adopté** (traversée, inchangé), sinon il est **converti** (remplacé). Le remboursement
+  de l'infra écrasée (matériaux + améliorations) est **généralisé** à tout réseau converti (plus seulement
+  les porteurs couplés) → conservation de la matière. Seuls les vrais bâtiments / autres jonctions restent
+  interdits (toast MAJ). Texte d'aide → « touchez une tuile ou directement un réseau ». (2) **Bouton
+  réparation d'île → SPRITE permanent** : l'ancien bouton texte « Réparer Île N » (visible seulement une
+  fois la recherche d'accès atteinte) est remplacé par un **sprite seul** (`uiIcon('reparation')`, classe
+  `.inv-repair-ico`) **affiché en permanence** dès qu'une île suivante existe. États : **atténué/désactivé**
+  (`.locked`) tant que la recherche d'accès n'est pas atteinte ; **actif** (cliquable → `RepairModal`)
+  ensuite ; **pastille de notification** (`.notif-dot` + pulse `.ready`) quand la réparation devient
+  **possible** (ressources livrées au port = `canRepair`). `node --check` (7 blocs) + Chromium (boot 0
+  erreur, sprite réparation rendu icône-seule/permanent, build 195) OK. Build 194→195.
   Changement 13.13 : **amélioration réseau = matériau AUTOMATIQUE (cheap → premium) + câble ×4.**
   Demande utilisateur. (1) **Matériau d'amélioration auto (paliers V3+)** : le bouton « Monter » du
   `NetworkPanel` ne propose plus de **sélecteur manuel** cheap/premium ; il paie **par défaut en
