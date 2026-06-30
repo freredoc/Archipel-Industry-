@@ -17,7 +17,72 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 192`, `GAME_VERSION = 'Alpha 13.11'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 197`, `GAME_VERSION = 'Alpha 13.16'`, `SAVE_VERSION = 15`.**
+  Changement 13.16 : **bascule « Cible = Réserve » par île (haut de l'onglet Transit).** Demande
+  utilisateur. Nouveau bouton **`.pp-link-reserve`** en tête de la liste de transit du Port (au-dessus de
+  l'en-tête du tableau) affichant **OUI/NON** : quand activé, la **réserve** (`seuilExport`) suit toujours
+  la **cible** (`stockCible`) et **inversement** pour toutes les ressources de l'île. (1) Flag par île
+  `game.tradeLinkReserve[isl]` (persisté newGame/serialize/loadSave ; rétro-compat : absent = off,
+  `SAVE_VERSION` inchangé). (2) Handler `toggleTradeLinkReserve` : à l'activation, aligne `seuilExport =
+  stockCible` pour toutes les ressources déjà configurées. (3) `setTradeCfg` : si le flag est actif,
+  éditer `stockCible` OU `seuilExport` fixe **les deux** à la même valeur. (4) i18n en/es/de
+  (« Cible = Réserve », OUI/NON, infobulle). `node --check` (7 blocs) + Chromium (toggle OUI/NON, cible
+  5000→réserve 5000, réserve 250→cible 250, 0 erreur, build 197) OK. Build 196→197.
+  Changement 13.15 : **fix transit bloqué par la réserve d'une île intermédiaire + revert de la pose
+  jonction-sur-réseau du 13.14.** Demande utilisateur. (1) **Transit débloqué (réacheminement)** : une
+  île intermédiaire dont la **réserve** (`seuilExport`) = sa **cible** (`stockCible`) ne réexportait
+  JAMAIS vers l'aval → tout le transit en aval était silencieusement bloqué (ex. île 1 produit du
+  charbon, île 2 cible 10000 + réserve 10000 → l'île 3 n'était jamais servie). Contre-intuitif. Nouveau
+  helper `transitForwardBudget(game, src, dest, res)` : la **cible d'import EFFECTIVE** de la destination
+  = sa cible propre **+** un budget de transit = somme des déficits des îles **au-delà** (chaîne linéaire
+  1-2-3-4-5), **borné par le débit de la liaison aval**. `rawShippable` l'utilise → l'amont « sur-remplit »
+  légèrement l'île intermédiaire, qui réexpédie cet excédent vers l'aval **sans jamais descendre sous sa
+  réserve** et **sans accumuler** (borne = 1 débit aval/tick). Respecte `interdit`/blocages/liaisons
+  inactives. Simulation Chromium : charbon 1→2→3 (et 1→2→3→4) ; l'île intermédiaire reste EXACTEMENT à
+  sa réserve (min=max=10000) ; sans demande aval, réserve inchangée (remplit puis garde) ; `interdit`
+  respecté (pas de réacheminement). (2) **Revert 13.14** : la **pose de jonction sur n'importe quel
+  réseau** (non-couplé) est **annulée** (demande utilisateur : la pose sur un porteur couplé existait
+  déjà et suffit, ne change pas les réseaux). `canPlace`/`tryPlaceJunction`/refund/texte d'aide
+  reviennent à l'état pré-13.14. **Le sprite de réparation d'île permanent du 13.14 est CONSERVÉ.**
+  `node --check` (7 blocs) + Chromium (transit OK, 0 erreur, build 196) OK. Build 195→196.
+  Changement 13.14 : **sprite de réparation d'île permanent avec notification.** Demande utilisateur.
+  L'ancien bouton texte « Réparer Île N » (visible seulement une fois la recherche d'accès atteinte) est
+  remplacé par un **sprite seul** (`uiIcon('reparation')`, classe `.inv-repair-ico`) **affiché en
+  permanence** dès qu'une île suivante existe. États : **atténué/désactivé** (`.locked`) tant que la
+  recherche d'accès n'est pas atteinte ; **actif** (cliquable → `RepairModal`) ensuite ; **pastille de
+  notification** (`.notif-dot` + pulse `.ready`) quand la réparation devient **possible** (ressources
+  livrées au port = `canRepair`). (NB : la « pose de jonction sur n'importe quel réseau » initialement
+  livrée en 13.14 a été **retirée en 13.15** à la demande de l'utilisateur.) Build 194→195.
+  Changement 13.13 : **amélioration réseau = matériau AUTOMATIQUE (cheap → premium) + câble ×4.**
+  Demande utilisateur. (1) **Matériau d'amélioration auto (paliers V3+)** : le bouton « Monter » du
+  `NetworkPanel` ne propose plus de **sélecteur manuel** cheap/premium ; il paie **par défaut en
+  « cheap »** (route → ciment, tuyau → lingot de fer, câble → câble) et **bascule automatiquement** sur
+  le **« premium »** (route → béton armé, tuyau → acier) si le stock du port ne suffit pas pour le cheap.
+  Le câble n'a pas de premium → reste sur son unique matériau. Implémenté dans le panneau : `effPay`
+  calculé via deux appels `networkLevelChange(+1,'cheap')` / `(+1,'premium')` + test d'`affordCost` sur
+  `game.port`. State `payMat`/`setPayMat` et bloc UI `.ip-fluxpri` du sélecteur **supprimés** ; le coût
+  réel (matériau choisi) reste visible dans le sous-label du bouton. (2) **Capacité câble ×4** :
+  `networkThroughput(level, type)` prend désormais le **type** de réseau et multiplie par
+  `WIRE_CAP_MULT = 4` quand `type === 'wire'` → le câble transporte 4× plus de puissance à niveau égal
+  (route/tuyau inchangés). Les 4 appelants passent le type (`net.type`/`no.type`/`netObj.type`) ; la
+  composante électrique (`poolCap`) et le panneau (`wi.cap`) en héritent. `node --check` (7 blocs) +
+  Chromium (ratio câble/route = 4 ; auto-fallback : ciment riche→ciment, sans ciment + béton→béton armé,
+  ni l'un ni l'autre→bloqué ; 0 erreur, build 194) OK. Build 193→194.
+  Changement 13.12 : **jonctions = MÉLANGE de versions de réseaux (chaque porteur garde son niveau).**
+  Demande utilisateur : une jonction peut désormais relier deux réseaux de **niveaux différents** (ex.
+  route V1 × câble V2) et chaque porteur s'améliore **indépendamment** (améliorer le câble n'améliore que
+  le câble). (1) **Mécanique : déjà supportée au niveau données** — `coupledNetworkIds` renvoyait déjà le
+  seul réseau courant (10.99), `rebuildNetworks` traverse chaque porteur séparément (un `networkId` par
+  carrier dans `t.netIds`) et ne fusionne que les réseaux d'un MÊME porteur. Aucune règle de pose/upgrade
+  ne forçait l'égalité des niveaux (`tryPlaceJunction` sans contrôle de niveau). (2) **Sprites refondus**
+  : le pack a livré **96 sprites mixtes** `jonction_<H>_v<n>_<V>_v<m>` (6 orientations × 4 × 4) encodant le
+  niveau de CHAQUE porteur. Les **24 anciens** sprites mono-version (`jonction_<H>_<V>_v<n>`) retirés de
+  `__SPRITE_DATA__` (582→654 clés). (3) **Draw** (`drawBuilding`, branche jonction) : le niveau de sprite
+  est calculé **par porteur** via `carLvl(car)` (= niveau de `g.networks[isl][t.netIds[car]]`, 4 si
+  illimité, sinon 1..3) au lieu du `max` des deux → clé `jonction_<first>_v<carLvl(first)>_<second>_v<carLvl(second)>`.
+  (4) **Câblage** : `BLD_SPRITE_OVERRIDE` (icônes menu Réseau des 3 jonctions) → `jonction_<a>_v1_<b>_v1` ;
+  texte d'aide « (mêmes niveaux) » → « (niveaux indépendants) ». `node --check` (7 blocs) + Chromium (boot
+  0 erreur, 96 clés jonction, clé mixte `jonction_route_v1_cable_v3` présente, build 193) OK. Build 192→193.
   Changement 13.11 : **2 sons de baisse de niveau (downgrade).** Le module SFX gagne `downgrade`
   (arpège DESCENDANT mat, bâtiment) et `downgradeNetwork` (réseau) — inlinés après `upgrade`/
   `upgradeNetwork` (47 noms au total). Branchements : `tryDowngrade` → `downgrade` ; `changeNetworkLevel`
