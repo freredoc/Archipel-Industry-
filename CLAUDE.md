@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 196`, `GAME_VERSION = 'Alpha 13.15'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 197`, `GAME_VERSION = 'Alpha 13.16'`, `SAVE_VERSION = 15`.**
+  Changement 13.16 : **bascule « Cible = Réserve » par île (haut de l'onglet Transit).** Demande
+  utilisateur. Nouveau bouton **`.pp-link-reserve`** en tête de la liste de transit du Port (au-dessus de
+  l'en-tête du tableau) affichant **OUI/NON** : quand activé, la **réserve** (`seuilExport`) suit toujours
+  la **cible** (`stockCible`) et **inversement** pour toutes les ressources de l'île. (1) Flag par île
+  `game.tradeLinkReserve[isl]` (persisté newGame/serialize/loadSave ; rétro-compat : absent = off,
+  `SAVE_VERSION` inchangé). (2) Handler `toggleTradeLinkReserve` : à l'activation, aligne `seuilExport =
+  stockCible` pour toutes les ressources déjà configurées. (3) `setTradeCfg` : si le flag est actif,
+  éditer `stockCible` OU `seuilExport` fixe **les deux** à la même valeur. (4) i18n en/es/de
+  (« Cible = Réserve », OUI/NON, infobulle). `node --check` (7 blocs) + Chromium (toggle OUI/NON, cible
+  5000→réserve 5000, réserve 250→cible 250, 0 erreur, build 197) OK. Build 196→197.
   Changement 13.15 : **fix transit bloqué par la réserve d'une île intermédiaire + revert de la pose
   jonction-sur-réseau du 13.14.** Demande utilisateur. (1) **Transit débloqué (réacheminement)** : une
   île intermédiaire dont la **réserve** (`seuilExport`) = sa **cible** (`stockCible`) ne réexportait
