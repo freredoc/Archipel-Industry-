@@ -17,7 +17,16 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 197`, `GAME_VERSION = 'Alpha 13.16'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 198`, `GAME_VERSION = 'Alpha 13.17'`, `SAVE_VERSION = 15`.**
+  Changement 13.17 : **fix « baisse de niveau accidentelle » à la réouverture de la fiche bâtiment.**
+  Bug utilisateur : la fiche bâtiment (`InfoPanel`) s'ouvre flottante à l'endroit du tap (`info.x/info.y`)
+  et, pour un bâtiment bas à l'écran, est repoussée vers le haut → le **bouton « Baisser » se retrouve
+  sous le doigt**. Or « Baisser » baissait le niveau en **un seul clic** (sans confirmation, contrairement
+  à « Monter » et « Démolir ») → le tap d'ouverture « traversait » sur le bouton et baissait le niveau
+  (souvent juste après une amélioration). Fix : **« Baisser » passe en confirmation à 2 temps** (état
+  `armedDown`, réinitialisé sur `[info.r, info.c]`, classe `.ip-down.armed`) — 1er clic = « Confirmer ? »
+  (rien n'est baissé), 2e clic = baisse effective. Cohérent avec Monter/Démolir/NetworkPanel. `node
+  --check` (7 blocs) + Chromium (boot 0 erreur, build 198) OK. Build 197→198.
   Changement 13.16 : **bascule « Cible = Réserve » par île (haut de l'onglet Transit).** Demande
   utilisateur. Nouveau bouton **`.pp-link-reserve`** en tête de la liste de transit du Port (au-dessus de
   l'en-tête du tableau) affichant **OUI/NON** : quand activé, la **réserve** (`seuilExport`) suit toujours

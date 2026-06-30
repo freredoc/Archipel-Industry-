@@ -4355,8 +4355,8 @@ const SAVE_VERSION = 15;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 197;
-const GAME_VERSION = 'Alpha 13.16';
+const GAME_BUILD = 198;
+const GAME_VERSION = 'Alpha 13.17';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -8956,9 +8956,14 @@ function InfoPanel({
   const [armed, setArmed] = useState(false);
   // Démolition à deux temps (évite les suppressions accidentelles en touchant le bouton).
   const [armedDem, setArmedDem] = useState(false);
+  // Baisse de niveau à deux temps : le panneau s'ouvrant sous le doigt (à l'endroit du tap),
+  // un seul clic « Baisser » pouvait baisser le niveau par inadvertance à la réouverture. On
+  // exige désormais un 2e clic de confirmation (cohérent avec Monter / Démolir).
+  const [armedDown, setArmedDown] = useState(false);
   useEffect(() => {
     setArmed(false);
     setArmedDem(false);
+    setArmedDown(false);
   }, [info.r, info.c]);
   const tilesRow = game.islands[currentIsland] && game.islands[currentIsland][info.r];
   const live = tilesRow && tilesRow[info.c];
@@ -9727,11 +9732,16 @@ function InfoPanel({
   }, uiIcon('monter', "\u2B06"), armed ? I18N.t(" Confirmer ") : I18N.t(" Monter "), React.createElement("span", {
     className: "ip-sub"
   }, "Nv.", upg + 2)), React.createElement("button", {
-    className: "ip-down",
+    className: "ip-down" + (armedDown ? ' armed' : ''),
     disabled: upg <= 0,
-    onClick: () => onDowngrade(info.r, info.c),
+    onClick: () => {
+      if (armedDown) {
+        setArmedDown(false);
+        onDowngrade(info.r, info.c);
+      } else setArmedDown(true);
+    },
     title: downRefund ? I18N.t('Remb. : ') + (formatCost(downRefund) || '—') : I18N.t('Déjà au niveau de base')
-  }, uiIcon('baisser', "\u2B07"), I18N.t(" Baisser "), React.createElement("span", {
+  }, uiIcon('baisser', "\u2B07"), armedDown ? I18N.t(" Confirmer ?") : I18N.t(" Baisser "), React.createElement("span", {
     className: "ip-sub"
   }, upg > 0 ? 'Nv.' + upg : '—'))), upgradable && upg > 0 && alignCount > 0 && React.createElement("button", {
     className: "ip-align",
