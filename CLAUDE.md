@@ -17,23 +17,32 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 195`, `GAME_VERSION = 'Alpha 13.14'`, `SAVE_VERSION = 15`.**
-  Changement 13.14 : **jonction posable directement sur un réseau + sprite de réparation d'île
-  permanent avec notification.** Demande utilisateur. (1) **Pose de jonction sur un réseau** :
-  `canPlace`/`tryPlaceJunction` autorisaient la pose par-dessus un réseau infra **seulement** si
-  c'était l'un des deux porteurs couplés (`b.junction.indexOf(id)!==-1`). Désormais on peut poser une
-  jonction directement sur **N'IMPORTE QUEL** réseau infra (route/tuyau/câble) : si c'est un porteur
-  couplé il est **adopté** (traversée, inchangé), sinon il est **converti** (remplacé). Le remboursement
-  de l'infra écrasée (matériaux + améliorations) est **généralisé** à tout réseau converti (plus seulement
-  les porteurs couplés) → conservation de la matière. Seuls les vrais bâtiments / autres jonctions restent
-  interdits (toast MAJ). Texte d'aide → « touchez une tuile ou directement un réseau ». (2) **Bouton
-  réparation d'île → SPRITE permanent** : l'ancien bouton texte « Réparer Île N » (visible seulement une
-  fois la recherche d'accès atteinte) est remplacé par un **sprite seul** (`uiIcon('reparation')`, classe
-  `.inv-repair-ico`) **affiché en permanence** dès qu'une île suivante existe. États : **atténué/désactivé**
-  (`.locked`) tant que la recherche d'accès n'est pas atteinte ; **actif** (cliquable → `RepairModal`)
-  ensuite ; **pastille de notification** (`.notif-dot` + pulse `.ready`) quand la réparation devient
-  **possible** (ressources livrées au port = `canRepair`). `node --check` (7 blocs) + Chromium (boot 0
-  erreur, sprite réparation rendu icône-seule/permanent, build 195) OK. Build 194→195.
+- **État au dernier passage : `GAME_BUILD = 196`, `GAME_VERSION = 'Alpha 13.15'`, `SAVE_VERSION = 15`.**
+  Changement 13.15 : **fix transit bloqué par la réserve d'une île intermédiaire + revert de la pose
+  jonction-sur-réseau du 13.14.** Demande utilisateur. (1) **Transit débloqué (réacheminement)** : une
+  île intermédiaire dont la **réserve** (`seuilExport`) = sa **cible** (`stockCible`) ne réexportait
+  JAMAIS vers l'aval → tout le transit en aval était silencieusement bloqué (ex. île 1 produit du
+  charbon, île 2 cible 10000 + réserve 10000 → l'île 3 n'était jamais servie). Contre-intuitif. Nouveau
+  helper `transitForwardBudget(game, src, dest, res)` : la **cible d'import EFFECTIVE** de la destination
+  = sa cible propre **+** un budget de transit = somme des déficits des îles **au-delà** (chaîne linéaire
+  1-2-3-4-5), **borné par le débit de la liaison aval**. `rawShippable` l'utilise → l'amont « sur-remplit »
+  légèrement l'île intermédiaire, qui réexpédie cet excédent vers l'aval **sans jamais descendre sous sa
+  réserve** et **sans accumuler** (borne = 1 débit aval/tick). Respecte `interdit`/blocages/liaisons
+  inactives. Simulation Chromium : charbon 1→2→3 (et 1→2→3→4) ; l'île intermédiaire reste EXACTEMENT à
+  sa réserve (min=max=10000) ; sans demande aval, réserve inchangée (remplit puis garde) ; `interdit`
+  respecté (pas de réacheminement). (2) **Revert 13.14** : la **pose de jonction sur n'importe quel
+  réseau** (non-couplé) est **annulée** (demande utilisateur : la pose sur un porteur couplé existait
+  déjà et suffit, ne change pas les réseaux). `canPlace`/`tryPlaceJunction`/refund/texte d'aide
+  reviennent à l'état pré-13.14. **Le sprite de réparation d'île permanent du 13.14 est CONSERVÉ.**
+  `node --check` (7 blocs) + Chromium (transit OK, 0 erreur, build 196) OK. Build 195→196.
+  Changement 13.14 : **sprite de réparation d'île permanent avec notification.** Demande utilisateur.
+  L'ancien bouton texte « Réparer Île N » (visible seulement une fois la recherche d'accès atteinte) est
+  remplacé par un **sprite seul** (`uiIcon('reparation')`, classe `.inv-repair-ico`) **affiché en
+  permanence** dès qu'une île suivante existe. États : **atténué/désactivé** (`.locked`) tant que la
+  recherche d'accès n'est pas atteinte ; **actif** (cliquable → `RepairModal`) ensuite ; **pastille de
+  notification** (`.notif-dot` + pulse `.ready`) quand la réparation devient **possible** (ressources
+  livrées au port = `canRepair`). (NB : la « pose de jonction sur n'importe quel réseau » initialement
+  livrée en 13.14 a été **retirée en 13.15** à la demande de l'utilisateur.) Build 194→195.
   Changement 13.13 : **amélioration réseau = matériau AUTOMATIQUE (cheap → premium) + câble ×4.**
   Demande utilisateur. (1) **Matériau d'amélioration auto (paliers V3+)** : le bouton « Monter » du
   `NetworkPanel` ne propose plus de **sélecteur manuel** cheap/premium ; il paie **par défaut en
