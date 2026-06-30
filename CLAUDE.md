@@ -17,7 +17,22 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 192`, `GAME_VERSION = 'Alpha 13.11'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 193`, `GAME_VERSION = 'Alpha 13.12'`, `SAVE_VERSION = 15`.**
+  Changement 13.12 : **jonctions = MÉLANGE de versions de réseaux (chaque porteur garde son niveau).**
+  Demande utilisateur : une jonction peut désormais relier deux réseaux de **niveaux différents** (ex.
+  route V1 × câble V2) et chaque porteur s'améliore **indépendamment** (améliorer le câble n'améliore que
+  le câble). (1) **Mécanique : déjà supportée au niveau données** — `coupledNetworkIds` renvoyait déjà le
+  seul réseau courant (10.99), `rebuildNetworks` traverse chaque porteur séparément (un `networkId` par
+  carrier dans `t.netIds`) et ne fusionne que les réseaux d'un MÊME porteur. Aucune règle de pose/upgrade
+  ne forçait l'égalité des niveaux (`tryPlaceJunction` sans contrôle de niveau). (2) **Sprites refondus**
+  : le pack a livré **96 sprites mixtes** `jonction_<H>_v<n>_<V>_v<m>` (6 orientations × 4 × 4) encodant le
+  niveau de CHAQUE porteur. Les **24 anciens** sprites mono-version (`jonction_<H>_<V>_v<n>`) retirés de
+  `__SPRITE_DATA__` (582→654 clés). (3) **Draw** (`drawBuilding`, branche jonction) : le niveau de sprite
+  est calculé **par porteur** via `carLvl(car)` (= niveau de `g.networks[isl][t.netIds[car]]`, 4 si
+  illimité, sinon 1..3) au lieu du `max` des deux → clé `jonction_<first>_v<carLvl(first)>_<second>_v<carLvl(second)>`.
+  (4) **Câblage** : `BLD_SPRITE_OVERRIDE` (icônes menu Réseau des 3 jonctions) → `jonction_<a>_v1_<b>_v1` ;
+  texte d'aide « (mêmes niveaux) » → « (niveaux indépendants) ». `node --check` (7 blocs) + Chromium (boot
+  0 erreur, 96 clés jonction, clé mixte `jonction_route_v1_cable_v3` présente, build 193) OK. Build 192→193.
   Changement 13.11 : **2 sons de baisse de niveau (downgrade).** Le module SFX gagne `downgrade`
   (arpège DESCENDANT mat, bâtiment) et `downgradeNetwork` (réseau) — inlinés après `upgrade`/
   `upgradeNetwork` (47 noms au total). Branchements : `tryDowngrade` → `downgrade` ; `changeNetworkLevel`
