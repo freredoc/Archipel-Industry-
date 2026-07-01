@@ -17,7 +17,23 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 198`, `GAME_VERSION = 'Alpha 13.17'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 199`, `GAME_VERSION = 'Alpha 13.18'`, `SAVE_VERSION = 15`.**
+  Changement 13.18 : **jonction = CROISEMENT strict (pas de diffusion perpendiculaire).** Demande
+  utilisateur (anti-abus). Une jonction porte deux réseaux qui se croisent ; jusqu'ici chaque porteur
+  se connectait sur les **4 côtés** → un porteur pouvait « diffuser » son réseau perpendiculairement à
+  sa traversée (ex. câble N-S qui traverse ET route qui diffuse N-S par la même jonction). Désormais
+  **chaque porteur ne transmet QUE le long de SON axe** (2 côtés opposés), jamais sur les côtés
+  perpendiculaires, et les deux porteurs sont **forcément perpendiculaires**. (1) Helpers module
+  `junctionAxisH(tiles,r,c,def)` (le 1er porteur est-il horizontal ? — priorité au porteur qui
+  « traverse » réellement un axe = 2 côtés opposés présents, l'autre prend le perpendiculaire ; repli 1
+  côté puis défaut A=horizontal/B=vertical) et `junctionDirOk(...,carrier,dr,dc)` (le porteur transmet-il
+  dans cette direction ?). (2) `rebuildNetworks` (flood-fill) : depuis/vers une jonction, on ne propage
+  un porteur que si `junctionDirOk` (côté sur l'axe) — port road/pipe inclus. (3) `adjacentNetworks` et
+  `adjacentNetworksFootprint` : un voisin jonction ne compte pour un porteur que si le côté est sur son
+  axe (bâtiments/bridging respectent la règle). (4) **Sprite** : l'orientation vient désormais de
+  `junctionAxisH` (visuel = mécanique). `node --check` (7 blocs) + Chromium (croisement propre : 2
+  porteurs connectés ; abus : côté perpendiculaire NON diffusé/réseau séparé ; porteurs distincts ;
+  boot+ticks 0 erreur, build 199) OK. Build 198→199.
   Changement 13.17 : **fix « baisse de niveau accidentelle » à la réouverture de la fiche bâtiment.**
   Bug utilisateur : la fiche bâtiment (`InfoPanel`) s'ouvre flottante à l'endroit du tap (`info.x/info.y`)
   et, pour un bâtiment bas à l'écran, est repoussée vers le haut → le **bouton « Baisser » se retrouve
