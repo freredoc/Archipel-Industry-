@@ -1,7 +1,7 @@
 {
-  "build": 199,
-  "version": "Alpha 13.18",
+  "build": 200,
+  "version": "Alpha 13.19",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Jonction = croisement strict, pas de diffusion perpendiculaire (#194)"
+  "notes": "Merge pull request #195 from freredoc/claude/new-session-criacz"
 }
