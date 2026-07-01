@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 199`, `GAME_VERSION = 'Alpha 13.18'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 200`, `GAME_VERSION = 'Alpha 13.19'`, `SAVE_VERSION = 15`.**
+  Changement 13.19 : **plafonnement du redessin d'ambiance à ~10 FPS (« Levier 1 » — chauffe/batterie).**
+  Le canvas était redessiné à ~60 FPS en continu : le dirty-checking (`g.dirty`) ne servait jamais car
+  chaque frame animée re-marquait `g.dirty` via `_animPlayed` (eau/écume/machines toujours animées →
+  redraw permanent → CPU/GPU saturés sur mobile). Fix chirurgical (2 modifs) : (1) nouvelle constante
+  module `ANIM_REDRAW_MS = 100` (après `_animPlayed`, ~L2329). (2) Dans `frame`, le re-déclenchement
+  d'animation `if (_animPlayed) g.dirty = true;` devient un **garde temporel** : `if (_animPlayed && now
+  - (g.lastAnimTs || 0) >= ANIM_REDRAW_MS) { g.dirty = true; g.lastAnimTs = now; }` → l'ambiance ne
+  redessine qu'à ~10 FPS. **Canal interaction inchangé** : `markDirty` (pan/hover/zoom/placement/
+  sélection), le tick horloge et le cargo (`boatActiveNearPort` garde son `g.dirty = true`
+  inconditionnel) restent servis immédiatement au prochain rAF (60 Hz maintenu). `g.lastAnimTs` géré via
+  `|| 0` (pas d'init dans le constructeur). Aucune logique de simulation touchée ; UI React (useReducer/
+  useState, hors rAF) non concernée. `node --check` (7 blocs) OK. Build 199→200.
   Changement 13.18 : **jonction = CROISEMENT strict (pas de diffusion perpendiculaire).** Demande
   utilisateur (anti-abus). Une jonction porte deux réseaux qui se croisent ; jusqu'ici chaque porteur
   se connectait sur les **4 côtés** → un porteur pouvait « diffuser » son réseau perpendiculairement à

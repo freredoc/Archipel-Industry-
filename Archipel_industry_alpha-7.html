@@ -2327,6 +2327,11 @@ function animImg(cle) {
 }
 // Mis à true par drawAnimFrame quand une anim est rendue → la boucle force le redraw suivant.
 let _animPlayed = false;
+// Cadence MAX de redessin pour l'animation d'ambiance (eau, machines) : ~100 ms ≈ 10 FPS.
+// N'affecte PAS les interactions (pan/hover/zoom/placement via markDirty) ni le tick horloge,
+// qui restent servis immédiatement. Ajustable : 120–150 ms pour gratter plus de batterie
+// (si l'eau reste visuellement acceptable), ou 66 ms (~15 FPS) pour un rendu plus lisse.
+const ANIM_REDRAW_MS = 100;
 // Dessine la frame courante de l'anim associée à la clé statique `sk`. Renvoie false si pas
 // d'anim (ou sheet pas encore décodée) → l'appelant retombe sur le sprite statique.
 function drawAnimFrame(ctx, sk, x, y, w, h) {
@@ -4355,8 +4360,8 @@ const SAVE_VERSION = 15;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 199;
-const GAME_VERSION = 'Alpha 13.18';
+const GAME_BUILD = 200;
+const GAME_VERSION = 'Alpha 13.19';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -15325,10 +15330,16 @@ function App() {
       checkTips();
       checkStockAlerts();
       checkEnergyAlerts();
-      // Keep redrawing smoothly while a cargo boat is animating near the current port.
+      // Un cargo près du port se DÉPLACE visiblement → on le garde à pleine cadence (fluide).
       if (boatActiveNearPort(g)) g.dirty = true;
-      // Anim de bâtiments rendue à la frame précédente → on continue de redessiner pour les jouer.
-      if (_animPlayed) g.dirty = true;
+      // Animation d'ambiance (eau, machines) : redessin d'ENTRETIEN plafonné à ~10 FPS pour
+      // épargner batterie/chaleur. Les interactions (markDirty : pan, hover, zoom, placement) et
+      // le tick gardent g.dirty et restent servis d'emblée — ce garde ne touche QUE le redessin
+      // répété dû aux sprites animés.
+      if (_animPlayed && now - (g.lastAnimTs || 0) >= ANIM_REDRAW_MS) {
+        g.dirty = true;
+        g.lastAnimTs = now;
+      }
       if (g.dirty && ctxValid()) {
         _animPlayed = false;
         draw();
