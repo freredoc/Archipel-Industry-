@@ -4355,8 +4355,8 @@ const SAVE_VERSION = 15;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 198;
-const GAME_VERSION = 'Alpha 13.17';
+const GAME_BUILD = 199;
+const GAME_VERSION = 'Alpha 13.18';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -4780,6 +4780,41 @@ function isInfraTile(t) {
 function addInto(dst, src) {
   for (const k in src) dst[k] = (dst[k] || 0) + src[k];
 }
+// ── Jonction = CROISEMENT strict : chaque porteur ne transmet QUE le long de SON axe (les deux
+// côtés opposés de la traversée), JAMAIS sur les côtés perpendiculaires. Les deux porteurs d'une
+// jonction sont forcément perpendiculaires. Un porteur qui « traverse » (deux côtés opposés
+// présents) prend son axe ; l'autre porteur prend l'axe perpendiculaire. Empêche la diffusion
+// d'un réseau sur les côtés perpendiculaires (ex. cable N-S qui traverse ⇒ la route ne peut pas
+// diffuser N-S, seulement E-O). Masque netConnectMask : N=1, E=2, S=4, O=8.
+// Renvoie true si le 1er porteur (def.junction[0]) est HORIZONTAL (l'autre est alors vertical).
+function junctionAxisH(tiles, r, c, def) {
+  const cA = def.junction[0],
+    cB = def.junction[1];
+  const mA = netConnectMask(tiles, r, c, [cA]),
+    mB = netConnectMask(tiles, r, c, [cB]);
+  const anyH = m => !!((m & 2) || (m & 8)),
+    anyV = m => !!((m & 1) || (m & 4));
+  const spanH = m => !!((m & 2) && (m & 8)),
+    spanV = m => !!((m & 1) && (m & 4));
+  // Priorité à un porteur qui traverse réellement un axe (deux côtés opposés) ; les deux porteurs
+  // restent perpendiculaires. Repli sur « un seul côté » puis défaut A horizontal / B vertical.
+  if (spanH(mA) && !spanH(mB)) return true;
+  if (spanV(mA) && !spanV(mB)) return false;
+  if (spanH(mB) && !spanH(mA)) return false;
+  if (spanV(mB) && !spanV(mA)) return true;
+  if (anyH(mA) && !anyV(mA)) return true;
+  if (anyV(mA) && !anyH(mA)) return false;
+  if (anyH(mB) && !anyV(mB)) return false;
+  if (anyV(mB) && !anyH(mB)) return true;
+  return true;
+}
+// Le porteur `carrier` d'une jonction en (r,c) transmet-il dans la direction (dr,dc) (le long de
+// son axe) ? Horizontal ⇒ dc≠0 (E/O) ; vertical ⇒ dr≠0 (N/S).
+function junctionDirOk(tiles, r, c, def, carrier, dr, dc) {
+  const aH = junctionAxisH(tiles, r, c, def);
+  const carrierH = carrier === def.junction[0] ? aH : !aH;
+  return carrierH ? dc !== 0 : dr !== 0;
+}
 function rebuildNetworks(game, islandId) {
   const def = defById(islandId);
   const tiles = game.islands[islandId];
@@ -4826,9 +4861,12 @@ function rebuildNetworks(game, islandId) {
         if (oldId != null && oldToNew[oldId] === undefined) oldToNew[oldId] = nid;
         ct.networkId = nid;
       }
+      // Si la tuile courante est une jonction, elle ne propage ce porteur que le long de son axe.
+      const cjDef = cj ? BUILDINGS[ct.building.id] : null;
+      const curOk = (dr, dc) => !cj || junctionDirOk(tiles, cr, cc, cjDef, type, dr, dc);
       if ((type === 'road' || type === 'pipe') && port) {
         for (const [dr, dc] of DIRS4) {
-          if (cr + dr === port.r && cc + dc === port.c) {
+          if (curOk(dr, dc) && cr + dr === port.r && cc + dc === port.c) {
             net.connected = true;
             break;
           }
@@ -4840,11 +4878,14 @@ function rebuildNetworks(game, islandId) {
         if (nr < 0 || nc < 0 || nr >= def.rows || nc >= def.cols) continue;
         const nt = tiles[nr][nc];
         if (!nt || !nt.building) continue;
+        if (!curOk(dr, dc)) continue;
         if (nt.building.id === type) {
           if (seen[nr][nc]) continue;
           seen[nr][nc] = true;
           stack.push([nr, nc, false]);
         } else if (isJunctionTile(nt) && BUILDINGS[nt.building.id].junction.indexOf(type) !== -1) {
+          // La jonction voisine ne se connecte à ce porteur que le long de SON axe (perpendiculaire interdit).
+          if (!junctionDirOk(tiles, nr, nc, BUILDINGS[nt.building.id], type, dr, dc)) continue;
           const key = nr + ',' + nc + ',' + type;
           if (jseen.has(key)) continue;
           jseen.add(key);
@@ -4950,7 +4991,7 @@ function adjacentNetworks(game, islandId, r, c, infraType) {
     const t = tiles[nr][nc];
     if (!t || !t.building) continue;
     let nid = null;
-    if (t.building.id === infraType && t.networkId != null) nid = t.networkId;else if (t.netIds && BUILDINGS[t.building.id] && BUILDINGS[t.building.id].kind === 'junction' && t.netIds[infraType] != null) nid = t.netIds[infraType];
+    if (t.building.id === infraType && t.networkId != null) nid = t.networkId;else if (t.netIds && BUILDINGS[t.building.id] && BUILDINGS[t.building.id].kind === 'junction' && t.netIds[infraType] != null && junctionDirOk(tiles, nr, nc, BUILDINGS[t.building.id], infraType, dr, dc)) nid = t.netIds[infraType];
     if (nid != null && ids.indexOf(nid) === -1) ids.push(nid);
   }
   return ids;
@@ -4973,7 +5014,7 @@ function adjacentNetworksFootprint(game, islandId, r, c, w, h, infraType) {
       const t = tiles[nr][nc];
       if (!t || !t.building) continue;
       let nid = null;
-      if (t.building.id === infraType && t.networkId != null) nid = t.networkId;else if (t.netIds && BUILDINGS[t.building.id] && BUILDINGS[t.building.id].kind === 'junction' && t.netIds[infraType] != null) nid = t.netIds[infraType];
+      if (t.building.id === infraType && t.networkId != null) nid = t.networkId;else if (t.netIds && BUILDINGS[t.building.id] && BUILDINGS[t.building.id].kind === 'junction' && t.netIds[infraType] != null && junctionDirOk(tiles, nr, nc, BUILDINGS[t.building.id], infraType, er, ec)) nid = t.netIds[infraType];
       if (nid != null && ids.indexOf(nid) === -1) ids.push(nid);
     }
   }
@@ -14512,16 +14553,11 @@ function App() {
         };
         const cA = bdef.junction[0],
           cB = bdef.junction[1];
-        const mA = netConnectMask(tiles, r, c, [cA]),
-          mB = netConnectMask(tiles, r, c, [cB]);
-        const aH = mA & 2 || mA & 8,
-          aV = mA & 1 || mA & 4;
-        const bH = mB & 2 || mB & 8,
-          bV = mB & 1 || mB & 4;
-        // Met en 1er (axe horizontal du sprite) le porteur réellement horizontal.
-        const swap = aV && !aH || bH && !bV;
-        const first = swap ? cB : cA,
-          second = swap ? cA : cB;
+        // Orientation = celle de la MÉCANIQUE (junctionAxisH) → le sprite reflète l'axe réel de
+        // chaque porteur : 1er token = porteur horizontal, 2e = porteur vertical (perpendiculaires).
+        const aIsH = junctionAxisH(tiles, r, c, bdef);
+        const first = aIsH ? cA : cB,
+          second = aIsH ? cB : cA;
         // Niveau de sprite d'un porteur = niveau de SON réseau (4 si illimité, sinon 1..3).
         const carLvl = car => {
           let lvl = 1,
