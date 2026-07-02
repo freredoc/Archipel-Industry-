@@ -17,7 +17,36 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 201`, `GAME_VERSION = 'Alpha 13.20'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 202`, `GAME_VERSION = 'Alpha 13.21'`, `SAVE_VERSION = 15`.**
+  Changement 13.21 : **Phase 2 densification — contenu V2 (bâtiments, recettes, nœuds, rééquilibrage,
+  assets)** (brief `BRIEF_PHASE2_CONTENU_V2` + `archipel_new_assets.js`). (1) **3 nouveaux bâtiments**
+  (après `four_cuivre_v2`, `cost: {}` car paliers via `TIER_STEP`, exempts `TIER_COST_MULT` via
+  `/_v2$/`) : `cimenterie_v2` (4 pierre + 0,5 fer + 0,5 eau → 1 ciment, 0 kW — intrants fractionnaires
+  VOULUS, n'existe qu'à upgrade ≥10), `pompe_eau_v2` (1 eau, 0,125 kW, côte), `centrale_charbon_v2`
+  (8 charbon + 2 eau → 128 kW, posable land/resource/coast). (2) **Paliers branchés** : `TIER_NEXT`
+  += cimenterie/pompe_eau/centrale_charbon (cap 9, pas de V3 → V2 améliorable à l'infini) ; `TIER_STEP`
+  += les 3 forfaits (circuit 10+béton 1000 / béton 500+polymère 100 / béton 1000+pièce 500+circuit 100).
+  (3) **Recettes** : `centrale_charbon` 64→128 kW ; `raffinerie` diesel 1→3, power 16→32 ;
+  `usine_polymere` pétrole 16→8, eau 4→2, +pierre 4 (sortie/power inchangés) ; coût `pompe_eau` V1
+  {pierre:10,lingot_fer:10}→{ciment:50,lingot_fer:50}. (4) **Rééquilibrage socle ×2^upgrade** (inputs/
+  outputs/power SEULS, costs intacts) : fours V2 = 4 minerai→1 lingot (SANS charbon), power 1 ; mines V2
+  = output 1, power 1 ; les 6 mines V3 = output 1, `randomP {min:0.0625, max:0.1875}` (moyenne 0,125 kW
+  → ~128 MW à niv 21) — l'`element_moteur_nuc` reste uniquement dans le coût/forfait (jamais un intrant).
+  (5) **Toolbar** : les 3 V2 ajoutés aux groupes extraction/cement/energy ; **coût de pose affiché =
+  cumul** pour les bâtiments de palier (`ToolButton` : `cost = TIER_STEP[id] ? cumulativeInvested(id,
+  tierEntry(id)) : b.cost`, sous-libellé inclus ; même substitution dans `BuildingDetailModal`).
+  (6) **Tech tree — échange nœuds 7↔13** (reqs/prereq INCHANGÉS) : nœud 7 « Upgrades V2 — Extraction »
+  débloque les 4 mines V2 (plus tôt, acier/cuivre) ; nœud 13 « Upgrades V2 — Transformation » débloque
+  four_fer_v2/four_cuivre_v2 + les 3 nouveaux V2 (circuit). (7) **Assets** : 5 sprites inlinés dans le
+  bloc d'assignations `__SPRITE_DATA__` (cimenterie_v2, pompe_eau_v2, centrale_charbon_v2 + four_arc_fer/
+  four_arc_cuivre pour la phase 3) ; méthode SFX `densify()` (arpège + power-up + clunk) inlinée après
+  `downgrade` ; `tryDensify` joue `densify` (fini le repli `upgrade`). Hors scope : four à arc unifié
+  (phase 3), migration saves/`SAVE_VERSION` (phase 5), bétonnière V2/nucléaire/pétrole (plus tard).
+  Validé : `node --check` (7 blocs) + Chromium (boot 0 erreur build 202 ; toutes les defs/paliers/
+  recettes/toolbar/nœuds vérifiés par assertions ; 5 sprites décodés 32×32 ; `SFX.play('densify')` sans
+  throw ; cumul pose pompe_eau_v2 exact ; E2E : cimenterie u9 → « Densifier → Cimenterie V2 » → clic =
+  cimenterie_v2 u10 + forfait débité exactement ; ToolButton cimenterie_v2 = 4 pastilles de cumul,
+  pas « gratuit »). Build 201→202.
   Changement 13.20 : **Phase 1 densification — moteur de paliers (V1→V2→V3) + bouton « Densifier » +
   courbe éolienne accélérée** (brief `BRIEF_PHASE1_DENSIFICATION`). (1) **Données module** (après
   `UPGRADE_SCALE`) : `TIER_NEXT` (id → {next, cap} ; mines+fours cap 9, mines V2 cap 19, or/uranium
