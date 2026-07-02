@@ -17,7 +17,44 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 202`, `GAME_VERSION = 'Alpha 13.21'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 203`, `GAME_VERSION = 'Alpha 13.22'`, `SAVE_VERSION = 15`.**
+  Changement 13.22 : **Phase 3 densification — four à arc UNIFIÉ + sélecteur multi-sortie par bâtiment**
+  (brief `BRIEF_PHASE3_ARC_UNIFIE`). (1) **2 nouveaux bâtiments** `four_arc_fer`/`four_arc_cuivre`
+  (flag `arc: true`, `cost: {}`, t3 ; I/O statiques = REPRÉSENTATIFS du mode lingot par défaut, repli
+  pour le code lisant les champs statiques). (2) **Données module** (après `tierForfait`) : `ARC_DEF`
+  (input fixe `inRate` 8, `order`, par sortie {out, powMin, powMax} — fer : lingot 1 (0,5-1,5 kW) /
+  acier 0,125 (2,5-7,5) / pièce 0,125 (1,5-4,5) ; cuivre : lingot 1 / câble 1/12 (1-3)) ; `arcWeights`
+  (single/mix/auto, mirror `nucAutoWeights` — auto = stock port le plus bas favorisé) ; `arcEffective`
+  (I/O + fourchette conso pondérés, base avant ×2^upgrade ; **l'entrée reste FIXE**, poids nuls →
+  repli 1re sortie) ; `arcDefaultState` (single/lingot, poids 1). (3) **Paliers** : `TIER_NEXT` +=
+  four_fer_v2/four_cuivre_v2 → arcs (**cap 19**, fini l'« améliorable à l'infini » de la phase 1) ;
+  `TIER_STEP` += les 2 arcs (entry 20, forfait 2000 béton armé + 1000 pièce + 100 processeur). (4)
+  **Init `bld.arc`** : `tryDensify` (après transform) + `tryPlace` (après pose). (5) **`tickIsland`**
+  (tête de boucle bâtiment, après `mult`) : `arcEff = ARC_DEF[bld.id] ? arcEffective(bld, workPort) :
+  null` → `effInputs`/`effOutputs`/`effRandomP` substitués à `b.inputs`/`b.outputs`/`b.randomP` dans
+  TOUTE la boucle (basePower, `eligible`, `inByType`/`outByType`, energyOut ; le dépôt aval passe déjà
+  par `outByType`). (6) **Suppression des 3 anciens arcs** (`four_arc_acier`/`_cable`/`_piece`) :
+  BUILDINGS, `BLD_SPRITE_OVERRIDE` (ligne `four_arc_meca`), toolbar steel/copper (remplacés par les 2
+  unifiés), nœud tech 19 → `['four_arc_fer','four_arc_cuivre']` (name/reqs/prereq intacts). Restes
+  inertes voulus : sprites/anims/i18n data. ⚠ Saves avec anciens arcs : tuiles **droppées** au
+  chargement (garde `!BUILDINGS[p.b] → continue` préexistante) — conversion en phase 5. (7)
+  **Persistance** (rétro-compatible, `SAVE_VERSION` inchangé) : `serialize` émet `pl.arc =
+  {mode,sel,w}` ; `loadSave` restaure avec défauts/validation (`arcDefaultState` merge). (8) **UI** :
+  `InfoPanel` — les lignes Entrées/Réel/Sortie/Élec./aperçu d'amélioration passent par
+  `arcIO = arcEffective(...)` (`bIn`/`bOut`/`bRandomP`) → la fiche montre le mode courant, pas le
+  statique ; **bloc sélecteur** (classes `ip-nuc-*` réutilisées, SANS curseur de puissance) : ligne
+  I/O effective « − entrée /s (fixe) → + sorties », 3 boutons de mode, boutons par sortie (single),
+  sliders 0-100 pas 5 + % normalisé (mix), barres lecture seule (auto) ; setters `setArcMode`/
+  `setArcSel`/`setArcWeight` (état PAR bâtiment `t.building.arc`) + props `onSetArc*`. Hors scope :
+  migration/conversion des saves (phase 5). Validé : `node --check` (7 blocs) + Chromium (boot 0
+  erreur build 203 ; `arcEffective` : single lingot/acier, mix 50/50 (sortie ET conso pondérées,
+  entrée fixe), auto (stock bas favorisé), câble 1/12, poids nuls → repli ; cumul
+  `cumulativeInvested('four_arc_fer',20)` = four_fer 0..9 + v2 10..19 + arc 20 ; toolbar/nœud 19/
+  override/sprites 32×32 OK ; grep anciens ids = data inerte seulement ; E2E A : four_fer_v2 u19 →
+  « Densifier → Four à Arc Fer » → arc u20 + `pl.arc` single/lingot + forfait débité exact ; E2E B :
+  arc réel posé (route→port, éolienne+câble) → +1 lingot/s à −8 minerai/s régime 100 %, bascule
+  « acier » via le sélecteur de la fiche → +0,125 acier/s, lingot FIGÉ, minerai toujours −8/s,
+  `pl.arc.sel='acier'` persisté). Build 202→203.
   Changement 13.21 : **Phase 2 densification — contenu V2 (bâtiments, recettes, nœuds, rééquilibrage,
   assets)** (brief `BRIEF_PHASE2_CONTENU_V2` + `archipel_new_assets.js`). (1) **3 nouveaux bâtiments**
   (après `four_cuivre_v2`, `cost: {}` car paliers via `TIER_STEP`, exempts `TIER_COST_MULT` via

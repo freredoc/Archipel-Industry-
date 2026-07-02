@@ -2606,7 +2606,6 @@ const NET_MASK_SUFFIX = (() => {
 })();
 // Resolve building id (+ upgrade level) -> sprite filename key.
 const BLD_SPRITE_OVERRIDE = {
-  four_arc_piece: 'four_arc_meca',
   usine_moteur_nuc: 'bat_usine_moteur_nucleaire',
   carriere: 'carriere_v1',
   carriere_v2: 'carriere_v2',
@@ -3600,8 +3599,11 @@ const BUILDINGS = {
       cable: 75
     }
   },
-  four_arc_acier: {
-    name: 'Four Arc Acier V1',
+  // Fours à arc UNIFIÉS (paliers des fours V2, sélecteur multi-sortie par bâtiment via ARC_DEF).
+  // Les champs inputs/outputs/randomP statiques sont REPRÉSENTATIFS (mode par défaut = lingot) :
+  // la simulation passe par arcEffective ; ces champs servent de repli au code lisant les I/O statiques.
+  four_arc_fer: {
+    name: 'Four à Arc Fer',
     color: '#90A4AE',
     label: 'ARC.F',
     kind: 'build',
@@ -3610,25 +3612,21 @@ const BUILDINGS = {
     needRoad: true,
     size: [1, 1],
     power: 0,
-    randomP: {
-      min: 32,
-      max: 256
-    },
-    cost: {
-      acier: 75,
-      beton_arme: 38,
-      cable: 25,
-      processeur: 10
-    },
+    cost: {},
+    arc: true,
     inputs: {
-      minerai_fer: 96
+      minerai_fer: 8
     },
     outputs: {
-      acier: 4
+      lingot_fer: 1
+    },
+    randomP: {
+      min: 0.5,
+      max: 1.5
     }
   },
-  four_arc_cable: {
-    name: 'Four Arc Câble V1',
+  four_arc_cuivre: {
+    name: 'Four à Arc Cuivre',
     color: '#A1887F',
     label: 'ARC.C',
     kind: 'build',
@@ -3637,48 +3635,17 @@ const BUILDINGS = {
     needRoad: true,
     size: [1, 1],
     power: 0,
-    randomP: {
-      min: 16,
-      max: 128
-    },
-    cost: {
-      acier: 75,
-      beton_arme: 38,
-      piece_meca: 25,
-      processeur: 10
-    },
+    cost: {},
+    arc: true,
     inputs: {
-      minerai_cuivre: 144
+      minerai_cuivre: 8
     },
     outputs: {
-      cable: 4
-    }
-  },
-  four_arc_piece: {
-    name: 'Four Arc Pièce Méca V1',
-    color: '#8D6E63',
-    label: 'ARC.P',
-    kind: 'build',
-    tier: 't3',
-    terrains: ['land', 'resource'],
-    needRoad: true,
-    size: [1, 1],
-    power: 0,
+      lingot_cuivre: 1
+    },
     randomP: {
-      min: 24,
-      max: 192
-    },
-    cost: {
-      acier: 75,
-      cable: 38,
-      piece_meca: 25,
-      processeur: 10
-    },
-    inputs: {
-      minerai_fer: 96
-    },
-    outputs: {
-      piece_meca: 4
+      min: 0.5,
+      max: 1.5
     }
   },
   eolienne_offshore: {
@@ -4093,11 +4060,11 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'steel',
   label: 'Fer-acier',
-  ids: ['four_fer', 'four_fer_v2', 'acierie', 'four_arc_acier', 'atelier_meca', 'four_arc_piece']
+  ids: ['four_fer', 'four_fer_v2', 'four_arc_fer', 'acierie', 'atelier_meca']
 }, {
   key: 'copper',
   label: 'Cuivre',
-  ids: ['four_cuivre', 'four_cuivre_v2', 'cablerie', 'four_arc_cable']
+  ids: ['four_cuivre', 'four_cuivre_v2', 'four_arc_cuivre', 'cablerie']
 }, {
   key: 'electronics',
   label: 'Électronique',
@@ -4423,8 +4390,8 @@ const SAVE_VERSION = 15;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 202;
-const GAME_VERSION = 'Alpha 13.21';
+const GAME_BUILD = 203;
+const GAME_VERSION = 'Alpha 13.22';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -4809,8 +4776,9 @@ const TIER_NEXT = {
   mine_uranium:    { next: 'mine_uranium_v3', cap: 9  },   // uranium : saute V2
   cimenterie:      { next: 'cimenterie_v2',       cap: 9 },
   pompe_eau:       { next: 'pompe_eau_v2',        cap: 9 },
-  centrale_charbon:{ next: 'centrale_charbon_v2', cap: 9 }
-  // four_fer_v2 / four_cuivre_v2 → arc : ajoutés en phase 3.
+  centrale_charbon:{ next: 'centrale_charbon_v2', cap: 9 },
+  four_fer_v2:     { next: 'four_arc_fer',        cap: 19 },
+  four_cuivre_v2:  { next: 'four_arc_cuivre',     cap: 19 }
 };
 
 // TIER_STEP : pour chaque bâtiment de palier (V2/V3/arc), l'`entry` (valeur de `upgrade` à
@@ -4832,7 +4800,9 @@ const TIER_STEP = {
   mine_uranium_v3: { entry: 10, forfait: { element_moteur_nuc: 1 } },
   cimenterie_v2:      { entry: 10, forfait: { circuit: 10, beton_arme: 1000 } },
   pompe_eau_v2:       { entry: 10, forfait: { beton_arme: 500, polymere: 100 } },
-  centrale_charbon_v2:{ entry: 10, forfait: { beton_arme: 1000, piece_meca: 500, circuit: 100 } }
+  centrale_charbon_v2:{ entry: 10, forfait: { beton_arme: 1000, piece_meca: 500, circuit: 100 } },
+  four_arc_fer:       { entry: 20, forfait: { beton_arme: 2000, piece_meca: 1000, processeur: 100 } },
+  four_arc_cuivre:    { entry: 20, forfait: { beton_arme: 2000, piece_meca: 1000, processeur: 100 } }
 };
 
 // TIER_PREV : chaîne inverse (auto-dérivée), pour remonter jusqu'au V1 (coût cumulé).
@@ -4842,6 +4812,65 @@ for (const _p in TIER_NEXT) TIER_PREV[TIER_NEXT[_p].next] = _p;
 // Helpers palier.
 const tierEntry = id => (TIER_STEP[id] && TIER_STEP[id].entry) || 0;
 const tierForfait = id => (TIER_STEP[id] && TIER_STEP[id].forfait) || (BUILDINGS[id] && BUILDINGS[id].cost) || {};
+
+// ── Fours à arc unifiés (sélecteur multi-sortie PAR BÂTIMENT) ────────────────
+// input : ressource consommée (débit fixe inRate × 2^upgrade, quel que soit le mode).
+// modes : par sortie → out (part de sortie, base) + powMin/powMax (fourchette conso base, kW).
+const ARC_DEF = {
+  four_arc_fer: {
+    input: 'minerai_fer', inRate: 8,
+    order: ['lingot_fer', 'acier', 'piece_meca'],
+    modes: {
+      lingot_fer: { out: 1,     powMin: 0.5, powMax: 1.5 },  // ~1 GW à niv 21 (8:1)
+      acier:      { out: 0.125, powMin: 2.5, powMax: 7.5 },  // ~5 GW (64:1)
+      piece_meca: { out: 0.125, powMin: 1.5, powMax: 4.5 }   // ~3 GW (64:1)
+    }
+  },
+  four_arc_cuivre: {
+    input: 'minerai_cuivre', inRate: 8,
+    order: ['lingot_cuivre', 'cable'],
+    modes: {
+      lingot_cuivre: { out: 1,        powMin: 0.5, powMax: 1.5 },  // ~1 GW (8:1)
+      cable:         { out: 1 / 12,   powMin: 1,   powMax: 3 }     // ~2 GW (96:1)
+    }
+  }
+};
+
+// Poids par sortie selon le mode (mirror nucAutoWeights).
+function arcWeights(bld, port) {
+  const def = ARC_DEF[bld.id], st = bld.arc || {}, keys = def.order;
+  const mode = st.mode || 'single';
+  if (mode === 'single') {
+    const sel = def.modes[st.sel] ? st.sel : keys[0];
+    return keys.reduce((o, k) => (o[k] = k === sel ? 1 : 0, o), {});
+  }
+  if (mode === 'auto') {
+    let mx = 0; const s = {};
+    for (const k of keys) { s[k] = (port && port[k]) || 0; if (s[k] > mx) mx = s[k]; }
+    const w = {}; for (const k of keys) w[k] = mx - s[k] + 1; return w;
+  }
+  const w = {}; for (const k of keys) w[k] = Math.max(0, (st.w && st.w[k] != null) ? st.w[k] : 1); return w;
+}
+
+// I/O + fourchette de puissance effectifs (base, avant ×2^upgrade — appliqué par tickIsland).
+function arcEffective(bld, port) {
+  const def = ARC_DEF[bld.id], w = arcWeights(bld, port), keys = def.order;
+  let sum = 0; for (const k of keys) sum += w[k];
+  if (sum <= 0) { w[keys[0]] = 1; sum = 1; }
+  const outputs = {}; let pmin = 0, pmax = 0;
+  for (const k of keys) {
+    const f = w[k] / sum, m = def.modes[k];
+    if (f > 0) outputs[k] = (outputs[k] || 0) + f * m.out;
+    pmin += f * m.powMin; pmax += f * m.powMax;
+  }
+  return { inputs: { [def.input]: def.inRate }, outputs, randomP: { min: pmin, max: pmax } };
+}
+
+// État par défaut d'un arc fraîchement posé / densifié.
+function arcDefaultState(id) {
+  const def = ARC_DEF[id];
+  return { mode: 'single', sel: def.order[0], w: def.order.reduce((o, k) => (o[k] = 1, o), {}) };
+}
 const upgradeMult = upg => Math.pow(2, upg || 0);
 function repairCost(n) {
   const f = Math.pow(10, n);
@@ -5678,22 +5707,28 @@ function tickIsland(game, isl) {
       continue;
     }
     const mult = Math.pow(2, bld.upgrade || 0);
+    // Four à arc unifié : I/O + fourchette de conso EFFECTIFS selon le mode du sélecteur
+    // (single/mix/auto) — l'entrée reste fixe, le mode ne répartit que sortie et conso.
+    const arcEff = ARC_DEF[bld.id] ? arcEffective(bld, workPort) : null;
+    const effInputs = arcEff ? arcEff.inputs : b.inputs;
+    const effOutputs = arcEff ? arcEff.outputs : b.outputs;
+    const effRandomP = arcEff ? arcEff.randomP : b.randomP;
     let basePower = b.power || 0;
     if (b.sigmoid) {
       bld.sigmoidT = (bld.sigmoidT || 0) + 1;
       const s = b.sigmoid;
       basePower = s.base + s.amp * (1 + Math.sin(2 * Math.PI * bld.sigmoidT / s.period)) / 2;
-    } else if (b.randomP) {
+    } else if (effRandomP) {
       bld.randTick = (bld.randTick || 0) + 1;
       if (bld.randomPower == null || bld.randTick % 5 === 1) {
-        bld.randomPower = b.randomP.min + Math.random() * (b.randomP.max - b.randomP.min);
+        bld.randomPower = effRandomP.min + Math.random() * (effRandomP.max - effRandomP.min);
       }
       basePower = bld.randomPower;
     }
     // Boost d'antenne : un bâtiment de production (kind build avec sorties) sur une tuile influencée
     // tourne plus vite — INTRANTS ×facteur ET SORTIES ×facteur — et sa conso élec. OSCILLE en
     // sigmoïde jusqu'à ×(1+facteur) du nominal (×1→×3 au niveau de base). Facteur = buffSet (2, ×2/niv).
-    const eligible = b.outputs && !b.antenna && b.kind === 'build';
+    const eligible = effOutputs && !b.antenna && b.kind === 'build';
     const speedFac = hasAntenna && eligible && buffSet[r + '-' + c] ? buffSet[r + '-' + c] : 1;
     const prodFac = eligible && debuffSet[r + '-' + c] ? debuffSet[r + '-' + c] : 1;
     const buffed = speedFac > 1;
@@ -5721,22 +5756,22 @@ function tickIsland(game, isl) {
     //    toggle : « Vitesse −50 % & intrants ÷2 ».
     const outMul = mult * (buffed ? speedFac : debuffed ? 0.5 : 1);
     const inMul = mult * (buffed ? speedFac : debuffed ? 0.25 : 1);
-    if (!b.outputs && power <= 0) continue;
+    if (!effOutputs && power <= 0) continue;
     const inByType = {},
       outByType = {};
     let energyOut = 0;
-    for (const k in b.inputs || {}) {
+    for (const k in effInputs || {}) {
       if (k === 'energie_kw') continue;
       const ty = isPortPipe(k) ? 'pipePort' : carrierOf(k);
-      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (inByType[ty] || (inByType[ty] = {}))[k] = b.inputs[k] * inMul;
+      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (inByType[ty] || (inByType[ty] = {}))[k] = effInputs[k] * inMul;
     }
-    for (const k in b.outputs || {}) {
+    for (const k in effOutputs || {}) {
       if (k === 'energie_kw') {
-        energyOut += b.outputs[k] * outMul;
+        energyOut += effOutputs[k] * outMul;
         continue;
       }
       const ty = isPortPipe(k) ? 'pipePort' : carrierOf(k);
-      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (outByType[ty] || (outByType[ty] = {}))[k] = b.outputs[k] * outMul;
+      if (ty === 'road' || ty === 'pipe' || ty === 'pipePort') (outByType[ty] || (outByType[ty] = {}))[k] = effOutputs[k] * outMul;
     }
     const hasPoolIO = inByType.road || outByType.road || inByType.pipe || outByType.pipe || inByType.pipePort || outByType.pipePort;
     let ok = true,
@@ -7198,7 +7233,7 @@ const TECH_NODES = [{
     n: 1
   }],
   unlocks: {
-    buildings: ['four_arc_acier', 'four_arc_cable', 'four_arc_piece']
+    buildings: ['four_arc_fer', 'four_arc_cuivre']
   }
 }, {
   id: 20,
@@ -9146,6 +9181,9 @@ function InfoPanel({
   onSetNucMode,
   onSetNucMixWeight,
   onSetNucPlutoCap,
+  onSetArcMode,
+  onSetArcSel,
+  onSetArcWeight,
   onSetFluxPri,
   onSetAntMode,
   onHeatRepair,
@@ -9275,6 +9313,12 @@ function InfoPanel({
   const antInMul = antBoost > 1 ? antBoost : antProd > 1 ? 0.25 : 1;
   const antOutMul = antBoost > 1 ? antBoost : antProd > 1 ? 0.5 : 1;
   const antElecFac = Math.max(antBoost, antProd);
+  // Four à arc unifié : recettes & conso affichées = valeurs EFFECTIVES du sélecteur (mode courant),
+  // pas les champs statiques (qui reflètent le mode lingot par défaut).
+  const arcIO = ARC_DEF[bld.id] ? arcEffective(bld, game.port[currentIsland]) : null;
+  const bIn = arcIO ? arcIO.inputs : b.inputs;
+  const bOut = arcIO ? arcIO.outputs : b.outputs;
+  const bRandomP = arcIO ? arcIO.randomP : b.randomP;
   const upgradable = isUpgradable(info.id);
   const dev = game.ui && game.ui.dev;
   const port = game.port[currentIsland] || {};
@@ -9779,20 +9823,20 @@ function InfoPanel({
       fontWeight: 700
     },
     title: antBoost > 1 ? I18N.t("Bâtiment dans la zone d'une antenne : intrants & production ×ce facteur") : I18N.t("Bâtiment dans la zone d'une antenne en PRODUCTIVITÉ : sortie ×0,5 (ralenti) mais intrants ÷2 (×0,25) → moitié moins de matières par unité produite ; conso élec. boostée")
-  }, antBoost > 1 ? "×" + antBoost : I18N.t("intrants ÷2 · sortie ×0,5"))), b.inputs && React.createElement("div", {
+  }, antBoost > 1 ? "×" + antBoost : I18N.t("intrants ÷2 · sortie ×0,5"))), bIn && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
   }, I18N.t("Entr\xE9es")), React.createElement("span", {
     className: "val"
-  }, recipeChips(b.inputs, upgradeMult(upg) * antInMul, bld.inAvail).concat(I18N.t(' /s')))), b.inputs && speedPct > 0 && speedPct < 100 && React.createElement("div", {
+  }, recipeChips(bIn, upgradeMult(upg) * antInMul, bld.inAvail).concat(I18N.t(' /s')))), bIn && speedPct > 0 && speedPct < 100 && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
   }, "R\xE9el ⚠"), React.createElement("span", {
     className: "val",
     title: I18N.t("Consommation r\xE9elle ce tick (brid\xE9e : ") + speedReason + ")"
-  }, recipeChips(b.inputs, upgradeMult(upg) * antInMul * speedPct / 100).concat(I18N.t(' /s')))), b.outputs && React.createElement("div", {
+  }, recipeChips(bIn, upgradeMult(upg) * antInMul * speedPct / 100).concat(I18N.t(' /s')))), bOut && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -9801,9 +9845,9 @@ function InfoPanel({
   }, (() => {
     // Sortie = matières (chips) + PRODUCTION ÉLECTRIQUE si le bâtiment en génère (energie_kw).
     const m = upgradeMult(upg) * antOutMul;
-    const chips = recipeChips(b.outputs, m);
+    const chips = recipeChips(bOut, m);
     const hasMat = !(chips.length === 1 && chips[0] === '—');
-    const eOut = (b.outputs.energie_kw || 0) * m;
+    const eOut = (bOut.energie_kw || 0) * m;
     if (eOut > 0) {
       const elec = '⚡ ' + fmtPower(eOut);
       return hasMat ? chips.concat(I18N.t(' /s · ') + elec) : [elec];
@@ -9859,7 +9903,7 @@ function InfoPanel({
     // Bâtiment boosté par une antenne : sa conso élec. oscille en sigmoïde de ×1 à ×(1+boost)
     // du nominal (cf. tick). On affiche cette plage boostée (≠ d'une mine non boostée).
     if (antElecFac > 1) {
-      const nomP = (b.sigmoid ? b.sigmoid.base + b.sigmoid.amp : b.randomP ? b.randomP.max : b.power || 0) * mult;
+      const nomP = (b.sigmoid ? b.sigmoid.base + b.sigmoid.amp : bRandomP ? bRandomP.max : b.power || 0) * mult;
       return I18N.t('boosté ×1→×') + (1 + antElecFac) + ' · ' + fmtPower(nomP) + '→' + fmtPower(nomP * (1 + antElecFac));
     }
     // Conso variable (sigmoïde/aléatoire) : on affiche la valeur ACTUELLE (depuis la
@@ -9868,9 +9912,9 @@ function InfoPanel({
       const cur = (b.sigmoid.base + b.sigmoid.amp * (1 + Math.sin(2 * Math.PI * (bld.sigmoidT || 0) / b.sigmoid.period)) / 2) * mult;
       return fmtPower(cur) + I18N.t(' · prévu ') + fmtPower(b.sigmoid.base * mult) + '→' + fmtPower((b.sigmoid.base + b.sigmoid.amp) * mult);
     }
-    if (b.randomP) {
-      const cur = (bld.randomPower != null ? bld.randomPower : (b.randomP.min + b.randomP.max) / 2) * mult;
-      return fmtPower(cur) + I18N.t(' · prévu ') + fmtPower(b.randomP.min * mult) + '→' + fmtPower(b.randomP.max * mult);
+    if (bRandomP) {
+      const cur = (bld.randomPower != null ? bld.randomPower : (bRandomP.min + bRandomP.max) / 2) * mult;
+      return fmtPower(cur) + I18N.t(' · prévu ') + fmtPower(bRandomP.min * mult) + '→' + fmtPower(bRandomP.max * mult);
     }
     return fmtPower((b.power || 0) * mult);
   })())), b.antenna && React.createElement("div", {
@@ -9886,7 +9930,84 @@ function InfoPanel({
     const am = game.antennaMode && game.antennaMode[currentIsland] === 'prod' ? 'prod' : 'speed';
     if (am === 'prod') return I18N.t("Productivité : vitesse −50 % & intrants ÷2 (8 cases) · émet de la chaleur · conso élec. ×1→×") + (1 + f) + I18N.t(" (sigmoïde)");
     return "×" + f + I18N.t(" intrants & production des 8 cases · conso élec. ×1→×") + (1 + f) + I18N.t(" (sigmoïde)");
-  })()))), (usesNet || drawsPower) && React.createElement("div", {
+  })()))), arcIO && (() => {
+    // ── Sélecteur du four à arc unifié (par bâtiment, adapté du sélecteur nucléaire) ──
+    // L'entrée minerai est FIXE ; le mode ne répartit que la sortie et la conso.
+    const def = ARC_DEF[bld.id];
+    const st = bld.arc || arcDefaultState(bld.id);
+    const mode = ['single', 'mix', 'auto'].includes(st.mode) ? st.mode : 'single';
+    const selKey = def.modes[st.sel] ? st.sel : def.order[0];
+    const w = arcWeights(bld, port);
+    let wSum = 0;
+    for (const k of def.order) wSum += w[k];
+    if (wSum <= 0) wSum = 1;
+    const m = upgradeMult(upg);
+    const lbl = k => RES_SHORT[k] || k;
+    return React.createElement("div", {
+      className: "ip-nuc-irr"
+    }, React.createElement("div", {
+      className: "ip-nuc-irr-hd"
+    }, I18N.t("Production de l'arc (sélecteur)")), React.createElement("div", {
+      className: "ip-nuc-irr-io"
+    }, "− " + fmtRateSci(def.inRate * m) + " " + lbl(def.input) + I18N.t(" /s (fixe)") + " → " + def.order.filter(k => arcIO.outputs[k] > 0).map(k => "+ " + fmtRateSci(arcIO.outputs[k] * m) + " " + lbl(k)).join(" · ") + I18N.t(" /s")),
+    // Choix du mode (3 boutons à suivre) : une seule sortie / mix manuel / équilibrage auto.
+    React.createElement("div", {
+      className: "ip-nuc-mats"
+    }, [['single', I18N.t("Une seule")], ['mix', I18N.t("Mix réparti")], ['auto', I18N.t("Auto")]].map(([mk, label]) => React.createElement("button", {
+      key: mk,
+      className: 'ip-nuc-mat' + (mode === mk ? ' on' : ''),
+      onClick: () => onSetArcMode && onSetArcMode(info.r, info.c, mk)
+    }, label))),
+    // MODE « une seule » : un bouton par sortie possible.
+    mode === 'single' && React.createElement("div", {
+      className: "ip-nuc-mats"
+    }, def.order.map(k => React.createElement("button", {
+      key: k,
+      className: 'ip-nuc-mat' + (selKey === k ? ' on' : ''),
+      onClick: () => onSetArcSel && onSetArcSel(info.r, info.c, k)
+    }, lbl(k)))),
+    // MODE « mix » : un slider de poids par sortie + % normalisé et débit produit.
+    mode === 'mix' && React.createElement("div", {
+      className: "ip-nuc-mix"
+    }, def.order.map(k => React.createElement("div", {
+      className: "ip-nuc-mix-row",
+      key: k
+    }, React.createElement("span", {
+      className: "ip-nuc-mix-lbl"
+    }, lbl(k)), React.createElement("input", {
+      type: "range",
+      min: 0,
+      max: 100,
+      step: 5,
+      value: st.w && st.w[k] != null ? st.w[k] : 1,
+      onChange: e => onSetArcWeight && onSetArcWeight(info.r, info.c, k, parseFloat(e.target.value))
+    }), React.createElement("span", {
+      className: "ip-nuc-mix-val"
+    }, Math.round(w[k] / wSum * 100) + "% · " + fmtRateSci(w[k] / wSum * def.modes[k].out * m) + "/s")))),
+    // MODE « auto » : répartition calculée (lecture seule) vers la sortie au stock le plus bas.
+    mode === 'auto' && React.createElement("div", {
+      className: "ip-nuc-mix"
+    }, def.order.map(k => React.createElement("div", {
+      className: "ip-nuc-mix-row auto",
+      key: k
+    }, React.createElement("span", {
+      className: "ip-nuc-mix-lbl"
+    }, lbl(k)), React.createElement("span", {
+      className: "ip-nuc-mix-auto-bar"
+    }, React.createElement("span", {
+      className: "ip-nuc-mix-auto-fill",
+      style: {
+        width: Math.round(w[k] / wSum * 100) + '%'
+      }
+    })), React.createElement("span", {
+      className: "ip-nuc-mix-val"
+    }, Math.round(w[k] / wSum * 100) + "% · " + fmtRateSci(w[k] / wSum * def.modes[k].out * m) + "/s")))),
+    mode === 'auto' && React.createElement("div", {
+      className: "ip-nuc-irr-note"
+    }, I18N.t("Équilibrage automatique : on produit davantage de la sortie dont le stock au port est le plus bas.")), React.createElement("div", {
+      className: "ip-nuc-irr-note"
+    }, I18N.t("Entrée minerai fixe quel que soit le mode ; la conso électrique suit la répartition choisie.")));
+  })(), (usesNet || drawsPower) && React.createElement("div", {
     className: "ip-fluxpri"
   }, React.createElement("div", {
     className: "ip-fluxpri-lbl"
@@ -9903,7 +10024,7 @@ function InfoPanel({
     className: "ip-up-ptitle"
   }, I18N.t("Amélioration → Nv."), upg + 2), React.createElement("div", {
     className: "up-rows"
-  }, previewRow(I18N.t("Entrées"), b.inputs), previewRow(I18N.t("Sortie"), b.outputs), b.antenna && React.createElement("div", {
+  }, previewRow(I18N.t("Entrées"), bIn), previewRow(I18N.t("Sortie"), bOut), b.antenna && React.createElement("div", {
     className: "up-row",
     key: "antboost"
   }, React.createElement("span", {
@@ -12252,6 +12373,12 @@ function App() {
             pl.dt = b.dmgTimer || 0;
           }
           if (b.fluxPri === 'haute' || b.fluxPri === 'basse') pl.fp = b.fluxPri;
+          // Sélecteur du four à arc unifié (mode/sortie/poids) — champ additionnel rétro-compatible.
+          if (b.arc && ARC_DEF[b.id]) pl.arc = {
+            mode: b.arc.mode,
+            sel: b.arc.sel,
+            w: { ...(b.arc.w || {}) }
+          };
           placements.push(pl);
         }
         if (t.networkId != null && repByNid[t.networkId] === undefined) repByNid[t.networkId] = {
@@ -12715,6 +12842,16 @@ function App() {
             }
           }
           if (p.fp === 'haute' || p.fp === 'basse') t.building.fluxPri = p.fp;
+          // Four à arc unifié : restaure le sélecteur (défauts si save antérieure).
+          if (ARC_DEF[p.b]) {
+            const d = arcDefaultState(p.b);
+            const pa = p.arc || {};
+            t.building.arc = {
+              mode: ['single', 'mix', 'auto'].includes(pa.mode) ? pa.mode : d.mode,
+              sel: ARC_DEF[p.b].modes[pa.sel] ? pa.sel : d.sel,
+              w: { ...d.w, ...(pa.w || {}) }
+            };
+          }
           // Re-create occupancy refs for multi-tile buildings.
           const sz = BUILDINGS[p.b].size || [1, 1];
           const hh = sz[0] || 1,
@@ -13497,6 +13634,7 @@ function App() {
       id,
       variant: 0
     };
+    if (ARC_DEF[id]) t.building.arc = arcDefaultState(id);
     // Une centrale fraîchement posée démarre à 0 % : le joueur la branche (câble / route / eau froide)
     // puis monte la puissance — évite la mise en sécurité immédiate faute de refroidissement.
     if (b.nuclear) {
@@ -13671,6 +13809,7 @@ function App() {
     }
     t.building.id = nextId;
     t.building.upgrade = nextEntry;
+    if (ARC_DEF[nextId] && !t.building.arc) t.building.arc = arcDefaultState(nextId);
     bumpHud();
     markDirty();
     scheduleSave();
@@ -14198,6 +14337,32 @@ function App() {
     const bld = tiles && tiles[r] && tiles[r][c] && tiles[r][c].building;
     if (!bld) return;
     if (pri === 'normale') delete bld.fluxPri;else bld.fluxPri = pri;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  // ── Sélecteur du four à arc unifié (état PAR BÂTIMENT : t.building.arc) ──
+  function setArcMode(r, c, mode) {
+    const t = curTiles()[r] && curTiles()[r][c];
+    if (!t || !t.building || !ARC_DEF[t.building.id]) return;
+    (t.building.arc = t.building.arc || arcDefaultState(t.building.id)).mode = mode;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  function setArcSel(r, c, res) {
+    const t = curTiles()[r] && curTiles()[r][c];
+    if (!t || !t.building || !ARC_DEF[t.building.id]) return;
+    (t.building.arc = t.building.arc || arcDefaultState(t.building.id)).sel = res;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  function setArcWeight(r, c, res, v) {
+    const t = curTiles()[r] && curTiles()[r][c];
+    if (!t || !t.building || !ARC_DEF[t.building.id]) return;
+    const a = t.building.arc = t.building.arc || arcDefaultState(t.building.id);
+    (a.w = a.w || {})[res] = Math.max(0, v);
     bumpHud();
     markDirty();
     scheduleSave();
@@ -15842,6 +16007,9 @@ function App() {
     onSetNucMode: setNucMode,
     onSetNucMixWeight: setNucMixWeight,
     onSetNucPlutoCap: setNucPlutoCap,
+    onSetArcMode: setArcMode,
+    onSetArcSel: setArcSel,
+    onSetArcWeight: setArcWeight,
     onSetFluxPri: setFluxPri,
     onSetAntMode: setAntennaMode,
     onHeatRepair: (r, c) => tryHeatRepair(r, c),
