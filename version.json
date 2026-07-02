@@ -1,7 +1,7 @@
 {
-  "build": 200,
-  "version": "Alpha 13.19",
+  "build": 204,
+  "version": "Alpha 13.23",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Merge pull request #195 from freredoc/claude/new-session-criacz"
+  "notes": "Merge pull request #196 from freredoc/claude/new-session-3x1ngb"
 }
