@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 205`, `GAME_VERSION = 'Alpha 13.24'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 206`, `GAME_VERSION = 'Alpha 13.25'`, `SAVE_VERSION = 17`.**
+  Changement 13.25 : **option « Production hors-ligne » (désactivable).** Nouveau toggle dans les
+  Options (au-dessus de « Calcul hors-ligne simplifié ») : préférence `ui.offlineEnabled` (défaut
+  **true** = comportement historique ; pattern `uiPrefs` complet : newGame, serialize, loadSave avec
+  rétro-compat champ absent = activée, state React, sync au load + à l'ouverture des Options,
+  `SAVE_VERSION` inchangé). Désactivée → **garde en tête de `runCatchUp`** : AUCUN rattrapage (ni
+  production, ni `playTicks`, ni overlay/récap) ; les horloges `lastSave`/`lastActiveTs` sont
+  **réarmées** (dans la garde ET dans `toggleOffline` à la désactivation) pour que le temps d'absence
+  ne soit jamais rattrapé rétroactivement (réactivation de l'option, retour d'arrière-plan) — couvre
+  les DEUX chemins d'appel (boot `applyOfflineProgress` + resume visibilitychange). i18n en/es/de.
+  Validé : `node --check` (7 blocs) + Chromium E2E (toggle ON par défaut ; OFF persisté dans
+  `uiPrefs` ; save antidatée de 2 h + option OFF → reload sans overlay/récap, chrono inchangé ;
+  contre-épreuve option ON → 2 h créditées, chrono 02:00:10 + récap). Build 205→206.
   Changement 13.24 : **Mode Rapide intégré + chronomètre cliquable** (brief `BRIEF_MODE_RAPIDE_INTEGRE`).
   On accélère le TEMPS (plus de ticks/s), jamais les débits — aucun équilibre modifié. (1) **État**
   (init App, à côté de `tickAcc`) : `playTicks` (temps de jeu simulé en ticks, PERSISTÉ), `timeScale`
