@@ -17,7 +17,114 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 200`, `GAME_VERSION = 'Alpha 13.19'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 204`, `GAME_VERSION = 'Alpha 13.23'`, `SAVE_VERSION = 16`.**
+  Changement 13.23 : **Phase 4 (finale) densification — migration des sauvegardes + `SAVE_VERSION`
+  15→16** (brief `BRIEF_PHASE4_MIGRATION` ; la refonte paliers/densification est COMPLÈTE). (1)
+  **Version** : `SAVE_VERSION = 16` ; 16 ajouté à la whitelist de `loadSave` (liste unique). (2)
+  **Migration < 16** (module, après `arcDefaultState`) : `ARC_MODE_FROM_OLD` (four_arc_acier →
+  four_arc_fer/acier, four_arc_piece → four_arc_fer/piece_meca, four_arc_cable →
+  four_arc_cuivre/cable) + `migratePlacement(p, fromV)` (mutation en place : anciens arcs → arc
+  unifié mode single équivalent + poids par défaut ; bâtiment de palier (`TIER_STEP`) → `p.u =
+  tierEntry` ; V1 au-delà du nouveau cap (`TIER_NEXT`) → `p.u = cap` ; **pas de remboursement**).
+  Appelée en TÊTE de la boucle de placements de `loadSave`, AVANT le garde `!BUILDINGS[p.b]` → les
+  anciens arcs sont convertis au lieu d'être droppés ; tout autre id inconnu reste ignoré sans crash.
+  Les changements de recettes (centrale charbon, raffinerie, polymère, coût pompe) ne nécessitent
+  AUCUNE migration (la save ne stocke que id+niveau). (3) **Sérialisation/restauration `pl.arc`** :
+  déjà en place depuis 13.22 (rétro-compatible), inchangée. Validé : `node --check` (7 blocs) +
+  Chromium E2E (save v15 forgée : chargement 0 erreur ; les 3 anciens arcs → arcs unifiés u20/mode
+  correspondant, 0 id résiduel ; four_fer_v2 u17→10, mine_fer_v3 u3→20, mine_or/uranium_v3 →10 ;
+  four_fer u14→9 (cap), four_fer u5 et acierie u12 INTACTS, cimenterie u11→9 ; re-save = version 16 ;
+  2e reload+resave v16 : modes d'arc et niveaux CONSERVÉS — la migration ne retouche pas les v16).
+  Build 203→204.
+  Changement 13.22 : **Phase 3 densification — four à arc UNIFIÉ + sélecteur multi-sortie par bâtiment**
+  (brief `BRIEF_PHASE3_ARC_UNIFIE`). (1) **2 nouveaux bâtiments** `four_arc_fer`/`four_arc_cuivre`
+  (flag `arc: true`, `cost: {}`, t3 ; I/O statiques = REPRÉSENTATIFS du mode lingot par défaut, repli
+  pour le code lisant les champs statiques). (2) **Données module** (après `tierForfait`) : `ARC_DEF`
+  (input fixe `inRate` 8, `order`, par sortie {out, powMin, powMax} — fer : lingot 1 (0,5-1,5 kW) /
+  acier 0,125 (2,5-7,5) / pièce 0,125 (1,5-4,5) ; cuivre : lingot 1 / câble 1/12 (1-3)) ; `arcWeights`
+  (single/mix/auto, mirror `nucAutoWeights` — auto = stock port le plus bas favorisé) ; `arcEffective`
+  (I/O + fourchette conso pondérés, base avant ×2^upgrade ; **l'entrée reste FIXE**, poids nuls →
+  repli 1re sortie) ; `arcDefaultState` (single/lingot, poids 1). (3) **Paliers** : `TIER_NEXT` +=
+  four_fer_v2/four_cuivre_v2 → arcs (**cap 19**, fini l'« améliorable à l'infini » de la phase 1) ;
+  `TIER_STEP` += les 2 arcs (entry 20, forfait 2000 béton armé + 1000 pièce + 100 processeur). (4)
+  **Init `bld.arc`** : `tryDensify` (après transform) + `tryPlace` (après pose). (5) **`tickIsland`**
+  (tête de boucle bâtiment, après `mult`) : `arcEff = ARC_DEF[bld.id] ? arcEffective(bld, workPort) :
+  null` → `effInputs`/`effOutputs`/`effRandomP` substitués à `b.inputs`/`b.outputs`/`b.randomP` dans
+  TOUTE la boucle (basePower, `eligible`, `inByType`/`outByType`, energyOut ; le dépôt aval passe déjà
+  par `outByType`). (6) **Suppression des 3 anciens arcs** (`four_arc_acier`/`_cable`/`_piece`) :
+  BUILDINGS, `BLD_SPRITE_OVERRIDE` (ligne `four_arc_meca`), toolbar steel/copper (remplacés par les 2
+  unifiés), nœud tech 19 → `['four_arc_fer','four_arc_cuivre']` (name/reqs/prereq intacts). Restes
+  inertes voulus : sprites/anims/i18n data. ⚠ Saves avec anciens arcs : tuiles **droppées** au
+  chargement (garde `!BUILDINGS[p.b] → continue` préexistante) — conversion en phase 5. (7)
+  **Persistance** (rétro-compatible, `SAVE_VERSION` inchangé) : `serialize` émet `pl.arc =
+  {mode,sel,w}` ; `loadSave` restaure avec défauts/validation (`arcDefaultState` merge). (8) **UI** :
+  `InfoPanel` — les lignes Entrées/Réel/Sortie/Élec./aperçu d'amélioration passent par
+  `arcIO = arcEffective(...)` (`bIn`/`bOut`/`bRandomP`) → la fiche montre le mode courant, pas le
+  statique ; **bloc sélecteur** (classes `ip-nuc-*` réutilisées, SANS curseur de puissance) : ligne
+  I/O effective « − entrée /s (fixe) → + sorties », 3 boutons de mode, boutons par sortie (single),
+  sliders 0-100 pas 5 + % normalisé (mix), barres lecture seule (auto) ; setters `setArcMode`/
+  `setArcSel`/`setArcWeight` (état PAR bâtiment `t.building.arc`) + props `onSetArc*`. Hors scope :
+  migration/conversion des saves (phase 5). Validé : `node --check` (7 blocs) + Chromium (boot 0
+  erreur build 203 ; `arcEffective` : single lingot/acier, mix 50/50 (sortie ET conso pondérées,
+  entrée fixe), auto (stock bas favorisé), câble 1/12, poids nuls → repli ; cumul
+  `cumulativeInvested('four_arc_fer',20)` = four_fer 0..9 + v2 10..19 + arc 20 ; toolbar/nœud 19/
+  override/sprites 32×32 OK ; grep anciens ids = data inerte seulement ; E2E A : four_fer_v2 u19 →
+  « Densifier → Four à Arc Fer » → arc u20 + `pl.arc` single/lingot + forfait débité exact ; E2E B :
+  arc réel posé (route→port, éolienne+câble) → +1 lingot/s à −8 minerai/s régime 100 %, bascule
+  « acier » via le sélecteur de la fiche → +0,125 acier/s, lingot FIGÉ, minerai toujours −8/s,
+  `pl.arc.sel='acier'` persisté). Build 202→203.
+  Changement 13.21 : **Phase 2 densification — contenu V2 (bâtiments, recettes, nœuds, rééquilibrage,
+  assets)** (brief `BRIEF_PHASE2_CONTENU_V2` + `archipel_new_assets.js`). (1) **3 nouveaux bâtiments**
+  (après `four_cuivre_v2`, `cost: {}` car paliers via `TIER_STEP`, exempts `TIER_COST_MULT` via
+  `/_v2$/`) : `cimenterie_v2` (4 pierre + 0,5 fer + 0,5 eau → 1 ciment, 0 kW — intrants fractionnaires
+  VOULUS, n'existe qu'à upgrade ≥10), `pompe_eau_v2` (1 eau, 0,125 kW, côte), `centrale_charbon_v2`
+  (8 charbon + 2 eau → 128 kW, posable land/resource/coast). (2) **Paliers branchés** : `TIER_NEXT`
+  += cimenterie/pompe_eau/centrale_charbon (cap 9, pas de V3 → V2 améliorable à l'infini) ; `TIER_STEP`
+  += les 3 forfaits (circuit 10+béton 1000 / béton 500+polymère 100 / béton 1000+pièce 500+circuit 100).
+  (3) **Recettes** : `centrale_charbon` 64→128 kW ; `raffinerie` diesel 1→3, power 16→32 ;
+  `usine_polymere` pétrole 16→8, eau 4→2, +pierre 4 (sortie/power inchangés) ; coût `pompe_eau` V1
+  {pierre:10,lingot_fer:10}→{ciment:50,lingot_fer:50}. (4) **Rééquilibrage socle ×2^upgrade** (inputs/
+  outputs/power SEULS, costs intacts) : fours V2 = 4 minerai→1 lingot (SANS charbon), power 1 ; mines V2
+  = output 1, power 1 ; les 6 mines V3 = output 1, `randomP {min:0.0625, max:0.1875}` (moyenne 0,125 kW
+  → ~128 MW à niv 21) — l'`element_moteur_nuc` reste uniquement dans le coût/forfait (jamais un intrant).
+  (5) **Toolbar** : les 3 V2 ajoutés aux groupes extraction/cement/energy ; **coût de pose affiché =
+  cumul** pour les bâtiments de palier (`ToolButton` : `cost = TIER_STEP[id] ? cumulativeInvested(id,
+  tierEntry(id)) : b.cost`, sous-libellé inclus ; même substitution dans `BuildingDetailModal`).
+  (6) **Tech tree — échange nœuds 7↔13** (reqs/prereq INCHANGÉS) : nœud 7 « Upgrades V2 — Extraction »
+  débloque les 4 mines V2 (plus tôt, acier/cuivre) ; nœud 13 « Upgrades V2 — Transformation » débloque
+  four_fer_v2/four_cuivre_v2 + les 3 nouveaux V2 (circuit). (7) **Assets** : 5 sprites inlinés dans le
+  bloc d'assignations `__SPRITE_DATA__` (cimenterie_v2, pompe_eau_v2, centrale_charbon_v2 + four_arc_fer/
+  four_arc_cuivre pour la phase 3) ; méthode SFX `densify()` (arpège + power-up + clunk) inlinée après
+  `downgrade` ; `tryDensify` joue `densify` (fini le repli `upgrade`). Hors scope : four à arc unifié
+  (phase 3), migration saves/`SAVE_VERSION` (phase 5), bétonnière V2/nucléaire/pétrole (plus tard).
+  Validé : `node --check` (7 blocs) + Chromium (boot 0 erreur build 202 ; toutes les defs/paliers/
+  recettes/toolbar/nœuds vérifiés par assertions ; 5 sprites décodés 32×32 ; `SFX.play('densify')` sans
+  throw ; cumul pose pompe_eau_v2 exact ; E2E : cimenterie u9 → « Densifier → Cimenterie V2 » → clic =
+  cimenterie_v2 u10 + forfait débité exactement ; ToolButton cimenterie_v2 = 4 pastilles de cumul,
+  pas « gratuit »). Build 201→202.
+  Changement 13.20 : **Phase 1 densification — moteur de paliers (V1→V2→V3) + bouton « Densifier » +
+  courbe éolienne accélérée** (brief `BRIEF_PHASE1_DENSIFICATION`). (1) **Données module** (après
+  `UPGRADE_SCALE`) : `TIER_NEXT` (id → {next, cap} ; mines+fours cap 9, mines V2 cap 19, or/uranium
+  sautent V2), `TIER_STEP` (id de palier → {entry 10|20, forfait plat}), `TIER_PREV` (auto-dérivé),
+  helpers `tierEntry`/`tierForfait`. (2) **Coût** : `upgradeCostFactor` gagne la branche `eolienne`
+  (niveau ≥10 → même courbe accélérée que le puits, ×2,7⁹ puis ×3,0×1,1^k ; puits inchangé) ;
+  `upgradeCost` branche sur `TIER_STEP` (coût d'un cran = forfait × 2,7^(level−entry), le cran d'entrée
+  = forfait plat) sinon chemin historique ; nouvelle `cumulativeInvested(id, upgrade)` (remonte la
+  chaîne V1→…→id, somme pose+montées+forfaits ; `cumulativeUpgradeCost` conservée pour les jonctions).
+  (3) **Actions** : nouvelle `tryDensify(r,c)` (au cap → paie le forfait, transforme sur place :
+  `building.id = next`, `upgrade = entry` ; SFX 'upgrade' en hook, TODO son dédié) ; `tryUpgrade`
+  bloqué au cap (`lvl >= link.cap`) ; `tryDowngrade` bloqué au 1er niveau d'un palier
+  (`lvl <= tierEntry`) ; `tryPlace` : pose directe d'un bâtiment de palier = `cumulativeInvested(id,
+  tierEntry(id))` ; `tryDemolish` : remboursement = `cumulativeInvested` (jonctions inchangées).
+  (4) **UI** : `UpgradePanel` reçoit `onDensify` ; au cap, la ligne de coût devient « Densification »
+  (forfait) et le bouton devient « ✦ Densifier → <nom> » (`.up-btn.densify-btn` violet, CSS ajouté) ;
+  câblage `onDensify: tryDensify` sur l'instance. **Hors scope (phases 2+)** : valeurs de base des
+  V2/V3, nouveaux bâtiments (cimenterie_v2…), four à arc unifié, swap tech, migration saves.
+  Validé : `node --check` (7 blocs) + Chromium (boot 0 erreur ; moteur de coût : forfait plat,
+  ×2,7/cran, chaîne `cumulativeInvested` V1+V2+V3 exacte, éolienne ×3 au niveau 10, puits/hors-palier
+  inchangés ; rendu `UpgradePanel` 2 branches ; E2E : four_fer u9 → « Densifier → Four Fer V2 » →
+  clic = four_fer_v2 u10 + port débité du forfait exact ; démolition d'un four_fer_v2 u12 →
+  remboursement = `cumulativeInvested` au près). Build 200→201.
   Changement 13.19 : **plafonnement du redessin d'ambiance à ~10 FPS (« Levier 1 » — chauffe/batterie).**
   Le canvas était redessiné à ~60 FPS en continu : le dirty-checking (`g.dirty`) ne servait jamais car
   chaque frame animée re-marquait `g.dirty` via `_animPlayed` (eau/écume/machines toujours animées →
