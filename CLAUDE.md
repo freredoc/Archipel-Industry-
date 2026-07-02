@@ -17,7 +17,32 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 204`, `GAME_VERSION = 'Alpha 13.23'`, `SAVE_VERSION = 16`.**
+- **État au dernier passage : `GAME_BUILD = 205`, `GAME_VERSION = 'Alpha 13.24'`, `SAVE_VERSION = 17`.**
+  Changement 13.24 : **Mode Rapide intégré + chronomètre cliquable** (brief `BRIEF_MODE_RAPIDE_INTEGRE`).
+  On accélère le TEMPS (plus de ticks/s), jamais les débits — aucun équilibre modifié. (1) **État**
+  (init App, à côté de `tickAcc`) : `playTicks` (temps de jeu simulé en ticks, PERSISTÉ), `timeScale`
+  (1|10, NON persisté — repart à 1 au boot), `_sfxPrev` (mémo audio avant coupure auto). (2) **Boucle
+  `frame`** : accumulation `+= min(dt×_ts, _ts)`, plafond `_maxTicks = _ts>1 ? _ts*5 : 5`,
+  `g.playTicks++` par tick simulé. (3) **Offline** : `runCatchUp` crédite `playTicks += ticks` UNE fois
+  en tête (la boucle frame ne tique pas pendant le rattrapage ; l'extrapolation simplifiée représente
+  quand même ce temps — pas de double comptage). (4) **Persistance** : `SAVE_VERSION 16→17` (+17 à la
+  whitelist), `playTicks` dans `serialize` ; au load : défaut 0 (< 17), `timeScale = 1`, `_sfxPrev =
+  null`. ⚠ Le bloc `audio.enabled` de `serialize` persiste désormais le CHOIX joueur (`_sfxPrev`) quand
+  `timeScale > 1` (le mute auto du mode rapide n'écrase plus le réglage sauvegardé). (5) **UI** : helper
+  module `fmtPlaytime(ticks)` (HH:MM:SS, après `fmtHeat`) ; bouton `.playclock` (1er enfant du
+  `toolbar-wrap`, au-dessus de la barre de bâtiments ; props `playTicks`/`timeScale`/`onToggleFast` de
+  la Toolbar, re-rendu via le `setInterval(bumpClock, 1000)` existant) affichant temps + `N×`
+  (`.playclock-fast` liseré jaune en 10×) ; handler App `toggleFastMode` (10× → mute auto avec mémo
+  `_sfxPrev` ; 1× → restaure SANS écraser un mute volontaire ; `toggleAudio` met à jour `_sfxPrev` si
+  réglé manuellement PENDANT le rapide). (6) **Création de partie** : toggle « Mode rapide » (défaut
+  OFF, `.mode-fast-row`) dans la **ModeModal** (l'écran « Choisis ton mode de jeu » — PAS le SlotPanel :
+  `slotCreate` recharge la page avant de créer l'état, la ModeModal est l'écran de création effectif) →
+  `chooseMode(mode, fast)` appelle `toggleFastMode()` si coché. i18n en/es/de (« Mode rapide », tooltip
+  chrono, desc toggle). Validé : `node --check` (7 blocs) + Chromium E2E (fmtPlaytime 0/3661/86399
+  exacts ; 1× ≈ 1 tick/s, clic → 10× = 40 ticks/4 s + classe fast, retour 1× OK ; création avec toggle
+  → 10× immédiat ; reload → `playTicks` restauré de la save v17, `timeScale = 1`, `audio.enabled = true`
+  malgré le mute auto actif à la sauvegarde ; save v16 forgée sans `playTicks` → charge sans erreur,
+  chrono repart à 0). Build 204→205.
   Changement 13.23 : **Phase 4 (finale) densification — migration des sauvegardes + `SAVE_VERSION`
   15→16** (brief `BRIEF_PHASE4_MIGRATION` ; la refonte paliers/densification est COMPLÈTE). (1)
   **Version** : `SAVE_VERSION = 16` ; 16 ajouté à la whitelist de `loadSave` (liste unique). (2)
