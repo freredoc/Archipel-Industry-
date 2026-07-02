@@ -4386,12 +4386,12 @@ function ensureSlotsInitialized() {
   }
   return active;
 }
-const SAVE_VERSION = 15;
+const SAVE_VERSION = 16;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 203;
-const GAME_VERSION = 'Alpha 13.22';
+const GAME_BUILD = 204;
+const GAME_VERSION = 'Alpha 13.23';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -4870,6 +4870,31 @@ function arcEffective(bld, port) {
 function arcDefaultState(id) {
   const def = ARC_DEF[id];
   return { mode: 'single', sel: def.order[0], w: def.order.reduce((o, k) => (o[k] = 1, o), {}) };
+}
+
+// ── Migration des sauvegardes < 16 vers le modèle « paliers » ────────────────
+// Correspondance ancien four à arc séparé → arc unifié + mode single équivalent.
+const ARC_MODE_FROM_OLD = {
+  four_arc_acier: { id: 'four_arc_fer',    sel: 'acier' },
+  four_arc_piece: { id: 'four_arc_fer',    sel: 'piece_meca' },
+  four_arc_cable: { id: 'four_arc_cuivre', sel: 'cable' }
+};
+
+// Migration d'un placement de save < 16 (mutation en place de `p`) : anciens arcs séparés →
+// arc unifié (mode correspondant), bâtiments de palier → niveau d'ENTRÉE du palier, V1 au-delà
+// du nouveau cap → cap. Pas de remboursement, pas de double-paiement (approche validée).
+function migratePlacement(p, fromV) {
+  if ((fromV || 0) >= 16) return;
+  // 1) Anciens fours à arc séparés → arc unifié, mode single correspondant.
+  const rc = ARC_MODE_FROM_OLD[p.b];
+  if (rc) {
+    p.b = rc.id;
+    p.arc = { mode: 'single', sel: rc.sel, w: ARC_DEF[rc.id].order.reduce((o, k) => (o[k] = 1, o), {}) };
+  }
+  // 2) Bâtiment de palier (V2 / V3 / arc) → ramené au niveau d'ENTRÉE de son palier.
+  if (TIER_STEP[p.b]) p.u = tierEntry(p.b);
+  // 3) Bâtiment V1 monté au-delà du nouveau cap → ramené au cap.
+  else if (TIER_NEXT[p.b] && (p.u || 0) > TIER_NEXT[p.b].cap) p.u = TIER_NEXT[p.b].cap;
 }
 const upgradeMult = upg => Math.pow(2, upg || 0);
 function repairCost(n) {
@@ -12655,7 +12680,7 @@ function App() {
     } catch (e) {
       return false;
     }
-    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].indexOf(data.version) === -1) return false;
+    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].indexOf(data.version) === -1) return false;
     const g = gameRef.current;
     // Extension des mers (v11) : les îles sont désormais entourées de SEA_PAD tuiles d'eau.
     // Les sauvegardes antérieures (coordonnées non décalées) sont translatées de +SEA_PAD.
@@ -12817,6 +12842,9 @@ function App() {
         if (tt && typeof tm.t === 'string') tt.terrain = tm.t;
       }
       for (const p of isl.placements || []) {
+        // Migration < v16 AVANT le garde : les anciens arcs récupèrent un id valide (→ convertis
+        // au lieu d'être ignorés) ; tout autre id inconnu reste ignoré sans crash.
+        migratePlacement(p, data.version || 0);
         if (!BUILDINGS[p.b] || BUILDINGS[p.b].fixed) continue;
         const pr = p.r + padShift,
           pc = p.c + padShift;

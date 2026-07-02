@@ -17,7 +17,25 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 203`, `GAME_VERSION = 'Alpha 13.22'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 204`, `GAME_VERSION = 'Alpha 13.23'`, `SAVE_VERSION = 16`.**
+  Changement 13.23 : **Phase 4 (finale) densification — migration des sauvegardes + `SAVE_VERSION`
+  15→16** (brief `BRIEF_PHASE4_MIGRATION` ; la refonte paliers/densification est COMPLÈTE). (1)
+  **Version** : `SAVE_VERSION = 16` ; 16 ajouté à la whitelist de `loadSave` (liste unique). (2)
+  **Migration < 16** (module, après `arcDefaultState`) : `ARC_MODE_FROM_OLD` (four_arc_acier →
+  four_arc_fer/acier, four_arc_piece → four_arc_fer/piece_meca, four_arc_cable →
+  four_arc_cuivre/cable) + `migratePlacement(p, fromV)` (mutation en place : anciens arcs → arc
+  unifié mode single équivalent + poids par défaut ; bâtiment de palier (`TIER_STEP`) → `p.u =
+  tierEntry` ; V1 au-delà du nouveau cap (`TIER_NEXT`) → `p.u = cap` ; **pas de remboursement**).
+  Appelée en TÊTE de la boucle de placements de `loadSave`, AVANT le garde `!BUILDINGS[p.b]` → les
+  anciens arcs sont convertis au lieu d'être droppés ; tout autre id inconnu reste ignoré sans crash.
+  Les changements de recettes (centrale charbon, raffinerie, polymère, coût pompe) ne nécessitent
+  AUCUNE migration (la save ne stocke que id+niveau). (3) **Sérialisation/restauration `pl.arc`** :
+  déjà en place depuis 13.22 (rétro-compatible), inchangée. Validé : `node --check` (7 blocs) +
+  Chromium E2E (save v15 forgée : chargement 0 erreur ; les 3 anciens arcs → arcs unifiés u20/mode
+  correspondant, 0 id résiduel ; four_fer_v2 u17→10, mine_fer_v3 u3→20, mine_or/uranium_v3 →10 ;
+  four_fer u14→9 (cap), four_fer u5 et acierie u12 INTACTS, cimenterie u11→9 ; re-save = version 16 ;
+  2e reload+resave v16 : modes d'arc et niveaux CONSERVÉS — la migration ne retouche pas les v16).
+  Build 203→204.
   Changement 13.22 : **Phase 3 densification — four à arc UNIFIÉ + sélecteur multi-sortie par bâtiment**
   (brief `BRIEF_PHASE3_ARC_UNIFIE`). (1) **2 nouveaux bâtiments** `four_arc_fer`/`four_arc_cuivre`
   (flag `arc: true`, `cost: {}`, t3 ; I/O statiques = REPRÉSENTATIFS du mode lingot par défaut, repli
