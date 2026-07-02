@@ -999,6 +999,8 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .up-btn:hover{background:rgba(76,175,80,.26);}
 .up-btn:active{transform:translateY(1px);}
 .up-btn:disabled{background:#2a2a3e;border-color:var(--line);color:var(--ink-faint);cursor:not-allowed;}
+.up-btn.densify-btn{background:rgba(124,77,255,.18);border-color:#7c4dff;color:#b79cff;}
+.up-btn.densify-btn:not(:disabled):hover{background:rgba(124,77,255,.28);}
 /* Research-ready notification dot on the Recherche button */
 .research-btn{position:relative;}
 .research-btn.pending{border-color:var(--yellow);box-shadow:0 0 0 1px var(--yellow) inset;}
@@ -4360,8 +4362,8 @@ const SAVE_VERSION = 15;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 200;
-const GAME_VERSION = 'Alpha 13.19';
+const GAME_BUILD = 201;
+const GAME_VERSION = 'Alpha 13.20';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -4719,6 +4721,53 @@ function fmtEnergyPair(stored, cap) {
   return fmtSig(stored / div) + ' / ' + fmtSig(cap / div) + ' ' + u;
 }
 const UPGRADE_SCALE = 2.7;
+// ── Paliers de densification ────────────────────────────────────────────────
+// TIER_NEXT : id courant → { next: id du palier suivant, cap: dernier `upgrade` avant densif }.
+// Au niveau `cap`, le bouton « Améliorer » est remplacé par « Densifier → <next> ».
+const TIER_NEXT = {
+  four_fer:        { next: 'four_fer_v2',     cap: 9  },
+  four_cuivre:     { next: 'four_cuivre_v2',  cap: 9  },
+  mine_fer:        { next: 'mine_fer_v2',     cap: 9  },
+  mine_charbon:    { next: 'mine_charbon_v2', cap: 9  },
+  carriere:        { next: 'carriere_v2',     cap: 9  },   // « mine pierre »
+  mine_cuivre:     { next: 'mine_cuivre_v2',  cap: 9  },
+  mine_fer_v2:     { next: 'mine_fer_v3',     cap: 19 },
+  mine_charbon_v2: { next: 'mine_charbon_v3', cap: 19 },
+  carriere_v2:     { next: 'carriere_v3',     cap: 19 },
+  mine_cuivre_v2:  { next: 'mine_cuivre_v3',  cap: 19 },
+  mine_or:         { next: 'mine_or_v3',      cap: 9  },   // or : saute V2
+  mine_uranium:    { next: 'mine_uranium_v3', cap: 9  }    // uranium : saute V2
+  // four_fer_v2 / four_cuivre_v2 → arc : ajoutés en phase 3.
+  // cimenterie → cimenterie_v2, pompe_eau → pompe_eau_v2,
+  // centrale_charbon → centrale_charbon_v2 : ajoutés en phase 2 (bâtiments à créer).
+};
+
+// TIER_STEP : pour chaque bâtiment de palier (V2/V3/arc), l'`entry` (valeur de `upgrade` à
+// l'entrée du palier) et le `forfait` = coût PLAT de densification vers ce palier
+// (= coût du 1er niveau du palier). Coût d'un cran `u` dans le palier = forfait × 2,7^(u − entry).
+// Les V1 n'ont PAS d'entrée ici (entry implicite 0, coût de base = BUILDINGS[id].cost).
+const TIER_STEP = {
+  four_fer_v2:     { entry: 10, forfait: { circuit: 50, piece_meca: 2000, beton_arme: 500 } },
+  four_cuivre_v2:  { entry: 10, forfait: { circuit: 50, piece_meca: 2000, beton_arme: 500 } },
+  mine_fer_v2:     { entry: 10, forfait: { acier: 500, cable: 500, ciment: 1000 } },
+  mine_charbon_v2: { entry: 10, forfait: { acier: 500, cable: 500, ciment: 1000 } },
+  carriere_v2:     { entry: 10, forfait: { acier: 500, cable: 500, ciment: 1000 } },
+  mine_cuivre_v2:  { entry: 10, forfait: { acier: 500, cable: 500, ciment: 1000 } },
+  mine_fer_v3:     { entry: 20, forfait: { element_moteur_nuc: 1 } },
+  mine_charbon_v3: { entry: 20, forfait: { element_moteur_nuc: 1 } },
+  carriere_v3:     { entry: 20, forfait: { element_moteur_nuc: 1 } },
+  mine_cuivre_v3:  { entry: 20, forfait: { element_moteur_nuc: 1 } },
+  mine_or_v3:      { entry: 10, forfait: { element_moteur_nuc: 1 } },  // or : entrée à 10 (saute V2)
+  mine_uranium_v3: { entry: 10, forfait: { element_moteur_nuc: 1 } }
+};
+
+// TIER_PREV : chaîne inverse (auto-dérivée), pour remonter jusqu'au V1 (coût cumulé).
+const TIER_PREV = {};
+for (const _p in TIER_NEXT) TIER_PREV[TIER_NEXT[_p].next] = _p;
+
+// Helpers palier.
+const tierEntry = id => (TIER_STEP[id] && TIER_STEP[id].entry) || 0;
+const tierForfait = id => (TIER_STEP[id] && TIER_STEP[id].forfait) || (BUILDINGS[id] && BUILDINGS[id].cost) || {};
 const upgradeMult = upg => Math.pow(2, upg || 0);
 function repairCost(n) {
   const f = Math.pow(10, n);
@@ -4743,9 +4792,25 @@ function upgradeCostFactor(buildingId, level) {
     for (let k = 5; k <= level; k++) p *= 3.0 * Math.pow(1.1, k - 5);
     return p;
   }
+  // Éolienne : pas de densification → au-delà du niveau affiché 10, même courbe
+  // accélérée que le puits de pétrole, décalée au seuil 10.
+  if (buildingId === 'eolienne' && level >= 10) {
+    let p = Math.pow(UPGRADE_SCALE, 9);
+    for (let k = 10; k <= level; k++) p *= 3.0 * Math.pow(1.1, k - 10);
+    return p;
+  }
   return Math.pow(UPGRADE_SCALE, level);
 }
 function upgradeCost(baseCost, level, buildingId) {
+  // Bâtiment de palier (V2/V3/arc) : coût = forfait × 2,7^(level − entry).
+  const step = TIER_STEP[buildingId];
+  if (step) {
+    const f = Math.pow(UPGRADE_SCALE, level - step.entry);
+    const out = {};
+    for (const k in step.forfait) out[k] = Math.round(step.forfait[k] * f);
+    return out;
+  }
+  // Sinon : comportement historique (coût de base × facteur, exception puits_petrole incluse).
   const f = upgradeCostFactor(buildingId, level);
   const out = {};
   for (const k in baseCost || {}) out[k] = Math.round(baseCost[k] * f);
@@ -4756,6 +4821,27 @@ function cumulativeUpgradeCost(baseCost, level, buildingId) {
   for (let l = 0; l < (level || 0); l++) {
     const c = upgradeCost(baseCost, l + 1, buildingId);
     for (const k in c) out[k] = (out[k] || 0) + c[k];
+  }
+  return out;
+}
+// Coût total réellement investi dans un bâtiment (id, upgrade) : remonte toute la chaîne de
+// paliers V1→…→id et somme, pour chaque palier, le coût pour atteindre chaque niveau
+// (pose comprise pour le V1). Utilisé pour : remboursement à la démolition, et coût de pose
+// directe d'un bâtiment de palier depuis la barre d'outils.
+function cumulativeInvested(id, upgrade) {
+  const chain = [id];
+  let cur = id;
+  while (TIER_PREV[cur]) { cur = TIER_PREV[cur]; chain.unshift(cur); }
+  const out = {};
+  for (let i = 0; i < chain.length; i++) {
+    const cid = chain[i];
+    const from = tierEntry(cid);
+    const isLast = i === chain.length - 1;
+    const to = isLast ? (upgrade || 0) : TIER_NEXT[cid].cap;
+    for (let k = from; k <= to; k++) {
+      const c = upgradeCost(BUILDINGS[cid] && BUILDINGS[cid].cost, k, cid);
+      for (const key in c) out[key] = (out[key] || 0) + c[key];
+    }
   }
   return out;
 }
@@ -9812,7 +9898,8 @@ function UpgradePanel({
   currentIsland,
   stageRef,
   onClose,
-  onUpgrade
+  onUpgrade,
+  onDensify
 }) {
   const ref = useRef(null);
   const [pos, setPos] = useState({
@@ -9853,6 +9940,12 @@ function UpgradePanel({
   const port = game.port[currentIsland] || {};
   let canAfford = true;
   for (const k in cost) if ((port[k] || 0) < cost[k]) canAfford = false;
+  // Au cap d'un palier : « Améliorer » devient « Densifier → palier suivant » (forfait plat).
+  const link = TIER_NEXT[bld.id];
+  const atCap = !!(link && lvl >= link.cap);
+  const densCost = atCap ? upgradeCost(null, tierEntry(link.next), link.next) : null;
+  let canDensify = atCap;
+  if (atCap) for (const k in densCost) if ((port[k] || 0) < densCost[k]) canDensify = false;
   const statLine = (label, rec) => {
     if (!rec || Object.keys(rec).length === 0) return null;
     return React.createElement("div", {
@@ -9919,9 +10012,13 @@ function UpgradePanel({
     className: "up-cost"
   }, React.createElement("span", {
     className: "lbl"
-  }, I18N.t("Co\xFBt niv. "), lvl + 2), React.createElement("span", {
+  }, atCap ? I18N.t("Densification") : I18N.t("Co\xFBt niv. ") + (lvl + 2)), React.createElement("span", {
     className: "val"
-  }, formatCost(cost) || 'gratuit')), React.createElement("button", {
+  }, formatCost(atCap ? densCost : cost) || 'gratuit')), atCap ? React.createElement("button", {
+    className: "up-btn densify-btn",
+    disabled: !canDensify,
+    onClick: () => onDensify(up.r, up.c)
+  }, "\u2726 " + I18N.t("Densifier \u2192 ") + BUILDINGS[link.next].name) : React.createElement("button", {
     className: "up-btn",
     disabled: !canAfford,
     onClick: () => onUpgrade(up.r, up.c)
@@ -13309,6 +13406,9 @@ function App() {
       for (const k in b.cost) costToPay[k] = (costToPay[k] || 0) + b.cost[k];
       if (extCost) for (const k in extCost) costToPay[k] = (costToPay[k] || 0) + extCost[k];
     } else costToPay = extCost || b.cost;
+    // Bâtiment de palier posé directement : on paie le cumul V1→…→ce palier (pose + montées +
+    // forfaits de densification), pas le simple coût de base.
+    if (TIER_STEP[id]) costToPay = cumulativeInvested(id, tierEntry(id));
     if (!dev) {
       const miss = missingFor(costToPay);
       if (miss.length) {
@@ -13378,8 +13478,8 @@ function App() {
     }
     const wasInfra = b.kind === 'infra' || b.kind === 'junction';
     if (!gameRef.current.ui.dev) {
-      // Jonction en Normal : rembourse le coût de la dernière posée (place/démolit symétrique).
       if (b.kind === 'junction' && gameRef.current.mode === 'normal') {
+        // Jonction en Normal : coût de la dernière posée + montées (logique inchangée).
         const g = gameRef.current,
           isl = g.currentIsland;
         const n = Math.max(0, countJunctions(g, isl, t.building.id) - 1);
@@ -13387,8 +13487,11 @@ function App() {
         const rc = {};
         for (const k in JUNCTION_BASE_COST) rc[k] = JUNCTION_BASE_COST[k] * mult;
         refund(rc);
-      } else refund(b.cost);
-      if (t.building.upgrade) refund(cumulativeUpgradeCost(b.cost, t.building.upgrade, t.building.id));
+        if (t.building.upgrade) refund(cumulativeUpgradeCost(b.cost, t.building.upgrade, t.building.id));
+      } else {
+        // Bâtiment normal (paliers inclus) : remboursement du cumul investi total.
+        refund(cumulativeInvested(t.building.id, t.building.upgrade || 0));
+      }
     }
     // Clear the whole footprint (occupancy tiles) for multi-tile buildings.
     const {
@@ -13447,6 +13550,8 @@ function App() {
     const b = BUILDINGS[t.building.id];
     if (!isUpgradable(t.building.id)) return false;
     const lvl = t.building.upgrade || 0;
+    const link = TIER_NEXT[t.building.id];
+    if (link && lvl >= link.cap) return false; // au cap → densification requise (bouton dédié)
     // Coût du palier lvl→lvl+1 : on applique la multiplication dès le 1er upgrade
     // (Nv.1→Nv.2 = coût de base × UPGRADE_SCALE, pas le coût de construction brut).
     const cost = upgradeCost(b.cost, lvl + 1, t.building.id);
@@ -13464,6 +13569,37 @@ function App() {
     scheduleSave();
     SFX.play('upgrade');
     showToast(`⬆ ${b.name} → Nv.${lvl + 2}`, 'var(--green)');
+    return true;
+  }
+  // Densification : au cap d'un palier (TIER_NEXT), transforme le bâtiment sur place en son
+  // palier suivant (V1→V2→V3) contre le forfait plat du palier cible. Tous les bâtiments de
+  // la chaîne sont 1×1 → pas de gestion de footprint.
+  function tryDensify(r, c) {
+    const t = curTiles()[r] && curTiles()[r][c];
+    if (!t || !t.building) return false;
+    const link = TIER_NEXT[t.building.id];
+    if (!link) return false; // pas de palier suivant
+    const lvl = t.building.upgrade || 0;
+    if (lvl < link.cap) return false; // pas encore au cap
+    const nextId = link.next;
+    const nextEntry = tierEntry(nextId); // 10 ou 20
+    const cost = upgradeCost(null, nextEntry, nextId); // forfait plat (2,7^0) via TIER_STEP
+    if (!gameRef.current.ui.dev) {
+      const miss = missingFor(cost);
+      if (miss.length) {
+        showToast(I18N.t('❌ Manque ') + miss.join(', '), 'var(--red)');
+        SFX.play('invalid');
+        return false;
+      }
+      pay(cost);
+    }
+    t.building.id = nextId;
+    t.building.upgrade = nextEntry;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+    SFX.play('upgrade'); // TODO phase transverse : son dédié 'densify'
+    showToast(`✦ ${BUILDINGS[nextId].name}`, 'var(--green)');
     return true;
   }
   // Aligne tous les bâtiments du même type (sur l'île courante) qui sont en-dessous
@@ -13516,6 +13652,7 @@ function App() {
     if (!t || !t.building) return false;
     const lvl = t.building.upgrade || 0;
     if (lvl <= 0) return false;
+    if (lvl <= tierEntry(t.building.id)) return false; // 1er niveau d'un palier : pas de -1 (dé-densif hors scope P1)
     const b = BUILDINGS[t.building.id];
     if (!gameRef.current.ui.dev) refund(upgradeCost(b.cost, lvl, t.building.id));
     t.building.upgrade = lvl - 1;
@@ -15640,7 +15777,8 @@ function App() {
     currentIsland: game.currentIsland,
     stageRef: stageRef,
     onClose: () => { SFX.play('panelClose'); setUpgrade(null); },
-    onUpgrade: (r, c) => tryUpgrade(r, c)
+    onUpgrade: (r, c) => tryUpgrade(r, c),
+    onDensify: (r, c) => tryDensify(r, c)
   }), network && React.createElement(NetworkPanel, {
     net: network,
     game: game,

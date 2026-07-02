@@ -17,7 +17,30 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 200`, `GAME_VERSION = 'Alpha 13.19'`, `SAVE_VERSION = 15`.**
+- **État au dernier passage : `GAME_BUILD = 201`, `GAME_VERSION = 'Alpha 13.20'`, `SAVE_VERSION = 15`.**
+  Changement 13.20 : **Phase 1 densification — moteur de paliers (V1→V2→V3) + bouton « Densifier » +
+  courbe éolienne accélérée** (brief `BRIEF_PHASE1_DENSIFICATION`). (1) **Données module** (après
+  `UPGRADE_SCALE`) : `TIER_NEXT` (id → {next, cap} ; mines+fours cap 9, mines V2 cap 19, or/uranium
+  sautent V2), `TIER_STEP` (id de palier → {entry 10|20, forfait plat}), `TIER_PREV` (auto-dérivé),
+  helpers `tierEntry`/`tierForfait`. (2) **Coût** : `upgradeCostFactor` gagne la branche `eolienne`
+  (niveau ≥10 → même courbe accélérée que le puits, ×2,7⁹ puis ×3,0×1,1^k ; puits inchangé) ;
+  `upgradeCost` branche sur `TIER_STEP` (coût d'un cran = forfait × 2,7^(level−entry), le cran d'entrée
+  = forfait plat) sinon chemin historique ; nouvelle `cumulativeInvested(id, upgrade)` (remonte la
+  chaîne V1→…→id, somme pose+montées+forfaits ; `cumulativeUpgradeCost` conservée pour les jonctions).
+  (3) **Actions** : nouvelle `tryDensify(r,c)` (au cap → paie le forfait, transforme sur place :
+  `building.id = next`, `upgrade = entry` ; SFX 'upgrade' en hook, TODO son dédié) ; `tryUpgrade`
+  bloqué au cap (`lvl >= link.cap`) ; `tryDowngrade` bloqué au 1er niveau d'un palier
+  (`lvl <= tierEntry`) ; `tryPlace` : pose directe d'un bâtiment de palier = `cumulativeInvested(id,
+  tierEntry(id))` ; `tryDemolish` : remboursement = `cumulativeInvested` (jonctions inchangées).
+  (4) **UI** : `UpgradePanel` reçoit `onDensify` ; au cap, la ligne de coût devient « Densification »
+  (forfait) et le bouton devient « ✦ Densifier → <nom> » (`.up-btn.densify-btn` violet, CSS ajouté) ;
+  câblage `onDensify: tryDensify` sur l'instance. **Hors scope (phases 2+)** : valeurs de base des
+  V2/V3, nouveaux bâtiments (cimenterie_v2…), four à arc unifié, swap tech, migration saves.
+  Validé : `node --check` (7 blocs) + Chromium (boot 0 erreur ; moteur de coût : forfait plat,
+  ×2,7/cran, chaîne `cumulativeInvested` V1+V2+V3 exacte, éolienne ×3 au niveau 10, puits/hors-palier
+  inchangés ; rendu `UpgradePanel` 2 branches ; E2E : four_fer u9 → « Densifier → Four Fer V2 » →
+  clic = four_fer_v2 u10 + port débité du forfait exact ; démolition d'un four_fer_v2 u12 →
+  remboursement = `cumulativeInvested` au près). Build 200→201.
   Changement 13.19 : **plafonnement du redessin d'ambiance à ~10 FPS (« Levier 1 » — chauffe/batterie).**
   Le canvas était redessiné à ~60 FPS en continu : le dirty-checking (`g.dirty`) ne servait jamais car
   chaque frame animée re-marquait `g.dirty` via `_animPlayed` (eau/écume/machines toujours animées →
