@@ -3396,7 +3396,7 @@ const BUILDINGS = {
     tier: 't2',
     terrains: ['resource'],
     size: [1, 1],
-    power: 1,
+    power: 0.125,
     cost: {
       acier: 70,
       beton_arme: 56,
@@ -3415,7 +3415,7 @@ const BUILDINGS = {
     terrains: ['resource'],
     exclusiveIsland: 1,
     size: [1, 1],
-    power: 1,
+    power: 0.125,
     cost: {
       acier: 70,
       beton_arme: 56,
@@ -3433,7 +3433,7 @@ const BUILDINGS = {
     tier: 't2',
     terrains: ['resource'],
     size: [1, 1],
-    power: 1,
+    power: 0.125,
     exclusiveIsland: 2,
     cost: {
       acier: 70,
@@ -3452,7 +3452,7 @@ const BUILDINGS = {
     tier: 't2',
     terrains: ['land', 'resource', 'coast'],
     size: [1, 1],
-    power: 1,
+    power: 0.125,
     cost: {
       acier: 70,
       beton_arme: 56,
@@ -4410,8 +4410,8 @@ const SAVE_VERSION = 17;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 207;
-const GAME_VERSION = 'Alpha 13.26';
+const GAME_BUILD = 208;
+const GAME_VERSION = 'Alpha 13.27';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -4913,6 +4913,10 @@ const ARC_MODE_FROM_OLD = {
 // arc unifié (mode correspondant), bâtiments de palier → niveau d'ENTRÉE du palier, V1 au-delà
 // du nouveau cap → cap. Pas de remboursement, pas de double-paiement (approche validée).
 function migratePlacement(p, fromV) {
+  // TOUTES versions : un bâtiment de palier SOUS son niveau d'entrée est remonté à l'entrée.
+  // (Builds 202-207 : la pose directe d'un V2/V3 depuis la barre d'outils créait le bâtiment
+  // à Nv.1 alors que le joueur payait le cumul jusqu'à l'entrée — on répare ces placements.)
+  if (TIER_STEP[p.b] && (p.u || 0) < tierEntry(p.b)) p.u = tierEntry(p.b);
   if ((fromV || 0) >= 16) return;
   // 1) Anciens fours à arc séparés → arc unifié, mode single correspondant.
   const rc = ARC_MODE_FROM_OLD[p.b];
@@ -13826,6 +13830,11 @@ function App() {
       id,
       variant: 0
     };
+    // Bâtiment de palier posé directement : il démarre AU NIVEAU D'ENTRÉE de son palier
+    // (u=10 pour un V2, u=20 pour un V3/arc) — cohérent avec le cumul payé à la pose et
+    // avec un bâtiment obtenu par densification. (Avant : posé à Nv.1 pour le prix d'un
+    // Nv.11, et démoli il ne remboursait même pas le forfait.)
+    if (TIER_STEP[id]) t.building.upgrade = tierEntry(id);
     if (ARC_DEF[id]) t.building.arc = arcDefaultState(id);
     // Une centrale fraîchement posée démarre à 0 % : le joueur la branche (câble / route / eau froide)
     // puis monte la puissance — évite la mise en sécurité immédiate faute de refroidissement.

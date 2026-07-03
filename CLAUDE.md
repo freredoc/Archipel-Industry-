@@ -17,7 +17,21 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 207`, `GAME_VERSION = 'Alpha 13.26'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 208`, `GAME_VERSION = 'Alpha 13.27'`, `SAVE_VERSION = 17`.**
+  Changement 13.27 : **pose directe V2/V3 au niveau d'entrée + remboursement symétrique + élec.
+  mines V2 ÷8.** (1) **Pose directe d'un bâtiment de palier** (`tryPlace`, après `t.building = {…}`) :
+  `if (TIER_STEP[id]) t.building.upgrade = tierEntry(id)` → un V2 posé depuis la barre d'outils démarre
+  à **u=10 (Nv.11)**, un V3/arc à u=20 — cohérent avec le cumul payé (avant : posé Nv.1 pour le prix du
+  cumul, et `cumulativeInvested(id, 0)` ne remboursait même pas le forfait à la démolition → perte
+  sèche). (2) **Migration TOUTES versions** (tête de `migratePlacement`, AVANT le garde `fromV >= 16`) :
+  un bâtiment de palier avec `p.u < tierEntry` est remonté à l'entrée (répare les placements Nv.1 des
+  builds 202-207 ; ne touche pas les V2 ≥ entrée). `SAVE_VERSION` inchangé. (3) **Rééquilibrage** : les
+  4 mines V2 (`mine_fer_v2`/`mine_charbon_v2`/`mine_cuivre_v2`/`carriere_v2`) passent de `power: 1` à
+  **`0.125`** (÷8 ; à l'entrée u10 : 128 kW au lieu de 1024 kW ; fours V2 et `pompe_eau_v2` — déjà à
+  0,125 — inchangés). Validé : `node --check` (7 blocs) + Chromium E2E (save forgée : v2 u3 → fiche
+  Nv.11 après load (migration) ; fiche v2 u10 = Nv.11 / **128 kW** ; démolition → remboursement =
+  pierre 242 214 + forfait (acier 500, câble 500, ciment 1000) ; re-pose barre d'outils sur tuile
+  ressource → u10 et **prix payé == remboursement** au près). Build 207→208.
   Changement 13.26 : **2 fixes UI — bouton Alerte compacté + densification visible/verrouillée dans la
   fiche bâtiment.** (1) **Bouton Alerte** (`.inv-alert-btn`) réduit (~35 % : font .66→.58rem, padding
   2×8→1×4, gap 5→3, icône 12→10 px, badge .55rem) → tient sur la MÊME ligne que INVENTAIRE/Production
