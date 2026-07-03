@@ -17,7 +17,25 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 206`, `GAME_VERSION = 'Alpha 13.25'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 207`, `GAME_VERSION = 'Alpha 13.26'`, `SAVE_VERSION = 17`.**
+  Changement 13.26 : **2 fixes UI — bouton Alerte compacté + densification visible/verrouillée dans la
+  fiche bâtiment.** (1) **Bouton Alerte** (`.inv-alert-btn`) réduit (~35 % : font .66→.58rem, padding
+  2×8→1×4, gap 5→3, icône 12→10 px, badge .55rem) → tient sur la MÊME ligne que INVENTAIRE/Production
+  (il passait à la ligne sur mobile ; ≈38 px). (2) **Fiche bâtiment (InfoPanel) au cap de palier** : le
+  bouton « Monter » (qui proposait Nv.11 et échouait en silence — `tryUpgrade` retourne false au cap)
+  devient **« ✦ Densifier »** (2 temps comme Monter : 1er clic = aperçu `.ip-up-preview` « Densification
+  → <nom> » + pastilles du forfait, 2e = `tryDensify` ; fiche FERMÉE à la réussite car elle capturait
+  l'ancien bâtiment). **Recherche manquante** → bouton VISIBLE mais grisé 🔒 (`.densify-btn.locked`,
+  disabled) avec le **nom de la recherche requise** en sous-libellé (pédagogie). Calculs : `tierLink`/
+  `atCap`/`densUnlocked` (via `isBuildingUnlocked`)/`densCost`/`canDens`/`densNode` (props `onDensify`
+  câblée sur l'instance). (3) **Même verrou dans l'UpgradePanel** (outil Améliorer) : bouton grisé 🔒 +
+  ligne de coût « 🔒 Recherche requise : <nœud> » si non débloqué. (4) **`tryDensify` gate la recherche**
+  (filet : toast rouge « 🔒 Recherche requise : … » + SFX invalid) — avant, on pouvait densifier vers un
+  bâtiment PAS ENCORE débloqué par la recherche. CSS : `.ip-up.densify-btn` (violet) + `.locked` (gris).
+  i18n en/es/de (Densifier/Densification/Recherche requise). Validé : `node --check` (7 blocs) +
+  Chromium E2E (save forgée mine_fer u9 : fiche SANS recherche → bouton locked/disabled, sub = nom du
+  nœud, plus de « Monter » ; nœud 7 confirmé → « ✦ Densifier », armé = aperçu forfait, confirmation →
+  toast « ✦ Mine Fer V2 » + fiche fermée ; bouton alerte synthétique ≈38 px). Build 206→207.
   Changement 13.25 : **option « Production hors-ligne » (désactivable).** Nouveau toggle dans les
   Options (au-dessus de « Calcul hors-ligne simplifié ») : préférence `ui.offlineEnabled` (défaut
   **true** = comportement historique ; pattern `uiPrefs` complet : newGame, serialize, loadSave avec
