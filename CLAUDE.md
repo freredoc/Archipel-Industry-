@@ -17,7 +17,21 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 211`, `GAME_VERSION = 'Alpha 13.30'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 212`, `GAME_VERSION = 'Alpha 13.31'`, `SAVE_VERSION = 17`.**
+  Changement 13.31 : **kickstart d'île protégé de l'export + lien « Cible ⇒ Réserve » unidirectionnel.**
+  (1) **Stock de départ bloqué** : au déblocage d'une île (2-5), `applyUnlocks` pose désormais, pour
+  chaque ressource du `ISLAND_KICKSTART`, la **réserve** (`tradeCfgFor(...).seuilExport`) au montant
+  déposé (`Math.max` — ne rabaisse jamais une réserve préexistante) → le transit ne siphonne plus le
+  coup de pouce vers les îles voisines dès le premier tick ; le joueur peut baisser la réserve pour
+  ré-exporter. Ne s'applique qu'aux déblocages FUTURS (saves existantes : îles déjà ouvertes
+  inchangées). (2) **Lien cible/réserve à sens unique** (le « Cible = Réserve » du 13.16 devient
+  **« Cible ⇒ Réserve »**) : dans `setTradeCfg`, éditer la **cible** aligne la réserve dessus ; éditer
+  la **réserve** ne touche plus la cible. L'activation du toggle aligne toujours réserve=cible pour
+  les ressources déjà configurées (inchangé). Libellé + infobulle du bouton `.pp-link-reserve` et
+  i18n en/es/de mis à jour (clés gettext renommées). `SAVE_VERSION` inchangé. Validé : `node --check`
+  (7 blocs, dev + testeur après sed) + Chromium E2E (applyUnlocks île 3 forgée : 7 réserves = montants
+  exacts, réserve préexistante 9999 conservée ; Port réel : lien ON, cible 5000 → réserve 5000,
+  réserve 250 → cible INCHANGÉE à 5000 ; 0 erreur console). Build 211→212.
   Changement 13.30 : **édition TESTEUR — 2 APK construits depuis le MÊME fichier de jeu.** Pas de
   branche git séparée (une mise à jour = les DEUX APK d'un coup). (1) **Flag `const TESTER_BUILD =
   false;`** (juste au-dessus de `VERSION_URL`) : la CI le bascule à `true` par `sed` (ligne exacte
