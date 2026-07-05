@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 208`, `GAME_VERSION = 'Alpha 13.27'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 209`, `GAME_VERSION = 'Alpha 13.28'`, `SAVE_VERSION = 17`.**
+  Changement 13.28 : **réseaux — béton armé et acier RETIRÉS des coûts possibles.** Un seul matériau
+  d'amélioration par type de réseau : route = ciment, tuyau = lingot de fer, câble = câble. (1)
+  **`NETWORK_HI_MATS`** : `premium: null` pour road ET pipe (plus de bascule auto cheap→premium du
+  13.13 ; `networkUnitCost` garde sa branche premium, inerte). (2) **`NETWORK_UPGRADE_COST`** (table du
+  rattrapage de niveau à la pose, `tbl[3]` = cran 3→4) : road `beton_arme: 100` → **`ciment: 800`**,
+  pipe `acier: 100` → **`lingot_fer: 800`** (aligné sur la vraie formule cheap 800×4^k — le rattrapage
+  ne coûte plus de matériau premium ET ne sous-facture plus). (3) **NetworkPanel** : le bloc de
+  bascule auto cheap→premium (13.13) supprimé (code mort) ; `hiMats` conservé (bouton illimité
+  irradié, INCHANGÉ : `beton_arme_irradie`/`acier_irradie` restent le forfait « illimité »).
+  Validé : `node --check` (7 blocs) + Chromium E2E (route 12 tuiles posée en jeu, montée V1→V4 via le
+  panneau : 120 / 1200 / 9600 ciment payés — jamais de béton armé ; port fourni en béton armé/acier
+  pour contre-épreuve). Build 208→209.
   Changement 13.27 : **pose directe V2/V3 au niveau d'entrée + remboursement symétrique + élec.
   mines V2 ÷8.** (1) **Pose directe d'un bâtiment de palier** (`tryPlace`, après `t.building = {…}`) :
   `if (TIER_STEP[id]) t.building.upgrade = tierEntry(id)` → un V2 posé depuis la barre d'outils démarre

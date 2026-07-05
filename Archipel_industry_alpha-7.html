@@ -4241,7 +4241,7 @@ const NETWORK_UPGRADE_COST = {
       ciment: 100
     },
     3: {
-      beton_arme: 100
+      ciment: 800
     }
   },
   wire: {
@@ -4263,7 +4263,7 @@ const NETWORK_UPGRADE_COST = {
       lingot_fer: 100
     },
     3: {
-      acier: 100
+      lingot_fer: 800
     }
   },
   // Conduit de chaleur : montée ×10 par palier (cuivre + polymère), débit ×2 par palier.
@@ -4281,19 +4281,18 @@ const NETWORK_UPGRADE_COST = {
 // Débit d'un conduit de chaleur (MJ/s) PAR TUILE selon le niveau : V1=1, V2=2, V3=4… (×2/palier).
 const conduitDebit = level => 1 * Math.pow(2, (level || 1) - 1);
 // Matériaux des paliers élevés (niveau 3 → 4 et au-delà), par type de réseau.
-//  - cheap   : matériau « volume » (toujours dispo), base 800.
-//  - premium : matériau raffiné (base 100) — nécessite de l'avoir débloqué.
+//  - cheap   : matériau « volume » (UNIQUE matériau d'amélioration — le béton armé et
+//              l'acier ne sont PLUS acceptés pour les réseaux).
 //  - irradie : matériau irradié pour rendre le réseau ILLIMITÉ (coût forfaitaire).
-// Le câble n'a pas d'option premium (un seul matériau).
 const NETWORK_HI_MATS = {
   road: {
     cheap: 'ciment',
-    premium: 'beton_arme',
+    premium: null,
     irradie: 'beton_arme_irradie'
   },
   pipe: {
     cheap: 'lingot_fer',
-    premium: 'acier',
+    premium: null,
     irradie: 'acier_irradie'
   },
   wire: {
@@ -4410,8 +4409,8 @@ const SAVE_VERSION = 17;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 208;
-const GAME_VERSION = 'Alpha 13.27';
+const GAME_BUILD = 209;
+const GAME_VERSION = 'Alpha 13.28';
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -11072,23 +11071,10 @@ function NetworkPanel({
   const cap = isConduit ? condThrough : isWire && wi ? wi.cap : unlimited ? Infinity : networkThroughput(lvl, netObj.type);
   const dev = game.ui && game.ui.dev;
   const port = game.port[currentIsland] || {};
-  // Paliers à choix de matériau : à partir du niveau 3 (vers V4+).
+  // Amélioration : un SEUL matériau par type de réseau (ciment / lingot de fer / câble) —
+  // plus d'option « premium » béton armé / acier depuis le build 209.
   const hiMats = NETWORK_HI_MATS[netObj.type] || {};
-  const matChoice = lvl >= 3 && !unlimited;
-  const hasPremium = !!hiMats.premium;
-  // Matériau d'amélioration AUTOMATIQUE (paliers V3+) : on paie en « cheap » (ciment pour la
-  // route, lingot de fer pour le tuyau, câble pour le câble) PAR DÉFAUT ; si le stock du port
-  // ne suffit pas, on bascule automatiquement sur le « premium » (béton armé / acier). Le câble
-  // n'a pas de premium → il reste toujours sur son unique matériau.
-  const affordCost = c => dev || Object.keys(c || {}).every(k => (port[k] || 0) >= c[k]);
-  let effPay = 'cheap';
-  if (matChoice && hasPremium && !dev) {
-    const cheapInfo = networkLevelChange(game, currentIsland, net.networkId, +1, 'cheap');
-    if (cheapInfo.blocked || !affordCost(cheapInfo.cost)) {
-      const premInfo = networkLevelChange(game, currentIsland, net.networkId, +1, 'premium');
-      if (!premInfo.blocked && affordCost(premInfo.cost)) effPay = 'premium';
-    }
-  }
+  const effPay = 'cheap';
   const upInfo = networkLevelChange(game, currentIsland, net.networkId, +1, effPay);
   const downInfo = networkLevelChange(game, currentIsland, net.networkId, -1);
   const unlInfo = networkUnlimitedInfo(game, currentIsland, net.networkId);
