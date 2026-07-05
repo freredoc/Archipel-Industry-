@@ -12,9 +12,10 @@ android {
     compileSdk 34
 
     defaultConfig {
-        // applicationId / libellé surchargeables (-PappId / -PappLabel) pour produire
-        // un APK PARALLÈLE (mode rapide) installable À CÔTÉ de l'app principale.
-        // Défauts = valeurs d'origine → le build principal est inchangé.
+        // applicationId / libellé surchargeables (-PappId / -PappLabel) : la CI produit
+        // deux APK — DEV (appId d'origine, libellé « Archipel Ind. Dev ») et TESTEUR
+        // (appId .tester, libellé « Archipel Industry »), installables côte à côte.
+        // Défauts = valeurs d'origine → un build local reste l'app principale.
         applicationId (project.findProperty('appId') ?: 'fr.archipel.industry')
         minSdk 26
         targetSdk 34

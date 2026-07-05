@@ -4417,8 +4417,12 @@ const SAVE_VERSION = 17;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 210;
-const GAME_VERSION = 'Alpha 13.29';
+const GAME_BUILD = 211;
+const GAME_VERSION = 'Alpha 13.30';
+// Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
+// (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
+// Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
+const TESTER_BUILD = false;
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -9242,10 +9246,10 @@ function Toolbar({
   }, React.createElement("button", {
     className: "playclock" + (timeScale > 1 ? " playclock-fast" : ""),
     onClick: onToggleFast,
-    title: I18N.t("Cliquer pour accélérer / ralentir le temps de jeu")
+    title: TESTER_BUILD ? I18N.t("Temps de jeu") : I18N.t("Cliquer pour accélérer / ralentir le temps de jeu")
   }, React.createElement("span", {
     className: "playclock-time"
-  }, fmtPlaytime(playTicks)), React.createElement("span", {
+  }, fmtPlaytime(playTicks)), !TESTER_BUILD && React.createElement("span", {
     className: "playclock-mult"
   }, (timeScale || 1) + "\xD7")), detailId && React.createElement(BuildingDetailModal, {
     id: detailId,
@@ -11791,7 +11795,7 @@ function ModeModal({
     className: "mode-sub"
   }, I18N.t("Le mode fixe la taille des \xEEles pour cette partie.")), React.createElement("div", {
     className: "mode-opts"
-  }, card('normal', "🗺", I18N.t("Normal"), I18N.t("Grandes \xEEles, plus d'espace pour construire.")), card('difficile', "⛰", I18N.t("Difficile"), I18N.t("\xCEles compactes, espace limit\xE9."))), React.createElement("div", {
+  }, card('normal', "🗺", I18N.t("Normal"), I18N.t("Grandes \xEEles, plus d'espace pour construire.")), card('difficile', "⛰", I18N.t("Difficile"), I18N.t("\xCEles compactes, espace limit\xE9."))), !TESTER_BUILD && React.createElement("div", {
     className: "mode-fast-row"
   }, React.createElement("button", {
     className: 'opt-toggle' + (fast ? ' on' : ''),
@@ -11909,7 +11913,8 @@ function OptionsModal({
       if (build > GAME_BUILD) setUpd({
         state: 'available',
         label: d.version || ('build ' + build),
-        apk: d.apk || d.url || '',
+        // Édition testeur : APK testeur (repli sur l'APK dev si le champ manque).
+        apk: (TESTER_BUILD ? d.apkTester || d.apk : d.apk) || d.url || '',
         notes: d.notes || ''
       });else setUpd({
         state: 'uptodate'
@@ -12005,7 +12010,7 @@ function OptionsModal({
   }, I18N.names[code])))), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Production hors-ligne"), I18N.t("Rattrape la production pendant une absence. D\xE9sactiv\xE9 : le jeu ne progresse que lorsqu'il est ouvert."), offlineEnabled !== false, onToggleOffline), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Sons"), I18N.t("Effets sonores du jeu (pose, am\xE9lioration, alertes…)"), audioEnabled !== false, onToggleAudio), sliderRow(I18N.t("Volume"), I18N.t("Volume des effets sonores"), audioVolume == null ? 0.55 : audioVolume, 0, 1, 0.05, v => onSetAudioVolume && onSetAudioVolume(v), v => Math.round(v * 100) + '%'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onResetTips
-  }, uiIcon('astuce', "💡"), I18N.t(" Revoir les astuces")), toggleRow(I18N.t("Mode d\xE9veloppeur"), I18N.t("Construction et am\xE9liorations gratuites"), dev, onToggleDev, 'dev'), React.createElement("button", {
+  }, uiIcon('astuce', "💡"), I18N.t(" Revoir les astuces")), !TESTER_BUILD && toggleRow(I18N.t("Mode d\xE9veloppeur"), I18N.t("Construction et am\xE9liorations gratuites"), dev, onToggleDev, 'dev'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onOpenSaves
   }, uiIcon('sauvegarde', "💾"), I18N.t(" Emplacements de sauvegarde")), React.createElement("div", {
@@ -12016,7 +12021,7 @@ function OptionsModal({
     className: "opt-name"
   }, I18N.t("Version")), React.createElement("span", {
     className: "opt-desc"
-  }, GAME_VERSION, I18N.t(" · build "), GAME_BUILD)), React.createElement("button", {
+  }, GAME_VERSION, I18N.t(" · build "), GAME_BUILD, TESTER_BUILD ? " · test" : " · dev")), React.createElement("button", {
     className: "opt-upd-btn",
     onClick: checkUpdate,
     disabled: upd.state === 'checking'
@@ -12493,7 +12498,8 @@ function App() {
         setUpdateInfo({
           build,
           label: d.version || ('build ' + build),
-          apk: d.apk || d.url || '',
+          // Édition testeur : APK testeur (repli sur l'APK dev si le champ manque).
+          apk: (TESTER_BUILD ? d.apkTester || d.apk : d.apk) || d.url || '',
           notes: d.notes || ''
         });
         showToast(I18N.t('⬆ Mise à jour disponible : ') + (d.version || ('build ' + build)), 'var(--yellow)');
@@ -13532,6 +13538,7 @@ function App() {
   // On accélère le TEMPS (plus de ticks/s), jamais les débits. En 10×, l'audio est coupé
   // automatiquement ; au retour en 1×, il est restauré en respectant le choix du joueur.
   function toggleFastMode() {
+    if (TESTER_BUILD) return; // édition testeur : pas de mode rapide
     const g = gameRef.current;
     const goingFast = (g.timeScale || 1) === 1;
     if (goingFast) {
@@ -14724,6 +14731,7 @@ function App() {
     scheduleSave();
   }
   function toggleDev() {
+    if (TESTER_BUILD) return; // édition testeur : pas de mode dev
     const g = gameRef.current;
     g.ui.dev = !g.ui.dev;
     setDev(g.ui.dev);

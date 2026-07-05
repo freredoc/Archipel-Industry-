@@ -17,7 +17,26 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 210`, `GAME_VERSION = 'Alpha 13.29'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 211`, `GAME_VERSION = 'Alpha 13.30'`, `SAVE_VERSION = 17`.**
+  Changement 13.30 : **édition TESTEUR — 2 APK construits depuis le MÊME fichier de jeu.** Pas de
+  branche git séparée (une mise à jour = les DEUX APK d'un coup). (1) **Flag `const TESTER_BUILD =
+  false;`** (juste au-dessus de `VERSION_URL`) : la CI le bascule à `true` par `sed` (ligne exacte
+  `^const TESTER_BUILD = false;$` — NE PAS reformater cette ligne) pour produire la variante testeur,
+  avec garde-fou grep qui fait échouer le build si la bascule rate. En testeur : **pas de mode dev**
+  (toggle masqué dans les Options + garde `toggleDev`) ni de **mode rapide** (toggle « Mode rapide »
+  masqué dans la ModeModal, garde `toggleFastMode` — couvre le chrono ET la création de partie —,
+  span `N×` du playclock masqué, title adapté) ; ligne Version des Options suffixée « · test » /
+  « · dev ». (2) **CI (`android.yml`)** : 2 builds gradle — DEV (`fr.archipel.industry`, libellé
+  **« Archipel Ind. Dev »**, asset `ArchipelIndustryDev.apk`, remplace l'ancien `ArchipelIndustry.apk`
+  et met à jour l'app déjà installée) et TESTEUR (`-PappId=fr.archipel.industry.tester`, libellé
+  « Archipel Industry », asset `ArchipelIndustryTester.apk`, installable À CÔTÉ) ; les 2 APK publiés
+  dans la release `apk-latest` + artifact ; vérif certificat sur les 2. (3) **`version.json`** : champ
+  `apk` → APK dev (les installs existantes, qui lisent ce champ, migrent vers l'édition dev), nouveau
+  champ **`apkTester`** ; le jeu choisit `TESTER_BUILD ? apkTester||apk : apk` aux 2 points de fetch
+  (boot + « Vérifier les mises à jour »). `SAVE_VERSION` inchangé, aucune mécanique touchée. Validé :
+  `node --check` (7 blocs, éditions dev ET testeur après sed) + Chromium E2E des 2 variantes (dev :
+  toggle rapide + toggle dev + `N×` présents, clic chrono → 10× ; testeur : tout absent, clic chrono
+  inerte, `TESTER_BUILD===true`, version « · test » ; 0 erreur console). Build 210→211.
   Changement 13.29 : **pause d'un bâtiment + 2 ajustements HUD.** (1) **Pause joueur** : nouveau bouton
   « ⏸ Mettre en pause » / « ▶ Reprendre la production » (`.ip-pause`, orange/vert, au-dessus de
   Démolir) dans la fiche bâtiment (kind `build`, non-fixe). En pause : `bld.paused` → **skip en tête
