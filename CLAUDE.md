@@ -17,7 +17,23 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 209`, `GAME_VERSION = 'Alpha 13.28'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 210`, `GAME_VERSION = 'Alpha 13.29'`, `SAVE_VERSION = 17`.**
+  Changement 13.29 : **pause d'un bâtiment + 2 ajustements HUD.** (1) **Pause joueur** : nouveau bouton
+  « ⏸ Mettre en pause » / « ▶ Reprendre la production » (`.ip-pause`, orange/vert, au-dessus de
+  Démolir) dans la fiche bâtiment (kind `build`, non-fixe). En pause : `bld.paused` → **skip en tête
+  de la boucle bâtiment** de `tickIsland` (AVANT les branches accu/nucléaire → vaut pour tous :
+  active=false, discReason='paused', regime=0, heatEmit=0 → ne consomme/produit RIEN, ni élec., ni
+  chaleur) ; **pré-pass antenne** : antenne en pause = aucune zone d'influence ; **`processHeat`** :
+  tour en pause n'évacue plus (heatAbsorb=0), chaleur résiduelle gelée. Carte : icône `etat_arret`
+  (repli `statusSpriteKey` — inactive + discReason inconnu). Fiche : « Vitesse 0% · en pause (par le
+  joueur) ». Handler App `togglePauseBuilding` (SFX toggleOff/On + toast). **Persistance** : `pl.pz = 1`
+  (champ additionnel rétro-compatible, `SAVE_VERSION` inchangé), restauré dans `loadSave`. (2) **Boutons
+  INVENTAIRE/Production −10 %** (`.inv-label-btn` .78→.70rem pad 12→10, `.inv-prod-btn` .62→.56rem
+  icône 12→11px). (3) **Bouton réparation d'île déplacé À DROITE de Production** (états replié ET
+  ouvert : [INVENTAIRE][Production][réparation][alerte]). i18n en/es/de. Validé : `node --check`
+  (7 blocs) + Chromium E2E (fiche mine : ⏸ → « Speed 0% · paused (by you) » + bouton vert ▶, save
+  `pz:1`, reload → toujours en pause, reprise → `pz` retiré ; ordre HUD et tailles vérifiés).
+  Build 209→210.
   Changement 13.28 : **réseaux — béton armé et acier RETIRÉS des coûts possibles.** Un seul matériau
   d'amélioration par type de réseau : route = ciment, tuyau = lingot de fer, câble = câble. (1)
   **`NETWORK_HI_MATS`** : `premium: null` pour road ET pipe (plus de bascule auto cheap→premium du
