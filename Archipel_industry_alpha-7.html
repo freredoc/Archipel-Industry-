@@ -435,6 +435,8 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 .tip-kicker{font-family:'Bebas Neue',sans-serif;font-size:.7rem;letter-spacing:.12em;color:var(--green);}
 .tip-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.12rem;color:var(--ink);line-height:1.1;}
 .tip-body{display:flex;flex-direction:column;gap:7px;}
+.tip-illu{margin:2px 0 4px;border-radius:10px;overflow:hidden;border:1px solid var(--line, rgba(255,255,255,.09));background:#0d1117;line-height:0;}
+.tip-illu-canvas{position:static;display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:auto;cursor:default;}
 .tip-body p{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:.93rem;line-height:1.32;color:var(--ink-dim);}
 .tip-body p b,.tip-body p strong{color:var(--ink);font-weight:700;}
 .tip-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px;}
@@ -4417,8 +4419,8 @@ const SAVE_VERSION = 17;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 212;
-const GAME_VERSION = 'Alpha 13.31';
+const GAME_BUILD = 213;
+const GAME_VERSION = 'Alpha 13.32';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7631,6 +7633,12 @@ const GAME_TIPS = [{
   body: ['Ouvrez le panneau <b>Recherche</b> (🔬). Chaque nœud demande des ressources livrées au port pour débloquer des bâtiments ou des îles.', 'Trois façons de valider : <b>automatique</b> (dès les ressources réunies), <b>manuel</b> (bouton Confirmer) ou <b>livraison</b> (acheminer un lot par bateau).', 'Une recherche prête à valider apparaît en jaune.'],
   when: g => tipResearchActionable(g)
 }, {
+  id: 'port',
+  icon: '⚓',
+  title: 'Le port',
+  body: ["Le port est le <b>cœur</b> de chaque île : on y <b>livre</b> les ressources demandées par la recherche.", "C'est aussi là qu'on configure les <b>échanges</b> vers les autres îles — <b>Cible</b> (import voulu), <b>Réserve</b> (surplus exporté), <b>Priorité</b> (ordre de chargement)."],
+  when: g => tipResearchActionable(g)
+}, {
   id: 'transport',
   icon: '🚢',
   title: 'Transport inter-îles',
@@ -7642,6 +7650,18 @@ const GAME_TIPS = [{
   title: 'L\'énergie',
   body: ['Certains bâtiments consomment de l\'<b>électricité</b>. Il faut en produire assez (éolienne, centrale…) pour couvrir la demande.', 'L\'électricité est partagée à l\'échelle de l\'<b>île entière</b> : le bilan (production − consommation) s\'affiche en haut, avec la pastille 🔋.', 'Ouvrez le panneau <b>Énergie</b> pour voir le détail et la demande non servie.'],
   when: g => tipAnyEnergy(g, e => (e.demand || 0) > 0 || (e.produced || 0) > 0)
+}, {
+  id: 'eolienne',
+  icon: '🌬️',
+  title: "L'éolienne",
+  body: ["Ta première source d'<b>électricité</b> : elle produit <b>8 kW</b> sans aucun intrant, mais c'est modeste.", "Relie-la au <b>câble</b> et pose-en <b>plusieurs</b> pour couvrir tes premiers besoins."],
+  when: g => isBuildingUnlocked(g, 'eolienne')
+}, {
+  id: 'centrale_charbon',
+  icon: '🏭',
+  title: 'La centrale à charbon',
+  body: ["Générateur puissant : <b>128 kW</b> en brûlant du <b>charbon en continu</b>.", "Elle se pose <b>sur la côte</b> et doit être alimentée en charbon par la route — prévois l'approvisionnement."],
+  when: g => isBuildingUnlocked(g, 'centrale_charbon')
 }, {
   id: 'deficit',
   icon: '🪫',
@@ -7661,6 +7681,12 @@ const GAME_TIPS = [{
   body: ['Un réseau transporte plus que son débit ne le permet : le flux est <b>bridé</b> et les bâtiments concernés tournent au ralenti.', 'Sélectionnez le réseau et <b>améliorez son niveau</b> (V2, V3…) pour augmenter le débit.', 'Vous pouvez aussi régler la <b>priorité de flux</b> de chaque bâtiment (haute / normale / basse) pour servir l\'essentiel d\'abord.'],
   when: g => tipAnyNetworkSaturated(g)
 }, {
+  id: 'priorite',
+  icon: '⚖️',
+  title: 'Priorité de flux',
+  body: ["Quand un réseau ne suit pas, règle la <b>priorité</b> de chaque bâtiment : <b>haute</b>, normale ou <b>basse</b>.", "Les bâtiments prioritaires sont servis d'abord (intrants ET électricité) — l'essentiel tourne, le reste patiente."],
+  when: g => isBuildingUnlocked(g, 'four_fer')
+}, {
   id: 'batiment_deconnecte',
   icon: '🔌',
   title: 'Bâtiment déconnecté',
@@ -7670,20 +7696,74 @@ const GAME_TIPS = [{
   id: 'jonctions',
   icon: '🔀',
   title: 'Les jonctions',
-  body: ['Les <b>jonctions</b> laissent deux réseaux se croiser sur la même tuile <b>sans se connecter</b> (ex. une route qui passe au-dessus d\'un câble).', 'Une seule sorte de jonction par île. Pratique quand la place manque.'],
+  body: ["Une <b>jonction</b> fait se croiser deux réseaux sur la même tuile <b>sans les relier</b> (une route par-dessus un câble, par exemple).", "Les deux réseaux gardent des <b>niveaux indépendants</b> (ex. route V2 croisant câble V3).", "Pose-la <b>directement sur un réseau existant</b> : le croisement se convertit, et le second réseau manquant est posé pour toi."],
   when: g => isBuildingUnlocked(g, 'jonction_route_cable')
 }, {
-  id: 'upgrade_vs_v2',
-  icon: '⬆️',
-  title: 'Améliorer ou passer en V2 ?',
-  body: ['Deux progressions différentes coexistent. <b>Améliorer sur place</b> (mode Améliorer) monte le <b>même</b> bâtiment d\'un niveau : plus de production sur la même tuile.', 'Une <b>version V2</b> (ex. Four Fer V2) est un <b>nouveau</b> bâtiment, avec sa propre recette : il faut le construire à la place de l\'ancien.', 'L\'espace au sol étant limité, améliorer sur place est souvent le meilleur choix.'],
-  when: g => isBuildingUnlocked(g, 'four_fer_v2')
+  id: 'traverser',
+  icon: '↝',
+  title: 'Traverser un bâtiment',
+  body: ["Un réseau peut <b>passer au travers</b> d'un bâtiment déjà posé : le tracé continue de l'autre côté.", "Pratique pour alimenter un bâtiment situé derrière un autre sans contourner."],
+  when: g => isBuildingUnlocked(g, 'jonction_route_cable')
+}, {
+  id: 'densifier',
+  icon: '✦',
+  title: 'Améliorer & densifier',
+  body: ["<b>Améliore sur place</b> (bouton Monter, +1 niveau) : plus de production sur la <b>même tuile</b>.", "Au dernier niveau du palier, le bouton devient <b>Densifier → V2</b> : le bâtiment se transforme sur place en sa version supérieure (V1→V2→V3), pour un <b>forfait</b>, sans le reconstruire.", "La densification demande d'avoir débloqué le palier à la <b>recherche</b> (certains, comme l'éolienne, ne se densifient pas)."],
+  when: g => isBuildingUnlocked(g, 'mine_fer_v2') || isBuildingUnlocked(g, 'four_fer_v2')
 }, {
   id: 'accumulateur',
   icon: '🔋',
   title: 'L\'accumulateur',
   body: ['L\'<b>accumulateur</b> stocke le surplus d\'électricité quand vous produisez plus que nécessaire, et le restitue en cas de <b>déficit</b>.', 'Idéal pour les producteurs irréguliers ou les pics de consommation. On peut l\'améliorer pour augmenter sa capacité.'],
   when: g => isBuildingUnlocked(g, 'accumulateur')
+}, {
+  id: 'centrale_diesel',
+  icon: '⛽',
+  title: 'La centrale diesel',
+  body: ["Générateur avancé : <b>512 kW</b> à partir de <b>diesel</b> (raffiné du pétrole).", "Bien plus dense en énergie que le charbon — pour les grosses consommations."],
+  when: g => isBuildingUnlocked(g, 'centrale_diesel')
+}, {
+  id: 'four_arc_fer',
+  icon: '⚡',
+  title: 'Le four à arc (fer)',
+  body: ["Un four <b>électrique</b> : au lieu du charbon, il consomme de l'<b>électricité</b> (conso variable — dimensionne ton câble).", "Un seul bâtiment, <b>plusieurs sorties au choix</b> via le sélecteur : lingot de fer, <b>acier</b> ou <b>pièce méca</b>."],
+  when: g => isBuildingUnlocked(g, 'four_arc_fer')
+}, {
+  id: 'four_arc_cuivre',
+  icon: '⚡',
+  title: 'Le four à arc (cuivre)',
+  body: ["Même principe côté cuivre : <b>électrique</b>, avec <b>sélecteur de sortie</b> — lingot de cuivre ou <b>câble</b>.", "Sa demande électrique varie : garde une marge de production sur son réseau."],
+  when: g => isBuildingUnlocked(g, 'four_arc_cuivre')
+}, {
+  id: 'puits_piege',
+  icon: '🛢️',
+  title: 'Puits de pétrole : le coût qui grimpe',
+  body: ["Le <b>puits de pétrole</b> se pose sur une tuile pétrole et s'améliore comme les autres extracteurs.", "Attention : au-delà de <b>V5</b>, son coût d'amélioration <b>explose</b> (+10 % par niveau). Densifie au bon moment."],
+  when: g => isBuildingUnlocked(g, 'puits_petrole')
+}, {
+  id: 'construire_mer',
+  icon: '🌊',
+  title: 'Construire en mer',
+  body: ["Certains bâtiments se posent <b>sur l'eau</b>, adjacents à la côte : <b>éolienne offshore</b> et <b>plateforme pétrolière</b>.", "Relie-les à la terre par un câble (élec) ou un tuyau (liquide) qui rejoint le réseau de l'île."],
+  when: g => isBuildingUnlocked(g, 'eolienne_offshore') || isBuildingUnlocked(g, 'plateforme_petroliere')
+}, {
+  id: 'liaisons_port',
+  icon: '🔗',
+  title: 'Liaisons de port',
+  body: ["Entre deux îles reliées, configure les <b>liaisons</b> dans le panneau Port : ce qui s'exporte, vers qui, dans quel ordre.", "Les cargos transportent des <b>lots</b> à intervalle régulier — améliore le transit pour augmenter la taille des lots."],
+  when: g => !!(g.islandUnlocked && g.islandUnlocked[2])
+}, {
+  id: 'reserves',
+  icon: '🔒',
+  title: 'Réserves & transit',
+  body: ["Pour qu'un cargo ne vide pas une île de ce qu'elle consomme, fixe une <b>réserve</b> : seul le <b>surplus au-dessus</b> part à l'export.", "Dans une liaison entre deux îles, <b>bloque l'import</b> des ressources dont la destination n'a pas besoin.", "Résultat : fini les <b>allers-retours inutiles</b>, le cargo ne transporte que l'essentiel."],
+  when: g => !!(g.islandUnlocked && g.islandUnlocked[2])
+}, {
+  id: 'copier',
+  icon: '📋',
+  title: 'Copier un bâtiment',
+  body: ["Le mode <b>Copier</b> reprend un bâtiment existant (avec ses réglages) pour le reposer à l'identique.", "Un gain de temps pour dupliquer une configuration qui marche."],
+  when: g => isBuildingUnlocked(g, 'four_fer')
 }, {
   id: 'nucleaire',
   icon: '☢️',
@@ -7703,10 +7783,22 @@ const GAME_TIPS = [{
   body: ['La Centrale Nucléaire peut <b>irradier</b> des matériaux (béton armé, acier, câble).', 'Avec 10 000 unités d\'un matériau irradié, un réseau passe en <b>débit illimité</b> : plus aucune limite de flux, plus jamais de saturation sur ce réseau.'],
   when: g => isBuildingUnlocked(g, 'centrale_nucleaire')
 }, {
+  id: 'plutonium',
+  icon: '☢️',
+  title: 'Plutonium & usine moteur',
+  body: ["La filière nucléaire produit du <b>plutonium</b>, transformé par l'<b>usine moteur</b> en éléments moteur.", "Une chaîne d'endgame très exigeante en logistique et en électricité."],
+  when: g => isBuildingUnlocked(g, 'usine_moteur_nuc')
+}, {
   id: 'antenne',
   icon: '📡',
   title: 'L\'antenne T5',
   body: ['L\'<b>antenne</b> fait tourner les <b>8 tuiles adjacentes</b> plus vite : <b>intrants ×2 et production ×2</b>, avec une conso élec. qui oscille jusqu\'à <b>×3</b>. Les bâtiments boostés affichent un badge <b>×2</b> et les cases influencées pulsent.', 'Elle consomme 1024 kW. <b>Améliorez-la</b> pour doubler le boost à chaque niveau (×4, ×8…).'],
+  when: g => isBuildingUnlocked(g, 'antenne')
+}, {
+  id: 'antenne_modes',
+  icon: '📡',
+  title: 'Antenne : vitesse ou productivité',
+  body: ["L'antenne a deux modes. <b>Vitesse</b> (par défaut) accélère la production des cases adjacentes.", "<b>Productivité</b> pousse le rendement plus loin mais <b>génère de la chaleur</b> — surveille la jauge."],
   when: g => isBuildingUnlocked(g, 'antenne')
 }, {
   id: 'reparer',
@@ -11371,6 +11463,257 @@ function NetworkPanel({
     className: "ip-sub"
   }, formatCost(unlInfo.cost) || '—'))));
 }
+/* ============================================================================
+ *  ARCHIPEL INDUSTRY — Rendu des illustrations d'astuces (tip scenes)
+ *  Zéro octet ajouté : réutilise les sprites déjà chargés (window.__SPRITE_DATA__).
+ *  Une scène = { island, grid:[...], ops:[...] } (voir TIP_SCENES).
+ *  drawTipScene(canvas, scene) dessine le terrain autotilé + les sprites + les
+ *  décorations sur un <canvas>. À appeler au montage de la popup d'astuce.
+ * ========================================================================== */
+(function (global) {
+  'use strict';
+  const T = 32; // taille tuile source
+
+  /* ---- cache d'images sprites (data-URL -> HTMLImageElement) --------------- */
+  const IMG = Object.create(null);
+  function spriteData() { return global.__SPRITE_DATA__ || {}; }
+  function getImg(key) {
+    if (IMG[key]) return IMG[key];
+    const src = spriteData()[key];
+    if (!src) return null;
+    const im = new Image(); im.src = src; IMG[key] = im; return im;
+  }
+  // Précharge toutes les images d'un lot de scènes (sprites d'ops ET tuiles de terrain
+  // autotilées). Résout quand tout est décodé, pour un premier rendu déjà complet.
+  function preloadForScenes(scenes) {
+    const keys = new Set();
+    for (const id in scenes) {
+      const sc = scenes[id];
+      for (const op of sc.ops) if (op.s) keys.add(op.s);
+      try { const T3 = terrainStacks(sc.island, sc.grid, 2); for (const rc in T3.stacks) for (const k of T3.stacks[rc]) keys.add(k); } catch (e) { }
+    }
+    const proms = [];
+    keys.forEach(k => { const im = getImg(k); if (im && !im.complete && im.decode) proms.push(im.decode().catch(() => {})); });
+    return Promise.all(proms);
+  }
+
+  /* ---- AUTOTILING (porté fidèlement du moteur terrain du jeu) -------------- */
+  const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+  function chTerr(c) {
+    return { W: 'water', T: 'land', M: 'resource', O: 'obstacle', C: 'coast', P: 'oil', X: 'coast' }[c] || 'water';
+  }
+  function buildTiles(def) {
+    const t = Array.from({ length: def.rows }, (_, r) =>
+      Array.from({ length: def.cols }, (_, c) => ({ terrain: chTerr((def.grid[r] || '')[c]) })));
+    const D = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
+      if (t[r][c].terrain !== 'land') continue;
+      for (const [dr, dc] of D) {
+        const nr = r + dr, nc = c + dc;
+        const nt = (nr < 0 || nc < 0 || nr >= def.rows || nc >= def.cols) ? 'water' : t[nr][nc].terrain;
+        if (nt === 'water') { t[r][c].terrain = 'coast'; break; }
+      }
+    }
+    return t;
+  }
+  const cw = (t, d, r, c) => r < 0 || c < 0 || r >= d.rows || c >= d.cols || t[r][c].terrain === 'water';
+  const cl = (t, d, r, c) => !cw(t, d, r, c);
+  const cc = (t, d, r, c) => cl(t, d, r, c) && (cw(t, d, r - 1, c) || cw(t, d, r + 1, c) || cw(t, d, r, c - 1) || cw(t, d, r, c + 1));
+  function foam(t, d, r, c) {
+    const L = (a, b) => cl(t, d, r + a, c + b);
+    const N = L(-1, 0), E = L(0, 1), S = L(1, 0), W = L(0, -1), NE = L(-1, 1), SE = L(1, 1), SW = L(1, -1), NW = L(-1, -1);
+    const e = []; if (N) e.push('n'); if (E) e.push('e'); if (S) e.push('s'); if (W) e.push('w');
+    const n = e.length;
+    if (n === 0) {
+      const d2 = []; if (NE) d2.push('ne'); if (SE) d2.push('se'); if (SW) d2.push('sw'); if (NW) d2.push('nw');
+      if (!d2.length) return [];
+      if (d2.length === 1) return ['coast_coin_' + d2[0]];
+      if (d2.length === 2) {
+        const k = d2.slice().sort().join(',');
+        const a = { 'ne,nw': 'n', 'ne,se': 'e', 'se,sw': 's', 'nw,sw': 'w' };
+        const di = { 'ne,sw': 'ne_sw', 'nw,se': 'nw_se' };
+        if (a[k]) return ['coast_dcoin_' + a[k]];
+        if (di[k]) return ['coast_dcoin_' + di[k]];
+      }
+      return d2.map(s => 'coast_coin_' + s);
+    }
+    if (n === 1) return ['coast_ligne_' + e[0]];
+    if (n === 2) {
+      const k = e.slice().sort().join(',');
+      const a = { 'e,n': 'ne', 'e,s': 'se', 's,w': 'sw', 'n,w': 'nw' };
+      if (a[k]) return ['coast_L_' + a[k]];
+      if (k === 'n,s') return ['coast_ligne_ns'];
+      if (k === 'e,w') return ['coast_ligne_ew'];
+    }
+    if (n === 3) { const m = ['n', 'e', 's', 'w'].find(x => !e.includes(x)); return ['coast_U_' + m]; }
+    return ['coast_lac'];
+  }
+  function cliff(t, d, r, c) {
+    const L = (a, b) => cl(t, d, r + a, c + b);
+    const N = L(-1, 0), E = L(0, 1), W = L(0, -1), NW = L(-1, -1), NE = L(-1, 1);
+    if (N && E && W) return ['falaise_U_s'];
+    if (N && W && !E) return ['falaise_crique_se'];
+    if (N && E && !W) return ['falaise_crique_sw'];
+    if (E && W && !N) return [!NW ? 'falaise_coin_ne' : 'falaise_w', !NE ? 'falaise_coin_nw' : 'falaise_e'];
+    const res = [];
+    if (N) res.push('falaise_s');
+    if (W) res.push(!NW && !N ? 'falaise_coin_ne' : 'falaise_w');
+    if (E) res.push(!NE && !N ? 'falaise_coin_nw' : 'falaise_e');
+    if (NW && !N && !W) res.push('falaise_coin_se');
+    if (NE && !N && !E) res.push('falaise_coin_sw');
+    return res;
+  }
+  function tri(t, d, r, c) {
+    if (!cl(t, d, r, c) || cc(t, d, r, c)) return null;
+    const cN = cc(t, d, r - 1, c), cE = cc(t, d, r, c + 1), cS = cc(t, d, r + 1, c), cW = cc(t, d, r, c - 1);
+    if (cN && cW) return 'nw'; if (cN && cE) return 'ne'; if (cS && cW) return 'sw'; if (cS && cE) return 'se';
+    return null;
+  }
+  const OVR = { resource: 'overlay_resource', obstacle: 'overlay_obstacle', oil: 'overlay_petrole' };
+  function stackAt(tiles, def, N, r, c) {
+    const terr = tiles[r][c].terrain, st = [];
+    if (terr === 'water') {
+      st.push('tile_i' + N + '_water');
+      for (const f of foam(tiles, def, r, c)) st.push(f);
+      for (const x of cliff(tiles, def, r, c)) st.push('i' + N + '_' + x);
+    } else {
+      const isC = cw(tiles, def, r - 1, c) || cw(tiles, def, r + 1, c) || cw(tiles, def, r, c - 1) || cw(tiles, def, r, c + 1);
+      st.push(isC ? 'tile_i' + N + '_coast' : 'tile_i' + N + '_land');
+      const tt = tri(tiles, def, r, c);
+      if (tt) st.push('tile_i' + N + '_coast_tri_' + tt);
+      if (OVR[terr]) st.push(OVR[terr]);
+    }
+    return st;
+  }
+  // Retourne { rows, cols, stacks:{"r,c":[keys]} } pour la fenêtre visible.
+  function terrainStacks(island, grid, pad) {
+    pad = pad == null ? 2 : pad;
+    const VR = grid.length, VC = grid[0].length, R = VR + 2 * pad, C = VC + 2 * pad;
+    const eg = [];
+    for (let r = 0; r < R; r++) { let s = ''; for (let c = 0; c < C; c++) { const vr = clamp(r - pad, 0, VR - 1), vc = clamp(c - pad, 0, VC - 1); s += grid[vr][vc]; } eg.push(s); }
+    const def = { id: island, cols: C, rows: R, grid: eg };
+    const tiles = buildTiles(def);
+    const out = { rows: VR, cols: VC, stacks: {} };
+    for (let r = pad; r < pad + VR; r++) for (let c = pad; c < pad + VC; c++) out.stacks[(r - pad) + ',' + (c - pad)] = stackAt(tiles, def, island, r, c);
+    return out;
+  }
+
+  /* ---- décorations (reproduisent le style des images de référence) --------- */
+  function rgba(a) { return Array.isArray(a) ? 'rgba(' + a[0] + ',' + a[1] + ',' + (a[2] || 0) + ',' + ((a[3] == null ? 255 : a[3]) / 255) + ')' : a; }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function drawBadge(ctx, s, op) {
+    const fs = Math.round(9 * s);
+    ctx.font = '700 ' + fs + 'px system-ui, sans-serif';
+    const tw = ctx.measureText(op.text).width;
+    const w = tw + 8 * s, h = 15 * s;
+    const tr = op.corner === 'tr' || op.corner === 'br', bot = op.corner === 'br' || op.corner === 'bl';
+    let x = op.c * T * s + (tr ? T * s - w - 1 * s : 1 * s);
+    let y = op.r * T * s + (bot ? T * s - h - 1 * s : 1 * s);
+    roundRect(ctx, x, y, w, h, 3 * s); ctx.fillStyle = rgba(op.bg || [40, 40, 46, 235]); ctx.fill();
+    ctx.lineWidth = Math.max(1, s * 0.6); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+    ctx.fillText(op.text, x + w / 2, y + h / 2 + 0.5 * s);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+  function drawArrow(ctx, s, op) {
+    const col = rgba(op.color || [245, 230, 120, 255]), w = (op.w || 4) * s;
+    const p0 = [op.p0[0] * s, op.p0[1] * s], p1 = [op.p1[0] * s, op.p1[1] * s];
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke();
+    const ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]), L = 8 * s;
+    for (const a of [ang + 2.6, ang - 2.6]) { ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p1[0] + L * Math.cos(a), p1[1] + L * Math.sin(a)); ctx.stroke(); }
+    ctx.lineCap = 'butt';
+  }
+  function drawDensArrow(ctx, s, op) {
+    const col = rgba(op.color || [150, 110, 255, 255]);
+    const y = op.y * s, x0 = op.x0 * s, x1 = op.x1 * s;
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 5 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1 - 6 * s, y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x1 - 11 * s, y - 7 * s); ctx.lineTo(x1 - 11 * s, y + 7 * s); ctx.closePath(); ctx.fill();
+    ctx.lineCap = 'butt';
+  }
+  function drawGauge(ctx, s, op) {
+    const gw = 52 * s, gh = 7 * s, gx = op.c * T * s + 6 * s, gy = (op.above === false) ? op.r * T * s + T * s + 4 * s : op.r * T * s - 11 * s;
+    roundRect(ctx, gx, gy, gw, gh, 3 * s); ctx.fillStyle = 'rgba(30,18,18,1)'; ctx.fill();
+    ctx.lineWidth = Math.max(1, s * 0.6); ctx.strokeStyle = 'rgba(95,62,62,1)'; ctx.stroke();
+    roundRect(ctx, gx + s, gy + s, (gw - 2 * s) * op.frac, gh - 2 * s, 3 * s); ctx.fillStyle = rgba(op.color); ctx.fill();
+    if (op.icon) { const im = getImg(op.icon); if (im && im.complete) ctx.drawImage(im, gx + gw + s, gy - 5 * s, T * s, T * s); }
+  }
+  function drawLock(ctx, s, op) {
+    const x = op.c * T * s + op.dx * s, y = op.r * T * s + op.dy * s;
+    ctx.fillStyle = 'rgba(230,200,70,1)'; ctx.strokeStyle = 'rgba(60,50,20,1)'; ctx.lineWidth = Math.max(1, s * 0.6);
+    roundRect(ctx, x, y + 5 * s, 10 * s, 8 * s, 2 * s); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(210,190,90,1)'; ctx.lineWidth = 2 * s;
+    ctx.beginPath(); ctx.arc(x + 5 * s, y + 4.5 * s, 3 * s, Math.PI, 2 * Math.PI); ctx.stroke();
+    ctx.fillStyle = 'rgba(60,50,20,1)'; ctx.fillRect(x + 4 * s, y + 8 * s, 2 * s, 3 * s);
+  }
+  function drawForbid(ctx, s, op) {
+    const R = (op.R || 9) * s, cx = op.c * T * s + op.dx * s, cy = op.r * T * s + op.dy * s;
+    ctx.strokeStyle = 'rgba(235,60,55,1)'; ctx.lineWidth = 3 * s;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke();
+    const o = R * 0.7; ctx.beginPath(); ctx.moveTo(cx - o, cy - o); ctx.lineTo(cx + o, cy + o); ctx.stroke();
+  }
+
+  /* ---- rendu principal ---------------------------------------------------- */
+  // sc = facteur d'agrandissement (pixels nets). 4 par défaut.
+  function drawTipScene(canvas, scene, sc) {
+    if (!canvas || !scene) return;
+    sc = sc || 4;
+    const T3 = terrainStacks(scene.island, scene.grid, 2);
+    const W = T3.cols * T, H = T3.rows * T;
+    // passe 1 : terrain + sprites en résolution native (offscreen)
+    const off = document.createElement('canvas'); off.width = W; off.height = H;
+    const octx = off.getContext('2d'); octx.imageSmoothingEnabled = false;
+    for (let r = 0; r < T3.rows; r++) for (let c = 0; c < T3.cols; c++) {
+      for (const k of T3.stacks[r + ',' + c]) { const im = getImg(k); if (im && im.complete && im.naturalWidth) octx.drawImage(im, c * T, r * T); }
+    }
+    for (const op of scene.ops) {
+      if (op.op === 'spr') { const im = getImg(op.s); if (im && im.complete && im.naturalWidth) octx.drawImage(im, op.c * T + (op.dx || 0), op.r * T + (op.dy || 0)); }
+      else if (op.op === 'ghost') { const im = getImg(op.s); if (im && im.complete && im.naturalWidth) { octx.globalAlpha = (op.a == null ? 120 : op.a) / 255; octx.drawImage(im, op.c * T + (op.dx || 0), op.r * T + (op.dy || 0)); octx.globalAlpha = 1; } }
+    }
+    // passe 2 : upscale net + décorations vectorielles (nettes)
+    canvas.width = W * sc; canvas.height = H * sc;
+    const ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, 0, 0, W * sc, H * sc);
+    for (const op of scene.ops) {
+      switch (op.op) {
+        case 'badge': drawBadge(ctx, sc, op); break;
+        case 'arrow': drawArrow(ctx, sc, op); break;
+        case 'densarrow': drawDensArrow(ctx, sc, op); break;
+        case 'gauge': drawGauge(ctx, sc, op); break;
+        case 'lock': drawLock(ctx, sc, op); break;
+        case 'forbid': drawForbid(ctx, sc, op); break;
+      }
+    }
+  }
+
+  global.TipScenes = { draw: drawTipScene, preload: preloadForScenes, terrainStacks, _img: getImg };
+})(typeof window !== 'undefined' ? window : this);
+
+/* ARCHIPEL INDUSTRY — specs des illustrations d’astuces (généré). */
+window.TIP_SCENES = {"bienvenue": {"island": 1, "grid": ["WTTMMT", "WTTTMT", "WTTTTT", "WTTTOT"], "ops": [{"op": "spr", "s": "tile_port_mer", "c": 0, "r": 3, "dx": 0, "dy": 0}, {"op": "spr", "s": "tile_port_terre", "c": 1, "r": 3, "dx": 0, "dy": 0}, {"op": "spr", "s": "mine_fer_v1", "c": 3, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "mine_fer_v1", "c": 4, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "mine_fer_v1", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "carriere_v1", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_06_ES", "c": 1, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_06_ES", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_09_NO", "c": 2, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_minerai_fer", "c": 2, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "item_minerai_fer", "c": 2, "r": 2, "dx": 8, "dy": 8}]}, "recherche": {"island": 2, "grid": ["WTTTMT", "WTTTTT", "WTTTTO", "WTTTTT"], "ops": [{"op": "spr", "s": "tile_port_mer", "c": 0, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "tile_port_terre", "c": 1, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "bateau_cargo", "c": 0, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "mine_fer_v1", "c": 4, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "four_fer_v1", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_06_ES", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_09_NO", "c": 2, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_lingot_fer", "c": 0, "r": 0, "dx": 8, "dy": 2}, {"op": "spr", "s": "item_minerai_fer", "c": 2, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "ui_recherche", "c": 1, "r": 2, "dx": 8, "dy": -6}]}, "transport": {"island": 1, "grid": ["WWWWWW", "WWWWWW", "WWWWWW", "WWWWWW"], "ops": [{"op": "spr", "s": "ile_1", "c": 0, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "ile_2", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "bateau_cargo", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_acier", "c": 2, "r": 1, "dx": 8, "dy": 2}]}, "energie": {"island": 2, "grid": ["TTTTTT", "TTTTTT", "TTTMTO", "WWWWWW"], "ops": [{"op": "spr", "s": "eolienne", "c": 1, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "eolienne", "c": 2, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "eolienne", "c": 3, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "four_fer_v1", "c": 5, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_acierie", "c": 5, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_11_NEO", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_11_NEO", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_03_NE", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_03_NE", "c": 4, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_14_ESO", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "ui_batterie", "c": 2, "r": 1, "dx": 8, "dy": -7}]}, "eolienne": {"island": 2, "grid": ["TTTTTT", "TTTTTT", "TTTMTO", "WWWWWW"], "ops": [{"op": "spr", "s": "eolienne", "c": 1, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "eolienne", "c": 2, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "eolienne", "c": 3, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_cablerie", "c": 5, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_11_NEO", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_03_NE", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_10_EO", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_11_NEO", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "ui_batterie", "c": 2, "r": 1, "dx": 8, "dy": -7}, {"op": "badge", "c": 2, "r": 0, "text": "8kW", "bg": [30, 60, 90, 235], "corner": "tr"}]}, "centrale_charbon": {"island": 2, "grid": ["WTTMTT", "WTTTTT", "WTTTTT", "WTTOTT"], "ops": [{"op": "spr", "s": "bat_centrale_charbon", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "badge", "c": 1, "r": 1, "text": "128kW", "bg": [40, 50, 60, 235], "corner": "tr"}, {"op": "spr", "s": "mine_charbon_v1", "c": 3, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_06_ES", "c": 2, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_09_NO", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_charbon", "c": 2, "r": 0, "dx": 8, "dy": 8}, {"op": "spr", "s": "four_fer_v1", "c": 4, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_10_EO", "c": 3, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_03_NE", "c": 1, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_10_EO", "c": 2, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "ui_batterie", "c": 2, "r": 2, "dx": 8, "dy": -7}]}, "centrale_diesel": {"island": 3, "grid": ["WTTTTM", "WTTTTT", "WTTTTT", "WTTOTT"], "ops": [{"op": "spr", "s": "bat_raffinerie", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_centrale_diesel", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "badge", "c": 3, "r": 1, "text": "512kW", "bg": [30, 45, 55, 235], "corner": "tr"}, {"op": "spr", "s": "tuyau_v2_10_EO", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_diesel", "c": 2, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "bat_cablerie", "c": 5, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_03_NE", "c": 3, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_10_EO", "c": 4, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "ui_batterie", "c": 4, "r": 2, "dx": 8, "dy": -7}]}, "deficit": {"island": 3, "grid": ["WTTTTT", "WTTTMT", "WTTTTT", "WTTOTT"], "ops": [{"op": "spr", "s": "eolienne", "c": 1, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "four_fer_v1", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "ghost", "s": "bat_acierie", "c": 3, "r": 1, "dx": 0, "dy": 0, "a": 120}, {"op": "ghost", "s": "four_cuivre_v1", "c": 2, "r": 2, "dx": 0, "dy": 0, "a": 120}, {"op": "ghost", "s": "bat_cablerie", "c": 3, "r": 2, "dx": 0, "dy": 0, "a": 120}, {"op": "spr", "s": "cable_v2_03_NE", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_10_EO", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "ui_alerte", "c": 3, "r": 1, "dx": 8, "dy": -6}]}, "tuyaux": {"island": 2, "grid": ["TTTTTT", "TTTTTT", "TTTMTT", "WWWWWW"], "ops": [{"op": "spr", "s": "bat_pompe_eau", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "betonniere", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cimenterie", "c": 4, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "tuyau_v2_14_ESO", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "tuyau_v2_03_NE", "c": 3, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "tuyau_v2_10_EO", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_eau", "c": 2, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "item_eau", "c": 3, "r": 1, "dx": 8, "dy": 8}]}, "reseau_sature": {"island": 1, "grid": ["WWWWWW", "MTTTTT", "TTTMTT", "TTOTTT"], "ops": [{"op": "spr", "s": "mine_fer_v1", "c": 0, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "four_fer_v1", "c": 5, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_acier", "c": 1, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "item_acier", "c": 2, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "item_acier", "c": 3, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "item_acier", "c": 4, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "ui_alerte", "c": 3, "r": 1, "dx": 8, "dy": -6}]}, "batiment_deconnecte": {"island": 2, "grid": ["TTTTTW", "TTMTTW", "TTTTTW", "TTTOTW"], "ops": [{"op": "spr", "s": "mine_fer_v1", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "four_fer_v1", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_minerai_fer", "c": 3, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "cimenterie", "c": 1, "r": 3, "dx": 0, "dy": 0}, {"op": "spr", "s": "ui_alerte", "c": 1, "r": 3, "dx": 8, "dy": -6}]}, "jonctions": {"island": 3, "grid": ["WTTTTT", "WTTTTT", "WTTTMT", "WTTOTT"], "ops": [{"op": "spr", "s": "route_v2_08_O", "c": 5, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_02_E", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v3_01_N", "c": 3, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v3_04_S", "c": 3, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "jonction_route_v2_cable_v3", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "badge", "c": 2, "r": 1, "text": "V2", "bg": [50, 50, 60, 235], "corner": "tr"}, {"op": "badge", "c": 3, "r": 0, "text": "V3", "bg": [40, 55, 70, 235], "corner": "tr"}]}, "densifier": {"island": 1, "grid": ["TTTTTT", "TTTTTT", "TTMTMT", "WWWWWW"], "ops": [{"op": "spr", "s": "four_fer_v1", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "badge", "c": 1, "r": 1, "text": "Nv9", "bg": [60, 45, 20, 235], "corner": "tr"}, {"op": "densarrow", "x0": 70, "x1": 126, "y": 48, "color": [150, 110, 255, 255]}, {"op": "badge", "c": 3, "r": 0, "text": "Densifier", "bg": [70, 50, 120, 235], "corner": "tr"}, {"op": "spr", "s": "four_fer_v2", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "badge", "c": 4, "r": 1, "text": "V2", "bg": [70, 50, 20, 235], "corner": "tr"}]}, "accumulateur": {"island": 4, "grid": ["TTTTTW", "TTTTTW", "TTTMTW", "TTOTTW"], "ops": [{"op": "spr", "s": "eolienne", "c": 0, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_accumulateur", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_fab_processeur", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_10_EO", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_10_EO", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "ui_batterie", "c": 2, "r": 1, "dx": 8, "dy": -7}]}, "four_arc_fer": {"island": 4, "grid": ["TTTMTT", "TTTTTT", "TTTTTT", "WWWWWW"], "ops": [{"op": "spr", "s": "four_arc_fer", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "mine_fer_v1", "c": 3, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_06_ES", "c": 2, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_09_NO", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_minerai_fer", "c": 2, "r": 0, "dx": 8, "dy": 8}, {"op": "spr", "s": "eolienne", "c": 0, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_09_NO", "c": 1, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "ui_batterie", "c": 1, "r": 2, "dx": 4, "dy": -6}, {"op": "arrow", "p0": [66, 48], "p1": [100, 48], "color": [245, 230, 120, 255], "w": 4}, {"op": "spr", "s": "item_lingot_fer", "c": 3, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "item_acier", "c": 4, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "item_piece_meca", "c": 5, "r": 1, "dx": 8, "dy": 8}, {"op": "badge", "c": 4, "r": 0, "text": "au choix", "bg": [60, 50, 70, 235], "corner": "tr"}]}, "four_arc_cuivre": {"island": 4, "grid": ["TTTMTT", "TTTTTT", "TTTTTT", "WWWWWW"], "ops": [{"op": "spr", "s": "four_arc_cuivre", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "mine_cuivre_v1", "c": 3, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_06_ES", "c": 2, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_09_NO", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_minerai_cuivre", "c": 2, "r": 0, "dx": 8, "dy": 8}, {"op": "spr", "s": "eolienne", "c": 0, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_09_NO", "c": 1, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "ui_batterie", "c": 1, "r": 2, "dx": 4, "dy": -6}, {"op": "arrow", "p0": [66, 48], "p1": [100, 48], "color": [245, 230, 120, 255], "w": 4}, {"op": "spr", "s": "item_lingot_cuivre", "c": 3, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "item_cable", "c": 4, "r": 1, "dx": 8, "dy": 8}, {"op": "badge", "c": 4, "r": 0, "text": "au choix", "bg": [60, 50, 70, 235], "corner": "tr"}]}, "nucleaire": {"island": 5, "grid": ["MTTTTT", "TTTTTM", "TTTTTT", "TTOTTT"], "ops": [{"op": "spr", "s": "mine_uranium_v1", "c": 0, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_broyeur_uranium", "c": 2, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_centrale_enrichissement", "c": 4, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 1, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 3, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_centrale_nucleaire", "c": 3, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_uranium", "c": 1, "r": 0, "dx": 8, "dy": 8}, {"op": "spr", "s": "item_yellow_cake", "c": 3, "r": 0, "dx": 8, "dy": 8}]}, "chaleur_nuc": {"island": 5, "grid": ["TTTTTM", "TTTTTT", "TTTTTT", "TTTOTT"], "ops": [{"op": "spr", "s": "bat_centrale_nucleaire", "c": 0, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "conduit_v2_10_EO_chauffe3", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "conduit_v2_14_ESO_chauffe2", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "conduit_v2_05_NS_chauffe1", "c": 3, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_tour_aerorefrigerante", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_tour_aerorefrigerante", "c": 3, "r": 3, "dx": 0, "dy": 0}, {"op": "gauge", "c": 0, "r": 0, "frac": 0.82, "color": [228, 72, 55, 255], "above": true, "icon": "ui_chaleur"}]}, "irradie": {"island": 5, "grid": ["WWWWWW", "TTTTTM", "TTTTTT", "TTTOTT"], "ops": [{"op": "spr", "s": "bat_centrale_nucleaire", "c": 0, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 3, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_08_O", "c": 4, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 2, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_acier_irradie", "c": 2, "r": 2, "dx": 8, "dy": 8}, {"op": "spr", "s": "item_acier_irradie", "c": 3, "r": 2, "dx": 8, "dy": 8}, {"op": "badge", "c": 4, "r": 2, "text": "oo", "bg": [30, 60, 40, 235], "corner": "tr"}]}, "antenne": {"island": 4, "grid": ["TTTMTW", "TTTTTW", "TTTMTW", "TTOTTW"], "ops": [{"op": "spr", "s": "bat_antenne", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "fx_boost", "c": 1, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "fx_boost", "c": 2, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "fx_boost", "c": 3, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "fx_boost", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "fx_boost", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "fx_boost", "c": 1, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "fx_boost", "c": 2, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "fx_boost", "c": 3, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "four_fer_v1", "c": 1, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "mine_fer_v1", "c": 3, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "cimenterie", "c": 1, "r": 2, "dx": 0, "dy": 0}, {"op": "badge", "c": 3, "r": 0, "text": "x2", "bg": [60, 40, 70, 235], "corner": "tr"}]}, "antenne_modes": {"island": 4, "grid": ["TTTTTW", "TTTTTW", "TTTMTW", "TTOTTW"], "ops": [{"op": "spr", "s": "bat_antenne", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "fx_boost", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "fx_boost", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "fx_boost", "c": 2, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "fx_boost", "c": 2, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "ui_mode_vitesse", "c": 1, "r": 0, "dx": 4, "dy": 4}, {"op": "spr", "s": "ui_mode_productivite", "c": 3, "r": 0, "dx": 12, "dy": 4}, {"op": "gauge", "c": 2, "r": 2, "frac": 0.5, "color": [228, 120, 55, 255], "above": false, "icon": "ui_chaleur"}]}, "plutonium": {"island": 5, "grid": ["TTTTTT", "TTTTTT", "TTTTTM", "TTTOTT"], "ops": [{"op": "spr", "s": "bat_centrale_nucleaire", "c": 0, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_usine_moteur_nucleaire", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_plutonium", "c": 2, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "item_plutonium", "c": 3, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "item_element_moteur", "c": 5, "r": 1, "dx": 4, "dy": 8}]}, "reparer": {"island": 1, "grid": ["TOOTTT", "TOOTMT", "TTTTTT", "WWWTTT"], "ops": [{"op": "arrow", "p0": [52, 48], "p1": [102, 48], "color": [245, 230, 120, 255], "w": 4}, {"op": "spr", "s": "ui_reparation", "c": 1, "r": 1, "dx": 8, "dy": -6}]}, "etendre": {"island": 2, "grid": ["WWWTTT", "WWTTTM", "WTTTTT", "WWWTTO"], "ops": [{"op": "arrow", "p0": [52, 48], "p1": [102, 48], "color": [245, 230, 120, 255], "w": 4}, {"op": "spr", "s": "ui_reparation", "c": 2, "r": 1, "dx": 8, "dy": -6}]}, "traverser": {"island": 1, "grid": ["WWWWWW", "TTTTTT", "TTTMTT", "TTOTTT"], "ops": [{"op": "spr", "s": "eolienne", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "four_fer_v1", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_acierie", "c": 5, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_10_EO", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_10_EO", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_10_EO", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "arrow", "p0": [66, 48], "p1": [168, 48], "color": [120, 210, 255, 255], "w": 3}]}, "priorite": {"island": 3, "grid": ["WTTTTT", "WTTTTM", "WTTTTT", "WTTOTT"], "ops": [{"op": "spr", "s": "four_fer_v1", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_13_NSO", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_03_NE", "c": 3, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_06_ES", "c": 3, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_atelier_meca", "c": 4, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_piece_meca", "c": 4, "r": 0, "dx": 8, "dy": -6}, {"op": "ghost", "s": "bat_acierie", "c": 4, "r": 2, "dx": 0, "dy": 0, "a": 120}, {"op": "spr", "s": "item_lingot_fer", "c": 3, "r": 1, "dx": 8, "dy": 8}, {"op": "badge", "c": 4, "r": 0, "text": "H", "bg": [30, 70, 40, 235], "corner": "tr"}, {"op": "badge", "c": 4, "r": 2, "text": "B", "bg": [80, 40, 40, 235], "corner": "tr"}]}, "puits_piege": {"island": 4, "grid": ["WTTTTT", "WTPTTM", "WTTTTT", "WTTOTT"], "ops": [{"op": "spr", "s": "puits_petrole_v1", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_raffinerie", "c": 5, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "tuyau_v2_10_EO", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "tuyau_v2_10_EO", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_petrole", "c": 3, "r": 1, "dx": 8, "dy": 8}, {"op": "badge", "c": 2, "r": 1, "text": "V5", "bg": [70, 50, 20, 235], "corner": "tr"}, {"op": "badge", "c": 2, "r": 1, "text": "$$", "bg": [90, 30, 30, 235], "corner": "br"}]}, "port": {"island": 1, "grid": ["WTTTMT", "WTTTTT", "WTTTTO", "WTTTTT"], "ops": [{"op": "spr", "s": "tile_port_mer", "c": 0, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "tile_port_terre", "c": 1, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "bateau_cargo", "c": 0, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_acier", "c": 0, "r": 0, "dx": 8, "dy": 2}, {"op": "spr", "s": "four_fer_v1", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_10_EO", "c": 3, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "route_v2_02_E", "c": 2, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_lingot_fer", "c": 3, "r": 1, "dx": 8, "dy": 8}, {"op": "spr", "s": "ui_recherche", "c": 1, "r": 2, "dx": 8, "dy": -6}, {"op": "badge", "c": 1, "r": 2, "text": "echanges", "bg": [40, 60, 55, 235], "corner": "br"}]}, "liaisons_port": {"island": 1, "grid": ["TWWWWT", "TWWWWT", "WWWWWW", "WWWWWW"], "ops": [{"op": "spr", "s": "tile_port_terre", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "tile_port_mer", "c": 0, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "tile_port_terre", "c": 5, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "tile_port_mer", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "bateau_cargo", "c": 2, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_acier", "c": 2, "r": 2, "dx": 8, "dy": 2}, {"op": "spr", "s": "item_cable", "c": 3, "r": 2, "dx": 8, "dy": 2}]}, "construire_mer": {"island": 3, "grid": ["TTTTTT", "TTTTTT", "WWWWWW", "WWWWWW"], "ops": [{"op": "spr", "s": "four_fer_v1", "c": 1, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "eolienne_offshore", "c": 1, "r": 3, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_05_NS", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "cable_v2_05_NS", "c": 1, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_raffinerie", "c": 4, "r": 0, "dx": 0, "dy": 0}, {"op": "spr", "s": "bat_plateforme_petroliere", "c": 4, "r": 3, "dx": 0, "dy": 0}, {"op": "spr", "s": "tuyau_v2_05_NS", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "tuyau_v2_05_NS", "c": 4, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_petrole", "c": 4, "r": 2, "dx": 8, "dy": 8}]}, "copier": {"island": 2, "grid": ["WWWWWW", "TTTTTT", "TTTMTT", "TTOTTT"], "ops": [{"op": "spr", "s": "four_fer_v1", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "ui_copier", "c": 1, "r": 1, "dx": 8, "dy": -6}, {"op": "arrow", "p0": [70, 48], "p1": [126, 48], "color": [245, 230, 120, 255], "w": 4}, {"op": "ghost", "s": "four_fer_v1", "c": 4, "r": 1, "dx": 0, "dy": 0, "a": 120}]}, "reserves": {"island": 1, "grid": ["TWWWWT", "TWWWWT", "WWWWWW", "WWWWWW"], "ops": [{"op": "spr", "s": "tile_port_terre", "c": 0, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "tile_port_mer", "c": 1, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "tile_port_terre", "c": 5, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "tile_port_mer", "c": 4, "r": 1, "dx": 0, "dy": 0}, {"op": "spr", "s": "bateau_cargo", "c": 2, "r": 2, "dx": 0, "dy": 0}, {"op": "spr", "s": "item_acier", "c": 2, "r": 2, "dx": 8, "dy": 2}, {"op": "spr", "s": "item_lingot_fer", "c": 0, "r": 0, "dx": 8, "dy": 6}, {"op": "lock", "c": 0, "r": 0, "dx": 18, "dy": 2}, {"op": "spr", "s": "item_cable", "c": 5, "r": 0, "dx": 8, "dy": 6}, {"op": "forbid", "c": 5, "r": 0, "dx": 15, "dy": 9, "R": 9}, {"op": "arrow", "p0": [48, 42], "p1": [76, 70], "color": [150, 220, 150, 255], "w": 3}]}};
+
+/* --- Illustration d'astuce : scene TIP_SCENES[tip.id] dessinee sur canvas (sprites du jeu) --- */
+function TipIllustration({ tipId }) {
+  const ref = React.useRef(null);
+  const scene = (typeof window !== 'undefined' && window.TIP_SCENES) ? window.TIP_SCENES[tipId] : null;
+  React.useEffect(() => {
+    if (!scene || !ref.current || !window.TipScenes) return;
+    let alive = true;
+    const render = () => { if (alive && ref.current) window.TipScenes.draw(ref.current, scene, 4); };
+    render();
+    window.TipScenes.preload({ [tipId]: scene }).then(render);
+    return () => { alive = false; };
+  }, [tipId]);
+  if (!scene) return null;
+  return React.createElement("div", { className: "tip-illu" },
+    React.createElement("canvas", { ref, className: "tip-illu-canvas" }));
+}
+
 function TipPopup({
   tip,
   onClose,
@@ -11393,7 +11736,7 @@ function TipPopup({
     className: "tip-kicker"
   }, I18N.t("Astuce")), React.createElement("span", {
     className: "tip-title"
-  }, tip.title))), React.createElement("div", {
+  }, tip.title))), React.createElement(TipIllustration, { tipId: tip.id }), React.createElement("div", {
     className: "tip-body"
   }, body.map((p, i) => React.createElement("p", {
     key: i,
