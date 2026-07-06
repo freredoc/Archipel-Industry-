@@ -1,7 +1,8 @@
 {
-  "build": 210,
-  "version": "Alpha 13.29",
+  "build": 213,
+  "version": "Alpha 13.32",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
-  "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
-  "notes": "Merge pull request #203 from freredoc/claude/new-session-2qb1md"
+  "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
+  "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
+  "notes": "Merge pull request #206 from freredoc/claude/new-session-t6yowo"
 }

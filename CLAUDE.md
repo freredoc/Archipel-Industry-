@@ -17,8 +17,8 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 213`, `GAME_VERSION = 'Alpha 13.32'`, `SAVE_VERSION = 17`.**
-  Changement 13.32 : **fix scission de réseau — plus de retour au niveau 1.** Démolir une tuile
+- **État au dernier passage : `GAME_BUILD = 214`, `GAME_VERSION = 'Alpha 13.33'`, `SAVE_VERSION = 17`.**
+  Changement 13.33 : **fix scission de réseau — plus de retour au niveau 1.** Démolir une tuile
   d'infra qui COUPE un réseau en deux réinitialisait la moitié « non première » au niveau 1 (et
   perdait son statut illimité) : dans le flood-fill de `rebuildNetworks`, `oldToNew[oldId]` ne
   mappait l'ancien réseau que vers le PREMIER fragment rencontré — seul lui héritait niveau/pool/
@@ -32,7 +32,33 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   rattrapage). Validé : `node --check` (7 blocs, dev + testeur) + Chromium moteur réel (route 7 tuiles
   V4 + câble V3 illimité : rebuild no-op → tout conservé ; démolition du milieu → les DEUX fragments
   V4 / V3+illimité, pool sur un seul fragment ; re-pose → un seul réseau V4, pool intact, illimité
-  conservé). Build 212→213.
+  conservé). Build 213→214.
+  Changement 13.32 : **illustrations d'astuces (canvas, zéro octet d'image) + refonte/extension de
+  `GAME_TIPS` (17 → 32 astuces)** (brief BRIEF tip scenes). (1) **Moteur `TipScenes`** (IIFE module,
+  inséré juste avant `function TipPopup`) : autotiling du littoral porté du jeu (écume/falaises/
+  triangles/overlays), cache d'images propre (recrée des `Image` depuis les data-URL de
+  `__SPRITE_DATA__` — aucun octet ajouté), `draw(canvas, scene, 4)` = terrain + sprites en NEAREST +
+  repères vectoriels (badges/flèches/jauges/cadenas/interdit) ; **`TIP_SCENES`** = 32 specs
+  déclaratives `{island, grid 4×6, ops[]}` (clé = id d'astuce, 1:1 avec `GAME_TIPS`) ; composant
+  **`TipIllustration`** (1er rendu immédiat + `preload().then(redraw)`), inséré dans `TipPopup` entre
+  `tip-head` et `tip-body`, renvoie `null` sans scène. (2) **CSS** `.tip-illu`/`.tip-illu-canvas` —
+  ⚠ piège : la règle GLOBALE `canvas{position:absolute;inset:0}` (canvas de jeu) s'applique aussi ici
+  → `.tip-illu-canvas` doit poser `position:static` (sinon le canvas recouvre toute la popup et
+  intercepte les clics du bouton « Compris »). (3) **Astuces** : `jonctions` refondue (niveaux
+  indépendants + pose directe sur réseau) ; `upgrade_vs_v2` (périmé depuis la densification 13.20-23,
+  encore présent contrairement au brief) **remplacé** par `traverser` + `densifier` ; **14 ajouts** :
+  `port`, `eolienne`, `centrale_charbon`, `priorite`, `centrale_diesel`, `four_arc_fer`,
+  `four_arc_cuivre`, `puits_piege`, `construire_mer`, `liaisons_port`, `reserves`, `copier`,
+  `plutonium`, `antenne_modes` — insérés dans l'ordre de progression recommandé du brief. `when` :
+  ids vérifiés contre `BUILDINGS` (fours à arc = ids unifiés 13.22, sans repli anciens ids) ;
+  **`port` déclenché par `tipResearchActionable(g)`** (pas le `g => true` du brief, qui l'aurait
+  affiché en même temps que `bienvenue` — choix par défaut À VALIDER par Ethan, comme le maintien des
+  9 propositions, toutes gardées). ⚠ Nouvelles astuces **non traduites** (repli fr en en/es/de —
+  i18n à faire si souhaité). Aucune mécanique/sauvegarde touchée, `SAVE_VERSION` inchangé. Validé :
+  `node --check` (7 blocs) + Chromium E2E (32 scènes dessinées, 0 vide, toutes les clés sprites +
+  terrain autotilé présentes dans `__SPRITE_DATA__` ; nouvelle partie : popups bienvenue → recherche
+  → port → priorite → copier avec canvas 768×512 rempli 100 %, clics OK ; captures jonctions V2×V3 et
+  densifier Nv9→V2 fidèles ; 0 erreur console hors fetch `version.json` offline). Build 212→213.
   Changement 13.31 : **kickstart d'île protégé de l'export + lien « Cible ⇒ Réserve » unidirectionnel.**
   (1) **Stock de départ bloqué** : au déblocage d'une île (2-5), `applyUnlocks` pose désormais, pour
   chaque ressource du `ISLAND_KICKSTART`, la **réserve** (`tradeCfgFor(...).seuilExport`) au montant
