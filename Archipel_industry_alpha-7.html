@@ -4419,8 +4419,8 @@ const SAVE_VERSION = 17;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 213;
-const GAME_VERSION = 'Alpha 13.32';
+const GAME_BUILD = 214;
+const GAME_VERSION = 'Alpha 13.33';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -5123,7 +5123,19 @@ function rebuildNetworks(game, islandId) {
       const ct = tiles[cr][cc];
       if (!cj) {
         const oldId = ct.networkId;
-        if (oldId != null && oldToNew[oldId] === undefined) oldToNew[oldId] = nid;
+        if (oldId != null) {
+          if (oldToNew[oldId] === undefined) oldToNew[oldId] = nid;
+          // Scission d'un réseau (démolition d'une tuile au milieu) : CHAQUE fragment
+          // hérite du niveau et du statut illimité de l'ancien réseau — pas seulement le
+          // premier rencontré (sinon l'autre moitié retombait au niveau 1). Le pool et le
+          // tampon thermique, eux, ne vont qu'au premier fragment (pas de duplication de
+          // matière) via la boucle oldToNew plus bas.
+          const on = oldNets[oldId];
+          if (on) {
+            if ((on.level || 1) > net.level) net.level = on.level;
+            if (on.unlimited) net.unlimited = true;
+          }
+        }
         ct.networkId = nid;
       }
       // Si la tuile courante est une jonction, elle ne propage ce porteur que le long de son axe.
@@ -5219,7 +5231,9 @@ function rebuildNetworks(game, islandId) {
       if (rn && n) {
         addInto(rn.pool, n.pool || {});
         if ((n.level || 1) > (rn.level || 1)) rn.level = n.level;
+        if (n.unlimited) rn.unlimited = true;
         if (n.connected) rn.connected = true;
+        if (n.heatStore) rn.heatStore = (rn.heatStore || 0) + n.heatStore;
       }
       delete newNets[id];
     }
