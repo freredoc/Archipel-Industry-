@@ -4421,8 +4421,8 @@ const SAVE_VERSION = 17;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 217;
-const GAME_VERSION = 'Alpha 13.36';
+const GAME_BUILD = 218;
+const GAME_VERSION = 'Alpha 13.37';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -9342,6 +9342,19 @@ function Toolbar({
 }) {
   // Bâtiment dont la fiche détaillée est ouverte (appui long), ou null.
   const [detailId, setDetailId] = useState(null);
+  // Position de défilement des menus Bâtiment / Réseau, CONSERVÉE entre les ouvertures
+  // (les panneaux sont démontés à la fermeture → sans ça, on repart en haut à chaque
+  // fois qu'on veut reprendre un bâtiment situé en bas de la liste).
+  const buildScrollRef = useRef(0);
+  const netScrollRef = useRef(0);
+  const keepScroll = posRef => ({
+    ref: el => {
+      if (el) el.scrollTop = posRef.current; // restaure à l'ouverture (clampé par le navigateur)
+    },
+    onScroll: e => {
+      posRef.current = e.target.scrollTop;
+    }
+  });
   const visibleOn = id => {
     const ex = BUILDINGS[id].exclusiveIsland;
     if (!(ex == null || ex === currentIsland)) return false;
@@ -9400,9 +9413,11 @@ function Toolbar({
     id: detailId,
     onClose: () => { SFX.play('panelClose'); setDetailId(null); }
   }), buildOpen && React.createElement("div", {
-    className: "build-panel"
+    className: "build-panel",
+    ...keepScroll(buildScrollRef)
   }, renderGroups(BUILD_GROUPS)), netOpen && React.createElement("div", {
-    className: "build-panel"
+    className: "build-panel",
+    ...keepScroll(netScrollRef)
   }, renderGroups(NETWORK_GROUPS, id => networkUnlocked(id, unlockedSet, currentIsland))), React.createElement("div", {
     className: "toolbar"
   }, React.createElement("div", {
