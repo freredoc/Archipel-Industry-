@@ -4421,8 +4421,8 @@ const SAVE_VERSION = 17;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 216;
-const GAME_VERSION = 'Alpha 13.35';
+const GAME_BUILD = 217;
+const GAME_VERSION = 'Alpha 13.36';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -16474,6 +16474,17 @@ function App() {
     };
     document.addEventListener('visibilitychange', onResume);
     window.addEventListener('pageshow', onResume);
+    // Passage en ARRIÈRE-PLAN : on écrit IMMÉDIATEMENT toute sauvegarde en attente. Les
+    // sauvegardes sont débouncées (500 ms) et Android gèle les timers JS d'une WebView en
+    // arrière-plan puis peut tuer le process → un réglage fait juste avant de quitter (ex.
+    // « Taille des badges ») était PERDU et semblait « réinitialisé » au lancement suivant.
+    // Garde `saveTimer` : on ne flushe QUE s'il y a une écriture en attente (une partie
+    // neuve jamais touchée ne crée pas de sauvegarde parasite).
+    const onHide = () => {
+      if (document.visibilityState === 'hidden' && gameRef.current.saveTimer) flushSave();
+    };
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', onHide);
     const onCtxLost = e => {
       e.preventDefault();
       stop();
@@ -16493,6 +16504,8 @@ function App() {
       clearInterval(beat);
       document.removeEventListener('visibilitychange', onResume);
       window.removeEventListener('pageshow', onResume);
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', onHide);
       if (canvasEl) canvasEl.removeEventListener('contextlost', onCtxLost);
     };
   }, [canvasKey]);
