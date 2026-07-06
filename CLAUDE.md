@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 217`, `GAME_VERSION = 'Alpha 13.36'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 218`, `GAME_VERSION = 'Alpha 13.37'`, `SAVE_VERSION = 17`.**
+  Changement 13.37 : **le menu Bâtiment (et Réseau) garde sa position de défilement.** Demande
+  testeur : les panneaux `.build-panel` sont DÉMONTÉS à la fermeture → chaque réouverture repartait
+  en haut de la liste (pénible pour reprendre un bâtiment du bas). Fix dans la Toolbar (toujours
+  montée) : refs `buildScrollRef`/`netScrollRef` + helper `keepScroll(posRef)` = `{ref}` (callback
+  qui restaure `el.scrollTop` au montage — clampé par le navigateur si la liste a raccourci) +
+  `{onScroll}` (mémorise la position). Positions INDÉPENDANTES pour les deux menus. Aucune
+  mécanique/persistance touchée (position non sauvegardée — session seulement, voulu). Validé :
+  `node --check` (7 blocs, dev + testeur) + Chromium E2E (save testeur : menu Bâtiment scrollable
+  790 px → scroll 250 → fermer/rouvrir → 250 conservé ; menu Réseau ouvre à 0, indépendant).
+  Build 217→218.
   Changement 13.36 : **flush de sauvegarde au passage en arrière-plan (fix « Taille des badges
   réinitialisée au lancement »).** TOUTE la chaîne badgeScale (serialize `uiPrefs` → `loadSave` →
   sync React boot/Options → draw) est CORRECTE (vérifiée E2E avec la save du testeur). La vraie
