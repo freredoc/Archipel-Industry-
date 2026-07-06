@@ -17,7 +17,21 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 216`, `GAME_VERSION = 'Alpha 13.35'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 217`, `GAME_VERSION = 'Alpha 13.36'`, `SAVE_VERSION = 17`.**
+  Changement 13.36 : **flush de sauvegarde au passage en arrière-plan (fix « Taille des badges
+  réinitialisée au lancement »).** TOUTE la chaîne badgeScale (serialize `uiPrefs` → `loadSave` →
+  sync React boot/Options → draw) est CORRECTE (vérifiée E2E avec la save du testeur). La vraie
+  faille : les sauvegardes sont UNIQUEMENT débouncées (`scheduleSave`, 500 ms) et il n'y avait
+  AUCUN flush quand l'app part en arrière-plan — Android gèle les timers JS d'une WebView cachée
+  puis peut tuer le process → un réglage fait juste avant de quitter (geste typique pour une
+  option) était perdu et « réinitialisé » au lancement suivant. Fix : listener `onHide`
+  (`visibilitychange`→hidden + `pagehide`, dans l'effet canvas à côté d'`onResume`, retiré au
+  cleanup) qui appelle `flushSave()` **seulement si `gameRef.current.saveTimer` est en attente**
+  (une partie neuve jamais touchée n'écrit pas de save parasite — le ModeModal reste affiché au
+  boot suivant). Protège au passage les 500 dernières ms de TOUTE action avant de quitter l'app.
+  Validé : `node --check` (7 blocs, dev + testeur) + Chromium E2E (save testeur : slider 1.6→0.8,
+  save en attente, localStorage ENCORE à 1.6 → dispatch hidden → localStorage à 0.8 → reload →
+  0.8 restauré ; boot/reload/Options déjà vérifiés OK par ailleurs). Build 216→217.
   Changement 13.35 : **alerte électrique PAR RÉSEAU (composante câble).** Retour testeur : aucune
   alerte alors qu'un réseau était en déficit — `activeEnergyAlerts` comparait production/demande de
   l'ÎLE entière, or l'électricité circule par composante câble : un surplus sur un câble masquait le
