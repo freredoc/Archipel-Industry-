@@ -17,7 +17,20 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 215`, `GAME_VERSION = 'Alpha 13.34'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 216`, `GAME_VERSION = 'Alpha 13.35'`, `SAVE_VERSION = 17`.**
+  Changement 13.35 : **alerte électrique PAR RÉSEAU (composante câble).** Retour testeur : aucune
+  alerte alors qu'un réseau était en déficit — `activeEnergyAlerts` comparait production/demande de
+  l'ÎLE entière, or l'électricité circule par composante câble : un surplus sur un câble masquait le
+  déficit d'un autre (HUD « +0 kW » sans alerte, bâtiment 0 % ⚡). Désormais l'alerte se déclenche
+  PAR COMPOSANTE (via `game.wireInfo[isl]`, objets dédupliqués par identité — une composante est
+  partagée par plusieurs nids) : demande non SERVIE (`served + 0.5 < demand`, couvre production
+  insuffisante ET câble saturé) + batterie de la composante vide (`accStored`). L'`AlertsPanel`
+  affiche « ⚡ Réseau en déficit · 0% batterie » (ou « N réseaux en déficit ») + livré/demandé de la
+  pire composante ; repli île entière conservé (avant le 1er tick, sans wireInfo). Le badge ⚠ du HUD
+  et le SFX `checkEnergyAlerts` en héritent (mêmes données). i18n en/es/de. Validé : `node --check`
+  (7 blocs, dev + testeur) + Chromium E2E sur la save du testeur (île 2 : bilan global +1024 kW MAIS
+  composante 11,78/12,03 MW → alerte `{isl:2, nets:1}`, bouton ⚠ présent, panneau « Grid in
+  deficit · 0% battery 11,78 MW / 12,03 MW » ; 0 erreur console). Build 215→216.
   Changement 13.34 : **3 correctifs UX (retours testeur).** (1) **Toast « manque » sans décimales** :
   `missingFor` arrondit à l'entier SUPÉRIEUR (`Math.ceil`) + notation port (`fmtPort`) — fini
   « manque 352.49999999999994 ». (2) **Fiche bâtiment — cause élec. LISIBLE** : quand un bâtiment
