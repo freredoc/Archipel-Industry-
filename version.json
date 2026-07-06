@@ -1,8 +1,8 @@
 {
-  "build": 214,
-  "version": "Alpha 13.33",
+  "build": 215,
+  "version": "Alpha 13.34",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #207 from freredoc/claude/dual-apk-tester-build-lq9dbv"
+  "notes": "Merge pull request #208 from freredoc/claude/dual-apk-tester-build-lq9dbv"
 }
