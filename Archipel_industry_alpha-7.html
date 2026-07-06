@@ -4239,9 +4239,11 @@ const NETWORK_THROUGHPUT = {
 // (amélioration « infinie »). N=1:128, 2:1024, 3:8192, 4:65536, 5:524288, 6:4194304, …
 // En mode Difficile, tous les débits sont divisés par 2 (économie plus tendue) :
 // N=1:64, 2:512, 3:4096, …
-// Le CÂBLE (électricité) a une capacité ×4 par rapport à la route/au tuyau (WIRE_CAP_MULT).
+// Le CÂBLE (électricité) a une capacité ×4 par rapport à la route (WIRE_CAP_MULT) ;
+// le TUYAU (liquides) une capacité ÷2 (PIPE_CAP_DIV) : V1=64, V2=512, V3=4096, …
 const WIRE_CAP_MULT = 4;
-const networkThroughput = (level, type) => 128 * Math.pow(8, (level || 1) - 1) / (isDifficileMode() ? 2 : 1) * (type === 'wire' ? WIRE_CAP_MULT : 1);
+const PIPE_CAP_DIV = 2;
+const networkThroughput = (level, type) => 128 * Math.pow(8, (level || 1) - 1) / (isDifficileMode() ? 2 : 1) * (type === 'wire' ? WIRE_CAP_MULT : 1) / (type === 'pipe' ? PIPE_CAP_DIV : 1);
 const NETWORK_MAX_LEVEL = 99;
 // Per-tile upgrade cost for going from (level) to (level+1), by infra type.
 const NETWORK_UPGRADE_COST = {
@@ -4421,8 +4423,8 @@ const SAVE_VERSION = 17;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 218;
-const GAME_VERSION = 'Alpha 13.37';
+const GAME_BUILD = 219;
+const GAME_VERSION = 'Alpha 13.38';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.

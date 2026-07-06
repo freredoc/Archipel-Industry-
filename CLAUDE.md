@@ -17,7 +17,13 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 218`, `GAME_VERSION = 'Alpha 13.37'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 219`, `GAME_VERSION = 'Alpha 13.38'`, `SAVE_VERSION = 17`.**
+  Changement 13.38 : **capacité du réseau TUYAU ÷2.** Demande testeur. Nouvelle constante
+  `PIPE_CAP_DIV = 2` appliquée dans `networkThroughput` (comme `WIRE_CAP_MULT` pour le câble) :
+  tuyau V1=64, V2=512, V3=4096 /s (÷2 de plus en Difficile) ; route et câble inchangés. Tous les
+  appelants passent déjà le type depuis 13.13 → panneau réseau, saturation, bannières et pools en
+  héritent. Validé : `node --check` (7 blocs, dev + testeur) + Chromium moteur (partie Normal :
+  pipe 64/512/4096, road 128/1024/8192, wire 512/4096/32768). Build 218→219.
   Changement 13.37 : **le menu Bâtiment (et Réseau) garde sa position de défilement.** Demande
   testeur : les panneaux `.build-panel` sont DÉMONTÉS à la fermeture → chaque réouverture repartait
   en haut de la liste (pénible pour reprendre un bâtiment du bas). Fix dans la Toolbar (toujours
