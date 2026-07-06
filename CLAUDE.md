@@ -17,7 +17,22 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 212`, `GAME_VERSION = 'Alpha 13.31'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 213`, `GAME_VERSION = 'Alpha 13.32'`, `SAVE_VERSION = 17`.**
+  Changement 13.32 : **fix scission de réseau — plus de retour au niveau 1.** Démolir une tuile
+  d'infra qui COUPE un réseau en deux réinitialisait la moitié « non première » au niveau 1 (et
+  perdait son statut illimité) : dans le flood-fill de `rebuildNetworks`, `oldToNew[oldId]` ne
+  mappait l'ancien réseau que vers le PREMIER fragment rencontré — seul lui héritait niveau/pool/
+  heatStore. Fix : pendant le flood-fill, CHAQUE fragment hérite directement du `level` (max) et de
+  `unlimited` de l'ancien réseau de ses tuiles ; le pool et le tampon thermique restent au premier
+  fragment (pas de duplication de matière). Au passage : la passe de FUSION « traversée bâtiment »
+  (10.59) reporte désormais aussi `unlimited` et `heatStore` (avant : perdus à la fusion — `unlimited`
+  n'était reporté NULLE PART dans un rebuild ; il ne survivait que par la save). Aucun changement de
+  coût (l'amélioration réseau se paie PAR TUILE → conserver le niveau des deux moitiés n'est pas un
+  exploit ; la re-jonction reprend le max, et la pose d'une tuile sur un réseau haut paie toujours le
+  rattrapage). Validé : `node --check` (7 blocs, dev + testeur) + Chromium moteur réel (route 7 tuiles
+  V4 + câble V3 illimité : rebuild no-op → tout conservé ; démolition du milieu → les DEUX fragments
+  V4 / V3+illimité, pool sur un seul fragment ; re-pose → un seul réseau V4, pool intact, illimité
+  conservé). Build 212→213.
   Changement 13.31 : **kickstart d'île protégé de l'export + lien « Cible ⇒ Réserve » unidirectionnel.**
   (1) **Stock de départ bloqué** : au déblocage d'une île (2-5), `applyUnlocks` pose désormais, pour
   chaque ressource du `ISLAND_KICKSTART`, la **réserve** (`tradeCfgFor(...).seuilExport`) au montant
