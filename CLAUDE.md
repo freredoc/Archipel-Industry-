@@ -17,7 +17,21 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 220`, `GAME_VERSION = 'Alpha 13.39'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 221`, `GAME_VERSION = 'Alpha 13.40'`, `SAVE_VERSION = 17`.**
+  Changement 13.40 : **2 retours testeur UI.** (1) **Indicateur d'énergie déplacé** : le bloc
+  `.stocks` (pastille ⚡ bilan kW + 🔋 batterie, clic → panneau Énergie, JSX inchangé) quitte le
+  haut du HUD (`hud-side`, qui garde PORT/RECHERCHE) pour la barre d'inventaire, À DROITE du bouton
+  Production — ordre : [INVENTAIRE][Production][⚡/🔋][réparation][alerte], états replié ET ouvert
+  (`stocksBlk` défini dans l'IIFE du HUD). CSS `.stocks-inv` : disposition en LIGNE (la colonne du
+  11.06 ne vaut que pour l'ancien emplacement) + pastilles compactées. (2) **Confirmations de la
+  fiche bâtiment re-demandées à la réouverture** : l'effet de reset des états armés (Monter/
+  Baisser/Pause/Démolir) dépend de l'OBJET `info` (recréé à CHAQUE tap) et plus de `[info.r,
+  info.c]` — quitter la fiche puis re-toucher le MÊME bâtiment ré-exige le clic « Confirmer »
+  (avant : l'état armé survivait au re-tap du même bâtiment). Les clics ENCHAÎNÉS sur « Monter »
+  fiche ouverte restent sans re-confirmation (design 13.20). Validé : `node --check` (7 blocs,
+  dev + testeur) + Chromium E2E (save testeur : stocks absents du haut, ordre inventaire OK, clic
+  ⚡ → panneau Énergie ; aciérie : armé → monte → monte enchaîné, fermeture + re-tap → 1er clic
+  N'A PAS monté + libellé « Confirm »). Build 220→221.
   Changement 13.39 : **badge « nouveau » sur les bâtiments fraîchement débloqués + bouton INVENTAIRE
   sans nombre.** (1) **Badge nouveau** : pastille jaune « nouveau » (`.tb-new`, i18n en/es/de) sur
   chaque bâtiment du menu Bâtiment/Réseau débloqué mais JAMAIS sélectionné ; `notif-dot` sur les
