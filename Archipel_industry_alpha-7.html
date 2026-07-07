@@ -393,6 +393,10 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 .ep-pos{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--ink-faint);}
 .ep-pow{font-family:'DM Mono',monospace;font-size:.68rem;color:#8fd0ff;text-align:right;}
 .stock.energy,.stock.battery{cursor:pointer;}
+/* Énergie/batterie déplacées dans la barre d'inventaire (à droite de Production) : en LIGNE. */
+.stocks-inv{flex-direction:row;align-items:center;gap:4px;}
+.stocks-inv .stock{padding:1px 7px;}
+.stocks-inv .stock .v{font-size:.7rem;}
 
 /* ── Panneau Recherche (overlay) ── */
 .research-backdrop{position:fixed;inset:0;z-index:120;background:rgba(5,5,15,.55);}
@@ -4430,8 +4434,8 @@ const SAVE_VERSION = 17;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 220;
-const GAME_VERSION = 'Alpha 13.39';
+const GAME_BUILD = 221;
+const GAME_VERSION = 'Alpha 13.40';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -8972,25 +8976,7 @@ function Hud({
     unlocked: islandUnlocked
   })), React.createElement("div", {
     className: "hud-grp hud-side"
-  }, React.createElement("div", {
-    className: "stocks"
-  }, React.createElement("div", {
-    className: 'stock energy' + (deficit ? ' deficit' : ' ok'),
-    title: "Bilan \xE9nergie de l'\xEEle \u2014 cliquer pour g\xE9rer le d\xE9ficit",
-    onClick: onEnergy
-  }, React.createElement("span", {
-    className: "k"
-  }, uiIcon('energie', "\u26A1")), React.createElement("span", {
-    className: "v"
-  }, net >= 0 ? '+' : '', fmtPower(net))), accPct != null && React.createElement("div", {
-    className: "stock battery" + (accPct <= 15 ? ' deficit' : ' ok'),
-    title: "Charge des accumulateurs de l'\xEEle \u2014 cliquer pour g\xE9rer l'\xE9nergie",
-    onClick: onEnergy
-  }, React.createElement("span", {
-    className: "k"
-  }, uiIcon('batterie', "\uD83D\uDD0B")), React.createElement("span", {
-    className: "v"
-  }, accPct + "%"))), React.createElement("button", {
+  }, React.createElement("button", {
     className: "research-btn",
     onClick: onOpenPort,
     title: I18N.t("Configuration du port (commerce)")
@@ -9026,6 +9012,28 @@ function Hud({
       onClick: onOpenProduction,
       title: I18N.t("Production / consommation / transit de toutes les \xEEles")
     }, uiIcon('production', "📊"), React.createElement("span", null, I18N.t("Production")));
+    // Indicateur d'énergie (+ batterie) — déplacé À DROITE du bouton Production (demande
+    // testeur). Même JSX qu'avant (clic → panneau Énergie), classe stocks-inv pour la mise
+    // en page en LIGNE dans la barre d'inventaire.
+    const stocksBlk = React.createElement("div", {
+    className: "stocks stocks-inv"
+  }, React.createElement("div", {
+    className: 'stock energy' + (deficit ? ' deficit' : ' ok'),
+    title: "Bilan \xE9nergie de l'\xEEle \u2014 cliquer pour g\xE9rer le d\xE9ficit",
+    onClick: onEnergy
+  }, React.createElement("span", {
+    className: "k"
+  }, uiIcon('energie', "\u26A1")), React.createElement("span", {
+    className: "v"
+  }, net >= 0 ? '+' : '', fmtPower(net))), accPct != null && React.createElement("div", {
+    className: "stock battery" + (accPct <= 15 ? ' deficit' : ' ok'),
+    title: "Charge des accumulateurs de l'\xEEle \u2014 cliquer pour g\xE9rer l'\xE9nergie",
+    onClick: onEnergy
+  }, React.createElement("span", {
+    className: "k"
+  }, uiIcon('batterie', "\uD83D\uDD0B")), React.createElement("span", {
+    className: "v"
+  }, accPct + "%")));
     // Bouton ALERTE (à droite de Production) : visible s'il y a ≥1 alerte de stock active sur une île.
     const alertBtn = alertCount > 0 && React.createElement("button", {
       className: "inv-alert-btn",
@@ -9041,7 +9049,7 @@ function Hud({
         className: "inv-label-btn",
         onClick: onToggleInv,
         title: I18N.t("Afficher l'inventaire")
-      }, I18N.t("INVENTAIRE")), prodBtn, repairBtn, alertBtn);
+      }, I18N.t("INVENTAIRE")), prodBtn, stocksBlk, repairBtn, alertBtn);
     }
     let lastTier = null;
     const items = [];
@@ -9085,7 +9093,7 @@ function Hud({
       className: "inv-label-btn open",
       onClick: onToggleInv,
       title: I18N.t("Replier l'inventaire")
-    }, I18N.t("INVENTAIRE")), prodBtn, repairBtn, alertBtn, inv.length === 0 ? React.createElement("span", {
+    }, I18N.t("INVENTAIRE")), prodBtn, stocksBlk, repairBtn, alertBtn, inv.length === 0 ? React.createElement("span", {
       className: "inv-empty"
     }, "\u2014 vide \u2014") : items, React.createElement("span", {
       className: "inv-break",
@@ -9501,7 +9509,10 @@ function InfoPanel({
     setArmedDem(false);
     setArmedDown(false);
     setArmedPause(false);
-  }, [info.r, info.c]);
+    // Dépendance sur l'OBJET info (recréé à chaque tap) et plus seulement (r,c) : quitter la
+    // fiche puis RE-TOUCHER le même bâtiment redemande la confirmation (Monter/Baisser/Pause/
+    // Démolir). Les clics enchaînés sur « Monter » fiche OUVERTE restent sans re-confirmation.
+  }, [info]);
   const tilesRow = game.islands[currentIsland] && game.islands[currentIsland][info.r];
   const live = tilesRow && tilesRow[info.c];
   const bld = live && live.building;
