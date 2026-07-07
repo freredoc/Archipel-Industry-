@@ -1038,6 +1038,13 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .research-btn.pending{border-color:var(--yellow);box-shadow:0 0 0 1px var(--yellow) inset;}
 .notif-dot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;
   background:var(--yellow);border:1px solid var(--panel);animation:notifpulse 1.2s ease-in-out infinite;}
+/* Badge « nouveau » sur un bâtiment fraîchement débloqué (menu Bâtiment/Réseau), jusqu'à sa
+   première sélection. Les onglets Bâtiment/Réseau portent une notif-dot tant qu'il en reste. */
+.tool-btn{position:relative;}
+.tab-btn{position:relative;}
+.tb-new{position:absolute;top:1px;right:2px;background:var(--yellow);color:#1b1b30;
+  font-family:'Bebas Neue',sans-serif;font-size:.56rem;letter-spacing:.05em;line-height:1.25;
+  padding:0 4px;border-radius:6px;z-index:2;text-transform:uppercase;pointer-events:none;}
 @keyframes notifpulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.35);opacity:.6;}}
 /* Tappable quit button in the status bar (mobile-friendly replacement for "Échap") */
 .status-quit{margin-left:10px;flex-shrink:0;background:rgba(255,59,48,.9);color:#fff;
@@ -2060,7 +2067,7 @@ window.__ANIM_DATA__["tile_i5_coast_tri_sw"]="data:image/png;base64,iVBORw0KGgoA
 })(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));
 
 /* i18n — libellés supplémentaires (catégories du menu Bâtiment + Options langue) ajoutés aux 4 langues. */
-(function(){ if(!window.I18N||!I18N.locales) return; var ADD={"en":{"Infrastructure":"Infrastructure","Jonctions":"Junctions","Extraction":"Extraction","Énergie":"Energy","Fer-acier":"Iron & Steel","Ciment & béton":"Cement & Concrete","Cuivre":"Copper","Électronique":"Electronics","Plastique et chimie":"Plastics & Chemicals","Nucléaire":"Nuclear","Langue":"Language","Langue du jeu (système par défaut)":"Game language (system default)","Transit île":"Island transit","Transit archipel":"Archipelago transit","Flux entre îles":"Flows between islands","Aucun flux de transit en cours.":"No transit flow in progress.","Conso. théorique":"Theoretical consumption","Prod. théorique":"Theoretical output","Charge/Déch.":"Charge/Disch.","plein dans ":"full in ","vide dans ":"empty in ","plein":"full","vide":"empty","stable (ni charge ni décharge)":"stable (no charge/discharge)","Cible ⇒ Réserve":"Target ⇒ Reserve","OUI":"YES","NON":"NO","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"When on, editing the target also sets the reserve (one way: target ⇒ reserve) for every resource on this island"," — ce réseau produit ":" — this grid produces "," demandés":" requested"," — câble saturé : débit ":" — cable saturated: throughput ","⚡ Réseau en déficit · 0% batterie":"⚡ Grid in deficit · 0% battery"," réseaux en déficit · 0% batterie":" grids in deficit · 0% battery","Mode rapide":"Fast mode","Cliquer pour accélérer / ralentir le temps de jeu":"Click to speed up / slow down game time","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"Game time runs at ×10 (sound muted). Toggle anytime via the clock.","Production hors-ligne":"Offline production","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Catches up production while you're away. Off: the game only progresses while open."," Densifier ":" Densify ","Densifier → ":"Densify → ","Densification":"Densification","Densification → ":"Densification → ","Recherche requise":"Research required","Recherche requise : ":"Research required: ","Niveau max. atteint — densifier vers ":"Max level reached — densify into ","Mettre en pause":"Pause","Reprendre la production":"Resume production","en pause (par le joueur)":"paused (by you)","en pause":"paused","production reprise":"production resumed","Relancer la production de ce bâtiment":"Restart this building's production","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Suspend this building (consumes and produces nothing)"},"es":{"Infrastructure":"Infraestructura","Jonctions":"Uniones","Extraction":"Extracción","Énergie":"Energía","Fer-acier":"Hierro y acero","Ciment & béton":"Cemento y hormigón","Cuivre":"Cobre","Électronique":"Electrónica","Plastique et chimie":"Plásticos y química","Nucléaire":"Nuclear","Langue":"Idioma","Langue du jeu (système par défaut)":"Idioma del juego (sistema por defecto)","Transit île":"Tránsito de la isla","Transit archipel":"Tránsito del archipiélago","Flux entre îles":"Flujos entre islas","Aucun flux de transit en cours.":"Ningún flujo de tránsito en curso.","Conso. théorique":"Consumo teórico","Prod. théorique":"Producción teórica","Charge/Déch.":"Carga/Desc.","plein dans ":"lleno en ","vide dans ":"vacío en ","plein":"lleno","vide":"vacío","stable (ni charge ni décharge)":"estable (sin carga/descarga)","Cible ⇒ Réserve":"Objetivo ⇒ Reserva","OUI":"SÍ","NON":"NO","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"Cuando está activado, editar el objetivo también fija la reserva (un solo sentido: objetivo ⇒ reserva) para todos los recursos de esta isla"," — ce réseau produit ":" — esta red produce "," demandés":" solicitados"," — câble saturé : débit ":" — cable saturado: caudal ","⚡ Réseau en déficit · 0% batterie":"⚡ Red en déficit · 0% batería"," réseaux en déficit · 0% batterie":" redes en déficit · 0% batería","Mode rapide":"Modo rápido","Cliquer pour accélérer / ralentir le temps de jeu":"Pulsa para acelerar / ralentizar el tiempo de juego","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"El tiempo de juego corre a ×10 (sonido silenciado). Conmutable en cualquier momento con el reloj.","Production hors-ligne":"Producción sin conexión","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Recupera la producción durante una ausencia. Desactivado: el juego solo avanza mientras está abierto."," Densifier ":" Densificar ","Densifier → ":"Densificar → ","Densification":"Densificación","Densification → ":"Densificación → ","Recherche requise":"Investigación necesaria","Recherche requise : ":"Investigación necesaria: ","Niveau max. atteint — densifier vers ":"Nivel máx. alcanzado — densificar hacia ","Mettre en pause":"Pausar","Reprendre la production":"Reanudar la producción","en pause (par le joueur)":"en pausa (por el jugador)","en pause":"en pausa","production reprise":"producción reanudada","Relancer la production de ce bâtiment":"Reiniciar la producción de este edificio","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Suspender este edificio (no consume ni produce nada)"},"de":{"Infrastructure":"Infrastruktur","Jonctions":"Kreuzungen","Extraction":"Förderung","Énergie":"Energie","Fer-acier":"Eisen & Stahl","Ciment & béton":"Zement & Beton","Cuivre":"Kupfer","Électronique":"Elektronik","Plastique et chimie":"Kunststoff & Chemie","Nucléaire":"Nuklear","Langue":"Sprache","Langue du jeu (système par défaut)":"Spielsprache (System-Standard)","Transit île":"Insel-Transit","Transit archipel":"Archipel-Transit","Flux entre îles":"Flüsse zwischen Inseln","Aucun flux de transit en cours.":"Kein Transitfluss aktiv.","Conso. théorique":"Theoret. Verbrauch","Prod. théorique":"Theoret. Leistung","Charge/Déch.":"Laden/Entl.","plein dans ":"voll in ","vide dans ":"leer in ","plein":"voll","vide":"leer","stable (ni charge ni décharge)":"stabil (kein Laden/Entladen)","Cible ⇒ Réserve":"Ziel ⇒ Reserve","OUI":"JA","NON":"NEIN","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"Wenn aktiv, setzt das Bearbeiten des Ziels auch die Reserve (nur eine Richtung: Ziel ⇒ Reserve) für alle Ressourcen dieser Insel"," — ce réseau produit ":" — dieses Netz erzeugt "," demandés":" angefordert"," — câble saturé : débit ":" — Kabel ausgelastet: Durchsatz ","⚡ Réseau en déficit · 0% batterie":"⚡ Netz im Defizit · 0% Batterie"," réseaux en déficit · 0% batterie":" Netze im Defizit · 0% Batterie","Mode rapide":"Schnellmodus","Cliquer pour accélérer / ralentir le temps de jeu":"Klicken, um die Spielzeit zu beschleunigen / verlangsamen","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"Die Spielzeit läuft mit ×10 (Ton aus). Jederzeit über die Uhr umschaltbar.","Production hors-ligne":"Offline-Produktion","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Holt die Produktion während einer Abwesenheit nach. Aus: Das Spiel läuft nur, solange es geöffnet ist."," Densifier ":" Verdichten ","Densifier → ":"Verdichten → ","Densification":"Verdichtung","Densification → ":"Verdichtung → ","Recherche requise":"Forschung erforderlich","Recherche requise : ":"Forschung erforderlich: ","Niveau max. atteint — densifier vers ":"Max. Stufe erreicht — verdichten zu ","Mettre en pause":"Pausieren","Reprendre la production":"Produktion fortsetzen","en pause (par le joueur)":"pausiert (vom Spieler)","en pause":"pausiert","production reprise":"Produktion fortgesetzt","Relancer la production de ce bâtiment":"Produktion dieses Gebäudes wieder starten","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Gebäude anhalten (verbraucht und produziert nichts mehr)"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; var ADD={"en":{"Infrastructure":"Infrastructure","Jonctions":"Junctions","Extraction":"Extraction","Énergie":"Energy","Fer-acier":"Iron & Steel","Ciment & béton":"Cement & Concrete","Cuivre":"Copper","Électronique":"Electronics","Plastique et chimie":"Plastics & Chemicals","Nucléaire":"Nuclear","Langue":"Language","Langue du jeu (système par défaut)":"Game language (system default)","Transit île":"Island transit","Transit archipel":"Archipelago transit","Flux entre îles":"Flows between islands","Aucun flux de transit en cours.":"No transit flow in progress.","Conso. théorique":"Theoretical consumption","Prod. théorique":"Theoretical output","Charge/Déch.":"Charge/Disch.","plein dans ":"full in ","vide dans ":"empty in ","plein":"full","vide":"empty","stable (ni charge ni décharge)":"stable (no charge/discharge)","Cible ⇒ Réserve":"Target ⇒ Reserve","OUI":"YES","NON":"NO","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"When on, editing the target also sets the reserve (one way: target ⇒ reserve) for every resource on this island"," — ce réseau produit ":" — this grid produces "," demandés":" requested"," — câble saturé : débit ":" — cable saturated: throughput ","⚡ Réseau en déficit · 0% batterie":"⚡ Grid in deficit · 0% battery"," réseaux en déficit · 0% batterie":" grids in deficit · 0% battery","nouveau":"new","Débloqué récemment — jamais sélectionné":"Recently unlocked — never selected","Mode rapide":"Fast mode","Cliquer pour accélérer / ralentir le temps de jeu":"Click to speed up / slow down game time","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"Game time runs at ×10 (sound muted). Toggle anytime via the clock.","Production hors-ligne":"Offline production","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Catches up production while you're away. Off: the game only progresses while open."," Densifier ":" Densify ","Densifier → ":"Densify → ","Densification":"Densification","Densification → ":"Densification → ","Recherche requise":"Research required","Recherche requise : ":"Research required: ","Niveau max. atteint — densifier vers ":"Max level reached — densify into ","Mettre en pause":"Pause","Reprendre la production":"Resume production","en pause (par le joueur)":"paused (by you)","en pause":"paused","production reprise":"production resumed","Relancer la production de ce bâtiment":"Restart this building's production","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Suspend this building (consumes and produces nothing)"},"es":{"Infrastructure":"Infraestructura","Jonctions":"Uniones","Extraction":"Extracción","Énergie":"Energía","Fer-acier":"Hierro y acero","Ciment & béton":"Cemento y hormigón","Cuivre":"Cobre","Électronique":"Electrónica","Plastique et chimie":"Plásticos y química","Nucléaire":"Nuclear","Langue":"Idioma","Langue du jeu (système par défaut)":"Idioma del juego (sistema por defecto)","Transit île":"Tránsito de la isla","Transit archipel":"Tránsito del archipiélago","Flux entre îles":"Flujos entre islas","Aucun flux de transit en cours.":"Ningún flujo de tránsito en curso.","Conso. théorique":"Consumo teórico","Prod. théorique":"Producción teórica","Charge/Déch.":"Carga/Desc.","plein dans ":"lleno en ","vide dans ":"vacío en ","plein":"lleno","vide":"vacío","stable (ni charge ni décharge)":"estable (sin carga/descarga)","Cible ⇒ Réserve":"Objetivo ⇒ Reserva","OUI":"SÍ","NON":"NO","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"Cuando está activado, editar el objetivo también fija la reserva (un solo sentido: objetivo ⇒ reserva) para todos los recursos de esta isla"," — ce réseau produit ":" — esta red produce "," demandés":" solicitados"," — câble saturé : débit ":" — cable saturado: caudal ","⚡ Réseau en déficit · 0% batterie":"⚡ Red en déficit · 0% batería"," réseaux en déficit · 0% batterie":" redes en déficit · 0% batería","nouveau":"nuevo","Débloqué récemment — jamais sélectionné":"Desbloqueado hace poco — nunca seleccionado","Mode rapide":"Modo rápido","Cliquer pour accélérer / ralentir le temps de jeu":"Pulsa para acelerar / ralentizar el tiempo de juego","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"El tiempo de juego corre a ×10 (sonido silenciado). Conmutable en cualquier momento con el reloj.","Production hors-ligne":"Producción sin conexión","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Recupera la producción durante una ausencia. Desactivado: el juego solo avanza mientras está abierto."," Densifier ":" Densificar ","Densifier → ":"Densificar → ","Densification":"Densificación","Densification → ":"Densificación → ","Recherche requise":"Investigación necesaria","Recherche requise : ":"Investigación necesaria: ","Niveau max. atteint — densifier vers ":"Nivel máx. alcanzado — densificar hacia ","Mettre en pause":"Pausar","Reprendre la production":"Reanudar la producción","en pause (par le joueur)":"en pausa (por el jugador)","en pause":"en pausa","production reprise":"producción reanudada","Relancer la production de ce bâtiment":"Reiniciar la producción de este edificio","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Suspender este edificio (no consume ni produce nada)"},"de":{"Infrastructure":"Infrastruktur","Jonctions":"Kreuzungen","Extraction":"Förderung","Énergie":"Energie","Fer-acier":"Eisen & Stahl","Ciment & béton":"Zement & Beton","Cuivre":"Kupfer","Électronique":"Elektronik","Plastique et chimie":"Kunststoff & Chemie","Nucléaire":"Nuklear","Langue":"Sprache","Langue du jeu (système par défaut)":"Spielsprache (System-Standard)","Transit île":"Insel-Transit","Transit archipel":"Archipel-Transit","Flux entre îles":"Flüsse zwischen Inseln","Aucun flux de transit en cours.":"Kein Transitfluss aktiv.","Conso. théorique":"Theoret. Verbrauch","Prod. théorique":"Theoret. Leistung","Charge/Déch.":"Laden/Entl.","plein dans ":"voll in ","vide dans ":"leer in ","plein":"voll","vide":"leer","stable (ni charge ni décharge)":"stabil (kein Laden/Entladen)","Cible ⇒ Réserve":"Ziel ⇒ Reserve","OUI":"JA","NON":"NEIN","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"Wenn aktiv, setzt das Bearbeiten des Ziels auch die Reserve (nur eine Richtung: Ziel ⇒ Reserve) für alle Ressourcen dieser Insel"," — ce réseau produit ":" — dieses Netz erzeugt "," demandés":" angefordert"," — câble saturé : débit ":" — Kabel ausgelastet: Durchsatz ","⚡ Réseau en déficit · 0% batterie":"⚡ Netz im Defizit · 0% Batterie"," réseaux en déficit · 0% batterie":" Netze im Defizit · 0% Batterie","nouveau":"neu","Débloqué récemment — jamais sélectionné":"Kürzlich freigeschaltet — nie ausgewählt","Mode rapide":"Schnellmodus","Cliquer pour accélérer / ralentir le temps de jeu":"Klicken, um die Spielzeit zu beschleunigen / verlangsamen","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"Die Spielzeit läuft mit ×10 (Ton aus). Jederzeit über die Uhr umschaltbar.","Production hors-ligne":"Offline-Produktion","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Holt die Produktion während einer Abwesenheit nach. Aus: Das Spiel läuft nur, solange es geöffnet ist."," Densifier ":" Verdichten ","Densifier → ":"Verdichten → ","Densification":"Verdichtung","Densification → ":"Verdichtung → ","Recherche requise":"Forschung erforderlich","Recherche requise : ":"Forschung erforderlich: ","Niveau max. atteint — densifier vers ":"Max. Stufe erreicht — verdichten zu ","Mettre en pause":"Pausieren","Reprendre la production":"Produktion fortsetzen","en pause (par le joueur)":"pausiert (vom Spieler)","en pause":"pausiert","production reprise":"Produktion fortgesetzt","Relancer la production de ce bâtiment":"Produktion dieses Gebäudes wieder starten","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Gebäude anhalten (verbraucht und produziert nichts mehr)"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 </script>
 <script>
 const {
@@ -4423,8 +4430,8 @@ const SAVE_VERSION = 17;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 219;
-const GAME_VERSION = 'Alpha 13.38';
+const GAME_BUILD = 220;
+const GAME_VERSION = 'Alpha 13.39';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -9034,9 +9041,7 @@ function Hud({
         className: "inv-label-btn",
         onClick: onToggleInv,
         title: I18N.t("Afficher l'inventaire")
-      }, I18N.t("INVENTAIRE"), inv.length > 0 && React.createElement("span", {
-        className: "inv-count"
-      }, inv.length)), prodBtn, repairBtn, alertBtn);
+      }, I18N.t("INVENTAIRE")), prodBtn, repairBtn, alertBtn);
     }
     let lastTier = null;
     const items = [];
@@ -9138,7 +9143,8 @@ function ToolButton({
   accent,
   onSelect,
   onDetail,
-  port
+  port,
+  isNew
 }) {
   const b = BUILDINGS[id];
   // Coût affiché en pastilles : chaque ressource INDISPONIBLE (stock du port < coût) passe
@@ -9210,7 +9216,10 @@ function ToolButton({
     }
   }), React.createElement("span", {
     className: "tb-name"
-  }, b.name)), showCostChips ? React.createElement("span", {
+  }, b.name)), isNew && React.createElement("span", {
+    className: "tb-new",
+    title: I18N.t("Débloqué récemment — jamais sélectionné")
+  }, I18N.t("nouveau")), showCostChips ? React.createElement("span", {
     className: "tb-sub tb-cost"
   }, Object.keys(cost).map(k => React.createElement("span", {
     key: k,
@@ -9340,7 +9349,8 @@ function Toolbar({
   port,
   playTicks,
   timeScale,
-  onToggleFast
+  onToggleFast,
+  seenBuildings
 }) {
   // Bâtiment dont la fiche détaillée est ouverte (appui long), ou null.
   const [detailId, setDetailId] = useState(null);
@@ -9385,10 +9395,12 @@ function Toolbar({
       accent: TIER_ACCENT[BUILDINGS[id].tier],
       onSelect: onSelect,
       onDetail: setDetailId,
-      port: port
+      port: port,
+      // Badge « nouveau » : débloqué mais jamais sélectionné depuis.
+      isNew: !!(seenBuildings && !seenBuildings[id])
     })))));
   });
-  const tab = (key, extraCls, iconName, emoji, name, sub, active, onClick) => React.createElement("button", {
+  const tab = (key, extraCls, iconName, emoji, name, sub, active, onClick, dot) => React.createElement("button", {
     key: key,
     className: 'tab-btn ' + extraCls + (active ? ' active' : ''),
     onClick: onClick
@@ -9400,7 +9412,13 @@ function Toolbar({
     className: "tb-name"
   }, name)), React.createElement("span", {
     className: "tb-sub"
-  }, sub));
+  }, sub), dot && React.createElement("span", {
+    className: "notif-dot"
+  }));
+  // Pastille sur les onglets Bâtiment/Réseau : au moins un élément VISIBLE jamais sélectionné.
+  const hasNewIn = (groups, gate) => !!seenBuildings && groups.some(g => g.ids.some(id => visibleOn(id) && (!gate || gate(id)) && !seenBuildings[id]));
+  const newInBuild = hasNewIn(BUILD_GROUPS);
+  const newInNet = hasNewIn(NETWORK_GROUPS, id => networkUnlocked(id, unlockedSet, currentIsland));
   return React.createElement("div", {
     className: "toolbar-wrap"
   }, React.createElement("button", {
@@ -9430,7 +9448,7 @@ function Toolbar({
     className: "tool-group-label"
   }, I18N.t("Actions")), React.createElement("div", {
     className: "tool-row tabs-row"
-  }, [tab('bat', 'tab-build' + (isBuildingTool ? ' has-sel' : ''), 'batiment', "🏭", I18N.t("B\xE2timent"), isBuildingTool ? BUILDINGS[tool].name : buildOpen ? I18N.t('fermer ▾') : I18N.t('ouvrir ▴'), buildOpen, onToggleBuild), tab('net', 'tab-net' + (isNetworkTool ? ' has-sel' : ''), 'route', "🛣️", I18N.t("R\xE9seau"), isNetworkTool ? BUILDINGS[tool].name : netOpen ? I18N.t('fermer ▾') : I18N.t('ouvrir ▴'), netOpen, onToggleNet), tab('copy', 'tab-copy', 'copier', "⧉", I18N.t("Copier"), tool === COPY ? 'choisir' : 'copier', tool === COPY, () => onSelect(COPY)), tab('dem', 'tab-dem', 'demolir', "♻", I18N.t("D\xE9molir"), I18N.t('remb. 100%'), tool === DEMOLISH, () => onSelect(DEMOLISH)), tab('upg', 'tab-upg', 'monter', "⬆", I18N.t("Am\xE9liorer"), I18N.t('niveau +1'), tool === UPGRADE, () => onSelect(UPGRADE))])))));
+  }, [tab('bat', 'tab-build' + (isBuildingTool ? ' has-sel' : ''), 'batiment', "🏭", I18N.t("B\xE2timent"), isBuildingTool ? BUILDINGS[tool].name : buildOpen ? I18N.t('fermer ▾') : I18N.t('ouvrir ▴'), buildOpen, onToggleBuild, newInBuild), tab('net', 'tab-net' + (isNetworkTool ? ' has-sel' : ''), 'route', "🛣️", I18N.t("R\xE9seau"), isNetworkTool ? BUILDINGS[tool].name : netOpen ? I18N.t('fermer ▾') : I18N.t('ouvrir ▴'), netOpen, onToggleNet, newInNet), tab('copy', 'tab-copy', 'copier', "⧉", I18N.t("Copier"), tool === COPY ? 'choisir' : 'copier', tool === COPY, () => onSelect(COPY)), tab('dem', 'tab-dem', 'demolir', "♻", I18N.t("D\xE9molir"), I18N.t('remb. 100%'), tool === DEMOLISH, () => onSelect(DEMOLISH)), tab('upg', 'tab-upg', 'monter', "⬆", I18N.t("Am\xE9liorer"), I18N.t('niveau +1'), tool === UPGRADE, () => onSelect(UPGRADE))])))));
 }
 function InfoPanel({
   info,
@@ -13144,7 +13162,9 @@ function App() {
         offlineEnabled: (g.ui && g.ui.offlineEnabled) !== false,
         fastUpgrade: !!(g.ui && g.ui.fastUpgrade),
         theme: g.ui && g.ui.theme === 'inox' ? 'inox' : 'bleu'
-      }
+      },
+      // Bâtiments déjà « vus » (badge nouveau du menu) — champ additif rétro-compatible.
+      seenBuildings: { ...(g.seenBuildings || {}) }
     };
   }
   function writeSave() {
@@ -13691,6 +13711,13 @@ function App() {
     g.ui.offlineEnabled = up.offlineEnabled !== false;
     g.ui.fastUpgrade = !!up.fastUpgrade;
     g.ui.theme = up.theme === 'inox' ? 'inox' : 'bleu';
+    // Badge « nouveau » : restauré si présent ; absent (save d'avant la fonctionnalité) →
+    // null, le boot initialise alors « tout ce qui est débloqué = vu » (pas de spam).
+    g.seenBuildings = null;
+    if (data.seenBuildings) {
+      g.seenBuildings = {};
+      for (const id in data.seenBuildings) if (data.seenBuildings[id] && BUILDINGS[id]) g.seenBuildings[id] = true;
+    }
     return true;
   }
   // Rejoue la production manquée pendant une absence (production hors-ligne / idle).
@@ -14751,6 +14778,14 @@ function App() {
     const toggles = id === COPY || id === DEMOLISH || id === UPGRADE;
     const next = id === cur && toggles ? null : id;
     SFX.play(next === null ? 'deselect' : 'selectBuilding');
+    // Badge « nouveau » : la première sélection d'un bâtiment le marque comme vu.
+    if (next && BUILDINGS[next]) {
+      const gSeen = gameRef.current;
+      if (gSeen.seenBuildings && !gSeen.seenBuildings[next]) {
+        gSeen.seenBuildings[next] = true;
+        scheduleSave();
+      }
+    }
     gameRef.current.ui.tool = next;
     setToolState(next);
     setInfo(null);
@@ -16292,6 +16327,14 @@ function App() {
   useEffect(() => {
     ensureSlotsInitialized();
     const loaded = loadSave();
+    // Badge « nouveau » — première initialisation (partie neuve OU save d'avant la
+    // fonctionnalité) : tout ce qui est DÉJÀ débloqué est considéré comme vu ; seuls les
+    // déblocages futurs porteront la pastille, jusqu'à leur première sélection.
+    if (!gameRef.current.seenBuildings) {
+      const gSeen = gameRef.current;
+      gSeen.seenBuildings = {};
+      for (const id in BUILDINGS) if (isBuildingUnlocked(gSeen, id)) gSeen.seenBuildings[id] = true;
+    }
     if (!loaded) rebuildNetworks(gameRef.current, gameRef.current.currentIsland);
     // Partie neuve (aucune sauvegarde) : proposer le choix du mode de jeu.
     if (!loaded) setNeedMode(true);
@@ -16811,7 +16854,8 @@ function App() {
     port: game.port[game.currentIsland] || {},
     playTicks: game.playTicks || 0,
     timeScale: timeScale,
-    onToggleFast: toggleFastMode
+    onToggleFast: toggleFastMode,
+    seenBuildings: game.seenBuildings
   }), researchOpen && React.createElement(ResearchPanel, {
     game: game,
     currentIsland: game.currentIsland,

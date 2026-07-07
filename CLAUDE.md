@@ -17,7 +17,20 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 219`, `GAME_VERSION = 'Alpha 13.38'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 220`, `GAME_VERSION = 'Alpha 13.39'`, `SAVE_VERSION = 17`.**
+  Changement 13.39 : **badge « nouveau » sur les bâtiments fraîchement débloqués + bouton INVENTAIRE
+  sans nombre.** (1) **Badge nouveau** : pastille jaune « nouveau » (`.tb-new`, i18n en/es/de) sur
+  chaque bâtiment du menu Bâtiment/Réseau débloqué mais JAMAIS sélectionné ; `notif-dot` sur les
+  onglets Bâtiment/Réseau tant qu'il en reste un VISIBLE. État `game.seenBuildings` (champ additif
+  rétro-compatible, `SAVE_VERSION` inchangé) : sérialisé, restauré (`loadSave`), et si ABSENT (partie
+  neuve ou vieille save) le boot initialise « tout ce qui est débloqué = vu » (pas de spam). Marquage
+  « vu » à la première sélection (`selectTool` + scheduleSave). ToolButton reçoit `isNew`, Toolbar
+  `seenBuildings` ; helper `hasNewIn(groups, gate)` pour les pastilles d'onglet. CSS : `.tool-btn`/
+  `.tab-btn` passent `position:relative`. (2) **Bouton INVENTAIRE** : le nombre (`.inv-count`) est
+  retiré de l'état replié (le libellé seul reste). Validé : `node --check` (7 blocs, dev + testeur)
+  + Chromium E2E (save testeur : init sans badge ; « déblocage » simulé → 1 badge « new » + dot ;
+  sélection → vu, persisté dans la save, badge et dot disparus ; INVENTORY sans chiffre).
+  Build 219→220.
   Changement 13.38 : **capacité du réseau TUYAU ÷2.** Demande testeur. Nouvelle constante
   `PIPE_CAP_DIV = 2` appliquée dans `networkThroughput` (comme `WIRE_CAP_MULT` pour le câble) :
   tuyau V1=64, V2=512, V3=4096 /s (÷2 de plus en Difficile) ; route et câble inchangés. Tous les
