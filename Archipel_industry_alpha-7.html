@@ -2800,7 +2800,7 @@ function buildingConnectsCarrier(buildingId, carrier) {
 // `carriers` donnés (un réseau a un seul carrier, une jonction en couple deux).
 // Sert à amincir réseaux ET jonctions sans casser les raccords : on n'insère la
 // marge que sur les côtés sans connexion.
-function netConnectMask(tiles, r, c, carriers) {
+function netConnectMask(tiles, r, c, carriers, junctionAxis) {
   let mask = 0;
   const nb = [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]];
   for (const [dr, dc, bit] of nb) {
@@ -2816,7 +2816,12 @@ function netConnectMask(tiles, r, c, carriers) {
       if (nid === carrier) {
         connects = true; // même infra réseau
       } else if (ndef && ndef.kind === 'junction' && ndef.junction && ndef.junction.indexOf(carrier) !== -1) {
-        connects = true; // jonction qui porte ce type
+        // Jonction qui porte ce type. Avec `junctionAxis` (sprites d'infra), on exige en plus
+        // qu'elle transmette VERS cette tuile (le long de son axe, règle 13.18) — sinon la tuile
+        // dessinait une branche vers une jonction à laquelle elle n'est PAS raccordée. Le flag est
+        // opt-in car junctionAxisH (orientation d'une jonction) passe par ici : l'activer là
+        // créerait une récursion entre jonctions adjacentes.
+        connects = !junctionAxis || junctionDirOk(tiles, r + dr, c + dc, ndef, carrier, -dr, -dc);
       } else if (ndef && ndef.kind !== 'infra' && ndef.kind !== 'junction') {
         connects = buildingConnectsCarrier(nid, carrier); // bâtiment desservi
       }
@@ -4439,8 +4444,8 @@ const SAVE_VERSION = 17;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 222;
-const GAME_VERSION = 'Alpha 13.41';
+const GAME_BUILD = 223;
+const GAME_VERSION = 'Alpha 13.42';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -15714,7 +15719,9 @@ function App() {
       if (SPRITES_ENABLED && bdef && bdef.kind === 'infra' && NET_PREFIX[bid]) {
         const carrier = bid === 'road' ? 'road' : bid === 'pipe' ? 'pipe' : 'wire';
         // Côtés connectés (route/tuyau/câble portent un seul carrier) -> variante.
-        const mask = netConnectMask(tiles, r, c, [carrier]);
+        // junctionAxis : pas de branche vers une jonction dont l'axe de CE porteur ne fait
+        // pas face à la tuile (elle n'y est pas raccordée mécaniquement, règle 13.18).
+        const mask = netConnectMask(tiles, r, c, [carrier], true);
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
         // Visuel bloqué à V3 pour les niveaux >= 3 ; le sprite V4 est réservé à
@@ -15775,7 +15782,12 @@ function App() {
             if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
             if (!nt || !nt.building) continue;
             const nd = BUILDINGS[nt.building.id];
-            const isJunc = nd && nd.kind === 'junction' && nd.junction && nd.junction.indexOf(carrier) !== -1;
+            // Jonction voisine : ne compte pour ce porteur QUE si elle transmet VERS le bâtiment
+            // (le long de son axe, règle 13.18) — sinon un porteur perpendiculaire « volait » la
+            // direction (ex. mine avec jonction à l'Est, câble E-O / route N-S : le masque route
+            // gagnait le bit Est, la résolution de conflit le retirait au câble → stub route
+            // dessiné sur un raccord qui est en réalité du câble).
+            const isJunc = nd && nd.kind === 'junction' && nd.junction && nd.junction.indexOf(carrier) !== -1 && junctionDirOk(tiles, r + dr, c + dc, nd, carrier, -dr, -dc);
             const isNet = nt.building.id === carrier || isJunc;
             if (!isNet) continue;
             mask |= bit;

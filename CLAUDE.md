@@ -17,7 +17,25 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 222`, `GAME_VERSION = 'Alpha 13.41'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 223`, `GAME_VERSION = 'Alpha 13.42'`, `SAVE_VERSION = 17`.**
+  Changement 13.42 : **fix sprites de connexion près d'une jonction (règle d'axe 13.18 appliquée au
+  DESSIN).** Bug testeur (capture) : une mine V2 avec une jonction route/câble à l'Est (câble E-O à
+  travers, route N-S) affichait un stub ROUTE côté Est alors que le raccord réel est du câble.
+  Cause : le 13.18 a restreint la MÉCANIQUE (chaque porteur d'une jonction ne transmet que le long
+  de SON axe) mais pas le DESSIN — (1) la boucle des **stubs sous les bâtiments** comptait une
+  jonction voisine pour un porteur même si son axe ne fait pas face au bâtiment → le masque route
+  gagnait le bit Est, puis la résolution de conflit 10.40 retirait ce bit au câble (stub route sur
+  un raccord câble) ; (2) **`netConnectMask`** (sprites des tuiles d'infra) dessinait une branche
+  vers une jonction non raccordée (même défaut). Fix : (1) le stub n'accepte une jonction voisine
+  que si `junctionDirOk(..., -dr, -dc)` (elle transmet VERS le bâtiment) ; (2) `netConnectMask`
+  gagne un 5e param opt-in `junctionAxis` (même garde), activé UNIQUEMENT à l'appel des sprites
+  d'infra — PAS dans `junctionAxisH` (l'y activer créerait une récursion entre jonctions
+  adjacentes). Dessin seul, aucune mécanique/sauvegarde touchée. Validé : `node --check` (7 blocs) +
+  Chromium E2E avant/après sur save forgée (mine_fer_v2 u11 + route N + câble S + jonction E +
+  câbles) : AVANT = morceau de route entre mine et câble à l'Est + fausse branche du câble sud de
+  jonction ; APRÈS = câble direct, branche disparue ; unit `junctionAxisH`/`junctionDirOk` (câble
+  horizontal, route verticale, route ne transmet pas vers l'Ouest) ; 0 erreur console. NB : la mine
+  V1 (`power: 0`) ne se raccorde PAS au câble — le cas testeur est une mine V2+. Build 222→223.
   Changement 13.41 : **3 retours testeur UI + audit throttle.** (1) **Aide = astuces DÉBLOQUÉES
   seulement** : `HelpPanel` reçoit `game` et filtre `GAME_TIPS` (`tipsSeen[t.id] || t.when(game)`,
   try/catch — couvre astuces désactivées et « Revoir les astuces » qui vide tipsSeen) ; section
