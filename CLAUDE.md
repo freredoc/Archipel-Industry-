@@ -17,7 +17,27 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 221`, `GAME_VERSION = 'Alpha 13.40'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 222`, `GAME_VERSION = 'Alpha 13.41'`, `SAVE_VERSION = 17`.**
+  Changement 13.41 : **3 retours testeur UI + audit throttle.** (1) **Aide = astuces DÉBLOQUÉES
+  seulement** : `HelpPanel` reçoit `game` et filtre `GAME_TIPS` (`tipsSeen[t.id] || t.when(game)`,
+  try/catch — couvre astuces désactivées et « Revoir les astuces » qui vide tipsSeen) ; section
+  renommée « Astuces débloquées » + note « 🔒 D'autres astuces se débloqueront en progressant. »
+  si certaines sont masquées ; title du bouton Aide adapté. (2) **Bouton « Y aller » dans les
+  alertes** : chaque ligne de l'`AlertsPanel` (stock ET énergie) gagne un bouton `.alert-go`
+  (`onGoIsland` : `switchIsland` + fermeture, SANS ouvrir de panneau — voir la carte) ; le clic
+  sur la LIGNE garde son comportement (île + Port/Énergie). ⚠ Les lignes passent de `<button>` à
+  `<div>` (bouton imbriqué = HTML invalide) ; grid 4 colonnes. (3) **Indicateur ⚡/🔋 remonté dans
+  la barre du HAUT, à droite de RECHERCHE** (`hud-side` : [Port][Recherche][⚡/🔋]) — annule
+  l'emplacement barre d'inventaire du 13.40 ; même JSX (clic → panneau Énergie), classe
+  `stocks stocks-inv` conservée (ligne + compact). (4) **Audit throttle (demande « Vérifier
+  throttle »)** : RAS — `SFX.playThrottled` (cooldown par nom), alertes stock/énergie à TRANSITION
+  (bip à l'entrée en alerte seulement, réarmé à la sortie) + throttle 6-8 s, toasts nucléaire/
+  surchauffe throttlés 8/4 s, `ANIM_REDRAW_MS` (~10 FPS ambiance, interactions à 60 Hz),
+  `scheduleSave` 500 ms + flush arrière-plan : tous corrects, aucun correctif. i18n en/es/de
+  (Y aller, Aller à cette île, Astuces débloquées…). Validé : `node --check` (7 blocs) + Chromium
+  E2E (stocks après RECHERCHE + absents de l'inventaire, clic ⚡ → Énergie ; aide nouvelle partie =
+  5 cartes/32 + note 🔒 ; save forgée stockAlerts → ligne DIV + « Y aller » ferme sans panneau,
+  clic ligne → Port ; 0 erreur console). Build 221→222.
   Changement 13.40 : **2 retours testeur UI.** (1) **Indicateur d'énergie déplacé** : le bloc
   `.stocks` (pastille ⚡ bilan kW + 🔋 batterie, clic → panneau Énergie, JSX inchangé) quitte le
   haut du HUD (`hud-side`, qui garde PORT/RECHERCHE) pour la barre d'inventaire, À DROITE du bouton
