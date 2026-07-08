@@ -3673,7 +3673,7 @@ const BUILDINGS = {
     cost: {},
     arc: true,
     inputs: {
-      minerai_fer: 8
+      minerai_fer: 4
     },
     outputs: {
       lingot_fer: 1
@@ -3696,7 +3696,7 @@ const BUILDINGS = {
     cost: {},
     arc: true,
     inputs: {
-      minerai_cuivre: 8
+      minerai_cuivre: 4
     },
     outputs: {
       lingot_cuivre: 1
@@ -4456,8 +4456,8 @@ const SAVE_VERSION = 18;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 225;
-const GAME_VERSION = 'Alpha 13.44';
+const GAME_BUILD = 226;
+const GAME_VERSION = 'Alpha 13.45';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -4898,7 +4898,7 @@ const tierForfait = id => (TIER_STEP[id] && TIER_STEP[id].forfait) || (BUILDINGS
 // plancher = powBase, pic = powBase + powAmp, ratio plancher→pic = 8).
 const ARC_DEF = {
   four_arc_fer: {
-    input: 'minerai_fer', inRate: 8,
+    input: 'minerai_fer', inRate: 4,
     order: ['lingot_fer', 'acier', 'piece_meca'],
     modes: {
       lingot_fer: { out: 1,     powBase: 0.25, powAmp: 1.75 },  // sigmoïde 262144→2097152 à niv 21
@@ -4907,7 +4907,7 @@ const ARC_DEF = {
     }
   },
   four_arc_cuivre: {
-    input: 'minerai_cuivre', inRate: 8,
+    input: 'minerai_cuivre', inRate: 4,
     order: ['lingot_cuivre', 'cable'],
     modes: {
       lingot_cuivre: { out: 1,        powBase: 0.25, powAmp: 1.75 },  // 262144→2097152

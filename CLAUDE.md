@@ -17,7 +17,22 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 225`, `GAME_VERSION = 'Alpha 13.44'`, `SAVE_VERSION = 18`.**
+- **État au dernier passage : `GAME_BUILD = 226`, `GAME_VERSION = 'Alpha 13.45'`, `SAVE_VERSION = 18`.**
+  Changement 13.45 : **fours à arc — intrants minerai ÷2 (fix erreur de calcul).** Demande utilisateur :
+  les fours à arc consommaient 2× trop de minerai. Les DEUX débits d'entrée passent 8 → **4 /s** (base,
+  ×2^upgrade ensuite) : `ARC_DEF.four_arc_fer.inRate` et `ARC_DEF.four_arc_cuivre.inRate` (source de
+  vérité de la sim via `arcEffective`) + les recettes STATIQUES représentatives des blocs `four_arc_*`
+  de BUILDINGS (`minerai_fer`/`minerai_cuivre` 8 → 4, repli du code lisant les champs statiques —
+  cohérence). Conversion minerai→lingot : 8:1 → **4:1** (l'entrée est fixe quel que soit le mode ; les
+  sorties, la conso sigmoïde et les ratios acier/pièce/câble par MINERAI restent inchangés → par unité
+  PRODUITE tout coûte 2× moins de minerai). Les fours V1 (à charbon, 8 minerai) et V2 (4 minerai) sont
+  INTACTS. Aucune sauvegarde touchée (`SAVE_VERSION` inchangé). Validé : `node --check` (7 blocs) + 16
+  assertions unitaires (inRate/statiques = 4, sorties/sigmoïde/nominal/minPower INCHANGÉS, fours V1-V2
+  non touchés) + Chromium E2E moteur (arc u20 réel : minerai consommé / lingots produits = **4,0000
+  exactement**, demande 262144→2097152 lisse ratio 8.00, 0 erreur console). Build 225→226.
+  ⚠ Piège harnais de test : un `eval()` direct fait FUIR les déclarations `function` dans le scope
+  englobant (sloppy mode) → collision avec un destructuring `const` du même nom dans le module de test
+  (« Identifier already declared ») ; nommer différemment les variables du test.
   Changement 13.44 : **panneau Aide en ACCORDÉON (titres seuls + dépliage avec illustration).** Demande
   utilisateur : le bouton Aide n'affiche plus les astuces complètes mais **uniquement leurs titres** ;
   un clic sur un titre déplie l'astuce complète — **illustration sprite** (`TipIllustration`, le même
