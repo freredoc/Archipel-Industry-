@@ -17,7 +17,28 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 226`, `GAME_VERSION = 'Alpha 13.45'`, `SAVE_VERSION = 18`.**
+- **État au dernier passage : `GAME_BUILD = 227`, `GAME_VERSION = 'Alpha 13.46'`, `SAVE_VERSION = 18`.**
+  Changement 13.46 : **nouveaux coûts de forfait V2 + Bétonnière V2 (nouveau bâtiment) + animations
+  sprites des V2.** Demande utilisateur (zip `Archipel_sprites_COMPLET`). (1) **Forfaits de densification
+  revus** (`TIER_STEP`) : `four_fer_v2` ET `four_cuivre_v2` (« Four v2 ») → `{ piece_meca: 500,
+  beton_arme: 500, circuit: 10 }` (avant circuit 50 + piece 2000 + béton 500) ; `cimenterie_v2` →
+  `{ beton_arme: 500, acier: 500, circuit: 10 }` ; `centrale_charbon_v2` → `{ beton_arme: 500,
+  piece_meca: 500, circuit: 10 }`. (2) **Nouveau bâtiment `betonniere_v2`** (palier V2 de `betonniere`,
+  `TIER_NEXT.betonniere = {next, cap: 9}`, `TIER_STEP` forfait **50 processeur**, entrée u10 = Nv.11).
+  Def : `tier t2`, `cost: {}`, `power: 0` + **`sigmoid {base:16, amp:112, period:60}`** (conso Nv.11 =
+  **16384→131072 kW**), intrants **pierre 64 / minerai_fer 32 / eau 8** (base ; ×1024 à Nv.11 =
+  65536/32768/8192 /s), sortie **beton_arme 1** (base → **1024/s** à Nv.11, valeur confirmée par
+  l'utilisateur). Exempt du
+  `TIER_COST_MULT` via le suffixe `/_v2$/`. **Débloqué avec les fours à arcs** (ajouté aux `unlocks.buildings`
+  du **nœud tech 19**) ; ajouté au groupe toolbar « Ciment & béton ». Densification gatée par la recherche
+  (13.26). (3) **Animations sprites** : le zip a livré les sheets 128×32 (4 frames) manquantes →
+  `betonniere_v2` (static + sheet), `cimenterie_v2`, `centrale_charbon_v2`, `pompe_eau_v2` (sheets ; leurs
+  statiques existaient déjà) inlinés dans le bloc d'assignations `window.__(SPRITE|ANIM)_DATA__[…]` +
+  4 entrées `ANIM_META` → ces bâtiments s'animent désormais quand actifs (frame 0 == statique vérifié
+  byte-à-byte). `SAVE_VERSION` inchangé (`betonniere_v2` = nouvel id additif, aucune migration). Validé :
+  `node --check` (7 blocs) + Chromium E2E (boot 0 erreur ; def/sigmoïde/forfaits/TIER_NEXT-STEP-PREV/
+  node 19/toolbar exacts ; sprite `betonniere_v2` 32×32, 4 sheets 128×32 décodées et mappées par
+  `ANIM_BY_SK` ; `cumulativeInvested('betonniere_v2', 10)` OK). Build 226→227.
   Changement 13.45 : **fours à arc — intrants minerai ÷2 (fix erreur de calcul).** Demande utilisateur :
   les fours à arc consommaient 2× trop de minerai. Les DEUX débits d'entrée passent 8 → **4 /s** (base,
   ×2^upgrade ensuite) : `ARC_DEF.four_arc_fer.inRate` et `ARC_DEF.four_arc_cuivre.inRate` (source de
