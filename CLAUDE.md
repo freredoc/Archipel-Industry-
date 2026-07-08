@@ -27,8 +27,8 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   `TIER_NEXT.betonniere = {next, cap: 9}`, `TIER_STEP` forfait **50 processeur**, entrée u10 = Nv.11).
   Def : `tier t2`, `cost: {}`, `power: 0` + **`sigmoid {base:16, amp:112, period:60}`** (conso Nv.11 =
   **16384→131072 kW**), intrants **pierre 64 / minerai_fer 32 / eau 8** (base ; ×1024 à Nv.11 =
-  65536/32768/8192 /s), sortie **beton_arme 8** (base → **8192/s** à Nv.11 — ⚠ valeur de sortie NON
-  précisée par la demande, choisie ratio pierre:béton 8:1 comme la V1, à ajuster si besoin). Exempt du
+  65536/32768/8192 /s), sortie **beton_arme 1** (base → **1024/s** à Nv.11, valeur confirmée par
+  l'utilisateur). Exempt du
   `TIER_COST_MULT` via le suffixe `/_v2$/`. **Débloqué avec les fours à arcs** (ajouté aux `unlocks.buildings`
   du **nœud tech 19**) ; ajouté au groupe toolbar « Ciment & béton ». Densification gatée par la recherche
   (13.26). (3) **Animations sprites** : le zip a livré les sheets 128×32 (4 frames) manquantes →
