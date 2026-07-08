@@ -17,7 +17,23 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 224`, `GAME_VERSION = 'Alpha 13.43'`, `SAVE_VERSION = 18`.**
+- **État au dernier passage : `GAME_BUILD = 225`, `GAME_VERSION = 'Alpha 13.44'`, `SAVE_VERSION = 18`.**
+  Changement 13.44 : **panneau Aide en ACCORDÉON (titres seuls + dépliage avec illustration).** Demande
+  utilisateur : le bouton Aide n'affiche plus les astuces complètes mais **uniquement leurs titres** ;
+  un clic sur un titre déplie l'astuce complète — **illustration sprite** (`TipIllustration`, le même
+  canvas `TIP_SCENES` que la popup d'astuce) + **texte riche** (`dangerouslySetInnerHTML`, fini le
+  `stripHtml` — le gras est conservé comme dans la popup). Implémentation : `HelpPanel` gagne un état
+  `openTip` (accordéon : UNE astuce dépliée à la fois, re-clic = repli) ; la tête de carte
+  `.help-card-head` devient un `<button>` (reset CSS : `background:none;border:none;font:inherit`…,
+  hover titre jaune) avec **chevron** `.help-card-chev` ▸/▾ ; `TipIllustration` + `.help-card-body`
+  rendus SEULEMENT si dépliée (le canvas ne se dessine que là) ; SFX `click`/`panelClose` au
+  dépliage/repli ; classe `.help-card.open` (liseré jaune), `.help-card .tip-illu` margin ajusté.
+  Le filtre « astuces débloquées seulement » (13.41) et la section tutoriel sont INCHANGÉS. i18n
+  en/es/de (« Voir l'astuce complète », « Replier »). Aucune mécanique/sauvegarde touchée
+  (`SAVE_VERSION` inchangé). Validé : `node --check` (7 blocs) + Chromium E2E (partie neuve : 5 cartes
+  titres seuls, 0 corps/0 canvas ; clic titre 1 → corps avec `<b>` + canvas 768×512 rempli 100 % +
+  chevron ▾ ; clic titre 2 → accordéon (seule la 2e ouverte) ; re-clic → tout replié ; 0 erreur
+  console). Build 224→225.
   Changement 13.43 : **refonte sigmoïdes + batterie + fours à arc (brief « Refonte sigmoïdes, batterie
   & fours à arc »).** (1) **Batterie** : capacité de l'accumulateur 20480 → **8192** (le repli `|| 512`
   d'`accCapacity` — socle V1 d'upgrade — est INTACT, voulu). (2) **Toutes les sigmoïdes en period 60** :
