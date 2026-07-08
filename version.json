@@ -1,8 +1,8 @@
 {
-  "build": 226,
-  "version": "Alpha 13.45",
+  "build": 227,
+  "version": "Alpha 13.46",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #219 from freredoc/claude/arc-furnaces-sigmoid-refactor-05ez6s"
+  "notes": "Merge pull request #220 from freredoc/claude/sprite-animation-costs-pvzi5s"
 }
