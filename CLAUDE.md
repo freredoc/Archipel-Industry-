@@ -17,7 +17,36 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 223`, `GAME_VERSION = 'Alpha 13.42'`, `SAVE_VERSION = 17`.**
+- **État au dernier passage : `GAME_BUILD = 224`, `GAME_VERSION = 'Alpha 13.43'`, `SAVE_VERSION = 18`.**
+  Changement 13.43 : **refonte sigmoïdes + batterie + fours à arc (brief « Refonte sigmoïdes, batterie
+  & fours à arc »).** (1) **Batterie** : capacité de l'accumulateur 20480 → **8192** (le repli `|| 512`
+  d'`accCapacity` — socle V1 d'upgrade — est INTACT, voulu). (2) **Toutes les sigmoïdes en period 60** :
+  `circuit` passait 150 → 60 (fab_processeur et enrichissement y étaient déjà). (3) **Ratio 1→8 partout**
+  (pic conservé, plancher recalé à pic/8) : `fab_processeur` 16/1008 → **128/896** (128→1024), `circuit`
+  64/192 → **32/224** (32→256), `centrale_enrichissement` 64/192 → **32/224** (32→256). (4) **Fours à
+  arc : conso aléatoire → SIGMOÏDE** : `ARC_DEF` passe de `powMin`/`powMax` à **`powBase`/`powAmp`**
+  (lingot 0,25/1,75 → 262144→2097152 à niv 21 ; acier 1,25/8,75 ; pièce 0,75/5,25 ; câble 0,5/3,5) ;
+  `arcEffective` renvoie `sigmoid {base, amp, period: 60}` (un mix = combinaison linéaire des base/amp →
+  le ratio 8 est conservé ; mix 50/50 acier+pièce = base 1/amp 7) ; **tick** : `effSigmoid` (arc OU
+  `b.sigmoid`) prime, `effRandomP = null` pour un arc ; **`nominalPower`/`minPower`** routés via
+  `arcEffective(bld, null)` (bornes exactes en single, indicatives en mix/auto — assumé) ; **InfoPanel** :
+  `bSigmoid = arcIO ? arcIO.sigmoid : b.sigmoid` (la ligne Élec. d'un arc affiche la plage sigmoïde).
+  **Option A retenue** : les `randomP {0.5, 1.5}` STATIQUES des blocs `four_arc_*` de BUILDINGS sont
+  CONSERVÉS (repli du code lisant les champs statiques + drapeau « conso variable » des détecteurs
+  réseau `hasVarCons`/`isEnergyConsumer`/`usesWireUI` — jamais tirés au sort pour un arc). (5) **Mines V3
+  (les 6) + usine moteur nucléaire : randomP → sigmoid** : mines 0,0625-0,1875 → **{0.03125, 0.21875, 60}**
+  (à niv 21 : 32768→262144, pic doublé assumé) ; `usine_moteur_nuc` {64, 512} → **{64, 448, 60}** (64→512,
+  moyenne 288 inchangée, `heatCap: 10` intact). Ces bâtiments passent par la branche `b.sigmoid` des
+  helpers — aucun câblage supplémentaire. (6) **Tuto accumulateur réécrit** (GAME_TIPS) : règle de
+  dimensionnement chiffrée (production ≈ **5/8 du pic**, capacité ≈ **8× le pic**, exemple 1024 kW →
+  640 kW + 8192 kWh) ; pas de nouvelle scène d'illustration requise. (7) **`SAVE_VERSION` 17→18** (+18 à
+  la whitelist `loadSave` ; aucune migration nécessaire — `sigmoidT`/`randomPower` sont transitoires).
+  Validé : `node --check` (7 blocs) + 67 assertions unitaires (arcEffective single/mix 50/50,
+  nominal/minPower arc niv 21 = 2097152/262144, les 6 mines V3, usine, batterie, période 60 partout) +
+  Chromium E2E (save forgée : arc réel — migré u20 par `migratePlacement`, confirmé — + éolienne u18 +
+  route/câble illimités → demande élec. = **sinusoïde LISSE tick par tick, pic exact 2 097 152 kW**,
+  fini les paliers aléatoires ; conversion 8:1 exacte (1e9 minerai → 1,25e8 lingots) ; save v18
+  rechargée ; 0 erreur console). Build 223→224.
   Changement 13.42 : **fix sprites de connexion près d'une jonction (règle d'axe 13.18 appliquée au
   DESSIN).** Bug testeur (capture) : une mine V2 avec une jonction route/câble à l'Est (câble E-O à
   travers, route N-S) affichait un stub ROUTE côté Est alors que le raccord réel est du câble.

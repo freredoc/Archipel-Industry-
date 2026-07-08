@@ -3409,9 +3409,9 @@ const BUILDINGS = {
     },
     power: 0,
     sigmoid: {
-      base: 64,
-      amp: 192,
-      period: 150
+      base: 32,
+      amp: 224,
+      period: 60
     },
     inputs: {
       lingot_cuivre: 16,
@@ -3616,8 +3616,8 @@ const BUILDINGS = {
     size: [1, 1],
     power: 0,
     sigmoid: {
-      base: 16,
-      amp: 1008,
+      base: 128,
+      amp: 896,
       period: 60
     },
     cost: {
@@ -3645,7 +3645,7 @@ const BUILDINGS = {
     size: [1, 1],
     power: 0,
     accumulator: true,
-    capacity: 20480,
+    capacity: 8192,
     cost: {
       silicium_raffine: 75,
       processeur: 5,
@@ -3769,9 +3769,10 @@ const BUILDINGS = {
     exclusiveIsland: 5,
     size: [1, 1],
     power: 0,
-    randomP: {
-      min: 0.0625,
-      max: 0.1875
+    sigmoid: {
+      base: 0.03125,
+      amp: 0.21875,
+      period: 60
     },
     cost: {
       beton_arme: 100,
@@ -3815,8 +3816,8 @@ const BUILDINGS = {
     size: [1, 1],
     power: 0,
     sigmoid: {
-      base: 64,
-      amp: 192,
+      base: 32,
+      amp: 224,
       period: 60
     },
     cost: {
@@ -3880,9 +3881,10 @@ const BUILDINGS = {
     terrains: ['resource'],
     size: [1, 1],
     power: 0,
-    randomP: {
-      min: 0.0625,
-      max: 0.1875
+    sigmoid: {
+      base: 0.03125,
+      amp: 0.21875,
+      period: 60
     },
     cost: {
       acier: 100,
@@ -3903,9 +3905,10 @@ const BUILDINGS = {
     terrains: ['resource'],
     size: [1, 1],
     power: 0,
-    randomP: {
-      min: 0.0625,
-      max: 0.1875
+    sigmoid: {
+      base: 0.03125,
+      amp: 0.21875,
+      period: 60
     },
     cost: {
       acier: 100,
@@ -3926,9 +3929,10 @@ const BUILDINGS = {
     terrains: ['land', 'resource'],
     size: [1, 1],
     power: 0,
-    randomP: {
-      min: 0.0625,
-      max: 0.1875
+    sigmoid: {
+      base: 0.03125,
+      amp: 0.21875,
+      period: 60
     },
     cost: {
       acier: 100,
@@ -3950,9 +3954,10 @@ const BUILDINGS = {
     exclusiveIsland: 1,
     size: [1, 1],
     power: 0,
-    randomP: {
-      min: 0.0625,
-      max: 0.1875
+    sigmoid: {
+      base: 0.03125,
+      amp: 0.21875,
+      period: 60
     },
     cost: {
       acier: 100,
@@ -3974,9 +3979,10 @@ const BUILDINGS = {
     exclusiveIsland: 4,
     size: [1, 1],
     power: 0,
-    randomP: {
-      min: 0.0625,
-      max: 0.1875
+    sigmoid: {
+      base: 0.03125,
+      amp: 0.21875,
+      period: 60
     },
     cost: {
       acier: 100,
@@ -3999,9 +4005,10 @@ const BUILDINGS = {
     size: [1, 1],
     power: 0,
     heatCap: 10,
-    randomP: {
-      min: 64,
-      max: 512
+    sigmoid: {
+      base: 64,
+      amp: 448,
+      period: 60
     },
     cost: {
       beton_arme_irradie: 400,
@@ -4440,12 +4447,12 @@ function ensureSlotsInitialized() {
   }
   return active;
 }
-const SAVE_VERSION = 17;
+const SAVE_VERSION = 18;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 223;
-const GAME_VERSION = 'Alpha 13.42';
+const GAME_BUILD = 224;
+const GAME_VERSION = 'Alpha 13.43';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -4882,23 +4889,24 @@ const tierForfait = id => (TIER_STEP[id] && TIER_STEP[id].forfait) || (BUILDINGS
 
 // ── Fours à arc unifiés (sélecteur multi-sortie PAR BÂTIMENT) ────────────────
 // input : ressource consommée (débit fixe inRate × 2^upgrade, quel que soit le mode).
-// modes : par sortie → out (part de sortie, base) + powMin/powMax (fourchette conso base, kW).
+// modes : par sortie → out (part de sortie, base) + powBase/powAmp (sigmoïde de conso base, kW :
+// plancher = powBase, pic = powBase + powAmp, ratio plancher→pic = 8).
 const ARC_DEF = {
   four_arc_fer: {
     input: 'minerai_fer', inRate: 8,
     order: ['lingot_fer', 'acier', 'piece_meca'],
     modes: {
-      lingot_fer: { out: 1,     powMin: 0.5, powMax: 1.5 },  // ~1 GW à niv 21 (8:1)
-      acier:      { out: 0.125, powMin: 2.5, powMax: 7.5 },  // ~5 GW (64:1)
-      piece_meca: { out: 0.125, powMin: 1.5, powMax: 4.5 }   // ~3 GW (64:1)
+      lingot_fer: { out: 1,     powBase: 0.25, powAmp: 1.75 },  // sigmoïde 262144→2097152 à niv 21
+      acier:      { out: 0.125, powBase: 1.25, powAmp: 8.75 },  // 1310720→10485760
+      piece_meca: { out: 0.125, powBase: 0.75, powAmp: 5.25 }   // 786432→6291456
     }
   },
   four_arc_cuivre: {
     input: 'minerai_cuivre', inRate: 8,
     order: ['lingot_cuivre', 'cable'],
     modes: {
-      lingot_cuivre: { out: 1,        powMin: 0.5, powMax: 1.5 },  // ~1 GW (8:1)
-      cable:         { out: 1 / 12,   powMin: 1,   powMax: 3 }     // ~2 GW (96:1)
+      lingot_cuivre: { out: 1,        powBase: 0.25, powAmp: 1.75 },  // 262144→2097152
+      cable:         { out: 1 / 12,   powBase: 0.5,  powAmp: 3.5 }    // 524288→4194304
     }
   }
 };
@@ -4919,18 +4927,19 @@ function arcWeights(bld, port) {
   const w = {}; for (const k of keys) w[k] = Math.max(0, (st.w && st.w[k] != null) ? st.w[k] : 1); return w;
 }
 
-// I/O + fourchette de puissance effectifs (base, avant ×2^upgrade — appliqué par tickIsland).
+// I/O + sigmoïde de puissance effectifs (base, avant ×2^upgrade — appliqué par tickIsland).
+// Mélanger des modes à ratio 8 conserve le ratio 8 (combinaison linéaire des base/amp).
 function arcEffective(bld, port) {
   const def = ARC_DEF[bld.id], w = arcWeights(bld, port), keys = def.order;
   let sum = 0; for (const k of keys) sum += w[k];
   if (sum <= 0) { w[keys[0]] = 1; sum = 1; }
-  const outputs = {}; let pmin = 0, pmax = 0;
+  const outputs = {}; let pbase = 0, pamp = 0;
   for (const k of keys) {
     const f = w[k] / sum, m = def.modes[k];
     if (f > 0) outputs[k] = (outputs[k] || 0) + f * m.out;
-    pmin += f * m.powMin; pmax += f * m.powMax;
+    pbase += f * m.powBase; pamp += f * m.powAmp;
   }
-  return { inputs: { [def.input]: def.inRate }, outputs, randomP: { min: pmin, max: pmax } };
+  return { inputs: { [def.input]: def.inRate }, outputs, sigmoid: { base: pbase, amp: pamp, period: 60 } };
 }
 
 // État par défaut d'un arc fraîchement posé / densifié.
@@ -5846,11 +5855,12 @@ function tickIsland(game, isl) {
     const arcEff = ARC_DEF[bld.id] ? arcEffective(bld, workPort) : null;
     const effInputs = arcEff ? arcEff.inputs : b.inputs;
     const effOutputs = arcEff ? arcEff.outputs : b.outputs;
-    const effRandomP = arcEff ? arcEff.randomP : b.randomP;
+    const effSigmoid = arcEff ? arcEff.sigmoid : b.sigmoid;
+    const effRandomP = arcEff ? null : b.randomP;
     let basePower = b.power || 0;
-    if (b.sigmoid) {
+    if (effSigmoid) {
       bld.sigmoidT = (bld.sigmoidT || 0) + 1;
-      const s = b.sigmoid;
+      const s = effSigmoid;
       basePower = s.base + s.amp * (1 + Math.sin(2 * Math.PI * bld.sigmoidT / s.period)) / 2;
     } else if (effRandomP) {
       bld.randTick = (bld.randTick || 0) + 1;
@@ -6901,6 +6911,8 @@ function nominalPower(bld) {
   const b = BUILDINGS[bld.id];
   if (!b) return 0;
   const mult = Math.pow(2, bld.upgrade || 0);
+  const arcS = ARC_DEF[bld.id] ? arcEffective(bld, null).sigmoid : null;
+  if (arcS) return (arcS.base + arcS.amp) * mult;
   if (b.sigmoid) return (b.sigmoid.base + b.sigmoid.amp) * mult;
   if (b.randomP) return b.randomP.max * mult;
   return (b.power || 0) * mult;
@@ -6911,6 +6923,8 @@ function minPower(bld) {
   const b = BUILDINGS[bld.id];
   if (!b) return 0;
   const mult = Math.pow(2, bld.upgrade || 0);
+  const arcS = ARC_DEF[bld.id] ? arcEffective(bld, null).sigmoid : null;
+  if (arcS) return arcS.base * mult;
   if (b.sigmoid) return b.sigmoid.base * mult;
   if (b.randomP) return b.randomP.min * mult;
   return (b.power || 0) * mult;
@@ -7753,7 +7767,7 @@ const GAME_TIPS = [{
   id: 'accumulateur',
   icon: '🔋',
   title: 'L\'accumulateur',
-  body: ['L\'<b>accumulateur</b> stocke le surplus d\'électricité quand vous produisez plus que nécessaire, et le restitue en cas de <b>déficit</b>.', 'Idéal pour les producteurs irréguliers ou les pics de consommation. On peut l\'améliorer pour augmenter sa capacité.'],
+  body: ['L\'<b>accumulateur</b> emmagasine l\'électricité en trop quand vos centrales produisent plus que nécessaire, puis la restitue au moment où la demande grimpe. C\'est l\'outil qui vous permet de faire tourner une consommation <b>qui oscille</b> (sigmoïde) sans surdimensionner vos centrales sur son pic.', 'L\'idée : plutôt que de produire assez pour couvrir la pointe, produisez un peu en dessous et laissez la batterie combler les creux. La règle d\'or : visez une production électrique d\'environ <b>5/8 du pic</b> de consommation, et une capacité d\'accumulateur d\'environ <b>8 fois ce pic</b>.', 'Concrètement, pour un pic de <b>1024 kW</b> : installez de quoi produire <b>640 kW</b> en continu et un accumulateur de <b>8192 kWh</b>. La batterie se recharge dans les creux et prend le relais dans les pointes — vos machines ne décrochent jamais, et vous économisez une centrale entière.'],
   when: g => isBuildingUnlocked(g, 'accumulateur')
 }, {
   id: 'centrale_diesel',
@@ -9643,7 +9657,8 @@ function InfoPanel({
   const arcIO = ARC_DEF[bld.id] ? arcEffective(bld, game.port[currentIsland]) : null;
   const bIn = arcIO ? arcIO.inputs : b.inputs;
   const bOut = arcIO ? arcIO.outputs : b.outputs;
-  const bRandomP = arcIO ? arcIO.randomP : b.randomP;
+  const bSigmoid = arcIO ? arcIO.sigmoid : b.sigmoid;
+  const bRandomP = arcIO ? null : b.randomP;
   const upgradable = isUpgradable(info.id);
   const dev = game.ui && game.ui.dev;
   const port = game.port[currentIsland] || {};
@@ -10254,14 +10269,14 @@ function InfoPanel({
     // Bâtiment boosté par une antenne : sa conso élec. oscille en sigmoïde de ×1 à ×(1+boost)
     // du nominal (cf. tick). On affiche cette plage boostée (≠ d'une mine non boostée).
     if (antElecFac > 1) {
-      const nomP = (b.sigmoid ? b.sigmoid.base + b.sigmoid.amp : bRandomP ? bRandomP.max : b.power || 0) * mult;
+      const nomP = (bSigmoid ? bSigmoid.base + bSigmoid.amp : bRandomP ? bRandomP.max : b.power || 0) * mult;
       return I18N.t('boosté ×1→×') + (1 + antElecFac) + ' · ' + fmtPower(nomP) + '→' + fmtPower(nomP * (1 + antElecFac));
     }
     // Conso variable (sigmoïde/aléatoire) : on affiche la valeur ACTUELLE (depuis la
     // phase/valeur stockée sur le bâtiment) puis la plage prévue min→max.
-    if (b.sigmoid) {
-      const cur = (b.sigmoid.base + b.sigmoid.amp * (1 + Math.sin(2 * Math.PI * (bld.sigmoidT || 0) / b.sigmoid.period)) / 2) * mult;
-      return fmtPower(cur) + I18N.t(' · prévu ') + fmtPower(b.sigmoid.base * mult) + '→' + fmtPower((b.sigmoid.base + b.sigmoid.amp) * mult);
+    if (bSigmoid) {
+      const cur = (bSigmoid.base + bSigmoid.amp * (1 + Math.sin(2 * Math.PI * (bld.sigmoidT || 0) / bSigmoid.period)) / 2) * mult;
+      return fmtPower(cur) + I18N.t(' · prévu ') + fmtPower(bSigmoid.base * mult) + '→' + fmtPower((bSigmoid.base + bSigmoid.amp) * mult);
     }
     if (bRandomP) {
       const cur = (bld.randomPower != null ? bld.randomPower : (bRandomP.min + bRandomP.max) / 2) * mult;
@@ -13344,7 +13359,7 @@ function App() {
     } catch (e) {
       return false;
     }
-    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].indexOf(data.version) === -1) return false;
+    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18].indexOf(data.version) === -1) return false;
     const g = gameRef.current;
     // Extension des mers (v11) : les îles sont désormais entourées de SEA_PAD tuiles d'eau.
     // Les sauvegardes antérieures (coordonnées non décalées) sont translatées de +SEA_PAD.
