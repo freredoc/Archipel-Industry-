@@ -1,8 +1,8 @@
 {
-  "build": 225,
-  "version": "Alpha 13.44",
+  "build": 226,
+  "version": "Alpha 13.45",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #218 from freredoc/claude/arc-furnaces-sigmoid-refactor-05ez6s"
+  "notes": "Merge pull request #219 from freredoc/claude/arc-furnaces-sigmoid-refactor-05ez6s"
 }
