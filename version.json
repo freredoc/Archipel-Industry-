@@ -1,8 +1,8 @@
 {
-  "build": 229,
-  "version": "Alpha 13.48",
+  "build": 230,
+  "version": "Alpha 13.49",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "HUD batterie sous l'électricité + écart sigmoïdes dans le panneau Énergie (#222)"
+  "notes": "Coût batterie : silicium raffiné → silicium, retrait du processeur (#223)"
 }
