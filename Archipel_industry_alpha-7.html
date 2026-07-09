@@ -2397,6 +2397,11 @@ let _animPlayed = false;
 // qui restent servis immédiatement. Ajustable : 120–150 ms pour gratter plus de batterie
 // (si l'eau reste visuellement acceptable), ou 66 ms (~15 FPS) pour un rendu plus lisse.
 const ANIM_REDRAW_MS = 100;
+// Plafond DUR de la boucle de rendu : 30 FPS. Espace les frames RAF pour ne pas
+// réveiller le CPU 60/90/120× par seconde (chauffe/batterie). L'accumulateur tickAcc
+// compense le delta plus grand → production inchangée. Marge -2 ms pour ne pas rater
+// une frame quand l'écran est pile à 30 Hz.
+const FRAME_CAP_MS = 1000 / 30 - 2;
 // Dessine la frame courante de l'anim associée à la clé statique `sk`. Renvoie false si pas
 // d'anim (ou sheet pas encore décodée) → l'appelant retombe sur le sprite statique.
 function drawAnimFrame(ctx, sk, x, y, w, h) {
@@ -4487,8 +4492,8 @@ const SAVE_VERSION = 18;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 227;
-const GAME_VERSION = 'Alpha 13.46';
+const GAME_BUILD = 228;
+const GAME_VERSION = 'Alpha 13.47';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -16531,6 +16536,13 @@ function App() {
       try {
       const g = gameRef.current;
       const now = performance.now();
+      // Gate 30 FPS : si trop peu de temps depuis la dernière frame TRAITÉE, on saute
+      // le travail (le RAF est déjà reprogrammé par le finally). On NE touche PAS à
+      // lastFrameTs ici — c'est _lastCapTs qui pilote le cap, lastFrameTs reste la
+      // base de calcul du delta de simulation (accumulateur juste après le rattrapage
+      // hors-ligne et le mode rapide).
+      if (now - (g._lastCapTs || 0) < FRAME_CAP_MS) return;
+      g._lastCapTs = now;
       // Pendant le rattrapage hors-ligne (simulation par morceaux), on NE tique PAS ici
       // (sinon double-tick) ; on garde juste la boucle vivante et l'horloge à jour.
       if (g.catchingUp) {
