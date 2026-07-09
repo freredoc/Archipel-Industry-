@@ -398,8 +398,9 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
 .ep-pos{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--ink-faint);}
 .ep-pow{font-family:'DM Mono',monospace;font-size:.68rem;color:#8fd0ff;text-align:right;}
 .stock.energy,.stock.battery{cursor:pointer;}
-/* Énergie/batterie déplacées dans la barre d'inventaire (à droite de Production) : en LIGNE. */
-.stocks-inv{flex-direction:row;align-items:center;gap:4px;}
+/* Indicateur énergie/batterie (barre du haut, à droite de RECHERCHE) : la batterie
+   est EMPILÉE SOUS l'électricité (colonne), pastilles compactes. */
+.stocks-inv{flex-direction:column;align-items:stretch;gap:3px;}
 .stocks-inv .stock{padding:1px 7px;}
 .stocks-inv .stock .v{font-size:.7rem;}
 
@@ -4492,8 +4493,8 @@ const SAVE_VERSION = 18;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 228;
-const GAME_VERSION = 'Alpha 13.47';
+const GAME_BUILD = 229;
+const GAME_VERSION = 'Alpha 13.48';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -6621,7 +6622,13 @@ function tickIsland(game, isl) {
     consumed = 0,
     demand = 0,
     accStored = 0,
-    accCap = 0;
+    accCap = 0,
+    // Bornes min/max de la demande de l'ÎLE (somme des plages par composante) : les
+    // bâtiments sigmoïde/aléatoire oscillent, l'écart demandMax−demandMin est la conso
+    // variable due aux sigmoïdes (affichée dans le panneau Énergie).
+    demandMin = 0,
+    demandMax = 0,
+    demandVar = false;
   // Bilan électrique détaillé par composante (panneau Câble : Production / Demande / Livrée),
   // reporté sur chaque câble de la composante (taper n'importe lequel affiche le même bilan).
   const wireInfo = {};
@@ -6734,6 +6741,9 @@ function tickIsland(game, isl) {
     supply += netSupply;
     consumed += netServed;
     demand += netDem;
+    demandMin += demMin;
+    demandMax += demMax;
+    if (hasVarCons) demandVar = true;
     for (const acc of accs) {
       accStored += acc.stored;
       accCap += acc.capacity;
@@ -6763,7 +6773,10 @@ function tickIsland(game, isl) {
     demand,
     gross: energyProduced,
     accStored,
-    accCap
+    accCap,
+    demandMin,
+    demandMax,
+    demandVar
   };
   return {
     resChanged,
@@ -11153,6 +11166,12 @@ function EnergyPanel({
   const dem = e.demand || 0;
   const served = e.consumed || 0;
   const cut = Math.max(0, dem - served);
+  // Conso variable due aux sigmoïdes/aléatoire : plage min→max de la demande de l'île.
+  // L'écart (demandMax − demandMin) est la puissance qui oscille selon les sigmoïdes.
+  const demMin = e.demandMin || 0;
+  const demMax = e.demandMax || 0;
+  const demSpread = Math.max(0, demMax - demMin);
+  const showSpread = !!e.demandVar && demSpread > 0.5;
   // Bilan = génération RÉELLE (gross, hors batterie) − demande → +surplus (batterie charge) /
   // −déficit (batterie décharge). La contribution batterie est montrée à part (ligne « Batterie »).
   const netE = gross - dem;
@@ -11194,7 +11213,7 @@ function EnergyPanel({
     className: "pp-note"
   }, "⚡ L'\xE9lectricit\xE9 circule par r\xE9seau de c\xE2bles : chaque r\xE9seau c\xE2ble est un sous-r\xE9seau \xE9lectrique distinct (les g\xE9n\xE9rateurs, consommateurs et accumulateurs qu'il relie se partagent l'\xE9nergie). Le d\xE9bit du c\xE2ble (V1, V2…) borne la puissance transmissible : montez-le si un r\xE9seau sature. Les totaux ci-dessous additionnent tous les r\xE9seaux de l'\xEEle."), React.createElement("div", {
     className: "ep-stats"
-  }, statRow(I18N.t("Production (g\xE9n\xE9rateurs)"), fmtPower(gross)), battery > 0.5 && statRow(I18N.t("Batterie (d\xE9charge)"), "+" + fmtPower(battery), "var(--green)"), statRow(I18N.t("Demande totale"), fmtPower(dem)), cut > 0.5 && statRow(I18N.t("Demande non servie"), "-" + fmtPower(cut), '#ff8079'), statRow(I18N.t("Bilan r\xE9el"), (netE >= 0 ? '+' : '') + fmtPower(netE), netE < -1e-6 ? '#ff8079' : 'var(--green)'), accPct != null && statRow(I18N.t("Accumulateurs"), fmtEnergyPair(accStored, accCap) + " \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
+  }, statRow(I18N.t("Production (g\xE9n\xE9rateurs)"), fmtPower(gross)), battery > 0.5 && statRow(I18N.t("Batterie (d\xE9charge)"), "+" + fmtPower(battery), "var(--green)"), statRow(I18N.t("Demande totale"), fmtPower(dem)), showSpread && statRow(I18N.t("Conso sigmo\xEFdes (min→max)"), fmtPower(demMin) + " → " + fmtPower(demMax), '#8fd0ff'), showSpread && statRow(I18N.t("\xC9cart sigmo\xEFdes"), fmtPower(demSpread), '#8fd0ff'), cut > 0.5 && statRow(I18N.t("Demande non servie"), "-" + fmtPower(cut), '#ff8079'), statRow(I18N.t("Bilan r\xE9el"), (netE >= 0 ? '+' : '') + fmtPower(netE), netE < -1e-6 ? '#ff8079' : 'var(--green)'), accPct != null && statRow(I18N.t("Accumulateurs"), fmtEnergyPair(accStored, accCap) + " \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
     className: "ep-bar",
     key: "bar"
   }, React.createElement("i", {
