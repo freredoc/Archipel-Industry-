@@ -1,8 +1,8 @@
 {
-  "build": 227,
-  "version": "Alpha 13.46",
+  "build": 228,
+  "version": "Alpha 13.47",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #220 from freredoc/claude/sprite-animation-costs-pvzi5s"
+  "notes": "Plafond dur 30 FPS de la boucle de rendu (chauffe/batterie) (#221)"
 }
