@@ -1,8 +1,8 @@
 {
-  "build": 231,
-  "version": "Alpha 13.50",
+  "build": 232,
+  "version": "Alpha 13.51",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.50 : équilibrage arc/softcap/broyeur V2 + 4 fixes UI (build 231) (#224)"
+  "notes": "Alpha 13.51 : nombres électriques à 3 chiffres significatifs (build 232) (#225)"
 }
