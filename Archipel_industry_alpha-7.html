@@ -4555,8 +4555,8 @@ const SAVE_VERSION = 18;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 231;
-const GAME_VERSION = 'Alpha 13.50';
+const GAME_BUILD = 232;
+const GAME_VERSION = 'Alpha 13.51';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -4884,10 +4884,12 @@ function fmtRate(v) {
 // Débit /s pour les panneaux Production/Réseaux : notation scientifique (1,5e5…) dès 1e5
 // pour compacter les gros débits ; décimales fines en dessous (comme fmtRate).
 const fmtRateSci = v => Math.abs(v) >= 1e5 ? fmtInt(v, 1e5) : fmtRate(v);
-// Mantisse : entier si rond, sinon jusqu'à 2 décimales (virgule décimale française).
+// Mantisse : 3 chiffres significatifs maximum (demande utilisateur — « 131 MW », « 65,5 MW »,
+// « 1,02 MW », jamais « 131,07 MW »). Zéros de fin retirés, virgule décimale française.
 const fmtSig = v => {
-  const r = Math.round(v * 100) / 100;
-  return Number.isInteger(r) ? String(r) : String(r).replace('.', ',');
+  const a = Math.abs(v);
+  const dec = a >= 99.95 ? 0 : a >= 9.995 ? 1 : 2;
+  return String(Number(v.toFixed(dec))).replace('.', ',');
 };
 // Puissance (donnée en kW) avec unité adaptée à l'ampleur : kW < 1000, MW < 1e6, GW au-delà.
 // Le signe est conservé. Renvoie la valeur + l'unité (ex. « 1,5 MW », « 4 GW », « 512 kW »).
