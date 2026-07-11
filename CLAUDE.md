@@ -17,7 +17,15 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 231`, `GAME_VERSION = 'Alpha 13.50'`, `SAVE_VERSION = 18`.**
+- **État au dernier passage : `GAME_BUILD = 232`, `GAME_VERSION = 'Alpha 13.51'`, `SAVE_VERSION = 18`.**
+  Changement 13.51 : **nombres électriques à 3 chiffres significatifs max.** Demande utilisateur.
+  `fmtSig` (la mantisse partagée par `fmtPower`/`fmtEnergy`/`fmtEnergyPair`/`fmtHeat`) passe de
+  « jusqu'à 2 décimales » (→ « 131,07 MW », 5 chiffres) à **3 chiffres significatifs** : 0 décimale
+  ≥ 100, 1 décimale ≥ 10, 2 décimales en dessous, zéros de fin retirés → « 131 MW », « 65,5 MW »,
+  « 1,02 MW », « 2,1 GW » (chaleur/batterie alignées : « 20,5 MWh », « 1,54 MJ »). Les branches
+  < 1000 (kW/kWh entiers) sont déjà ≤ 3 chiffres. Edge assumé : ~999 950 kW s'affiche « 1000 MW »
+  (frontière d'unité, transitoire). Affichage seul. Validé : `node --check` (7 blocs) + Chromium
+  (boot 0 erreur ; `fmtPower/fmtEnergy/fmtHeat/fmtEnergyPair` vérifiés en jeu). Build 231→232.
   Changement 13.50 : **équilibrage (brief arc/softcap/broyeur V2) + 4 fixes UI** (brief
   `BRIEF_equilibrage_arc_softcap_broyeurv2` + zip `Archipel_sprite_broyeur_v2` + retours testeur).
   (1) **Fours à arc** : forfait d'entrée → **`{ element_moteur_nuc: 10 }`** (remplace béton/pièce/proc) ;
