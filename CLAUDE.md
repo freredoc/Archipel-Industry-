@@ -17,7 +17,49 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 227`, `GAME_VERSION = 'Alpha 13.46'`, `SAVE_VERSION = 18`.**
+- **État au dernier passage : `GAME_BUILD = 231`, `GAME_VERSION = 'Alpha 13.50'`, `SAVE_VERSION = 18`.**
+  Changement 13.50 : **équilibrage (brief arc/softcap/broyeur V2) + 4 fixes UI** (brief
+  `BRIEF_equilibrage_arc_softcap_broyeurv2` + zip `Archipel_sprite_broyeur_v2` + retours testeur).
+  (1) **Fours à arc** : forfait d'entrée → **`{ element_moteur_nuc: 10 }`** (remplace béton/pièce/proc) ;
+  déblocage déplacé du **nœud 19 → nœud 25** (celui de l'usine moteur nuc + mines V3). Nœud 19 renommé
+  « **Densification Avancée** » (unlocks `betonniere_v2` + `broyeur_v2`), nœud 25 renommé « Moteur
+  Nucléaire + Mines V3 + Fours à Arc ». ⚠ Les noms de nœuds sont RÉÉCRITS par `I18N.applyToData`
+  (LOCALES `tech` par id, y compris fr) → renommer un nœud = éditer AUSSI les 4 entrées LOCALES.
+  Effets assumés (brief §5) : partie ayant confirmé le 19 mais pas le 25 → ne peut plus POSER de
+  nouveaux arcs (ceux posés continuent) ; démolition d'un arc → rembourse le NOUVEAU forfait.
+  (2) **Bridage économique `COST_SOFTCAP_X2`** (atelier_meca, cablerie, acierie — PAS de cap dur) :
+  au-delà du Nv. affiché 10 le facteur de coût DOUBLE à chaque cran (ratios 2,7 → 5,4 → 10,8 → 21,6 →
+  43,2…) ; branche dans `upgradeCostFactor`, courbes puits/éolienne intactes. (3) **Puits de pétrole** :
+  courbe `3,0 × 1,1^k` → **`3,0 × 1,2^k`** (ratios 3,00/3,60/4,32/5,18/6,22). (4) **Nouveau bâtiment
+  `broyeur_v2`** (palier V2 du broyeur, `TIER_NEXT.broyeur cap 9`, forfait **5 processeur + 1000
+  câble**, entrée u10) : recette **8 pierre + 8 eau → 1 silicium** (l'eau est AJOUTÉE au palier V2),
+  `power: 96` PLAT (identique V1, pas de sigmoïde — décision D1 du brief), `cost: {}`, **PAS dans
+  `TIER_NEXT`** → améliorable à l'infini (×2,7/cran, voulu) ; toolbar Électronique après le V1 ;
+  **sprite + anim livrés** (zip) : `bat_broyeur_v2` 32×32 + sheet 128×32 4f fps8 inlinés (frame 0 ==
+  statique vérifié 0 px). (5) **Fiche bâtiment — Élec. en AMPLITUDE** : la ligne des conso variables
+  (sigmoïde/aléatoire) n'affiche plus la valeur instantanée qui sautait à chaque tick, mais l'amplitude
+  fixe « min→max (amplitude) » (i18n en/es/de). (6) **Tiers ressources RETRIÉS** (15 réaffectations :
+  pétrole/min.or/uranium→T0, polymère/diesel/silicium/acide/ling.or/yellowcake→T1, câble/acier/
+  si.raffiné/comb.U235→T2, béton armé/pièce méca→T3) + **place FIXE dans l'inventaire** : l'ordre de
+  déclaration de `RES_TIER` fait foi (`RES_ORDER_RANK`/`resOrderRank`, tri de l'inventaire du HUD) —
+  fini l'alphabétique mouvant. Affichage seul, aucune save touchée. (7) **Fix tap-through (« clic
+  fantôme »)** : le tap canvas qui OUVRE un panneau cliquait immédiatement un bouton rendu sous le
+  doigt (« Baisser » de la fiche, toggle du Port…). Nouveau hook **`useGhostGuard(openKey)`** (module,
+  après la destructuration React) : un clic légitime est toujours précédé d'un pointerdown DANS le
+  panneau → tant qu'aucun pointerdown interne depuis l'ouverture (openKey = objet info/net/up recréé
+  à chaque tap), le click est avalé en phase CAPTURE (indépendant du timing, jamais bloquant pour une
+  vraie interaction). Appliqué à **InfoPanel** (2 racines : bâtiment + réparation/remblai),
+  **UpgradePanel**, **NetworkPanel**, **PortPanel** (panneau ET backdrop — le fantôme pouvait fermer
+  le panneau). (8) **Fix oscillation des confirmations** : `.ip-up.armed,.ip-down.armed` utilisait
+  `animation:notifpulse` (= `transform:scale(1.35)`, prévu pour la pastille de notification 8 px) →
+  le bouton pleine largeur « Confirmer ? » gonflait/dégonflait en boucle. Nouveau
+  `@keyframes armedpulse` (pulsation de `filter:brightness` seulement, aucune géométrie) ;
+  `notifpulse` reste réservé à `.notif-dot`. `SAVE_VERSION` inchangé (18 — `broyeur_v2` = id additif,
+  tiers/UI = affichage). Validé : `node --check` (7 blocs) + Chromium E2E 37 assertions (données du
+  brief exactes — ratios softcap/puits, coûts atelier 2 287 679/12 353 468/133 417 454/2 881 816 998 ;
+  `cumulativeInvested('broyeur_v2', 10)` = chaîne V1 + forfait ; sprite décodé/mappé `ANIM_BY_SK` ;
+  nœuds 19/25 + i18n ; Port réel : clic fantôme AVALÉ, vrai clic accepté, garde désarmé ensuite ;
+  0 erreur console). Build 230→231.
   Changement 13.46 : **nouveaux coûts de forfait V2 + Bétonnière V2 (nouveau bâtiment) + animations
   sprites des V2.** Demande utilisateur (zip `Archipel_sprites_COMPLET`). (1) **Forfaits de densification
   revus** (`TIER_STEP`) : `four_fer_v2` ET `four_cuivre_v2` (« Four v2 ») → `{ piece_meca: 500,
