@@ -1,8 +1,8 @@
 {
-  "build": 237,
-  "version": "Alpha 13.56",
+  "build": 238,
+  "version": "Alpha 13.57",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.56 : jauge de chaleur en sprites ui_jauge_mj_* du pack (build 237) (#230)"
+  "notes": "Alpha 13.57 : fix centrale nucléaire qui redémarre à 0 après une mise à jour (build 238) (#231)"
 }
