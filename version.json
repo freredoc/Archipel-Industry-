@@ -1,8 +1,8 @@
 {
-  "build": 236,
-  "version": "Alpha 13.55",
+  "build": 237,
+  "version": "Alpha 13.56",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.55 : tour 1,024 MJ/s + joules à l'échelle des watts + jauge de chaleur sprite (build 236) (#229)"
+  "notes": "Alpha 13.56 : jauge de chaleur en sprites ui_jauge_mj_* du pack (build 237) (#230)"
 }
