@@ -1,8 +1,8 @@
 {
-  "build": 235,
-  "version": "Alpha 13.54",
+  "build": 236,
+  "version": "Alpha 13.55",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.54 : sortie de mode = croix seule à droite du bandeau d'état (build 235) (#228)"
+  "notes": "Alpha 13.55 : tour 1,024 MJ/s + joules à l'échelle des watts + jauge de chaleur sprite (build 236) (#229)"
 }
