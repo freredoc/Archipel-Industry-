@@ -763,8 +763,9 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .status{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);
   background:rgba(13,13,26,.82);border:1px solid var(--line);border-radius:4px;
   padding:3px 12px;font-size:.74rem;letter-spacing:.02em;color:var(--ink-dim);
-  pointer-events:none;white-space:nowrap;backdrop-filter:blur(4px);max-width:92%;
-  overflow:hidden;text-overflow:ellipsis;}
+  pointer-events:none;white-space:nowrap;backdrop-filter:blur(4px);max-width:92%;}
+/* Le texte s'ellipse dans .status-hint (min-width:0) pour ne JAMAIS rogner la croix ✕. */
+.status-hint{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .status b{color:var(--yellow);}
 
 /* ── Toast ── */
@@ -976,15 +977,6 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .tab-btn.tab-dem.active .tb-name{color:#ff7a72;}
 .tab-btn.tab-upg.active{border-color:#4CAF50;background:rgba(76,175,80,.16);box-shadow:0 0 0 1px #4CAF50 inset;}
 .tab-btn.tab-upg.active .tb-name{color:#7fd98a;}
-/* Gros bouton « ✕ Quitter » au-dessus de la barre ACTIONS quand un mode/outil est actif
-   (Copier/Démolir/Améliorer/pose) — évite de devoir re-cliquer l'onglet pour en sortir. */
-.tool-quit{align-self:center;margin:5px auto 3px;padding:9px 26px;cursor:pointer;
-  font-family:'Bebas Neue',sans-serif;font-size:1.02rem;letter-spacing:.06em;color:#fff;
-  background:#b3362e;border:2px solid #ff7a72;border-radius:10px;
-  box-shadow:0 2px 10px rgba(0,0,0,.45);display:flex;align-items:center;gap:7px;}
-.tool-quit:hover{background:#d24138;}
-.tool-quit .tool-quit-mode{font-family:'Barlow Condensed',sans-serif;font-weight:600;
-  font-size:.82rem;color:#ffd7d3;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .toolbar::-webkit-scrollbar{height:6px;}
 .toolbar::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
 .tool-group{display:flex;align-items:stretch;gap:6px;padding:8px 10px;flex-shrink:0;
@@ -1086,9 +1078,9 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 @keyframes notifpulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.35);opacity:.6;}}
 /* Tappable quit button in the status bar (mobile-friendly replacement for "Échap") */
 .status-quit{margin-left:10px;flex-shrink:0;background:rgba(255,59,48,.9);color:#fff;
-  border:1px solid rgba(255,99,90,.95);border-radius:6px;padding:6px 18px;cursor:pointer;
-  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.98rem;
-  letter-spacing:.4px;text-transform:uppercase;box-shadow:0 2px 8px rgba(255,59,48,.4);
+  border:1px solid rgba(255,99,90,.95);border-radius:6px;padding:5px 12px;cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;line-height:1;
+  box-shadow:0 2px 8px rgba(255,59,48,.4);
   pointer-events:auto;touch-action:manipulation;}
 .status-quit:hover{background:rgba(255,59,48,1);}
 .status{display:flex;align-items:center;}
@@ -4580,8 +4572,8 @@ const SAVE_VERSION = 19;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 234;
-const GAME_VERSION = 'Alpha 13.53';
+const GAME_BUILD = 235;
+const GAME_VERSION = 'Alpha 13.54';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -9599,7 +9591,6 @@ function Toolbar({
   currentIsland,
   unlockedSet,
   onSelect,
-  onQuit,
   buildOpen,
   onToggleBuild,
   netOpen,
@@ -9697,15 +9688,7 @@ function Toolbar({
   }, renderGroups(BUILD_GROUPS)), netOpen && React.createElement("div", {
     className: "build-panel",
     ...keepScroll(netScrollRef)
-  }, renderGroups(NETWORK_GROUPS, id => networkUnlocked(id, unlockedSet, currentIsland))), tool != null && React.createElement("button", {
-    // Gros bouton de sortie du mode en cours (Copier/Démolir/Améliorer/pose) : jusqu'ici il
-    // fallait RE-cliquer le même onglet pour quitter — peu découvrable, surtout sur mobile.
-    className: "tool-quit",
-    onClick: onQuit,
-    title: I18N.t("Quitter le mode en cours")
-  }, "✕ ", I18N.t("Quitter"), " ", React.createElement("span", {
-    className: "tool-quit-mode"
-  }, tool === COPY ? I18N.t("Copier") : tool === DEMOLISH ? I18N.t("Démolir") : tool === UPGRADE ? I18N.t("Améliorer") : BUILDINGS[tool] ? BUILDINGS[tool].name : '')), React.createElement("div", {
+  }, renderGroups(NETWORK_GROUPS, id => networkUnlocked(id, unlockedSet, currentIsland))), React.createElement("div", {
     className: "toolbar"
   }, React.createElement("div", {
     className: "tool-group tabs"
@@ -17196,15 +17179,20 @@ function App() {
     }
   }), React.createElement("div", {
     className: "status"
-  }, statusHint(), (tool !== null || buildOpen || netOpen) && React.createElement("button", {
+  }, React.createElement("span", {
+    // Le texte s'ellipse DANS ce span : la croix de sortie reste toujours visible \u00e0 droite
+    // (avant, l'overflow du bandeau entier rognait le bouton d\u00e8s que le hint \u00e9tait long).
+    className: "status-hint"
+  }, statusHint()), (tool !== null || buildOpen || netOpen) && React.createElement("button", {
     className: "status-quit",
     onClick: () => {
+      SFX.play('deselect');
       deselectAll();
       setBuildOpen(false);
       setNetOpen(false);
     },
     title: I18N.t("Quitter le mode construction")
-  }, "\u2715 Quitter")), dev && React.createElement("div", {
+  }, "\u2715")), dev && React.createElement("div", {
     className: "dev-banner"
   }, "\u26A0 MODE DEV \u2014 construction gratuite"), (() => {
     const sl = saturationLabel();
@@ -17274,10 +17262,6 @@ function App() {
     currentIsland: game.currentIsland,
     unlockedSet: unlockedSet,
     onSelect: selectTool,
-    onQuit: () => {
-      SFX.play('deselect');
-      deselectAll();
-    },
     buildOpen: buildOpen,
     onToggleBuild: () => {
       const opening = !buildOpen;
