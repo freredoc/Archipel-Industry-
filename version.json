@@ -1,8 +1,8 @@
 {
-  "build": 233,
-  "version": "Alpha 13.52",
+  "build": 234,
+  "version": "Alpha 13.53",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.52 : notation sci complétée + nœud 24 = 64 U235 + badge d'état de stock au Port (build 233) (#226)"
+  "notes": "Alpha 13.53 : nœuds 25→28 + tuto mix irradiés + alerte tour + anim tour + bouton Quitter + centrale 8192 kW (build 234) (#227)"
 }
