@@ -17,7 +17,24 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 235`, `GAME_VERSION = 'Alpha 13.54'`, `SAVE_VERSION = 19`.**
+- **État au dernier passage : `GAME_BUILD = 236`, `GAME_VERSION = 'Alpha 13.55'`, `SAVE_VERSION = 19`.**
+  Changement 13.55 : **tour aéroréfrigérante 1,024 MJ/s + joules à l'échelle des watts + jauge de
+  chaleur « sprite ».** Demandes utilisateur. (1) **Rééquilibrage** : absorption de la tour
+  0,768 → **1,024 MJ/s** (V1, ×2^upgrade) — 2 spots (`processHeat` absorbCap + `capA` fiche) →
+  la centrale 8192 kW (2,048 MJ/s) = **exactement 2 tours V1**, l'usine moteur (1 MJ/s) = 1 tour.
+  (2) **`fmtHeat` aligné sur `fmtPower`** : nouvelle marche **kJ** (entier) sous 1 MJ, puis MJ/GJ
+  (mantisse fmtSig) — « 512 kJ », « 1,02 MJ », « 2,05 GJ ». Appliqué AUSSI à la fiche (les mini
+  formateurs locaux `fmtH`/`fH`/`fmtN` remplacés par `fmtHeat`) : ligne Chaleur `X / cap · %`,
+  Bilan chaleur, Refroidissement de la tour (` MJ/s évacués` → clé `/s évacués`, i18n en/es/de
+  ajoutée), lignes 🔥 réel/théorique de la centrale. (3) **Jauge de chaleur sur tuile en
+  « sprite »** (draw, remplace la barre pleine sans cadre) : icône **`ui_chaleur`** (drawSprite) à
+  gauche + cadre pixel 1 px (#565b66) + fond sombre + **barre SEGMENTÉE 8 cellules** (≥1 allumée
+  dès qu'il y a de la chaleur) ; couleurs vert/orange/rouge + clignotement ≥80 % conservés.
+  Validé : `node --check` (7 blocs) + Chromium E2E (fmtHeat 6 cas exacts ; partie réelle avec 2
+  usines moteur forgées h=5 et h=9 via addInitScript sur des tuiles de terre calculées par
+  `buildIslandTiles` → capture : icône + cadre + segments, orange 4/8 et rouge plein, lisibles ;
+  0 erreur console du jeu — les warnings « passive event listener » viennent des wheel synthétiques
+  du test). Build 235→236.
   Changement 13.54 : **bouton de sortie de mode = croix seule dans la bannière d'état (retour
   testeur sur le 13.53).** Le gros bouton `.tool-quit` du 13.53 (au-dessus des ACTIONS) est RETIRÉ
   (render Toolbar + prop onQuit + câblage App + CSS). Il existait en fait DÉJÀ un « ✕ Quitter » dans
