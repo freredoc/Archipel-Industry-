@@ -17,7 +17,26 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 232`, `GAME_VERSION = 'Alpha 13.51'`, `SAVE_VERSION = 18`.**
+- **État au dernier passage : `GAME_BUILD = 233`, `GAME_VERSION = 'Alpha 13.52'`, `SAVE_VERSION = 18`.**
+  Changement 13.52 : **notation scientifique complétée + nœud 24 simplifié + badge d'état de stock
+  (Port).** Demandes utilisateur (4 captures). (1) **Notation scientifique** : la ligne « Débit max »
+  du Port (`fmtInt` → `fmtPort` ×2) et le popover ressource (Production/Consommation/Bilan net :
+  `fmtRate` → `fmtRateSci` ; Export/Import l'étaient déjà) passent en scientifique dès 1e5
+  (« 163 840 u/s » → « 1,64e5 u/s », « +1048576 /s » → « +1,05e6 /s »). (2) **Nœud tech 24 (Centrale
+  Nucléaire + Tour)** : mode `delivery` → **`auto`**, condition unique **produire 64 combustible_u235**
+  (avant : 5 U235 + livraison acier 1000/béton 1500/proc 100/pièce 1000, supprimée). ⚠ Une save où le
+  nœud est déjà `condition_ok` le reste (pas de rétrogradation) — validable d'un clic. (3) **Badge
+  d'état du stock** (onglet « Transit île » du Port, sous « X en stock ») : petit badge coloré par
+  ressource — `→ export` (orange), `← import` (bleu), `⇄ transit` (violet, reçu ET réexpédié),
+  `▲ remplissage` (vert, prod locale nette > 0 et stock < cible), `⧖ en attente` (gris, cible non
+  atteinte et rien n'arrive — la voisine n'a pas de surplus), `✓ cible atteinte` (vert atténué) ;
+  rien si aucune cible et aucun flux. Données : `game.transitFlow` (flux réels sommés par île, calcul
+  UNE fois par rendu dans `PortPanel` : `_tfExp`/`_tfImp`), `islandFlowAgg` (prod/conso locales),
+  helper `stockStateFor(res, cfg)` ; CSS `.pp-state.{exp,imp,transit,fill,wait,done}` ; tooltips
+  détaillés ; i18n en/es/de (bloc ADD). Affichage seul, `SAVE_VERSION` inchangé. Validé : `node
+  --check` (7 blocs) + Chromium E2E (PortPanel rendu standalone avec état forgé : les 6 badges
+  exacts + tooltips ; nœud 24 auto/64/sans delivery ; `fmtPort(163840)`=1,64e5,
+  `fmtRateSci(1048576)`=1,05e6 ; 0 erreur console). Build 232→233.
   Changement 13.51 : **nombres électriques à 3 chiffres significatifs max.** Demande utilisateur.
   `fmtSig` (la mantisse partagée par `fmtPower`/`fmtEnergy`/`fmtEnergyPair`/`fmtHeat`) passe de
   « jusqu'à 2 décimales » (→ « 131,07 MW », 5 chiffres) à **3 chiffres significatifs** : 0 décimale
