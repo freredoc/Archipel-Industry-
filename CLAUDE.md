@@ -17,7 +17,23 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 237`, `GAME_VERSION = 'Alpha 13.56'`, `SAVE_VERSION = 19`.**
+- **État au dernier passage : `GAME_BUILD = 238`, `GAME_VERSION = 'Alpha 13.57'`, `SAVE_VERSION = 19`.**
+  Changement 13.57 : **fix « la centrale redémarre à 0 après une mise à jour ».** Bug testeur.
+  Diagnostic (E2E save forgée) : le RELOAD d'une centrale `running` est SAIN (reprise immédiate
+  pleine puissance) — les vraies causes : (1) la machine à états n'avait AUCUNE récupération depuis
+  `stopping` — un manque de combustible d'UN tick (stock U235 flottant près de 0 au moment de la
+  save, hoquet au chargement, rattrapage hors-ligne) → arrêt complet PUIS recalibrage 5 min depuis
+  0 ; (2) `nucFrom` (départ de rampe) n'était pas persisté → recharger PENDANT un calibrage
+  repartait de 0. Fix : (a) branche `stopping` du tick : si `wireOk && fuelOK && targetFrac > 0` →
+  repart en `starting` DEPUIS `nucCur` (rampe 5 min, cohérent avec le recalibrage existant) ;
+  (b) `pl.nf = nucFrom` sérialisé/restauré (champ additif, `SAVE_VERSION` inchangé) ; vieille save
+  sans `nf` en pleine rampe → nouvelle rampe DEPUIS `nucCur` (timer remis à 0). L'art V2 alternatif
+  du zip uploadé reste IGNORÉ (décision utilisateur). Validé : `node --check` (7 blocs) + Chromium
+  E2E (save forgée centrale+route+câble+U235 : reload running → +8,19 MW immédiat ; stopping tardif
+  + fuel revenu → `starting` depuis nc (nf=100) ; reload mi-calibrage → rampe continue (+4,42 MW) ;
+  vieille save sans nf → rampe depuis 4096, pas 0 ; sans fuel → s'arrête toujours ; 0 erreur
+  console). ⚠ Piège E2E découvert : une centrale forgée SANS tour surchauffe (trip à 20 MJ) en
+  ~10 ticks — un « +0 kW » au reload peut être la surchauffe, pas le bug. Build 237→238.
   Changement 13.56 : **jauge de chaleur = SPRITES du pack (`ui_jauge_mj_*`).** L'utilisateur a uploadé
   `Archipel_sprites_COMPLET.zip` (commit « Add files via upload ») contenant **9 sprites de jauge**
   `ui_jauge_mj_000..013..100` (8×32 VERTICAL, thermomètre orange, crans par HUITIÈMES, cadre rouge à
