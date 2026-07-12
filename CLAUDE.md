@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 234`, `GAME_VERSION = 'Alpha 13.53'`, `SAVE_VERSION = 19`.**
+- **État au dernier passage : `GAME_BUILD = 235`, `GAME_VERSION = 'Alpha 13.54'`, `SAVE_VERSION = 19`.**
+  Changement 13.54 : **bouton de sortie de mode = croix seule dans la bannière d'état (retour
+  testeur sur le 13.53).** Le gros bouton `.tool-quit` du 13.53 (au-dessus des ACTIONS) est RETIRÉ
+  (render Toolbar + prop onQuit + câblage App + CSS). Il existait en fait DÉJÀ un « ✕ Quitter » dans
+  la bannière `.status` (« <outil> — touchez une tuile… ») mais il était INVISIBLE sur mobile : le
+  bandeau entier portait `white-space:nowrap + overflow:hidden` → dès que le hint était long, le
+  bouton était rogné hors du bandeau. Fix : le hint est enveloppé dans un `<span.status-hint>`
+  (min-width:0 + ellipsis) — la croix (désormais **« ✕ » seule**, padding réduit) reste TOUJOURS
+  visible à droite du texte ; + SFX `deselect` au clic (manquait). Les clés i18n « Quitter »/« Quitter
+  le mode en cours » du 13.53 restent (inertes). Validé : `node --check` (7 blocs) + Chromium E2E
+  viewport 390px (mode Démolir : hint ellipsé, croix entière dans le viewport à droite du texte,
+  `elementFromPoint` = le bouton, clic → mode quitté + croix disparue ; `.tool-quit` absent ;
+  0 erreur console). Build 234→235.
   Changement 13.53 : **refonte nœuds 25→28 (+1 nœud, SAVE_VERSION 19) + tuto mix irradiés + alerte
   centrale sans tour + anim tour aéroréfrigérante + bouton Quitter + centrale 8192 kW.** Demandes
   utilisateur. (1) **Tech tree** : l'ancien nœud 25 (Usine+Mines V3+Arcs) est SCINDÉ —
