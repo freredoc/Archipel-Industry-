@@ -4581,8 +4581,8 @@ const SAVE_VERSION = 19;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 237;
-const GAME_VERSION = 'Alpha 13.56';
+const GAME_BUILD = 238;
+const GAME_VERSION = 'Alpha 13.57';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -6563,12 +6563,23 @@ function tickIsland(game, isl) {
         }
       }
     } else if (bld.nucState === 'stopping') {
-      bld.nucCur = (bld.nucFrom || 0) * (1 - sig(bld.nucTimer / NUC_STOP));
-      bld.nucTimer++;
-      if (bld.nucTimer >= NUC_STOP) {
-        bld.nucState = 'off';
-        bld.nucCur = 0;
+      // RÉCUPÉRATION : si les conditions redeviennent réunies PENDANT l'arrêt (manque de
+      // combustible d'un tick, hoquet au chargement d'une save/mise à jour, rattrapage
+      // hors-ligne), on repart en calibrage DEPUIS la puissance courante au lieu de finir
+      // l'arrêt et de recalibrer 5 min depuis 0 (« la centrale redémarre à 0 »).
+      if (wireOk && fuelOK && targetFrac > 0) {
+        bld.nucState = 'starting';
+        bld.nucFrom = bld.nucCur || 0;
+        bld.nucTo = targetPower;
         bld.nucTimer = 0;
+      } else {
+        bld.nucCur = (bld.nucFrom || 0) * (1 - sig(bld.nucTimer / NUC_STOP));
+        bld.nucTimer++;
+        if (bld.nucTimer >= NUC_STOP) {
+          bld.nucState = 'off';
+          bld.nucCur = 0;
+          bld.nucTimer = 0;
+        }
       }
     }
     let nucPower = bld.nucCur || 0;
@@ -13388,6 +13399,9 @@ function App() {
             pl.ns = b.nucState || 'off';
             pl.nt = b.nucTimer || 0;
             pl.nc = b.nucCur || 0;
+            // Point de départ de la rampe (calibrage/arrêt) — sans lui, recharger PENDANT un
+            // calibrage repartait de 0 (champ additif rétro-compatible).
+            pl.nf = b.nucFrom || 0;
           }
           // Chaleur (stock MJ) + état endommagé (surchauffe) — sources de chaleur uniquement.
           if (b.heat) pl.h = b.heat;
@@ -13882,6 +13896,14 @@ function App() {
             t.building.nucState = p.ns || 'off';
             t.building.nucTimer = p.nt || 0;
             t.building.nucCur = p.nc || 0;
+            if (p.nf != null) {
+              t.building.nucFrom = p.nf;
+            } else if (p.ns === 'starting' || p.ns === 'stopping') {
+              // Vieille save sans nf en pleine rampe : nouvelle rampe DEPUIS la puissance
+              // courante (sinon le calibrage repartait de 0 à chaque rechargement).
+              t.building.nucFrom = p.nc || 0;
+              t.building.nucTimer = 0;
+            }
           }
           // Chaleur (MJ) + état endommagé (surchauffe). Migration : bâtiments < v14 → heat 0.
           if (BUILDINGS[p.b].heatCap) {
