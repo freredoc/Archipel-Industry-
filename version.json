@@ -1,8 +1,8 @@
 {
-  "build": 232,
-  "version": "Alpha 13.51",
+  "build": 233,
+  "version": "Alpha 13.52",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.51 : nombres électriques à 3 chiffres significatifs (build 232) (#225)"
+  "notes": "Alpha 13.52 : notation sci complétée + nœud 24 = 64 U235 + badge d'état de stock au Port (build 233) (#226)"
 }
