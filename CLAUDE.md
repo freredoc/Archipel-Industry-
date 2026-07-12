@@ -17,7 +17,20 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 236`, `GAME_VERSION = 'Alpha 13.55'`, `SAVE_VERSION = 19`.**
+- **État au dernier passage : `GAME_BUILD = 237`, `GAME_VERSION = 'Alpha 13.56'`, `SAVE_VERSION = 19`.**
+  Changement 13.56 : **jauge de chaleur = SPRITES du pack (`ui_jauge_mj_*`).** L'utilisateur a uploadé
+  `Archipel_sprites_COMPLET.zip` (commit « Add files via upload ») contenant **9 sprites de jauge**
+  `ui_jauge_mj_000..013..100` (8×32 VERTICAL, thermomètre orange, crans par HUITIÈMES, cadre rouge à
+  100 %) → inlinés dans le bloc d'assignations `__SPRITE_DATA__`. Le draw de la jauge (13.55) choisit
+  le sprite au cran le plus proche (`round(hf×8)`, min 1 dès qu'il y a de la chaleur) et le dessine au
+  bord GAUCHE de la tuile (l=tile/4, h=×4, centré verticalement sur l'emprise) ; ≥ 80 % → pulsation
+  d'ALPHA (au lieu du clignotement de couleur) + `_animPlayed`. La barre segmentée du 13.55 reste en
+  REPLI si le sprite manque. ⚠ Le zip uploadé contient AUSSI un art V2 DIFFÉRENT (cimenterie_v2,
+  centrale_charbon_v2, pompe_eau_v2, betonniere_v2 + sheets — style entièrement redessiné, vérifié au
+  pixel ~700 px/sprite de diff) : **PAS intégré** (l'utilisateur n'a parlé que des jauges — à lui de
+  confirmer quel art V2 fait foi). Validé : `node --check` (7 blocs) + Chromium E2E (2 usines forgées
+  h=5/h=9 → capture : thermomètre mi-plein / presque plein + pulsation ; 0 erreur console du jeu).
+  Build 236→237.
   Changement 13.55 : **tour aéroréfrigérante 1,024 MJ/s + joules à l'échelle des watts + jauge de
   chaleur « sprite ».** Demandes utilisateur. (1) **Rééquilibrage** : absorption de la tour
   0,768 → **1,024 MJ/s** (V1, ×2^upgrade) — 2 spots (`processHeat` absorbCap + `capA` fiche) →
