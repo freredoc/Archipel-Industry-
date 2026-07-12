@@ -17,7 +17,40 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 233`, `GAME_VERSION = 'Alpha 13.52'`, `SAVE_VERSION = 18`.**
+- **État au dernier passage : `GAME_BUILD = 234`, `GAME_VERSION = 'Alpha 13.53'`, `SAVE_VERSION = 19`.**
+  Changement 13.53 : **refonte nœuds 25→28 (+1 nœud, SAVE_VERSION 19) + tuto mix irradiés + alerte
+  centrale sans tour + anim tour aéroréfrigérante + bouton Quitter + centrale 8192 kW.** Demandes
+  utilisateur. (1) **Tech tree** : l'ancien nœud 25 (Usine+Mines V3+Arcs) est SCINDÉ —
+  **25 « Usine Moteur Nucléaire »** (auto, produire 1000 acier irr. + 1000 béton irr. + 1000 câble
+  irr., débloque `usine_moteur_nuc` seule ; le « 1000 câble irradié » en double du message utilisateur
+  interprété comme les 3 irradiés), **26 « Mines V3 + Fours à Arc »** (auto, produire 100
+  élém.moteur, débloque les 6 mines V3 + 2 arcs), **27 « Antenne T5 »** (prereq 25, inchangé sinon),
+  **28 « Navire Futuriste »** (prereq 25, delivery inchangée). ⚠ Renommer/renuméroter = éditer AUSSI
+  les 4 entrées LOCALES `tech` (fait, fr/en/es/de + entrée 28 ajoutée). **`SAVE_VERSION` 18→19**
+  (+19 whitelist) : migration dans `loadSave` (< 19, sur `savedStatus` AVANT le map) — ancien 25
+  confirmé ⇒ nouveaux 25 ET 26 confirmés (aucun déblocage perdu), statuts intermédiaires rétrogradés
+  `available` (les conditions ont changé), ancien 26→27 et 27→28 copiés tels quels. (2) **Tuto
+  `nuc_mix`** (GAME_TIPS, après l'astuce réseaux illimités, `when` = centrale débloquée) : sélecteur
+  Une seule/Mix/Auto de la centrale, plutonium 4e option + plafond, matériau consommé seulement si
+  livré au port. Sans scène d'illustration (TipIllustration → null) et non traduit (repli fr).
+  (3) **Alerte démarrage sans refroidissement** : helper module `islandNuclearCoolingOk(game, isl)`
+  (au moins une tour non pausée/non endommagée, alimentée en eau au dernier tick — `regime` null =
+  jamais tickée = OK —, sur un conduit touchant l'emprise 2×2 d'une centrale) ; dans
+  `setNuclearPower`, toute MONTÉE de puissance sans refroidissement OK → toast rouge + SFX
+  `powerAlert` throttlé. (4) **Anim tour aéroréfrigérante** : sheet 128×32 du pack inlinée
+  (`__ANIM_DATA__` + `ANIM_META` fps 4, frame 0 == statique vérifié 0 px) ; ⚠ la tour a SES DEUX
+  clés statiques dans SPRITE_DATA (`tour_…` ET `bat_tour_…`) or `ANIM_BY_SK` retient la 1re
+  candidate alors que `buildingSpriteKey` préfère `bat_…` → **alias explicite** ajouté après l'IIFE.
+  Anime seulement si active (= alimentée en eau). (5) **Bouton « ✕ Quitter »** (`.tool-quit`, rouge,
+  au-dessus de la barre ACTIONS) dès qu'un outil/mode est actif (Copier/Démolir/Améliorer/pose —
+  affiche le nom du mode) : `onQuit` → SFX deselect + `deselectAll()` ; avant il fallait re-cliquer
+  le même onglet. (6) **`NUC_POWER` 6144 → 8192 kW** (2 occurrences tick + fiche) → chaleur pleine
+  puissance V1 = 2,048 MJ/s (3 tours V1 nécessaires au lieu de 2, conséquence assumée). i18n en/es/de
+  (Quitter, toast alerte). Validé : `node --check` (7 blocs) + Chromium E2E (28 nœuds, defs/LOCALES
+  exacts ; helper refroidissement 6 cas unitaires ; partie réelle : Démolir → bouton « ✕ Exit
+  Demolish » visible, clic = mode quitté ; migration réelle v18 forgée via addInitScript →
+  25/26 confirmés, 27 PRÊT, 28 disponible ; sheet 128×32 décodée + alias `ANIM_BY_SK` ; 0 erreur
+  console hors fetch version.json offline). Build 233→234.
   Changement 13.52 : **notation scientifique complétée + nœud 24 simplifié + badge d'état de stock
   (Port).** Demandes utilisateur (4 captures). (1) **Notation scientifique** : la ligne « Débit max »
   du Port (`fmtInt` → `fmtPort` ×2) et le popover ressource (Production/Consommation/Bilan net :
