@@ -1,8 +1,8 @@
 {
-  "build": 239,
-  "version": "Alpha 13.58",
+  "build": 240,
+  "version": "Alpha 13.59",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.58 : conduits flux pur ×8, chaleur stockée au bâtiment (1 min), alerte accumulation (build 239) (#232)"
+  "notes": "Alpha 13.59 : oxygène/azote, séparateur d'air, paliers V2, puits pétrole V2, 1 centrale nucléaire par île (build 240) (#233)"
 }
