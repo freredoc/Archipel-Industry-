@@ -17,7 +17,49 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 239`, `GAME_VERSION = 'Alpha 13.58'`, `SAVE_VERSION = 19`.**
+- **État au dernier passage : `GAME_BUILD = 240`, `GAME_VERSION = 'Alpha 13.59'`, `SAVE_VERSION = 19`.**
+  Changement 13.59 : **oxygène/azote + séparateur d'air + 6 nouveaux paliers V2/V3 + puits V2 +
+  1 centrale nucléaire PAR ÎLE** (brief utilisateur + pack `Archipel_sprites_OFFICIEL.zip`,
+  dossier `_nouveau_v2/`). (1) **2 nouvelles ressources** `oxygene`/`azote` (RES_TIER t2, carrier
+  **pipe** — gaz —, ajoutées à `TRADE_LIQUIDS` → transitables ; sprite `item_oxygene` livré, azote
+  en repli code). (2) **`separateur_air`** (nouveau bâtiment, nœud 16 avec le raffineur Si) :
+  1024 kW → 512 O₂ + 1024 N₂/s, coût 500 circuit + 1000 béton armé + 1000 câble — ⚠ nouveau flag
+  **`noTierMult: true`** (exemption explicite du `TIER_COST_MULT` ×8 t3 : coût du brief = coût payé) ;
+  **`separateur_air_v2`** (palier u10, forfait 50 proc + 1000 béton irr + 1000 câble irr, sigmoïde
+  288→2304). (3) **Règle sigmoïde des V2** : base V1 ×1,125 → plancher ÷4, plafond ×2 (ex. 1024 →
+  1152 → 288/2304). Nouveaux paliers (TIER_NEXT cap 9 + TIER_STEP entry 10) : **usine_polymere_v2**
+  (4 pétrole/2 eau/0,5 Si/0,125 acide → 1 poly ; forfait 1000 béton + 500 pièce + 10 proc ; sigmoïde
+  27/189), **distillerie_v2** (4 pétrole/2 eau/2 O₂ → 1 acide ; 5 EMN + 200 câble irr + 100 béton
+  irr ; 18/126), **raffinerie_v2** (I/O idem V1 ; 10 proc + 500 câble + 500 béton + 500 poly ; 9/63),
+  **centrale_diesel_v2** (1,5 diesel + 2 O₂ → 512 kW, soit 1536/2048 → 524288 au Nv.11 ; 10 proc +
+  1000 pièce), **circuit_v2** (2 câble + 8 poly + 4 azote → 1 circuit — les « 8196/4196 » du brief
+  lus comme 8192/4096 ; forfait 5000 béton irr + 2500 acier irr + 100 EMN ; sigmoïde V1 conservée),
+  **pompe_eau_v3** (palier de pompe_eau_v2 cap 19, entry 20 ; 10 EMN + 500 béton irr + 500 acier
+  irr ; sigmoïde 0,03515625/0,24609375). (4) **`puits_petrole_v2`** = bâtiment À PART (pas de
+  densification) : 8 acide + sigmoïde 36→288 kW → 256 pétrole au Nv.1, coût 10 EMN + 200 béton irr +
+  100 câble irr, île 3 comme le V1. (5) **Recettes** : raffineur_silicium +32 O₂/s, fab_processeur
+  +256 azote/s ; **fours à arc** : nouvel intrant secondaire fixe `extraIn` dans ARC_DEF (fer :
+  O₂ 0,015625 base = 16384/s au Nv.21 ; cuivre : acide 0,00048828125 = 512/s) — `arcEffective`
+  fusionne extraIn dans inputs, statiques REPRÉSENTATIFS alignés ; **forfait des arcs** → 50 EMN +
+  1000 câble irr + 500 acier irr + 500 béton irr. (6) **1 centrale nucléaire PAR ÎLE** : nouveau
+  helper `countBuildingsOnIsland` — le garde `maxPerIsland` de `tryPlace` comptait via
+  `countBuildings` (TOUTES les îles = 1/partie, bug latent, le toast disait déjà « par île ») ;
+  vaut aussi pour l'antenne ; **`exclusiveIsland: 5` RETIRÉ de la centrale** (posable partout, état
+  nucléaire déjà par île). (7) **Déblocages** : nœud 16 += separateur_air ; nœud 20 (plateforme) +=
+  usine_polymere_v2/raffinerie_v2/centrale_diesel_v2 ; nœud 26 (mines V3) += distillerie_v2/
+  puits_petrole_v2/separateur_air_v2/circuit_v2/pompe_eau_v3 ; toolbar MAJ (9 ids). (8) **Assets** :
+  `assets_data.js` du zip collé après l'ancre `__ANIM_DATA__["tour_aerorefrigerante"]` (36 sprites +
+  18 sheets, dont les V2 « île 6 » encore inertes : fab_processeur_v2, fonderie_or_v2,
+  raffineur_silicium_v2, broyeur_uranium_v2, centrale_enrichissement_v2, centrale_nucleaire_v2 —
+  PAS de defs BUILDINGS, volontaire) + 17 entrées `ANIM_META`. `SAVE_VERSION` inchangé (ids/
+  ressources additifs). Validé : `node --check` (7 blocs) + Chromium E2E 40 assertions (defs/
+  forfaits/nœuds/toolbar exacts ; coût séparateur NON multiplié ; sprites décodés 32×32 + sheets
+  128×32 + `ANIM_BY_SK` ; moteur réel île 1 : séparateur +512 O₂/+1024 N₂/s pile, distillerie_v2
+  u10 +1024 acide/−2048 O₂/s, arc fer u20 −16384 O₂/s et minerai/lingot 4194304/1048576 (4:1) ;
+  `countBuildingsOnIsland` 1/île ; 0 erreur console). ⚠ Piège harnais : pour mesurer les débits
+  nominaux d'un réseau forgé, passer les réseaux en `unlimited` (sinon on mesure le PLAFOND de débit
+  V1 : tuyau 64/s, route 128/s) ; `netIds` n'existe que sur les JONCTIONS (tuile d'infra simple =
+  `t.networkId`). Build 239→240.
   Changement 13.58 : **refonte chaleur — conduits FLUX pur (×8/palier, teinte au % de flux) + stock
   de chaleur DANS le bâtiment (1 min d'émission) + alerte d'accumulation.** 5 demandes utilisateur.
   (1) **`conduitDebit` ×2 → ×8 par palier** : V1=1, V2=8, V3=64 MJ/s/tuile. (2) **Le conduit ne
