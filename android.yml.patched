@@ -1,0 +1,188 @@
+name: Build Android APK
+
+# Construit DEUX APK Android (coquilles WebView autour du MÊME jeu HTML) et les
+# publie dans une Release "apk-latest", facile à installer depuis le téléphone :
+#  - ArchipelIndustryDev.apk    : édition DEV (jeu complet : mode dev + mode rapide),
+#    appId d'origine `fr.archipel.industry` → met à jour l'app déjà installée.
+#    Libellé « Archipel Ind. Dev ».
+#  - ArchipelIndustryTester.apk : édition TESTEUR (TESTER_BUILD=true : SANS mode dev
+#    ni mode rapide), appId `fr.archipel.industry.tester` → installable À CÔTÉ de
+#    l'édition dev. Libellé « Archipel Industry ».
+# Toute mise à jour du jeu produit donc les deux APK d'un coup.
+on:
+  workflow_dispatch:            # bouton "Run workflow" dans l'onglet Actions
+  push:
+    branches: [main]
+    paths:
+      - 'Archipel_industry_alpha-7.html'
+      - 'android/**'
+      - '.github/workflows/android.yml'
+      - 'sw.js'
+      - 'manifest.json'
+
+permissions:
+  contents: write               # nécessaire pour créer la Release
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Prepare game files (dev + tester)
+        run: |
+          mkdir -p android/app/src/main/assets
+          cp Archipel_industry_alpha-7.html game-dev.html
+          sed 's/^const TESTER_BUILD = false;$/const TESTER_BUILD = true;/' \
+            Archipel_industry_alpha-7.html > game-tester.html
+          # Garde-fou : le flag doit avoir réellement basculé dans la variante testeur.
+          grep -q "^const TESTER_BUILD = true;$" game-tester.html \
+            || { echo "::error::TESTER_BUILD flag not flipped — check the const line in the HTML"; exit 1; }
+
+      - name: Decode signing keystore (if secret is set)
+        env:
+          KS: ${{ secrets.SIGNING_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > android/app/keystore.jks
+            echo "Signing keystore decoded — APK will use the stable key."
+          else
+            echo "No SIGNING_KEYSTORE_B64 secret — building with the default debug key."
+          fi
+
+      - name: Build DEV APK (Archipel Ind. Dev)
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
+          VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
+          echo "versionCode=$BUILD versionName=$VERSION"
+          cp ../game-dev.html app/src/main/assets/index.html
+          ./gradlew assembleDebug --no-daemon --stacktrace \
+            -Pvcode="${BUILD:-1}" -Pvname="${VERSION:-1.0}" \
+            -PappLabel="Archipel Ind. Dev"
+          cp app/build/outputs/apk/debug/app-debug.apk ../ArchipelIndustryDev.apk
+
+      - name: Build TESTER APK (Archipel Industry)
+        working-directory: android
+        run: |
+          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
+          VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
+          cp ../game-tester.html app/src/main/assets/index.html
+          ./gradlew assembleDebug --no-daemon --stacktrace \
+            -Pvcode="${BUILD:-1}" -Pvname="${VERSION:-1.0}" \
+            -PappId="fr.archipel.industry.tester" \
+            -PappLabel="Archipel Industry"
+          cp app/build/outputs/apk/debug/app-debug.apk ../ArchipelIndustryTester.apk
+
+      - name: Show signing certificate (vérifie la clé stable)
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
+          for APK in ArchipelIndustryDev.apk ArchipelIndustryTester.apk; do
+            echo "=== Certificat de signature : $APK ==="
+            if [ -n "$APKSIGNER" ]; then
+              "$APKSIGNER" verify --print-certs "$APK" | grep -Ei "certificate DN|SHA-256" || true
+            else
+              echo "(apksigner introuvable)"
+            fi
+          done
+          echo "Empreinte SHA-256 attendue (clé stable) : A259F77798C2B99C567EA70D6B3E94490E32FE924C3FDCEFD83332619A3962A3"
+          if [ -f android/app/keystore.jks ]; then
+            echo "✅ keystore.jks présent — signature stable."
+          else
+            echo "::warning::keystore.jks ABSENT — APK signé avec la clé debug (NON stable entre builds)."
+          fi
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArchipelIndustry-APK
+          path: |
+            ArchipelIndustryDev.apk
+            ArchipelIndustryTester.apk
+          if-no-files-found: error
+
+      - name: Sync PWA (index.html + sw.js cache)
+        run: |
+          BUILD=$(grep -oP "const GAME_BUILD = \\K[0-9]+" Archipel_industry_alpha-7.html | head -1)
+          BUILD="${BUILD:-0}"
+          echo "PWA build=$BUILD"
+          test -f game-tester.html \
+            || { echo "::error::game-tester.html absent"; exit 1; }
+          cp game-tester.html index.html
+          grep -q "^const TESTER_BUILD = true;$" index.html \
+            || { echo "::error::index.html n'est pas l'edition testeur"; exit 1; }
+          test -f sw.js || { echo "::error::sw.js absent"; exit 1; }
+          sed -i "s/^var CACHE = 'archipel-[0-9]*';/var CACHE = 'archipel-$BUILD';/" sw.js
+          grep -q "^var CACHE = 'archipel-$BUILD';$" sw.js \
+            || { echo "::error::bump du cache SW echoue"; exit 1; }
+          echo "sw.js -> $(grep '^var CACHE' sw.js)"
+
+      - name: Sync version.json from the game's GAME_BUILD
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" Archipel_industry_alpha-7.html | head -1)
+          VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" Archipel_industry_alpha-7.html | head -1)
+          NOTES=$(git log -1 --pretty=%s)
+          echo "Game build=$BUILD version=$VERSION"
+          # `apk` = édition DEV (appId d'origine : les apps déjà installées, qui lisent
+          # ce champ, se mettent à jour vers l'édition dev) ; `apkTester` = édition
+          # testeur (lu par les builds TESTER_BUILD).
+          jq -n \
+            --argjson build "${BUILD:-0}" \
+            --arg version "${VERSION:-?}" \
+            --arg url "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest" \
+            --arg apk "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk" \
+            --arg apkTester "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk" \
+            --arg notes "$NOTES" \
+            '{build:$build, version:$version, url:$url, apk:$apk, apkTester:$apkTester, notes:$notes}' > version.json
+          if ! git diff --quiet version.json index.html sw.js; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add version.json index.html sw.js
+            git commit -m "chore: sync version.json + PWA (build $BUILD) [skip ci]"
+            git push origin HEAD:main || echo "push skipped (main advanced)"
+          else
+            echo "version.json + PWA already up to date."
+          fi
+
+      - name: Publish to "apk-latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete apk-latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create apk-latest ArchipelIndustryDev.apk ArchipelIndustryTester.apk \
+            --title "APK Android — dernière version" \
+            --notes "Application Android **Archipel Industry** (hors-ligne) — deux éditions :
+
+          - \`ArchipelIndustryTester.apk\` — **édition testeur** (sans mode développeur ni mode rapide).
+          - \`ArchipelIndustryDev.apk\` — **édition dev** (jeu complet ; remplace l'ancien \`ArchipelIndustry.apk\`, met à jour l'app déjà installée).
+
+          Les deux peuvent être installées côte à côte sur le même téléphone.
+
+          Installation :
+          1. Téléchargez l'APK voulu ci-dessous.
+          2. Ouvrez le fichier ; autorisez l'installation depuis cette source si demandé.
+          3. Lancez **Archipel Industry** (testeur) ou **Archipel Ind. Dev**.
+
+          Construit automatiquement depuis \`Archipel_industry_alpha-7.html\`."

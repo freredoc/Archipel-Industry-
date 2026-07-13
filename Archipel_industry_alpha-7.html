@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0d0d1a">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Archipel">
 <title>Archipel Industry</title>
 <noscript></noscript>
 <style>
@@ -1190,7 +1196,7 @@ setTimeout(function(){var s=document.getElementById('splash');if(s&&!window.__sp
     var mBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
     var link = document.createElement('link');
     link.rel = 'manifest'; link.href = URL.createObjectURL(mBlob);
-    document.head.appendChild(link);
+    if (!document.querySelector('link[rel="manifest"]')) document.head.appendChild(link);
   }catch(e){ /* manifest non critique pour le fonctionnement du jeu */ }
 
   // ── Service Worker inline (cache shell pour le mode hors ligne) ──
@@ -1226,8 +1232,7 @@ setTimeout(function(){var s=document.getElementById('splash');if(s&&!window.__sp
   // Garde : pas de SW en file:// (et jamais d'erreur visible)
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
     try{
-      var swBlob = new Blob([SW_SRC], {type:'text/javascript'});
-      var swUrl = URL.createObjectURL(swBlob);
+      var swUrl = './sw.js';
       navigator.serviceWorker.register(swUrl).then(function(){
         // Réchauffe le cache du HTML une fois le SW actif (pour l'offline au 2e chargement)
         return navigator.serviceWorker.ready;
