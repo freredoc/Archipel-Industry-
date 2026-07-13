@@ -1,8 +1,8 @@
 {
-  "build": 238,
-  "version": "Alpha 13.57",
+  "build": 239,
+  "version": "Alpha 13.58",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.57 : fix centrale nucléaire qui redémarre à 0 après une mise à jour (build 238) (#231)"
+  "notes": "Alpha 13.58 : conduits flux pur ×8, chaleur stockée au bâtiment (1 min), alerte accumulation (build 239) (#232)"
 }
