@@ -17,7 +17,36 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 238`, `GAME_VERSION = 'Alpha 13.57'`, `SAVE_VERSION = 19`.**
+- **État au dernier passage : `GAME_BUILD = 239`, `GAME_VERSION = 'Alpha 13.58'`, `SAVE_VERSION = 19`.**
+  Changement 13.58 : **refonte chaleur — conduits FLUX pur (×8/palier, teinte au % de flux) + stock
+  de chaleur DANS le bâtiment (1 min d'émission) + alerte d'accumulation.** 5 demandes utilisateur.
+  (1) **`conduitDebit` ×2 → ×8 par palier** : V1=1, V2=8, V3=64 MJ/s/tuile. (2) **Le conduit ne
+  stocke PLUS de chaleur** : `processHeat` étape 3 réécrite — plus de tampon `net.heatStore` (purgé
+  par `delete` à chaque tick ; le report du tampon dans `rebuildNetworks` — scission 13.33 + fusion
+  traversée — est retiré) ; transfert DIRECT sources → tours chaque tick, borné par le débit total
+  (tuiles × débit/tuile), l'absorption des tours (eau) et la chaleur dispo des sources. `conduitFlow`
+  = MJ/s réellement évacués (inchangé). (3) **Teinte du conduit = % de FLUX** (`conduitLoad =
+  flux/débit total` au lieu de `stock/cap`) — les sprites `_chauffe1/2/3` (≥25/50/80 %) et le stub
+  sous bâtiment en héritent sans changement du draw. (4) **Plafond de chaleur des bâtiments = 1 MINUTE
+  d'émission** (`HEAT_CAP_SECONDS = 60`) : `heatCapOf(bld)` devient DYNAMIQUE = `max(heatEmit,
+  heatEmitPk) × 60` où `heatEmitPk` = pic d'émission récent (décroissance ×0,995/tick, posé à
+  l'étape 1) — stable pour les émissions oscillantes (antenne) ; repli : émission nulle avec chaleur
+  gelée → cap = chaleur courante (jauge pleine, pas de trip). `b.heatCap` (def, 20/10/10) ne sert
+  plus que de FLAG « bâtiment à chaleur ». **Trip seulement si la chaleur MONTE** (`heatEmit >
+  heatCool`) — baisser la puissance avec de la chaleur stockée ne trippe plus. Fiche bâtiment + jauge
+  de tuile passées sur `heatCapOf` (+ tooltip « plafond = 1 min d'émission »). (5) **Alerte
+  d'accumulation** (`game.heatWarn`, à transition, ré-armée < 5 %) : dès 10 % du plafond en MONTÉE →
+  toast orange « accumule de la chaleur — surchauffe dans ~Xs » + SFX `powerAlert` throttlé 8 s ;
+  drapeau `bld.heatWarned` (transient), remis à zéro au trip et dans `tryHeatRepair` (qui reset aussi
+  `heatEmitPk`). NetworkPanel conduit : ligne « Stockage » RETIRÉE, « Flux évacué » = `X / cap /s`
+  (rouge si ≥99 % = saturé), titres MAJ ; astuce nucléaire réécrite ; i18n en/es/de des 3 nouvelles
+  clés (bloc ADD ligne ~2115). `SAVE_VERSION` inchangé (`pl.h` inchangé ; `heatEmitPk`/`heatWarned`
+  transients). Validé : `node --check` (7 blocs) + Chromium E2E 25 assertions (débits 1/8/64/512 ;
+  usine forgée + 3 conduits + tour + eau : flux 1 MJ/s, load = 1/3, heatStore undefined ; saturation
+  émission 5 > débit 3 → flux 3, load 1 ; heatWarn à 10 % avec secs=135 exact ; trip au tick 150 pile
+  (= cap 300 MJ à +2 net/tick), chaleur figée à 300 ; chaleur en baisse → PAS de trip ; conduit V2 →
+  débit 24, flux = absorption tour 4,096, load 0,171) + boot partie réelle 8 s (0 erreur console).
+  Build 238→239.
   Changement 13.57 : **fix « la centrale redémarre à 0 après une mise à jour ».** Bug testeur.
   Diagnostic (E2E save forgée) : le RELOAD d'une centrale `running` est SAIN (reprise immédiate
   pleine puissance) — les vraies causes : (1) la machine à états n'avait AUCUNE récupération depuis
