@@ -17,7 +17,31 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 242`, `GAME_VERSION = 'Alpha 13.61'`, `SAVE_VERSION = 21`.**
+- **État au dernier passage : `GAME_BUILD = 243`, `GAME_VERSION = 'Alpha 13.62'`, `SAVE_VERSION = 21`.**
+  Changement 13.62 : **4 fixes testeur (retours 13.59).** (1) **Icône azote** : sprite `item_azote`
+  GÉNÉRÉ (recoloration verte de `item_oxygene`, bouteille de gaz, 16×16, 206 o) et inliné juste après
+  lui — `itemSpriteKey('azote')` le prend automatiquement (inventaire/recettes/fiches/Port ; le pack
+  officiel ne livre toujours pas d'art azote — remplacer la clé si un art officiel arrive). (2) **Icône
+  pompe V3 manquante (menu Bâtiment + carte)** : `pompe_eau_v3` n'a AUCUNE clé sprite (ni `bat_`, ni id,
+  ni `_v1`) → alias `BLD_SPRITE_OVERRIDE.pompe_eau_v3 = 'pompe_eau_v2'` (réutilise l'art V2 ; l'anim V2
+  suit via `ANIM_BY_SK`). (3) **Import des matériaux irradiés impossible** : la liste Transit du Port
+  (`visiblePriority`) filtre par `unlockedResourceSet` = ressources dans les `outputs` STATIQUES des
+  bâtiments débloqués — or la centrale produit les irradiés DYNAMIQUEMENT (`nucMix`/`nucOutKey`, pas
+  d'`outputs`) → sur une île sans stock, impossible de fixer une cible d'import. Fix dans
+  `unlockedResourceSet` : si `centrale_nucleaire` débloquée → ajoute `nucOutKey(k)` pour chaque
+  `NUC_MAT_KEYS` (acier/béton/câble irradiés + plutonium). Effet de bord assumé : ils apparaissent
+  aussi à 0 dans l'inventaire HUD et le Calculateur dès la centrale recherchée. La mécanique de transit
+  était SAINE (carrier road → déjà dans `TRADE_RESOURCES`). (4) **Conduit 1,024 MJ au lieu de 1 MJ
+  rond** (demande : « 1024 kJ par conduit ») : `conduitDebit` base 1 → **1,024** (V1=1,024, V2=8,192,
+  V3=65,536 MJ/s/tuile, ×8/palier conservé) — échelle BINAIRE alignée sur les kW : 1 tuile V1 =
+  exactement l'absorption d'une tour V1 (1,024 MJ/s), centrale 8192 kW = 2,048 MJ/s = 2 tuiles.
+  Affichage « 1,02 MJ » via `fmtHeat` (dynamique, rien d'autre à toucher). + hook de test `__heat`
+  étendu (buildingSpriteKey/itemSpriteKey/unlockedResourceSet/isBuildingUnlocked/fmtHeat).
+  `SAVE_VERSION` inchangé (aucune donnée de save touchée). Validé : `node --check` (7 blocs) +
+  Chromium E2E (item_azote décodé 16×16 ; `itemSpriteKey('azote')='item_azote'` ;
+  `buildingSpriteKey('pompe_eau_v3')='pompe_eau_v2'` présent ; `unlockedResourceSet` avec/sans
+  centrale → 4 irradiés présents/absents ; conduitDebit 1,024/8,192/65,536 → « 1,02/8,19/65,5 MJ » ;
+  0 erreur console). Build 242→243.
   Changement 13.61 : **GUIDE DYNAMIQUE post-tutoriel (brief `BRIEF_B_GUIDE_DYNAMIQUE`)** — la couche
   « quoi faire ensuite » après le tuto : objectifs pilotés par l'ÉTAT (pas un compteur), correctifs
   récurrents AVANT découvertes one-shot (K1). (1) **`GUIDE_OBJECTIVES`** (module, avant GAME_TIPS,
