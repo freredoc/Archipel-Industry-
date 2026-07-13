@@ -17,6 +17,8 @@ on:
       - 'Archipel_industry_alpha-7.html'
       - 'android/**'
       - '.github/workflows/android.yml'
+      - 'sw.js'
+      - 'manifest.json'
 
 permissions:
   contents: write               # nécessaire pour créer la Release
@@ -119,6 +121,22 @@ jobs:
             ArchipelIndustryTester.apk
           if-no-files-found: error
 
+      - name: Sync PWA (index.html + sw.js cache)
+        run: |
+          BUILD=$(grep -oP "const GAME_BUILD = \\K[0-9]+" Archipel_industry_alpha-7.html | head -1)
+          BUILD="${BUILD:-0}"
+          echo "PWA build=$BUILD"
+          test -f game-tester.html \
+            || { echo "::error::game-tester.html absent"; exit 1; }
+          cp game-tester.html index.html
+          grep -q "^const TESTER_BUILD = true;$" index.html \
+            || { echo "::error::index.html n'est pas l'edition testeur"; exit 1; }
+          test -f sw.js || { echo "::error::sw.js absent"; exit 1; }
+          sed -i "s/^var CACHE = 'archipel-[0-9]*';/var CACHE = 'archipel-$BUILD';/" sw.js
+          grep -q "^var CACHE = 'archipel-$BUILD';$" sw.js \
+            || { echo "::error::bump du cache SW echoue"; exit 1; }
+          echo "sw.js -> $(grep '^var CACHE' sw.js)"
+
       - name: Sync version.json from the game's GAME_BUILD
         env:
           GH_TOKEN: ${{ github.token }}
@@ -138,14 +156,14 @@ jobs:
             --arg apkTester "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk" \
             --arg notes "$NOTES" \
             '{build:$build, version:$version, url:$url, apk:$apk, apkTester:$apkTester, notes:$notes}' > version.json
-          if ! git diff --quiet version.json; then
+          if ! git diff --quiet version.json index.html sw.js; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add version.json
-            git commit -m "chore: sync version.json (build $BUILD) [skip ci]"
+            git add version.json index.html sw.js
+            git commit -m "chore: sync version.json + PWA (build $BUILD) [skip ci]"
             git push origin HEAD:main || echo "push skipped (main advanced)"
           else
-            echo "version.json already up to date."
+            echo "version.json + PWA already up to date."
           fi
 
       - name: Publish to "apk-latest" release
