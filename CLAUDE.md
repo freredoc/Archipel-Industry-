@@ -17,7 +17,56 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 240`, `GAME_VERSION = 'Alpha 13.59'`, `SAVE_VERSION = 19`.**
+- **État au dernier passage : `GAME_BUILD = 241`, `GAME_VERSION = 'Alpha 13.60'`, `SAVE_VERSION = 20`.**
+  Changement 13.60 : **TUTORIEL V2 (île 1) — 8 étapes guidées, halo pulsé, popups « pourquoi »,
+  tuto bloquant** (brief `BRIEF_TUTO_V2`, décisions D1-D5 actées). (1) **`TUTORIAL_STEPS` refondu
+  (7 → 8 étapes, la ROUTE remonte en étape 2** pour boucler mine→route→port immédiatement) : chaque
+  étape = `{reveal, goal, why, targets[], done, afterToast}` ; nouvel ordre mine_fer / road /
+  carriere / améliorer / mine_charbon / four_fer / cimenterie / recherche (done étape 8 = n'importe
+  quel nœud ≠ 1 confirmé). (2) **Machine à cibles du halo** : `targets[]` = séquence `{sel|tiles,
+  when(g, ui)}` ; `checkTutorial` s'arrête sur la PREMIÈRE cible dont `when` est VRAI et pilote
+  `g.tutorial.targetIdx` (persisté). ⚠ 2 écarts au brief (sinon cibles inatteignables — la machine
+  s'arrête à la 1re vraie) : étape 4 cible tiles `when: !ui.upOpen` (pas `()=>true`) pour atteindre
+  le bouton Monter, étape 8 cible recherche `when: !ui.researchOpen` pour atteindre Livrer/Confirmer.
+  `ui` = **`panelsRef`** (miroir render-body des useState `buildOpen/netOpen/upOpen(=upgrade)/
+  researchOpen` — lisible depuis la boucle rAF). (3) **7 attributs `data-tut`** (6 du brief + 1) :
+  ToolButton (=id), Port, Recherche, « Monter » InfoPanel, bouton « ⬆ Améliorer » de l'UpgradePanel
+  (ajout : le flux réel de l'étape 4 passe par l'outil Améliorer → UpgradePanel, pas l'InfoPanel),
+  « Confirmer » ET « Livrer » du ResearchPanel (même ancre `confirm` : le 1er nœud validable — Accès
+  Île 2 — est en mode delivery). (4) **`TutorialHalo`** (composant DOM, `pointer-events:none`,
+  repositionné par rAF, pulsation CSS `@keyframes tut-pulse`) monté sous la bannière, masqué si un
+  popup est ouvert ; **`drawTutorialHalo(ctx, ox, oy, tile, r0, r1, c0, c1)`** (halo canvas, bornes
+  visibles passées en params) : tuiles posables via `canPlace`, `@upgradable` = mine/carrière Nv.1,
+  `'link'` = mine + port + polyligne pointillée en L (pas de pathfinding, J1) ; pose `_animPlayed =
+  true` → pulse au canal ~10 FPS d'ambiance. (5) **Tuto bloquant (D3/D4)** : prop `tutStep` de la
+  Toolbar → `tabAllowed(key)` (classe `.tab-locked` + disabled) ; **Démolir TOUJOURS actif (D4)**,
+  Copier jamais pendant le tuto (J2) ; cartes du menu déjà filtrées par `tutorialRevealed` (intact).
+  (6) **8 popups « pourquoi »** `tut_*` dans GAME_TIPS (`when: ()=>false`, ouverts par
+  `showTip(st.why)` au franchissement + marqués `tipsSeen` → visibles dans l'Aide) ; textes fr
+  inline + **bloc d'augmentation i18n** (après le bloc ADD, ~ligne 2183) : tips en/es/de,
+  **`L.tutorial` REMPLACÉ en bloc** (8 goals ×4 langues — l'ordre a changé, fusionner aurait gardé
+  les vieux goals), toasts `afterToast` en/es/de. ⚠ Le fallback body d'un tip vient du locale FR
+  (`tip()` mappe sur `fb`) → les entrées fr DOIVENT être dans LOCALES.fr.tips sinon les body
+  en/es/de ne s'appliquent pas. (7) **`checkTips` réécrit** : tutoriel actif = canal popup RÉSERVÉ
+  (bienvenue → tut_mine à l'étape 0 → popups d'étape) ; les astuces contextuelles (recherche/port,
+  vraies dès le boot car le nœud 2 est condition_ok immédiatement) sont **différées sans être
+  marquées vues** → reprennent à la fin/skip du tuto. (8) **FIX course préexistante « bienvenue
+  par-dessus la ModeModal »** : `needModeRef` était synchronisé par `useEffect([needMode])` qui, au
+  montage initial, tournait APRÈS l'effet de boot avec `needMode` encore false → écrasait le true ;
+  la 1re frame rAF battait le re-render React (flaky, reproduit ~1/4). Désormais synchro dans le
+  CORPS du render + pose synchrone au boot et dans `chooseMode`. (9) **`SAVE_VERSION` 19→20**
+  (+20 whitelist) : `tutorial.targetIdx` sérialisé/restauré (vieille save sans champ → 0, halo
+  recalé sur la 1re cible, pas de crash — vérifié). Validé : `node --check` (7 blocs) + Chromium E2E
+  3 suites (~55 assertions) : partie neuve réelle fr (statics, séquence bienvenue→tut_mine, halo
+  .tab-build→carte→gisements→pose mine→étape 2→route→liaison réelle au port→étape 3, gate D3/D4,
+  save v20) ; saves forgées (étape 4 : .tab-upg→@upgradable→bouton panneau→2 améliorations→étape 5 ;
+  étape 8 : Recherche→Livrer→fin du tuto+gate levé ; v19 sans targetIdx ; « Passer ») ; smoke DE
+  (goal + tips traduits) ; pulse vérifié par sonde pixel (canal vert oscille) ; 0 erreur console.
+  ⚠ Pièges harnais E2E : (a) le flush `pagehide` ré-écrit la save du jeu à la navigation → geler
+  `Storage.prototype.setItem` avant de forger une save en localStorage ; (b) réplique caméra =
+  `clientWidth/Height` + `MIN_TILE=26` ; au boot d'une save mi-tuto la bannière apparaît APRÈS
+  `centerCam()` (relayout sans recentrage) → tap auto-calibrant ±1 tuile ; (c) attendre la
+  SUPPRESSION de `#splash` (pas juste `__splashGone`) avant les taps canvas. Build 240→241.
   Changement 13.59 : **oxygène/azote + séparateur d'air + 6 nouveaux paliers V2/V3 + puits V2 +
   1 centrale nucléaire PAR ÎLE** (brief utilisateur + pack `Archipel_sprites_OFFICIEL.zip`,
   dossier `_nouveau_v2/`). (1) **2 nouvelles ressources** `oxygene`/`azote` (RES_TIER t2, carrier
