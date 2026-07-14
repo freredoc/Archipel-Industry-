@@ -2288,6 +2288,63 @@ for(var code in TUT){ var L=I18N.locales[code]; if(!L) continue; var m=TUT[code]
   L.tips=L.tips||{}; for(var t in m.tips) L.tips[t]=m.tips[t];
   L.ui=L.ui||{}; for(var k in m.ui) if(!L.ui[k]) L.ui[k]=m.ui[k];
 } })();
+
+/* i18n — GUIDE DYNAMIQUE (post-tutoriel) : goals des objectifs + libellés, en/es/de.
+   Les goals passent par I18N.t (couche ui, clé = texte fr) au rendu de la bannière. */
+(function(){ if(!window.I18N||!I18N.locales) return;
+var G={
+"en":{
+ "Un bâtiment n'est relié à aucun réseau : il ne produit rien. Relie-le au port.":"A building isn't connected to any network: it produces nothing. Connect it to the port.",
+ "Ta demande électrique dépasse ta production. Ajoute une source d'énergie.":"Your electricity demand exceeds your production. Add a power source.",
+ "Un réseau est saturé : il ne transporte plus tout. Améliore son niveau.":"A network is saturated: it no longer carries everything. Upgrade its level.",
+ "Une recherche est prête à être validée.":"A research is ready to be confirmed.",
+ "Pose ta première éolienne : elle produit de l'électricité sans aucun intrant.":"Place your first wind turbine: it produces electricity with no inputs at all.",
+ "L'électricité ne se téléporte pas : relie ton éolienne à un consommateur par un câble.":"Electricity doesn't teleport: connect your wind turbine to a consumer with a cable.",
+ "Une deuxième île est accessible. Va la visiter.":"A second island is accessible. Go visit it.",
+ "Ouvre le panneau Port et configure une liaison pour exporter vers l'île 2.":"Open the Port panel and set up a link to export to island 2.",
+ "Objectif":"Objective",
+ "Désactiver le guide (réactivable dans les Options)":"Disable the guide (can be re-enabled in Options)",
+ "Guide désactivé (réactivable dans les Options).":"Guide disabled (can be re-enabled in Options).",
+ "🧭 Guide activé":"🧭 Guide enabled",
+ "Guide désactivé":"Guide disabled",
+ "Guide":"Guide",
+ "Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)":"Suggested objective in the banner after the tutorial (fixes and discoveries)"
+},
+"es":{
+ "Un bâtiment n'est relié à aucun réseau : il ne produit rien. Relie-le au port.":"Un edificio no está conectado a ninguna red: no produce nada. Conéctalo al puerto.",
+ "Ta demande électrique dépasse ta production. Ajoute une source d'énergie.":"Tu demanda eléctrica supera tu producción. Añade una fuente de energía.",
+ "Un réseau est saturé : il ne transporte plus tout. Améliore son niveau.":"Una red está saturada: ya no lo transporta todo. Mejora su nivel.",
+ "Une recherche est prête à être validée.":"Una investigación está lista para validar.",
+ "Pose ta première éolienne : elle produit de l'électricité sans aucun intrant.":"Coloca tu primer aerogenerador: produce electricidad sin ningún insumo.",
+ "L'électricité ne se téléporte pas : relie ton éolienne à un consommateur par un câble.":"La electricidad no se teletransporta: conecta tu aerogenerador a un consumidor con un cable.",
+ "Une deuxième île est accessible. Va la visiter.":"Una segunda isla es accesible. Ve a visitarla.",
+ "Ouvre le panneau Port et configure une liaison pour exporter vers l'île 2.":"Abre el panel del Puerto y configura un enlace para exportar a la isla 2.",
+ "Objectif":"Objetivo",
+ "Désactiver le guide (réactivable dans les Options)":"Desactivar la guía (reactivable en Opciones)",
+ "Guide désactivé (réactivable dans les Options).":"Guía desactivada (reactivable en Opciones).",
+ "🧭 Guide activé":"🧭 Guía activada",
+ "Guide désactivé":"Guía desactivada",
+ "Guide":"Guía",
+ "Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)":"Objetivo sugerido en el banner tras el tutorial (correcciones y descubrimientos)"
+},
+"de":{
+ "Un bâtiment n'est relié à aucun réseau : il ne produit rien. Relie-le au port.":"Ein Gebäude ist mit keinem Netz verbunden: Es produziert nichts. Verbinde es mit dem Hafen.",
+ "Ta demande électrique dépasse ta production. Ajoute une source d'énergie.":"Dein Strombedarf übersteigt deine Erzeugung. Füge eine Energiequelle hinzu.",
+ "Un réseau est saturé : il ne transporte plus tout. Améliore son niveau.":"Ein Netz ist ausgelastet: Es transportiert nicht mehr alles. Verbessere seine Stufe.",
+ "Une recherche est prête à être validée.":"Eine Forschung ist bereit zur Bestätigung.",
+ "Pose ta première éolienne : elle produit de l'électricité sans aucun intrant.":"Platziere dein erstes Windrad: Es erzeugt Strom ganz ohne Eingänge.",
+ "L'électricité ne se téléporte pas : relie ton éolienne à un consommateur par un câble.":"Strom teleportiert sich nicht: Verbinde dein Windrad per Kabel mit einem Verbraucher.",
+ "Une deuxième île est accessible. Va la visiter.":"Eine zweite Insel ist zugänglich. Besuche sie.",
+ "Ouvre le panneau Port et configure une liaison pour exporter vers l'île 2.":"Öffne das Hafen-Panel und richte eine Verbindung ein, um zur Insel 2 zu exportieren.",
+ "Objectif":"Ziel",
+ "Désactiver le guide (réactivable dans les Options)":"Guide deaktivieren (in den Optionen reaktivierbar)",
+ "Guide désactivé (réactivable dans les Options).":"Guide deaktiviert (in den Optionen reaktivierbar).",
+ "🧭 Guide activé":"🧭 Guide aktiviert",
+ "Guide désactivé":"Guide deaktiviert",
+ "Guide":"Guide",
+ "Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)":"Vorgeschlagenes Ziel im Banner nach dem Tutorial (Korrekturen und Entdeckungen)"
+}};
+for(var code in G){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=G[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 </script>
 <script>
 const {
@@ -4991,12 +5048,12 @@ function ensureSlotsInitialized() {
   }
   return active;
 }
-const SAVE_VERSION = 20;
+const SAVE_VERSION = 21;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 241;
-const GAME_VERSION = 'Alpha 13.60';
+const GAME_BUILD = 242;
+const GAME_VERSION = 'Alpha 13.61';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -8438,6 +8495,132 @@ function tipAnyDisconnected(game) {
   }
   return false;
 }
+// ─────────────────────────────────────────────────────────────────────────────
+// GUIDE DYNAMIQUE — prend le relais quand le tutoriel est terminé (ou passé).
+//
+// Contrairement à TUTORIAL_STEPS (séquence figée), le guide est piloté par
+// l'ÉTAT : le premier objectif dont `when(g)` est vrai devient l'objectif actif.
+// Aucun ordre imposé → aucun blocage possible si le joueur explore l'arbre de
+// recherche dans un ordre inattendu.
+//
+//   kind : 'fix' (récurrent — le problème peut revenir)
+//          'discover' (one-shot — mémorisé dans g.guide.done[id])
+//   when : condition d'AFFICHAGE
+//   done : condition de résolution (pour 'discover' : marque done[id])
+//   why  : id d'un GAME_TIPS EXISTANT, ouvert une seule fois (garde tipsSeen)
+//   targets : mêmes formes que TUTORIAL_STEPS — { sel } ou { tiles }
+//
+// ORDRE = PRIORITÉ. Les correctifs d'abord : inutile de proposer une nouveauté
+// à un joueur dont l'usine est déjà à l'arrêt.
+// ─────────────────────────────────────────────────────────────────────────────
+const GUIDE_OBJECTIVES = [
+// ── CORRECTIFS ────────────────────────────────────────────────────────────
+{
+  id: 'fix_deconnecte',
+  kind: 'fix',
+  goal: 'Un bâtiment n\'est relié à aucun réseau : il ne produit rien. Relie-le au port.',
+  why: 'batiment_deconnecte',
+  // Cas particulier : la PREMIÈRE éolienne encore sans aucun câble posé est le sujet même
+  // de go_wire (« relie-la par un câble ») — on laisse la découverte faire la leçon plutôt
+  // que d'afficher « Relie-le au port » (trompeur : un câble ne va pas au port).
+  when: g => tipAnyDisconnected(g) && !(tipAnyPlaced(g, 'eolienne') && !tipAnyPlaced(g, 'wire')),
+  done: g => !tipAnyDisconnected(g),
+  targets: [{ tiles: '@disconnected', when: () => true }]
+}, {
+  id: 'fix_deficit',
+  kind: 'fix',
+  goal: 'Ta demande électrique dépasse ta production. Ajoute une source d\'énergie.',
+  why: 'deficit',
+  // Même mesure que le tip `deficit` : e.balance = bilan HONNÊTE (génération réelle − demande,
+  // hors batterie, cf. 13.8) — le `demand > produced` du brief sous-détectait (produced inclut
+  // la décharge batterie : le réseau peut être en déficit réel avec produced == demand).
+  when: g => tipAnyEnergy(g, e => (e.balance || 0) < -1e-6),
+  done: g => !tipAnyEnergy(g, e => (e.balance || 0) < -1e-6),
+  targets: [{ sel: '.tab-build', when: (g, ui) => !ui.buildOpen }]
+}, {
+  id: 'fix_sature',
+  kind: 'fix',
+  goal: 'Un réseau est saturé : il ne transporte plus tout. Améliore son niveau.',
+  why: 'reseau_sature',
+  when: g => tipAnyNetworkSaturated(g),
+  done: g => !tipAnyNetworkSaturated(g),
+  targets: [{ sel: '.tab-upg', when: g => g.ui.tool !== UPGRADE }, { tiles: '@saturated', when: () => true }]
+}, {
+  // ── DÉCOUVERTES ───────────────────────────────────────────────────────────
+  id: 'go_recherche',
+  kind: 'fix',
+  // 'fix' : une recherche prête doit TOUJOURS se signaler (K2)
+  goal: 'Une recherche est prête à être validée.',
+  why: null,
+  // le tip `recherche` est déjà géré par checkTips
+  // `hasPendingResearch` (et pas « ≥1 nœud condition_ok » du brief) : un nœud delivery
+  // (accès d'île) est condition_ok IMMÉDIATEMENT mais n'est validable que si le port couvre
+  // la livraison — sinon l'objectif s'afficherait en permanence dès le début de partie.
+  when: g => hasPendingResearch(g),
+  done: g => !hasPendingResearch(g),
+  targets: [{ sel: '[data-tut="research"]', when: (g, ui) => !ui.researchOpen }, { sel: '[data-tut="confirm"]', when: () => true }]
+}, {
+  id: 'go_eolienne',
+  kind: 'discover',
+  goal: 'Pose ta première éolienne : elle produit de l\'électricité sans aucun intrant.',
+  why: 'eolienne',
+  when: g => isBuildingUnlocked(g, 'eolienne') && !tipAnyPlaced(g, 'eolienne'),
+  done: g => tipAnyPlaced(g, 'eolienne'),
+  targets: [{ sel: '.tab-build', when: (g, ui) => !ui.buildOpen && g.ui.tool !== 'eolienne' }, { sel: '[data-tut="eolienne"]', when: g => g.ui.tool !== 'eolienne' }, { tiles: 'eolienne', when: () => true }]
+}, {
+  id: 'go_wire',
+  kind: 'discover',
+  goal: 'L\'électricité ne se téléporte pas : relie ton éolienne à un consommateur par un câble.',
+  why: 'energie',
+  when: g => tipAnyPlaced(g, 'eolienne') && !tipAnyPlaced(g, 'wire'),
+  done: g => tipAnyPlaced(g, 'wire'),
+  targets: [{ sel: '.tab-net', when: (g, ui) => !ui.netOpen && g.ui.tool !== 'wire' }, { sel: '[data-tut="wire"]', when: g => g.ui.tool !== 'wire' }, { tiles: 'wire', when: () => true }]
+}, {
+  id: 'go_ile2',
+  kind: 'discover',
+  goal: 'Une deuxième île est accessible. Va la visiter.',
+  why: 'transport',
+  when: g => !!(g.islandUnlocked && g.islandUnlocked[2]),
+  done: g => g.currentIsland === 2 || !!(g.guide && g.guide.seenIsland2),
+  targets: [{ sel: '[data-tut="island-2"]', when: () => true }]
+}, {
+  id: 'go_liaison',
+  kind: 'discover',
+  goal: 'Ouvre le panneau Port et configure une liaison pour exporter vers l\'île 2.',
+  why: 'liaisons_port',
+  when: g => !!(g.islandUnlocked && g.islandUnlocked[2]) && !guideHasTradeCfg(g),
+  done: g => guideHasTradeCfg(g),
+  targets: [{ sel: '[data-tut="port"]', when: () => true }]
+}];
+// « Le joueur a configuré le commerce » : une CIBLE d'import (> 0) sur n'importe quelle île,
+// OU une réserve d'export (> 0) sur l'ÎLE 1. ⚠ Pas « seuilExport > 0 sur n'importe quelle île »
+// (brief) : le kickstart d'une île débloquée pose automatiquement des réserves (13.31) — le
+// critère du brief serait vrai dès le déblocage de l'île 2, sans aucune action du joueur.
+function guideHasTradeCfg(game) {
+  const tc = game.tradeConfig || {};
+  for (const isl in tc) for (const res in tc[isl]) {
+    const c = tc[isl][res] || {};
+    if ((c.stockCible || 0) > 0) return true;
+    if (+isl === 1 && (c.seuilExport || 0) > 0) return true;
+  }
+  return false;
+}
+// Objectif actif : le 1er dont `when` est vrai et qui n'est pas déjà accompli.
+function activeGuideObjective(game) {
+  if (!game.guide || game.guide.enabled === false) return null;
+  if (game.tutorial && game.tutorial.active) return null; // le tuto a la priorité
+  const done = game.guide.done || {};
+  for (const o of GUIDE_OBJECTIVES) {
+    if (o.kind === 'discover' && done[o.id]) continue;
+    let w = false, d = true;
+    try {
+      w = !!o.when(game);
+      d = !!o.done(game);
+    } catch (e) {}
+    if (w && !d) return o;
+  }
+  return null;
+}
 const GAME_TIPS = [{
   id: 'bienvenue',
   icon: '🏝️',
@@ -9243,6 +9426,7 @@ function IslandSelector({
     return React.createElement("button", {
       key: id,
       className: 'island-tab' + (id === current ? ' active' : '') + (locked ? ' locked' : ''),
+      'data-tut': 'island-' + id,
       disabled: locked,
       title: locked ? I18N.t("\xCEle ") + id + I18N.t(" verrouill\xE9e") : I18N.t("\xCEle ") + id,
       onClick: () => {
@@ -13272,6 +13456,8 @@ function OptionsModal({
   onToggleDeficitSprite,
   onToggleSimplifyOffline,
   onToggleTips,
+  guideEnabled,
+  onToggleGuide,
   onResetTips,
   onOpenSaves,
   onClose,
@@ -13447,7 +13633,7 @@ function OptionsModal({
   }, I18N.available().map(code => React.createElement("option", {
     key: code,
     value: code
-  }, I18N.names[code])))), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Production hors-ligne"), I18N.t("Rattrape la production pendant une absence. D\xE9sactiv\xE9 : le jeu ne progresse que lorsqu'il est ouvert."), offlineEnabled !== false, onToggleOffline), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Sons"), I18N.t("Effets sonores du jeu (pose, am\xE9lioration, alertes…)"), audioEnabled !== false, onToggleAudio), sliderRow(I18N.t("Volume"), I18N.t("Volume des effets sonores"), audioVolume == null ? 0.55 : audioVolume, 0, 1, 0.05, v => onSetAudioVolume && onSetAudioVolume(v), v => Math.round(v * 100) + '%'), React.createElement("button", {
+  }, I18N.names[code])))), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Production hors-ligne"), I18N.t("Rattrape la production pendant une absence. D\xE9sactiv\xE9 : le jeu ne progresse que lorsqu'il est ouvert."), offlineEnabled !== false, onToggleOffline), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Guide"), I18N.t("Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)"), guideEnabled !== false, onToggleGuide), toggleRow(I18N.t("Sons"), I18N.t("Effets sonores du jeu (pose, am\xE9lioration, alertes…)"), audioEnabled !== false, onToggleAudio), sliderRow(I18N.t("Volume"), I18N.t("Volume des effets sonores"), audioVolume == null ? 0.55 : audioVolume, 0, 1, 0.05, v => onSetAudioVolume && onSetAudioVolume(v), v => Math.round(v * 100) + '%'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onResetTips
   }, uiIcon('astuce', "💡"), I18N.t(" Revoir les astuces")), !TESTER_BUILD && toggleRow(I18N.t("Mode d\xE9veloppeur"), I18N.t("Construction et am\xE9liorations gratuites"), dev, onToggleDev, 'dev'), React.createElement("button", {
@@ -13603,18 +13789,21 @@ function TutorialBanner({
   goal,
   onSkip
 }) {
+  // total > 0 : bandeau du TUTORIEL (« Tuto x/y ») ; total === 0 : bandeau du GUIDE
+  // dynamique (« Objectif », sans compteur — les objectifs n'ont pas d'ordre fixe).
+  const isGuide = !(total > 0);
   return React.createElement("div", {
     className: "tuto-banner"
   }, React.createElement("div", {
     className: "tuto-main"
   }, React.createElement("span", {
     className: "tuto-step"
-  }, I18N.t("Tuto "), step + 1, "/", total), React.createElement("span", {
+  }, isGuide ? I18N.t("Objectif") : [I18N.t("Tuto "), step + 1, "/", total]), React.createElement("span", {
     className: "tuto-goal"
   }, goal)), React.createElement("button", {
     className: "tuto-skip",
     onClick: onSkip,
-    title: I18N.t("Passer le tutoriel et tout débloquer")
+    title: isGuide ? I18N.t("Désactiver le guide (réactivable dans les Options)") : I18N.t("Passer le tutoriel et tout débloquer")
   }, I18N.t("Passer")));
 }
 function OfflineModal({
@@ -13896,6 +14085,12 @@ function App() {
       },
       tipsSeen: {},
       tipsEnabled: true,
+      // Guide dynamique post-tutoriel : done = découvertes accomplies (one-shot, K3).
+      guide: {
+        enabled: true,
+        done: {},
+        seenIsland2: false
+      },
       audioEnabled: true,
       audioVolume: 0.55,
       mode: 'difficile',
@@ -13959,6 +14154,15 @@ function App() {
   const [tutorialStep, setTutorialStep] = useState(-1);
   // Index de la cible du halo dans l'étape courante du tutoriel (cf. TUTORIAL_STEPS.targets).
   const [tutorialTarget, setTutorialTarget] = useState(0);
+  // Guide dynamique (post-tutoriel) : objectif actif + cible du halo (cf. GUIDE_OBJECTIVES).
+  // Les refs sont les jumelles lisibles hors React (boucle rAF / draw) des states d'affichage.
+  const [guideId, setGuideId] = useState(null);
+  const [guideTarget, setGuideTarget] = useState(0);
+  const guideIdRef = useRef(null);
+  const guideObjRef = useRef(null);
+  const guideTargetRef = useRef(0);
+  const guideEvalTsRef = useRef(0);
+  const [guideEnabled, setGuideEnabled] = useState(true);
   const [researchPending, setResearchPending] = useState(false);
   const [info, setInfo] = useState(null);
   const [upgrade, setUpgrade] = useState(null);
@@ -14226,6 +14430,13 @@ function App() {
         ...g.tipsSeen
       },
       tipsEnabled: g.tipsEnabled !== false,
+      guide: g.guide ? {
+        enabled: g.guide.enabled !== false,
+        done: {
+          ...g.guide.done
+        },
+        seenIsland2: !!g.guide.seenIsland2
+      } : null,
       audio: {
         // En mode rapide, l'audio est coupé AUTOMATIQUEMENT : on persiste le CHOIX du
         // joueur (mémorisé dans _sfxPrev), pas la coupure transitoire — au rechargement
@@ -14375,7 +14586,7 @@ function App() {
     } catch (e) {
       return false;
     }
-    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].indexOf(data.version) === -1) return false;
+    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].indexOf(data.version) === -1) return false;
     const g = gameRef.current;
     // Extension des mers (v11) : les îles sont désormais entourées de SEA_PAD tuiles d'eau.
     // Les sauvegardes antérieures (coordonnées non décalées) sont translatées de +SEA_PAD.
@@ -14785,6 +14996,19 @@ function App() {
       ...data.tipsSeen
     } : {};
     g.tipsEnabled = data.tipsEnabled !== false;
+    // Guide dynamique : saves antérieures (sans champ) → défauts (guide actif, rien d'accompli).
+    // Un joueur en cours de partie voit les objectifs pertinents à son état — voulu.
+    g.guide = data.guide && typeof data.guide === 'object' ? {
+      enabled: data.guide.enabled !== false,
+      done: {
+        ...(data.guide.done || {})
+      },
+      seenIsland2: !!data.guide.seenIsland2
+    } : {
+      enabled: true,
+      done: {},
+      seenIsland2: false
+    };
     // Temps de jeu simulé (chronomètre). Saves antérieures (sans le champ) démarrent à 0.
     g.playTicks = typeof data.playTicks === 'number' && data.playTicks >= 0 ? data.playTicks : 0;
     // Le mode rapide n'est jamais restauré depuis la save : on repart en 1×.
@@ -15041,6 +15265,98 @@ function App() {
   // Affiche la prochaine astuce contextuelle si une mécanique vient d'apparaître.
   // Appelé chaque frame. Une seule astuce à la fois ; rien tant qu'une est ouverte
   // ou que la modale de choix de mode bloque le démarrage.
+  // Pilote le GUIDE DYNAMIQUE : objectif actif + avancement du halo + mémorisation des
+  // découvertes accomplies. Appelé chaque frame, juste avant checkTips().
+  // La SÉLECTION d'objectif (when/done scannent les tuiles de toutes les îles) est throttlée
+  // à ~4 Hz ; l'avancement de cible (ouverture de panneau → halo suivant) reste par frame.
+  function checkGuide() {
+    const g = gameRef.current;
+    if (!g.guide) g.guide = { enabled: true, done: {}, seenIsland2: false };
+    if (g.tutorial && g.tutorial.active) {
+      if (guideIdRef.current !== null) {
+        guideIdRef.current = null;
+        guideObjRef.current = null;
+        setGuideId(null);
+      }
+      return;
+    }
+    if (g.currentIsland === 2 && !g.guide.seenIsland2) {
+      g.guide.seenIsland2 = true;
+      scheduleSave();
+    }
+    let changed = false;
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - guideEvalTsRef.current >= 250) {
+      guideEvalTsRef.current = now;
+      // Un objectif 'discover' résolu est mémorisé DÉFINITIVEMENT (il ne reviendra pas
+      // même si le joueur démolit l'éolienne : la mécanique est acquise — K3).
+      if (g.guide.enabled !== false) for (const obj of GUIDE_OBJECTIVES) {
+        if (obj.kind === 'discover' && !g.guide.done[obj.id]) {
+          let d = false;
+          try { d = !!obj.done(g); } catch (e) {}
+          if (d) {
+            g.guide.done[obj.id] = true;
+            changed = true;
+          }
+        }
+      }
+      const o = activeGuideObjective(g);
+      guideObjRef.current = o;
+      const id = o ? o.id : null;
+      if (id !== guideIdRef.current) {
+        guideIdRef.current = id;
+        setGuideId(id);
+        guideTargetRef.current = 0;
+        setGuideTarget(0);
+        // Le tip explicatif ne s'ouvre qu'UNE fois (garde + marque tipsSeen — K7) : les
+        // réapparitions d'un correctif récurrent se contentent de la bannière + du halo.
+        if (o && o.why && g.tipsSeen && !g.tipsSeen[o.why] && g.tipsEnabled !== false && !activeTipRef.current && !needModeRef.current) {
+          g.tipsSeen[o.why] = true;
+          showTip(o.why);
+        }
+        changed = true;
+      }
+    }
+    // Avancement du halo à l'intérieur de l'objectif courant (par frame : réactif).
+    const o = guideObjRef.current;
+    if (o && o.targets) {
+      const ui = panelsRef.current;
+      let idx = 0;
+      while (idx < o.targets.length - 1 && !o.targets[idx].when(g, ui)) idx++;
+      if (idx !== guideTargetRef.current) {
+        guideTargetRef.current = idx;
+        setGuideTarget(idx);
+        markDirty();
+      }
+    }
+    if (changed) {
+      markDirty();
+      scheduleSave();
+    }
+  }
+  // « Passer » du guide : désactive le guide ENTIER (K4), réactivable dans les Options.
+  function skipGuide() {
+    const g = gameRef.current;
+    if (!g.guide) g.guide = { enabled: true, done: {}, seenIsland2: false };
+    g.guide.enabled = false;
+    guideIdRef.current = null;
+    guideObjRef.current = null;
+    setGuideId(null);
+    setGuideEnabled(false);
+    showToast(I18N.t('Guide désactivé (réactivable dans les Options).'), 'var(--ink-dim)');
+    markDirty();
+    scheduleSave();
+  }
+  function toggleGuide() {
+    const g = gameRef.current;
+    if (!g.guide) g.guide = { enabled: true, done: {}, seenIsland2: false };
+    g.guide.enabled = g.guide.enabled === false;
+    setGuideEnabled(g.guide.enabled);
+    guideEvalTsRef.current = 0; // ré-évaluation immédiate à la réactivation
+    showToast(g.guide.enabled ? I18N.t('🧭 Guide activé') : I18N.t('Guide désactivé'), 'var(--ink-dim)');
+    markDirty();
+    scheduleSave();
+  }
   function checkTips() {
     const g = gameRef.current;
     if (g.tipsEnabled === false) return;
@@ -16663,15 +16979,20 @@ function App() {
     if (showIcon) drawDeficitIcon(ctx, x, y, W, H, tile, reason);
     drawInfoBadges(ctx, x, y, W, H, tile, upg, eff);
   }
-  // Halo tuiles du tutoriel : contour pulsé sur les cibles CANVAS de l'étape courante
-  // (tg.tiles : id de bâtiment → tuiles posables ; '@upgradable' → mine/carrière Nv.1 ;
-  // 'link' → mine + port reliés par une polyligne pointillée indicative).
+  // Halo tuiles du tutoriel ET du guide dynamique : contour pulsé sur les cibles CANVAS
+  // de l'étape/objectif courant (tg.tiles : id de bâtiment → tuiles posables ;
+  // '@upgradable' → mine/carrière Nv.1 ; '@disconnected' → bâtiments hors réseau ;
+  // '@saturated' → tuiles du réseau saturé ; 'link' → mine + port + polyligne pointillée).
+  // ⚠ La garde « tutoriel actif + île 1 » ne vaut QUE pour le tutoriel : le guide opère
+  // après le tuto et sur TOUTES les îles (brief B §7/§11 — sinon panne silencieuse île 2+).
   // Ne balaie que la fenêtre visible (r0..r1, c0..c1, bornes passées par draw()) → coût négligeable.
   function drawTutorialHalo(ctx, ox, oy, tile, r0, r1, c0, c1) {
     const g = gameRef.current;
-    if (!g.tutorial || !g.tutorial.active || g.currentIsland !== 1) return;
-    const st = TUTORIAL_STEPS[g.tutorial.step];
-    const tg = st && st.targets && st.targets[g.tutorial.targetIdx || 0];
+    const tutOn = g.tutorial && g.tutorial.active;
+    if (tutOn && g.currentIsland !== 1) return;
+    const st = tutOn ? TUTORIAL_STEPS[g.tutorial.step] : guideObjRef.current;
+    const idx = tutOn ? g.tutorial.targetIdx || 0 : guideTargetRef.current;
+    const tg = st && st.targets && st.targets[idx];
     if (!tg || !tg.tiles) return;
     const pulse = 0.45 + 0.35 * Math.sin(Date.now() / 190);
     const def = curDef(),
@@ -16725,6 +17046,21 @@ function App() {
       for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
         const b = tiles[r][c].building;
         if (b && (b.id === 'mine_fer' || b.id === 'carriere') && (b.upgrade || 0) < 1) mark(r, c);
+      }
+    } else if (tg.tiles === '@disconnected') {
+      // Guide : bâtiments hors réseau (flag disc posé par le tick) de l'ÎLE COURANTE.
+      for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+        const b = tiles[r][c].building;
+        if (b && b.disc === true) mark(r, c);
+      }
+    } else if (tg.tiles === '@saturated') {
+      // Guide : tuiles des réseaux saturés de l'île courante (pas toute l'île).
+      const sat = g.netSaturated && g.netSaturated[g.currentIsland] || [];
+      if (sat.length) {
+        const set = new Set(sat);
+        for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+          if (set.has(tiles[r][c].networkId)) mark(r, c);
+        }
       }
     } else {
       // Tuiles où le bâtiment attendu est réellement posable.
@@ -17641,6 +17977,7 @@ function App() {
     // de bienvenue s'affichera naturellement à la première frame.
     if (loaded) primeTipsSeen(gameRef.current);
     setTipsEnabled(gameRef.current.tipsEnabled !== false);
+    setGuideEnabled(!gameRef.current.guide || gameRef.current.guide.enabled !== false);
     setAudioEnabled(gameRef.current.audioEnabled !== false);
     setAudioVolume(gameRef.current.audioVolume == null ? 0.55 : gameRef.current.audioVolume);
     SFX.setEnabled(gameRef.current.audioEnabled !== false);
@@ -17670,11 +18007,11 @@ function App() {
     if (!raw) showToast(I18N.t('Sélectionnez un outil en bas pour construire'), 'var(--ink)');
     bumpClock();
   }, []);
-  // Le bandeau tutoriel apparaît/disparaît -> la hauteur du canvas change : relayout.
+  // Le bandeau tutoriel OU guide apparaît/disparaît -> la hauteur du canvas change : relayout.
   useEffect(() => {
     layout();
     gameRef.current.dirty = true;
-  }, [tutorialStep >= 0]);
+  }, [tutorialStep >= 0, !!guideId]);
   // (needModeRef est synchronisé dans le corps du render, à côté de sa déclaration —
   // l'ancien useEffect ici écrasait le `true` posé synchronement par l'effet de boot.)
   useEffect(() => {
@@ -17776,6 +18113,7 @@ function App() {
       }
       g.animClock = (g.animClock || 0) + 1;
       checkTutorial();
+      checkGuide();
       checkTips();
       checkStockAlerts();
       checkEnergyAlerts();
@@ -18052,6 +18390,24 @@ function App() {
       selector: tg.sel,
       key: tg.sel
     }) : null;
+  })(), tutorialStep < 0 && guideId && (() => {
+    // Bannière du GUIDE dynamique (post-tutoriel) : réutilise TutorialBanner en mode
+    // « Objectif » (total 0). Le goal passe par I18N.t (clé ui, contrairement au tuto).
+    const o = GUIDE_OBJECTIVES.find(x => x.id === guideId);
+    return o ? React.createElement(TutorialBanner, {
+      step: 0,
+      total: 0,
+      goal: I18N.t(o.goal),
+      onSkip: skipGuide
+    }) : null;
+  })(), tutorialStep < 0 && guideId && !activeTip && (() => {
+    // Halo DOM du guide (mêmes règles que le tuto : masqué si un popup est ouvert).
+    const o = GUIDE_OBJECTIVES.find(x => x.id === guideId);
+    const tg = o && o.targets && o.targets[guideTarget];
+    return tg && tg.sel ? React.createElement(TutorialHalo, {
+      selector: tg.sel,
+      key: tg.sel
+    }) : null;
   })(), React.createElement("div", {
     ref: stageRef,
     className: 'stage' + (selMode ? ' sel' : '') + (dragging ? ' dragging' : '')
@@ -18236,6 +18592,8 @@ function App() {
     onSetBadgeScale: setBadgeScaleVal,
     onToggleSimplifyOffline: toggleSimplifyOffline,
     onToggleTips: toggleTips,
+    guideEnabled: guideEnabled,
+    onToggleGuide: toggleGuide,
     onResetTips: resetTips,
     onOpenSaves: () => {
       setOptionsOpen(false);
