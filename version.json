@@ -1,8 +1,8 @@
 {
-  "build": 241,
-  "version": "Alpha 13.60",
+  "build": 242,
+  "version": "Alpha 13.61",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #236 — Tutoriel V2 (île 1), build 241"
+  "notes": "Merge pull request #237 — Guide dynamique post-tutoriel, build 242"
 }
