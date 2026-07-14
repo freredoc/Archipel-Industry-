@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 244`, `GAME_VERSION = 'Alpha 13.63'`, `SAVE_VERSION = 21`.**
+- **État au dernier passage : `GAME_BUILD = 245`, `GAME_VERSION = 'Alpha 13.64'`, `SAVE_VERSION = 21`.**
+  Changement 13.64 : **chaleur de l'usine moteur nucléaire = 1024 kJ/s au Nv.1, ×2 par niveau.**
+  Demande utilisateur. `bld.heatEmit` de `usine_moteur_nuc` (boucle bâtiment de `tickIsland`) passe
+  de `1 × regime` (plat, quel que soit le niveau) à **`1.024 × mult × regime`** (`mult` = 2^upgrade
+  déjà en scope) → Nv.1 = 1,024 MJ/s (1024 kJ), Nv.2 = 2,048, Nv.3 = 4,096… Échelle binaire alignée
+  conduit/tour (au Nv.1 : 1 tuile de conduit V1 + 1 tour V1 suffisent pile). Le plafond de trip suit
+  automatiquement (`heatCapOf` = 60 s d'émission, dynamique) ; la fiche « Bilan chaleur » lit
+  `heatEmit` en live → rien d'autre à toucher. `SAVE_VERSION` inchangé. Validé : `node --check`
+  (7 blocs) + Chromium E2E moteur réel via `__gameRef` (2 usines forgées u0/u1 + route connectée au
+  port + câble + intrants — ⚠ l'usine consomme du PLUTONIUM (recette 13.0), pas de l'U235 — :
+  `heatEmit/regime` = 1,024 et 2,048 exacts ; 0 erreur console). Build 244→245.
   Changement 13.63 : **barre de CALIBRATION en sprite au-dessus de la centrale nucléaire.** Demande
   utilisateur. (1) **9 sprites `ui_jauge_calib_000..100`** GÉNÉRÉS (les `ui_jauge_mj_*` du pack ROTÉS à
   l'horizontale 32×8 + recoloration violette #7E57C2 — teinte HLS des pixels saturés, gris du cadre

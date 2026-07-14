@@ -5070,8 +5070,8 @@ const SAVE_VERSION = 21;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 244;
-const GAME_VERSION = 'Alpha 13.63';
+const GAME_BUILD = 245;
+const GAME_VERSION = 'Alpha 13.64';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -6766,9 +6766,10 @@ function tickIsland(game, isl) {
     bld.inFac = inFac;
     bld.inAvail = inAvail;
     bld.regime = regime;
-    // Émission de chaleur de l'usine moteur nucléaire : 1 MJ/s au régime nominal → évacuable par
+    // Émission de chaleur de l'usine moteur nucléaire : 1,024 MJ/s (1024 kJ) au Nv.1, ×2 par
+    // niveau (2048 kJ au Nv.2…) — échelle binaire alignée conduit/tour : au Nv.1, évacuable par
     // UNE ligne de conduit V1 (1,024 MJ/s/tuile) + 1 tour (1,024 MJ/s), sans splitter (bâtiment 1×1).
-    if (b.heatCap) bld.heatEmit = bld.id === 'usine_moteur_nuc' ? 1 * regime : 0;
+    if (b.heatCap) bld.heatEmit = bld.id === 'usine_moteur_nuc' ? 1.024 * mult * regime : 0;
     // Plus AUCUN intrant → arrêt franc (on saute le bâtiment). On NE saute PAS sur un déficit
     // d'élec. (pwrF bas) : le bâtiment doit rester dans energyConsumers pour que la boucle énergie
     // compte sa demande et fasse converger pwrAvg (sinon oscillation/blocage). Sa production sera
