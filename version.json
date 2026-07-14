@@ -1,8 +1,8 @@
 {
-  "build": 250,
-  "version": "Alpha 13.69",
+  "build": 251,
+  "version": "Alpha 13.70",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #243 — Alpha 13.69 : boost élec. de l'antenne dans les bornes min/max de l'onglet Énergie (build 250)"
+  "notes": "Merge pull request #244 — Alpha 13.70 : boost de vitesse et conso élec. de l'antenne ÷10 au Nv.1 (build 251)"
 }
