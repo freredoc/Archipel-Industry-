@@ -293,6 +293,19 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   border-radius:5px;padding:4px 11px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.78rem;}
 .tuto-skip:hover{border-color:var(--red);color:#ff8079;}
 @media (max-width:480px){.tuto-banner{padding:6px 9px;gap:7px;}.tuto-goal{font-size:.82rem;white-space:normal;}}
+/* Halo pulsé du tutoriel (cible DOM) — pointer-events:none : ne bloque JAMAIS le tap dessous. */
+.tut-halo{
+  position:fixed; z-index:9000; pointer-events:none;
+  border:3px solid var(--green,#4caf50); border-radius:6px;
+  box-shadow:0 0 0 2px rgba(76,175,80,.35), 0 0 14px 4px rgba(76,175,80,.55);
+  animation:tut-pulse 1.15s ease-in-out infinite;
+}
+@keyframes tut-pulse{
+  0%,100%{ opacity:.55; transform:scale(1);    }
+  50%    { opacity:1;   transform:scale(1.045); }
+}
+/* Tuto bloquant : onglets d'action non pertinents à l'étape courante (Démolir reste TOUJOURS actif). */
+.tab-btn.tab-locked{ opacity:.32; filter:grayscale(1); pointer-events:none; }
 /* Bouton Réparer (déblocage île suivante) */
 .repair-btn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;background:rgba(76,175,80,.14);
   border:1px solid #4CAF50;color:#7fd98a;border-radius:5px;padding:5px 12px;cursor:pointer;flex-shrink:0;
@@ -2181,6 +2194,100 @@ window.__SPRITE_DATA__["ui_jauge_mj_100"]="data:image/png;base64,iVBORw0KGgoAAAA
 
 /* i18n — libellés supplémentaires (catégories du menu Bâtiment + Options langue) ajoutés aux 4 langues. */
 (function(){ if(!window.I18N||!I18N.locales) return; var ADD={"en":{" (amplitude)":" (amplitude)","Infrastructure":"Infrastructure","Jonctions":"Junctions","Extraction":"Extraction","Énergie":"Energy","Fer-acier":"Iron & Steel","Ciment & béton":"Cement & Concrete","Cuivre":"Copper","Électronique":"Electronics","Plastique et chimie":"Plastics & Chemicals","Nucléaire":"Nuclear","Langue":"Language","Langue du jeu (système par défaut)":"Game language (system default)","Transit île":"Island transit","Transit archipel":"Archipelago transit","Flux entre îles":"Flows between islands","Aucun flux de transit en cours.":"No transit flow in progress.","Conso. théorique":"Theoretical consumption","Prod. théorique":"Theoretical output","Charge/Déch.":"Charge/Disch.","plein dans ":"full in ","vide dans ":"empty in ","plein":"full","vide":"empty","stable (ni charge ni décharge)":"stable (no charge/discharge)","Cible ⇒ Réserve":"Target ⇒ Reserve","OUI":"YES","NON":"NO","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"When on, editing the target also sets the reserve (one way: target ⇒ reserve) for every resource on this island"," — ce réseau produit ":" — this grid produces "," demandés":" requested"," — câble saturé : débit ":" — cable saturated: throughput ","⚡ Réseau en déficit · 0% batterie":"⚡ Grid in deficit · 0% battery"," réseaux en déficit · 0% batterie":" grids in deficit · 0% battery","nouveau":"new","Débloqué récemment — jamais sélectionné":"Recently unlocked — never selected","Mode rapide":"Fast mode","Cliquer pour accélérer / ralentir le temps de jeu":"Click to speed up / slow down game time","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"Game time runs at ×10 (sound muted). Toggle anytime via the clock.","Production hors-ligne":"Offline production","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Catches up production while you're away. Off: the game only progresses while open."," Densifier ":" Densify ","Densifier → ":"Densify → ","Densification":"Densification","Densification → ":"Densification → ","Recherche requise":"Research required","Recherche requise : ":"Research required: ","Niveau max. atteint — densifier vers ":"Max level reached — densify into ","Y aller":"Go there","Aller à cette île":"Go to this island","Astuces débloquées":"Unlocked tips","Voir l'astuce complète":"Show the full tip","Replier":"Collapse","🔒 D'autres astuces se débloqueront en progressant.":"🔒 More tips will unlock as you progress.","Aide — astuces débloquées":"Help — unlocked tips","Mettre en pause":"Pause","Reprendre la production":"Resume production","en pause (par le joueur)":"paused (by you)","en pause":"paused","production reprise":"production resumed","Relancer la production de ce bâtiment":"Restart this building's production","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Suspend this building (consumes and produces nothing)","transit":"transit","export":"export","import":"import","remplissage":"filling","en attente":"waiting","cible atteinte":"target reached","Reçu et réexpédié : ":"Received and forwarded: ","Exporte ":"Exporting ","/s vers une île voisine":"/s to a neighbouring island","Importe ":"Importing ","/s depuis une île voisine":"/s from a neighbouring island","La production locale remplit le stock vers la cible (":"Local production is filling the stock toward the target (","/s)":"/s)","Cible non atteinte et rien n'arrive : l'île voisine n'a pas de surplus à envoyer":"Target not reached and nothing incoming: the neighbouring island has no surplus to send","Le stock couvre la cible configurée":"Stock covers the configured target","Quitter":"Exit","Quitter le mode en cours":"Exit the current mode","⚠️ Aucune tour aéroréfrigérante fonctionnelle reliée par conduit — la centrale va surchauffer !":"⚠️ No working cooling tower connected by heat pipe — the plant will overheat!","/s évacués":"/s evacuated","Tuiles × débit/tuile : chaleur qui peut transiter par seconde (le conduit ne stocke rien)":"Tiles × throughput/tile: heat that can flow through per second (the duct stores nothing)","Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).":"Heat actually evacuated to the towers this tick. Red: duct saturated (upgrade its level or add tiles).","Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).":"Heat stored in the building. Cap = 1 min of emission — once reached, the building breaks down (overheat)."},"es":{" (amplitude)":" (amplitud)","Infrastructure":"Infraestructura","Jonctions":"Uniones","Extraction":"Extracción","Énergie":"Energía","Fer-acier":"Hierro y acero","Ciment & béton":"Cemento y hormigón","Cuivre":"Cobre","Électronique":"Electrónica","Plastique et chimie":"Plásticos y química","Nucléaire":"Nuclear","Langue":"Idioma","Langue du jeu (système par défaut)":"Idioma del juego (sistema por defecto)","Transit île":"Tránsito de la isla","Transit archipel":"Tránsito del archipiélago","Flux entre îles":"Flujos entre islas","Aucun flux de transit en cours.":"Ningún flujo de tránsito en curso.","Conso. théorique":"Consumo teórico","Prod. théorique":"Producción teórica","Charge/Déch.":"Carga/Desc.","plein dans ":"lleno en ","vide dans ":"vacío en ","plein":"lleno","vide":"vacío","stable (ni charge ni décharge)":"estable (sin carga/descarga)","Cible ⇒ Réserve":"Objetivo ⇒ Reserva","OUI":"SÍ","NON":"NO","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"Cuando está activado, editar el objetivo también fija la reserva (un solo sentido: objetivo ⇒ reserva) para todos los recursos de esta isla"," — ce réseau produit ":" — esta red produce "," demandés":" solicitados"," — câble saturé : débit ":" — cable saturado: caudal ","⚡ Réseau en déficit · 0% batterie":"⚡ Red en déficit · 0% batería"," réseaux en déficit · 0% batterie":" redes en déficit · 0% batería","nouveau":"nuevo","Débloqué récemment — jamais sélectionné":"Desbloqueado hace poco — nunca seleccionado","Mode rapide":"Modo rápido","Cliquer pour accélérer / ralentir le temps de jeu":"Pulsa para acelerar / ralentizar el tiempo de juego","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"El tiempo de juego corre a ×10 (sonido silenciado). Conmutable en cualquier momento con el reloj.","Production hors-ligne":"Producción sin conexión","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Recupera la producción durante una ausencia. Desactivado: el juego solo avanza mientras está abierto."," Densifier ":" Densificar ","Densifier → ":"Densificar → ","Densification":"Densificación","Densification → ":"Densificación → ","Recherche requise":"Investigación necesaria","Recherche requise : ":"Investigación necesaria: ","Niveau max. atteint — densifier vers ":"Nivel máx. alcanzado — densificar hacia ","Y aller":"Ir allí","Aller à cette île":"Ir a esta isla","Astuces débloquées":"Consejos desbloqueados","Voir l'astuce complète":"Ver el consejo completo","Replier":"Plegar","🔒 D'autres astuces se débloqueront en progressant.":"🔒 Se desbloquearán más consejos a medida que avances.","Aide — astuces débloquées":"Ayuda — consejos desbloqueados","Mettre en pause":"Pausar","Reprendre la production":"Reanudar la producción","en pause (par le joueur)":"en pausa (por el jugador)","en pause":"en pausa","production reprise":"producción reanudada","Relancer la production de ce bâtiment":"Reiniciar la producción de este edificio","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Suspender este edificio (no consume ni produce nada)","transit":"tránsito","export":"exportación","import":"importación","remplissage":"llenado","en attente":"en espera","cible atteinte":"objetivo alcanzado","Reçu et réexpédié : ":"Recibido y reexpedido: ","Exporte ":"Exporta ","/s vers une île voisine":"/s hacia una isla vecina","Importe ":"Importa ","/s depuis une île voisine":"/s desde una isla vecina","La production locale remplit le stock vers la cible (":"La producción local llena el stock hacia el objetivo (","/s)":"/s)","Cible non atteinte et rien n'arrive : l'île voisine n'a pas de surplus à envoyer":"Objetivo no alcanzado y no llega nada: la isla vecina no tiene excedente que enviar","Le stock couvre la cible configurée":"El stock cubre el objetivo configurado","Quitter":"Salir","Quitter le mode en cours":"Salir del modo actual","⚠️ Aucune tour aéroréfrigérante fonctionnelle reliée par conduit — la centrale va surchauffer !":"⚠️ Ninguna torre de refrigeración funcional conectada por conducto — ¡la central se sobrecalentará!","/s évacués":"/s evacuados","Tuiles × débit/tuile : chaleur qui peut transiter par seconde (le conduit ne stocke rien)":"Casillas × caudal/casilla: calor que puede transitar por segundo (el conducto no almacena nada)","Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).":"Calor realmente evacuado hacia las torres este tick. Rojo: conducto saturado (mejora el nivel o añade casillas).","Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).":"Calor almacenado en el edificio. Límite = 1 min de emisión — al alcanzarlo, el edificio se avería (sobrecalentamiento)."},"de":{" (amplitude)":" (Amplitude)","Infrastructure":"Infrastruktur","Jonctions":"Kreuzungen","Extraction":"Förderung","Énergie":"Energie","Fer-acier":"Eisen & Stahl","Ciment & béton":"Zement & Beton","Cuivre":"Kupfer","Électronique":"Elektronik","Plastique et chimie":"Kunststoff & Chemie","Nucléaire":"Nuklear","Langue":"Sprache","Langue du jeu (système par défaut)":"Spielsprache (System-Standard)","Transit île":"Insel-Transit","Transit archipel":"Archipel-Transit","Flux entre îles":"Flüsse zwischen Inseln","Aucun flux de transit en cours.":"Kein Transitfluss aktiv.","Conso. théorique":"Theoret. Verbrauch","Prod. théorique":"Theoret. Leistung","Charge/Déch.":"Laden/Entl.","plein dans ":"voll in ","vide dans ":"leer in ","plein":"voll","vide":"leer","stable (ni charge ni décharge)":"stabil (kein Laden/Entladen)","Cible ⇒ Réserve":"Ziel ⇒ Reserve","OUI":"JA","NON":"NEIN","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"Wenn aktiv, setzt das Bearbeiten des Ziels auch die Reserve (nur eine Richtung: Ziel ⇒ Reserve) für alle Ressourcen dieser Insel"," — ce réseau produit ":" — dieses Netz erzeugt "," demandés":" angefordert"," — câble saturé : débit ":" — Kabel ausgelastet: Durchsatz ","⚡ Réseau en déficit · 0% batterie":"⚡ Netz im Defizit · 0% Batterie"," réseaux en déficit · 0% batterie":" Netze im Defizit · 0% Batterie","nouveau":"neu","Débloqué récemment — jamais sélectionné":"Kürzlich freigeschaltet — nie ausgewählt","Mode rapide":"Schnellmodus","Cliquer pour accélérer / ralentir le temps de jeu":"Klicken, um die Spielzeit zu beschleunigen / verlangsamen","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"Die Spielzeit läuft mit ×10 (Ton aus). Jederzeit über die Uhr umschaltbar.","Production hors-ligne":"Offline-Produktion","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Holt die Produktion während einer Abwesenheit nach. Aus: Das Spiel läuft nur, solange es geöffnet ist."," Densifier ":" Verdichten ","Densifier → ":"Verdichten → ","Densification":"Verdichtung","Densification → ":"Verdichtung → ","Recherche requise":"Forschung erforderlich","Recherche requise : ":"Forschung erforderlich: ","Niveau max. atteint — densifier vers ":"Max. Stufe erreicht — verdichten zu ","Y aller":"Dorthin","Aller à cette île":"Zu dieser Insel wechseln","Astuces débloquées":"Freigeschaltete Tipps","Voir l'astuce complète":"Vollständigen Tipp anzeigen","Replier":"Einklappen","🔒 D'autres astuces se débloqueront en progressant.":"🔒 Weitere Tipps werden im Spielverlauf freigeschaltet.","Aide — astuces débloquées":"Hilfe — freigeschaltete Tipps","Mettre en pause":"Pausieren","Reprendre la production":"Produktion fortsetzen","en pause (par le joueur)":"pausiert (vom Spieler)","en pause":"pausiert","production reprise":"Produktion fortgesetzt","Relancer la production de ce bâtiment":"Produktion dieses Gebäudes wieder starten","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Gebäude anhalten (verbraucht und produziert nichts mehr)","transit":"Transit","export":"Export","import":"Import","remplissage":"Auffüllen","en attente":"wartet","cible atteinte":"Ziel erreicht","Reçu et réexpédié : ":"Empfangen und weitergeleitet: ","Exporte ":"Exportiert ","/s vers une île voisine":"/s zu einer Nachbarinsel","Importe ":"Importiert ","/s depuis une île voisine":"/s von einer Nachbarinsel","La production locale remplit le stock vers la cible (":"Die lokale Produktion füllt den Bestand Richtung Ziel (","/s)":"/s)","Cible non atteinte et rien n'arrive : l'île voisine n'a pas de surplus à envoyer":"Ziel nicht erreicht und nichts kommt an: die Nachbarinsel hat keinen Überschuss zu senden","Le stock couvre la cible configurée":"Der Bestand deckt das konfigurierte Ziel","Quitter":"Beenden","Quitter le mode en cours":"Aktuellen Modus beenden","⚠️ Aucune tour aéroréfrigérante fonctionnelle reliée par conduit — la centrale va surchauffer !":"⚠️ Kein funktionierender Kühlturm per Leitung verbunden — das Kraftwerk wird überhitzen!","/s évacués":"/s abgeführt","Tuiles × débit/tuile : chaleur qui peut transiter par seconde (le conduit ne stocke rien)":"Felder × Durchsatz/Feld: Wärme, die pro Sekunde durchfließen kann (die Leitung speichert nichts)","Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).":"Tatsächlich zu den Türmen abgeführte Wärme in diesem Tick. Rot: Leitung ausgelastet (Stufe erhöhen oder Felder hinzufügen).","Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).":"Im Gebäude gespeicherte Wärme. Limit = 1 Min. Emission — bei Erreichen fällt das Gebäude aus (Überhitzung)."}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+
+/* i18n — TUTORIEL V2 : les 8 objectifs (REMPLACENT les 7 anciens, l'ordre a changé), les 8
+   popups « pourquoi » (tips tut_*) et les toasts de franchissement, dans les 4 langues.
+   ⚠️ L.tutorial est REMPLACÉ en bloc (pas fusionné) : applyToData réécrit les goals par index. */
+(function(){ if(!window.I18N||!I18N.locales) return;
+var TUT={
+"fr":{
+ tutorial:{"0":"Pose une mine de fer sur un gisement de fer.","1":"Relie la mine au port avec une route.","2":"Pose une carrière et relie-la au port.","3":"Améliore la mine et la carrière au niveau 2.","4":"Pose une mine de charbon et relie-la au port.","5":"Pose un four à fer et relie-le au port.","6":"Pose une cimenterie et relie-la au port.","7":"Ouvre la Recherche et valide ton premier nœud."},
+ tips:{
+  "tut_mine":{"title":"Le sol, la source de tout","body":["Tout part du sol. Une <b>mine de fer</b> ne peut se poser QUE sur un <b>gisement de fer</b> — les tuiles qui clignotent en vert.","Elle extrait du minerai en continu, sans intrant et sans électricité. C'est ton point de départ."]},
+  "tut_route":{"title":"Rien ne circule tout seul","body":["Ta mine extrait… mais le minerai <b>reste sur place</b>. Il faut une <b>route</b> pour l'acheminer.","Le <b>port</b> est l'entrepôt de l'île : <b>tout y arrive et tout en repart</b>. Un bâtiment non relié au port ne reçoit rien et ne livre rien.","Relie la mine au port, puis regarde ton stock monter."]},
+  "tut_carriere":{"title":"La pierre, partout","body":["La <b>carrière</b> n'a pas besoin de gisement : elle se pose sur n'importe quelle tuile libre.","La pierre est la base du <b>ciment</b>, donc de toute construction avancée. Il t'en faudra beaucoup."]},
+  "tut_ameliorer":{"title":"Ta ressource la plus rare : le sol","body":["Les îles sont <b>petites</b>. L'espace au sol, pas les ressources, est ta vraie contrainte.","<b>Améliorer</b> un bâtiment le monte d'un niveau : <b>même tuile, production doublée</b>. C'est le cœur de toute la progression du jeu.","Sélectionne le mode <b>⬆ Améliorer</b>, touche un bâtiment, confirme."]},
+  "tut_charbon":{"title":"Le charbon est un carburant","body":["Le <b>charbon</b> ne sert à rien seul : c'est un <b>combustible</b>.","Il alimentera ton four à fer, puis tes centrales électriques. Sans lui, rien ne brûle et rien ne fond."]},
+  "tut_four":{"title":"Transformer : le port fait le lien","body":["Le <b>four à fer</b> consomme <b>minerai + charbon</b> et produit du <b>lingot de fer</b>. Ta première transformation.","Point clé : le four prend ses intrants <b>AU PORT</b> et y renvoie sa production. Il n'a pas besoin d'être collé à la mine — mais <b>sans route jusqu'au port, il ne reçoit rien</b>.","Tous tes bâtiments fonctionnent ainsi : le port est le carrefour de tout."]},
+  "tut_ciment":{"title":"Le ciment, base de tout","body":["La <b>cimenterie</b> transforme la pierre en <b>ciment</b>.","Le ciment entre dans presque toutes les constructions avancées. Avec lui, tu as de quoi lancer ta première recherche."]},
+  "tut_recherche":{"title":"Voilà pourquoi tu livres","body":["C'est <b>ça</b>, le but de tout ce que tu accumules au port.","Chaque <b>nœud de recherche</b> consomme des ressources livrées et débloque de <b>nouveaux bâtiments</b> — ou une <b>nouvelle île</b>.","Ouvre le panneau <b>🔬 Recherche</b>, repère le nœud en jaune, et valide-le. La partie commence vraiment."]}
+ },
+ ui:{}
+},
+"en":{
+ tutorial:{"0":"Place an iron mine on an iron deposit.","1":"Connect the mine to the port with a road.","2":"Place a quarry and connect it to the port.","3":"Upgrade the mine and the quarry to level 2.","4":"Place a coal mine and connect it to the port.","5":"Place an iron furnace and connect it to the port.","6":"Place a cement plant and connect it to the port.","7":"Open Research and confirm your first node."},
+ tips:{
+  "tut_mine":{"title":"The ground, the source of everything","body":["Everything starts from the ground. An <b>iron mine</b> can ONLY be placed on an <b>iron deposit</b> — the tiles pulsing in green.","It extracts ore continuously, with no inputs and no electricity. It's your starting point."]},
+  "tut_route":{"title":"Nothing moves on its own","body":["Your mine is extracting… but the ore <b>stays put</b>. You need a <b>road</b> to move it.","The <b>port</b> is the island's warehouse: <b>everything arrives there and everything leaves from there</b>. A building not connected to the port receives nothing and delivers nothing.","Connect the mine to the port, then watch your stock grow."]},
+  "tut_carriere":{"title":"Stone, everywhere","body":["The <b>quarry</b> needs no deposit: it can be placed on any free tile.","Stone is the basis of <b>cement</b>, and thus of every advanced construction. You'll need a lot of it."]},
+  "tut_ameliorer":{"title":"Your scarcest resource: land","body":["The islands are <b>small</b>. Ground space, not resources, is your real constraint.","<b>Upgrading</b> a building raises it one level: <b>same tile, double the output</b>. It's the heart of the whole game's progression.","Select the <b>⬆ Upgrade</b> mode, tap a building, confirm."]},
+  "tut_charbon":{"title":"Coal is a fuel","body":["<b>Coal</b> is useless on its own: it's a <b>fuel</b>.","It will feed your iron furnace, then your power plants. Without it, nothing burns and nothing melts."]},
+  "tut_four":{"title":"Transforming: the port is the link","body":["The <b>iron furnace</b> consumes <b>ore + coal</b> and produces <b>iron ingots</b>. Your first transformation.","Key point: the furnace takes its inputs <b>FROM THE PORT</b> and sends its output back there. It doesn't need to sit next to the mine — but <b>without a road to the port, it receives nothing</b>.","All your buildings work this way: the port is the hub of everything."]},
+  "tut_ciment":{"title":"Cement, the basis of everything","body":["The <b>cement plant</b> turns stone into <b>cement</b>.","Cement goes into almost every advanced construction. With it, you have what it takes to launch your first research."]},
+  "tut_recherche":{"title":"This is why you deliver","body":["<b>This</b> is what everything you stockpile at the port is for.","Each <b>research node</b> consumes delivered resources and unlocks <b>new buildings</b> — or a <b>new island</b>.","Open the <b>🔬 Research</b> panel, spot the node in yellow, and confirm it. The game truly begins."]}
+ },
+ ui:{
+  "✅ La mine extrait — mais le minerai reste sur place. Il lui faut une route.":"✅ The mine is extracting — but the ore stays put. It needs a road.",
+  "✅ Le minerai arrive au port. Regarde ton stock monter.":"✅ The ore reaches the port. Watch your stock grow.",
+  "✅ Deux extracteurs alimentent ton port.":"✅ Two extractors are feeding your port.",
+  "✅ Même tuile, production doublée. C'est le cœur de la progression.":"✅ Same tile, double the output. That's the heart of progression.",
+  "✅ Du charbon au port. Il ne sert à rien seul — il faut le brûler.":"✅ Coal at the port. It's useless on its own — it has to be burned.",
+  "✅ Ton four fabrique des lingots. Tu transformes, tu ne fais plus qu'extraire.":"✅ Your furnace makes ingots. You're transforming now, not just extracting.",
+  "✅ Du ciment. Tu as tout ce qu'il faut pour ta première recherche.":"✅ Cement. You have everything you need for your first research.",
+  "🎓 Tu tiens la boucle : extraire → acheminer → transformer → livrer → chercher.":"🎓 You've got the loop: extract → route → transform → deliver → research."
+ }
+},
+"es":{
+ tutorial:{"0":"Coloca una mina de hierro sobre un yacimiento de hierro.","1":"Conecta la mina al puerto con una carretera.","2":"Coloca una cantera y conéctala al puerto.","3":"Mejora la mina y la cantera al nivel 2.","4":"Coloca una mina de carbón y conéctala al puerto.","5":"Coloca un horno de hierro y conéctalo al puerto.","6":"Coloca una cementera y conéctala al puerto.","7":"Abre la Investigación y valida tu primer nodo."},
+ tips:{
+  "tut_mine":{"title":"El suelo, la fuente de todo","body":["Todo parte del suelo. Una <b>mina de hierro</b> SOLO puede colocarse sobre un <b>yacimiento de hierro</b> — las casillas que parpadean en verde.","Extrae mineral de forma continua, sin insumos y sin electricidad. Es tu punto de partida."]},
+  "tut_route":{"title":"Nada circula por sí solo","body":["Tu mina extrae… pero el mineral <b>se queda en el sitio</b>. Hace falta una <b>carretera</b> para transportarlo.","El <b>puerto</b> es el almacén de la isla: <b>todo llega allí y todo sale de allí</b>. Un edificio no conectado al puerto no recibe ni entrega nada.","Conecta la mina al puerto y mira cómo sube tu stock."]},
+  "tut_carriere":{"title":"La piedra, en todas partes","body":["La <b>cantera</b> no necesita yacimiento: se coloca en cualquier casilla libre.","La piedra es la base del <b>cemento</b> y, por tanto, de toda construcción avanzada. Necesitarás mucha."]},
+  "tut_ameliorer":{"title":"Tu recurso más escaso: el suelo","body":["Las islas son <b>pequeñas</b>. El espacio en el suelo, no los recursos, es tu verdadera limitación.","<b>Mejorar</b> un edificio lo sube un nivel: <b>misma casilla, producción duplicada</b>. Es el corazón de toda la progresión del juego.","Selecciona el modo <b>⬆ Mejorar</b>, toca un edificio y confirma."]},
+  "tut_charbon":{"title":"El carbón es un combustible","body":["El <b>carbón</b> no sirve de nada solo: es un <b>combustible</b>.","Alimentará tu horno de hierro y luego tus centrales eléctricas. Sin él, nada arde y nada se funde."]},
+  "tut_four":{"title":"Transformar: el puerto es el enlace","body":["El <b>horno de hierro</b> consume <b>mineral + carbón</b> y produce <b>lingotes de hierro</b>. Tu primera transformación.","Punto clave: el horno toma sus insumos <b>DEL PUERTO</b> y devuelve allí su producción. No necesita estar pegado a la mina — pero <b>sin carretera hasta el puerto, no recibe nada</b>.","Todos tus edificios funcionan así: el puerto es el cruce de todo."]},
+  "tut_ciment":{"title":"El cemento, base de todo","body":["La <b>cementera</b> transforma la piedra en <b>cemento</b>.","El cemento entra en casi todas las construcciones avanzadas. Con él tienes lo necesario para lanzar tu primera investigación."]},
+  "tut_recherche":{"title":"Para esto entregas","body":["<b>Esto</b> es el objetivo de todo lo que acumulas en el puerto.","Cada <b>nodo de investigación</b> consume recursos entregados y desbloquea <b>nuevos edificios</b> — o una <b>nueva isla</b>.","Abre el panel <b>🔬 Investigación</b>, localiza el nodo en amarillo y valídalo. La partida empieza de verdad."]}
+ },
+ ui:{
+  "✅ La mine extrait — mais le minerai reste sur place. Il lui faut une route.":"✅ La mina extrae — pero el mineral se queda en el sitio. Necesita una carretera.",
+  "✅ Le minerai arrive au port. Regarde ton stock monter.":"✅ El mineral llega al puerto. Mira cómo sube tu stock.",
+  "✅ Deux extracteurs alimentent ton port.":"✅ Dos extractores alimentan tu puerto.",
+  "✅ Même tuile, production doublée. C'est le cœur de la progression.":"✅ Misma casilla, producción duplicada. Es el corazón de la progresión.",
+  "✅ Du charbon au port. Il ne sert à rien seul — il faut le brûler.":"✅ Carbón en el puerto. No sirve de nada solo — hay que quemarlo.",
+  "✅ Ton four fabrique des lingots. Tu transformes, tu ne fais plus qu'extraire.":"✅ Tu horno fabrica lingotes. Ya transformas, no solo extraes.",
+  "✅ Du ciment. Tu as tout ce qu'il faut pour ta première recherche.":"✅ Cemento. Tienes todo lo necesario para tu primera investigación.",
+  "🎓 Tu tiens la boucle : extraire → acheminer → transformer → livrer → chercher.":"🎓 Ya dominas el ciclo: extraer → transportar → transformar → entregar → investigar."
+ }
+},
+"de":{
+ tutorial:{"0":"Platziere eine Eisenmine auf einem Eisenvorkommen.","1":"Verbinde die Mine mit einer Straße zum Hafen.","2":"Platziere einen Steinbruch und verbinde ihn mit dem Hafen.","3":"Verbessere die Mine und den Steinbruch auf Stufe 2.","4":"Platziere eine Kohlemine und verbinde sie mit dem Hafen.","5":"Platziere einen Eisenofen und verbinde ihn mit dem Hafen.","6":"Platziere ein Zementwerk und verbinde es mit dem Hafen.","7":"Öffne die Forschung und bestätige deinen ersten Knoten."},
+ tips:{
+  "tut_mine":{"title":"Der Boden, die Quelle von allem","body":["Alles beginnt im Boden. Eine <b>Eisenmine</b> kann NUR auf einem <b>Eisenvorkommen</b> stehen — die grün pulsierenden Felder.","Sie fördert ununterbrochen Erz, ohne Eingänge und ohne Strom. Das ist dein Ausgangspunkt."]},
+  "tut_route":{"title":"Nichts bewegt sich von allein","body":["Deine Mine fördert… aber das Erz <b>bleibt liegen</b>. Du brauchst eine <b>Straße</b>, um es zu transportieren.","Der <b>Hafen</b> ist das Lager der Insel: <b>alles kommt dort an und alles geht von dort ab</b>. Ein Gebäude ohne Verbindung zum Hafen erhält nichts und liefert nichts.","Verbinde die Mine mit dem Hafen und sieh zu, wie dein Bestand wächst."]},
+  "tut_carriere":{"title":"Stein, überall","body":["Der <b>Steinbruch</b> braucht kein Vorkommen: Er lässt sich auf jedem freien Feld platzieren.","Stein ist die Grundlage von <b>Zement</b> und damit jeder fortgeschrittenen Konstruktion. Du wirst viel davon brauchen."]},
+  "tut_ameliorer":{"title":"Deine knappste Ressource: der Boden","body":["Die Inseln sind <b>klein</b>. Der Platz am Boden, nicht die Rohstoffe, ist deine wahre Grenze.","Ein Gebäude zu <b>verbessern</b> hebt es eine Stufe an: <b>gleiches Feld, doppelte Produktion</b>. Das ist der Kern des gesamten Spielfortschritts.","Wähle den Modus <b>⬆ Verbessern</b>, tippe auf ein Gebäude, bestätige."]},
+  "tut_charbon":{"title":"Kohle ist ein Brennstoff","body":["<b>Kohle</b> nützt allein nichts: Sie ist ein <b>Brennstoff</b>.","Sie versorgt deinen Eisenofen und später deine Kraftwerke. Ohne sie brennt nichts und schmilzt nichts."]},
+  "tut_four":{"title":"Verarbeiten: der Hafen verbindet","body":["Der <b>Eisenofen</b> verbraucht <b>Erz + Kohle</b> und erzeugt <b>Eisenbarren</b>. Deine erste Verarbeitung.","Wichtig: Der Ofen bezieht seine Eingänge <b>VOM HAFEN</b> und liefert seine Produktion dorthin zurück. Er muss nicht neben der Mine stehen — aber <b>ohne Straße zum Hafen erhält er nichts</b>.","Alle deine Gebäude funktionieren so: Der Hafen ist der Knotenpunkt von allem."]},
+  "tut_ciment":{"title":"Zement, die Basis von allem","body":["Das <b>Zementwerk</b> verwandelt Stein in <b>Zement</b>.","Zement steckt in fast jeder fortgeschrittenen Konstruktion. Damit hast du alles für deine erste Forschung."]},
+  "tut_recherche":{"title":"Dafür lieferst du","body":["<b>Das</b> ist das Ziel von allem, was du im Hafen ansammelst.","Jeder <b>Forschungsknoten</b> verbraucht gelieferte Ressourcen und schaltet <b>neue Gebäude</b> frei — oder eine <b>neue Insel</b>.","Öffne das <b>🔬 Forschung</b>-Panel, finde den gelben Knoten und bestätige ihn. Das Spiel beginnt erst richtig."]}
+ },
+ ui:{
+  "✅ La mine extrait — mais le minerai reste sur place. Il lui faut une route.":"✅ Die Mine fördert — aber das Erz bleibt liegen. Sie braucht eine Straße.",
+  "✅ Le minerai arrive au port. Regarde ton stock monter.":"✅ Das Erz erreicht den Hafen. Sieh zu, wie dein Bestand wächst.",
+  "✅ Deux extracteurs alimentent ton port.":"✅ Zwei Förderer versorgen deinen Hafen.",
+  "✅ Même tuile, production doublée. C'est le cœur de la progression.":"✅ Gleiches Feld, doppelte Produktion. Das ist der Kern des Fortschritts.",
+  "✅ Du charbon au port. Il ne sert à rien seul — il faut le brûler.":"✅ Kohle im Hafen. Allein nützt sie nichts — sie muss verbrannt werden.",
+  "✅ Ton four fabrique des lingots. Tu transformes, tu ne fais plus qu'extraire.":"✅ Dein Ofen stellt Barren her. Du verarbeitest jetzt, statt nur zu fördern.",
+  "✅ Du ciment. Tu as tout ce qu'il faut pour ta première recherche.":"✅ Zement. Du hast alles für deine erste Forschung.",
+  "🎓 Tu tiens la boucle : extraire → acheminer → transformer → livrer → chercher.":"🎓 Du beherrschst den Kreislauf: fördern → transportieren → verarbeiten → liefern → forschen."
+ }
+}};
+for(var code in TUT){ var L=I18N.locales[code]; if(!L) continue; var m=TUT[code];
+  L.tutorial=m.tutorial; // REMPLACEMENT en bloc (l'ordre des étapes a changé)
+  L.tips=L.tips||{}; for(var t in m.tips) L.tips[t]=m.tips[t];
+  L.ui=L.ui||{}; for(var k in m.ui) if(!L.ui[k]) L.ui[k]=m.ui[k];
+} })();
 </script>
 <script>
 const {
@@ -4884,12 +4991,12 @@ function ensureSlotsInitialized() {
   }
   return active;
 }
-const SAVE_VERSION = 19;
+const SAVE_VERSION = 20;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 240;
-const GAME_VERSION = 'Alpha 13.59';
+const GAME_BUILD = 241;
+const GAME_VERSION = 'Alpha 13.60';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7375,34 +7482,111 @@ function tutConnected(game, isl, id) {
   }
   return false;
 }
+// TUTORIEL V2 — 8 étapes guidées (halo + popups « pourquoi » + tuto bloquant).
+// Chaque étape : { reveal, goal, why, targets[], done, afterToast }
+//  - reveal     : bâtiments révélés dans le menu (cumulatif, cf. tutorialRevealedSet)
+//  - goal       : texte de la bannière (i18n via LOCALES.<lang>.tutorial[i])
+//  - why        : id du tip « pourquoi » ouvert à l'ENTRÉE de l'étape (cf. GAME_TIPS)
+//  - targets    : séquence de cibles du halo. La machine s'arrête sur la PREMIÈRE cible
+//                 dont `when(g, ui)` est VRAI (les cibles déjà « faites » sont sautées).
+//                 Deux formes :
+//                   { sel: '<css selector>', when: (g, ui) => bool }   → halo DOM
+//                   { tiles: '<id bâtiment>' | 'link' | '@upgradable', when: … } → halo canvas
+//                 `ui` = { buildOpen, netOpen, upOpen, researchOpen } (miroir panelsRef —
+//                 ces états React ne sont PAS dans `g`, cf. App).
+//  - done       : condition de passage à l'étape suivante
+//  - afterToast : feedback affiché au franchissement (ferme la boucle mentale)
 const TUTORIAL_STEPS = [{
   reveal: ['mine_fer'],
-  goal: 'Posez une mine de fer sur un gisement de fer.',
-  done: g => tutCount(g, 1, 'mine_fer') >= 1
-}, {
-  reveal: ['carriere'],
-  goal: 'Posez une carrière sur une tuile.',
-  done: g => tutCount(g, 1, 'carriere') >= 1
+  goal: 'Pose une mine de fer sur un gisement de fer.',
+  why: 'tut_mine',
+  targets: [
+    { sel: '.tab-build',            when: (g, ui) => !ui.buildOpen && g.ui.tool !== 'mine_fer' },
+    { sel: '[data-tut="mine_fer"]', when: g => g.ui.tool !== 'mine_fer' },
+    { tiles: 'mine_fer',            when: () => true }
+  ],
+  done: g => tutCount(g, 1, 'mine_fer') >= 1,
+  afterToast: '✅ La mine extrait — mais le minerai reste sur place. Il lui faut une route.'
 }, {
   reveal: ['road'],
-  goal: 'Reliez la mine et la carrière au port avec des routes.',
-  done: g => tutConnected(g, 1, 'mine_fer') && tutConnected(g, 1, 'carriere')
+  goal: 'Relie la mine au port avec une route.',
+  why: 'tut_route',
+  targets: [
+    { sel: '.tab-net',          when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' },
+    { sel: '[data-tut="road"]', when: g => g.ui.tool !== 'road' },
+    { tiles: 'link',            when: () => true }
+  ],
+  done: g => tutConnected(g, 1, 'mine_fer'),
+  afterToast: '✅ Le minerai arrive au port. Regarde ton stock monter.'
+}, {
+  reveal: ['carriere'],
+  goal: 'Pose une carrière et relie-la au port.',
+  why: 'tut_carriere',
+  targets: [
+    { sel: '.tab-build',            when: (g, ui) => !ui.buildOpen && g.ui.tool !== 'carriere' },
+    { sel: '[data-tut="carriere"]', when: g => g.ui.tool !== 'carriere' },
+    { tiles: 'carriere',            when: () => true }
+  ],
+  done: g => tutConnected(g, 1, 'carriere'),
+  afterToast: '✅ Deux extracteurs alimentent ton port.'
 }, {
   reveal: [],
-  goal: 'Améliorez la mine et la carrière au niveau 2.',
-  done: g => tutAllUpgraded(g, 1, ['mine_fer', 'carriere'], 1)
+  goal: 'Améliore la mine et la carrière au niveau 2.',
+  why: 'tut_ameliorer',
+  targets: [
+    { sel: '.tab-upg',             when: g => g.ui.tool !== UPGRADE },
+    { tiles: '@upgradable',        when: (g, ui) => !ui.upOpen },
+    { sel: '[data-tut="upgrade"]', when: () => true }
+  ],
+  done: g => tutAllUpgraded(g, 1, ['mine_fer', 'carriere'], 1),
+  afterToast: '✅ Même tuile, production doublée. C\'est le cœur de la progression.'
 }, {
   reveal: ['mine_charbon'],
-  goal: 'Posez une mine de charbon et reliez-la au port.',
-  done: g => tutConnected(g, 1, 'mine_charbon')
+  goal: 'Pose une mine de charbon et relie-la au port.',
+  why: 'tut_charbon',
+  targets: [
+    { sel: '.tab-build',                when: (g, ui) => !ui.buildOpen && g.ui.tool !== 'mine_charbon' },
+    { sel: '[data-tut="mine_charbon"]', when: g => g.ui.tool !== 'mine_charbon' },
+    { tiles: 'mine_charbon',            when: () => true }
+  ],
+  done: g => tutConnected(g, 1, 'mine_charbon'),
+  afterToast: '✅ Du charbon au port. Il ne sert à rien seul — il faut le brûler.'
 }, {
   reveal: ['four_fer'],
-  goal: 'Posez un four à fer et reliez-le au port.',
-  done: g => tutConnected(g, 1, 'four_fer')
+  goal: 'Pose un four à fer et relie-le au port.',
+  why: 'tut_four',
+  targets: [
+    { sel: '.tab-build',            when: (g, ui) => !ui.buildOpen && g.ui.tool !== 'four_fer' },
+    { sel: '[data-tut="four_fer"]', when: g => g.ui.tool !== 'four_fer' },
+    { tiles: 'four_fer',            when: () => true }
+  ],
+  done: g => tutConnected(g, 1, 'four_fer'),
+  afterToast: '✅ Ton four fabrique des lingots. Tu transformes, tu ne fais plus qu\'extraire.'
 }, {
   reveal: ['cimenterie'],
-  goal: 'Posez une cimenterie et reliez-la au port.',
-  done: g => tutConnected(g, 1, 'cimenterie')
+  goal: 'Pose une cimenterie et relie-la au port.',
+  why: 'tut_ciment',
+  targets: [
+    { sel: '.tab-build',              when: (g, ui) => !ui.buildOpen && g.ui.tool !== 'cimenterie' },
+    { sel: '[data-tut="cimenterie"]', when: g => g.ui.tool !== 'cimenterie' },
+    { tiles: 'cimenterie',            when: () => true }
+  ],
+  done: g => tutConnected(g, 1, 'cimenterie'),
+  afterToast: '✅ Du ciment. Tu as tout ce qu\'il faut pour ta première recherche.'
+}, {
+  reveal: [],
+  goal: 'Ouvre la Recherche et valide ton premier nœud.',
+  why: 'tut_recherche',
+  targets: [
+    { sel: '[data-tut="research"]', when: (g, ui) => !ui.researchOpen },
+    { sel: '[data-tut="confirm"]',  when: () => true }
+  ],
+  done: g => {
+    const ns = (g.techTree && g.techTree.nodes) || [];
+    for (const n of ns) if (n.id !== 1 && n.status === 'confirmed') return true;
+    return false;
+  },
+  afterToast: '🎓 Tu tiens la boucle : extraire → acheminer → transformer → livrer → chercher.'
 }];
 // Productions « nucléaires » de la centrale (4 options, mêmes ratios) : les 3 matériaux irradiés
 // (consomment leur base au port) + le PLUTONIUM (produit sans matériau de base — combustible du
@@ -8260,6 +8444,57 @@ const GAME_TIPS = [{
   title: 'Bienvenue sur l\'archipel',
   body: ['Votre but : <b>extraire</b> des ressources, les <b>acheminer</b> au port par des réseaux, les <b>transformer</b> en produits, puis <b>livrer</b> et <b>chercher</b> pour débloquer de nouveaux bâtiments et de nouvelles îles.', 'Le bandeau en haut vous guide pas à pas pour vos premières constructions.', 'Trois réseaux relient tout : la <b>route</b> (solides), le <b>tuyau</b> (liquides) et le <b>câble</b> (électricité).'],
   when: () => true
+}, {
+  // ── Popups « pourquoi » du tutoriel V2 : jamais déclenchés par nextPendingTip
+  // (`when: () => false`), uniquement par showTip(step.why) depuis checkTutorial.
+  // Ils apparaissent ensuite dans l'Aide une fois vus (tipsSeen), comportement voulu.
+  id: 'tut_mine',
+  icon: '⛏️',
+  title: 'Le sol, la source de tout',
+  body: ['Tout part du sol. Une <b>mine de fer</b> ne peut se poser QUE sur un <b>gisement de fer</b> — les tuiles qui clignotent en vert.', 'Elle extrait du minerai en continu, sans intrant et sans électricité. C\'est ton point de départ.'],
+  when: () => false
+}, {
+  id: 'tut_route',
+  icon: '🛣️',
+  title: 'Rien ne circule tout seul',
+  body: ['Ta mine extrait… mais le minerai <b>reste sur place</b>. Il faut une <b>route</b> pour l\'acheminer.', 'Le <b>port</b> est l\'entrepôt de l\'île : <b>tout y arrive et tout en repart</b>. Un bâtiment non relié au port ne reçoit rien et ne livre rien.', 'Relie la mine au port, puis regarde ton stock monter.'],
+  when: () => false
+}, {
+  id: 'tut_carriere',
+  icon: '🪨',
+  title: 'La pierre, partout',
+  body: ['La <b>carrière</b> n\'a pas besoin de gisement : elle se pose sur n\'importe quelle tuile libre.', 'La pierre est la base du <b>ciment</b>, donc de toute construction avancée. Il t\'en faudra beaucoup.'],
+  when: () => false
+}, {
+  id: 'tut_ameliorer',
+  icon: '⬆️',
+  title: 'Ta ressource la plus rare : le sol',
+  body: ['Les îles sont <b>petites</b>. L\'espace au sol, pas les ressources, est ta vraie contrainte.', '<b>Améliorer</b> un bâtiment le monte d\'un niveau : <b>même tuile, production doublée</b>. C\'est le cœur de toute la progression du jeu.', 'Sélectionne le mode <b>⬆ Améliorer</b>, touche un bâtiment, confirme.'],
+  when: () => false
+}, {
+  id: 'tut_charbon',
+  icon: '🔥',
+  title: 'Le charbon est un carburant',
+  body: ['Le <b>charbon</b> ne sert à rien seul : c\'est un <b>combustible</b>.', 'Il alimentera ton four à fer, puis tes centrales électriques. Sans lui, rien ne brûle et rien ne fond.'],
+  when: () => false
+}, {
+  id: 'tut_four',
+  icon: '🏭',
+  title: 'Transformer : le port fait le lien',
+  body: ['Le <b>four à fer</b> consomme <b>minerai + charbon</b> et produit du <b>lingot de fer</b>. Ta première transformation.', 'Point clé : le four prend ses intrants <b>AU PORT</b> et y renvoie sa production. Il n\'a pas besoin d\'être collé à la mine — mais <b>sans route jusqu\'au port, il ne reçoit rien</b>.', 'Tous tes bâtiments fonctionnent ainsi : le port est le carrefour de tout.'],
+  when: () => false
+}, {
+  id: 'tut_ciment',
+  icon: '🧱',
+  title: 'Le ciment, base de tout',
+  body: ['La <b>cimenterie</b> transforme la pierre en <b>ciment</b>.', 'Le ciment entre dans presque toutes les constructions avancées. Avec lui, tu as de quoi lancer ta première recherche.'],
+  when: () => false
+}, {
+  id: 'tut_recherche',
+  icon: '🔬',
+  title: 'Voilà pourquoi tu livres',
+  body: ['C\'est <b>ça</b>, le but de tout ce que tu accumules au port.', 'Chaque <b>nœud de recherche</b> consomme des ressources livrées et débloque de <b>nouveaux bâtiments</b> — ou une <b>nouvelle île</b>.', 'Ouvre le panneau <b>🔬 Recherche</b>, repère le nœud en jaune, et valide-le. La partie commence vraiment.'],
+  when: () => false
 }, {
   id: 'recherche',
   icon: '🔬',
@@ -9602,12 +9837,14 @@ function Hud({
     className: "hud-grp hud-side"
   }, React.createElement("button", {
     className: "research-btn",
+    'data-tut': "port",
     onClick: onOpenPort,
     title: I18N.t("Configuration du port (commerce)")
   }, uiIcon('port', "\u2693"), React.createElement("span", {
     className: "rlabel"
   }, I18N.t("Port"))), React.createElement("button", {
     className: "research-btn" + (researchPending ? ' pending' : ''),
+    'data-tut': "research",
     onClick: onOpenResearch,
     title: researchPending ? I18N.t("Recherche prête à valider !") : I18N.t("Panneau Recherche")
   }, uiIcon('recherche', "\uD83D\uDD2C"), React.createElement("span", {
@@ -9819,6 +10056,7 @@ function ToolButton({
   };
   return React.createElement("button", {
     className: 'tool-btn' + (active ? ' active' : ''),
+    'data-tut': id,
     style: {
       '--accent': accent
     },
@@ -9979,6 +10217,7 @@ function Toolbar({
   netOpen,
   onToggleNet,
   tutorialRevealed,
+  tutStep,
   port,
   playTicks,
   timeScale,
@@ -10033,9 +10272,22 @@ function Toolbar({
       isNew: !!(seenBuildings && !seenBuildings[id])
     })))));
   });
+  // Tuto bloquant (D3) : seuls les onglets utiles à l'étape courante sont actifs.
+  // DÉMOLIR RESTE TOUJOURS ACTIF (D4) — sinon une erreur de pose enferme le joueur.
+  const tabAllowed = key => {
+    if (!tutStep) return true;
+    if (key === 'dem') return true; // D4, non négociable
+    const sels = (tutStep.targets || []).map(t => t.sel || '').join(' ');
+    if (key === 'bat') return sels.includes('.tab-build');
+    if (key === 'net') return sels.includes('.tab-net');
+    if (key === 'upg') return sels.includes('.tab-upg');
+    if (key === 'copy') return false; // Copier : jamais pendant le tuto (bruit inutile)
+    return true;
+  };
   const tab = (key, extraCls, iconName, emoji, name, sub, active, onClick, dot) => React.createElement("button", {
     key: key,
-    className: 'tab-btn ' + extraCls + (active ? ' active' : ''),
+    className: 'tab-btn ' + extraCls + (active ? ' active' : '') + (tabAllowed(key) ? '' : ' tab-locked'),
+    disabled: !tabAllowed(key),
     onClick: onClick
   }, React.createElement("div", {
     className: "tb-top"
@@ -11035,6 +11287,7 @@ function InfoPanel({
     className: "ip-sub"
   }, densUnlocked ? BUILDINGS[densId].name : densNode ? densNode.name : I18N.t("Recherche requise"))) : React.createElement("button", {
     className: "ip-up" + (armed ? ' armed' : ''),
+    'data-tut': "upgrade",
     disabled: armed && !canUp,
     onClick: () => {
       if (!armed) {
@@ -11226,6 +11479,7 @@ function UpgradePanel({
     onClick: () => onDensify(up.r, up.c)
   }, (densUnlocked ? "\u2726 " + I18N.t("Densifier \u2192 ") : "\ud83d\udd12 " + I18N.t("Densifier \u2192 ")) + BUILDINGS[link.next].name) : React.createElement("button", {
     className: "up-btn",
+    'data-tut': "upgrade",
     disabled: !canAfford,
     onClick: () => onUpgrade(up.r, up.c)
   }, "\u2B06 Am\xE9liorer (\xD7", nextMult, ")"));
@@ -11328,6 +11582,9 @@ function ResearchPanel({
       key: k
     }, RES_SHORT[k] || k, " ", fmtInt(port[k] || 0), "/", fmtInt(def.delivery[k])))), React.createElement("button", {
       className: "rp-btn",
+      // Même ancre tuto que « Confirmer » : le 1er nœud validable (Accès Île 2) est en mode
+      // delivery → le halo de l'étape 8 doit pouvoir pointer ce bouton-ci.
+      'data-tut': "confirm",
       disabled: !canDeliver,
       onClick: () => onDeliver(def.id)
     }, I18N.t("Livrer"))), isManual && React.createElement("div", {
@@ -11336,6 +11593,7 @@ function ResearchPanel({
       className: "rp-ready-note"
     }, I18N.t("Condition remplie")), React.createElement("button", {
       className: "rp-btn",
+      'data-tut': "confirm",
       onClick: () => onConfirm(def.id)
     }, I18N.t("Confirmer"))), node.status === 'condition_ok' && def.mode === 'delivery' && !def.delivery && React.createElement("div", {
       className: "rp-lockhint"
@@ -13292,6 +13550,53 @@ function HelpPanel({
     className: "alerts-empty"
   }, I18N.t("🔒 D'autres astuces se débloqueront en progressant.")))));
 }
+// Halo pulsé du tutoriel sur un élément du DOM (bouton, onglet, carte du menu…).
+// `pointer-events:none` (impératif mobile : ne doit jamais avaler le tap). Repositionné par
+// requestAnimationFrame continu tant qu'il est monté — 1 getBoundingClientRect/frame, coût
+// négligeable, et c'est le seul moyen robuste de suivre les panneaux ouverts avec transition
+// CSS. La pulsation est 100 % CSS (@keyframes tut-pulse).
+function TutorialHalo({
+  selector
+}) {
+  const [box, setBox] = useState(null);
+  useEffect(() => {
+    if (!selector) {
+      setBox(null);
+      return;
+    }
+    let raf = 0,
+      alive = true;
+    const tick = () => {
+      if (!alive) return;
+      const el = document.querySelector(selector);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        setBox(prev => prev && Math.abs(prev.top - r.top) < 0.5 && Math.abs(prev.left - r.left) < 0.5 && Math.abs(prev.width - r.width) < 0.5 && Math.abs(prev.height - r.height) < 0.5 ? prev : {
+          top: r.top,
+          left: r.left,
+          width: r.width,
+          height: r.height
+        });
+      } else setBox(null);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
+    };
+  }, [selector]);
+  if (!box) return null;
+  return React.createElement("div", {
+    className: "tut-halo",
+    style: {
+      top: box.top - 4,
+      left: box.left - 4,
+      width: box.width + 8,
+      height: box.height + 8
+    }
+  });
+}
 function TutorialBanner({
   step,
   total,
@@ -13586,7 +13891,8 @@ function App() {
       lastSave: 0,
       tutorial: {
         active: true,
-        step: 0
+        step: 0,
+        targetIdx: 0
       },
       tipsSeen: {},
       tipsEnabled: true,
@@ -13623,6 +13929,12 @@ function App() {
   }, []);
   const [buildOpen, setBuildOpen] = useState(false);
   const [netOpen, setNetOpen] = useState(false);
+  // Miroir en ref des états de panneaux : `checkTutorial` tourne hors du cycle React
+  // (boucle rAF) et doit pouvoir lire l'ouverture des menus pour faire avancer le halo.
+  // Synchronisé dans le corps du render (upOpen/researchOpen posés plus bas, après leurs useState).
+  const panelsRef = useRef({ buildOpen: false, netOpen: false, upOpen: false, researchOpen: false });
+  panelsRef.current.buildOpen = buildOpen;
+  panelsRef.current.netOpen = netOpen;
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [offlineReport, setOfflineReport] = useState(null);
@@ -13645,11 +13957,15 @@ function App() {
     scheduleSave();
   };
   const [tutorialStep, setTutorialStep] = useState(-1);
+  // Index de la cible du halo dans l'étape courante du tutoriel (cf. TUTORIAL_STEPS.targets).
+  const [tutorialTarget, setTutorialTarget] = useState(0);
   const [researchPending, setResearchPending] = useState(false);
   const [info, setInfo] = useState(null);
   const [upgrade, setUpgrade] = useState(null);
   const [toast, setToast] = useState(null);
   const [researchOpen, setResearchOpen] = useState(false);
+  panelsRef.current.upOpen = !!upgrade;
+  panelsRef.current.researchOpen = researchOpen;
   const [portOpen, setPortOpen] = useState(false);
   const [repairOpen, setRepairOpen] = useState(false);
   const [slotOpen, setSlotOpen] = useState(false);
@@ -13664,6 +13980,11 @@ function App() {
   const [activeTip, setActiveTip] = useState(null);
   const activeTipRef = useRef(null);
   const needModeRef = useRef(false);
+  // Synchro dans le CORPS du render (pas un useEffect) : au montage initial, l'ancien
+  // useEffect([needMode]) tournait APRÈS l'effet de boot avec needMode encore false et
+  // écrasait le `true` posé au boot → la 1re frame rAF pouvait afficher l'astuce
+  // « bienvenue » PAR-DESSUS la modale de choix de mode (course au 1er lancement).
+  needModeRef.current = needMode;
   const [dev, setDev] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
   const [showLevels, setShowLevels] = useState(true);
@@ -13852,7 +14173,8 @@ function App() {
       mode: g.mode === 'normal' ? 'normal' : 'difficile',
       tutorial: g.tutorial ? {
         active: !!g.tutorial.active,
-        step: g.tutorial.step || 0
+        step: g.tutorial.step || 0,
+        targetIdx: g.tutorial.targetIdx || 0
       } : null,
       currentIsland: g.currentIsland,
       port,
@@ -14053,7 +14375,7 @@ function App() {
     } catch (e) {
       return false;
     }
-    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].indexOf(data.version) === -1) return false;
+    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].indexOf(data.version) === -1) return false;
     const g = gameRef.current;
     // Extension des mers (v11) : les îles sont désormais entourées de SEA_PAD tuiles d'eau.
     // Les sauvegardes antérieures (coordonnées non décalées) sont translatées de +SEA_PAD.
@@ -14451,10 +14773,13 @@ function App() {
     // tutoriel sauvegardent leur progression.
     g.tutorial = data.tutorial && typeof data.tutorial === 'object' ? {
       active: !!data.tutorial.active,
-      step: data.tutorial.step || 0
+      step: data.tutorial.step || 0,
+      // Vieilles saves (< v20, sans champ) : 0 → le halo se recale sur la 1re cible de l'étape.
+      targetIdx: +(data.tutorial.targetIdx || 0)
     } : {
       active: false,
-      step: 0
+      step: 0,
+      targetIdx: 0
     };
     g.tipsSeen = data.tipsSeen && typeof data.tipsSeen === 'object' ? {
       ...data.tipsSeen
@@ -14657,17 +14982,41 @@ function App() {
     if (!g.tutorial || !g.tutorial.active) return;
     let changed = false;
     while (g.tutorial.step < TUTORIAL_STEPS.length && TUTORIAL_STEPS[g.tutorial.step].done(g)) {
+      const prev = TUTORIAL_STEPS[g.tutorial.step];
+      if (prev && prev.afterToast) showToast(I18N.t(prev.afterToast), 'var(--green)');
       g.tutorial.step++;
+      g.tutorial.targetIdx = 0; // reset du halo sur la 1re cible de la nouvelle étape
       changed = true;
       const st = TUTORIAL_STEPS[g.tutorial.step];
-      if (st) for (const id of st.reveal) { showToast('🔓 ' + (BUILDINGS[id] ? BUILDINGS[id].name : id) + I18N.t(' débloqué !'), 'var(--green)'); SFX.play('buildingUnlock'); }
+      if (st) {
+        for (const id of st.reveal) { showToast('🔓 ' + (BUILDINGS[id] ? BUILDINGS[id].name : id) + I18N.t(' débloqué !'), 'var(--green)'); SFX.play('buildingUnlock'); }
+        // Popup « pourquoi » à l'entrée de l'étape (marqué vu → visible ensuite dans l'Aide).
+        if (st.why && g.tipsEnabled !== false) {
+          g.tipsSeen = g.tipsSeen || {};
+          g.tipsSeen[st.why] = true;
+          showTip(st.why);
+        }
+      }
     }
     if (g.tutorial.step >= TUTORIAL_STEPS.length) {
       g.tutorial.active = false;
       showToast(I18N.t('🎓 Tutoriel terminé — bonne partie !'), 'var(--green)');
     }
+    // Avancement du halo À L'INTÉRIEUR de l'étape courante : on s'arrête sur la première
+    // cible dont `when(g, ui)` est vrai (les cibles déjà « faites » sont sautées).
+    const st = TUTORIAL_STEPS[g.tutorial.step];
+    if (g.tutorial.active && st && st.targets) {
+      let idx = 0;
+      const ui = panelsRef.current;
+      while (idx < st.targets.length - 1 && !st.targets[idx].when(g, ui)) idx++;
+      if (idx !== g.tutorial.targetIdx) {
+        g.tutorial.targetIdx = idx;
+        changed = true;
+      }
+    }
     if (changed) {
       setTutorialStep(g.tutorial.active ? g.tutorial.step : -1);
+      setTutorialTarget(g.tutorial.active ? g.tutorial.targetIdx || 0 : -1);
       markDirty();
       scheduleSave();
     }
@@ -14676,6 +15025,7 @@ function App() {
     const g = gameRef.current;
     if (g.tutorial) g.tutorial.active = false;
     setTutorialStep(-1);
+    setTutorialTarget(-1);
     showToast(I18N.t('Tutoriel passé — bâtiments débloqués'), 'var(--ink-dim)');
     markDirty();
     scheduleSave();
@@ -14695,6 +15045,31 @@ function App() {
     const g = gameRef.current;
     if (g.tipsEnabled === false) return;
     if (activeTipRef.current || needModeRef.current) return;
+    // TUTORIEL ACTIF : le canal popup est réservé à la séquence guidée — `bienvenue` puis
+    // les popups « pourquoi » (tut_*, ouverts par checkTutorial au franchissement d'étape).
+    // Les astuces contextuelles (recherche, port…) sont DIFFÉRÉES sans être marquées vues :
+    // elles reprennent normalement à la fin (ou au passage) du tutoriel. Sans ce garde,
+    // « La recherche » (condition vraie dès le boot) grillait la priorité à tut_mine.
+    if (g.tutorial && g.tutorial.active) {
+      if (!g.tipsSeen || !g.tipsSeen.bienvenue) {
+        const first = nextPendingTip(g); // = bienvenue (1re astuce, condition toujours vraie)
+        if (first) {
+          showTip(first);
+          markDirty();
+          scheduleSave();
+        }
+        return;
+      }
+      // Popup « pourquoi » de l'ÉTAPE 0 : checkTutorial ne l'ouvre qu'au franchissement
+      // d'étape — l'étape 0 n'est jamais franchie. Séquence : bienvenue → tut_mine.
+      if (g.tutorial.step === 0 && !g.tipsSeen.tut_mine && TIP_BY_ID.tut_mine) {
+        g.tipsSeen.tut_mine = true;
+        showTip('tut_mine');
+        markDirty();
+        scheduleSave();
+      }
+      return;
+    }
     const id = nextPendingTip(g);
     if (id) {
       showTip(id);
@@ -15612,6 +15987,7 @@ function App() {
     g.cam.zoom = 1;
     layout();
     centerCam();
+    needModeRef.current = false; // miroir synchrone (cf. boot) — libère les astuces
     setNeedMode(false);
     bumpHud();
     markDirty();
@@ -16287,6 +16663,80 @@ function App() {
     if (showIcon) drawDeficitIcon(ctx, x, y, W, H, tile, reason);
     drawInfoBadges(ctx, x, y, W, H, tile, upg, eff);
   }
+  // Halo tuiles du tutoriel : contour pulsé sur les cibles CANVAS de l'étape courante
+  // (tg.tiles : id de bâtiment → tuiles posables ; '@upgradable' → mine/carrière Nv.1 ;
+  // 'link' → mine + port reliés par une polyligne pointillée indicative).
+  // Ne balaie que la fenêtre visible (r0..r1, c0..c1, bornes passées par draw()) → coût négligeable.
+  function drawTutorialHalo(ctx, ox, oy, tile, r0, r1, c0, c1) {
+    const g = gameRef.current;
+    if (!g.tutorial || !g.tutorial.active || g.currentIsland !== 1) return;
+    const st = TUTORIAL_STEPS[g.tutorial.step];
+    const tg = st && st.targets && st.targets[g.tutorial.targetIdx || 0];
+    if (!tg || !tg.tiles) return;
+    const pulse = 0.45 + 0.35 * Math.sin(Date.now() / 190);
+    const def = curDef(),
+      tiles = curTiles();
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(76,175,80,' + pulse.toFixed(3) + ')';
+    ctx.fillStyle = 'rgba(76,175,80,' + (pulse * 0.18).toFixed(3) + ')';
+    const mark = (r, c) => {
+      const x = ox + c * tile,
+        y = oy + r * tile;
+      ctx.fillRect(x + 2, y + 2, tile - 4, tile - 4);
+      ctx.strokeRect(x + 2, y + 2, tile - 4, tile - 4);
+    };
+    if (tg.tiles === 'link') {
+      // Étape 2 : « relie CECI à CELA ». Pas de pathfinding — on halote la source et le
+      // port, reliés par une polyligne pointillée en L. C'est une INDICATION, pas un ordre.
+      const p = PORTS[1];
+      if (!p) {
+        ctx.restore();
+        return;
+      }
+      let sr = -1,
+        sc = -1;
+      for (let r = 0; r < def.rows && sr < 0; r++) for (let c = 0; c < def.cols; c++) {
+        const b = tiles[r][c].building;
+        if (b && b.id === 'mine_fer') {
+          sr = r;
+          sc = c;
+          break;
+        }
+      }
+      if (sr < 0) {
+        ctx.restore();
+        return;
+      }
+      mark(sr, sc);
+      mark(p.r, p.c);
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      const x0 = ox + (sc + .5) * tile,
+        y0 = oy + (sr + .5) * tile;
+      const x1 = ox + (p.c + .5) * tile,
+        y1 = oy + (p.r + .5) * tile;
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (tg.tiles === '@upgradable') {
+      for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+        const b = tiles[r][c].building;
+        if (b && (b.id === 'mine_fer' || b.id === 'carriere') && (b.upgrade || 0) < 1) mark(r, c);
+      }
+    } else {
+      // Tuiles où le bâtiment attendu est réellement posable.
+      for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+        if (canPlace(r, c, tg.tiles)) mark(r, c);
+      }
+    }
+    ctx.restore();
+    // Le halo pulse en continu → on réutilise le canal de redessin d'ambiance (~10 FPS),
+    // sinon la boucle throttlée le figerait dès que rien d'autre ne bouge.
+    _animPlayed = true;
+  }
   function drawHover(ctx, ox, oy, tile) {
     const g = gameRef.current;
     const h = g.hover;
@@ -16739,6 +17189,7 @@ function App() {
     drawPortExtras(ctx, ox, oy, tile);
     drawHover(ctx, ox, oy, tile);
     drawNetworkDebug(ctx, ox, oy, tile);
+    drawTutorialHalo(ctx, ox, oy, tile, r0, r1, c0, c1);
     // 1er rendu effectif du jeu → on retire le splash de chargement (l'écran n'est plus noir).
     if (!window.__splashGone) {
       window.__splashGone = true;
@@ -17168,7 +17619,13 @@ function App() {
     }
     if (!loaded) rebuildNetworks(gameRef.current, gameRef.current.currentIsland);
     // Partie neuve (aucune sauvegarde) : proposer le choix du mode de jeu.
-    if (!loaded) setNeedMode(true);
+    // ⚠️ La ref est posée SYNCHRONE en plus du state : checkTips tourne dans la boucle rAF
+    // et pouvait lire needModeRef=false avant la resynchro useEffect → l'astuce « bienvenue »
+    // s'affichait PAR-DESSUS la modale de choix de mode (course au 1er lancement).
+    if (!loaded) {
+      needModeRef.current = true;
+      setNeedMode(true);
+    }
     evaluateTechTree(gameRef.current);
     // Redraw when async sprite images finish decoding.
     spriteOnReady = () => {
@@ -17204,6 +17661,7 @@ function App() {
     if (loaded) applyOfflineProgress();
     const tut = gameRef.current.tutorial;
     setTutorialStep(tut && tut.active ? tut.step : -1);
+    setTutorialTarget(tut && tut.active ? tut.targetIdx || 0 : -1);
     let raw = null;
     try {
       const aid = getActiveSlotId();
@@ -17217,10 +17675,8 @@ function App() {
     layout();
     gameRef.current.dirty = true;
   }, [tutorialStep >= 0]);
-  // L'astuce de bienvenue ne doit pas s'afficher tant que la modale de choix de mode bloque.
-  useEffect(() => {
-    needModeRef.current = needMode;
-  }, [needMode]);
+  // (needModeRef est synchronisé dans le corps du render, à côté de sa déclaration —
+  // l'ancien useEffect ici écrasait le `true` posé synchronement par l'effet de boot.)
   useEffect(() => {
     const canvasEl = canvasRef.current;
     const ctxValid = () => {
@@ -17587,7 +18043,16 @@ function App() {
     total: TUTORIAL_STEPS.length,
     goal: TUTORIAL_STEPS[tutorialStep] ? TUTORIAL_STEPS[tutorialStep].goal : '',
     onSkip: skipTutorial
-  }), React.createElement("div", {
+  }), tutorialStep >= 0 && !activeTip && (() => {
+    // Halo DOM du tutoriel — masqué tant qu'un popup « pourquoi » est ouvert (il le
+    // recouvrirait de toute façon). Les cibles canvas (tiles) sont dessinées dans draw().
+    const st = TUTORIAL_STEPS[tutorialStep];
+    const tg = st && st.targets && st.targets[tutorialTarget];
+    return tg && tg.sel ? React.createElement(TutorialHalo, {
+      selector: tg.sel,
+      key: tg.sel
+    }) : null;
+  })(), React.createElement("div", {
     ref: stageRef,
     className: 'stage' + (selMode ? ' sel' : '') + (dragging ? ' dragging' : '')
   }, React.createElement("canvas", {
@@ -17707,6 +18172,8 @@ function App() {
       if (opening) deselectAll();
     },
     tutorialRevealed: game.tutorial && game.tutorial.active && game.currentIsland === 1 ? tutorialRevealedSet(game.tutorial.step) : null,
+    // Tuto bloquant : étape courante (ou null hors tutoriel) → gate des onglets d'action.
+    tutStep: tutorialStep >= 0 && game.tutorial && game.tutorial.active && game.currentIsland === 1 ? TUTORIAL_STEPS[tutorialStep] || null : null,
     port: game.port[game.currentIsland] || {},
     playTicks: game.playTicks || 0,
     timeScale: timeScale,

@@ -1,8 +1,8 @@
 {
-  "build": 240,
-  "version": "Alpha 13.59",
+  "build": 241,
+  "version": "Alpha 13.60",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #235 from freredoc/claude/android-workflow-patch-su2qx2"
+  "notes": "Merge pull request #236 — Tutoriel V2 (île 1), build 241"
 }
