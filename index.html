@@ -5082,8 +5082,8 @@ const SAVE_VERSION = 21;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 249;
-const GAME_VERSION = 'Alpha 13.68';
+const GAME_BUILD = 250;
+const GAME_VERSION = 'Alpha 13.69';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7359,8 +7359,20 @@ function tickIsland(game, isl) {
       netDem += cc.power;
       // Plage de conso de la composante : min/max nominaux par consommateur (les
       // bâtiments sigmoïde/aléatoire oscillent → on borne le pire et le meilleur cas).
-      demMin += minPower(cc.bld);
-      demMax += nominalPower(cc.bld);
+      // ⚠ Boost d'antenne : la conso d'un bâtiment boosté oscille du NOMINAL ×1 à
+      // ×(1+facteur) (calcul du tick : power = nomP × (1 + sig × fac), identique en
+      // vitesse et en productivité) → les bornes suivent, sinon l'onglet Énergie et le
+      // panneau Câble sous-estiment la demande max (retour testeur 13.69).
+      const antFac = Math.max(cc.bld.antennaBuff || 1, cc.bld.antennaProd || 1);
+      if (antFac > 1) {
+        const nomP = nominalPower(cc.bld);
+        demMin += nomP;
+        demMax += nomP * (1 + antFac);
+        hasVarCons = true;
+      } else {
+        demMin += minPower(cc.bld);
+        demMax += nominalPower(cc.bld);
+      }
       const cb = BUILDINGS[cc.bld.id];
       if (cb && (cb.sigmoid || cb.randomP)) hasVarCons = true;
     }
