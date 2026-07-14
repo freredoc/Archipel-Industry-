@@ -5070,8 +5070,8 @@ const SAVE_VERSION = 21;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 245;
-const GAME_VERSION = 'Alpha 13.64';
+const GAME_BUILD = 246;
+const GAME_VERSION = 'Alpha 13.65';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -9078,8 +9078,12 @@ function portUpgradeCost(islandId, currentLevel) {
   return out;
 }
 const portSpeedMult = level => Math.pow(2, level || 0);
-const TRADE_LIQUIDS = ['petrole', 'acide', 'diesel', 'oxygene', 'azote'];
+// ⚠ oxygene/azote RETIRÉS (retour testeur) : les gaz ne s'importent/exportent PAS entre îles
+// (production locale uniquement) — ils restent stockés au port via le tuyau relié, mais ne
+// transitent plus. Le nettoyage des listes de priorité existantes est fait par tradePriorityFor.
+const TRADE_LIQUIDS = ['petrole', 'acide', 'diesel'];
 const TRADE_RESOURCES = Object.keys(CARRIER_BY_RES).filter(r => CARRIER_BY_RES[r] === 'road' || TRADE_LIQUIDS.includes(r));
+const TRADE_RESOURCE_SET = new Set(TRADE_RESOURCES);
 function portPipePools(game, islandId) {
   const nets = game.networks[islandId] || {};
   const pools = [];
@@ -9122,8 +9126,14 @@ const tradeCfgFor = (game, islandId, res) => {
 const tradePriorityFor = (game, islandId) => {
   let arr = game.tradePriority[islandId];
   if (!arr) return game.tradePriority[islandId] = [...TRADE_RESOURCES];
-  // Réconcilie : ajoute les ressources transitables apparues APRÈS la création de la liste
-  // (ex. diesel en 11.09) — sinon, dans une save existante, elles ne seraient jamais transitées.
+  // Réconcilie dans les DEUX sens une liste venant d'une save existante :
+  //  - RETIRE les ressources devenues non transitables (ex. oxygene/azote retirés en 13.65) —
+  //    sinon transferLink/PortPanel continueraient de les transiter/afficher ;
+  //  - ajoute les ressources transitables apparues APRÈS la création de la liste (ex. diesel
+  //    en 11.09) — sinon elles ne seraient jamais transitées.
+  if (arr.some(r => TRADE_RESOURCES.indexOf(r) === -1)) {
+    arr = game.tradePriority[islandId] = arr.filter(r => TRADE_RESOURCES.indexOf(r) !== -1);
+  }
   if (arr.length < TRADE_RESOURCES.length) for (const r of TRADE_RESOURCES) if (arr.indexOf(r) === -1) arr.push(r);
   return arr;
 };
@@ -9172,6 +9182,9 @@ function transitForwardBudget(game, src, dest, res) {
 // Quantité brute expédiable (surplus exportable borné par le manque côté destination), SANS
 // la règle anti aller-retour.
 function rawShippable(game, srcIsland, destIsland, res) {
+  // Garde CENTRAL anti-transit : ressource non transitable (ex. oxygene/azote) → 0, quel que
+  // soit le chemin d'appel (transferLink, pré-pass transitDestPriority d'une vieille save…).
+  if (!TRADE_RESOURCE_SET.has(res)) return 0;
   const cfg = tradeCfgFor(game, srcIsland, res);
   if (cfg.interdit) return 0;
   if (tradeResBlocked(game, srcIsland, destIsland, res)) return 0;
@@ -10666,8 +10679,25 @@ function InfoPanel({
     }, React.createElement("span", {
       className: "lbl"
     }, I18N.t("Coût")), React.createElement("span", {
-      className: "val"
-    }, formatCost(cost) || '—')), React.createElement("div", {
+      className: "val ip-cost-chips"
+    }, Object.keys(cost).length ? Object.keys(cost).map(k => {
+      // Pastille sprite + notation port par ressource (comme le coût d'amélioration) ;
+      // rouge si le stock du port ne couvre pas — avant : texte brut sans icônes.
+      const ikey = SPRITES_ENABLED ? itemSpriteKey(k) : null;
+      const idata = ikey && SPRITE_DATA[ikey];
+      const miss = !dev && (port[k] || 0) < cost[k];
+      return React.createElement("span", {
+        key: k,
+        className: 'dr-res ipc-ci' + (miss ? ' miss' : ''),
+        title: RES_SHORT[k] || k
+      }, idata && React.createElement("img", {
+        className: "inv-ico",
+        src: idata,
+        alt: ""
+      }), React.createElement("span", {
+        className: "dr-q"
+      }, (RES_SHORT[k] || k) + ' ' + fmtPort(cost[k])));
+    }) : '—')), React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
