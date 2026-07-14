@@ -17,7 +17,24 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 249`, `GAME_VERSION = 'Alpha 13.68'`, `SAVE_VERSION = 21`.**
+- **État au dernier passage : `GAME_BUILD = 250`, `GAME_VERSION = 'Alpha 13.69'`, `SAVE_VERSION = 21`.**
+  Changement 13.69 : **fix « le boost élec. de l'antenne n'est pas pris en compte dans l'onglet
+  Énergie ».** Retour testeur (suite du 13.68). Au tick, la conso d'un bâtiment boosté par
+  l'antenne oscille du NOMINAL ×1 à ×(1+facteur) (`power = nomP × (1 + sig × fac)`, identique en
+  vitesse et en productivité), mais les bornes `demandMin`/`demandMax` de la boucle énergie
+  (affichées dans « Consommation min → max »/« Amplitude » du panneau Énergie ET dans « Demande
+  min→max » du panneau Câble) sommaient `minPower`/`nominalPower` SANS le facteur → max
+  sous-estimé (jusqu'à ÷3 au Nv.1) et min faux (le plancher sigmoïde du bâtiment n'est jamais
+  atteint une fois boosté). Fix dans la boucle des consommateurs par composante : si
+  `antFac = max(bld.antennaBuff, bld.antennaProd) > 1` → `demMin += nomP`,
+  `demMax += nomP × (1 + antFac)`, `hasVarCons = true` (les drapeaux sont posés chaque tick par la
+  boucle bâtiment, AVANT la boucle énergie). Affichage seul (`cc.power`/« Demande totale » étaient
+  déjà justes), `SAVE_VERSION` inchangé, aucune clé i18n nouvelle. Validé : `node --check`
+  (7 blocs) + Chromium E2E moteur réel (aciérie 128 kW + antenne 1024 kW mode VITESSE + câbles +
+  route→port forgés via `__gameRef`/`__heat.rebuildNetworks` : `antennaBuff = 2`,
+  `demandMin/Max = 1152/1408 kW` EXACTS (avant fix : 1152/1152), demande instantanée dans la
+  plage, panneau Énergie « 1,15 MW → 1,41 MW » + « Amplitude 256 kW » ; 0 erreur console).
+  Build 249→250.
   Changement 13.68 : **7 retours testeur — popup densification verrouillée + 2 badges Port (import
   consommé / aller-retour) + tuto traverser refait + astuce traverser_tuyau + flux nucléaires dans
   l'onglet Production + conso min/max « Amplitude » (panneau Énergie).** (1) **Popup « Recherche
