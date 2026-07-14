@@ -17,7 +17,19 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 246`, `GAME_VERSION = 'Alpha 13.65'`, `SAVE_VERSION = 21`.**
+- **État au dernier passage : `GAME_BUILD = 247`, `GAME_VERSION = 'Alpha 13.66'`, `SAVE_VERSION = 21`.**
+  Changement 13.66 : **reformulation du mode PRODUCTIVITÉ de l'antenne (retour testeur : « intrants
+  ÷2 · sortie ×0,5 » incompréhensible).** Le concept est désormais présenté partout comme
+  **« rendement ×2 · vitesse ×0,5 »** (= 2× moins de matières par unité produite, machine 2× plus
+  lente ; mécanique INCHANGÉE — intrants ×0,25 / sortie ×0,5). 4 textes réécrits : (1) ligne
+  « Productivité » de la fiche d'un bâtiment boosté (valeur + tooltip) ; (2) tooltip du bouton
+  Productivité du toggle de la fiche antenne ; (3) ligne « Effet » mode-aware de la fiche antenne ;
+  (4) body de l'astuce `antenne_modes` (« Productivité = rendement ×2 : … »). + 2e IIFE
+  d'augmentation i18n (après le bloc ADD, ~ligne 2210) : 4 clés en/es/de (les anciennes clés
+  n'avaient AUCUNE traduction — déjà en repli fr). Aucune mécanique/sauvegarde touchée. Validé :
+  `node --check` (7 blocs) + Chromium E2E (boot 0 erreur ; clés résolues : en « yield ×2 · speed
+  ×0.5 », de « Ausbeute ×2 · Tempo ×0,5 » — ⚠ le navigateur de test est locale EN → `I18N.t`
+  renvoie l'anglais, normal). Build 246→247.
   Changement 13.65 : **2 retours testeur — icônes des panneaux Réparer/Remblayer + gaz NON
   transitables.** (1) **Coût en pastilles sprites** : la ligne « Coût » des panneaux terrain
   (`InfoPanel`, branche `mode 'repair'/'extend'`) passait par `formatCost` (texte brut, pas de
