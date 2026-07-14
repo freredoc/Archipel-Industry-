@@ -17,7 +17,50 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 248`, `GAME_VERSION = 'Alpha 13.67'`, `SAVE_VERSION = 21`.**
+- **État au dernier passage : `GAME_BUILD = 249`, `GAME_VERSION = 'Alpha 13.68'`, `SAVE_VERSION = 21`.**
+  Changement 13.68 : **7 retours testeur — popup densification verrouillée + 2 badges Port (import
+  consommé / aller-retour) + tuto traverser refait + astuce traverser_tuyau + flux nucléaires dans
+  l'onglet Production + conso min/max « Amplitude » (panneau Énergie).** (1) **Popup « Recherche
+  requise » (densification)** : le bouton 🔒 Densifier (fiche bâtiment `InfoPanel` ET `UpgradePanel`)
+  n'est PLUS `disabled` quand la recherche manque — le clic ouvre **`DensifyLockPopup`** (nouveau
+  composant après `ResearchDonePopup`, classes `rd-popup` réutilisées) : nom du nœud requis, texte
+  explicatif, bouton **« Voir la recherche »** (ferme fiche/panneau + ouvre le ResearchPanel) ;
+  state App `densLock`, prop `onDensifyLocked(densId)` sur les 2 panneaux ; CSS `.locked` passe
+  `cursor:pointer` + hover jaune. (2) **Badge Port « import consommé »** (`.pp-state.drain`, orange,
+  glyphe `←!`) : dans `stockStateFor`, si import > 0 ET stock < cible ET `local + imp ≤ 0` (la conso
+  locale absorbe tout ce qui arrive) → le joueur voit POURQUOI son stock ne monte pas (retour : « je
+  veux 10k charbon, 10/s arrivent, l'île en consomme 20/s, le stock ne bouge pas »). (3) **Badge
+  « aller-retour »** (`.pp-state.ping`, rouge, `↔`) : nouvelle ventilation des flux PAR île voisine
+  (`_tfExpBy`/`_tfImpBy` dans PortPanel) — si la même ressource est exportée ET importée avec la
+  MÊME île → badge + tooltip (« réglez cible/réserve ou interdisez un sens ») ; le cas chaîne
+  (reçu d'une île, réexpédié vers une autre) garde le badge `⇄ transit`. (4) **Astuce `traverser`
+  REFAITE** (brief `FIX_traverser.md` : l'illustration montrait un câble traversant `four_fer_v1`,
+  four à CHARBON qui ne se raccorde pas au câble — situation impossible) : scène TIP_SCENES →
+  éolienne → câble → **four_arc_fer** → câble → aciérie + badges « fait pont »/« alimentee » ;
+  body réécrit (consommateur du porteur = pont, FUSION des réseaux, la route ne traverse jamais).
+  (5) **Nouvelle astuce `traverser_tuyau`** (brief `AJOUT_traverser_tuyau.md`) : scène puits →
+  tuyau → raffinerie (pont) → usine polymère, `when` = raffinerie débloquée, insérée APRÈS
+  traverser (TIP_SCENES 32→33). ⚠ Les 2 astuces restent en repli fr (pas de trad, précédent 13.32).
+  (6) **Flux nucléaires dans l'onglet Production** (retours « matériaux irradiés introuvables » et
+  « U235 pas consommé ») : le bloc centrale du tick lit/écrit le port EN DIRECT (hors
+  inByType/outByType) → invisibles dans `netFlow`/`islandFlowAgg`. Ajout de 5 `addFlow(roadNid,…)` :
+  cons `combustible_u235`, cons matériau de base, prod irradié/plutonium. (7) **Panneau Énergie** :
+  la ligne « Conso sigmoïdes (min→max) » devient **« Consommation min → max »** et s'affiche
+  TOUJOURS dès qu'il y a des consommateurs (plus gatée sur `demandVar` — demande : voir la conso
+  min et max) ; « Écart sigmoïdes » renommé **« Amplitude (sigmoïdes) »** (affiché seulement si ça
+  oscille). i18n : nouveau bloc d'augmentation (après le bloc 13.67) — 10 clés en/es/de. Aucune
+  mécanique/sauvegarde touchée hors affichage (`SAVE_VERSION` inchangé ; les addFlow sont du
+  reporting). Validé : `node --check` (7 blocs) + Chromium E2E fr-FR 45 assertions (statics scènes ;
+  EnergyPanel forgé : plage 100→400 kW + Amplitude 300 kW, conso fixe → plage sans Amplitude ;
+  Port forgé : badges drain+ping + tooltips ; four_fer u9 forgé in-vivo + tap réel → bouton 🔒
+  cliquable → popup → « Voir la recherche » ; Aide : 2 astuces dépliées, textes neufs, canvas 100 % ;
+  **moteur réel** : centrale forgée (BFS route→port + câble via `__gameRef`/`__heat.rebuildNetworks`)
+  → `netFlow` U235/acier/acier irradié ≈1/s exacts + lignes visibles dans l'onglet Production ;
+  0 erreur console) + smoke i18n en/es/de (10 clés résolues). ⚠ Piège harnais : `pointerToTile` est
+  relatif au CANVAS (`getBoundingClientRect`) — convertir les coords tuile→page en ajoutant
+  `rect.left/top` ; `g.catchingUp = true` gèle tick ET draw (données forgées stables, mais plus de
+  redraw) ; une astuce peut s'ouvrir juste avant le gel → purger `.tip-ok` avant les panneaux.
+  Build 248→249.
   Changement 13.67 : **effet du mode PRODUCTIVITÉ ÷10 au Nv.1 (retour testeur : « trop efficace »)
   + l'effet MONTE désormais avec le niveau de l'antenne.** Avant : rendement +100 % / vitesse −50 %
   PLAT quel que soit le niveau. Désormais **nouveau helper module `antProdEffect(f)`** (avant
