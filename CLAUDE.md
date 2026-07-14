@@ -17,7 +17,25 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 245`, `GAME_VERSION = 'Alpha 13.64'`, `SAVE_VERSION = 21`.**
+- **État au dernier passage : `GAME_BUILD = 246`, `GAME_VERSION = 'Alpha 13.65'`, `SAVE_VERSION = 21`.**
+  Changement 13.65 : **2 retours testeur — icônes des panneaux Réparer/Remblayer + gaz NON
+  transitables.** (1) **Coût en pastilles sprites** : la ligne « Coût » des panneaux terrain
+  (`InfoPanel`, branche `mode 'repair'/'extend'`) passait par `formatCost` (texte brut, pas de
+  notation port) → pastilles `.dr-res` (sprite `itemSpriteKey` + `RES_SHORT` + `fmtPort`), classe
+  `.ipc-ci.miss` (rouge) quand le stock du port ne couvre pas (sauf mode dev). (2) **Import/export
+  d'azote et d'oxygène INTERDITS** (demande : gaz = production locale seulement) :
+  `oxygene`/`azote` RETIRÉS de `TRADE_LIQUIDS` (posés en 13.59) → hors `TRADE_RESOURCES`, plus de
+  ligne dans la config Transit du Port ; ils restent stockés au port (tuyau relié) et visibles à
+  l'inventaire. Protection vieilles saves : (a) `tradePriorityFor` FILTRE désormais les entrées
+  devenues non transitables (en plus d'ajouter les manquantes) ; (b) **garde central dans
+  `rawShippable`** (`TRADE_RESOURCE_SET`, nouveau Set module) → 0 pour toute ressource hors
+  commerce, quel que soit le chemin (transferLink, pré-pass `transitDestPriority` — qui aurait
+  sinon expédié un gaz d'une save avec ordre explicite). `SAVE_VERSION` inchangé. Validé :
+  `node --check` (7 blocs) + Chromium E2E (pire cas forgé : 50k gaz + cible île 2 + gaz dans
+  tradePriority ET transitDestPriority → 4 s de ticks : flux 1→2 = acier seul (10/s), 0 gaz au
+  port 2, liste purgée/réconciliée ; InfoPanel standalone repair+extend : 2/3 pastilles avec
+  sprite, fmtPort, `.miss` rouge ; 0 erreur console). ⚠ Rendu standalone d'InfoPanel : opacity
+  reste 0 sans `stageRef` réel (layout effect) — asserter le DOM, pas les pixels. Build 245→246.
   Changement 13.64 : **chaleur de l'usine moteur nucléaire = 1024 kJ/s au Nv.1, ×2 par niveau.**
   Demande utilisateur. `bld.heatEmit` de `usine_moteur_nuc` (boucle bâtiment de `tickIsland`) passe
   de `1 × regime` (plat, quel que soit le niveau) à **`1.024 × mult × regime`** (`mult` = 2^upgrade
