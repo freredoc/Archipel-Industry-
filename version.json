@@ -1,8 +1,8 @@
 {
-  "build": 248,
-  "version": "Alpha 13.67",
+  "build": 249,
+  "version": "Alpha 13.68",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #241 — effet Productivité ÷10 au Nv.1, monte avec le niveau, build 248"
+  "notes": "Merge pull request #242 — Alpha 13.68 : popup densification, badges Port, tuto traverser, flux nucléaires Production, conso min/max (build 249)"
 }
