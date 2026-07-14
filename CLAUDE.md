@@ -17,7 +17,26 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 243`, `GAME_VERSION = 'Alpha 13.62'`, `SAVE_VERSION = 21`.**
+- **État au dernier passage : `GAME_BUILD = 244`, `GAME_VERSION = 'Alpha 13.63'`, `SAVE_VERSION = 21`.**
+  Changement 13.63 : **barre de CALIBRATION en sprite au-dessus de la centrale nucléaire.** Demande
+  utilisateur. (1) **9 sprites `ui_jauge_calib_000..100`** GÉNÉRÉS (les `ui_jauge_mj_*` du pack ROTÉS à
+  l'horizontale 32×8 + recoloration violette #7E57C2 — teinte HLS des pixels saturés, gris du cadre
+  conservés ; ~3 Ko), inlinés après `ui_jauge_mj_100`. (2) **Draw** (après la jauge de chaleur, avant le
+  post-effet endommagé) : si `bdef.nuclear && nucState === 'starting'` (calibrage/recalibrage) →
+  barre horizontale (largeur 1 tuile, h = tuile/4) CENTRÉE en haut de l'emprise 2×2, cran =
+  `round(nucTimer/300 × 8)` (300 = NUC_START, constante LOCALE au tick — dupliquée en littéral
+  commenté) ; remplissage gauche→droite ; disparaît en `running`/`stopping`/`off` ; ne chevauche pas
+  la jauge de chaleur (verticale, bord gauche, centrée verticalement) ; `_animPlayed` posé (redraw
+  ~10 FPS pendant la rampe) ; repli barre segmentée violette si sprite absent. (3) **Nouveau hook de
+  test `window.__gameRef`** (dans App, comme `__heat`) : accès à la partie en cours pour les E2E
+  (forge de bâtiments in-vivo, fini les saves forgées pour les cas simples). ⚠ Piège E2E découvert :
+  une centrale forgée sans câble/combustible est re-basculée `stopping` par le TICK suivant (la barre
+  « disparaît » en ~1 s) → forger avec `paused: true` (le tick saute le bâtiment, l'état nucléaire
+  reste gelé — et la barre reste visible sur une centrale en pause mi-calibrage, edge assumé).
+  `SAVE_VERSION` inchangé (nucState/nucTimer déjà transitoires). Validé : `node --check` (7 blocs) +
+  Chromium E2E partie réelle (9 sprites décodés ; centrale forgée au centre de la vue : barre à
+  7 %/50 %/95 % conforme aux captures zoomées, disparition en running ; 0 erreur console).
+  Build 243→244.
   Changement 13.62 : **4 fixes testeur (retours 13.59).** (1) **Icône azote** : sprite `item_azote`
   GÉNÉRÉ (recoloration verte de `item_oxygene`, bouteille de gaz, 16×16, 206 o) et inliné juste après
   lui — `itemSpriteKey('azote')` le prend automatiquement (inventaire/recettes/fiches/Port ; le pack
