@@ -1,8 +1,8 @@
 {
-  "build": 245,
-  "version": "Alpha 13.64",
+  "build": 246,
+  "version": "Alpha 13.65",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #238 — chaleur usine moteur nucléaire ×2 par niveau, build 245"
+  "notes": "Merge pull request #239 — icônes coût Réparer/Remblayer + gaz non transitables, build 246"
 }
