@@ -17,7 +17,48 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 241`, `GAME_VERSION = 'Alpha 13.60'`, `SAVE_VERSION = 20`.**
+- **État au dernier passage : `GAME_BUILD = 242`, `GAME_VERSION = 'Alpha 13.61'`, `SAVE_VERSION = 21`.**
+  Changement 13.61 : **GUIDE DYNAMIQUE post-tutoriel (brief `BRIEF_B_GUIDE_DYNAMIQUE`)** — la couche
+  « quoi faire ensuite » après le tuto : objectifs pilotés par l'ÉTAT (pas un compteur), correctifs
+  récurrents AVANT découvertes one-shot (K1). (1) **`GUIDE_OBJECTIVES`** (module, avant GAME_TIPS,
+  8 entrées) : fix_deconnecte / fix_deficit / fix_sature / go_recherche (fix, K2) / go_eolienne /
+  go_wire / go_ile2 / go_liaison ; `activeGuideObjective` = 1er `when` vrai non accompli (try/catch),
+  `guideHasTradeCfg`. ⚠ 4 écarts au brief (tous justifiés/testés) : (a) go_recherche `when` =
+  **`hasPendingResearch`** (pas « ≥1 condition_ok » : un nœud delivery est condition_ok IMMÉDIATEMENT
+  sans être payable → l'objectif serait affiché en permanence) ; (b) fix_deficit sur **`e.balance <
+  -1e-6`** (bilan honnête 13.8 — `demand > produced` sous-détecte, produced inclut la décharge
+  batterie) ; (c) `guideHasTradeCfg` = stockCible>0 (toute île) OU seuilExport>0 **île 1 seulement**
+  (le kickstart 13.31 pose des réserves sur l'île débloquée → le critère du brief était vrai sans
+  action du joueur) ; (d) fix_deconnecte **s'efface devant go_wire** (1re éolienne sans aucun câble :
+  « Relie-le au port » est trompeur, la leçon câble EST le correctif). (2) **`checkGuide()`** (App,
+  appelé avant checkTips dans la boucle rAF) : sélection d'objectif **throttlée ~4 Hz** (les when/done
+  scannent les tuiles de toutes les îles), avancement de cible PAR frame ; refs jumelles
+  `guideIdRef/guideObjRef/guideTargetRef` (lisibles depuis draw) + states guideId/guideTarget ;
+  discover accompli → `g.guide.done[id]` DÉFINITIF (K3) ; tip `why` ouvert UNE fois (marqué tipsSeen,
+  K7) ; tuto actif → guide inerte. (3) **Bannière** : `TutorialBanner` gagne le mode `total: 0` →
+  badge « Objectif » sans compteur, goal via **`I18N.t(o.goal)`** (couche ui, PAS applyToData) ;
+  montée après la bannière tuto (`tutorialStep < 0 && guideId`), halo DOM idem (masqué si popup) ;
+  le relayout du bandeau dépend désormais de `[tutorialStep >= 0, !!guideId]`. « Passer » →
+  `skipGuide` = guide ENTIER off (K4), toggle **« Guide »** dans les Options (`toggleGuide`,
+  pattern tipsEnabled). **PAS de gate d'onglets** (K5 — le tuto seul est bloquant). (4)
+  **`drawTutorialHalo` étendu** : gardes refondues (`tutorial actif → île 1 seulement` ; sinon lit
+  `guideObjRef/guideTargetRef` → **toutes les îles**, §11 du brief) + mots-clés `@disconnected`
+  (b.disc, île courante) et `@saturated` (tuiles des `netSaturated[isl]`). (5) **8e `data-tut`** :
+  `island-<id>` sur les onglets d'île (IslandSelector). (6) **`SAVE_VERSION` 20→21** (+21 whitelist) :
+  `guide {enabled, done, seenIsland2}` newGame/serialize/loadSave (save antérieure → défauts, le
+  joueur en cours bénéficie des objectifs pertinents — voulu). (7) **i18n** : 2e bloc d'augmentation
+  (après le bloc TUT 13.60) — 8 goals + Objectif/libellés/toasts en en/es/de. Validé : `node --check`
+  (7 blocs) + Chromium E2E 4 suites (~75 assertions au total) : guide partie 1 (statics — ordre K1,
+  7 why existants, 0 collision d'id —, tuto passé → 0 gate (K5), mine sans route posée en réel →
+  bannière Objectif + halo canvas sonde pixel + tip 1 fois, route L jusqu'au port → objectif résolu) ;
+  guide partie 2 saves forgées (go_eolienne → carte → outil ; go_wire ; go_ile2 → clic île 2 →
+  go_liaison + done persisté ; tradeConfig → résolu sans retour (K3) ; Passer + réactivation par le
+  toggle Options ; save v20 sans champ → défauts ; **halo canvas pulsé sur l'ÎLE 2** — test critique
+  §11) ; non-régression des 2 suites tuto 13.60 (fin de tuto : la bannière GUIDE peut enchaîner —
+  assertion adaptée) ; 0 erreur console partout. ⚠ Rappels harnais : la bannière guide partage la
+  classe `.tuto-banner` (tester le CONTENU, pas la présence) ; `disc` = « pas relié AU PORT » (une
+  tuile de route adjacente ne suffit pas — tracer le L complet) ; OptionsModal = `.slot-panel`/
+  `.slot-close`. Build 241→242.
   Changement 13.60 : **TUTORIEL V2 (île 1) — 8 étapes guidées, halo pulsé, popups « pourquoi »,
   tuto bloquant** (brief `BRIEF_TUTO_V2`, décisions D1-D5 actées). (1) **`TUTORIAL_STEPS` refondu
   (7 → 8 étapes, la ROUTE remonte en étape 2** pour boucler mine→route→port immédiatement) : chaque
