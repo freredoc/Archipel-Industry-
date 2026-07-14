@@ -1,8 +1,8 @@
 {
-  "build": 242,
-  "version": "Alpha 13.61",
+  "build": 244,
+  "version": "Alpha 13.63",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #237 — Guide dynamique post-tutoriel, build 242"
+  "notes": "Merge pull request #234 — 4 fixes testeur + barre de calibration de la centrale, build 244"
 }
