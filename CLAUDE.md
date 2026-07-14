@@ -17,7 +17,29 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 250`, `GAME_VERSION = 'Alpha 13.69'`, `SAVE_VERSION = 21`.**
+- **État au dernier passage : `GAME_BUILD = 251`, `GAME_VERSION = 'Alpha 13.70'`, `SAVE_VERSION = 21`.**
+  Changement 13.70 : **boost de VITESSE et conso élec. boostée de l'antenne ÷10 au Nv.1** (demande
+  utilisateur : aligner sur la productivité 13.67). 2 nouveaux helpers module à côté d'`antProdEffect`
+  (sources de vérité UNIQUES tick + fiches + bornes énergie + badge carte) : **`antSpeedMul(f)`**
+  = 1 + min(1, 5 %×f) (Nv.1 : ×1,1, Nv.2 : ×1,2…, plafonné ×2 = ancien effet Nv.1) et
+  **`antElecBoost(f)`** = min(2, 10 %×f) (conso sigmoïde ×1→×1,2 au Nv.1, ×1→×1,4 au Nv.2…,
+  plafonnée ×1→×3 = ancien effet) — `f` = facteur de zone brut 2^(upg+1), TOUJOURS stocké tel quel
+  dans `buffSet`/`bld.antennaBuff` (les helpers dérivent). Mécanique du mode PRODUCTIVITÉ intacte
+  (déjà ÷10 en 13.67) ; sa conso élec. boostée passe par le MÊME `antElecBoost`. Effet de bord
+  assumé : la chaleur d'antenne en mode prod (0,25 MJ × MW consommés EN PLUS) baisse d'autant.
+  9 spots : tick (power boosté + outMul/inMul via helpers), bornes `demandMin/Max` de la boucle
+  énergie (le fix 13.69 passe par `antElecBoost`), fiche bâtiment boosté (« Boost antenne ×1,1 »,
+  Élec. « boosté ×1→×1,2 » — nouveau formateur local `fxDec`, virgule fr), ligne « Effet » de la
+  fiche antenne, tooltip du bouton Vitesse du toggle (texte neuf + i18n en/es/de, nouvelle IIFE
+  d'augmentation), badge carte « ×N » (affiche le multiplicateur EFFECTIF ×1,1 — plus le facteur
+  brut ×2), astuce `antenne` (⚠ les entrées **LOCALES tips ×4 langues** ÉCRASENT l'inline via
+  `applyToData` → les 4 réécrites ; elles dataient d'avant 11.31 : « double la production »,
+  « 512 kW ») + astuce `antenne_modes` (inline fr, phrase Vitesse chiffrée). `SAVE_VERSION`
+  inchangé. `__heat` étendu (antProdEffect/antSpeedMul/antElecBoost). Validé : `node --check`
+  (7 blocs) + Chromium E2E fr-FR 18 assertions (helpers unitaires + plafonds ; moteur réel forgé :
+  bornes 1152/1177,6 kW exactes, panneau « 1,15 MW → 1,18 MW » + « Amplitude 26 kW » ; mine_fer
+  boostée → netFlow = base ×1,1 EXACT ; fiches mine + antenne « ×1,1 »/« ×1→×1,2 » par tap réel ;
+  0 erreur console) + smoke i18n en (tooltip + tips résolus). Build 250→251.
   Changement 13.69 : **fix « le boost élec. de l'antenne n'est pas pris en compte dans l'onglet
   Énergie ».** Retour testeur (suite du 13.68). Au tick, la conso d'un bâtiment boosté par
   l'antenne oscille du NOMINAL ×1 à ×(1+facteur) (`power = nomP × (1 + sig × fac)`, identique en
