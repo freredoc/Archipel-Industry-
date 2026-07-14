@@ -17,7 +17,23 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 247`, `GAME_VERSION = 'Alpha 13.66'`, `SAVE_VERSION = 21`.**
+- **État au dernier passage : `GAME_BUILD = 248`, `GAME_VERSION = 'Alpha 13.67'`, `SAVE_VERSION = 21`.**
+  Changement 13.67 : **effet du mode PRODUCTIVITÉ ÷10 au Nv.1 (retour testeur : « trop efficace »)
+  + l'effet MONTE désormais avec le niveau de l'antenne.** Avant : rendement +100 % / vitesse −50 %
+  PLAT quel que soit le niveau. Désormais **nouveau helper module `antProdEffect(f)`** (avant
+  `tickIsland`, source de vérité UNIQUE tick + fiches) : à partir du facteur de zone `f = 2^(upg+1)`
+  (le même que le boost VITESSE, déjà stocké dans `debuffSet`/`bld.antennaProd`) → **bonus de
+  rendement = 5 % × f** (Nv.1 : +10 %, Nv.2 : +20 %…, plafonné à +100 % = ancien effet) et **malus
+  de vitesse = 2,5 % × f** (Nv.1 : −5 %, plafonné à −50 %) ; SORTIE ×(1−malus), INTRANTS
+  ×(1−malus)/(1+bonus). Améliorer l'antenne sert donc AUSSI en mode prod (avant : seul l'élec
+  changeait). Conso élec. boostée ×1→×(1+f) et chaleur INCHANGÉES. 5 spots : tick (outMul/inMul),
+  fiche bâtiment boosté (antInMul/antOutMul + ligne « Productivité » DYNAMIQUE « rendement +X % ·
+  vitesse −Y % »), tooltip toggle antenne, ligne « Effet » de la fiche antenne (valeurs du niveau
+  courant), astuce `antenne_modes`. IIFE i18n 13.66 REMPLACÉE (clés obsolètes) par les nouvelles
+  clés en/es/de (dont « rendement »/« vitesse » composables). `SAVE_VERSION` inchangé. Validé :
+  `node --check` (7 blocs) + Chromium E2E moteur réel (four_fer + route port + câble + antenne
+  forgés, mode prod : Nv.1 → lingot 0,95/s & minerai/lingot = 8÷1,1 exacts ; antenne montée Nv.2
+  → 0,90/s & 8÷1,2 ; 0 erreur console). Build 247→248.
   Changement 13.66 : **reformulation du mode PRODUCTIVITÉ de l'antenne (retour testeur : « intrants
   ÷2 · sortie ×0,5 » incompréhensible).** Le concept est désormais présenté partout comme
   **« rendement ×2 · vitesse ×0,5 »** (= 2× moins de matières par unité produite, machine 2× plus
