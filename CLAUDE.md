@@ -17,7 +17,35 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 252`, `GAME_VERSION = 'Alpha 13.71'`, `SAVE_VERSION = 21`.**
+- **État au dernier passage : `GAME_BUILD = 253`, `GAME_VERSION = 'Alpha 13.72'`, `SAVE_VERSION = 22`.**
+  Changement 13.72 : **port — amélioration gatée sur la PROCHAINE île + transit ÷10 + coûts ÷10 +
+  migration douce des saves (SAVE_VERSION 22).** 3 demandes utilisateur. (1) **Gate « prochaine
+  île »** : améliorer le port de l'île N exige que l'île N+1 soit débloquée (l'île 5, dernière,
+  n'a pas de suivante → règle `hasLink` existante seule). 2 spots : handler `upgradePort` (toast
+  orange, filet) + `PortPanel` (message `.pp-port-locked` « 🔒 Débloquez l'île N… » quand une
+  liaison existe mais N+1 verrouillée, bouton Améliorer `disabled` via `nextLocked` ; le message
+  historique « réparez l'île voisine » couvre le cas 0 liaison). i18n : 2 clés composables
+  en/es/de. (2) **Transit ÷10 + coûts ÷10, ratio coût/débit INCHANGÉ** : `SHIP_BATCH` 600→**60**
+  (débit de base Normal 10→1 u/s) et `PORT_BASE_COST` ÷10 sur les 5 îles (î1 10k ciment + 10k
+  ling.fer, etc. — le commentaire « = coût de livraison du déblocage » n'est plus vrai).
+  ⚠ **Mode Difficile** : lot de base 6 → 0,1 u/s au niveau 0, or `transitPerSec` FLOORAIT → transit
+  MORT. Nouveau helper **`portRateAt(lvl)`** (source unique tick + panneau Port) : entier dès
+  1 u/s (comportement historique), **fractionnaire en dessous** — le moteur (`transferLink`)
+  déplace des quantités flottantes sans problème. (3) **Migration saves < 22** (`loadSave`, après
+  la restauration de `portSpeed`) : **+3 niveaux sur TOUTES les îles** (×8 ≈ ×10) → débit ET
+  prochains coûts ≈ 80 % de l'ancien barème, ratio coût/débit préservé, niveaux payés non
+  dévalués, save homogène (un port jamais amélioré passait sinon de 10 à 1 u/s). `SAVE_VERSION`
+  21→**22** (+22 whitelist), pas d'autre migration. Rappel mécanique : le niveau d'une LIAISON =
+  `max(portSpeed[src], portSpeed[dest])`. `__heat` étendu (PORT_BASE_COST/portUpgradeCost/
+  portRateAt/transitPerSec/ISLAND_ACCESS_NODE/linkActive). Validé : `node --check` (7 blocs) +
+  Chromium E2E fr-FR 31 assertions (coûts/débits/ratio exacts ; Difficile 0,1/0,8/1 u/s via
+  `applyGameMode` aller-retour ; save v21 forgée depuis une VRAIE save (skip tuto + flush
+  `pagehide`) → +3 partout, liaison 1-2 32 u/s = 80 % de l'ancien ; UI : verrou île 2→3 + bouton
+  disabled, île 1 sans verrou, « Débit max 32 u/s · lots ×32 » ; round-trip v22 sans double
+  migration — save en attente garantie par le toggle Cible⇒Réserve avant le flush ; 0 erreur
+  console) + non-régression suite 13.71 (36 assertions). ⚠ Piège harnais : le bouton PORT du HUD
+  se sélectionne par `button[title="Configuration du port (commerce)"]` (2 `.research-btn`).
+  Build 252→253.
   Changement 13.71 : **patch 5 demandes utilisateur — conduit polymère ÷10 + réseaux ×8/niveau +
   nœud 28 pure réparation + centrale ×2 (ratio 1024 kW : 128 kJ) + menu Bâtiment rabattable/recherche.**
   (1) **Conduit : polymère ÷10** (cuivre INCHANGÉ) aux 3 spots : pose (def `BUILDINGS.conduit.cost`
