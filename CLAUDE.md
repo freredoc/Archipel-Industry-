@@ -17,7 +17,42 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 251`, `GAME_VERSION = 'Alpha 13.70'`, `SAVE_VERSION = 21`.**
+- **État au dernier passage : `GAME_BUILD = 252`, `GAME_VERSION = 'Alpha 13.71'`, `SAVE_VERSION = 21`.**
+  Changement 13.71 : **patch 5 demandes utilisateur — conduit polymère ÷10 + réseaux ×8/niveau +
+  nœud 28 pure réparation + centrale ×2 (ratio 1024 kW : 128 kJ) + menu Bâtiment rabattable/recherche.**
+  (1) **Conduit : polymère ÷10** (cuivre INCHANGÉ) aux 3 spots : pose (def `BUILDINGS.conduit.cost`
+  100→10/tuile), table `NETWORK_UPGRADE_COST.conduit` (1000→100, 10000→1000) et formule
+  `networkUnitCost` conduit (100×10^lvl → 10×10^lvl) — table et formule restent égales. (2) **Montée
+  des AUTRES réseaux (route/tuyau/câble) plus pénalisante** : niveaux 3+ passent de ×4 à **×8 par
+  niveau** (`Math.pow(8, level-3)`, aligné sur le débit ×8/palier → le coût par unité de débit ne
+  baisse plus ; 3→4 = 800 inchangé, 4→5 = 6400, 5→6 = 51200…). Le rattrapage à la pose (`tbl[3]`)
+  reste cohérent (= cran 3→4 de la formule). (3) **Nœud 28 (Navire Futuriste) = pure RÉPARATION** :
+  les 3 reqs `produce` (10000 EMN + 100000 acier irr. + 100000 câble irr.) DUPLIQUAIENT la livraison
+  → le joueur « payait » deux fois (production cumulée PUIS stock à livrer). `reqs: []` désormais
+  (comme les accès d'île 2/8/14/21) : prêt à livrer dès le nœud 25 confirmé, la livraison (inchangée)
+  est le seul coût. Saves existantes : `nodeCond` sur reqs vides = true → condition_ok au 1er
+  evaluateTechTree, aucune migration. (4) **Centrale nucléaire ×2 + nouveau ratio chaleur** :
+  `NUC_POWER` 8192→**16384** (2 spots : tick + fiche) et **`HEAT_PER_MW` 0,25→0,125** (= 1024 kW →
+  128 kJ/s demandé) → la chaleur à pleine puissance V1 reste 2,048 MJ/s (mêmes tours/conduits).
+  Les 2 `0.25` codés en dur de la fiche centrale (lignes Sortie/Prod. théorique) passent par
+  `HEAT_PER_MW`. ⚠ Effet de bord assumé : la chaleur d'antenne en mode prod (même constante) ÷2.
+  (5) **Menu Bâtiment** : chaque catégorie a une **tête cliquable** (`.tool-group-head`, chevron
+  ▸/▾, SFX click) qui la rabat (`collapsed[gk]`, état de SESSION dans la Toolbar — survit à
+  l'ouverture/fermeture comme le scroll 13.37, non persisté) + pastille `notif-dot` sur une tête
+  repliée cachant un bâtiment « nouveau » ; **champ de recherche sticky** (`.bp-search`, menu
+  Bâtiment seulement) filtrant par nom localisé, insensible aux accents (`normSearch` =
+  lowercase + NFD), la recherche IGNORE le rabattage, message `.bp-empty` si 0 résultat, effacée à
+  la fermeture du panneau (useEffect sur buildOpen) ; le menu Réseau est rabattable aussi (pas de
+  recherche). `renderGroups(groups, gate, opts {collapsible, query})`. i18n : nouvelle IIFE (4 clés
+  en/es/de). `__heat` étendu (networkUnitCost/NETWORK_UPGRADE_COST/TECH_NODES/TECH_BY_ID/
+  HEAT_PER_MW). `SAVE_VERSION` inchangé. Validé : `node --check` (7 blocs) + Chromium E2E fr-FR
+  36 assertions (données exactes ×3 réseaux + conduit ; moteur réel : centrale 2×2 forgée in-vivo
+  (ancre + tuiles `occupied`) → `heatEmit/nucCur` = 0,000125 EXACT au tick ; menu : replier/déplier
+  par tête, « carriere » trouve « Carrière V1 » dans une catégorie REPLIÉE, .bp-empty, ✕, recherche
+  vidée à la réouverture, Réseau sans champ ; `fmtHeat(16384×0,125/1000)` = « 2,05 MJ » ; 0 erreur
+  console) + smoke i18n en (4 clés résolues). ⚠ Rappel harnais : `window.__gameRef` est le REF
+  (`.current`) ; le 1er enfant de `.build-panel` est désormais `.bp-search` (les sélecteurs
+  `:first-child` sur les groupes ne matchent plus). Build 251→252.
   Changement 13.70 : **boost de VITESSE et conso élec. boostée de l'antenne ÷10 au Nv.1** (demande
   utilisateur : aligner sur la productivité 13.67). 2 nouveaux helpers module à côté d'`antProdEffect`
   (sources de vérité UNIQUES tick + fiches + bornes énergie + badge carte) : **`antSpeedMul(f)`**

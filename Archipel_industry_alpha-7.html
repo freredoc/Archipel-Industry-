@@ -1016,6 +1016,24 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .build-panel .tool-btn{min-width:0;}
 .build-panel .tool-btn .tb-name{white-space:normal;}
 .build-panel .tool-btn .tb-sub{white-space:normal;line-height:1.15;}
+/* 13.71 — Menu Bâtiment : catégories rabattables (tête cliquable + chevron) + recherche. */
+.tool-group-head{display:flex;align-items:center;gap:6px;width:100%;background:none;border:none;
+  padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;text-align:left;}
+.tool-group-head .tool-group-label{pointer-events:none;}
+.tool-group-head:hover .tool-group-label{color:var(--yellow);}
+.tool-group-chev{font-size:.6rem;line-height:1;color:var(--ink-dim);width:10px;flex-shrink:0;}
+.tool-group-head .notif-dot{position:static;margin-left:2px;flex-shrink:0;}
+.build-panel .tool-group.collapsed{padding-top:6px;padding-bottom:6px;}
+.bp-search{position:sticky;top:0;z-index:3;display:flex;gap:6px;padding:7px 10px;flex-shrink:0;
+  background:var(--panel);border-bottom:1px solid var(--line);}
+.bp-search-input{flex:1;min-width:0;background:var(--panel-2);border:1px solid var(--line);
+  color:var(--ink);border-radius:6px;padding:6px 9px;font:inherit;font-size:.8rem;}
+.bp-search-input::placeholder{color:var(--ink-faint);}
+.bp-search-input:focus{outline:none;border-color:var(--yellow);}
+.bp-search-clear{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+  border-radius:6px;padding:0 11px;cursor:pointer;font:inherit;}
+.bp-search-clear:hover{border-color:var(--red);color:#ff7a72;}
+.bp-empty{padding:14px 12px;color:var(--ink-dim);font-size:.8rem;}
 .tool-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:76px;
   background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px 8px;
   cursor:pointer;text-align:left;transition:border-color .1s,background .1s;flex-shrink:0;}
@@ -2213,6 +2231,8 @@ window.__SPRITE_DATA__["ui_jauge_calib_100"]="data:image/png;base64,iVBORw0KGgoA
 
 /* i18n — libellés supplémentaires (catégories du menu Bâtiment + Options langue) ajoutés aux 4 langues. */
 (function(){ if(!window.I18N||!I18N.locales) return; var ADD={"en":{" (amplitude)":" (amplitude)","Infrastructure":"Infrastructure","Jonctions":"Junctions","Extraction":"Extraction","Énergie":"Energy","Fer-acier":"Iron & Steel","Ciment & béton":"Cement & Concrete","Cuivre":"Copper","Électronique":"Electronics","Plastique et chimie":"Plastics & Chemicals","Nucléaire":"Nuclear","Langue":"Language","Langue du jeu (système par défaut)":"Game language (system default)","Transit île":"Island transit","Transit archipel":"Archipelago transit","Flux entre îles":"Flows between islands","Aucun flux de transit en cours.":"No transit flow in progress.","Conso. théorique":"Theoretical consumption","Prod. théorique":"Theoretical output","Charge/Déch.":"Charge/Disch.","plein dans ":"full in ","vide dans ":"empty in ","plein":"full","vide":"empty","stable (ni charge ni décharge)":"stable (no charge/discharge)","Cible ⇒ Réserve":"Target ⇒ Reserve","OUI":"YES","NON":"NO","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"When on, editing the target also sets the reserve (one way: target ⇒ reserve) for every resource on this island"," — ce réseau produit ":" — this grid produces "," demandés":" requested"," — câble saturé : débit ":" — cable saturated: throughput ","⚡ Réseau en déficit · 0% batterie":"⚡ Grid in deficit · 0% battery"," réseaux en déficit · 0% batterie":" grids in deficit · 0% battery","nouveau":"new","Débloqué récemment — jamais sélectionné":"Recently unlocked — never selected","Mode rapide":"Fast mode","Cliquer pour accélérer / ralentir le temps de jeu":"Click to speed up / slow down game time","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"Game time runs at ×10 (sound muted). Toggle anytime via the clock.","Production hors-ligne":"Offline production","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Catches up production while you're away. Off: the game only progresses while open."," Densifier ":" Densify ","Densifier → ":"Densify → ","Densification":"Densification","Densification → ":"Densification → ","Recherche requise":"Research required","Recherche requise : ":"Research required: ","Niveau max. atteint — densifier vers ":"Max level reached — densify into ","Y aller":"Go there","Aller à cette île":"Go to this island","Astuces débloquées":"Unlocked tips","Voir l'astuce complète":"Show the full tip","Replier":"Collapse","🔒 D'autres astuces se débloqueront en progressant.":"🔒 More tips will unlock as you progress.","Aide — astuces débloquées":"Help — unlocked tips","Mettre en pause":"Pause","Reprendre la production":"Resume production","en pause (par le joueur)":"paused (by you)","en pause":"paused","production reprise":"production resumed","Relancer la production de ce bâtiment":"Restart this building's production","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Suspend this building (consumes and produces nothing)","transit":"transit","export":"export","import":"import","remplissage":"filling","en attente":"waiting","cible atteinte":"target reached","Reçu et réexpédié : ":"Received and forwarded: ","Exporte ":"Exporting ","/s vers une île voisine":"/s to a neighbouring island","Importe ":"Importing ","/s depuis une île voisine":"/s from a neighbouring island","La production locale remplit le stock vers la cible (":"Local production is filling the stock toward the target (","/s)":"/s)","Cible non atteinte et rien n'arrive : l'île voisine n'a pas de surplus à envoyer":"Target not reached and nothing incoming: the neighbouring island has no surplus to send","Le stock couvre la cible configurée":"Stock covers the configured target","Quitter":"Exit","Quitter le mode en cours":"Exit the current mode","⚠️ Aucune tour aéroréfrigérante fonctionnelle reliée par conduit — la centrale va surchauffer !":"⚠️ No working cooling tower connected by heat pipe — the plant will overheat!","/s évacués":"/s evacuated","Tuiles × débit/tuile : chaleur qui peut transiter par seconde (le conduit ne stocke rien)":"Tiles × throughput/tile: heat that can flow through per second (the duct stores nothing)","Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).":"Heat actually evacuated to the towers this tick. Red: duct saturated (upgrade its level or add tiles).","Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).":"Heat stored in the building. Cap = 1 min of emission — once reached, the building breaks down (overheat)."},"es":{" (amplitude)":" (amplitud)","Infrastructure":"Infraestructura","Jonctions":"Uniones","Extraction":"Extracción","Énergie":"Energía","Fer-acier":"Hierro y acero","Ciment & béton":"Cemento y hormigón","Cuivre":"Cobre","Électronique":"Electrónica","Plastique et chimie":"Plásticos y química","Nucléaire":"Nuclear","Langue":"Idioma","Langue du jeu (système par défaut)":"Idioma del juego (sistema por defecto)","Transit île":"Tránsito de la isla","Transit archipel":"Tránsito del archipiélago","Flux entre îles":"Flujos entre islas","Aucun flux de transit en cours.":"Ningún flujo de tránsito en curso.","Conso. théorique":"Consumo teórico","Prod. théorique":"Producción teórica","Charge/Déch.":"Carga/Desc.","plein dans ":"lleno en ","vide dans ":"vacío en ","plein":"lleno","vide":"vacío","stable (ni charge ni décharge)":"estable (sin carga/descarga)","Cible ⇒ Réserve":"Objetivo ⇒ Reserva","OUI":"SÍ","NON":"NO","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"Cuando está activado, editar el objetivo también fija la reserva (un solo sentido: objetivo ⇒ reserva) para todos los recursos de esta isla"," — ce réseau produit ":" — esta red produce "," demandés":" solicitados"," — câble saturé : débit ":" — cable saturado: caudal ","⚡ Réseau en déficit · 0% batterie":"⚡ Red en déficit · 0% batería"," réseaux en déficit · 0% batterie":" redes en déficit · 0% batería","nouveau":"nuevo","Débloqué récemment — jamais sélectionné":"Desbloqueado hace poco — nunca seleccionado","Mode rapide":"Modo rápido","Cliquer pour accélérer / ralentir le temps de jeu":"Pulsa para acelerar / ralentizar el tiempo de juego","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"El tiempo de juego corre a ×10 (sonido silenciado). Conmutable en cualquier momento con el reloj.","Production hors-ligne":"Producción sin conexión","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Recupera la producción durante una ausencia. Desactivado: el juego solo avanza mientras está abierto."," Densifier ":" Densificar ","Densifier → ":"Densificar → ","Densification":"Densificación","Densification → ":"Densificación → ","Recherche requise":"Investigación necesaria","Recherche requise : ":"Investigación necesaria: ","Niveau max. atteint — densifier vers ":"Nivel máx. alcanzado — densificar hacia ","Y aller":"Ir allí","Aller à cette île":"Ir a esta isla","Astuces débloquées":"Consejos desbloqueados","Voir l'astuce complète":"Ver el consejo completo","Replier":"Plegar","🔒 D'autres astuces se débloqueront en progressant.":"🔒 Se desbloquearán más consejos a medida que avances.","Aide — astuces débloquées":"Ayuda — consejos desbloqueados","Mettre en pause":"Pausar","Reprendre la production":"Reanudar la producción","en pause (par le joueur)":"en pausa (por el jugador)","en pause":"en pausa","production reprise":"producción reanudada","Relancer la production de ce bâtiment":"Reiniciar la producción de este edificio","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Suspender este edificio (no consume ni produce nada)","transit":"tránsito","export":"exportación","import":"importación","remplissage":"llenado","en attente":"en espera","cible atteinte":"objetivo alcanzado","Reçu et réexpédié : ":"Recibido y reexpedido: ","Exporte ":"Exporta ","/s vers une île voisine":"/s hacia una isla vecina","Importe ":"Importa ","/s depuis une île voisine":"/s desde una isla vecina","La production locale remplit le stock vers la cible (":"La producción local llena el stock hacia el objetivo (","/s)":"/s)","Cible non atteinte et rien n'arrive : l'île voisine n'a pas de surplus à envoyer":"Objetivo no alcanzado y no llega nada: la isla vecina no tiene excedente que enviar","Le stock couvre la cible configurée":"El stock cubre el objetivo configurado","Quitter":"Salir","Quitter le mode en cours":"Salir del modo actual","⚠️ Aucune tour aéroréfrigérante fonctionnelle reliée par conduit — la centrale va surchauffer !":"⚠️ Ninguna torre de refrigeración funcional conectada por conducto — ¡la central se sobrecalentará!","/s évacués":"/s evacuados","Tuiles × débit/tuile : chaleur qui peut transiter par seconde (le conduit ne stocke rien)":"Casillas × caudal/casilla: calor que puede transitar por segundo (el conducto no almacena nada)","Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).":"Calor realmente evacuado hacia las torres este tick. Rojo: conducto saturado (mejora el nivel o añade casillas).","Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).":"Calor almacenado en el edificio. Límite = 1 min de emisión — al alcanzarlo, el edificio se avería (sobrecalentamiento)."},"de":{" (amplitude)":" (Amplitude)","Infrastructure":"Infrastruktur","Jonctions":"Kreuzungen","Extraction":"Förderung","Énergie":"Energie","Fer-acier":"Eisen & Stahl","Ciment & béton":"Zement & Beton","Cuivre":"Kupfer","Électronique":"Elektronik","Plastique et chimie":"Kunststoff & Chemie","Nucléaire":"Nuklear","Langue":"Sprache","Langue du jeu (système par défaut)":"Spielsprache (System-Standard)","Transit île":"Insel-Transit","Transit archipel":"Archipel-Transit","Flux entre îles":"Flüsse zwischen Inseln","Aucun flux de transit en cours.":"Kein Transitfluss aktiv.","Conso. théorique":"Theoret. Verbrauch","Prod. théorique":"Theoret. Leistung","Charge/Déch.":"Laden/Entl.","plein dans ":"voll in ","vide dans ":"leer in ","plein":"voll","vide":"leer","stable (ni charge ni décharge)":"stabil (kein Laden/Entladen)","Cible ⇒ Réserve":"Ziel ⇒ Reserve","OUI":"JA","NON":"NEIN","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"Wenn aktiv, setzt das Bearbeiten des Ziels auch die Reserve (nur eine Richtung: Ziel ⇒ Reserve) für alle Ressourcen dieser Insel"," — ce réseau produit ":" — dieses Netz erzeugt "," demandés":" angefordert"," — câble saturé : débit ":" — Kabel ausgelastet: Durchsatz ","⚡ Réseau en déficit · 0% batterie":"⚡ Netz im Defizit · 0% Batterie"," réseaux en déficit · 0% batterie":" Netze im Defizit · 0% Batterie","nouveau":"neu","Débloqué récemment — jamais sélectionné":"Kürzlich freigeschaltet — nie ausgewählt","Mode rapide":"Schnellmodus","Cliquer pour accélérer / ralentir le temps de jeu":"Klicken, um die Spielzeit zu beschleunigen / verlangsamen","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"Die Spielzeit läuft mit ×10 (Ton aus). Jederzeit über die Uhr umschaltbar.","Production hors-ligne":"Offline-Produktion","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Holt die Produktion während einer Abwesenheit nach. Aus: Das Spiel läuft nur, solange es geöffnet ist."," Densifier ":" Verdichten ","Densifier → ":"Verdichten → ","Densification":"Verdichtung","Densification → ":"Verdichtung → ","Recherche requise":"Forschung erforderlich","Recherche requise : ":"Forschung erforderlich: ","Niveau max. atteint — densifier vers ":"Max. Stufe erreicht — verdichten zu ","Y aller":"Dorthin","Aller à cette île":"Zu dieser Insel wechseln","Astuces débloquées":"Freigeschaltete Tipps","Voir l'astuce complète":"Vollständigen Tipp anzeigen","Replier":"Einklappen","🔒 D'autres astuces se débloqueront en progressant.":"🔒 Weitere Tipps werden im Spielverlauf freigeschaltet.","Aide — astuces débloquées":"Hilfe — freigeschaltete Tipps","Mettre en pause":"Pausieren","Reprendre la production":"Produktion fortsetzen","en pause (par le joueur)":"pausiert (vom Spieler)","en pause":"pausiert","production reprise":"Produktion fortgesetzt","Relancer la production de ce bâtiment":"Produktion dieses Gebäudes wieder starten","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Gebäude anhalten (verbraucht und produziert nichts mehr)","transit":"Transit","export":"Export","import":"Import","remplissage":"Auffüllen","en attente":"wartet","cible atteinte":"Ziel erreicht","Reçu et réexpédié : ":"Empfangen und weitergeleitet: ","Exporte ":"Exportiert ","/s vers une île voisine":"/s zu einer Nachbarinsel","Importe ":"Importiert ","/s depuis une île voisine":"/s von einer Nachbarinsel","La production locale remplit le stock vers la cible (":"Die lokale Produktion füllt den Bestand Richtung Ziel (","/s)":"/s)","Cible non atteinte et rien n'arrive : l'île voisine n'a pas de surplus à envoyer":"Ziel nicht erreicht und nichts kommt an: die Nachbarinsel hat keinen Überschuss zu senden","Le stock couvre la cible configurée":"Der Bestand deckt das konfigurierte Ziel","Quitter":"Beenden","Quitter le mode en cours":"Aktuellen Modus beenden","⚠️ Aucune tour aéroréfrigérante fonctionnelle reliée par conduit — la centrale va surchauffer !":"⚠️ Kein funktionierender Kühlturm per Leitung verbunden — das Kraftwerk wird überhitzen!","/s évacués":"/s abgeführt","Tuiles × débit/tuile : chaleur qui peut transiter par seconde (le conduit ne stocke rien)":"Felder × Durchsatz/Feld: Wärme, die pro Sekunde durchfließen kann (die Leitung speichert nichts)","Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).":"Tatsächlich zu den Türmen abgeführte Wärme in diesem Tick. Rot: Leitung ausgelastet (Stufe erhöhen oder Felder hinzufügen).","Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).":"Im Gebäude gespeicherte Wärme. Limit = 1 Min. Emission — bei Erreichen fällt das Gebäude aus (Überhitzung)."}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+// Menu Bâtiment 13.71 : catégories rabattables + recherche textuelle.
+(function(){ if(!window.I18N||!I18N.locales) return; var ADD={"en":{"Rechercher un bâtiment…":"Search buildings…","Effacer la recherche":"Clear the search","Aucun bâtiment ne correspond.":"No building matches.","Replier / déplier la catégorie":"Collapse / expand this category"},"es":{"Rechercher un bâtiment…":"Buscar un edificio…","Effacer la recherche":"Borrar la búsqueda","Aucun bâtiment ne correspond.":"Ningún edificio coincide.","Replier / déplier la catégorie":"Plegar / desplegar la categoría"},"de":{"Rechercher un bâtiment…":"Gebäude suchen…","Effacer la recherche":"Suche löschen","Aucun bâtiment ne correspond.":"Kein Gebäude passt zur Suche.","Replier / déplier la catégorie":"Kategorie ein-/ausklappen"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 // Textes du mode PRODUCTIVITÉ (13.67 : effet ÷10 au Nv.1, ×2/niveau — remplace les clés 13.66).
 (function(){ if(!window.I18N||!I18N.locales) return; var ADD={"en":{"rendement":"yield","vitesse":"speed","Bâtiment dans la zone d'une antenne en PRODUCTIVITÉ : consomme moins de matières par unité produite, mais tourne un peu plus lentement ; conso élec. boostée":"Building in the zone of an antenna in PRODUCTIVITY mode: uses less material per unit produced, but runs slightly slower; boosted power draw","Rendement amélioré : les machines consomment moins de matières par unité produite, au prix d'une légère baisse de vitesse (Nv.1 : rendement +10 % · vitesse −5 %, ×2 par niveau) · émet de la chaleur (conduit + tour)":"Improved yield: machines use less material per unit produced, at the cost of a slight speed loss (Lv.1: yield +10% · speed −5%, ×2 per level) · emits heat (duct + tower)","Productivité : rendement +":"Productivity: yield +"," % (moins de matières par unité produite) · vitesse −":"% (less material per unit produced) · speed −"," % (8 cases) · émet de la chaleur · conso élec. ×1→×":"% (8 tiles) · emits heat · power draw ×1→×"},"es":{"rendement":"rendimiento","vitesse":"velocidad","Bâtiment dans la zone d'une antenne en PRODUCTIVITÉ : consomme moins de matières par unité produite, mais tourne un peu plus lentement ; conso élec. boostée":"Edificio en la zona de una antena en PRODUCTIVIDAD: consume menos materiales por unidad producida, pero funciona un poco más lento; consumo eléctrico aumentado","Rendement amélioré : les machines consomment moins de matières par unité produite, au prix d'une légère baisse de vitesse (Nv.1 : rendement +10 % · vitesse −5 %, ×2 par niveau) · émet de la chaleur (conduit + tour)":"Rendimiento mejorado: las máquinas consumen menos materiales por unidad producida, a costa de una ligera pérdida de velocidad (Nv.1: rendimiento +10% · velocidad −5%, ×2 por nivel) · emite calor (conducto + torre)","Productivité : rendement +":"Productividad: rendimiento +"," % (moins de matières par unité produite) · vitesse −":"% (menos materiales por unidad producida) · velocidad −"," % (8 cases) · émet de la chaleur · conso élec. ×1→×":"% (8 casillas) · emite calor · consumo eléctrico ×1→×"},"de":{"rendement":"Ausbeute","vitesse":"Tempo","Bâtiment dans la zone d'une antenne en PRODUCTIVITÉ : consomme moins de matières par unité produite, mais tourne un peu plus lentement ; conso élec. boostée":"Gebäude in der Zone einer Antenne im PRODUKTIVITÄTS-Modus: verbraucht weniger Material pro erzeugter Einheit, läuft aber etwas langsamer; erhöhter Stromverbrauch","Rendement amélioré : les machines consomment moins de matières par unité produite, au prix d'une légère baisse de vitesse (Nv.1 : rendement +10 % · vitesse −5 %, ×2 par niveau) · émet de la chaleur (conduit + tour)":"Verbesserte Ausbeute: Maschinen verbrauchen weniger Material pro erzeugter Einheit, dafür etwas langsamer (St.1: Ausbeute +10% · Tempo −5%, ×2 pro Stufe) · erzeugt Wärme (Leitung + Turm)","Productivité : rendement +":"Produktivität: Ausbeute +"," % (moins de matières par unité produite) · vitesse −":"% (weniger Material pro erzeugter Einheit) · Tempo −"," % (8 cases) · émet de la chaleur · conso élec. ×1→×":"% (8 Felder) · erzeugt Wärme · Stromverbrauch ×1→×"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 
@@ -3243,7 +3263,7 @@ const BUILDINGS = {
     size: [1, 1],
     cost: {
       lingot_cuivre: 1000,
-      polymere: 100
+      polymere: 10
     },
     power: 0
   },
@@ -4942,20 +4962,21 @@ const NETWORK_UPGRADE_COST = {
     }
   },
   // Conduit de chaleur : montée ×10 par palier (cuivre + polymère), débit ×8 par palier.
+  // (Polymère ÷10 en 13.71 : base 10/tuile, montées 100 puis 1000 — le cuivre est inchangé.)
   conduit: {
     1: {
       lingot_cuivre: 10000,
-      polymere: 1000
+      polymere: 100
     },
     2: {
       lingot_cuivre: 100000,
-      polymere: 10000
+      polymere: 1000
     }
   }
 };
 // Débit d'un conduit de chaleur (MJ/s) PAR TUILE selon le niveau : V1=1,024, V2=8,192,
 // V3=65,536… (×8/palier). Base 1,024 MJ (= 1024 kJ, échelle BINAIRE alignée sur les kW :
-// 1 tuile V1 = exactement l'absorption d'une tour V1 à 1,024 MJ/s, centrale 8192 kW = 2,048).
+// 1 tuile V1 = exactement l'absorption d'une tour V1 à 1,024 MJ/s, centrale 16384 kW = 2,048).
 const conduitDebit = level => 1.024 * Math.pow(8, (level || 1) - 1);
 // Matériaux des paliers élevés (niveau 3 → 4 et au-delà), par type de réseau.
 //  - cheap   : matériau « volume » (UNIQUE matériau d'amélioration — le béton armé et
@@ -4982,14 +5003,15 @@ const NETWORK_HI_CHEAP_BASE = 800;
 const NETWORK_HI_PREMIUM_BASE = 100;
 const NETWORK_UNLIMITED_COST = 10000;
 // Coût unitaire (par tuile) pour passer du niveau `level` au niveau `level+1`.
-// Niveaux 1-2 : tables ci-dessus (matériau de base). Niveaux 3+ : choix du matériau
-// (cheap/premium), coût ×4 par niveau — toujours croissant, sans fin.
+// Niveaux 1-2 : tables ci-dessus (matériau de base). Niveaux 3+ : coût ×8 par niveau
+// (aligné sur le débit ×8/palier → le coût par unité de débit ne baisse plus) —
+// toujours croissant, sans fin.
 function networkUnitCost(type, level, payMat) {
   const tbl = NETWORK_UPGRADE_COST[type] || {};
   // Conduit : coût ×10 par palier, sans choix de matériau ni état illimité.
   if (type === 'conduit') return {
     lingot_cuivre: 1000 * Math.pow(10, level),
-    polymere: 100 * Math.pow(10, level)
+    polymere: 10 * Math.pow(10, level)
   };
   if (level < 3) return tbl[level] || {};
   const m = NETWORK_HI_MATS[type];
@@ -4998,7 +5020,7 @@ function networkUnitCost(type, level, payMat) {
   const mat = usePrem ? m.premium : m.cheap;
   const base = usePrem ? NETWORK_HI_PREMIUM_BASE : NETWORK_HI_CHEAP_BASE;
   return {
-    [mat]: base * Math.pow(4, level - 3)
+    [mat]: base * Math.pow(8, level - 3)
   };
 }
 const SAVE_KEY = 'archipel_save_v1';
@@ -5086,8 +5108,8 @@ const SAVE_VERSION = 21;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 251;
-const GAME_VERSION = 'Alpha 13.70';
+const GAME_BUILD = 252;
+const GAME_VERSION = 'Alpha 13.71';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -6079,8 +6101,11 @@ function networkTileCount(game, islandId, networkId) {
   return n;
 }
 // ============ CHALEUR / REFROIDISSEMENT ============
-// Ratio chaleur : 0,25 MJ/s émis par MW (puissance interne en kW → /1000 puis ×0,25).
-const HEAT_PER_MW = 0.25;
+// Ratio chaleur : 0,125 MJ/s émis par MW (puissance interne en kW → /1000 puis ×0,125),
+// soit 1024 kW → 128 kJ/s (÷2 en 13.71, avec la puissance de la centrale ×2 : la chaleur
+// à pleine puissance V1 est INCHANGÉE — 16384 kW × 0,125 = 2,048 MJ/s). Vaut aussi pour
+// la chaleur de l'antenne en mode productivité (÷2, effet de bord assumé).
+const HEAT_PER_MW = 0.125;
 // Coût TOTAL cumulé d'un bâtiment = coût de construction + toutes les améliorations payées.
 // Sert à calculer la pénalité de réparation (20 %) après une surchauffe (trip).
 function buildingTotalCost(bld) {
@@ -6517,7 +6542,7 @@ function tickIsland(game, isl) {
   // L'antenne a 2 modes (toggle joueur) + 1 état subi :
   //  • VITESSE (défaut) : ×2 intrants & sortants sur 8 cases, conso ×3 sigmoïde, AUCUNE chaleur.
   //  • PRODUCTIVITÉ : vitesse −50 % ET intrants ÷2 ; conso élec. des voisins INCHANGÉE (×3),
-  //    chaleur émise par l'antenne = 0,25 MJ/s × (MW consommés EN PLUS par les voisins).
+  //    chaleur émise par l'antenne = HEAT_PER_MW (0,125) MJ/s × (MW consommés EN PLUS par les voisins).
   //  • SURCHAUFFE (endommagé) : l'antenne s'arrête, mais en mode productivité le debuff voisins
   //    RESTE appliqué pendant les 5 min (gel de l'accumulation de chaleur côté antenne).
   // buffSet[bk] = facteur de boost VITESSE ; debuffSet[bk] = facteur des voisins en PRODUCTIVITÉ.
@@ -6888,7 +6913,7 @@ function tickIsland(game, isl) {
       regime
     });
   }
-  // Chaleur de l'antenne (mode PRODUCTIVITÉ) : 0,25 MJ/s par MW consommé EN PLUS par les voisins.
+  // Chaleur de l'antenne (mode PRODUCTIVITÉ) : HEAT_PER_MW (0,125) MJ/s par MW consommé EN PLUS par les voisins.
   if (antBld) antBld.heatEmit = antMode === 'prod' && !antBld.damaged ? HEAT_PER_MW * antExtraKw / 1000 : 0;
   // Per-network throughput factor based on each network's level cap.
   const netFactor = {};
@@ -7020,8 +7045,8 @@ function tickIsland(game, isl) {
       NUC_STOP = 30,
       NUC_SAFETY = 300,
       // 5 min de mise en sécurité (manque de refroidissement)
-      NUC_POWER = 8192,
-      // 8 MW à V1 niveau 1 / 100 % (×2^upgrade ensuite)
+      NUC_POWER = 16384,
+      // 16 MW à V1 niveau 1 / 100 % (×2^upgrade ensuite)
       NUC_COOL = 256;
     const matKey = (game.nuclearConfig && game.nuclearConfig[isl]) || 'acier';
     const irrKey = matKey + '_irradie';
@@ -7174,7 +7199,7 @@ function tickIsland(game, isl) {
       energyProduced += nucPower;
       wireProd[nucWireNid] = (wireProd[nucWireNid] || 0) + nucPower;
     }
-    // Chaleur émise : 0,25 MJ/s par MW (8192 kW → 2,048 MJ/s à pleine puissance V1).
+    // Chaleur émise : HEAT_PER_MW MJ/s par MW (16384 kW → 2,048 MJ/s à pleine puissance V1).
     bld.heatEmit = (bld.nucCur || 0) * HEAT_PER_MW / 1000;
     // Série de fonctionnement (conservée, inoffensive).
     if (bld.nucState === 'running') {
@@ -8404,19 +8429,11 @@ const TECH_NODES = [{
   name: 'Navire Futuriste',
   prereq: 25,
   mode: 'delivery',
-  reqs: [{
-    t: 'produce',
-    res: 'element_moteur_nuc',
-    n: 10000
-  }, {
-    t: 'produce',
-    res: 'acier_irradie',
-    n: 100000
-  }, {
-    t: 'produce',
-    res: 'cable_irradie',
-    n: 100000
-  }],
+  // RÉPARATION du navire (comme les accès d'île 2/8/14/21) : la LIVRAISON est le seul
+  // coût. Les anciennes conditions « produire » dupliquaient les montants de la livraison
+  // → le joueur payait deux fois (production cumulée PUIS stock à livrer). reqs vides =
+  // prêt à livrer dès que le prérequis (nœud 25) est confirmé.
+  reqs: [],
   delivery: {
     element_moteur_nuc: 10000,
     acier_irradie: 100000,
@@ -10532,6 +10549,18 @@ function Toolbar({
       posRef.current = e.target.scrollTop;
     }
   });
+  // Catégories rabattues des menus Bâtiment/Réseau (clé de groupe → true). État de SESSION
+  // (la Toolbar reste montée quand les panneaux se ferment) et non persisté — même choix que
+  // la position de défilement (13.37).
+  const [collapsed, setCollapsed] = useState({});
+  // Recherche textuelle du menu Bâtiment ('' = pas de filtre). Effacée à la fermeture du
+  // panneau : rouvrir plus tard sur une liste filtrée en silence serait déroutant.
+  const [search, setSearch] = useState('');
+  useEffect(() => {
+    if (!buildOpen) setSearch('');
+  }, [buildOpen]);
+  // Normalisation de recherche : minuscules + accents retirés (« eolienne » trouve « Éolienne »).
+  const normSearch = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const visibleOn = id => {
     const ex = BUILDINGS[id].exclusiveIsland;
     if (!(ex == null || ex === currentIsland)) return false;
@@ -10541,30 +10570,62 @@ function Toolbar({
   };
   const isBuildingTool = tool && tool !== DEMOLISH && tool !== UPGRADE && tool !== COPY && BUILDINGS[tool] && !isNetworkId(tool);
   const isNetworkTool = !!(tool && BUILDINGS[tool] && isNetworkId(tool));
-  const renderGroups = (groups, gate) => groups.map(g => {
-    const ids = g.ids.filter(id => visibleOn(id) && (!gate || gate(id)));
-    if (!ids.length) return null;
-    return React.createElement("div", {
-      className: "tool-group",
-      key: g.key || g.label
-    }, React.createElement("div", {
-      className: "tool-group-inner"
-    }, React.createElement("span", {
-      className: "tool-group-label"
-    }, window.I18N ? I18N.t(g.label) : g.label), React.createElement("div", {
-      className: "tool-row"
-    }, ids.map(id => React.createElement(ToolButton, {
-      key: id,
-      id: id,
-      active: tool === id,
-      accent: TIER_ACCENT[BUILDINGS[id].tier],
-      onSelect: onSelect,
-      onDetail: setDetailId,
-      port: port,
-      // Badge « nouveau » : débloqué mais jamais sélectionné depuis.
-      isNew: !!(seenBuildings && !seenBuildings[id])
-    })))));
-  });
+  const renderGroups = (groups, gate, opts) => {
+    const q = opts && opts.query ? normSearch(opts.query) : '';
+    const nodes = groups.map(g => {
+      let ids = g.ids.filter(id => visibleOn(id) && (!gate || gate(id)));
+      // Recherche textuelle : filtre par nom localisé ; le rabattage est ignoré pendant
+      // une recherche (on montre TOUT ce qui correspond, même dans une catégorie repliée).
+      if (q) ids = ids.filter(id => normSearch(BUILDINGS[id].name).indexOf(q) !== -1);
+      if (!ids.length) return null;
+      const gk = g.key || g.label;
+      const isCollapsed = !q && !!(opts && opts.collapsible) && !!collapsed[gk];
+      // Pastille sur la tête d'une catégorie REPLIÉE qui cache un bâtiment « nouveau ».
+      const hasNewHere = !!seenBuildings && ids.some(id => !seenBuildings[id]);
+      const head = opts && opts.collapsible ? React.createElement("button", {
+        className: "tool-group-head",
+        title: I18N.t("Replier / déplier la catégorie"),
+        onClick: () => {
+          SFX.play('click');
+          setCollapsed(prev => ({
+            ...prev,
+            [gk]: !prev[gk]
+          }));
+        }
+      }, React.createElement("span", {
+        className: "tool-group-chev"
+      }, isCollapsed ? '▸' : '▾'), React.createElement("span", {
+        className: "tool-group-label"
+      }, window.I18N ? I18N.t(g.label) : g.label), isCollapsed && hasNewHere && React.createElement("span", {
+        className: "notif-dot"
+      })) : React.createElement("span", {
+        className: "tool-group-label"
+      }, window.I18N ? I18N.t(g.label) : g.label);
+      return React.createElement("div", {
+        className: "tool-group" + (isCollapsed ? " collapsed" : ""),
+        key: gk
+      }, React.createElement("div", {
+        className: "tool-group-inner"
+      }, head, !isCollapsed && React.createElement("div", {
+        className: "tool-row"
+      }, ids.map(id => React.createElement(ToolButton, {
+        key: id,
+        id: id,
+        active: tool === id,
+        accent: TIER_ACCENT[BUILDINGS[id].tier],
+        onSelect: onSelect,
+        onDetail: setDetailId,
+        port: port,
+        // Badge « nouveau » : débloqué mais jamais sélectionné depuis.
+        isNew: !!(seenBuildings && !seenBuildings[id])
+      })))));
+    });
+    // Recherche sans résultat : petit message plutôt qu'un panneau vide muet.
+    if (q && !nodes.some(Boolean)) return React.createElement("div", {
+      className: "bp-empty"
+    }, I18N.t("Aucun bâtiment ne correspond."));
+    return nodes;
+  };
   // Tuto bloquant (D3) : seuls les onglets utiles à l'étape courante sont actifs.
   // DÉMOLIR RESTE TOUJOURS ACTIF (D4) — sinon une erreur de pose enferme le joueur.
   const tabAllowed = key => {
@@ -10613,10 +10674,30 @@ function Toolbar({
   }), buildOpen && React.createElement("div", {
     className: "build-panel",
     ...keepScroll(buildScrollRef)
-  }, renderGroups(BUILD_GROUPS)), netOpen && React.createElement("div", {
+  }, React.createElement("div", {
+    className: "bp-search"
+  }, React.createElement("input", {
+    className: "bp-search-input",
+    type: "text",
+    value: search,
+    placeholder: "🔍 " + I18N.t("Rechercher un bâtiment…"),
+    onChange: e => setSearch(e.target.value)
+  }), search && React.createElement("button", {
+    className: "bp-search-clear",
+    title: I18N.t("Effacer la recherche"),
+    onClick: () => {
+      SFX.play('click');
+      setSearch('');
+    }
+  }, "✕")), renderGroups(BUILD_GROUPS, null, {
+    collapsible: true,
+    query: search
+  })), netOpen && React.createElement("div", {
     className: "build-panel",
     ...keepScroll(netScrollRef)
-  }, renderGroups(NETWORK_GROUPS, id => networkUnlocked(id, unlockedSet, currentIsland))), React.createElement("div", {
+  }, renderGroups(NETWORK_GROUPS, id => networkUnlocked(id, unlockedSet, currentIsland), {
+    collapsible: true
+  })), React.createElement("div", {
     className: "toolbar"
   }, React.createElement("div", {
     className: "tool-group tabs"
@@ -11076,7 +11157,7 @@ function InfoPanel({
     const NUC_START = 300,
       NUC_STOP = 30,
       NUC_SAFETY = 300,
-      NUC_POWER = 8192,
+      NUC_POWER = 16384,
       NUC_COOL = 256;
     const upMult = Math.pow(2, upg || 0);
     const lvl = game.nuclearPower && game.nuclearPower[currentIsland] != null ? game.nuclearPower[currentIsland] : 10;
@@ -11145,7 +11226,7 @@ function InfoPanel({
       className: "lbl"
     }, I18N.t("Sortie")), React.createElement("span", {
       className: "val io"
-    }, "⚡ " + fmtPower(NUC_POWER * upMult * realFrac) + " · 🔥 " + fmtHeat(NUC_POWER * upMult * realFrac * 0.25 / 1000) + "/s")), React.createElement("div", {
+    }, "⚡ " + fmtPower(NUC_POWER * upMult * realFrac) + " · 🔥 " + fmtHeat(NUC_POWER * upMult * realFrac * HEAT_PER_MW / 1000) + "/s")), React.createElement("div", {
       className: "ip-row ip-theo"
     }, React.createElement("span", {
       className: "lbl"
@@ -11157,7 +11238,7 @@ function InfoPanel({
       className: "lbl"
     }, I18N.t("Prod. théorique")), React.createElement("span", {
       className: "val io"
-    }, "⚡ " + fmtPower(NUC_POWER * upMult * frac) + " · 🔥 " + fmtHeat(NUC_POWER * upMult * frac * 0.25 / 1000) + "/s")), React.createElement("div", {
+    }, "⚡ " + fmtPower(NUC_POWER * upMult * frac) + " · 🔥 " + fmtHeat(NUC_POWER * upMult * frac * HEAT_PER_MW / 1000) + "/s")), React.createElement("div", {
       className: "ip-nuc-irr"
     }, React.createElement("div", {
       className: "ip-nuc-irr-hd"
@@ -18987,6 +19068,7 @@ if (typeof window !== 'undefined') {
     adjacentNetworksFootprint,
     buildingSpriteKey, itemSpriteKey, unlockedResourceSet, isBuildingUnlocked, fmtHeat,
     antProdEffect, antSpeedMul, antElecBoost,
+    networkUnitCost, NETWORK_UPGRADE_COST, TECH_NODES, TECH_BY_ID, HEAT_PER_MW,
     InfoPanel: typeof InfoPanel === 'function' ? InfoPanel : null
   };
 }
