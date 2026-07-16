@@ -14,7 +14,7 @@
 // ⚠ Ligne réécrite AUTOMATIQUEMENT par la CI (étape « Sync PWA ») à partir de
 //   GAME_BUILD. Ne rien ajouter après le `;` : l'ancre sed/grep exige une fin de
 //   ligne immédiate.
-var CACHE = 'archipel-252';
+var CACHE = 'archipel-253';
 
 var SHELL = './';                     // page de navigation (index.html)
 
