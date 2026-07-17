@@ -1,8 +1,8 @@
 {
-  "build": 253,
-  "version": "Alpha 13.72",
+  "build": 254,
+  "version": "Alpha 13.73",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #246 — Alpha 13.72 : port gaté sur la prochaine île + transit/coûts ÷10 + migration saves (build 253)"
+  "notes": "Merge pull request #247 from freredoc/claude/new-session-2ym5ks"
 }
