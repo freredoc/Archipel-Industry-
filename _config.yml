@@ -1,0 +1,39 @@
+# ════════════════════════════════════════════════════════════════
+#  GitHub Pages — configuration
+#
+#  BUT UNIQUE : empêcher Pages de publier le fichier SOURCE du jeu.
+#
+#  `Archipel_industry_alpha-7.html` est l'édition DEV (TESTER_BUILD = false) :
+#  elle expose le mode développeur et le mode rapide. Elle ne doit pas être
+#  accessible publiquement.
+#
+#  ⚠ Le fichier RESTE dans le dépôt Git — la CI en a besoin :
+#     Archipel_industry_alpha-7.html  (source, édition dev)
+#        ├─→ game-dev.html      → ArchipelIndustryDev.apk
+#        ├─→ game-tester.html   → ArchipelIndustryTester.apk
+#        └─→ index.html         → PWA publique (édition TESTEUR)
+#
+#  `exclude` n'agit QUE sur la publication Pages, jamais sur Git.
+#
+#  Résultat :
+#    https://freredoc.github.io/Archipel-Industry-/                        → ✅ jeu (testeur)
+#    https://freredoc.github.io/Archipel-Industry-/Archipel_industry_alpha-7.html → ❌ 404
+# ════════════════════════════════════════════════════════════════
+
+exclude:
+  # Source du jeu = édition DEV. Ne jamais publier.
+  - Archipel_industry_alpha-7.html
+
+  # Variantes intermédiaires produites par la CI (au cas où un run les laisse traîner).
+  - game-dev.html
+  - game-tester.html
+
+  # Coquille Android et outillage : sans objet sur le web.
+  - android/
+  - .github/
+
+# Pas de thème, pas de plugins : le dépôt sert des fichiers statiques.
+# `index.html` n'a pas de front-matter → Jekyll le copie tel quel, sans
+# jamais interpréter son contenu (vérifié : 0 occurrence de {{ }} ou {% %}).
+theme: null
+plugins: []
