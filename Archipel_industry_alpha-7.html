@@ -5110,8 +5110,8 @@ const SAVE_VERSION = 22;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 253;
-const GAME_VERSION = 'Alpha 13.72';
+const GAME_BUILD = 254;
+const GAME_VERSION = 'Alpha 13.73';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -10673,13 +10673,13 @@ function Toolbar({
   const newInNet = hasNewIn(NETWORK_GROUPS, id => networkUnlocked(id, unlockedSet, currentIsland));
   return React.createElement("div", {
     className: "toolbar-wrap"
-  }, React.createElement("button", {
+  }, !TESTER_BUILD && React.createElement("button", {
     className: "playclock" + (timeScale > 1 ? " playclock-fast" : ""),
     onClick: onToggleFast,
-    title: TESTER_BUILD ? I18N.t("Temps de jeu") : I18N.t("Cliquer pour accélérer / ralentir le temps de jeu")
+    title: I18N.t("Cliquer pour accélérer / ralentir le temps de jeu")
   }, React.createElement("span", {
     className: "playclock-time"
-  }, fmtPlaytime(playTicks)), !TESTER_BUILD && React.createElement("span", {
+  }, fmtPlaytime(playTicks)), React.createElement("span", {
     className: "playclock-mult"
   }, (timeScale || 1) + "\xD7")), detailId && React.createElement(BuildingDetailModal, {
     id: detailId,
