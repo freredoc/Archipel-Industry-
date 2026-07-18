@@ -17,7 +17,20 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 256`, `GAME_VERSION = 'Alpha 13.75'`, `SAVE_VERSION = 22`.**
+- **État au dernier passage : `GAME_BUILD = 257`, `GAME_VERSION = 'Alpha 13.76'`, `SAVE_VERSION = 22`.**
+  Changement 13.76 : **sprite propre du booster + astuce booster débloquée à l'île 2.** (1) **Sprite
+  `ui_booster`** (fusée pixel-art 16×16 générée Pillow : nez rouge, hublot cyan, corps clair, ailerons
+  rouges, flamme) inliné dans `__SPRITE_DATA__` après `ui_batterie` → le 6e bouton du bas
+  (`tab('boost',…,'booster',…)`) rend automatiquement le sprite via `uiIcon('booster')` (clé `ui_booster`)
+  au lieu de l'emoji 🚀. (2) **Astuce `boost`** (GAME_TIPS, insérée après `transport`, `when = île 2
+  débloquée` — même condition que `transport`, donc s'affiche à la « réparation » de l'île 2) : explique
+  l'accélération du temps (aucun débit modifié), le barème ×2→×10, le cumul avec le mode rapide, la charge
+  30 min / recharge 24 h. Repli fr (pas de trad, précédent 13.32). (3) **Scène d'illustration `TIP_SCENES.boost`**
+  (île 2 : mine→route→four avec overlays `fx_boost`, sprite `ui_booster`, badges « x2 » / « + vitesse »)
+  → l'astuce a une vignette dans le popup ET l'Aide. `SAVE_VERSION` inchangé. Validé : `node --check`
+  (7 blocs) + Chromium E2E fr (île 2 forgée : bouton booster rend `img.ui-ico` `ui_booster` ; Aide →
+  carte « 🚀 Le booster de vitesse » dépliable → canvas 768×512 rempli 100 % ; 0 erreur console) +
+  sprite décodé 16×16 + capture barre du bas (fusée verte « ×2 » à droite des 6 boutons). Build 256→257.
   Changement 13.75 : **ajustements booster/UI (retours utilisateur sur 13.74).** (1) **Textes des
   boutons du HAUT restaurés** : la compaction CSS §7 du 13.74 (masquage `.rlabel` + sous-textes
   options/aide) est ANNULÉE — les libellés Port/Recherche/Options/Aide réapparaissent. (2) **Boutons
