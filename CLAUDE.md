@@ -17,7 +17,20 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 257`, `GAME_VERSION = 'Alpha 13.76'`, `SAVE_VERSION = 22`.**
+- **État au dernier passage : `GAME_BUILD = 258`, `GAME_VERSION = 'Alpha 13.77'`, `SAVE_VERSION = 22`.**
+  Changement 13.77 : **boutons du bas sur 2 lignes (sprite en haut, texte en bas, centré) + bouton
+  booster retiré (code conservé).** (1) **Layout 2 lignes** : `.tabs-row .tab-btn .tb-top` passe en
+  `flex-direction:column` (icône au-dessus du libellé, centré) + icône agrandie (13→16 px, emoji
+  .82→1rem) → fini le texte comprimé/tronqué (« Démol », « CoPier ») quand icône et texte se
+  partageaient une seule ligne. (2) **Bouton booster retiré** : nouveau flag module
+  `const BOOSTER_UI_ENABLED = false;` (près de `BOOSTER_MAX`) gate le 6e `tab('boost',…)` (via
+  `BOOSTER_UI_ENABLED && tab(...)`) → **barre à 5 boutons**. TOUTE la mécanique booster reste en place
+  (état `boosterCharge`/`boosterOn`, recharge frame+offline, `toggleBooster`, sprite `ui_booster`,
+  scène) — repasser le flag à `true` réaffiche le bouton sans autre changement. L'astuce `boost` est
+  aussi gatée sur le flag (`when: g => BOOSTER_UI_ENABLED && …`) → pas de tuto pour un bouton absent.
+  `SAVE_VERSION` inchangé. Validé : `node --check` (7 blocs) + Chromium E2E (île 2 forgée → 5 boutons,
+  `.tab-boost` absent, `tb-top` flex-direction column, libellés complets ; 0 erreur console) + capture
+  barre du bas (icône centrée sur ligne 1, libellé ligne 2). Build 257→258.
   Changement 13.76 : **sprite propre du booster + astuce booster débloquée à l'île 2.** (1) **Sprite
   `ui_booster`** (fusée pixel-art 16×16 générée Pillow : nez rouge, hublot cyan, corps clair, ailerons
   rouges, flamme) inliné dans `__SPRITE_DATA__` après `ui_batterie` → le 6e bouton du bas
