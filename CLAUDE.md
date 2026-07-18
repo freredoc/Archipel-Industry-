@@ -17,7 +17,39 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 253`, `GAME_VERSION = 'Alpha 13.72'`, `SAVE_VERSION = 22`.**
+- **État au dernier passage : `GAME_BUILD = 255`, `GAME_VERSION = 'Alpha 13.74'`, `SAVE_VERSION = 22`.**
+  Changement 13.74 : **booster de vitesse rechargeable (brief `briefboostervitesse`) + antenne T5
+  renommée + export de sauvegarde encodé.** (1) **Booster de vitesse** — accélère le NOMBRE DE TICKS/s
+  (même mécanique que le mode rapide `timeScale`, aucun débit modifié). Multiplicateur selon la PLUS
+  HAUTE île débloquée : `BOOSTER_MUL_BY_ISLAND {1:1,2:2,3:4,4:6,5:8,6:10}` (île 1 seule = indispo ;
+  île 6 supportée nativement même absente du code). Helpers module `highestUnlockedIsland`/
+  `boosterMulAvailable`/`fmtBoosterTime` (après `antElecBoost`). État `g.boosterCharge` (0→3600 s,
+  plafond 1 h) + `g.boosterOn` (jamais restauré actif au chargement). Recharge **150 s/heure réelle**
+  quand OFF, décharge 1:1 quand ON — EN JEU (boucle `frame`, avant `_ts`) ET HORS-LIGNE (`runCatchUp`,
+  sur `elapsedSec`, pas `ticks`). `_ts = (timeScale||1) × boosterMul` (cumul multiplicatif) ; coupure
+  auto à charge épuisée ; `_maxTicks` borné à **200** (garde-fou pire cumul ×100). `toggleBooster`
+  (App). Bouton flottant `.booster-btn` (bas-droite, position fixe, hors `.hud`) : visible si
+  `boosterMul>1`, affiche 🚀 ×N + charge mm:ss, classe `on` (vert, actif) / `empty` (grisé, charge < 1 s
+  → clic inerte). Props Toolbar `boosterMul`/`boosterCharge`/`boosterOn`/`onToggleBooster`, re-render
+  via l'intervalle `bumpClock` 1 s. `SAVE_VERSION` inchangé (`boosterCharge` additif dans serialize/
+  newGame/loadSave ; `boosterOn` non sauvegardé). (2) **§7 brief** : boutons HUD haut compactés (CSS)
+  — `.research-btn/.options-btn/.save-btn` font-size .62rem, `.rlabel` + sous-textes options/aide
+  masqués (`display:none`), titres conservés. (3) **Antenne T5 → « Antenne Amplificatrice »** (patch
+  utilisateur) : rename aux 10 emplacements (inline `BUILDINGS.antenne.name` + TECH_NODES 27 + LOCALES
+  bld.antenne & tech 27 × 4 langues ; fr/de « Antenne Amplificatrice », en « Amplifier Antenna », es
+  « Antena Amplificadora »). ⚠ `I18N.applyToData` réécrit depuis LOCALES → éditer AUSSI les entrées
+  LOCALES (fait). (4) **Export de sauvegarde ENCODÉ** (patch utilisateur : empêcher l'édition + c/c
+  plus digeste) : nouveaux helpers module (près de `lsDel`) `encodeSave`/`decodeSave` = LZW sur octets
+  UTF-8 (dict initial 256, codes 16 bits gelés à 65535) → base64, préfixe `ARCHv1:`. L'export
+  (`doExport`) et le `.txt` produisent ce jeton compact + OPAQUE (save réelle → ratio ~0,34 = plus
+  digeste, impossible à trafiquer à la main). `slotImport` = `JSON.parse(decodeSave(text))`,
+  **rétro-compatible** (accepte aussi le JSON brut des anciens exports). Validé : `node --check`
+  (7 blocs) + tests unitaires node (LZW round-trip petit/gros + save réelle sérialisée + passthrough
+  JSON ; barème booster ×2/4/8/10 ; recharge 1 h → 150 s exact ; fmtBoosterTime) + Chromium E2E fr
+  (boot 0 erreur ; booster invisible île 1 seule → visible ×2 « 🚀×2 05:00 » après déblocage île 2 ;
+  clic → classe `on` + `boosterOn=true` ; charge < 1 s → grisé « 00:00 » ; `.rlabel` display:none ;
+  export réel île 2 forgée → jeton `ARCHv1:` round-trip exact, `boosterCharge` sérialisé ; 0 erreur
+  console). Build 254→255.
   Changement 13.72 : **port — amélioration gatée sur la PROCHAINE île + transit ÷10 + coûts ÷10 +
   migration douce des saves (SAVE_VERSION 22).** 3 demandes utilisateur. (1) **Gate « prochaine
   île »** : améliorer le port de l'île N exige que l'île N+1 soit débloquée (l'île 5, dernière,
