@@ -275,11 +275,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .research-btn:hover{background:#23234a;border-color:var(--yellow);}
 .research-btn:active{transform:translateY(1px);}
 .research-btn .rlabel{text-transform:uppercase;letter-spacing:.05em;}
-/* Boutons HUD compactés (brief booster §7) : icônes seules, sous-textes masqués, titres conservés
-   pour l'accessibilité/survol → gagne de la place en haut de l'écran. */
-.research-btn,.options-btn,.save-btn{font-size:.62rem;}
-.research-btn .rlabel{display:none;}
-.options-btn>span:not(.gear):not(.notif-dot){display:none;}
 /* HUD groupé en deux blocs : gauche (Options/Aide/Île) et droite (Réparer/Port/Recherche/Énergie).
    Sur écran étroit le bloc droit passe à la ligne et comble le vide laissé par « Réparer ». */
 .hud-grp{display:flex;align-items:center;gap:8px;min-width:0;}
@@ -965,18 +960,12 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .playclock-mult{font-size:12px;opacity:.7;}
 .playclock-fast{border-color:var(--yellow);}
 .playclock-fast .playclock-mult{opacity:1;color:var(--yellow);font-weight:700;}
-/* Booster de vitesse rechargeable — bouton flottant bas-droite (hors du flux .hud). */
-.booster-btn{position:fixed;right:10px;bottom:70px;z-index:60;display:flex;flex-direction:column;
-  align-items:center;gap:1px;min-width:60px;padding:5px 10px;cursor:pointer;
-  background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--ink);
-  font-variant-numeric:tabular-nums;user-select:none;box-shadow:0 2px 8px rgba(0,0,0,.45);}
-.booster-btn .bb-top{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:700;line-height:1;}
-.booster-btn .bb-mult{color:var(--yellow);}
-.booster-btn .bb-time{font-size:11px;opacity:.85;font-family:'DM Mono',monospace;letter-spacing:.5px;}
-.booster-btn:active{transform:translateY(1px);}
-.booster-btn.on{border-color:var(--green);box-shadow:0 0 12px rgba(38,198,138,.55);}
-.booster-btn.on .bb-mult{color:var(--green);}
-.booster-btn.empty{opacity:.45;cursor:default;box-shadow:none;}
+/* Booster de vitesse rechargeable — 6e bouton de la barre d'actions du bas. */
+.tab-btn.tab-boost .tb-sub{color:var(--yellow);font-weight:700;}
+.tab-btn.tab-boost.boost-on{border-color:var(--green);background:rgba(38,198,138,.16);box-shadow:0 0 0 1px var(--green) inset;}
+.tab-btn.tab-boost.boost-on .tb-name,.tab-btn.tab-boost.boost-on .tb-sub{color:#7fd98a;}
+.tab-btn.tab-boost.boost-empty{opacity:.6;}
+.tab-btn.tab-boost.boost-locked{opacity:.4;filter:grayscale(1);}
 /* Toggle « Mode rapide » de l'écran de choix du mode (partie neuve). */
 .mode-fast-row{display:flex;align-items:center;gap:10px;margin-top:12px;padding:8px 10px;
   background:var(--panel-2);border:1px solid var(--line);border-radius:6px;text-align:left;}
@@ -5220,8 +5209,8 @@ const SAVE_VERSION = 22;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 255;
-const GAME_VERSION = 'Alpha 13.74';
+const GAME_BUILD = 256;
+const GAME_VERSION = 'Alpha 13.75';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -6586,6 +6575,9 @@ function antElecBoost(f) {
 // par île). Île 1 seule = booster indisponible (bouton invisible). Île2:×2 … Île6:×10.
 // Écrit pour supporter nativement l'île 6 si elle apparaît (pas de undefined sur un id absent).
 const BOOSTER_MUL_BY_ISLAND = { 1: 1, 2: 2, 3: 4, 4: 6, 5: 8, 6: 10 };
+// Réserve max = 30 min de booster ; recharge COMPLÈTE en 24 h réelles (quand le booster est OFF).
+const BOOSTER_MAX = 1800; // secondes stockables (30 min)
+const BOOSTER_RECHARGE_PER_SEC = BOOSTER_MAX / (24 * 3600); // 1800 s regagnés en 24 h réelles
 function highestUnlockedIsland(game) {
   let max = 1;
   const u = game && game.islandUnlocked || {};
@@ -10797,7 +10789,7 @@ function Toolbar({
     className: "tab-ico"
   }, uiIcon(iconName, emoji)), React.createElement("span", {
     className: "tb-name"
-  }, name)), React.createElement("span", {
+  }, name)), sub && React.createElement("span", {
     className: "tb-sub"
   }, sub), dot && React.createElement("span", {
     className: "notif-dot"
@@ -10816,17 +10808,7 @@ function Toolbar({
     className: "playclock-time"
   }, fmtPlaytime(playTicks)), React.createElement("span", {
     className: "playclock-mult"
-  }, (timeScale || 1) + "\xD7")), boosterMul > 1 && React.createElement("button", {
-    className: "booster-btn" + (boosterOn ? " on" : "") + (!boosterOn && boosterCharge < 1 ? " empty" : ""),
-    onClick: (!boosterOn && boosterCharge < 1) ? undefined : onToggleBooster,
-    title: boosterOn ? I18N.t("Booster actif — cliquer pour arrêter (économiser la charge)") : I18N.t("Booster de vitesse : accélère le temps de jeu selon votre progression, limité par la charge (max 1 h).")
-  }, React.createElement("span", {
-    className: "bb-top"
-  }, "🚀", React.createElement("span", {
-    className: "bb-mult"
-  }, "\xD7" + boosterMul)), React.createElement("span", {
-    className: "bb-time"
-  }, fmtBoosterTime(boosterCharge))), detailId && React.createElement(BuildingDetailModal, {
+  }, (timeScale || 1) + "\xD7")), detailId && React.createElement(BuildingDetailModal, {
     id: detailId,
     onClose: () => { SFX.play('panelClose'); setDetailId(null); }
   }), buildOpen && React.createElement("div", {
@@ -10865,7 +10847,7 @@ function Toolbar({
     className: "tool-group-label"
   }, I18N.t("Actions")), React.createElement("div", {
     className: "tool-row tabs-row"
-  }, [tab('bat', 'tab-build' + (isBuildingTool ? ' has-sel' : ''), 'batiment', "🏭", I18N.t("B\xE2timent"), isBuildingTool ? BUILDINGS[tool].name : buildOpen ? I18N.t('fermer ▾') : I18N.t('ouvrir ▴'), buildOpen, onToggleBuild, newInBuild), tab('net', 'tab-net' + (isNetworkTool ? ' has-sel' : ''), 'route', "🛣️", I18N.t("R\xE9seau"), isNetworkTool ? BUILDINGS[tool].name : netOpen ? I18N.t('fermer ▾') : I18N.t('ouvrir ▴'), netOpen, onToggleNet, newInNet), tab('copy', 'tab-copy', 'copier', "⧉", I18N.t("Copier"), tool === COPY ? 'choisir' : 'copier', tool === COPY, () => onSelect(COPY)), tab('dem', 'tab-dem', 'demolir', "♻", I18N.t("D\xE9molir"), I18N.t('remb. 100%'), tool === DEMOLISH, () => onSelect(DEMOLISH)), tab('upg', 'tab-upg', 'monter', "⬆", I18N.t("Am\xE9liorer"), I18N.t('niveau +1'), tool === UPGRADE, () => onSelect(UPGRADE))])))));
+  }, [tab('bat', 'tab-build' + (isBuildingTool ? ' has-sel' : ''), 'batiment', "🏭", isBuildingTool ? BUILDINGS[tool].name : buildOpen ? I18N.t("Fermer") : I18N.t("Ouvrir"), null, buildOpen, onToggleBuild, newInBuild), tab('net', 'tab-net' + (isNetworkTool ? ' has-sel' : ''), 'route', "🛣️", isNetworkTool ? BUILDINGS[tool].name : netOpen ? I18N.t("Fermer") : I18N.t("Ouvrir"), null, netOpen, onToggleNet, newInNet), tab('copy', 'tab-copy', 'copier', "⧉", I18N.t("Copier"), null, tool === COPY, () => onSelect(COPY)), tab('dem', 'tab-dem', 'demolir', "♻", I18N.t("D\xE9molir"), null, tool === DEMOLISH, () => onSelect(DEMOLISH)), tab('upg', 'tab-upg', 'monter', "⬆", I18N.t("Am\xE9liorer"), null, tool === UPGRADE, () => onSelect(UPGRADE)), tab('boost', 'tab-boost' + (boosterOn ? ' boost-on' : boosterMul <= 1 ? ' boost-locked' : boosterCharge < 1 ? ' boost-empty' : ''), 'booster', "🚀", boosterMul > 1 ? "\xD7" + boosterMul : I18N.t("Booster"), boosterMul > 1 ? fmtBoosterTime(boosterCharge) : null, boosterOn, boosterMul <= 1 || (!boosterOn && boosterCharge < 1) ? undefined : onToggleBooster)])))));
 }
 function InfoPanel({
   info,
@@ -15155,7 +15137,7 @@ function App() {
     };
     if (data.islandUnlocked) for (const id in data.islandUnlocked) g.islandUnlocked[id] = !!data.islandUnlocked[id];
     g.islandUnlocked[1] = true;
-    g.boosterCharge = data.boosterCharge || 0; // secondes stockées, plafond 3600
+    g.boosterCharge = Math.min(BOOSTER_MAX, data.boosterCharge || 0); // secondes stockées, plafond 30 min
     g.boosterOn = false; // jamais restauré actif au chargement (évite une décharge non suivie)
     g.boats = data.boats || 0;
     g.ships = defaultShips();
@@ -15615,7 +15597,7 @@ function App() {
     // Recharge/décharge du booster pendant l'absence — suit le TEMPS RÉEL écoulé (elapsedSec),
     // pas ticks (plafonné à OFFLINE_MAX_TICKS). Recharge s'il n'était pas actif, sinon décharge.
     if (!g.boosterOn) {
-      g.boosterCharge = Math.min(3600, (g.boosterCharge || 0) + elapsedSec * (150 / 3600));
+      g.boosterCharge = Math.min(BOOSTER_MAX, (g.boosterCharge || 0) + elapsedSec * BOOSTER_RECHARGE_PER_SEC);
     } else {
       g.boosterCharge = Math.max(0, (g.boosterCharge || 0) - elapsedSec);
       if (g.boosterCharge <= 0) { g.boosterOn = false; g.boosterCharge = 0; }
@@ -18597,14 +18579,14 @@ function App() {
       // passé en arrière-plan (la boucle est gelée quand l'onglet est masqué).
       g.lastActiveTs = Date.now();
       // Booster de vitesse : décharge si actif (1 s réelle = 1 s consommée), sinon recharge
-      // (150 s de charge par heure réelle écoulée), plafond fixe 3600 s (1 h). DOIT précéder le
-      // calcul de _ts pour que la coupure auto (charge épuisée) s'applique dès ce frame.
+      // (réserve pleine de 30 min en 24 h réelles), plafond BOOSTER_MAX (1800 s). DOIT précéder
+      // le calcul de _ts pour que la coupure auto (charge épuisée) s'applique dès ce frame.
       const _realDt = (now - prev) / 1000;
       if (g.boosterOn && g.boosterCharge > 0) {
         g.boosterCharge = Math.max(0, g.boosterCharge - _realDt);
         if (g.boosterCharge <= 0) { g.boosterOn = false; g.boosterCharge = 0; }
       } else if (!g.boosterOn) {
-        g.boosterCharge = Math.min(3600, (g.boosterCharge || 0) + _realDt * (150 / 3600));
+        g.boosterCharge = Math.min(BOOSTER_MAX, (g.boosterCharge || 0) + _realDt * BOOSTER_RECHARGE_PER_SEC);
       }
       const _boosterMul = (g.boosterOn && g.boosterCharge > 0) ? boosterMulAvailable(g) : 1;
       const _ts = (g.timeScale || 1) * _boosterMul;

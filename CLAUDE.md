@@ -17,7 +17,24 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 255`, `GAME_VERSION = 'Alpha 13.74'`, `SAVE_VERSION = 22`.**
+- **État au dernier passage : `GAME_BUILD = 256`, `GAME_VERSION = 'Alpha 13.75'`, `SAVE_VERSION = 22`.**
+  Changement 13.75 : **ajustements booster/UI (retours utilisateur sur 13.74).** (1) **Textes des
+  boutons du HAUT restaurés** : la compaction CSS §7 du 13.74 (masquage `.rlabel` + sous-textes
+  options/aide) est ANNULÉE — les libellés Port/Recherche/Options/Aide réapparaissent. (2) **Boutons
+  du BAS compactés à la place** : le helper `tab()` ne rend plus `.tb-sub` quand le sous-texte est
+  `null` ; les 5 boutons d'action passent en libellé court SANS sous-texte — Bâtiment/Réseau → **« Ouvrir »
+  / « Fermer »** (nom du bâtiment si un outil est sélectionné), Copier/Démolir/Améliorer gardent leur
+  verbe (sous-textes « choisir »/« remb. 100% »/« niveau +1 » supprimés). (3) **Booster = 6e bouton
+  de la barre du bas** (au lieu du bouton flottant `.booster-btn`, retiré) : rendu via `tab('boost',…)`,
+  icône 🚀, nom **« ×N »** (ou « Booster » grisé si indispo île 1), sous-texte = charge mm:ss ; classes
+  `tab-boost` + `boost-on` (vert, actif) / `boost-empty` (charge < 1 s) / `boost-locked` (île 1, grisé).
+  Toujours présent → **6 boutons** en permanence (grisé tant que seule l'île 1). (4) **Booster limité à
+  30 min** (`BOOSTER_MAX = 1800`) avec **recharge complète en 24 h réelles** (`BOOSTER_RECHARGE_PER_SEC
+  = 1800/86400`) — remplace l'ancien plafond 1 h / recharge 150 s/h. Appliqué en jeu (`frame`) ET
+  hors-ligne (`runCatchUp`) ; `loadSave` clampe à `BOOSTER_MAX` (une save 13.74 > 30 min redescend).
+  `SAVE_VERSION` inchangé. Validé : `node --check` (7 blocs) + Chromium E2E fr (haut restauré : `.rlabel`
+  « Port » + « Options » visibles ; bas = 6 boutons sans sous-texte ; booster grisé « Booster » île 1 →
+  « ×2 » + « 30:00 » île 2 ; clic → `boost-on` + `boosterOn=true` ; 0 erreur console). Build 255→256.
   Changement 13.74 : **booster de vitesse rechargeable (brief `briefboostervitesse`) + antenne T5
   renommée + export de sauvegarde encodé.** (1) **Booster de vitesse** — accélère le NOMBRE DE TICKS/s
   (même mécanique que le mode rapide `timeScale`, aucun débit modifié). Multiplicateur selon la PLUS
