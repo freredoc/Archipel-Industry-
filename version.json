@@ -1,8 +1,8 @@
 {
-  "build": 256,
-  "version": "Alpha 13.75",
+  "build": 257,
+  "version": "Alpha 13.76",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #249 from freredoc/claude/antenne-t5-save-encoding-h9agxq"
+  "notes": "Merge pull request #250 from freredoc/claude/antenne-t5-save-encoding-h9agxq"
 }
