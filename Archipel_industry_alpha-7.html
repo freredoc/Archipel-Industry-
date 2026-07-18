@@ -997,9 +997,9 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .tool-group.tabs .tool-group-inner{width:100%;}
 .tabs-row{display:flex;flex-wrap:nowrap;gap:4px;width:100%;}
 .tabs-row .tab-btn{flex:1 1 0;min-width:0;align-items:center;text-align:center;padding:6px 4px;}
-.tabs-row .tab-btn .tb-top{justify-content:center;gap:4px;}
-.tabs-row .tab-btn .tab-ico{font-size:.82rem;}
-.tabs-row .tab-btn .tab-ico .ui-ico,.tabs-row .tab-btn .tab-ico.ui-ico{width:13px;height:13px;}
+.tabs-row .tab-btn .tb-top{flex-direction:column;justify-content:center;gap:2px;}
+.tabs-row .tab-btn .tab-ico{font-size:1rem;}
+.tabs-row .tab-btn .tab-ico .ui-ico,.tabs-row .tab-btn .tab-ico.ui-ico{width:16px;height:16px;}
 .tabs-row .tab-btn .tb-name,.tabs-row .tab-btn .tb-sub{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .tabs-row .tab-btn .tb-name{font-size:.72rem;letter-spacing:0;}
 .tab-btn.tab-dem.active{border-color:var(--red);background:rgba(255,59,48,.16);box-shadow:0 0 0 1px var(--red) inset;}
@@ -5210,8 +5210,8 @@ const SAVE_VERSION = 22;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 257;
-const GAME_VERSION = 'Alpha 13.76';
+const GAME_BUILD = 258;
+const GAME_VERSION = 'Alpha 13.77';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -6579,6 +6579,10 @@ const BOOSTER_MUL_BY_ISLAND = { 1: 1, 2: 2, 3: 4, 4: 6, 5: 8, 6: 10 };
 // Réserve max = 30 min de booster ; recharge COMPLÈTE en 24 h réelles (quand le booster est OFF).
 const BOOSTER_MAX = 1800; // secondes stockables (30 min)
 const BOOSTER_RECHARGE_PER_SEC = BOOSTER_MAX / (24 * 3600); // 1800 s regagnés en 24 h réelles
+// Affichage du bouton booster (6e bouton de la barre du bas). MIS À false : le bouton est retiré
+// (barre à 5 boutons), mais TOUTE la mécanique booster reste en place (état, recharge, toggle,
+// sprite, astuce) — repasser à true pour réactiver le bouton sans autre changement.
+const BOOSTER_UI_ENABLED = false;
 function highestUnlockedIsland(game) {
   let max = 1;
   const u = game && game.islandUnlocked || {};
@@ -8934,7 +8938,9 @@ const GAME_TIPS = [{
   icon: '🚀',
   title: 'Le booster de vitesse',
   body: ["Débloqué avec l'île 2 : le <b>booster</b> (bouton 🚀 en bas de l'écran) <b>accélère le temps de jeu</b> — plus de ticks par seconde, <b>sans changer aucun débit</b>. Ta partie avance plus vite, ton économie reste identique.", "Le multiplicateur monte avec ta progression : <b>×2</b> à l'île 2, jusqu'à <b>×10</b>. Il se <b>cumule</b> avec le mode rapide.", "La <b>charge</b> (max <b>30 min</b>) se vide quand le booster est actif et se recharge à l'arrêt — il faut <b>24 h</b> réelles pour refaire le plein (même hors-ligne). À garder pour les grosses attentes !"],
-  when: g => !!(g.islandUnlocked && g.islandUnlocked[2])
+  // Gaté sur BOOSTER_UI_ENABLED : tant que le bouton booster est retiré, l'astuce ne s'affiche pas
+  // (ni popup ni Aide). Réactivée automatiquement si on remet le bouton.
+  when: g => BOOSTER_UI_ENABLED && !!(g.islandUnlocked && g.islandUnlocked[2])
 }, {
   id: 'energie',
   icon: '⚡',
@@ -10854,7 +10860,7 @@ function Toolbar({
     className: "tool-group-label"
   }, I18N.t("Actions")), React.createElement("div", {
     className: "tool-row tabs-row"
-  }, [tab('bat', 'tab-build' + (isBuildingTool ? ' has-sel' : ''), 'batiment', "🏭", isBuildingTool ? BUILDINGS[tool].name : buildOpen ? I18N.t("Fermer") : I18N.t("Ouvrir"), null, buildOpen, onToggleBuild, newInBuild), tab('net', 'tab-net' + (isNetworkTool ? ' has-sel' : ''), 'route', "🛣️", isNetworkTool ? BUILDINGS[tool].name : netOpen ? I18N.t("Fermer") : I18N.t("Ouvrir"), null, netOpen, onToggleNet, newInNet), tab('copy', 'tab-copy', 'copier', "⧉", I18N.t("Copier"), null, tool === COPY, () => onSelect(COPY)), tab('dem', 'tab-dem', 'demolir', "♻", I18N.t("D\xE9molir"), null, tool === DEMOLISH, () => onSelect(DEMOLISH)), tab('upg', 'tab-upg', 'monter', "⬆", I18N.t("Am\xE9liorer"), null, tool === UPGRADE, () => onSelect(UPGRADE)), tab('boost', 'tab-boost' + (boosterOn ? ' boost-on' : boosterMul <= 1 ? ' boost-locked' : boosterCharge < 1 ? ' boost-empty' : ''), 'booster', "🚀", boosterMul > 1 ? "\xD7" + boosterMul : I18N.t("Booster"), boosterMul > 1 ? fmtBoosterTime(boosterCharge) : null, boosterOn, boosterMul <= 1 || (!boosterOn && boosterCharge < 1) ? undefined : onToggleBooster)])))));
+  }, [tab('bat', 'tab-build' + (isBuildingTool ? ' has-sel' : ''), 'batiment', "🏭", isBuildingTool ? BUILDINGS[tool].name : buildOpen ? I18N.t("Fermer") : I18N.t("Ouvrir"), null, buildOpen, onToggleBuild, newInBuild), tab('net', 'tab-net' + (isNetworkTool ? ' has-sel' : ''), 'route', "🛣️", isNetworkTool ? BUILDINGS[tool].name : netOpen ? I18N.t("Fermer") : I18N.t("Ouvrir"), null, netOpen, onToggleNet, newInNet), tab('copy', 'tab-copy', 'copier', "⧉", I18N.t("Copier"), null, tool === COPY, () => onSelect(COPY)), tab('dem', 'tab-dem', 'demolir', "♻", I18N.t("D\xE9molir"), null, tool === DEMOLISH, () => onSelect(DEMOLISH)), tab('upg', 'tab-upg', 'monter', "⬆", I18N.t("Am\xE9liorer"), null, tool === UPGRADE, () => onSelect(UPGRADE)), BOOSTER_UI_ENABLED && tab('boost', 'tab-boost' + (boosterOn ? ' boost-on' : boosterMul <= 1 ? ' boost-locked' : boosterCharge < 1 ? ' boost-empty' : ''), 'booster', "🚀", boosterMul > 1 ? "\xD7" + boosterMul : I18N.t("Booster"), boosterMul > 1 ? fmtBoosterTime(boosterCharge) : null, boosterOn, boosterMul <= 1 || (!boosterOn && boosterCharge < 1) ? undefined : onToggleBooster)])))));
 }
 function InfoPanel({
   info,
