@@ -17,7 +17,14 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 258`, `GAME_VERSION = 'Alpha 13.77'`, `SAVE_VERSION = 22`.**
+- **État au dernier passage : `GAME_BUILD = 259`, `GAME_VERSION = 'Alpha 13.78'`, `SAVE_VERSION = 22`.**
+  Changement 13.78 : **bouton booster réaffiché (demande utilisateur).** `BOOSTER_UI_ENABLED` repassé
+  `false → true` → le 6e bouton (booster) revient dans la barre du bas (à nouveau **6 boutons**), avec
+  le layout 2 lignes du 13.77 (sprite `ui_booster` en haut, « ×N » + charge mm:ss en dessous) ;
+  l'astuce `boost` (gatée sur le même flag) se redéclenche à l'île 2. Aucune autre modif. Validé :
+  `node --check` (7 blocs) + Chromium E2E (île 2 forgée → 6 boutons, `.tab-boost` présent rendant
+  `img.ui-ico` `ui_booster` « ×2 29:59 », clic actif `boost-on` ; 0 erreur console) + capture.
+  Build 258→259.
   Changement 13.77 : **boutons du bas sur 2 lignes (sprite en haut, texte en bas, centré) + bouton
   booster retiré (code conservé).** (1) **Layout 2 lignes** : `.tabs-row .tab-btn .tb-top` passe en
   `flex-direction:column` (icône au-dessus du libellé, centré) + icône agrandie (13→16 px, emoji
