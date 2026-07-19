@@ -5210,8 +5210,8 @@ const SAVE_VERSION = 22;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 258;
-const GAME_VERSION = 'Alpha 13.77';
+const GAME_BUILD = 259;
+const GAME_VERSION = 'Alpha 13.78';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -6579,10 +6579,10 @@ const BOOSTER_MUL_BY_ISLAND = { 1: 1, 2: 2, 3: 4, 4: 6, 5: 8, 6: 10 };
 // Réserve max = 30 min de booster ; recharge COMPLÈTE en 24 h réelles (quand le booster est OFF).
 const BOOSTER_MAX = 1800; // secondes stockables (30 min)
 const BOOSTER_RECHARGE_PER_SEC = BOOSTER_MAX / (24 * 3600); // 1800 s regagnés en 24 h réelles
-// Affichage du bouton booster (6e bouton de la barre du bas). MIS À false : le bouton est retiré
-// (barre à 5 boutons), mais TOUTE la mécanique booster reste en place (état, recharge, toggle,
-// sprite, astuce) — repasser à true pour réactiver le bouton sans autre changement.
-const BOOSTER_UI_ENABLED = false;
+// Affichage du bouton booster (6e bouton de la barre du bas). true = bouton affiché ; false =
+// retiré (barre à 5 boutons). La mécanique booster (état, recharge, toggle, sprite, astuce) reste
+// toujours en place — ce flag ne fait qu'afficher/masquer le bouton et son astuce.
+const BOOSTER_UI_ENABLED = true;
 function highestUnlockedIsland(game) {
   let max = 1;
   const u = game && game.islandUnlocked || {};
