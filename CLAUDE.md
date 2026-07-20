@@ -17,7 +17,54 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 259`, `GAME_VERSION = 'Alpha 13.78'`, `SAVE_VERSION = 22`.**
+- **État au dernier passage : `GAME_BUILD = 260`, `GAME_VERSION = 'Alpha 13.79'`, `SAVE_VERSION = 23`.**
+  Changement 13.79 : **ÎLE 6 (surface) + SOUTERRAIN (île 7) — Phase 1 (fondations : terrain, ressources,
+  5 bâtiments, tech, sprites, migration ; brief `BRIEF_ILE6_PHASE1`).** PÉRIMÈTRE = poser le terrain,
+  déclarer le contenu et intégrer les sprites AVANT le système d'élévateur/transfert (phase 2). (1)
+  **Terrain** : nouveau code `E` = terrain `'elevator'` (`charToTerrain`) — circulable par les RÉSEAUX
+  (boucle post-`BUILDINGS` ajoutant `'elevator'` aux `terrains` des infra/jonctions), JAMAIS
+  constructible (aucun bâtiment ne le liste) ; `TERRAIN_COLORS.elevator`. La promotion `land→coast` de
+  `buildIslandTiles` ne touche pas l'élévateur (elle ne traite que `land`). (2) **Grilles** : île 6
+  (16×16, port maritime `X` r13c5, gisement tungstène 6 `M`, élévateur `E`, 2 `P` réservés au
+  Collisionneur phase 6) + île 7 (souterrain, 5×9, 12 tunnels + 1 élévateur, PAS de port) ajoutées à
+  `NORMAL_ISLANDS` ET `ISLAND_TERRAINS_BASE` ; `PORTS_BASE[6]` ; garde `if (base)` dans `applyGameMode`
+  (île 7 sans port → `base` undefined, `portPosFor` renvoie déjà `null`, 2 sites d'appel sûrs). (3)
+  **11 ressources** déclarées (`CARRIER_BY_RES` + `RES_SHORT`) : tungstène/alliage/pièce précision/câble
+  supra (produites en phase 1) + ordi & info quantiques, matière exotique, gaz fossiles, He3/He4, méthane
+  (phases futures). (4) **5 bâtiments** (`tier: 't5'` → pas de surcoût `TIER_COST_MULT`) : `mine_tungstene`
+  (surface, exclusiveIsland 6, multi-sortie tungstène+pierre, conso acide), `four_arc_tungstene`,
+  `machine_outil` (surface), `geothermie` (souterrain, PRODUCTEUR — `power:0`+`outputs.energie_kw:512`,
+  convention producteurs) et `presse_uhp` (souterrain, sigmoïde 128→1024 = `base:128,amp:896`) +
+  `TOOLBAR_GROUPS`, `TIER_ACCENT.t5`. (5) **Tech** : nœud 28 « Navire Futuriste » (doublon île 5 inerte)
+  repointé → **« Accès Île 6 »** (`unlocks.islands:[6]`+`mine_tungstene`, LOCALES tech 28 réécrit ×4
+  langues) ; nœuds **29** (Four à Arc Tungstène, produire 100 tungstène) et **30** (Machine-Outil, 100
+  alliage) ajoutés (+ LOCALES) ; `ISLAND_ACCESS_NODE[6]=28` ; kickstart île 6 (SANS acide, cf. blocage).
+  (6) **Rendu** : branche `elevator` du draw = `tile_i6_elevateur_casse` (phase 1 : cassé) ; helper DÉDIÉ
+  `tunnelBorderPieces` (miroir `coastFoamPieces`, prédicat roche=water, pièces `i7_bord_*` sur la tuile de
+  sol) routé quand `isl===7` ; écume/falaise maritimes désactivées sur l'île 7 (roche). `coastCliffPieces`
+  INTACT (îles 1–6 pixel-identiques). (7) **Onglets d'île** : île 7 filtrée (souterrain, accès par
+  l'élévateur en phase 2) ; **accès DEV** temporaire (île 7 visible + cliquable sous `game.ui.dev`,
+  contournement dans `switchIsland`). (8) **Sprites** : 69 fichiers `sprites/` + 3 sheets d'anim
+  `mine_tungstene_*` (frame 0 == statique vérifié 0 px) inlinés ; `ANIM_META` ×3 ; résolution auto
+  `tile_iN_*` / `item_*` / `bat_*`. (9) **Migration `SAVE_VERSION` 22→23** : `ensureIslandDefaults(g)`
+  (idempotent, appelé en newGame/chooseMode/loadSave) garantit les structures par île 6/7 (islands via
+  `buildIslandTiles`, `port[6]={}` SANS `port[7]`, islandUnlocked/repairs/extensions 6-7 par défaut) ;
+  whitelist `loadSave` +23 ; serialize (spreads par île) persiste 6/7 automatiquement. Validé :
+  `node --check` (7 blocs) + Chromium E2E `https://localhost/` (~35 assertions) : non-régression grilles
+  îles 1-5 identiques (2 modes) ; terrain 6/7 (dims paddées 32×32 / 21×25, 6 resource + 2 oil + 1 elevator
+  île 6 non promu en coast, 12 land + 1 elevator île 7, `PORTS[6]` défini, `PORTS[7]` undefined sans throw,
+  2 modes) ; 5 sprites + 11 ressources + nœuds 28/29/30 + geothermie producteur + presse sigmoïde ; save
+  v22 forgée → migre sans perte (bâtiment île 1 + stock préservés, îles 6/7 créées, `port[7]` absent) ;
+  `tunnelBorderPieces` → 12 clés `i7_bord_*` toutes présentes dans `__SPRITE_DATA__`, aucune sur la roche ;
+  0 erreur console (hors fetch offline). **⚠ BLOCAGES/TENSIONS SIGNALÉS (non tranchés, cf. brief) :**
+  (a) **acide non transitable** — la Mine Tungstène consomme 16 acide/s mais l'acide est un fluide `pipe`
+  hors `PORT_PIPE_RES` → ni transitable ni dans le kickstart → la mine est posable mais NON alimentée ;
+  (b) **pas de liaison maritime 5↔6** (`SHIP_LINKS` inchangé) → l'île 6 n'importe rien en phase 1 (amorcée
+  par kickstart seul) ; (c) **chaleur Machine-Outil/Presse** non branchée (ratio Excel « mj selon ratio
+  elec » non déterminé → pas de `heatCap`, option offerte par le brief) ; (d) **géothermie/presse sans
+  nœud tech** → toujours « unlocked » mais gatées par `exclusiveIsland:7` + île 7 dev-only (invisibles au
+  joueur) ; (e) nouvelles ressources sans `RES_TIER` → groupées sous T0 dans l'inventaire (cosmétique).
+  Build 259→260.
   Changement 13.78 : **bouton booster réaffiché (demande utilisateur).** `BOOSTER_UI_ENABLED` repassé
   `false → true` → le 6e bouton (booster) revient dans la barre du bas (à nouveau **6 boutons**), avec
   le layout 2 lignes du 13.77 (sprite `ui_booster` en haut, « ×N » + charge mm:ss en dessous) ;
