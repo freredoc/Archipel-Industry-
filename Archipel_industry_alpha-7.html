@@ -3430,6 +3430,24 @@ const BUILDINGS = {
     },
     power: 0
   },
+  // Câble logique (5ᵉ réseau, phase 5) : analogue booléen du conduit. Ne transporte pas de
+  // ressource stockable mais un signal 0/1 (flag `logic: true`, comme `heat: true`). Local à une
+  // île (jamais port/élévateur/bateaux). NON améliorable (un booléen n'a pas de débit).
+  logic_wire: {
+    name: 'Câble logique',
+    color: '#00E5A0',
+    label: '',
+    kind: 'infra',
+    tier: 'infra',
+    logic: true,
+    terrains: ['land', 'resource', 'coast'],
+    size: [1, 1],
+    cost: {
+      cable_supraconducteur: 1,
+      piece_precision: 1
+    },
+    power: 0
+  },
   jonction_route_cable: {
     name: 'Jonction Route/Câble',
     color: '#B0A030',
@@ -5035,8 +5053,8 @@ const BUILDINGS = {
   },
   // Séparateur Cryogénique (souterrain) : multi-sortie sur ratios (1 % He3, 10 % He4, 89 %
   // méthane pour 1 gaz fossile). Sorties fractionnaires sommant à 1 (le moteur gère < 1/s, cf.
-  // plutonium 0.1). Conso SIGMOÏDE 128 → 1024 kW. ⚠ Dépendance circulaire assumée (rapport §5.2) :
-  // coûte 10 ordinateurs quantiques, débloqués plus tard dans la chaîne.
+  // plutonium 0.1). Conso SIGMOÏDE 128 → 1024 kW. Coût = 100 processeurs (phase 5 §1 : remplace les
+  // 10 ordinateurs quantiques de la phase 4 qui créaient une dépendance circulaire dure).
   separateur_cryogenique: {
     name: 'Séparateur Cryogénique V1',
     color: '#4FC3F7',
@@ -5053,7 +5071,7 @@ const BUILDINGS = {
       period: 60
     },
     cost: {
-      ordinateur_quantique: 10,
+      processeur: 100,
       piece_precision: 750,
       polymere: 1000
     },
@@ -5152,6 +5170,93 @@ const BUILDINGS = {
       information_quantique: 1
     }
   },
+  // ===== RÉSEAU LOGIQUE — PHASE 5A (capteurs, actionneurs, portes) =====
+  // Capteur : observe UN bâtiment voisin (choisi au clic, `sensorDir`) et met le réseau logique
+  // adjacent à 1 si sa condition (`sensorMode`) est vraie. Source du réseau (flag `logicSource`).
+  capteur: {
+    name: 'Capteur',
+    color: '#00E5A0',
+    label: 'CAPT',
+    kind: 'build',
+    tier: 't5',
+    logicSource: true,
+    terrains: ['land', 'resource'],
+    size: [1, 1],
+    power: 0,
+    cost: {
+      piece_precision: 25,
+      cable_supraconducteur: 10,
+      processeur: 10
+    }
+  },
+  // Actionneur : relié à un réseau logique, éteint/rallume UN bâtiment voisin (`actDir`) via le
+  // champ `bld.logicOff` (JAMAIS `bld.active`, cf. §5.2). Polarité inversable (`actInvert`).
+  actionneur: {
+    name: 'Actionneur',
+    color: '#FF9628',
+    label: 'ACT',
+    kind: 'build',
+    tier: 't5',
+    logicSink: true,
+    terrains: ['land', 'resource'],
+    size: [1, 1],
+    power: 0,
+    cost: {
+      piece_precision: 25,
+      cable_supraconducteur: 10,
+      piece_meca: 50
+    }
+  },
+  // Portes logiques : entrées = réseaux logiques des faces NON-sortie ; sortie = réseau de la face
+  // orientée (`gateDir`, pivotable au clic comme les jonctions via junctionDirOk). power:0.
+  porte_and: {
+    name: 'Porte ET',
+    color: '#00E5A0',
+    label: 'AND',
+    kind: 'build',
+    tier: 't5',
+    logicGate: 'and',
+    terrains: ['land', 'resource'],
+    size: [1, 1],
+    power: 0,
+    cost: {
+      piece_precision: 25,
+      cable_supraconducteur: 10,
+      processeur: 10
+    }
+  },
+  porte_or: {
+    name: 'Porte OU',
+    color: '#00E5A0',
+    label: 'OR',
+    kind: 'build',
+    tier: 't5',
+    logicGate: 'or',
+    terrains: ['land', 'resource'],
+    size: [1, 1],
+    power: 0,
+    cost: {
+      piece_precision: 25,
+      cable_supraconducteur: 10,
+      processeur: 10
+    }
+  },
+  porte_not: {
+    name: 'Porte NON',
+    color: '#00E5A0',
+    label: 'NOT',
+    kind: 'build',
+    tier: 't5',
+    logicGate: 'not',
+    terrains: ['land', 'resource'],
+    size: [1, 1],
+    power: 0,
+    cost: {
+      piece_precision: 25,
+      cable_supraconducteur: 10,
+      processeur: 10
+    }
+  },
   port: {
     name: 'Port',
     color: '#2A6090',
@@ -5219,7 +5324,7 @@ const TIER_ACCENT = {
 const TOOLBAR_GROUPS = [{
   key: 'infra',
   label: 'Infrastructure',
-  ids: ['road', 'pipe', 'wire', 'conduit']
+  ids: ['road', 'pipe', 'wire', 'conduit', 'logic_wire']
 }, {
   key: 'junction',
   label: 'Jonctions',
@@ -5256,6 +5361,10 @@ const TOOLBAR_GROUPS = [{
   key: 'nuclear',
   label: 'Nucléaire',
   ids: ['broyeur_uranium', 'centrale_enrichissement', 'centrale_nucleaire', 'tour_aerorefrigerante', 'usine_moteur_nuc', 'antenne']
+}, {
+  key: 'logic',
+  label: 'Logique',
+  ids: ['capteur', 'actionneur', 'porte_and', 'porte_or', 'porte_not']
 }];
 // Onglet « Réseau » (infra + jonctions) séparé de l'onglet « Bâtiment ». Filtres sur la CLÉ stable
 // (pas le label, qui est traduit par l'i18n).
@@ -5283,6 +5392,9 @@ function networkUnlocked(id, unlockedSet, currentIsland) {
       return wireOk;
     case 'conduit':
       return heatOk;
+    case 'logic_wire':
+      // Câble logique : débloqué avec le nœud #32 « Câble Supraconducteur » (via unlocks.buildings).
+      return has('logic_wire');
     case 'jonction_route_cable':
       return wireOk;
     case 'jonction_route_tuyau':
@@ -5480,6 +5592,8 @@ const NETWORK_UNLIMITED_COST = 10000;
 // toujours croissant, sans fin.
 function networkUnitCost(type, level, payMat) {
   const tbl = NETWORK_UPGRADE_COST[type] || {};
+  // Câble logique : NON améliorable (un booléen n'a pas de débit) → coût d'amélioration vide.
+  if (type === 'logic_wire') return {};
   // Conduit : coût ×10 par palier, sans choix de matériau ni état illimité.
   if (type === 'conduit') return {
     lingot_cuivre: 1000 * Math.pow(10, level),
@@ -5669,12 +5783,12 @@ function ensureSlotsInitialized() {
   }
   return active;
 }
-const SAVE_VERSION = 26;
+const SAVE_VERSION = 27;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 263;
-const GAME_VERSION = 'Alpha 13.82';
+const GAME_BUILD = 264;
+const GAME_VERSION = 'Alpha 13.83';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -6828,7 +6942,7 @@ function islandNuclearCoolingOk(game, isl) {
       hasCentrale = true;
       const sz = b.size || [1, 1];
       for (const nid of adjacentNetworksFootprint(game, isl, r, c, sz[1] || 1, sz[0] || 1, 'conduit')) centraleNets.add(nid);
-    } else if (b.tour && !bld.paused && !bld.damaged) towers.push({ bld, r, c });
+    } else if (b.tour && !bld.paused && !bld.logicOff && !bld.damaged) towers.push({ bld, r, c });
   }
   if (!hasCentrale) return true;
   if (!centraleNets.size) return false;
@@ -6857,9 +6971,9 @@ function processHeat(game, isl) {
     if (!bld) continue;
     const b = BUILDINGS[bld.id];
     if (!b) continue;
-    // Tour en PAUSE : n'évacue plus rien (une source en pause a déjà heatEmit = 0 via le tick,
-    // mais on la sort aussi de la liste — sa chaleur résiduelle reste gelée, comme endommagé).
-    if (bld.paused) {
+    // Tour en PAUSE ou ÉTEINTE PAR LA LOGIQUE : n'évacue plus rien (une source en pause a déjà
+    // heatEmit = 0 via le tick, mais on la sort aussi de la liste — chaleur résiduelle gelée).
+    if (bld.paused || bld.logicOff) {
       if (b.tour) {
         bld.heatAbsorb = 0;
         bld.onConduit = false;
@@ -7014,6 +7128,146 @@ function processHeat(game, isl) {
     }
   }
 }
+// ===== RÉSEAU LOGIQUE (phase 5A) — propagation booléenne INSTANTANÉE, recalculée chaque tick =====
+// Modèle « Path A » : un réseau logique connexe = 1 booléen (stocké en ENTIER 0/1, prévoit Path B).
+// OU câblé : le réseau vaut 1 si ≥1 source connectée (capteur OU sortie de porte) émet 1.
+// Capteurs : lisent l'état d'UN voisin choisi (sensorDir) → émettent leur condition.
+// Portes : entrées = faces NON-sortie ; sortie = face orientée (gateDir). Évaluation ITÉRATIVE
+// jusqu'à stabilisation, plafonnée à LOGIC_MAX_ITER (coupe les oscillations, borne le coût).
+// Actionneurs : lisent le réseau adjacent → posent bld.logicOff sur le voisin ciblé (actDir).
+// Appelé AU DÉBUT de tickIsland (les capteurs lisent l'état du tick précédent ; logicOff est posé
+// AVANT la boucle bâtiment de ce tick). Aucune détection de boucle (une rétroaction oscille — voulu).
+const LOGIC_MAX_ITER = 16;
+function processLogic(game, isl) {
+  const def = defById(isl),
+    tiles = game.islands[isl];
+  if (!def || !tiles) return;
+  const nets = game.networks[isl] || {};
+  const resolveTarget = (r, c, dir) => {
+    if (dir == null) return null;
+    const d = DIRS4[dir];
+    if (!d) return null;
+    let nt = tiles[r + d[0]] && tiles[r + d[0]][c + d[1]];
+    if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
+    if (nt && nt.building) {
+      const nb = BUILDINGS[nt.building.id];
+      if (nb && nb.kind !== 'infra' && nb.kind !== 'junction') return nt.building;
+    }
+    return null;
+  };
+  const dirNet = (r, c, dir) => {
+    const d = DIRS4[dir];
+    const nt = tiles[r + d[0]] && tiles[r + d[0]][c + d[1]];
+    return nt && nt.building && nt.building.id === 'logic_wire' && nt.networkId != null ? nt.networkId : null;
+  };
+  // Passe 1 : RÉINITIALISE logicOff sur tous les bâtiments (aucun actionneur = aucun off), et
+  // récupère les dispositifs logiques (un dispositif en PAUSE est inerte).
+  const sensors = [],
+    gates = [],
+    sinks = [];
+  let anyLogic = false;
+  for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
+    const trow = tiles[r];
+    const bld = trow && trow[c] && trow[c].building;
+    if (!bld) continue;
+    if (bld.logicOff) bld.logicOff = false;
+    const b = BUILDINGS[bld.id];
+    if (!b) continue;
+    if (b.logic || b.logicSource || b.logicSink || b.logicGate) anyLogic = true;
+    if (bld.paused) continue;
+    if (b.logicSource) sensors.push({ bld, r, c });else if (b.logicGate) gates.push({ bld, r, c });else if (b.logicSink) sinks.push({ bld, r, c });
+  }
+  if (!game.logicState) game.logicState = {};
+  const state = game.logicState[isl] = {};
+  for (const nid in nets) if (nets[nid] && nets[nid].type === 'logic_wire') state[nid] = 0;
+  if (!anyLogic) return;
+  // Évalue la condition d'un capteur sur son voisin observé.
+  const evalSensor = s => {
+    const bld = s.bld,
+      mode = bld.sensorMode || 'active';
+    const obs = resolveTarget(s.r, s.c, bld.sensorDir);
+    if (!obs) return false;
+    const active = obs.active === true && !obs.paused && !obs.logicOff;
+    if (mode === 'active') return active;
+    if (mode === 'inactive') return !active;
+    if (mode === 'empty') return obs.inFac != null && obs.inFac < 0.999;
+    if (mode === 'full') {
+      // « Sortie saturée » : la 1ʳᵉ ressource de sortie du bâtiment observé a atteint sa CIBLE
+      // d'export (stockCible) au port de l'île. Sans cible configurée → jamais plein (choix §5.1
+      // documenté : l'engin ne modélise pas de plafond de stock ; la cible d'export = le réservoir).
+      const ob = BUILDINGS[obs.id];
+      if (!ob || !ob.outputs) return false;
+      const res = Object.keys(ob.outputs)[0];
+      if (!res) return false;
+      const pool = portPool(game, isl) || {};
+      const tgt = (tradeCfgFor(game, isl, res) || {}).stockCible || 0;
+      return tgt > 0 && (pool[res] || 0) >= tgt;
+    }
+    return false;
+  };
+  // Sources capteurs → base OR par réseau.
+  const base = {};
+  for (const nid in state) base[nid] = 0;
+  for (const s of sensors) {
+    const v = evalSensor(s) ? 1 : 0;
+    s.bld.logicOut = v;
+    if (v) for (const nid of adjacentNetworks(game, isl, s.r, s.c, 'logic_wire')) base[nid] = 1;
+  }
+  // Portes : entrées/sortie par orientation.
+  const gateIO = gates.map(gt => {
+    const dir = gt.bld.gateDir || 0;
+    const outNet = dirNet(gt.r, gt.c, dir);
+    const inNets = [];
+    for (let d = 0; d < 4; d++) {
+      if (d === dir) continue;
+      const nn = dirNet(gt.r, gt.c, d);
+      if (nn != null && inNets.indexOf(nn) === -1) inNets.push(nn);
+    }
+    return { gt, outNet, inNets, op: BUILDINGS[gt.bld.id].logicGate };
+  });
+  // Propagation itérative jusqu'à stabilisation (plafond LOGIC_MAX_ITER : coupe les oscillations,
+  // on garde la dernière valeur au-delà).
+  let cur = Object.assign({}, base);
+  let iters = 0;
+  for (; iters < LOGIC_MAX_ITER; iters++) {
+    const next = Object.assign({}, base);
+    for (const g of gateIO) {
+      const ins = g.inNets.map(n => cur[n] ? 1 : 0);
+      let out;
+      if (g.op === 'and') out = ins.length > 0 && ins.every(x => x) ? 1 : 0;else if (g.op === 'or') out = ins.some(x => x) ? 1 : 0;else out = ins.some(x => x) ? 0 : 1; // not = NON(OU des entrées)
+      g.gt.bld.logicOut = out;
+      if (out && g.outNet != null) next[g.outNet] = 1;
+    }
+    let same = true;
+    for (const nid in next) if (next[nid] !== (cur[nid] || 0)) {
+      same = false;
+      break;
+    }
+    cur = next;
+    if (same) {
+      iters++;
+      break;
+    }
+  }
+  for (const nid in cur) state[nid] = cur[nid];
+  if (!game.logicIters) game.logicIters = {};
+  game.logicIters[isl] = iters; // nb d'itérations avant stabilisation (≤ LOGIC_MAX_ITER) — debug/UI
+  // Actionneurs : lisent le réseau adjacent (OU), posent logicOff sur le voisin ciblé (polarité).
+  for (const s of sinks) {
+    let sig = 0;
+    for (const nid of adjacentNetworks(game, isl, s.r, s.c, 'logic_wire')) if (cur[nid]) sig = 1;
+    s.bld.logicIn = sig;
+    const off = s.bld.actInvert ? sig ? 0 : 1 : sig;
+    s.bld.logicOut = off;
+    const target = resolveTarget(s.r, s.c, s.bld.actDir);
+    if (target) {
+      target.logicOff = !!off;
+      // Compteur pour le nœud #33 : 1ʳᵉ fois qu'un actionneur éteint effectivement un bâtiment.
+      if (off && !s.bld._prevOff && game.techTree) game.techTree.logicTriggered = (game.techTree.logicTriggered || 0) + 1;
+    }
+    s.bld._prevOff = off;
+  }
+}
 // Combined upgrade cost (going from current level to current+1) for a network and
 // all networks coupled to it via junctions. dir = +1 (upgrade) or -1 (downgrade).
 // Returns { cost, ids, fromLevel, blocked, reason } where cost is the total resources.
@@ -7163,6 +7417,9 @@ function tickIsland(game, isl) {
   };
   const port = portPool(game, isl);
   const nets = game.networks[isl] || (game.networks[isl] = {});
+  // Réseau logique : recalcule les signaux et pose bld.logicOff AVANT la boucle bâtiment (les
+  // capteurs lisent l'état du tick précédent). Local à l'île → aucune fuite inter-îles.
+  processLogic(game, isl);
   const workPort = {
     ...port
   };
@@ -7244,8 +7501,8 @@ function tickIsland(game, isl) {
   for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
     const bl = tiles[r][c].building;
     if (!bl || !BUILDINGS[bl.id] || !BUILDINGS[bl.id].antenna) continue;
-    // Antenne en PAUSE : aucune zone d'influence (ni vitesse, ni productivité).
-    if (bl.paused) continue;
+    // Antenne en PAUSE ou ÉTEINTE PAR LA LOGIQUE : aucune zone d'influence.
+    if (bl.paused || bl.logicOff) continue;
     // antenna is effective only if wire-connected (drives its own 1024 kW too)
     if (adjacentNetworks(game, isl, r, c, 'wire').length === 0) continue;
     antBld = bl;
@@ -7287,6 +7544,19 @@ function tickIsland(game, isl) {
       bld.regime = 0;
       bld.heatEmit = 0;
       if (pA1 !== false) activeChanged = true;
+      continue;
+    }
+    // Bâtiment ÉTEINT PAR LA LOGIQUE (actionneur) : traité EXACTEMENT comme une pause, mais avec
+    // discReason 'logic' (distinct d'un manque d'intrant). bld.logicOff est posé par processLogic
+    // AVANT cette boucle. On n'écrit JAMAIS dans bld.active depuis l'actionneur (§5.2).
+    if (bld.logicOff && !bld.fixed && !b.fixed) {
+      const pAL = bld.active;
+      bld.active = false;
+      bld.disc = false;
+      bld.discReason = 'logic';
+      bld.regime = 0;
+      bld.heatEmit = 0;
+      if (pAL !== false) activeChanged = true;
       continue;
     }
     // Bâtiment ENDOMMAGÉ (surchauffe) : arrêté pendant ≥5 min, ne consomme/produit rien.
@@ -8635,6 +8905,50 @@ function resourceRates(game, isl, res) {
 const techProduced = (game, res) => game.techTree.produced[res] || 0;
 function reqValue(game, req) {
   switch (req.t) {
+    case 'logicTrig':
+      {
+        // Nombre de fois qu'un actionneur a éteint un bâtiment (game.techTree.logicTriggered).
+        // Sert au nœud #33 « Circuit Logique ».
+        const cur = game.techTree && game.techTree.logicTriggered || 0;
+        return {
+          cur,
+          target: req.n,
+          label: I18N.t('bâtiment éteint par la logique'),
+          ok: cur >= req.n
+        };
+      }
+    case 'buildAny':
+      {
+        // Nombre total de bâtiments parmi une liste d'ids (toutes îles). Sert au nœud #34 (≥1 porte).
+        let cur = 0;
+        for (const id of req.ids || []) cur += countBuildings(game, id);
+        return {
+          cur,
+          target: req.n,
+          label: I18N.t('porte logique construite'),
+          ok: cur >= req.n
+        };
+      }
+    case 'resourceTile':
+      {
+        // Compte les tuiles de terrain `resource` sur une île (défaut : île 7). Sert au nœud #36
+        // « Trouver de l'Hélium » : le joueur doit avoir foré pour révéler une poche d'Hélium 3.
+        // ⚠ Balayage à chaque appel : OK car l'île 7 est petite (5×9 + padding) ; NE PAS généraliser
+        // à de grandes îles sans mise en cache.
+        const isl = req.island != null ? req.island : 7;
+        const tiles = game.islands[isl];
+        let cur = 0;
+        if (tiles) {
+          for (let r = 0; r < tiles.length; r++) for (let c = 0; c < tiles[r].length; c++) if (tiles[r][c].terrain === 'resource') cur++;
+        }
+        const target = req.n != null ? req.n : 1;
+        return {
+          cur,
+          target,
+          label: I18N.t('poche souterraine révélée'),
+          ok: cur >= target
+        };
+      }
     case 'produce':
       {
         const cur = techProduced(game, req.res);
@@ -9220,30 +9534,47 @@ const TECH_NODES = [{
   // ===== PHASE 4 — renumérotation sur l'Excel v2 (§4). L'ancien #32 « Forage Profond → foreuse »
   // est remplacé : la foreuse passe en #35. Migration v25→v26 (loadSave) : un ancien #32 confirmé
   // marque #35 confirmé pour ne pas retirer la foreuse au joueur. =====
-  // PHASE 5 (circuit logique) — case vide préparée. Excel : « produire 100 câble supra », débloque
-  // le circuit logique basique. `reqs:[]` + `unlocks:{}` → nœud 'auto' qui se valide immédiatement
-  // (ne bloque pas la chaîne #31→#38). Contenu ajouté en phase 5.
+  // PHASE 5 : « Câble Supraconducteur » débloque le RÉSEAU LOGIQUE de base — câble logique +
+  // capteur + actionneur (le montage capteur→câble→actionneur permet de satisfaire #33). Excel :
+  // « produire 100 câble supra » → interprété en case auto (validable dès #31 confirmé, ne bloque
+  // pas la chaîne). Le câble logique s'affiche dès ce nœud confirmé (networkUnlocked → has('logic_wire')).
   id: 32,
   name: 'Câble Supraconducteur',
   prereq: 31,
   mode: 'auto',
   reqs: [],
-  unlocks: {}
+  unlocks: {
+    buildings: ['logic_wire', 'capteur', 'actionneur']
+  }
 }, {
-  // PHASE 5 (circuit logique) — case vide. Excel : « créer un circuit logique » → « porte logique ».
+  // PHASE 5 : « Circuit Logique » — validé quand un montage capteur→câble→actionneur a éteint un
+  // bâtiment au moins une fois (compteur game.techTree.logicTriggered, type reqs `logicTrig`).
+  // Débloque les 3 PORTES logiques.
   id: 33,
   name: 'Circuit Logique',
   prereq: 32,
   mode: 'auto',
-  reqs: [],
-  unlocks: {}
+  reqs: [{
+    t: 'logicTrig',
+    n: 1
+  }],
+  unlocks: {
+    buildings: ['porte_and', 'porte_or', 'porte_not']
+  }
 }, {
-  // PHASE 5/6 — case vide. Excel : « circuit avec porte logique » → « 1ʳᵉ réparation Collisionneur ».
+  // PHASE 5 : « Circuit Logique 2 » — au moins une PORTE construite (+ #33 confirmé via prereq).
+  // ⚠ Approximation (§7) : `buildAny` sur les 3 portes vérifie qu'une porte existe, PAS que le
+  // montage passe RÉELLEMENT par elle (trop coûteux à détecter). Signalé au rapport. unlocks vide
+  // (la 1ʳᵉ réparation du Collisionneur est en PHASE 6).
   id: 34,
   name: 'Circuit Logique 2',
   prereq: 33,
   mode: 'auto',
-  reqs: [],
+  reqs: [{
+    t: 'buildAny',
+    ids: ['porte_and', 'porte_or', 'porte_not'],
+    n: 1
+  }],
   unlocks: {}
 }, {
   // Réparation du Collisionneur (livraison). Débloque la FOREUSE (Excel v2). ⚠ Incohérence assumée
@@ -9263,16 +9594,17 @@ const TECH_NODES = [{
     buildings: ['foreuse']
   }
 }, {
-  // Trouver de l'Hélium. Excel : condition = « trouver une tuile de ressource souterraine ».
-  // ⚠ AUCUN type de reqs existant (produce/build/node/port/energy/imported/accu) n'exprime
-  // « posséder ≥1 tuile `resource` sur l'île 7 ». Le brief §6 interdit de bricoler un type nouveau
-  // sans validation → FALLBACK `reqs:[]` (auto-valide dès #35 confirmé, ne bloque pas la chaîne).
-  // Un type `resourceTile` est proposé dans le rapport (§6) en attente d'arbitrage.
+  // Trouver de l'Hélium. Condition = « posséder ≥1 tuile `resource` sur l'île 7 » via le type
+  // `resourceTile` (phase 5 §2) : le joueur doit avoir FORÉ (révélé une poche He3) pour valider.
   id: 36,
   name: 'Trouver de l\'Hélium',
   prereq: 35,
   mode: 'auto',
-  reqs: [],
+  reqs: [{
+    t: 'resourceTile',
+    island: 7,
+    n: 1
+  }],
   unlocks: {
     buildings: ['extracteur_souterrain', 'separateur_cryogenique']
   }
@@ -11634,6 +11966,7 @@ function InfoPanel({
   onSetArcWeight,
   onSetFluxPri,
   onSetAntMode,
+  onLogicSet,
   onHeatRepair,
   onRepair,
   onExtend,
@@ -12008,7 +12341,10 @@ function InfoPanel({
     power: I18N.t('élec. insuffisante (vérifier le débit du câble)'),
     // Île 7 : élévateur non réparé, ou bâtiment non relié à la tuile élévateur, ou élévateur non
     // relié au port en surface (île 6). Motif dédié (phase 3) — plus l'approximation 'road'.
-    elevator: I18N.t('élévateur non relié (réparé + relié au port en surface + bâtiment relié à l\'élévateur)')
+    elevator: I18N.t('élévateur non relié (réparé + relié au port en surface + bâtiment relié à l\'élévateur)'),
+    // Éteint par un actionneur du réseau logique (distinct d'un manque d'intrant).
+    logic: I18N.t('éteint par la logique (actionneur)'),
+    paused: I18N.t('en pause (par le joueur)')
   };
   // Régime RÉEL du bâtiment = min(intrants disponibles, élec. disponible) × saturation réseau.
   // `bld.regime` (calculé au tick) bride conso ET production au prorata : un déficit partiel
@@ -12390,7 +12726,47 @@ function InfoPanel({
     className: 'ip-fluxpri-btn' + ((game.antennaMode && game.antennaMode[currentIsland] || 'speed') === k ? ' on' : ''),
     onClick: () => onSetAntMode && onSetAntMode(currentIsland, k),
     title: k === 'speed' ? I18N.t("Vitesse : intrants & production +10 % au Nv.1 (l'effet double à chaque niveau, plafonné ×2) · aucune chaleur") : I18N.t("Rendement amélioré : les machines consomment moins de matières par unité produite, au prix d'une légère baisse de vitesse (Nv.1 : rendement +10 % · vitesse −5 %, ×2 par niveau) · émet de la chaleur (conduit + tour)")
-  }, uiIcon(ico, k === 'speed' ? "⚡" : "🏭"), " ", label)))), showStatus && React.createElement("div", {
+  }, uiIcon(ico, k === 'speed' ? "⚡" : "🏭"), " ", label)))), (b.logicSource || b.logicSink || b.logicGate) && (() => {
+    // ===== RÉSEAU LOGIQUE (phase 5) : config au clic + état courant =====
+    const DIRN = ['N', 'S', 'O', 'E'];
+    const tiles = game.islands[currentIsland];
+    const targetName = dir => {
+      if (dir == null) return I18N.t('aucune');
+      const dd = DIRS4[dir];
+      if (!dd) return I18N.t('aucune');
+      let nt = tiles[info.r + dd[0]] && tiles[info.r + dd[0]][info.c + dd[1]];
+      if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
+      if (nt && nt.building && BUILDINGS[nt.building.id] && BUILDINGS[nt.building.id].kind !== 'infra' && BUILDINGS[nt.building.id].kind !== 'junction') return DIRN[dir] + ' · ' + (BUILDINGS[nt.building.id].name || nt.building.id);
+      return DIRN[dir];
+    };
+    const rows = [];
+    if (b.logicSource) {
+      const mode = bld.sensorMode || 'active';
+      rows.push(React.createElement("div", { className: "ip-fluxpri-lbl", key: 'sl' }, I18N.t("Capteur — condition")));
+      rows.push(React.createElement("div", { className: "ip-nuc-mats", key: 'sm' }, [['full', I18N.t('Saturé')], ['empty', I18N.t('Vide')], ['active', I18N.t('Actif')], ['inactive', I18N.t('Inactif')]].map(([k, label]) => React.createElement("button", {
+        key: k,
+        className: 'ip-nuc-mat' + (mode === k ? ' on' : ''),
+        onClick: () => onLogicSet && onLogicSet(info.r, info.c, { sensorMode: k })
+      }, label))));
+      rows.push(React.createElement("button", { className: "ip-fluxpri-btn", key: 'st', style: { width: '100%', marginTop: 4 }, onClick: () => onLogicSet && onLogicSet(info.r, info.c, { __cycle: 'sensorDir' }) }, I18N.t("Observe : ") + targetName(bld.sensorDir)));
+      rows.push(React.createElement("div", { className: "ip-row", key: 'so' }, React.createElement("span", { className: "lbl" }, I18N.t("Signal émis")), React.createElement("span", { className: "val", style: { color: bld.logicOut ? '#00E5A0' : 'var(--ink-dim)', fontWeight: 700 } }, bld.logicOut ? '1 ● ' + I18N.t('vrai') : '0 ○ ' + I18N.t('faux'))));
+    }
+    if (b.logicSink) {
+      rows.push(React.createElement("button", { className: "ip-fluxpri-btn", key: 'at', style: { width: '100%' }, onClick: () => onLogicSet && onLogicSet(info.r, info.c, { __cycle: 'actDir' }) }, I18N.t("Contrôle : ") + targetName(bld.actDir)));
+      rows.push(React.createElement("div", { className: "ip-nuc-mats", key: 'ap', style: { gridTemplateColumns: '1fr 1fr' } }, [[false, I18N.t('Normale')], [true, I18N.t('Inversée')]].map(([v, label]) => React.createElement("button", {
+        key: String(v),
+        className: 'ip-nuc-mat' + (!!bld.actInvert === v ? ' on' : ''),
+        onClick: () => onLogicSet && onLogicSet(info.r, info.c, { actInvert: v }),
+        title: v ? I18N.t("Éteint quand le signal est FAUX") : I18N.t("Éteint quand le signal est VRAI")
+      }, label))));
+      rows.push(React.createElement("div", { className: "ip-row", key: 'as' }, React.createElement("span", { className: "lbl" }, I18N.t("Signal reçu → action")), React.createElement("span", { className: "val", style: { color: bld.logicOut ? 'var(--orange)' : 'var(--green)', fontWeight: 700 } }, (bld.logicIn ? '1' : '0') + ' → ' + (bld.logicOut ? I18N.t('éteint') : I18N.t('allumé')))));
+    }
+    if (b.logicGate) {
+      rows.push(React.createElement("button", { className: "ip-fluxpri-btn", key: 'gd', style: { width: '100%' }, onClick: () => onLogicSet && onLogicSet(info.r, info.c, { __cycle: 'gateDir' }) }, I18N.t("Face de sortie : ") + DIRN[bld.gateDir || 0]));
+      rows.push(React.createElement("div", { className: "ip-row", key: 'go' }, React.createElement("span", { className: "lbl" }, I18N.t("Sortie")), React.createElement("span", { className: "val", style: { color: bld.logicOut ? '#00E5A0' : 'var(--ink-dim)', fontWeight: 700 } }, bld.logicOut ? '1 ● ' + I18N.t('vrai') : '0 ○ ' + I18N.t('faux'))));
+    }
+    return React.createElement("div", { className: "ip-fluxpri" }, rows);
+  })(), showStatus && React.createElement("div", {
     className: "ip-row" + (speedPct < 100 ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
@@ -15249,7 +15625,8 @@ function App() {
           notified: false
         })),
         produced: {},
-        imported: {}
+        imported: {},
+        logicTriggered: 0
       },
       islandUnlocked: {
         1: true,
@@ -15625,6 +16002,13 @@ function App() {
           if (b.fluxPri === 'haute' || b.fluxPri === 'basse') pl.fp = b.fluxPri;
           // Pause joueur — champ additionnel rétro-compatible (absent = actif).
           if (b.paused) pl.pz = 1;
+          // Réseau logique (phase 5) — réglages d'instance (champs additifs rétro-compatibles).
+          // logicOff n'est PAS persisté : recalculé par processLogic dès le 1er tick.
+          if (b.sensorMode) pl.sm = b.sensorMode;
+          if (b.sensorDir != null) pl.sd = b.sensorDir;
+          if (b.actDir != null) pl.ad = b.actDir;
+          if (b.actInvert) pl.ai = 1;
+          if (b.gateDir != null) pl.gd = b.gateDir;
           // Sélecteur du four à arc unifié (mode/sortie/poids) — champ additionnel rétro-compatible.
           if (b.arc && ARC_DEF[b.id]) pl.arc = {
             mode: b.arc.mode,
@@ -15705,7 +16089,8 @@ function App() {
       },
       imported: {
         ...g.techTree.imported
-      }
+      },
+      logicTriggered: g.techTree.logicTriggered || 0
     };
     return {
       version: SAVE_VERSION,
@@ -15930,7 +16315,7 @@ function App() {
     } catch (e) {
       return false;
     }
-    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26].indexOf(data.version) === -1) return false;
+    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27].indexOf(data.version) === -1) return false;
     const g = gameRef.current;
     // Extension des mers (v11) : les îles sont désormais entourées de SEA_PAD tuiles d'eau.
     // Les sauvegardes antérieures (coordonnées non décalées) sont translatées de +SEA_PAD.
@@ -16023,7 +16408,8 @@ function App() {
       } : {},
       imported: data.techTree && data.techTree.imported ? {
         ...data.techTree.imported
-      } : {}
+      } : {},
+      logicTriggered: data.techTree && data.techTree.logicTriggered || 0
     };
     g.islandUnlocked = {
       1: true,
@@ -16163,6 +16549,12 @@ function App() {
           }
           if (p.fp === 'haute' || p.fp === 'basse') t.building.fluxPri = p.fp;
           if (p.pz) t.building.paused = true;
+          // Réseau logique (phase 5) : réglages d'instance (capteur/actionneur/porte).
+          if (p.sm) t.building.sensorMode = p.sm;
+          if (p.sd != null) t.building.sensorDir = +p.sd;
+          if (p.ad != null) t.building.actDir = +p.ad;
+          if (p.ai) t.building.actInvert = true;
+          if (p.gd != null) t.building.gateDir = +p.gd;
           // Four à arc unifié : restaure le sélecteur (défauts si save antérieure).
           if (ARC_DEF[p.b]) {
             const d = arcDefaultState(p.b);
@@ -17225,6 +17617,23 @@ function App() {
     // Nv.11, et démoli il ne remboursait même pas le forfait.)
     if (TIER_STEP[id]) t.building.upgrade = tierEntry(id);
     if (ARC_DEF[id]) t.building.arc = arcDefaultState(id);
+    // Dispositifs logiques : défauts. Capteur/actionneur → cible = 1er voisin bâtiment trouvé
+    // (choix explicite modifiable au clic). Capteur → condition 'active'. Porte → sortie au Nord.
+    if (b.logicSource || b.logicSink || b.logicGate) {
+      const tl = gameRef.current.islands[gameRef.current.currentIsland];
+      if (b.logicGate) t.building.gateDir = 0;
+      if (b.logicSource) t.building.sensorMode = 'active';
+      if (b.logicSource || b.logicSink) {
+        let picked = null;
+        for (let d = 0; d < 4; d++) {
+          const dd = DIRS4[d];
+          let nt = tl[r + dd[0]] && tl[r + dd[0]][c + dd[1]];
+          if (nt && nt.occupied) nt = tl[nt.occupied.r] && tl[nt.occupied.r][nt.occupied.c];
+          if (nt && nt.building && BUILDINGS[nt.building.id] && BUILDINGS[nt.building.id].kind !== 'infra' && BUILDINGS[nt.building.id].kind !== 'junction') { picked = d; break; }
+        }
+        if (picked != null) t.building[b.logicSource ? 'sensorDir' : 'actDir'] = picked;
+      }
+    }
     // Une centrale fraîchement posée démarre à 0 % : le joueur la branche (câble / route / eau froide)
     // puis monte la puissance — évite la mise en sécurité immédiate faute de refroidissement.
     if (b.nuclear) {
@@ -18085,6 +18494,38 @@ function App() {
     markDirty();
     scheduleSave();
   }
+  // Réglages du réseau logique (capteur/actionneur/porte) : fusionne un patch dans l'instance.
+  // action 'cycleDir' fait tourner un champ de direction (sensorDir/actDir/gateDir) 0→1→2→3→…,
+  // en ne s'arrêtant que sur les faces valides (voisin présent pour capteur/actionneur ; toutes
+  // pour une porte). SFX + save + re-render (bumpHud).
+  function setLogicConfig(r, c, patch) {
+    const g = gameRef.current;
+    const tiles = g.islands[g.currentIsland];
+    const bld = tiles && tiles[r] && tiles[r][c] && tiles[r][c].building;
+    if (!bld) return;
+    if (patch && patch.__cycle) {
+      const field = patch.__cycle;
+      const gate = field === 'gateDir';
+      let d = bld[field];
+      d = d == null ? -1 : d;
+      for (let i = 0; i < 4; i++) {
+        d = (d + 1) % 4;
+        if (gate) break; // porte : toutes les faces valides
+        // capteur/actionneur : ne s'arrêter que sur une face avec un bâtiment voisin
+        const dd = DIRS4[d];
+        let nt = tiles[r + dd[0]] && tiles[r + dd[0]][c + dd[1]];
+        if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
+        if (nt && nt.building && BUILDINGS[nt.building.id] && BUILDINGS[nt.building.id].kind !== 'infra' && BUILDINGS[nt.building.id].kind !== 'junction') break;
+      }
+      bld[field] = d;
+    } else if (patch) {
+      Object.assign(bld, patch);
+    }
+    SFX.play('click');
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
   // ── Sélecteur du four à arc unifié (état PAR BÂTIMENT : t.building.arc) ──
   function setArcMode(r, c, mode) {
     const t = curTiles()[r] && curTiles()[r][c];
@@ -18720,6 +19161,33 @@ function App() {
         y = oy + r * tile;
       const bid = t.building.id;
       const bdef = BUILDINGS[bid];
+      // Câble logique : dessin vectoriel (pas de sprite). Couleur VIVE (#00E5A0) quand le réseau
+      // est à 1, TERNE (#0d5a45) à 0 → état lisible d'un coup d'œil. Se raccorde aux autres câbles
+      // logiques ET aux bâtiments logiques (capteur/actionneur/porte) adjacents.
+      if (bid === 'logic_wire') {
+        let mask = netConnectMask(tiles, r, c, ['logic_wire']);
+        for (const [dr, dc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
+          let nt = tiles[r + dr] && tiles[r + dr][c + dc];
+          if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
+          if (nt && nt.building) {
+            const nb = BUILDINGS[nt.building.id];
+            if (nb && (nb.logicSource || nb.logicSink || nb.logicGate)) mask |= bit;
+          }
+        }
+        const st = g.logicState && g.logicState[isl] && g.logicState[isl][t.networkId] || 0;
+        const cx = x + tile / 2,
+          cy = y + tile / 2,
+          th = Math.max(2, tile * 0.16);
+        ctx.fillStyle = st ? '#00E5A0' : '#0d5a45';
+        roundRectPath(ctx, cx - th / 2, cy - th / 2, th, th, th * 0.3);
+        ctx.fill();
+        if (mask & 1) ctx.fillRect(cx - th / 2, y, th, tile / 2);
+        if (mask & 4) ctx.fillRect(cx - th / 2, cy, th, tile / 2);
+        if (mask & 8) ctx.fillRect(x, cy - th / 2, tile / 2, th);
+        if (mask & 2) ctx.fillRect(cx, cy - th / 2, tile / 2, th);
+        if (st) _animPlayed = true; // signal actif → on garde le rendu vif à jour
+        continue;
+      }
       // Conduit de chaleur : sprite connection-aware (bitmask + niveau, conduit_vN_xx_*) avec
       // repli vectoriel cuivre, puis TEINTE DE CHALEUR dynamique (cuivre → rouge vif) en canvas,
       // proportionnelle au % de FLUX transporté (flux évacué / débit total — game.conduitLoad).
@@ -18937,6 +19405,34 @@ function App() {
       }
       const sz = buildingSize(bid);
       drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime, t.building.inFac, t.building.pwrAvg);
+      // Dispositifs logiques (phase 5) : flèche d'ORIENTATION sur la face concernée + pastille d'état.
+      // Porte : flèche sur la face de SORTIE (gateDir). Capteur/actionneur : flèche vers la CIBLE.
+      if (bdef && (bdef.logicSource || bdef.logicSink || bdef.logicGate) && tile >= 14) {
+        const dir = bdef.logicGate ? t.building.gateDir || 0 : bdef.logicSource ? t.building.sensorDir : t.building.actDir;
+        const on = !!t.building.logicOut;
+        const cx = x + tile / 2,
+          cy = y + tile / 2;
+        // pastille d'état (coin haut-gauche) : vive si signal actif.
+        ctx.fillStyle = on ? '#00E5A0' : '#0d5a45';
+        ctx.beginPath();
+        ctx.arc(x + tile * 0.16, y + tile * 0.16, Math.max(2, tile * 0.07), 0, 6.283);
+        ctx.fill();
+        if (dir != null && DIRS4[dir]) {
+          const dd = DIRS4[dir],
+            ex = cx + dd[1] * tile * 0.34,
+            ey = cy + dd[0] * tile * 0.34,
+            a = Math.atan2(dd[0], dd[1]),
+            s = tile * 0.14;
+          ctx.fillStyle = bdef.logicGate ? '#00E5A0' : bdef.logicSink ? '#FF9628' : '#00E5A0';
+          ctx.beginPath();
+          ctx.moveTo(ex + Math.cos(a) * s, ey + Math.sin(a) * s);
+          ctx.lineTo(ex + Math.cos(a + 2.5) * s, ey + Math.sin(a + 2.5) * s);
+          ctx.lineTo(ex + Math.cos(a - 2.5) * s, ey + Math.sin(a - 2.5) * s);
+          ctx.closePath();
+          ctx.fill();
+        }
+        if (on) _animPlayed = true;
+      }
       // Jauge de chaleur (sources) : barre fine en haut de la tuile, % du plafond de trip
       // (dynamique : 60 s d'émission, heatCapOf). Vert < 50 %, orange 50-80 %, rouge clignotant
       // 80-100 %. Post-effet rouge si endommagé.
@@ -20085,6 +20581,7 @@ function App() {
     onSetArcSel: setArcSel,
     onSetArcWeight: setArcWeight,
     onSetFluxPri: setFluxPri,
+    onLogicSet: setLogicConfig,
     onSetAntMode: setAntennaMode,
     onHeatRepair: (r, c) => tryHeatRepair(r, c),
     onRepair: (r, c) => tryRepair(r, c),
@@ -20345,6 +20842,7 @@ if (typeof window !== 'undefined') {
     isPortPipe, portPool,
     elevatorRateAt, elevatorUpgradeCost, elevatorSurfaceLinked, elevatorTileOf, tickIsland,
     rawShippable, evaluateTechTree, techConfirm, techDeliver, PORT_PIPE_RES, BUILDING_NODE,
+    processLogic, reqValue, unlockedBuildingSet, networkUnlocked, networkUnitCost, LOGIC_MAX_ITER,
     InfoPanel: typeof InfoPanel === 'function' ? InfoPanel : null
   };
 }

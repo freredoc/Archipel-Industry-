@@ -17,7 +17,48 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 263`, `GAME_VERSION = 'Alpha 13.82'`, `SAVE_VERSION = 26`.**
+- **État au dernier passage : `GAME_BUILD = 264`, `GAME_VERSION = 'Alpha 13.83'`, `SAVE_VERSION = 27`.**
+  Changement 13.83 : **RÉSEAU LOGIQUE — Phase 5A (brief `BRIEF_ILE6_PHASE5`).** (0) **2 correctifs phase 4** :
+  (a) Séparateur Cryogénique `ordinateur_quantique:10` → **`processeur:100`** (lève la dépendance circulaire
+  dure) ; (b) **type `reqs` `resourceTile`** (compte les tuiles `resource` d'une île, défaut 7) → **#36
+  « Trouver de l'Hélium »** exige désormais **≥1 tuile forée sur l'île 7** (fini le `reqs:[]` auto-validant ;
+  un #36 déjà confirmé en save ne régresse pas, les nœuds confirmés ne se réévaluent pas). (1) **5ᵉ réseau
+  `logic_wire`** (kind infra, flag `logic:true`, patron du conduit) : booléen 0/1 par réseau connexe, **OU
+  câblé** (1 si ≥1 source à 1), **instantané, sans mémoire** (recalculé chaque tick par `processLogic`,
+  appelé en tête de `tickIsland`). NON améliorable (`networkUnitCost` vide), **local à l'île** (jamais
+  port/élévateur/bateaux — vérifié), pas de jonction. Débloqué par **#32** (`unlocks.buildings +=
+  logic_wire/capteur/actionneur`). Dessin vectoriel vert **vif (#00E5A0) si 1 / terne (#0d5a45) si 0**.
+  (2) **Capteur** (`logicSource`) : observe **UN** voisin choisi au clic (`sensorDir`, §5.1 — option
+  « un seul voisin explicite » retenue) ; conditions **full/empty/active/inactive** (`sensorMode`).
+  ⚠ `full` = 1ʳᵉ ressource de sortie du voisin ≥ sa **cible d'export** (`stockCible`) au port (le moteur
+  ne modélise pas de plafond de stock → la cible = le « réservoir » ; documenté). **Actionneur**
+  (`logicSink`) : lit le réseau adjacent (OU) → pose **`bld.logicOff`** (jamais `bld.active`, §5.2) sur le
+  voisin ciblé (`actDir`), **polarité inversable** (`actInvert`). (3) **`bld.logicOff`** traité EXACTEMENT
+  comme une pause dans la boucle bâtiment (active=false, regime=0, heatEmit=0, **`discReason:'logic'`**) —
+  l'actionneur n'écrit JAMAIS `active`. **Sites `active===false`/`paused` doublés par `logicOff`** :
+  boucle bâtiment (nouveau bloc, mirroir de `paused`), pré-pass antenne, `processHeat` (skip tour + liste
+  towers), `islandNuclearCoolingOk`. Les sites LECTURE aval (`active===false` : boucle énergie, draw,
+  InfoPanel) héritent automatiquement (le bloc pose `active=false`). (4) **Portes AND/OR/NOT**
+  (`logicGate`) : **face de sortie orientée** (`gateDir`, pivot au clic — modèle validé avec l'utilisateur,
+  réutilise l'esprit des jonctions) ; entrées = faces NON-sortie adjacentes à un réseau logique ; sortie =
+  face orientée. **Évaluation itérative** jusqu'à stabilisation, plafond **`LOGIC_MAX_ITER=16`** (coupe les
+  oscillations, garde la dernière valeur). NOT = NON(OU des entrées). (5) **Tech** : **#33** validé par
+  compteur **`game.techTree.logicTriggered`** (type `reqs` `logicTrig`, incrémenté à la 1ʳᵉ extinction par
+  actionneur) → débloque les 3 portes ; **#34** = ≥1 porte construite (type `reqs` `buildAny` — ⚠
+  approximation : ne vérifie pas que le montage passe PAR la porte, signalé) → unlocks vide (phase 6).
+  (6) **UI** : panneau d'info par dispositif (capteur : 4 conditions + cible + signal émis ; actionneur :
+  cible + polarité + reçu→action ; porte : face de sortie + sortie) via `setLogicConfig` (patch/cycle
+  d'orientation) ; flèche d'orientation + pastille d'état sur la carte. **Migration `SAVE_VERSION` 26→27**
+  (+27 whitelist) : `logicTriggered` (techTree) + réglages d'instance (`sm/sd/ad/ai/gd`) sérialisés/
+  restaurés (`logicOff` NON persisté, recalculé au 1er tick). **HORS périmètre (reportés)** : saveurs
+  d'information quantique + tri (phase 5B), capteurs avancés déficit/saveur (5B), Collisionneur (6).
+  ⚠ **Rétroaction** (capteur observant le bâtiment que l'actionneur éteint) : oscille chaque tick — voulu,
+  AUCUNE détection de boucle, vérifié ne plante/diverge pas. Validé : `node --check` (7 blocs) + Chromium
+  E2E (~40 assertions) : correctifs (sep coût, resourceTile #36) ; unlocks #32/#33/#34 ; **capteur→câble→
+  actionneur éteint la cible** (logicOff/active=false/disc 'logic') + rallume ; polarité inversée ;
+  **étanchéité inter-îles** ; **tables de vérité AND[0001]/OR[0111]/NOT[10] exactes** + cascade NOT(NOT(x))=x
+  + plafond d'itérations ; **rétroaction 200 ticks sans crash/divergence** ; non-régression grilles 1-7
+  phase4↔5 ; saves v22→v27 + round-trip des réglages logiques ; boot 2 modes 0 erreur. Build 263→264.
   Changement 13.82 : **ÎLE 6 / SOUTERRAIN — Phase 4 (chaîne He3 + quantique ; brief `BRIEF_ILE6_PHASE4`).**
   (1) **Azote stockable au port, PAS transitable** : `PORT_PIPE_RES += azote` (ancre D1, 1 ligne) → l'azote
   (carrier `pipe`) est stocké au PORT (chemin `pipePort`) donc traverse l'élévateur, MAIS reste hors
