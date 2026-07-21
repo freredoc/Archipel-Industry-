@@ -17,7 +17,226 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 259`, `GAME_VERSION = 'Alpha 13.78'`, `SAVE_VERSION = 22`.**
+- **État au dernier passage : `GAME_BUILD = 264`, `GAME_VERSION = 'Alpha 13.83'`, `SAVE_VERSION = 27`.**
+  Changement 13.83 : **RÉSEAU LOGIQUE — Phase 5A (brief `BRIEF_ILE6_PHASE5`).** (0) **2 correctifs phase 4** :
+  (a) Séparateur Cryogénique `ordinateur_quantique:10` → **`processeur:100`** (lève la dépendance circulaire
+  dure) ; (b) **type `reqs` `resourceTile`** (compte les tuiles `resource` d'une île, défaut 7) → **#36
+  « Trouver de l'Hélium »** exige désormais **≥1 tuile forée sur l'île 7** (fini le `reqs:[]` auto-validant ;
+  un #36 déjà confirmé en save ne régresse pas, les nœuds confirmés ne se réévaluent pas). (1) **5ᵉ réseau
+  `logic_wire`** (kind infra, flag `logic:true`, patron du conduit) : booléen 0/1 par réseau connexe, **OU
+  câblé** (1 si ≥1 source à 1), **instantané, sans mémoire** (recalculé chaque tick par `processLogic`,
+  appelé en tête de `tickIsland`). NON améliorable (`networkUnitCost` vide), **local à l'île** (jamais
+  port/élévateur/bateaux — vérifié), pas de jonction. Débloqué par **#32** (`unlocks.buildings +=
+  logic_wire/capteur/actionneur`). Dessin vectoriel vert **vif (#00E5A0) si 1 / terne (#0d5a45) si 0**.
+  (2) **Capteur** (`logicSource`) : observe **UN** voisin choisi au clic (`sensorDir`, §5.1 — option
+  « un seul voisin explicite » retenue) ; conditions **full/empty/active/inactive** (`sensorMode`).
+  ⚠ `full` = 1ʳᵉ ressource de sortie du voisin ≥ sa **cible d'export** (`stockCible`) au port (le moteur
+  ne modélise pas de plafond de stock → la cible = le « réservoir » ; documenté). **Actionneur**
+  (`logicSink`) : lit le réseau adjacent (OU) → pose **`bld.logicOff`** (jamais `bld.active`, §5.2) sur le
+  voisin ciblé (`actDir`), **polarité inversable** (`actInvert`). (3) **`bld.logicOff`** traité EXACTEMENT
+  comme une pause dans la boucle bâtiment (active=false, regime=0, heatEmit=0, **`discReason:'logic'`**) —
+  l'actionneur n'écrit JAMAIS `active`. **Sites `active===false`/`paused` doublés par `logicOff`** :
+  boucle bâtiment (nouveau bloc, mirroir de `paused`), pré-pass antenne, `processHeat` (skip tour + liste
+  towers), `islandNuclearCoolingOk`. Les sites LECTURE aval (`active===false` : boucle énergie, draw,
+  InfoPanel) héritent automatiquement (le bloc pose `active=false`). (4) **Portes AND/OR/NOT**
+  (`logicGate`) : **face de sortie orientée** (`gateDir`, pivot au clic — modèle validé avec l'utilisateur,
+  réutilise l'esprit des jonctions) ; entrées = faces NON-sortie adjacentes à un réseau logique ; sortie =
+  face orientée. **Évaluation itérative** jusqu'à stabilisation, plafond **`LOGIC_MAX_ITER=16`** (coupe les
+  oscillations, garde la dernière valeur). NOT = NON(OU des entrées). (5) **Tech** : **#33** validé par
+  compteur **`game.techTree.logicTriggered`** (type `reqs` `logicTrig`, incrémenté à la 1ʳᵉ extinction par
+  actionneur) → débloque les 3 portes ; **#34** = ≥1 porte construite (type `reqs` `buildAny` — ⚠
+  approximation : ne vérifie pas que le montage passe PAR la porte, signalé) → unlocks vide (phase 6).
+  (6) **UI** : panneau d'info par dispositif (capteur : 4 conditions + cible + signal émis ; actionneur :
+  cible + polarité + reçu→action ; porte : face de sortie + sortie) via `setLogicConfig` (patch/cycle
+  d'orientation) ; flèche d'orientation + pastille d'état sur la carte. **Migration `SAVE_VERSION` 26→27**
+  (+27 whitelist) : `logicTriggered` (techTree) + réglages d'instance (`sm/sd/ad/ai/gd`) sérialisés/
+  restaurés (`logicOff` NON persisté, recalculé au 1er tick). **HORS périmètre (reportés)** : saveurs
+  d'information quantique + tri (phase 5B), capteurs avancés déficit/saveur (5B), Collisionneur (6).
+  ⚠ **Rétroaction** (capteur observant le bâtiment que l'actionneur éteint) : oscille chaque tick — voulu,
+  AUCUNE détection de boucle, vérifié ne plante/diverge pas. Validé : `node --check` (7 blocs) + Chromium
+  E2E (~40 assertions) : correctifs (sep coût, resourceTile #36) ; unlocks #32/#33/#34 ; **capteur→câble→
+  actionneur éteint la cible** (logicOff/active=false/disc 'logic') + rallume ; polarité inversée ;
+  **étanchéité inter-îles** ; **tables de vérité AND[0001]/OR[0111]/NOT[10] exactes** + cascade NOT(NOT(x))=x
+  + plafond d'itérations ; **rétroaction 200 ticks sans crash/divergence** ; non-régression grilles 1-7
+  phase4↔5 ; saves v22→v27 + round-trip des réglages logiques ; boot 2 modes 0 erreur. Build 263→264.
+  Changement 13.82 : **ÎLE 6 / SOUTERRAIN — Phase 4 (chaîne He3 + quantique ; brief `BRIEF_ILE6_PHASE4`).**
+  (1) **Azote stockable au port, PAS transitable** : `PORT_PIPE_RES += azote` (ancre D1, 1 ligne) → l'azote
+  (carrier `pipe`) est stocké au PORT (chemin `pipePort`) donc traverse l'élévateur, MAIS reste hors
+  `TRADE_LIQUIDS`/`TRADE_RESOURCE_SET` → **jamais transité par bateau** (décision testeur maintenue,
+  `rawShippable(g,6,5,'azote')===0` vérifié). Migration D8 (pools tuyau → port) déjà générique sur toute
+  clé `PORT_PIPE_RES` → couvre l'azote (commentaire MAJ). Oxygène NON touché (reste pool local île 6).
+  (2) **5 bâtiments** (t5, style `separateur_air`/`presse_uhp`/`geothermie`) : `extracteur_souterrain`
+  (île 7, sur poche He3 `resource` ; acide 8 + eau 16 → gaz_fossiles 1 ; power 0), `separateur_cryogenique`
+  (île 7 ; multi-sortie sur ratios 1 gaz_fossiles + azote 16 → helium3 0,01 + helium4 0,1 + methane 0,89 ;
+  sigmoïde 128→1024), `centrale_gaz` (**île 6 SURFACE** — arbitrage concepteur ; methane 8 + oxygene 64 →
+  512 kW ; producteur power:0), `fab_ordi_quantique` (île 6 ; câble supra 16 + proc 8 + lingot_or 64 →
+  ordinateur_quantique 0,01 ; sigmoïde 1024→8096), `data_center` (île 6 ; proc 1 + azote 1024 + helium4 8 →
+  information_quantique 1 ; **power:0 = énergie absente de l'Excel, non inventée**). Toolbar ×5 ;
+  `BLD_SPRITE_OVERRIDE.extracteur_souterrain = 'bat_extracteur'` (le fichier livré n'a pas le suffixe
+  `_souterrain`) ; les 4 autres résolvent `bat_<id>`. (3) **Tech tree renuméroté sur l'Excel v2** :
+  l'ancien **#32 « Forage Profond → foreuse »** est remplacé par **#32 Câble Supraconducteur** (case vide) ;
+  ajout **#33/#34 Circuit Logique 1/2** (cases vides PHASE 5), **#35 Réparation du Collisionneur** (livraison
+  10000 béton irr. + 10000 alliage + 10000 câble supra → **foreuse**), **#36 Trouver de l'Hélium** →
+  extracteur + séparateur cryo, **#37 Ordinateur Quantique** (produire 100 helium4) → centrale gaz +
+  data center, **#38 Data Center** (produire 1 ordinateur_quantique, unlocks vide PHASE 6). LOCALES `tech`
+  ×4 langues (32→38). `BUILDING_NODE` auto-dérivé → foreuse=35/extracteur=36/gaz=37 sans câblage manuel.
+  Les cases vides (`reqs:[]`, mode auto) atteignent `condition_ok` immédiatement (1 clic, ne bloquent pas
+  la chaîne #31→#38). (4) **Migration `SAVE_VERSION` 25→26** (+26 whitelist) : si l'ancien #32 (Forage)
+  était confirmé, on marque **#32/#33/#34/#35 confirmés** → la **foreuse reste débloquée** (livraison #35
+  NON re-exigée) ; #36-#38 restent `locked` (promus normalement). ⚠ **BLOCAGES SIGNALÉS (Excel prime,
+  implémenté tel quel, arbitrage playtest)** : (a) **dépendance circulaire DURE** — le Séparateur Cryo
+  coûte **10 ordinateurs quantiques**, or l'Ordi Quantique (Fab) est débloqué par #37 qui exige « produire
+  100 helium4 » = avoir déjà un Séparateur → **le 1er Séparateur est inconstructible** (à trancher) ;
+  (b) **#35 = 10000 câble supra** (seule source : Presse UHP à 1 supra/s partagé avec le débit élévateur)
+  → ~10000 s de jeu MINIMUM (bien plus avec le partage) = atteignabilité très longue ; (c) **incohérence
+  foreuse/collisionneur** — #35 (Collisionneur) débloque la foreuse qui sert à forer l'He3 qui alimente le
+  Collisionneur ; (d) **helium = helium4** (interprétation §3/§6) ; (e) **Data Center sans énergie**
+  (colonne Excel vide → power:0, non inventé) ; (f) **saveurs d'information quantique** et **peaker de la
+  Centrale à Gaz** REPORTÉS (phase 5). ⚠ **#36 « trouver une tuile resource île 7 »** : AUCUN type de
+  `reqs` existant (produce/build/node/port/energy/imported/accu) ne l'exprime → **fallback `reqs:[]`**
+  (auto-valide dès #35, ne bloque pas ; proposition : type `resourceTile` en attente d'arbitrage §6).
+  Validé : `node --check` (7 blocs) + Chromium E2E (2 suites, ~55 assertions) : boot 2 modes + 5 defs/
+  sprites ; azote au port + `rawShippable===0` + oxygène local ; migration azote v25 pool→port ; chaîne
+  souterraine réelle (extracteur → gaz 1/s & acide 8/s ; séparateur ratios **1:10:89 EXACTS**, accumulation
+  0,01/s exacte, azote 16/s) ; chaîne surface (centrale gaz **512 kW** + méthane 8/oxygène 64 ; fab ordi
+  0,01/s ; data center info 1/s + azote 1024/helium4 8) ; **débit élévateur** (demande 18 > cap 16 →
+  flux bridé PROPORTIONNELLEMENT à 16/18, PAS de blocage dur) ; tech chaîne #31→#38 (cases vides
+  condition_ok, #35→foreuse, #37→gaz/data) ; migration tech v25 (foreuse conservée, 38 nœuds) ;
+  non-régression grilles îles 1-7 IDENTIQUES phase 3↔4 ; saves v22→v26 round-trip ; 0 erreur console.
+  Build 262→263.
+  Changement 13.81 : **ÎLE 6 / SOUTERRAIN — Phase 3 (l'élévateur : transferts au port île 6, débit
+  borné ; brief `BRIEF_ILE6_PHASE3`).** Le souterrain (île 7) devient une extension de l'île 6 reliée
+  par un « tuyau » de capacité finie. (1) **portPool(7)** renvoie désormais `game.port[6]` quand
+  l'élévateur est réparé (sinon `{}` jetable) → le tick de l'île 7 puise/dépose dans le port de l'île 6
+  (aucun `game.port[7]` jamais créé). L'île 6 étant tickée AVANT l'île 7 (`for def of ISLAND_TERRAINS`),
+  l'île 7 lit l'état À JOUR du port (vérifié : consommation même tick). (2) **Connexion physique** :
+  `rebuildNetworks` — cible de connexion = le PORT (îles 1-6) / la TUILE ÉLÉVATEUR de l'île 7 (si réparé) ;
+  un réseau route/tuyau ADJACENT à la cible OU PASSANT PAR elle (infra sur la tuile élévateur — le cas
+  « sur la tuile » ne se produit jamais sur un port → îles 1-6 intactes) devient `connected` → réutilise
+  la bascule pipePort/road existante. (3) **§4.2 option (a) retenue** : le souterrain n'est alimenté que
+  si la tuile élévateur de l'ÎLE 6 est reliée par route/tuyau au port en surface (`elevatorSurfaceLinked`)
+  — donne un rôle à la tuile élévateur de surface (tracé port→élévateur à construire). Gating dans le
+  tick (`undergroundBlocked`). (4) **Débit borné** : `ELEVATOR_BASE_RATE=16` (×2/niveau, `elevatorRateAt`)
+  = enveloppe PARTAGÉE bornant la somme de TOUT le port I/O (road + pipePort, intrants + sortants) × régime,
+  tous sens confondus. Allocation par priorité de flux (haute→normale→basse, même schéma que la saturation
+  réseau) → `elevFacOf(pri)` multiplie le flush port de l'île 7 (= 1 ailleurs, non-régression). `game.elevatorFlow`
+  {demand, cap, used} pour l'UI. (5) **Amélioration** : `game.elevatorLevel` (défaut 0), `ELEVATOR_BASE_COST`
+  (×2/niveau, payé depuis le port île 6) ; action `tryUpgradeElevator` ; panneau élévateur DÉDIÉ (au clic
+  sur la tuile réparée) = niveau, débit consommé/max en temps réel, débit suivant, coût, bouton améliorer
+  (`handleTap` ouvre le panneau réparé OU cassé). (6) **Motif de déconnexion DÉDIÉ `'elevator'`** (remplace
+  l'approximation 'road' de la phase 2) : élévateur non réparé / non relié en surface / bâtiment non relié
+  à la tuile élévateur ; `DISC_LABELS.elevator`. (7) **Électricité NE PASSE PAS** (vérifié) : `energie_kw`
+  est `wire`, le tick élec. est par île, jamais dans road/pipePort ; couper la géothermie île 7 arrête les
+  bâtiments souterrains même si l'île 6 est excédentaire. Les `NON_STORABLE` ne transitent jamais (déjà
+  exclus de pipePort). (8) **Migration `SAVE_VERSION` 24→25** : `elevatorLevel` sérialisé/restauré (défaut
+  0) ; whitelist +25. **HORS périmètre (dette assumée)** : construction ralentie par le débit (§7 — le jeu
+  n'a aucune notion de construction étalée dans le temps ; système à part entière, phase dédiée). **Valeurs
+  à playtester** : débit de base 16/s (une presse tourne à ~94 % au niveau 0 — plafond ressenti d'emblée,
+  voulu) ; coûts d'amélioration élévateur ; coûts réparation/forage hérités phase 2. Validé : `node --check`
+  (7 blocs) + Chromium E2E `https://localhost/` (~40 assertions, 2 suites) : non-régression grilles îles 1-6
+  (2 modes) ; ordre de tick (consommation port[6] MÊME tick) ; chaîne réelle presse UHP (route surface
+  port→élévateur + presses reliées à la tuile élévateur i7 + géothermies → consomme câble irradié de port[6],
+  y dépose supra) ; **enveloppe plafonnée EXACTEMENT** (2 presses/34 demandé → 16/s au niveau 0, 32/s au
+  niveau 1) ; **priorité respectée** (haute servie, basse coupée) ; étanchéité électrique (géothermie coupée
+  → presse s'arrête) ; élévateur non réparé → isolement total, `port[7]` absent, 0 exception ; amélioration
+  VIA CLIC UI (niveau +1, coût 250/500/2500 débité port 6) ; flux transit 5→6 et consommation four_fer île 1
+  IDENTIQUES phase 2 vs phase 3 ; migrations v22/v23/v24/v25 sans perte (`elevatorLevel` persisté) ; 0 erreur
+  console. Build 261→262.
+  Changement 13.80 : **ÎLE 6 / SOUTERRAIN — Phase 2 (logistique 5↔6, réparation élévateur, foreuse He3 ;
+  brief `BRIEF_ILE6_PHASE2`).** (1) **Logistique 5↔6** : `SHIP_LINKS += '5-6'` (activation auto via
+  `linkActive` au déblocage île 6, aucun gating ajouté) ; `transitForwardBudget` — bornes de chaîne
+  linéaire `5 → 6` (2 spots : `nextI > 6`, `while i <= 6`) → l'île 6 reçoit le transit relais ;
+  `defaultShips` crée `ships['5-6']` (migration auto) ; kickstart île 6 RÉDUIT (acier/béton/câble irr.
+  500, pièce méca 250 ; `element_moteur_nuc` retiré — transite désormais). L'acide (déjà dans
+  `TRADE_LIQUIDS`) transite par mer 5→6 et alimente les mines via la bascule pipe→pipePort existante —
+  **le blocage acide de la phase 1 est LEVÉ.** (2) **Réparation élévateur** : état de PARTIE
+  `game.elevatorRepaired` (bool, pas de terrain distinct) ; **nœud #31** « Réparation de l'Élévateur »
+  (`mode:'delivery'` — structure `delivery:{piece_precision:2000, beton_arme_irradie:20000}` alignée sur
+  #21/#28, PAS un `reqs:[{t:'deliver'}]` inexistant ; `unlocks.elevatorRepair` + geothermie + presse_uhp)
+  + LOCALES ×4 ; `isElevatorRepairUnlocked` (flag générique `isTechFlagConfirmed`) ; action
+  `tryRepairElevator` (coût FIXE 500 p.précision / 1000 alliage / 5000 câble irr. depuis le port île 6,
+  bypass dev, une seule fois → `elevatorRepaired=true` + `islandUnlocked[7]=true`) ; rendu élévateur
+  CONDITIONNEL (`tile_i6_elevateur` réparé / `_casse` sinon). (3) **Ouverture île 7 au joueur** : onglet
+  `IslandSelector` + `switchIsland` gatés sur `islandUnlocked[7]` (posé à la réparation) au lieu du flag
+  dev (bypass dev conservé) ; 7 onglets tiennent à 390px (flex+min-width:0, vérifié, pas d'overflow).
+  (4) **Foreuse + He3** : bâtiment `foreuse` (t5, exclusiveIsland 7, power 512, sans I/O — sprite
+  `bat_foreuse`) + toolbar ; **nœud #32** « Forage Profond » (`prereq 31`, produce **`piece_precision`
+  500** — ⚠ le brief proposait `cable_supraconducteur` INATTEIGNABLE en phase 2, option (a) retenue) +
+  LOCALES ×4 ; `game.he3Deposits` = 3 tuiles `land` île 7 (hors élévateur, coords paddées) générées UNE
+  fois par `generateHe3Deposits` (Fisher-Yates dans `ensureIslandDefaults`) puis PERSISTÉES ;
+  `game.drillsCount[7]` ; `drillCost(n)` = ×4/cran (100 p.précision + 500 câble irr.) ; action `tryDrill`
+  (foreuse 4-adjacente requise, révèle un gisement → terrain `resource`/`tile_i7_resource`, sinon rien ;
+  coût payé & compteur incrémenté dans les 2 cas ; `t.drilled` interdit le re-forage). (5) **Port île 7
+  ABSENT préservé** : `portPool` + la passe chaleur renvoient un tampon JETABLE pour l'île 7 (jamais
+  `game.port[7]`) → le tick des bâtiments souterrains tourne sans créer de port (aucun dépôt utile en
+  phase 2). (6) **UI terrain** : `InfoPanel` (branche répare/remblai) GÉNÉRALISÉE aux modes `elevator`
+  et `drill` (cost/count/unlocked/onAct mode-aware, ligne compteur masquée pour l'élévateur) ;
+  `handleTap` ouvre le panneau élévateur (tuile `elevator` non réparée) et forage (île 7, `land` vierge,
+  foreuse adjacente) ; props `onRepairElevator`/`onDrill`. (7) **Migration `SAVE_VERSION` 23→24** :
+  `elevatorRepaired`/`he3Deposits`/`drillsCount` sérialisés + restaurés AVANT `ensureIslandDefaults` (pas
+  de régénération des gisements) ; tuiles `drilled` persistées par île (comme terrainMods) ; whitelist
+  +24. **Décisions à arbitrer (rapport)** : (a) **forage payé depuis le PORT DE L'ÎLE 6** — l'île 7 n'a
+  pas de port, le brief n'a pas fixé la source ; `missingFor`/`pay`/`refund` reçoivent un param île
+  optionnel ; (b) **presse UHP sur l'île 7 → `discReason='road'`** (pas `'input'` comme prévu au brief) :
+  sans port souterrain, sa sortie route ne peut être déposée → déconnexion route AVANT le contrôle
+  d'intrant ; les deux = « logistique manquante » (état voulu, résolu phase 3) ; (c) nœud #32 prereq (cf.
+  supra) ; (d) coûts réparation/forage = premières estimations non playtestées. Validé : `node --check`
+  (7 blocs) + Chromium E2E `https://localhost/` (~50 assertions, 2 suites) : non-régression grilles îles
+  1-6 identiques (2 modes) ; boot 2 modes + tick île 7 sans port (port[7] absent) ; données (SHIP_LINKS,
+  nœuds 31/32, foreuse, geothermie gatée par #31, kickstart réduit, drillCost ×4) ; transit réel acide+
+  acier 5→6 (`tickShips`) ; chaîne mine tungstène alimentée en acide → produit (plus de blocage) ;
+  réparation élévateur VIA CLIC UI (coût débité port 6, île 7 débloquée + onglet, sprite réparé) ; forage
+  VIA CLIC UI (gisement→resource, coût port 6, `drilled` marqué, compteur) ; migration v22/v23 sans perte
+  (îles 6/7, ship 5-6, port[7] absent) ; round-trip v24 (gisements/drillsCount/drilled/elevatorRepaired
+  restaurés exact) ; presse UHP non fonctionnelle ; 7 onglets à 390px sans overflow ; 0 erreur console.
+  Build 260→261.
+  Changement 13.79 : **ÎLE 6 (surface) + SOUTERRAIN (île 7) — Phase 1 (fondations : terrain, ressources,
+  5 bâtiments, tech, sprites, migration ; brief `BRIEF_ILE6_PHASE1`).** PÉRIMÈTRE = poser le terrain,
+  déclarer le contenu et intégrer les sprites AVANT le système d'élévateur/transfert (phase 2). (1)
+  **Terrain** : nouveau code `E` = terrain `'elevator'` (`charToTerrain`) — circulable par les RÉSEAUX
+  (boucle post-`BUILDINGS` ajoutant `'elevator'` aux `terrains` des infra/jonctions), JAMAIS
+  constructible (aucun bâtiment ne le liste) ; `TERRAIN_COLORS.elevator`. La promotion `land→coast` de
+  `buildIslandTiles` ne touche pas l'élévateur (elle ne traite que `land`). (2) **Grilles** : île 6
+  (16×16, port maritime `X` r13c5, gisement tungstène 6 `M`, élévateur `E`, 2 `P` réservés au
+  Collisionneur phase 6) + île 7 (souterrain, 5×9, 12 tunnels + 1 élévateur, PAS de port) ajoutées à
+  `NORMAL_ISLANDS` ET `ISLAND_TERRAINS_BASE` ; `PORTS_BASE[6]` ; garde `if (base)` dans `applyGameMode`
+  (île 7 sans port → `base` undefined, `portPosFor` renvoie déjà `null`, 2 sites d'appel sûrs). (3)
+  **11 ressources** déclarées (`CARRIER_BY_RES` + `RES_SHORT`) : tungstène/alliage/pièce précision/câble
+  supra (produites en phase 1) + ordi & info quantiques, matière exotique, gaz fossiles, He3/He4, méthane
+  (phases futures). (4) **5 bâtiments** (`tier: 't5'` → pas de surcoût `TIER_COST_MULT`) : `mine_tungstene`
+  (surface, exclusiveIsland 6, multi-sortie tungstène+pierre, conso acide), `four_arc_tungstene`,
+  `machine_outil` (surface), `geothermie` (souterrain, PRODUCTEUR — `power:0`+`outputs.energie_kw:512`,
+  convention producteurs) et `presse_uhp` (souterrain, sigmoïde 128→1024 = `base:128,amp:896`) +
+  `TOOLBAR_GROUPS`, `TIER_ACCENT.t5`. (5) **Tech** : nœud 28 « Navire Futuriste » (doublon île 5 inerte)
+  repointé → **« Accès Île 6 »** (`unlocks.islands:[6]`+`mine_tungstene`, LOCALES tech 28 réécrit ×4
+  langues) ; nœuds **29** (Four à Arc Tungstène, produire 100 tungstène) et **30** (Machine-Outil, 100
+  alliage) ajoutés (+ LOCALES) ; `ISLAND_ACCESS_NODE[6]=28` ; kickstart île 6 (SANS acide, cf. blocage).
+  (6) **Rendu** : branche `elevator` du draw = `tile_i6_elevateur_casse` (phase 1 : cassé) ; helper DÉDIÉ
+  `tunnelBorderPieces` (miroir `coastFoamPieces`, prédicat roche=water, pièces `i7_bord_*` sur la tuile de
+  sol) routé quand `isl===7` ; écume/falaise maritimes désactivées sur l'île 7 (roche). `coastCliffPieces`
+  INTACT (îles 1–6 pixel-identiques). (7) **Onglets d'île** : île 7 filtrée (souterrain, accès par
+  l'élévateur en phase 2) ; **accès DEV** temporaire (île 7 visible + cliquable sous `game.ui.dev`,
+  contournement dans `switchIsland`). (8) **Sprites** : 69 fichiers `sprites/` + 3 sheets d'anim
+  `mine_tungstene_*` (frame 0 == statique vérifié 0 px) inlinés ; `ANIM_META` ×3 ; résolution auto
+  `tile_iN_*` / `item_*` / `bat_*`. (9) **Migration `SAVE_VERSION` 22→23** : `ensureIslandDefaults(g)`
+  (idempotent, appelé en newGame/chooseMode/loadSave) garantit les structures par île 6/7 (islands via
+  `buildIslandTiles`, `port[6]={}` SANS `port[7]`, islandUnlocked/repairs/extensions 6-7 par défaut) ;
+  whitelist `loadSave` +23 ; serialize (spreads par île) persiste 6/7 automatiquement. Validé :
+  `node --check` (7 blocs) + Chromium E2E `https://localhost/` (~35 assertions) : non-régression grilles
+  îles 1-5 identiques (2 modes) ; terrain 6/7 (dims paddées 32×32 / 21×25, 6 resource + 2 oil + 1 elevator
+  île 6 non promu en coast, 12 land + 1 elevator île 7, `PORTS[6]` défini, `PORTS[7]` undefined sans throw,
+  2 modes) ; 5 sprites + 11 ressources + nœuds 28/29/30 + geothermie producteur + presse sigmoïde ; save
+  v22 forgée → migre sans perte (bâtiment île 1 + stock préservés, îles 6/7 créées, `port[7]` absent) ;
+  `tunnelBorderPieces` → 12 clés `i7_bord_*` toutes présentes dans `__SPRITE_DATA__`, aucune sur la roche ;
+  0 erreur console (hors fetch offline). **⚠ BLOCAGES/TENSIONS SIGNALÉS (non tranchés, cf. brief) :**
+  (a) **acide non transitable** — la Mine Tungstène consomme 16 acide/s mais l'acide est un fluide `pipe`
+  hors `PORT_PIPE_RES` → ni transitable ni dans le kickstart → la mine est posable mais NON alimentée ;
+  (b) **pas de liaison maritime 5↔6** (`SHIP_LINKS` inchangé) → l'île 6 n'importe rien en phase 1 (amorcée
+  par kickstart seul) ; (c) **chaleur Machine-Outil/Presse** non branchée (ratio Excel « mj selon ratio
+  elec » non déterminé → pas de `heatCap`, option offerte par le brief) ; (d) **géothermie/presse sans
+  nœud tech** → toujours « unlocked » mais gatées par `exclusiveIsland:7` + île 7 dev-only (invisibles au
+  joueur) ; (e) nouvelles ressources sans `RES_TIER` → groupées sous T0 dans l'inventaire (cosmétique).
+  Build 259→260.
   Changement 13.78 : **bouton booster réaffiché (demande utilisateur).** `BOOSTER_UI_ENABLED` repassé
   `false → true` → le 6e bouton (booster) revient dans la barre du bas (à nouveau **6 boutons**), avec
   le layout 2 lignes du 13.77 (sprite `ui_booster` en haut, « ×N » + charge mm:ss en dessous) ;
