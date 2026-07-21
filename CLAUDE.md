@@ -17,7 +17,45 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 261`, `GAME_VERSION = 'Alpha 13.80'`, `SAVE_VERSION = 24`.**
+- **État au dernier passage : `GAME_BUILD = 262`, `GAME_VERSION = 'Alpha 13.81'`, `SAVE_VERSION = 25`.**
+  Changement 13.81 : **ÎLE 6 / SOUTERRAIN — Phase 3 (l'élévateur : transferts au port île 6, débit
+  borné ; brief `BRIEF_ILE6_PHASE3`).** Le souterrain (île 7) devient une extension de l'île 6 reliée
+  par un « tuyau » de capacité finie. (1) **portPool(7)** renvoie désormais `game.port[6]` quand
+  l'élévateur est réparé (sinon `{}` jetable) → le tick de l'île 7 puise/dépose dans le port de l'île 6
+  (aucun `game.port[7]` jamais créé). L'île 6 étant tickée AVANT l'île 7 (`for def of ISLAND_TERRAINS`),
+  l'île 7 lit l'état À JOUR du port (vérifié : consommation même tick). (2) **Connexion physique** :
+  `rebuildNetworks` — cible de connexion = le PORT (îles 1-6) / la TUILE ÉLÉVATEUR de l'île 7 (si réparé) ;
+  un réseau route/tuyau ADJACENT à la cible OU PASSANT PAR elle (infra sur la tuile élévateur — le cas
+  « sur la tuile » ne se produit jamais sur un port → îles 1-6 intactes) devient `connected` → réutilise
+  la bascule pipePort/road existante. (3) **§4.2 option (a) retenue** : le souterrain n'est alimenté que
+  si la tuile élévateur de l'ÎLE 6 est reliée par route/tuyau au port en surface (`elevatorSurfaceLinked`)
+  — donne un rôle à la tuile élévateur de surface (tracé port→élévateur à construire). Gating dans le
+  tick (`undergroundBlocked`). (4) **Débit borné** : `ELEVATOR_BASE_RATE=16` (×2/niveau, `elevatorRateAt`)
+  = enveloppe PARTAGÉE bornant la somme de TOUT le port I/O (road + pipePort, intrants + sortants) × régime,
+  tous sens confondus. Allocation par priorité de flux (haute→normale→basse, même schéma que la saturation
+  réseau) → `elevFacOf(pri)` multiplie le flush port de l'île 7 (= 1 ailleurs, non-régression). `game.elevatorFlow`
+  {demand, cap, used} pour l'UI. (5) **Amélioration** : `game.elevatorLevel` (défaut 0), `ELEVATOR_BASE_COST`
+  (×2/niveau, payé depuis le port île 6) ; action `tryUpgradeElevator` ; panneau élévateur DÉDIÉ (au clic
+  sur la tuile réparée) = niveau, débit consommé/max en temps réel, débit suivant, coût, bouton améliorer
+  (`handleTap` ouvre le panneau réparé OU cassé). (6) **Motif de déconnexion DÉDIÉ `'elevator'`** (remplace
+  l'approximation 'road' de la phase 2) : élévateur non réparé / non relié en surface / bâtiment non relié
+  à la tuile élévateur ; `DISC_LABELS.elevator`. (7) **Électricité NE PASSE PAS** (vérifié) : `energie_kw`
+  est `wire`, le tick élec. est par île, jamais dans road/pipePort ; couper la géothermie île 7 arrête les
+  bâtiments souterrains même si l'île 6 est excédentaire. Les `NON_STORABLE` ne transitent jamais (déjà
+  exclus de pipePort). (8) **Migration `SAVE_VERSION` 24→25** : `elevatorLevel` sérialisé/restauré (défaut
+  0) ; whitelist +25. **HORS périmètre (dette assumée)** : construction ralentie par le débit (§7 — le jeu
+  n'a aucune notion de construction étalée dans le temps ; système à part entière, phase dédiée). **Valeurs
+  à playtester** : débit de base 16/s (une presse tourne à ~94 % au niveau 0 — plafond ressenti d'emblée,
+  voulu) ; coûts d'amélioration élévateur ; coûts réparation/forage hérités phase 2. Validé : `node --check`
+  (7 blocs) + Chromium E2E `https://localhost/` (~40 assertions, 2 suites) : non-régression grilles îles 1-6
+  (2 modes) ; ordre de tick (consommation port[6] MÊME tick) ; chaîne réelle presse UHP (route surface
+  port→élévateur + presses reliées à la tuile élévateur i7 + géothermies → consomme câble irradié de port[6],
+  y dépose supra) ; **enveloppe plafonnée EXACTEMENT** (2 presses/34 demandé → 16/s au niveau 0, 32/s au
+  niveau 1) ; **priorité respectée** (haute servie, basse coupée) ; étanchéité électrique (géothermie coupée
+  → presse s'arrête) ; élévateur non réparé → isolement total, `port[7]` absent, 0 exception ; amélioration
+  VIA CLIC UI (niveau +1, coût 250/500/2500 débité port 6) ; flux transit 5→6 et consommation four_fer île 1
+  IDENTIQUES phase 2 vs phase 3 ; migrations v22/v23/v24/v25 sans perte (`elevatorLevel` persisté) ; 0 erreur
+  console. Build 261→262.
   Changement 13.80 : **ÎLE 6 / SOUTERRAIN — Phase 2 (logistique 5↔6, réparation élévateur, foreuse He3 ;
   brief `BRIEF_ILE6_PHASE2`).** (1) **Logistique 5↔6** : `SHIP_LINKS += '5-6'` (activation auto via
   `linkActive` au déblocage île 6, aucun gating ajouté) ; `transitForwardBudget` — bornes de chaîne

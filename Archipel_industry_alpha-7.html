@@ -5519,12 +5519,12 @@ function ensureSlotsInitialized() {
   }
   return active;
 }
-const SAVE_VERSION = 24;
+const SAVE_VERSION = 25;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 261;
-const GAME_VERSION = 'Alpha 13.80';
+const GAME_BUILD = 262;
+const GAME_VERSION = 'Alpha 13.81';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -6261,6 +6261,11 @@ function rebuildNetworks(game, islandId) {
     length: def.rows
   }, () => new Array(def.cols).fill(false));
   const port = portPosFor(islandId);
+  // Cible de connexion réseau↔« port » : le PORT pour les îles 1-6 ; pour l'île 7 (souterrain),
+  // la tuile ÉLÉVATEUR — et seulement si l'élévateur est réparé (sinon le souterrain reste isolé).
+  // Un réseau route/tuyau touchant cette cible devient `connected` (→ bascule pipePort / port I/O).
+  let connTarget = port;
+  if (islandId === 7) connTarget = game.elevatorRepaired ? elevatorTileOf(game, 7) : null;
   // Une jonction appartient aux DEUX réseaux porteurs qu'elle croise : le flood-fill
   // la traverse pour chaque porteur et stocke un networkId par porteur dans t.netIds.
   // Ainsi route ET câble (ou tuyau) « passent » à travers, quelle que soit l'orientation.
@@ -6311,9 +6316,14 @@ function rebuildNetworks(game, islandId) {
       // Si la tuile courante est une jonction, elle ne propage ce porteur que le long de son axe.
       const cjDef = cj ? BUILDINGS[ct.building.id] : null;
       const curOk = (dr, dc) => !cj || junctionDirOk(tiles, cr, cc, cjDef, type, dr, dc);
-      if ((type === 'road' || type === 'pipe') && port) {
-        for (const [dr, dc] of DIRS4) {
-          if (curOk(dr, dc) && cr + dr === port.r && cc + dc === port.c) {
+      if ((type === 'road' || type === 'pipe') && connTarget) {
+        // Réseau ADJACENT à la cible (port îles 1-6 ; les roads ne peuvent être POSÉES sur le port),
+        // OU réseau qui PASSE PAR la cible (île 7 : infra posée sur la tuile élévateur — terrain qui
+        // accepte les réseaux). Le cas « sur la tuile » ne se produit jamais sur un port → sans effet
+        // sur les îles 1-6.
+        if (cr === connTarget.r && cc === connTarget.c) net.connected = true;
+        else for (const [dr, dc] of DIRS4) {
+          if (curOk(dr, dc) && cr + dr === connTarget.r && cc + dc === connTarget.c) {
             net.connected = true;
             break;
           }
@@ -6415,13 +6425,61 @@ function rebuildNetworks(game, islandId) {
   }
   game.networks[islandId] = newNets;
 }
+// ===== ÉLÉVATEUR (île 6 ↔ 7) — phase 3 : transferts au port de l'île 6, débit borné =====
+// Débit = somme de TOUT ce qui traverse (intrants + sortants du souterrain), tous sens confondus,
+// par seconde. Barème calqué sur le port (×2/niveau). 16/s au niveau 0 = à PLAYTESTER (une Presse
+// UHP demande 16 câble irr. + 1 supra = 17/s → tourne à ~94 % au niveau 0, plafond ressenti d'emblée).
+const ELEVATOR_BASE_RATE = 16;
+const elevatorRateAt = lvl => ELEVATOR_BASE_RATE * Math.pow(2, lvl || 0);
+// Coût d'amélioration (payé depuis le port de l'île 6, ×2/niveau — aligné sur portUpgradeCost).
+const ELEVATOR_BASE_COST = {
+  piece_precision: 250,
+  alliage_tungstene: 500,
+  cable_irradie: 2500
+};
+const elevatorUpgradeCost = lvl => {
+  const m = Math.pow(2, lvl || 0), out = {};
+  for (const k in ELEVATOR_BASE_COST) out[k] = ELEVATOR_BASE_COST[k] * m;
+  return out;
+};
+// Position de la tuile élévateur d'une île (fixe par grille) — mémoïsée.
+const _elevTileCache = {};
+function elevatorTileOf(game, islandId) {
+  if (_elevTileCache[islandId] !== undefined) return _elevTileCache[islandId];
+  const def = defById(islandId), tiles = game.islands && game.islands[islandId];
+  let pos = null;
+  if (def && tiles) for (let r = 0; r < def.rows && !pos; r++) for (let c = 0; c < def.cols; c++) if (tiles[r][c] && tiles[r][c].terrain === 'elevator') { pos = { r, c }; break; }
+  _elevTileCache[islandId] = pos;
+  return pos;
+}
+// §4.2 (a) : le souterrain n'est alimenté que si la tuile élévateur de l'ÎLE 6 est reliée par
+// route/tuyau au PORT de l'île 6 (réseau `connected` adjacent à — ou passant par — la tuile).
+function elevatorSurfaceLinked(game) {
+  const tiles = game.islands && game.islands[6];
+  const e = elevatorTileOf(game, 6);
+  if (!tiles || !e) return false;
+  const nets = game.networks[6] || {};
+  const hit = (r, c) => {
+    const nt = tiles[r] && tiles[r][c];
+    if (!nt) return false;
+    const ids = nt.netIds ? Object.values(nt.netIds) : (nt.networkId != null ? [nt.networkId] : []);
+    for (const nid of ids) { const n = nets[nid]; if (n && (n.type === 'road' || n.type === 'pipe') && n.connected) return true; }
+    return false;
+  };
+  if (hit(e.r, e.c)) return true; // infra posée SUR la tuile élévateur (réseau reliant le port)
+  for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) if (hit(e.r + dr, e.c + dc)) return true;
+  return false;
+}
 function portPool(game, islandId) {
   const id = islandId != null ? islandId : game.currentIsland;
-  // L'île 7 (souterrain) n'a PAS de port : on renvoie un tampon JETABLE (jamais stocké dans
-  // game.port) → le tick tourne (Presse sans intrants, Géothermie électrique, Foreuse) SANS créer
-  // game.port[7]. En phase 2 aucun bâtiment souterrain ne dépose au port (la Presse ne produit
-  // rien sans câble irradié), donc rien d'utile n'est perdu. L'alimentation viendra en phase 3.
-  if (id === 7) return game.port[7] || {};
+  // L'île 7 (souterrain) n'a PAS de port propre : l'élévateur la raccorde au PORT DE L'ÎLE 6.
+  // Tant que l'élévateur n'est pas réparé, elle est isolée (tampon jetable, rien ne transite ;
+  // aucun game.port[7] créé). Le gating « route de surface reliée » (§4.2) est appliqué DANS le
+  // tick (undergroundBlocked) : les bâtiments souterrains non reliés sont sautés → port[6] intact.
+  if (id === 7) {
+    if (!game.elevatorRepaired) return {};
+    return game.port[6] || (game.port[6] = {});
+  }
   return game.port[id] || (game.port[id] = {});
 }
 function roadReachesPort(game, islandId, r, c) {
@@ -6958,6 +7016,13 @@ function tickIsland(game, isl) {
   const workPort = {
     ...port
   };
+  // Île 7 (souterrain) : les échanges avec le port passent par l'élévateur. Bloqué si l'élévateur
+  // n'est pas réparé OU si sa tuile de surface (île 6) n'est pas reliée par route/tuyau au port
+  // (§4.2 option a). Un bâtiment souterrain à I/O port dans cet état est déconnecté (discReason
+  // 'elevator', dédié — plus l'approximation 'road' de la phase 2). L'électricité (wire) et les
+  // fluides non stockables ne passent JAMAIS par l'élévateur (jamais dans road/pipePort).
+  const undergroundBlocked = isl === 7 && !(game.elevatorRepaired && elevatorSurfaceLinked(game));
+  const elevCap = isl === 7 ? elevatorRateAt(game.elevatorLevel || 0) : Infinity;
   let activeChanged = false,
     resChanged = false;
   const actives = [];
@@ -7189,12 +7254,20 @@ function tickIsland(game, isl) {
     const inAvail = {};
     const routeIn = {},
       routeOut = {};
+    // Île 7 : élévateur non réparé / surface non reliée → tout bâtiment à I/O port est déconnecté
+    // (motif dédié 'elevator'), AVANT les contrôles route/tuyau (qui parleraient de 'road'/'pipe').
+    if (undergroundBlocked && hasPoolIO) {
+      ok = false;
+      disc = true;
+      discReason = 'elevator';
+    }
     const usesSolid = inByType.road || outByType.road;
-    if (usesSolid) {
+    if (ok && usesSolid) {
       if (!roadReachesPort(game, isl, r, c)) {
         ok = false;
         disc = true;
-        discReason = 'road';
+        // Île 7 : la « connexion route » vise la tuile élévateur → motif 'elevator', pas 'road'.
+        discReason = isl === 7 ? 'elevator' : 'road';
       } else {
         // resolve the connected road network id adjacent to this building
         for (const nid of adjacentNetworks(game, isl, r, c, 'road')) {
@@ -7218,7 +7291,7 @@ function tickIsland(game, isl) {
       if (adj.length === 0) {
         ok = false;
         disc = true;
-        discReason = 'pipe';
+        discReason = isl === 7 ? 'elevator' : 'pipe';
       } else {
         // Tuyau RELIÉ AU PORT (un réseau adjacent touche le port) : on stocke au PORT comme
         // une route. Les intrants/extrants tuyau STOCKABLES de ce bâtiment basculent du pool
@@ -7448,6 +7521,36 @@ function tickIsland(game, isl) {
   }
   if (!game.solidFactor) game.solidFactor = {};
   game.solidFactor[isl] = solidF;
+  // Débit de l'élévateur (île 7) : enveloppe PARTAGÉE bornant la somme de TOUT le port I/O (road +
+  // pipePort, intrants + sortants) × régime, tous sens confondus. Allocation par priorité de flux
+  // (haute → normale → basse, même schéma que la saturation réseau via addTier). elevFacOf(pri) =
+  // fraction servie de ce niveau. Nul pour les îles 1-6 (elevTierFactor null → facteur 1).
+  let elevTierFactor = null;
+  if (isl === 7) {
+    const elevTierDemand = {};
+    let elevTotal = 0;
+    for (const a of actives) {
+      const rg = a.regime != null ? a.regime : 1;
+      let d = 0;
+      for (const k in a.inByType.road || {}) d += rg * a.inByType.road[k];
+      for (const k in a.inByType.pipePort || {}) d += rg * a.inByType.pipePort[k];
+      for (const k in a.outByType.road || {}) d += rg * a.outByType.road[k];
+      for (const k in a.outByType.pipePort || {}) d += rg * a.outByType.pipePort[k];
+      if (d > 0) { elevTierDemand[a.pri] = (elevTierDemand[a.pri] || 0) + d; elevTotal += d; }
+    }
+    elevTierFactor = {};
+    let remaining = elevCap;
+    for (const tier of PRI_ORDER) {
+      const dd = elevTierDemand[tier] || 0;
+      if (dd <= 0) { elevTierFactor[tier] = 1; continue; }
+      const give = Math.min(remaining, dd);
+      elevTierFactor[tier] = dd > 0 ? give / dd : 1;
+      remaining -= give;
+    }
+    // Retour temps réel pour le panneau élévateur (débit consommé / max).
+    game.elevatorFlow = { demand: elevTotal, cap: elevCap, used: Math.min(elevTotal, elevCap), level: game.elevatorLevel || 0 };
+  }
+  const elevFacOf = pri => elevTierFactor ? (elevTierFactor[pri] != null ? elevTierFactor[pri] : 1) : 1;
   const facOf = (route, ty, pri) => {
     const nid = route[ty];
     if (nid == null) return 1;
@@ -7457,8 +7560,9 @@ function tickIsland(game, isl) {
   };
   for (const a of actives) {
     const rg = a.regime != null ? a.regime : 1; // bride conso au régime (intrants/élec.)
+    const ef = elevFacOf(a.pri); // bridage élévateur (île 7 ; = 1 ailleurs)
     if (a.inByType.road) {
-      const fc = facOf(a.routeIn, 'road', a.pri) * rg;
+      const fc = facOf(a.routeIn, 'road', a.pri) * rg * ef;
       for (const k in a.inByType.road) port[k] = (port[k] || 0) - fc * a.inByType.road[k];
     }
     if (a.inByType.pipe) {
@@ -7467,15 +7571,16 @@ function tickIsland(game, isl) {
       for (const k in a.inByType.pipe) pool[k] = (pool[k] || 0) - fc * a.inByType.pipe[k];
     }
     if (a.inByType.pipePort) {
-      const fc = facOf(a.routeIn, 'pipePort', a.pri) * rg;
+      const fc = facOf(a.routeIn, 'pipePort', a.pri) * rg * ef;
       for (const k in a.inByType.pipePort) port[k] = (port[k] || 0) - fc * a.inByType.pipePort[k];
     }
   }
   const prod = game.techTree && game.techTree.produced;
   for (const a of actives) {
     const rg = a.regime != null ? a.regime : 1; // bride production au régime
+    const ef = elevFacOf(a.pri); // bridage élévateur (île 7 ; = 1 ailleurs)
     if (a.outByType.road) {
-      const fc = facOf(a.routeOut, 'road', a.pri) * rg;
+      const fc = facOf(a.routeOut, 'road', a.pri) * rg * ef;
       for (const k in a.outByType.road) {
         const amt = fc * a.outByType.road[k];
         port[k] = (port[k] || 0) + amt;
@@ -7492,7 +7597,7 @@ function tickIsland(game, isl) {
       }
     }
     if (a.outByType.pipePort) {
-      const fc = facOf(a.routeOut, 'pipePort', a.pri) * rg;
+      const fc = facOf(a.routeOut, 'pipePort', a.pri) * rg * ef;
       for (const k in a.outByType.pipePort) {
         const amt = fc * a.outByType.pipePort[k];
         port[k] = (port[k] || 0) + amt;
@@ -11311,7 +11416,8 @@ function InfoPanel({
   onRepair,
   onExtend,
   onRepairElevator,
-  onDrill
+  onDrill,
+  onUpgradeElevator
 }) {
   const ref = useRef(null);
   // Le tap qui ouvre/déplace la fiche ne doit pas cliquer un bouton sous le doigt.
@@ -11367,6 +11473,53 @@ function InfoPanel({
       ready: true
     });
   }, [info.x, info.y, info.id, info.mode, bld && bld.upgrade]);
+  // Panneau ÉLÉVATEUR RÉPARÉ : amélioration du débit (niveau / débit max / débit consommé en temps
+  // réel / coût). L'élévateur cassé retombe sur le panneau de réparation générique ci-dessous.
+  if (info.mode === 'elevator' && game.elevatorRepaired) {
+    const lvl = game.elevatorLevel || 0;
+    const rate = elevatorRateAt(lvl);
+    const nextRate = elevatorRateAt(lvl + 1);
+    const cost = elevatorUpgradeCost(lvl);
+    const port = game.port[6] || {};
+    const dev = game.ui && game.ui.dev;
+    const affordable = dev || Object.keys(cost).every(k => (port[k] || 0) >= cost[k]);
+    const flow = game.elevatorFlow || {};
+    const used = flow.used || 0;
+    const fmtR = v => (v >= 100 || v === Math.floor(v)) ? fmtPort(Math.round(v * 10) / 10) : (Math.round(v * 10) / 10).toString().replace('.', ',');
+    return React.createElement("div", {
+      ref: ref, className: "info-panel",
+      style: { left: pos.left, top: pos.top, opacity: pos.ready ? 1 : 0 },
+      onPointerDownCapture: guard.onPointerDownCapture, onClickCapture: guard.onClickCapture
+    }, React.createElement("div", { className: "ip-head" },
+      React.createElement("span", { className: "ip-swatch", style: { background: '#FF9628' } }),
+      React.createElement("span", { className: "ip-name" }, I18N.t('Élévateur') + ' — ' + I18N.t('Nv. ') + (lvl + 1)),
+      React.createElement("button", { className: "ip-close", onClick: onClose, title: I18N.t("Fermer") }, "\xD7")
+    ), React.createElement("div", { className: "ip-rows" },
+      React.createElement("div", { className: "ip-row" },
+        React.createElement("span", { className: "lbl" }, I18N.t('Débit (consommé / max)')),
+        React.createElement("span", { className: "val", style: { color: used > rate - 0.5 ? 'var(--orange)' : 'var(--ink)' } }, fmtR(used) + ' / ' + fmtR(rate) + I18N.t(' par seconde'))
+      ),
+      React.createElement("div", { className: "ip-row" },
+        React.createElement("span", { className: "lbl" }, I18N.t('Après amélioration')),
+        React.createElement("span", { className: "val" }, fmtR(rate) + ' → ' + fmtR(nextRate) + I18N.t(' /s'))
+      ),
+      React.createElement("div", { className: "ip-row" },
+        React.createElement("span", { className: "lbl" }, I18N.t("Coût (port île 6)")),
+        React.createElement("span", { className: "val ip-cost-chips" }, Object.keys(cost).map(k => {
+          const ikey = SPRITES_ENABLED ? itemSpriteKey(k) : null;
+          const idata = ikey && SPRITE_DATA[ikey];
+          const miss = !dev && (port[k] || 0) < cost[k];
+          return React.createElement("span", { key: k, className: 'dr-res ipc-ci' + (miss ? ' miss' : ''), title: RES_SHORT[k] || k },
+            idata && React.createElement("img", { className: "inv-ico", src: idata, alt: "" }),
+            React.createElement("span", { className: "dr-q" }, (RES_SHORT[k] || k) + ' ' + fmtPort(cost[k])));
+        }))
+      )
+    ), React.createElement("button", {
+      className: "ip-demolish", disabled: !affordable,
+      onClick: () => { if (onUpgradeElevator) onUpgradeElevator(); },
+      title: I18N.t('Améliorer le débit de l\'élévateur')
+    }, uiIcon('batiment', "\u{1F6D7}"), I18N.t(' Améliorer le débit')));
+  }
   // Terrain contextual panels (repair / extension) — tiles without a building.
   if (info.mode === 'repair' || info.mode === 'extend' || info.mode === 'elevator' || info.mode === 'drill') {
     const mode = info.mode;
@@ -11630,7 +11783,10 @@ function InfoPanel({
     pipe: I18N.t('tuyau manquant'),
     wire: I18N.t('câble manquant (élec.)'),
     input: I18N.t('intrants manquants'),
-    power: I18N.t('élec. insuffisante (vérifier le débit du câble)')
+    power: I18N.t('élec. insuffisante (vérifier le débit du câble)'),
+    // Île 7 : élévateur non réparé, ou bâtiment non relié à la tuile élévateur, ou élévateur non
+    // relié au port en surface (île 6). Motif dédié (phase 3) — plus l'approximation 'road'.
+    elevator: I18N.t('élévateur non relié (réparé + relié au port en surface + bâtiment relié à l\'élévateur)')
   };
   // Régime RÉEL du bâtiment = min(intrants disponibles, élec. disponible) × saturation réseau.
   // `bld.regime` (calculé au tick) bride conso ET production au prorata : un déficit partiel
@@ -14797,6 +14953,7 @@ function ensureIslandDefaults(g) {
   // Phase 2 : réparation de l'élévateur + forage He3 (île 7). he3Deposits généré UNE fois
   // (après création des tuiles île 7 ci-dessus), puis persisté — jamais recalculé.
   if (g.elevatorRepaired == null) g.elevatorRepaired = false;
+  if (g.elevatorLevel == null) g.elevatorLevel = 0;
   if (!g.drillsCount) g.drillsCount = {};
   if (g.drillsCount[7] == null) g.drillsCount[7] = 0;
   if (!Array.isArray(g.he3Deposits)) g.he3Deposits = generateHe3Deposits(g);
@@ -15345,6 +15502,7 @@ function App() {
       techTree,
       // Phase 2 (île 6/7) : état élévateur + gisements He3 (coords paddées) + compteur de forages.
       elevatorRepaired: !!g.elevatorRepaired,
+      elevatorLevel: g.elevatorLevel || 0, // phase 3 : niveau d'amélioration de l'élévateur
       he3Deposits: Array.isArray(g.he3Deposits) ? g.he3Deposits.map(d => ({ r: d.r, c: d.c })) : [],
       drillsCount: { ...g.drillsCount },
       islandUnlocked: {
@@ -15550,7 +15708,7 @@ function App() {
     } catch (e) {
       return false;
     }
-    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].indexOf(data.version) === -1) return false;
+    if (!data || [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25].indexOf(data.version) === -1) return false;
     const g = gameRef.current;
     // Extension des mers (v11) : les îles sont désormais entourées de SEA_PAD tuiles d'eau.
     // Les sauvegardes antérieures (coordonnées non décalées) sont translatées de +SEA_PAD.
@@ -15930,6 +16088,7 @@ function App() {
     // AVANT ensureIslandDefaults pour que les gisements NE SOIENT PAS régénérés (sinon ils se
     // déplaceraient). Une save < 24 n'a pas ces champs → ensure les initialise une fois.
     g.elevatorRepaired = !!data.elevatorRepaired;
+    g.elevatorLevel = Math.max(0, +data.elevatorLevel || 0);
     if (Array.isArray(data.he3Deposits)) g.he3Deposits = data.he3Deposits.map(d => ({ r: d.r, c: d.c }));
     g.drillsCount = {};
     if (data.drillsCount) for (const id in data.drillsCount) {
@@ -17187,11 +17346,35 @@ function App() {
     }
     g.elevatorRepaired = true;
     g.islandUnlocked[7] = true; // l'île 7 devient accessible (onglet + navigation)
+    // La connexion réseau de l'île 7 dépend de elevatorRepaired : reconstruire ses réseaux pour
+    // que la tuile élévateur devienne cible de connexion (net.connected).
+    rebuildNetworks(g, 7);
     bumpHud();
     markDirty();
     scheduleSave();
     setInfo(null);
     showToast(I18N.t('🛗 Élévateur réparé'), 'var(--green)');
+    return true;
+  }
+  // Amélioration de l'élévateur (débit ×2/niveau), payée depuis le port de l'île 6.
+  function tryUpgradeElevator() {
+    const g = gameRef.current;
+    if (!g.elevatorRepaired) return false;
+    const lvl = g.elevatorLevel || 0;
+    const cost = elevatorUpgradeCost(lvl);
+    if (!g.ui.dev) {
+      const miss = missingFor(cost, 6);
+      if (miss.length) {
+        showToast(I18N.t('❌ Manque (port île 6) ') + miss.join(', '), 'var(--red)');
+        return false;
+      }
+      pay(cost, 6);
+    }
+    g.elevatorLevel = lvl + 1;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+    showToast(I18N.t('🛗 Élévateur amélioré → Nv. ') + g.elevatorLevel, 'var(--green)');
     return true;
   }
   // Forage d'une tuile land de l'île 7 (foreuse adjacente requise). Révèle un gisement He3 si la
@@ -19021,8 +19204,9 @@ function App() {
           }
           if (adj) mode = 'extend';
         } else if (t.terrain === 'elevator') {
-          // Élévateur non réparé + techno débloquée → panneau de réparation.
-          if (!g.elevatorRepaired && isElevatorRepairUnlocked(g)) mode = 'elevator';
+          // Élévateur : panneau de réparation (non réparé + techno débloquée) OU d'amélioration
+          // du débit (déjà réparé).
+          if (g.elevatorRepaired || isElevatorRepairUnlocked(g)) mode = 'elevator';
         } else if (g.currentIsland === 7 && t.terrain === 'land' && !t.building && !t.drilled) {
           // Forage : tuile de tunnel vierge, foreuse débloquée ET posée sur une tuile adjacente.
           if (isBuildingUnlocked(g, 'foreuse')) {
@@ -19671,7 +19855,8 @@ function App() {
     onRepair: (r, c) => tryRepair(r, c),
     onExtend: (r, c) => tryExtend(r, c),
     onRepairElevator: (r, c) => tryRepairElevator(r, c),
-    onDrill: (r, c) => tryDrill(r, c)
+    onDrill: (r, c) => tryDrill(r, c),
+    onUpgradeElevator: () => tryUpgradeElevator()
   }), upgrade && React.createElement(UpgradePanel, {
     up: upgrade,
     game: game,
@@ -19923,6 +20108,7 @@ if (typeof window !== 'undefined') {
     SHIP_LINKS, linkActive, transferLink, transitForwardBudget, tickShips, onTick,
     tradeCfgFor, isElevatorRepairUnlocked, drillCost, generateHe3Deposits, ensureIslandDefaults,
     isPortPipe, portPool,
+    elevatorRateAt, elevatorUpgradeCost, elevatorSurfaceLinked, elevatorTileOf, tickIsland,
     InfoPanel: typeof InfoPanel === 'function' ? InfoPanel : null
   };
 }
