@@ -17,7 +17,52 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 262`, `GAME_VERSION = 'Alpha 13.81'`, `SAVE_VERSION = 25`.**
+- **État au dernier passage : `GAME_BUILD = 263`, `GAME_VERSION = 'Alpha 13.82'`, `SAVE_VERSION = 26`.**
+  Changement 13.82 : **ÎLE 6 / SOUTERRAIN — Phase 4 (chaîne He3 + quantique ; brief `BRIEF_ILE6_PHASE4`).**
+  (1) **Azote stockable au port, PAS transitable** : `PORT_PIPE_RES += azote` (ancre D1, 1 ligne) → l'azote
+  (carrier `pipe`) est stocké au PORT (chemin `pipePort`) donc traverse l'élévateur, MAIS reste hors
+  `TRADE_LIQUIDS`/`TRADE_RESOURCE_SET` → **jamais transité par bateau** (décision testeur maintenue,
+  `rawShippable(g,6,5,'azote')===0` vérifié). Migration D8 (pools tuyau → port) déjà générique sur toute
+  clé `PORT_PIPE_RES` → couvre l'azote (commentaire MAJ). Oxygène NON touché (reste pool local île 6).
+  (2) **5 bâtiments** (t5, style `separateur_air`/`presse_uhp`/`geothermie`) : `extracteur_souterrain`
+  (île 7, sur poche He3 `resource` ; acide 8 + eau 16 → gaz_fossiles 1 ; power 0), `separateur_cryogenique`
+  (île 7 ; multi-sortie sur ratios 1 gaz_fossiles + azote 16 → helium3 0,01 + helium4 0,1 + methane 0,89 ;
+  sigmoïde 128→1024), `centrale_gaz` (**île 6 SURFACE** — arbitrage concepteur ; methane 8 + oxygene 64 →
+  512 kW ; producteur power:0), `fab_ordi_quantique` (île 6 ; câble supra 16 + proc 8 + lingot_or 64 →
+  ordinateur_quantique 0,01 ; sigmoïde 1024→8096), `data_center` (île 6 ; proc 1 + azote 1024 + helium4 8 →
+  information_quantique 1 ; **power:0 = énergie absente de l'Excel, non inventée**). Toolbar ×5 ;
+  `BLD_SPRITE_OVERRIDE.extracteur_souterrain = 'bat_extracteur'` (le fichier livré n'a pas le suffixe
+  `_souterrain`) ; les 4 autres résolvent `bat_<id>`. (3) **Tech tree renuméroté sur l'Excel v2** :
+  l'ancien **#32 « Forage Profond → foreuse »** est remplacé par **#32 Câble Supraconducteur** (case vide) ;
+  ajout **#33/#34 Circuit Logique 1/2** (cases vides PHASE 5), **#35 Réparation du Collisionneur** (livraison
+  10000 béton irr. + 10000 alliage + 10000 câble supra → **foreuse**), **#36 Trouver de l'Hélium** →
+  extracteur + séparateur cryo, **#37 Ordinateur Quantique** (produire 100 helium4) → centrale gaz +
+  data center, **#38 Data Center** (produire 1 ordinateur_quantique, unlocks vide PHASE 6). LOCALES `tech`
+  ×4 langues (32→38). `BUILDING_NODE` auto-dérivé → foreuse=35/extracteur=36/gaz=37 sans câblage manuel.
+  Les cases vides (`reqs:[]`, mode auto) atteignent `condition_ok` immédiatement (1 clic, ne bloquent pas
+  la chaîne #31→#38). (4) **Migration `SAVE_VERSION` 25→26** (+26 whitelist) : si l'ancien #32 (Forage)
+  était confirmé, on marque **#32/#33/#34/#35 confirmés** → la **foreuse reste débloquée** (livraison #35
+  NON re-exigée) ; #36-#38 restent `locked` (promus normalement). ⚠ **BLOCAGES SIGNALÉS (Excel prime,
+  implémenté tel quel, arbitrage playtest)** : (a) **dépendance circulaire DURE** — le Séparateur Cryo
+  coûte **10 ordinateurs quantiques**, or l'Ordi Quantique (Fab) est débloqué par #37 qui exige « produire
+  100 helium4 » = avoir déjà un Séparateur → **le 1er Séparateur est inconstructible** (à trancher) ;
+  (b) **#35 = 10000 câble supra** (seule source : Presse UHP à 1 supra/s partagé avec le débit élévateur)
+  → ~10000 s de jeu MINIMUM (bien plus avec le partage) = atteignabilité très longue ; (c) **incohérence
+  foreuse/collisionneur** — #35 (Collisionneur) débloque la foreuse qui sert à forer l'He3 qui alimente le
+  Collisionneur ; (d) **helium = helium4** (interprétation §3/§6) ; (e) **Data Center sans énergie**
+  (colonne Excel vide → power:0, non inventé) ; (f) **saveurs d'information quantique** et **peaker de la
+  Centrale à Gaz** REPORTÉS (phase 5). ⚠ **#36 « trouver une tuile resource île 7 »** : AUCUN type de
+  `reqs` existant (produce/build/node/port/energy/imported/accu) ne l'exprime → **fallback `reqs:[]`**
+  (auto-valide dès #35, ne bloque pas ; proposition : type `resourceTile` en attente d'arbitrage §6).
+  Validé : `node --check` (7 blocs) + Chromium E2E (2 suites, ~55 assertions) : boot 2 modes + 5 defs/
+  sprites ; azote au port + `rawShippable===0` + oxygène local ; migration azote v25 pool→port ; chaîne
+  souterraine réelle (extracteur → gaz 1/s & acide 8/s ; séparateur ratios **1:10:89 EXACTS**, accumulation
+  0,01/s exacte, azote 16/s) ; chaîne surface (centrale gaz **512 kW** + méthane 8/oxygène 64 ; fab ordi
+  0,01/s ; data center info 1/s + azote 1024/helium4 8) ; **débit élévateur** (demande 18 > cap 16 →
+  flux bridé PROPORTIONNELLEMENT à 16/18, PAS de blocage dur) ; tech chaîne #31→#38 (cases vides
+  condition_ok, #35→foreuse, #37→gaz/data) ; migration tech v25 (foreuse conservée, 38 nœuds) ;
+  non-régression grilles îles 1-7 IDENTIQUES phase 3↔4 ; saves v22→v26 round-trip ; 0 erreur console.
+  Build 262→263.
   Changement 13.81 : **ÎLE 6 / SOUTERRAIN — Phase 3 (l'élévateur : transferts au port île 6, débit
   borné ; brief `BRIEF_ILE6_PHASE3`).** Le souterrain (île 7) devient une extension de l'île 6 reliée
   par un « tuyau » de capacité finie. (1) **portPool(7)** renvoie désormais `game.port[6]` quand
