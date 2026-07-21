@@ -17,7 +17,55 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 260`, `GAME_VERSION = 'Alpha 13.79'`, `SAVE_VERSION = 23`.**
+- **État au dernier passage : `GAME_BUILD = 261`, `GAME_VERSION = 'Alpha 13.80'`, `SAVE_VERSION = 24`.**
+  Changement 13.80 : **ÎLE 6 / SOUTERRAIN — Phase 2 (logistique 5↔6, réparation élévateur, foreuse He3 ;
+  brief `BRIEF_ILE6_PHASE2`).** (1) **Logistique 5↔6** : `SHIP_LINKS += '5-6'` (activation auto via
+  `linkActive` au déblocage île 6, aucun gating ajouté) ; `transitForwardBudget` — bornes de chaîne
+  linéaire `5 → 6` (2 spots : `nextI > 6`, `while i <= 6`) → l'île 6 reçoit le transit relais ;
+  `defaultShips` crée `ships['5-6']` (migration auto) ; kickstart île 6 RÉDUIT (acier/béton/câble irr.
+  500, pièce méca 250 ; `element_moteur_nuc` retiré — transite désormais). L'acide (déjà dans
+  `TRADE_LIQUIDS`) transite par mer 5→6 et alimente les mines via la bascule pipe→pipePort existante —
+  **le blocage acide de la phase 1 est LEVÉ.** (2) **Réparation élévateur** : état de PARTIE
+  `game.elevatorRepaired` (bool, pas de terrain distinct) ; **nœud #31** « Réparation de l'Élévateur »
+  (`mode:'delivery'` — structure `delivery:{piece_precision:2000, beton_arme_irradie:20000}` alignée sur
+  #21/#28, PAS un `reqs:[{t:'deliver'}]` inexistant ; `unlocks.elevatorRepair` + geothermie + presse_uhp)
+  + LOCALES ×4 ; `isElevatorRepairUnlocked` (flag générique `isTechFlagConfirmed`) ; action
+  `tryRepairElevator` (coût FIXE 500 p.précision / 1000 alliage / 5000 câble irr. depuis le port île 6,
+  bypass dev, une seule fois → `elevatorRepaired=true` + `islandUnlocked[7]=true`) ; rendu élévateur
+  CONDITIONNEL (`tile_i6_elevateur` réparé / `_casse` sinon). (3) **Ouverture île 7 au joueur** : onglet
+  `IslandSelector` + `switchIsland` gatés sur `islandUnlocked[7]` (posé à la réparation) au lieu du flag
+  dev (bypass dev conservé) ; 7 onglets tiennent à 390px (flex+min-width:0, vérifié, pas d'overflow).
+  (4) **Foreuse + He3** : bâtiment `foreuse` (t5, exclusiveIsland 7, power 512, sans I/O — sprite
+  `bat_foreuse`) + toolbar ; **nœud #32** « Forage Profond » (`prereq 31`, produce **`piece_precision`
+  500** — ⚠ le brief proposait `cable_supraconducteur` INATTEIGNABLE en phase 2, option (a) retenue) +
+  LOCALES ×4 ; `game.he3Deposits` = 3 tuiles `land` île 7 (hors élévateur, coords paddées) générées UNE
+  fois par `generateHe3Deposits` (Fisher-Yates dans `ensureIslandDefaults`) puis PERSISTÉES ;
+  `game.drillsCount[7]` ; `drillCost(n)` = ×4/cran (100 p.précision + 500 câble irr.) ; action `tryDrill`
+  (foreuse 4-adjacente requise, révèle un gisement → terrain `resource`/`tile_i7_resource`, sinon rien ;
+  coût payé & compteur incrémenté dans les 2 cas ; `t.drilled` interdit le re-forage). (5) **Port île 7
+  ABSENT préservé** : `portPool` + la passe chaleur renvoient un tampon JETABLE pour l'île 7 (jamais
+  `game.port[7]`) → le tick des bâtiments souterrains tourne sans créer de port (aucun dépôt utile en
+  phase 2). (6) **UI terrain** : `InfoPanel` (branche répare/remblai) GÉNÉRALISÉE aux modes `elevator`
+  et `drill` (cost/count/unlocked/onAct mode-aware, ligne compteur masquée pour l'élévateur) ;
+  `handleTap` ouvre le panneau élévateur (tuile `elevator` non réparée) et forage (île 7, `land` vierge,
+  foreuse adjacente) ; props `onRepairElevator`/`onDrill`. (7) **Migration `SAVE_VERSION` 23→24** :
+  `elevatorRepaired`/`he3Deposits`/`drillsCount` sérialisés + restaurés AVANT `ensureIslandDefaults` (pas
+  de régénération des gisements) ; tuiles `drilled` persistées par île (comme terrainMods) ; whitelist
+  +24. **Décisions à arbitrer (rapport)** : (a) **forage payé depuis le PORT DE L'ÎLE 6** — l'île 7 n'a
+  pas de port, le brief n'a pas fixé la source ; `missingFor`/`pay`/`refund` reçoivent un param île
+  optionnel ; (b) **presse UHP sur l'île 7 → `discReason='road'`** (pas `'input'` comme prévu au brief) :
+  sans port souterrain, sa sortie route ne peut être déposée → déconnexion route AVANT le contrôle
+  d'intrant ; les deux = « logistique manquante » (état voulu, résolu phase 3) ; (c) nœud #32 prereq (cf.
+  supra) ; (d) coûts réparation/forage = premières estimations non playtestées. Validé : `node --check`
+  (7 blocs) + Chromium E2E `https://localhost/` (~50 assertions, 2 suites) : non-régression grilles îles
+  1-6 identiques (2 modes) ; boot 2 modes + tick île 7 sans port (port[7] absent) ; données (SHIP_LINKS,
+  nœuds 31/32, foreuse, geothermie gatée par #31, kickstart réduit, drillCost ×4) ; transit réel acide+
+  acier 5→6 (`tickShips`) ; chaîne mine tungstène alimentée en acide → produit (plus de blocage) ;
+  réparation élévateur VIA CLIC UI (coût débité port 6, île 7 débloquée + onglet, sprite réparé) ; forage
+  VIA CLIC UI (gisement→resource, coût port 6, `drilled` marqué, compteur) ; migration v22/v23 sans perte
+  (îles 6/7, ship 5-6, port[7] absent) ; round-trip v24 (gisements/drillsCount/drilled/elevatorRepaired
+  restaurés exact) ; presse UHP non fonctionnelle ; 7 onglets à 390px sans overflow ; 0 erreur console.
+  Build 260→261.
   Changement 13.79 : **ÎLE 6 (surface) + SOUTERRAIN (île 7) — Phase 1 (fondations : terrain, ressources,
   5 bâtiments, tech, sprites, migration ; brief `BRIEF_ILE6_PHASE1`).** PÉRIMÈTRE = poser le terrain,
   déclarer le contenu et intégrer les sprites AVANT le système d'élévateur/transfert (phase 2). (1)
