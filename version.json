@@ -1,8 +1,8 @@
 {
-  "build": 259,
-  "version": "Alpha 13.78",
+  "build": 264,
+  "version": "Alpha 13.83",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #252 from freredoc/claude/antenne-t5-save-encoding-h9agxq"
+  "notes": "Merge: Île 6/Souterrain + Réseau logique (Phases 1→5A) — Alpha 13.83"
 }
