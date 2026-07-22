@@ -17,7 +17,35 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 264`, `GAME_VERSION = 'Alpha 13.83'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 265`, `GAME_VERSION = 'Alpha 13.84'`, `SAVE_VERSION = 27`.**
+  Changement 13.84 : **PATCH testeur — 10 retours (île 6, antenne, inventaire, décompte).** `SAVE_VERSION`
+  INCHANGÉ (aucun champ persisté ajouté ; terrain reconstruit depuis la def ; déblocage additif). (1)
+  **Inventaire ouvert = SUPERPOSITION** (ne pousse plus la scène vers le bas) : le HUD + la barre
+  d'inventaire sont enveloppés dans un `.hud-stack` (`position:relative`) et `.inventory.open` passe en
+  `position:absolute; top:100%` (au-dessus de la carte, sans occuper de hauteur de layout ; z-index 40,
+  max-height 65vh, scroll). (2) **Antenne — aperçu d'amélioration BOOST corrigé** : la ligne « Boost » de
+  l'aperçu affichait le facteur de ZONE brut (×4 → ×8) au lieu de l'effet EFFECTIF `antSpeedMul` → désormais
+  « ×1,2 → ×1,4 » (`fxDec(antSpeedMul(2^(upg+1)))` etc.), cohérent avec la ligne « Effet ». (3) **Icône île 6** :
+  sprites `ile_6`/`ile_6_gris` GÉNÉRÉS (recolorés depuis `ile_5` vers le bleu-gris de l'île 6 ; `_gris` =
+  silhouette grise réutilisée) → l'onglet île 6 affiche une icône (fini le « 6 » de repli). (4) **Décompte
+  inventaire = flux RÉEL** : le popover ressource (clic sur une ressource) lit désormais `islandFlowAgg`
+  (prod/conso réelles du dernier tick via `game.netFlow`) au lieu du recalcul statique `resourceRates` (repli
+  si flux nul) → la production des **fours à ARC** (sortie effective hors `outputs` statiques) ET le **boost
+  d'ANTENNE** (×antSpeedMul) apparaissent enfin. (5) **Ordinateur quantique masqué** : `fab_ordi_quantique`
+  ajouté aux `unlocks.buildings` du nœud **#37** (« Ordinateur Quantique ») → `ordinateur_quantique` n'est
+  plus « débloqué » d'emblée (n'apparaît plus dans l'inventaire avant #37). (6) **Coût amélioration PORT 5**
+  → `beton_arme_irradie: 10000 + piece_meca: 10000` (remplace acier/béton armé/câble 10000). (7) **Île 6 —
+  REMAP terrain** : puits de pétrole (P) → accidenté (obstacle) ; accidenté (O) → mine (`resource`) ; les
+  **6 mines du haut** → **Collisionneur cassé** (nouveau terrain `collider`, char `K`, `TERRAIN_COLORS.collider`,
+  non constructible/non circulable). Sprite = tranche 3×2 d'un anneau métallique endommagé
+  (`tile_i6_collisionneur_0..5`, généré) ; branche de rendu dédiée (sous-index = balayage voisins dr/dc,
+  indépendant de la position). (8) **Falaises île 6** : sprites `i6_falaise_*` (11) GÉNÉRÉS (recolorés depuis
+  l'île 5 vers un rocher ardoise pourpre sombre contrastant avec l'eau bleue ; écume cyan préservée) →
+  l'île 6 (et l'extension de terrain water→coast, retour #6) affiche enfin des falaises. Validé : `node
+  --check` (7 blocs) + Chromium headless (boot 0 erreur hors fetch offline ; terrain île 6 remappé vérifié
+  via `__gameRef` — collider/resource/obstacle aux bonnes tuiles ; rendu île 6 : anneau collisionneur cassé
+  continu + falaises + icône d'onglet ; inventaire ouvert `position:absolute` ne pousse plus la scène ;
+  19 sprites générés présents/décodés). Build 264→265.
   Changement 13.83 : **RÉSEAU LOGIQUE — Phase 5A (brief `BRIEF_ILE6_PHASE5`).** (0) **2 correctifs phase 4** :
   (a) Séparateur Cryogénique `ordinateur_quantique:10` → **`processeur:100`** (lève la dépendance circulaire
   dure) ; (b) **type `reqs` `resourceTile`** (compte les tuiles `resource` d'une île, défaut 7) → **#36
