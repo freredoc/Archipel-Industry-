@@ -17,7 +17,29 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 265`, `GAME_VERSION = 'Alpha 13.84'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 266`, `GAME_VERSION = 'Alpha 13.85'`, `SAVE_VERSION = 27`.**
+  Changement 13.85 : **PATCH — pack sprites île 6 v2.2 + 5 retours.** `SAVE_VERSION` INCHANGÉ (terrain
+  reconstruit depuis la def ; le reste = data/affichage additifs). (1) **Sprites OFFICIELS** (pack
+  `Archipel_sprites_ile6_v2.2`) : `ile_6`/`ile_6_gris` (64×64) remplacent les icônes générées ; le
+  **Collisionneur cassé** utilise `bat_collisionneur_ruine` (64×96 TOURNÉ en paysage 96×64) → bloc terrain
+  **3 larges × 2 hauts** (au-dessus de l'élévateur), sprite découpé en 6 tuiles `tile_i6_collisionneur_0..5`
+  (sous-index = nord*3 + ouest) ; **réseau logique** enfin en sprites : câble `fil_logique_v1_<NN>_<LETTRES>` (+`_on`
+  si 1, 32 sprites, repli vectoriel) et dispositifs `logic_porte_{and,or,not}_{n,e,s,o}` /
+  `logic_senseur_{plein,vide,contient}_{n,e,s,o}` (mode capteur full→plein/empty→vide/active·inactive→contient)
+  / `logic_sortie_collisionneur_{n,e,s,o}` (actionneur) — orientation encodée dans le sprite (DIRS4 [N,S,O,E]
+  → suffixe), la pastille d'état 0/1 reste, la flèche vectorielle ne s'affiche qu'en repli. (2) **Menu
+  Bâtiment : bouton « tout replier / tout déplier »** (`.bp-collapse-all`, dans la barre de recherche) —
+  bascule l'état `collapsed` de TOUS les groupes de `BUILD_GROUPS` d'un coup (⊟ replier / ⊞ déplier). (3)
+  **Coût transit 5↔6** : `PORT_BASE_COST[5]` béton irradié 10000 → **1000** (÷10 ; pièce méca 10000 inchangé).
+  (4) **Déblocage île 6** (nœud #28 delivery) : ancien barème (10000 élém. moteur + 100000 acier/câble irr.)
+  → **ressources de base de l'île 5** (= ISLAND_KICKSTART_5 inliné) **+ 500 de chaque irradié** (acier/béton/
+  câble). (5) **Port île 6 non améliorable** : l'île 6 n'a pas de `PORT_BASE_COST` (dernière du chemin
+  maritime, l'île 7 est souterraine) → la section « Amélioration du transit » du Port est masquée pour une
+  île sans barème + garde dans `upgradePort` (fini l'amélioration « gratuite » à vide). (6) **Mine Tungstène :
+  `power` 2048 → 512 kW** au Nv.1. Validé : `node --check` (7 blocs) + Chromium headless (0 erreur) : rendu
+  île 6 = collisionneur officiel 2×3 au-dessus de l'élévateur + icône d'onglet ; réseau logique forgé
+  (capteur/AND/actionneur + câbles) rendu en sprites ; bouton tout replier/déplier bascule les groupes ;
+  Port île 6 sans section d'amélioration. Build 265→266.
   Changement 13.84 : **PATCH testeur — 10 retours (île 6, antenne, inventaire, décompte).** `SAVE_VERSION`
   INCHANGÉ (aucun champ persisté ajouté ; terrain reconstruit depuis la def ; déblocage additif). (1)
   **Inventaire ouvert = SUPERPOSITION** (ne pousse plus la scène vers le bas) : le HUD + la barre
