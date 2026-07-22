@@ -227,7 +227,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .inv-ico{width:14px;height:14px;image-rendering:pixelated;flex-shrink:0;vertical-align:middle;}
 .ui-ico{width:16px;height:16px;image-rendering:pixelated;flex-shrink:0;vertical-align:middle;display:inline-block;}
 .tab-ico .ui-ico,.tab-ico.ui-ico{width:18px;height:18px;}
-.inventory.open{flex-wrap:wrap;align-items:center;}
+/* Empilement HUD + barre d'inventaire : contexte de positionnement pour l'inventaire OUVERT
+   (qui doit RECOUVRIR la carte en superposition au lieu de POUSSER la scène vers le bas). */
+.hud-stack{position:relative;flex-shrink:0;z-index:20;}
+.inventory.open{flex-wrap:wrap;align-items:center;
+  /* Superposition : ancré juste sous le HUD (top:100% = hauteur du HUD, la barre repliée
+     n'étant pas rendue quand ouvert), au-dessus de la scène, sans occuper de hauteur de layout. */
+  position:absolute;top:100%;left:0;right:0;z-index:40;
+  max-height:65vh;overflow-y:auto;box-shadow:0 8px 20px rgba(0,0,0,.45);}
 .inv-break{flex-basis:100%;width:100%;height:0;margin:0;padding:0;}
 .inv-tier-sep{font-family:'Bebas Neue',sans-serif;font-size:.62rem;letter-spacing:.12em;
   color:var(--yellow);background:rgba(255,209,102,.10);border:1px solid rgba(255,209,102,.28);
@@ -2169,6 +2176,28 @@ window.__SPRITE_DATA__["tile_i7_oil"]="data:image/png;base64,iVBORw0KGgoAAAANSUh
 window.__SPRITE_DATA__["tile_i7_resource"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAC9UlEQVR4nL2XTUsbQRjH/1kCHkKaPVmKDUJLEYl9sUIODYq0TUBEESUS0KtevAkifgLvgngVBRXyAYQEwbQBaVIRhBT6gsWm7aGnbEoOgexML53pzO7sS6LNnIaZZ+c3z3+f55mZwMrCBDXqDQBA7XcDejiEyJ0Qrn/84n02L/Zvy1ZjBgDQ39cLADDqDanP5v+HrdZNmMpWa2eBXLWFbMVArtpCrtq6lY0FxUGj3uAL6OEQX0APh1Cq9QAAkhsbyG9uAgCyFQP/mtjvAWotpKLe62p+dpurtjicEoJXa2t4uboKv81NhYCYBarItcIpIaCmCUoIiNCnlIKwcdPEu91dAEAqGnTNCM3rn3UCp4T4VkFzksaoN7j37cKtG3ALUk01KPZfr6+3DSemiZFMBgB4xjipoHkFnh/4s7k5CY6/c09nZ7kj2YqhVEFzynXWrPDY5KTN8/OjIxuczT+enpY2YXU4sLIwQVl9Zl53IvuXQgEPEgkJLtp8OD4GAKRjESkjpFLMve7gn7vBiWliIJm0xZiyFKtk94JbZU8sL8u2lOJjPi/FGA9C6yBTwAs+ksko4ZQQvNneluAsLeN606aCVIqZgR/PS/v7SrjVc0oIPp2cKDPNlgWsX9jaUsKfz887ys7Gf15eSnBqmng4OmpLPykIVSq83dmxef7+4MAVTgnB3cFBCc42A0B5hDuW4hdLS74Czkl2EU5NkzvoWYpZEfIL/35x4Qm3ng2upZg1N/i3cpmP3xsa8oSzDaRjEZsKtlLMmpvn94eHfcnO1rgul6XAEx1W3ooBoLS3d6N/zm0F+VXHctB6H4zrTX4unB8e8o+fzMx0BHe6nOjhEPr7ehFYnBqjTo8Ldjip2kAyqYR/PTtT2ouHkMgILE6NUeug00tGvgUDj8bHlXAnmGpdX7di1o/rTaSiQR7Nn09PQSnFVbHI4alosK23gbIU+1mAbeKqWOTgdCzS9gvJ81bstoBVkU5eSK634m68E11vxd3Y2B/z0ZEl4QMHQQAAAABJRU5ErkJggg==";
 window.__SPRITE_DATA__["tile_i7_wall"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADyElEQVR4nMWXQY8bNwxGH+XcCngkB0UboKc2//8nLZAALbpI65HszTFiD6Q0mvF4veklAwTrZJlPHPJ7Ii0/nyblBz7vAOI0IQgKxOnIPJ9BFVXLTURAAiLBPgOKQq2oKtN0JOfscYJIsJ+uiVZU641meflKWA4w4ZzzKsPlcFnFoZg4uhzOcPgYu3maZq+AVnVFy1RVQZs89h4iw7+rxdXaM1EUkYCqkmIEhJxn/z87mqJDAvqtl8dKVVvUUsYKiJ/Xy+kJAKhAsJB5PtNaq1qZ5/lWsw4e0DoItmxFEAVFEGm/87O0Wv/xtxJh+vCR6/OTVQJQVebz2Stae5woqPTXsgR2moTghgreV4bDt7EiXJ+fuleWxw1HO1R6vIweEAko1ct9QASOv/zOy5dPi6EwD5h8RUNAVFeE9NjmE0CoXVMQJAxxSwIChNYiRISXfz4j4bDygYkJQrC3kzuIiiK1un0DIpBSAhFKuSwV7h4Yy7WHE9IdvK7+5vD29h3RJS7ngoRATMn/nkcTfmMPJzOTl/weTiiIetUfI5rnublik4Bqc0vHqXW8EaKqxOkICrmUVxAdEn1Fc0mgYcJiohGnJYHKfD6DCCkmCIFSyoCoX7Ujol2TG82egDdquG63OHkIC065WE9TOgF2haveNH/ljz1EnQLD5D5OjqgccIt2nMrl6ocFK26oqAZEWWmuTOqI9gTS6WTOLJc7ODmiMLzNeuLdQ9Ti9hHtCZRSbifeCqfXEGVd9l59n3gPEHUT6usTr2O3h6j+P0RXJtTqOHnj3oKTSvswjPC3TNF6S4ENqjHTnYm3RVSwPWJAdG/iNURjnOwiOp8HTXwjCgsu1tdNU91Mx1//eBXR1RSVtWbOmTxnYozEGDfDKBz6eBwnHiEM4oGXL58JPqBaT6d4BK3MOXdKbpzfNEMlXy4ApNN7rn/93Spw8GzHS6OJBCQcCOFgcS3ZYLGlXMjlQkqndYzH/fT+t5Vm+9PuD0sAM9QOTQNO95dScJRXiFrpvp7/ZAhba7YWTNMEaN/dvmspfTOiw0rXNFsC8/wv+H5vI/O8g9N3ItrS2ozmlSabpbQtkXGaALFJ15dShrd/MPHkdoreW0qXbbP1B5v1dj0vS2lKydYqf44fPvZ+Ppp49xDtFZAQ0FoRgmd3i1O5XFFVUjqhWsnPT+Z0E9ideFOMDxG1BDBXtrF7g2J/o0ouBVSJvgeUUhYsWSZeOpqf5pxJ6bRUdKP5eCn1GrYvle1p3wdjOlHKpZe3Tbw5Z9A63HobRFvLf/TX8/8AfCBCOmZS7NMAAAAASUVORK5CYII=";
 window.__SPRITE_DATA__["tile_i7_water"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAEDElEQVR4nKWXMXPcNhBG30KsUhzBaxJ7JplMLFcp0uT//xTNJJMUmsQkcLJLYVPsAgR5x7M8YXU67X0Adr+HXcrjT+8VEaY4gQjLsoAWVAuqCqqICEhARIjTmZwzqDKOI6qFtMwWK4IgSAjtMwKqHGt+/PlHrcEKxPHEssygasHQbcA2AaAoFBMcxxMpJY8TRNYNKOvie02RQLAf2A8BUkr0T3/6Pg7FxNF1cbrF+9jdUzWRwGC7qorbNPm3dg6R7nu1uFLaThRFJKCqTDECQkqL/+aGppjOoFr8RJYeS1WpUWsaCyC+XkunbwBABYKFLMsMQHSPVF9tNF1vaHXpFm+GUlAEkfq/utdi9cdPJcL47pGX5yfLBKCqLPPsGS0tThRU7FiqheGgSO5gQYLXlW7xfawIL89PzSvr44ajLiotvmoO9kFRiqf7ARE4ff8Ln//5YzUU5gGTL2gIyAbRznzVJ4BQmuYGUdccCAEpBQi1RIgIn//9EwkPGx+YmCDYppEDREVdU1ADjWmyeybny0Zz6HFqiOxxarfJPvu7xevpm+Yal1JGQiBOk/+dQJVB9fUQJzOTp/wIJxTEUX4DomlZqitQVQZ9fe1cyganWvFKiKoSxxMopJzvINpt9CualoF2qtVEPU7rBgrLPNN6RwjknDtEHeke0abJTc2hFavhsV69VzXvcErZajpNZ8CucNWr4m/8cQvRIZ7PpCXZtX2IkyMqD7hFG0758uKLBUtuKKgGRNlobkzqiE7xxJDzhel8NmfmywFOjmhz/nXHO0JUvOncQjTli92EOefrjrfB6R6ibNPesr92vHuIWi/gKx2vYXcL0dpLvhFRjxtUS4eTF+4tOKnUD10Lf0sX3Wp6BmrHYz3BvuPtERXQskX0qOOhEONoF9E8bzRD3/GaB/ZFdTOdfvhwF9FNF5WtZkqJtCRijMQY1//XobS2x7WePnQ08Wuc6jyIFhYf5W46v9OsM+EUo1HQdzx7VpzqzXUPp5wvqBamOi33scB35/d8+fTXFlEgX14I4cFLUMfna5o6nI6HUnCUN4ha6r7Mf9OF7TR9KB1jBLR7J7iF0/9FtBvpmqYyaCksyyfwelrLnG/g9I2I1m3tWvMe0QG04VSHyDiOgFinu0L0DR1PrrvoEaLrtNnhlHJeDeWITtNkY5U/p3ePG9ff63j3ELWhVBQtxZwvctP5+fKCqjJNZ1QL6fkJCQ+HiIJ7yxE9omkdSiW0trvteIH1TIXkL6bR54Ccs8WF0FBWUaaT+WlJ6RBR5S1DqeewXiD1qe+D9rZ8aemtHW9JCbS0W+8KUcxT8vtvv6qW4sMi3sf7NNlex3G0dC4zcYy2CT+9hFArbSYtnfFcc5rOIKHdF9XM/wH/st+/eJTa8wAAAABJRU5ErkJggg==";
+// Sprites générés (patch île 6) : icône ile_6/ile_6_gris, falaises i6_falaise_* (recolorées
+// depuis l'île 5 vers le bleu-gris de l'île 6), et le Collisionneur cassé (tile_i6_collisionneur_0..5,
+// tranche 3×2 d'un anneau métallique endommagé).
+window.__SPRITE_DATA__["ile_6"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADvklEQVR4nO1awW7UMBB9Tpxku7sVPXLmM/gchKoKJA4Vv8ANegMhPojP4MwHdNtuPIk5tOM6qbPdxG68K/wuseJJHI/fjGcmBhISEhISEhIS/lMIn4d///mrfZ5/++a11/ghkMX+gNiQIV7y+eMHtA0hy6W51ts7SClBRJBSdvq+fv8RYtggGK2AIdoTEaR1LasF2obM1ZZ57l1zmkYQE+CJltUCRVlBZDlUvYXIckgp0TQNtNYoq0WI4YJitKZ51Vy0l1Li9mYDWZQoigJKKQAwbSHEXqZxNAwgIrQNmatSCifLFQBAKQVS9aOsqg1TAHTYwM/HwGQF8GRElqMoKzRNY/p44rYyTpYriCyH1rpjEqreRjUNbx8wNFlu91kwJEt0ZAxg2k6ZbF/WNo25MVkBHRv2ZEFMePkAoucdH/C8Yo7SCQLhWHCUTtBeNV8WMJtiwNsHTHV8h8ICr2SIiLBcraGUMpPlNqkasijv5R7adn9HtpcjMHal26GiRe9AyGf743ZMHxAkHR5c2T1ZAOwOhC4vzpHl958aOpWerACmrcjy8ZTvyeZ53mFBn/o8FiuhL+NjDsGcoG8ovM9YLxErTE6HLy/OO04QeFz5oih2psV92ZvN9ZPUeFdlie9d/fwFwI8BXj6grBaot3fmo1w7AhFBtw2yXJqJ8mSAexa4qkauylK9vevcY/iYg3cgxNehHaEvw4rjfgCdqtFytTYpdlktoLU2Fablam3S7lCB02QTsMFeWmv9hPLMENt7u8xnyDz6pmS/0zaXqeYQpCbIK8wlLyEEdNuAiAYTnSkxxNC4PmwY7QNsDTMbTl+d4XZzbT7KZcP9D+ctdEwMATz6DKUUirKCbhucvjqbMncAgQKhL9+uRsnbShkTQ7jkiMgofwqi/RkiotExhEvON4z2YsBYh8MmwzuClHJ02NyXK8rKywdE/zc4hgUuOd96YhQF7PsfAXhaO3QpxQdRFGCvGO/tAO6dmqqNYrjN/S4533riQThBYEQBNXAlKYoC2G7zPDfB0z6mwErhIEu3/mFxVCfYj+T2jQRdechUzHpEZUwe4coHGEKITvxvI0ou4AOzI9Rbk0cA6FJda+i2MTkGPxcCQULhfeHKI1wnSYAH+q/WuN1cmz6mPecYrveORbRTWi5z+PT+nakNyKLcSXUbUWqCLwFe1aKsoOrtLH+MZjUBGy5z6FO87+Ff4uhMNAUMgSc+11G6g1KAXUyZCwelgLlobyP6WV1gnp+gQzioXSAhISEhISEhIWFG/AOlU2ub7rpk9gAAAABJRU5ErkJggg==";
+window.__SPRITE_DATA__["ile_6_gris"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADz0lEQVR4nO1bsXKrMBDcWDaEoXBo/EXp06TKr6TOr6Si8ZfFjQYhEHmF5/QEgTwjKZzzzDYwlgBptXe6O/Dd/f09bhkb7gFwYyWAewDcWAngHgA3VgK4B8CNmydgG3Lx6+vrZ8j1b29vdyHXx8CqgBg3OR6PaJoGu93OHqWUSJIEWmskSdJre3p6ivHYKJhNwJTstda9Y57naJrGHt22f91rSdOIYgI00TzPkWUZhBCoqgpCCCRJgrZt0XUd8jyP8bio8DYBV/Yu6rpGmqbY7/dQSkEpZc+BswrKsrwa0whSgNYaTdPYI00WAJRSqOva9q3r2ioFQE8NdD0HvAmgyQghkGUZ2ra1bTRxl4z9fg8hBLqu65lEVVWsphHsA6YmS+dDFUz1HTrIpeBNAMnWZ7LDvq5pLA1vAtwBh6qAE0E+QGvtLXm37690gkA8FfxKJ+iuWqgKSE0cCPYBvo7vWlQQlAxprVEUxZeIjyabpimA76NDpdTk6n+XbsfKF4IDoZDtj845fUCUdHhqZS9VAfB9IFSWpc05YucL3gTQgIUQsyU/7LvdbnsqGEqfnuUmXm6fEHOI5gRDQ+FLnvUTsYK3Amjrcp2grwpohS+pLB2PR/vb8/MzHwHAeWWklHagYzuC1hrGGOx2O3x8fPQmA5xVMFY1GqssSSl7vxFCzCE4EKLj1I4w7EMToHYAvapRURQ2xc7zHF3X2QpTURQ27Y4VOHkr4OXlxZ6XZWnPh5KXUiLP8573poqQTwzh3pN2h6ZpvM0hSk2QVniz2UBKic1mA2MMtNaTiY5PDDH13BA1zFaAa2Nke4fDAafTyQ7KPQ7t1W0TQsyKIYC/PkMphSzLYIzB4XCYOw2LKIHQ4+PjrP4uKXN2j7F+WmtLvg/Y3gxprWfHEGP9QsPoIAXM3XLIZGhHSJJkdgwx7JdlWZAPYH83OEcFY/1C64ksBFz6HgH4WjscIyUELAS4K6aUAn2rmKYp6rq2xNA5tY/1C60nXoUTBC43hdiVJBYCyG63260Nni4xBSKFgixjDICwsJjVCQ4juUsjwbE8xBdRAqG5cOP2sixtZDcnEmyappeP+IJ9G6RVrKrK5hEAelLvug7GGJtj0HUxsKgCxvKIsS9JgPNKPzw84HQ62TbXXFzZh5TEWEzAhZsmv7+/AwDatkWaprYA8pMfTrCbgAta1SzLUFXVIm+M2BQwZg5DiQ89/E98PMVuAkPQxJf6XuiqCBgWU5bAVRGwlOxdXBUBv+4zuf8Bd+vf5m4cKwHcA+DGSgD3ALixEsA9AG7cPAF/AL0FcfdZbO0pAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["i6_falaise_U_s"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABGElEQVR4nO2UsU7DMBRFL9hCjXgV2dowIqaqKytC3ViYmPmafgsf0C9gyIJYEWPG0tEhTm0BKUyMzy+kIC9+67n2PbKsd7C4vP5CxNFFUbDQGIM8z4MXSBmJa2MMC+u6Dpb3yUj8UGz459HWWhZu3RZKqeAFUkbimohY2HUdQrxPRuLxX6CxDQvblpfrm5F4/E/ovWOhUgoh3icjcT2dFMiyDD9/obENvHdYPT3IS+AXc3NxdTIaZRjTGABARHDOQXMHPne7j7W1r39RfkrErltWAADevK/W1rZ7lh8PFgCAamMe9xI4p0WIiwI5Hb2/VJvnIeWzs+lcyogCAHB/d1sOEViWpSgQfQ8kgSSQBJJAEkgCSSC6wDdsX3xXQuLybgAAAABJRU5ErkJggg==";
+window.__SPRITE_DATA__["i6_falaise_coin_ne"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAfUlEQVR4nGO48eHd6w13bm1oOXIkg2EAANNAWDqoHMDgZOf5fyCjYcBDYNQBg8MBxeEpIhoiItY6EmIe9E6IgyMERh0wKByQ7h0xIAlx8ITAqANGHcDAMDA5YXCFwKgDBoUDouy96ZoQB18IjDpgUDggyNyJbglxcIYAPQEAMbAr1WGZgXIAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["i6_falaise_coin_nw"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAjUlEQVR4nGNkGADQcuRIho6EmIeGiIg100A4ABkMuAPoDlqOHMnYcOfWhhsf3r12svP8P+AhMOqAkeUA5PxfHJ4iQncHYAOjDhg5DkBOgOneESJ0dwAuMOqAUQfQxQG4cgDdHIAPjDpg+DsAOQFG2XuLoMsP/xAYdcCAOgA5AQaZO2EkQJo7gBgw4A4AAOOOJkwadW0MAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["i6_falaise_coin_se"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA3klEQVR4nO2ToQ7CMBiEb2SygpAghppEEh4AMUHCM/AGvAUvgMQQJGZyZkgSgkIOMYGqIqSi65YwQQZiGYYORav+z7Un7nK53wkmsxdaWEc7Mez2+m36P3A9z9MKy80qe1aVSe86gJRSK3Cl+IAxfbo/0mkTUiES0+YA4BZFoRUC35+mQpyMB2CMmfb4HUDXwDYOrQwQANy8yL8+bQ0Q0IwwPMaZrQECgFuWj88jOh8yrhRvBni53ffGAzTGQF19KkRiq34AcK5KSq4UB+rbX4zGc1vmBEEQBEEQBAEAbzrZWqxhEWDEAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["i6_falaise_coin_sw"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA2UlEQVR4nGNkoDG48eHd6yy/aBFc8oz0cAALExNrfWoRPzZ5Flo7gIGBgeHRp0+PPnz4oItNjokeDrjx5s1lXHI0D4Ebb94cdVJQcFv55cvAOAAGeHh4sIrTJQoYGBgYJq6e9/HLly8M6JhuIfDo06dHn798xkiIdAuBG2/eXF51ePtHujvgyotXO2AJ8dGnT49WHd7+8ceP7wwwTLcoYGBAZMdNpw/IMTAwMPiZOvDTvCREB9MunFuqISKiy8DAwCDHxydHb/tHwSgYBaNgFIyCUTAKRsHgAwAsMlretOgGBAAAAABJRU5ErkJggg==";
+window.__SPRITE_DATA__["i6_falaise_crique_se"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA4ElEQVR4nO2UoQ7CQAyGf7gLyZKJOdjLIHB4NI/HA/AECAzBEuTkQN64brsAGyjkXSdYaq72+9N+aZpOVsv1B4Kl8zz3QmMMsiwLNuAyHNfGGC+sqio4fEiG41N2wsilicgLm7aBUirYgMtwXKdp6oVd1yHEh2Q4Lr8BS9YL69ovNzTDcfkjdK71QqUUQnxIhuN6Mc+RJAl+t2DJwrkW+/OBfwJ/KO0D775/lUQ3MQEAeDhXlES1mAAAFHdzEhXI0tnzWtwvYgIAsNtujmMJiP+BKBAFokAUiAJRIAqIC3wBo0d0FijQ534AAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["i6_falaise_crique_sw"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA8UlEQVR4nO2Urw7CMBCHb7RihFuYZEiCIlgsIXMYFJqn4Vl4khkMBoMgiAlCyEK6v51Z4Anam6Cp6dnvl/t9aZrz4vX2CxaHR1GkhEIICMNQu4DKUJwLIZQwz3NteZ8MxQdkg+HhVVUpYSMbYIxpF1AZinNEVMKu60DH+2Qobv8FyqpUwrpWy/XNUNz+J2xbqYSMMdDxPhmKe/dCcwj+OLvVZuz7QwgwAAAARAQpJfC0KFLT5VNE5bnltyy7Gi4faQUeL3E2KjDHWMf58/25mCpfzCZLKsNPh31iSuCYJKSA9TvgBJyAE3ACTsAJOAHrAj9Gu2rUJCHKvgAAAABJRU5ErkJggg==";
+window.__SPRITE_DATA__["i6_falaise_e"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAgUlEQVR4nO3UsQ2AIBAF0A9SQICOGEewsLews7J2CgdxNHaC0oIFbPAs/k+uvpf7ySl0zJ3ztUzjMae0neuerHWIIQIAQggopUD3BLwJAQQQYL5cVmuBGdpKpRS01t9ewFoH59p47wH8oAICCCBAHMBPKF4BAQSIA/gHxCsgQBzwAB2qEk9UnP3lAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["i6_falaise_s"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA5klEQVR4nO2Suw6CQBBFB3dLCiJhE37Gws6ftrex0MbKwhhjeGUJC0tDtDLAuq9CQzOnY86d4YYQbDe7FywITdPUKDnnEEWR9YAr4/KUcz4bMMYgyzIAAKjr2vpyXWa673NjpQ6myzoYY1bv2lehQgij7GQHhJDZTM3rMjafJAnkeT4WCMPQuDwMA9i8T0b1UsrZs/cXUJvrMq4bOmgjGqNs27GcKTfNTInXMZRVafQfvn7CX1FWpVeO9r00SkII2LxPxuWD/f12cvf8H/RSFOdFC1yf/LBogUdWHZcsgCAIgiAIgrwBEGN8lLGIz4MAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["i6_falaise_s_ew"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABJklEQVR4nO2SwU6DQBRFTwWLqWNDbIDob5i48zf9Az/GTePSVZdVIBCgA9MN0UWDIlCgSSObOSvy7n1zL5OZPT48fQGIa8F/InMJgLm8WQLgeV7LlCQJtm33HjTkOab7vn8okGUZAJZlAeC6LkEQAJCmaW94l6e+33dGlXvRFOrLXbiu26sP7Tcxi30BgJSyJRaqwDCMP7Omr8vTpzuOQxiGVLnm4moBgBDtR1iWZef8FE9TV0ohhEApdSgw9gaq5kN/OFb/uYGiyAGYX85bpjz/LbWTu86AuqfO6nZFFEdH9Sq39QjPRRRHo3xm9bHfq5ZoGEbn/BTPkD57T+JwK+XHmLbn5l6Iu9nz2/plivAKc/OZvE5aYBvE6ykLaDQajUaj0Wi+AY2XmmhE3BQoAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["i6_falaise_w"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAh0lEQVR4nO3UsQ3CMBSE4R+UxvJKUYp07MQgTEFNRUdBnyIjRMhdbD0XQWYFmuQ1dwOcPumkO43DpYUQyDkDsOaVWo37+5nmlF7T8nlc+/7GTjnvVSyAAAL8mw6glIKZAVCrHQ+IMdJaA2D7boci3CcQQAAB3AF6QvcJBBDAHaAfcJ9AAHfADxRGSztCVCV8AAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["tile_i6_collisionneur_0"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAzklEQVR4nO2UsQ3CMBBFfxBzeAbPkR2yQESNGAFRoyzADsxxBbAOVI6MFDs++85u/KpEKd7z+RSg0+k0ZmghXR7Pb/UAX+qjGhCSqgekiFUCOGLHoaUcEJhArthRNIFSeVGAhBzIuAIpsYM1AWk5K0BDzgrQYJ7GIWkHpE8/T+Pq3Q2QlPvipAAp+ZbYob4DMXk0QOL0e/JoQA05ABxDHz7vV7b8fj0n/2E3J3C63LLHz5EHA2rJxQNyCO4AABDR+mytrRtARDDG/L1rRPwAdClI/HL+pPAAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["tile_i6_collisionneur_1"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAh0lEQVR4nO3V0QmAIBAG4DOaw4EawWyBBmoB0xEa6Baxp6SiIO6EEP4PBH2w+1VSIgClJWxZM99oPpriWvpu9J8KztNwqWmkK0hxJWttGTPz5xBnnaR4Te0GcKMnZi5Nsv1ERL00wBFCq90jQAAEqOX1N7zf2TU8XvtL2LL2RZP6qy4AAMDFDgGBKuhlutYtAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["tile_i6_collisionneur_2"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABFUlEQVR4nGNgGAWjYMSDaYu3/R9I+xnRHZAV68U4oA6gt2PwOoAejmEiVuG0xdv+0yK9EO0AWjmEZAcgO2RAHcDAwMCgYWDzX8PAhiKHkO2ASb1tKA4h1xwWSixGBhoGNv9vXDhCck4hKQRwWY7sCFJDg6gQIGQxNocQGxp4HUCqxeQ4Aq4APVuRa/mXZ/fg7CevnhHvABggJ0UjW4oOCDkCpyQxDsFnMbGOIBhE6A4h1lJiHUFUSpURk6K42MXlAKLKAWISEyGAyxNEF0TUcARFDsDlCB4pJYocQJavKEkT6J4gqzYkNToeN/DhlCM7XskNBXTHk1wdkwIUjBzg7AfnDmBVQzMHKBg5MMjJySGJOGB1BABRjHlRePBEjgAAAABJRU5ErkJggg==";
+window.__SPRITE_DATA__["tile_i6_collisionneur_3"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA5ElEQVR4nGNkQAM5FV3/GRgYGC5cuMAgJycHF3/06BGDgYEBunIUMKWjjBGvAiyAiRqGUAJYcEkYGBgwXLhwAYVPVwfQ0lJkgBEF9AZUdQAsAVPsAEoSIqmOoEkUkOIImqUBYh2B0wHUKA+IcQReS5z8EkhOVNjAvk0LcNpD0JfUcgQuhxAVzNR0BLpDiI5najsC5pABLQmd/BL+E+0AfAmJEkBSCNDCEWQbSK00QXYaoFZoUJQIqeEIqsUpuVFCtWxIbmjQJGuREho0bQET4xC6NcFxOYaufQAYoEW9MgpGwdAFAD9XRwZzAHIwAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["tile_i6_collisionneur_4"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAgklEQVR4nGNkgIKKE/+jGPCADgvGZfjkR8EoGAWjYBSMgqELnPwS/jv5JfwfKLsZcVm+b9MCRlpYiC6G0wH0AkwDafmoA0YdMCgcwEKJ5l+/fsHZbGxs9HXAr1+/GOTk5OD8R48ekeWIAY+CAXcA1vKe2OKZnDRA9TpmoOuSUUAxAACHPyO31xVgkQAAAABJRU5ErkJggg==";
+window.__SPRITE_DATA__["tile_i6_collisionneur_5"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABMElEQVR4nO2WMU7DMBSGfyNGxMhgIQtVGTpWzCBVPUDP0FMwM/cUnIEDoEp0rhgZEEJulYGZvZ0cxU5iv/ecZKH/Fmf4vvc7iaMgzO2NPsbu393PYYyprq21+NltAACH31K59QupgDR1OABcDgV6XwOPT7a6dtOHUa2rhKS2oCthA6NvQRiRgHT6/fN1Y429BVI40KwfYDaQgl/pCdeJLkCZ/K/8HkYgp3aXtvoBwndgOnvw4JIpY+l8CENwW6gyXdO3ClDAHJEY3BNYLFceuLRfXI+GTAoOACoE9yHh8vmxTQpE3wJtCmhTDAZPCkhFqHCAeRxrU0S3hQN2YR9GXW1I4CKBukguHMj8I8oBu4gbeHt9yYYDggb6ArMF+gaTBIaCRgXGgHqJnQXnnPMvcgLSvmo2Mk5S1gAAAABJRU5ErkJggg==";
 window.__ANIM_DATA__["mine_tungstene_v1"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAABu0lEQVR4nO2aMW7CMBSGf6qeIQMjUxQ5axT1DEgsiF6j7VCpS48AXKOoCy1nQKnUoRJRGtGKkYFLpEsTUkSEbWJT4P8WBsL7nv2eFdsCIIQQQgghhBBCyLnQkHnIabYyneCr5UIqPv2H81/KyO8fHpXlk9cXAMj2nQT6zfp3NkCZNE2lnnNdVyUs/Qf0SzdAEAYIwkA68G8H1gb9ZvzSDRC9vUvLTUC/Gb90A8w/EyMJ0H9Y/4WRqORoYAOcOdIN4Louvr/mALDz08QumH4z/p1n1PwcqrOrTeKPvS9D6Dfr17oJHPSHAIBZHK9lSYIomv75nambsEF/iFkcwxeiyMO2/2k0gud5AFDkcXt3Y80PrMfteZ72+KVOAeVAeTKbBVCRqrLNnyTrXbEvBHwhEEVTa/7rXq8oQDkfW/58/n0h9pp/pZvATXJxuQC2qCqALaoKYIuqBaCKdgOUB14uhC1OpQC61LUAtBug6hVgi1MpgC51LQDl95XTbGXP48nW77qdtpF3IP3m/MoXQavlotHttGuR60B/vX7thJ1mKwvDKwAwtvum///6iyR0/61C//H7CSGEEELIkfIDaH/aD+4X2OoAAAAASUVORK5CYII=";
 window.__ANIM_DATA__["mine_tungstene_v2"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAACX0lEQVR4nO2aPWvbQBjH/w79DBo0ahJGhk5G5DMEsgTna7QdAl06lHRNspXSOUNMOrTN1j2okKFgcTVJ8ejBX0IZwsVnVb433SMR/PyWYOvufs/pHuteFIBhGCY4UZxU7N9RfxQn1eW3X1VfQbDf3r9HFcTXL5+pmmZ/QD9ZAjAvg1e6iyEeYVGcVKvlYuBbl/20/q0XojipTt5/aOvHzc8fEOUfuN4E9nfj1z4BJPP53EuepqlXPfZ35zcmwDgfY5yPvQIAnjKwDeyn9RsToPh95y0PAftp/cYEuP8rSANgf79+3gbuOJwAOw4nwI5jTIA0TfHv4R4AnP+G2Aaxn9ZvPAhqu40B0OoghP20fu0uQJ4iqZyfXWBWlhhlGQBgVpZrkRAoituN8sPstU/MW/15vo/hcPj8WY2jC7/svxCiMY63796Q+4H1fVfj8Om/1UmgzB71bFoG0JQITeXboLZ3PJlsDIAaxyjLUBS3pH7pkqhxCCEay4f2qz9ANY5t5XVYJYCOpgGgxjQA1JgGgJKr6fS/xG8Tg3YR+PHTaeP39c4DTzflajq1bsOGbXXlAIyybOPx59KGr1/2cVaWjXFQ+48nEwDr/qpxyGsufu3CpP4qMYqTymYNUK/T5nVovS2bNQCl32YNQO0H9GsAF792CtBV1K0BbNsw0VTXZg1A6ZcuiWkKovC7TEEmv/PW5Pr7jbbM0eFBq06zv1u/00ngarkYHB0eBJO7wv7wfu+5Kc/3N76rzz2UsD+c3+tdwGq5GKhzbZedZ3///meiOOntf9/Z37+fYRiGYZiXyyOJK9zWZ6niMAAAAABJRU5ErkJggg==";
 window.__ANIM_DATA__["mine_tungstene_v3"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAACjklEQVR4nO2bMUvDQBTHX8XPkCFjUAlF11L8DFIpSP0a6iC4OIiu6ibi7GBQxNrNXSI4CA1nUenYoV8iDnK1Te+SdzHvUun7L9Izye9/uX/v3iUUgFiO68XUDObPKN9xvfj67ikuywTzs/kL1CauLi+oEcz/A588AKzZ1qKqkWLKclwvHg76FeyxzLfDn2pwXC/ePzgsmg+dxzaI6A2ybgLz7fKVM4BUr9crBO77fq7zmE/P1wagVq9BrV4rxADATwJNxHw7fG0AwpfXwuB5xHw7fG0APt6FFQPML5fP28A5FwdgzsUBmHNxAOZc2gD4vg9fnx8AAH/+m2cfzHw7fO2TQNN9K0YmT8KYb4ev3AZ2HtuwtLwC7ftgov3s9By6UQRrq6sAANCNommIEBCGzxNtjWZrlEaMsvhSKh/U/JsggGq1OtE+7sNW/4UQWh+7eztovnYJaN8H0Gi2AACmUtONolEQJDQpeU6j2ZrqCEY6vhC/++M0H1R8edN1PrZbk+cUzZf91Pm4CQIjfmoRKE3o3k6lDYDjenHezqfxsQNAxccOABU/eb9VPkz4ygAcnRwDwE+KxpOok2oAJFwmUV4TozQ+dgCo+NgBoOJLDzofpnxlQZJ8dywTeHZ6PjKg0/gamLyGyftwHV9Xg8g10QZfKqsGoeCb1CAYvnIGSB44/jlr7cdcI0tZ52K+AVR80xqkaL5pDZLFz/UgCFMEUgk7AFTCDgCVsEsgVuhUOq4X3z50UMdubW4YJZ755fHRM8Bw0K9sbW4UCjcR82n4xkYd14vr9XXl/8LwmaTzzKfjG9cAw0G/knzSlReeR8wvlp+rCEyasNV55s8GfyTH9Ur72RPzy+ezWCwW61/rG7JKvXQ4jwWOAAAAAElFTkSuQmCC";
@@ -2561,7 +2590,7 @@ const NORMAL_ISLANDS = [
 { id: 3, rows: 16, cols: 16, portR: 8, portC: 6, grid: ["WWWWWWWWWWWWWWWW", "WWCCCCCWWWWWWWWW", "WCTTTPTCCCCCCCWW", "WCTPTTTPTTTTTTCW", "WCTTTOTTTTTTMMCW", "WCTTPTTTTOTOTTCW", "WWCCTTTTTTTTTTCW", "WWWWCCTTTTTTTTCW", "WWWWWWXTTTTTTTCW", "WWWWWWWCTTMMMTCW", "WWWWWWWCTTTTTTCW", "WWWWWWWCTTTOTPCW", "WWWWWWWWCTPTTTCW", "WWWWWWWWCTTTTCWW", "WWWWWWWWWCCCCWWW", "WWWWWWWWWWWWWWWW"] },
 { id: 4, rows: 16, cols: 16, portR: 12, portC: 3, grid: ["WWWWWWWWWWWWWWWW", "WWWWWCCCCWCCWWWW", "WWWWCCTTTCTTCCWW", "WWWCCTMMMOTMMCWW", "WWCTTMTTTTTTMCCW", "WWCTTTTTCCCCCWWW", "WWCOTTTCWWWWWWWW", "WWCTTTTCWWWWWWWW", "WWCTTTTTCWWWWWWW", "WWCTTTTTCWWWWWWW", "WWCTOTOTCWWWWWWW", "WWCTTTTTCCWWCWCW", "WWWXTTTTTTCCTCCW", "WWWWCCCTMMTMTTCW", "WWWWWWWCCCCCCCWW", "WWWWWWWWWWWWWWWW"] },
 { id: 5, rows: 18, cols: 18, portR: 9, portC: 7, grid: ["WWWWWWWWWWWWWWWWWW", "WWWWCCCWWWWWWWWWWW", "WWCCTTTCCWWWWWWWWW", "WCTTMTTTCWWWWWWWWW", "WCTMMMTTTCWWWWWWWW", "WCTTTTTTTCWWWWWWWW", "WCMMTOTTTTCWWWWWWW", "WCMTTTTTTTTCWWWWWW", "WWCCCCCTTTTTCCWWWW", "WWWWWWWXCTTTTTCWWW", "WWWWWWWWWCTTOTTCCW", "WWWWWWWWWCTTTTTTCW", "WWWWWWWWWCTTTOTTCW", "WWWWWWWWWCTOTTTMCW", "WWWWWWWWWCTTTMMTCW", "WWWWWWWWWCMMTTTCWW", "WWWWWWWWWWCCCCCCWW", "WWWWWWWWWWWWWWWWWW"] },
-{ id: 6, rows: 16, cols: 16, portR: 13, portC: 5, grid: ["WWWWWWWWWWWWWWWW", "WWWWWCCCCWWWWWWW", "WWWWCTMMMCWWWWWW", "WWWWCTMMMTCWWWWW", "WWWWCTTTTCWWWWWW", "WWWWWCETCWWWWWWW", "WWWWWWCTCWWWWWWW", "WWWWWWCTCWCCCWWW", "WWWWWWCTPCOOCWWW", "WWWWWCOTTTCCWWWW", "WWWWWCTTOCWWWWWW", "WWWWWCPTCCWWWWWW", "WWWWWCTCWWWWWWWW", "WWWWWXCWWWWWWWWW", "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW"] },
+{ id: 6, rows: 16, cols: 16, portR: 13, portC: 5, grid: ["WWWWWWWWWWWWWWWW", "WWWWWCCCCWWWWWWW", "WWWWCTKKKCWWWWWW", "WWWWCTKKKTCWWWWW", "WWWWCTTTTCWWWWWW", "WWWWWCETCWWWWWWW", "WWWWWWCTCWWWWWWW", "WWWWWWCTCWCCCWWW", "WWWWWWCTOCMMCWWW", "WWWWWCMTTTCCWWWW", "WWWWWCTTMCWWWWWW", "WWWWWCOTCCWWWWWW", "WWWWWCTCWWWWWWWW", "WWWWWXCWWWWWWWWW", "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW"] },
 { id: 7, rows: 5, cols: 9, grid: ["WWWWWWWWW", "WWTTTWWWW", "WWTETTWWW", "WWTTTTWWW", "WWWTTWWWW"] },
 ];
 const ISLAND_TERRAINS = [];
@@ -2574,7 +2603,8 @@ function charToTerrain(c) {
     C: 'coast',
     P: 'oil',
     X: 'coast',
-    E: 'elevator'
+    E: 'elevator',
+    K: 'collider'
   }[c] ?? 'water';
 }
 function buildIslandTiles(def) {
@@ -3379,7 +3409,8 @@ const TERRAIN_COLORS = {
   obstacle: '#3A3060',
   coast: '#3A6A5A',
   oil: '#241813',
-  elevator: '#5A5560'
+  elevator: '#5A5560',
+  collider: '#2b3540'
 };
 const BUILDINGS = {
   road: {
@@ -5787,8 +5818,8 @@ const SAVE_VERSION = 27;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 264;
-const GAME_VERSION = 'Alpha 13.83';
+const GAME_BUILD = 265;
+const GAME_VERSION = 'Alpha 13.84';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -9621,7 +9652,7 @@ const TECH_NODES = [{
     n: 100
   }],
   unlocks: {
-    buildings: ['centrale_gaz', 'data_center']
+    buildings: ['centrale_gaz', 'data_center', 'fab_ordi_quantique']
   }
 }, {
   // Data Center. Excel : « produire 1 ordinateur quantique » (§6). Débloque le contenu phase 6
@@ -10371,9 +10402,8 @@ const PORT_BASE_COST = {
     piece_meca: 10000
   },
   5: {
-    acier: 10000,
-    beton_arme: 10000,
-    cable: 10000
+    beton_arme_irradie: 10000,
+    piece_meca: 10000
   }
 };
 // Cost to go from current portSpeed level to level+1 = base × 2^(currentLevel).
@@ -11348,7 +11378,9 @@ function Hud({
     canRepair = true;
     for (const k in repairInfo.cost) if ((resources[k] || 0) < repairInfo.cost[k]) canRepair = false;
   }
-  return React.createElement(React.Fragment, null, React.createElement("div", {
+  return React.createElement("div", {
+    className: "hud-stack"
+  }, React.createElement("div", {
     className: "hud"
   }, React.createElement("div", {
     className: "hud-brand"
@@ -13012,11 +13044,11 @@ function InfoPanel({
     className: "lbl"
   }, I18N.t("Boost")), React.createElement("span", {
     className: "cur"
-  }, "×" + Math.pow(2, upg + 1)), React.createElement("span", {
+  }, "×" + fxDec(antSpeedMul(Math.pow(2, upg + 1)))), React.createElement("span", {
     className: "arr"
   }, "→"), React.createElement("span", {
     className: "nxt"
-  }, "×" + Math.pow(2, upg + 2)))), React.createElement("div", {
+  }, "×" + fxDec(antSpeedMul(Math.pow(2, upg + 2)))))), React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -13984,10 +14016,19 @@ function ResPopover({
       ready: true
     });
   }, [x, y, res]);
-  const {
-    prod,
-    conso
-  } = resourceRates(game, currentIsland, res);
+  // Production / consommation RÉELLES du dernier tick (game.netFlow agrégé) plutôt qu'un recalcul
+  // statique sur les `outputs`/`inputs` des defs : cela reflète les fours à ARC (sortie effective
+  // selon le mode/mix, hors `outputs` statiques) ET le boost d'ANTENNE (×antSpeedMul) qui, sinon,
+  // n'apparaissaient jamais dans le décompte. Repli sur le recalcul statique si le flux n'existe pas
+  // encore (avant le 1er tick).
+  const _agg = islandFlowAgg(game, currentIsland);
+  let prod = (_agg.prod && _agg.prod[res]) || 0,
+    conso = (_agg.cons && _agg.cons[res]) || 0;
+  if (prod === 0 && conso === 0) {
+    const rr = resourceRates(game, currentIsland, res);
+    prod = rr.prod;
+    conso = rr.conso;
+  }
   // Flux de transit de cette ressource pour l'île courante : export (sortant) / import (entrant).
   let exp = 0,
     imp = 0;
@@ -19103,6 +19144,26 @@ function App() {
             const ck = 'i' + isl + '_' + cliff[i];
             if (!drawAnimFrame(ctx, ck, x, y, tile, tile)) drawSprite(ctx, ck, x, y, tile, tile);
           }
+        }
+      } else if (SPRITES_ENABLED && t.terrain === 'collider') {
+        // Terrain « collisionneur cassé » (île 6) : landmark 3×2 non constructible. On dessine
+        // d'abord la tuile de sol (land) puis la TRANCHE d'anneau correspondant à la position de
+        // cette tuile dans le bloc collisionneur (index = dr*3 + dc, calculé par balayage des
+        // voisins → indépendant de la position absolue du bloc dans la grille).
+        const cbase = 'tile_i' + isl + '_land';
+        if (!drawSprite(ctx, cbase, x, y, tile, tile)) {
+          ctx.fillStyle = TERRAIN_COLORS.land || '#4A7A3A';
+          ctx.fillRect(x, y, tile, tile);
+        }
+        const isCol = (rr, cc) => tiles[rr] && tiles[rr][cc] && tiles[rr][cc].terrain === 'collider';
+        let dr = isCol(r - 1, c) ? 1 : 0;
+        let dc = 0;
+        while (isCol(r, c - 1 - dc)) dc++;
+        if (dc > 2) dc = 2;
+        const csk = 'tile_i6_collisionneur_' + (dr * 3 + dc);
+        if (!drawSprite(ctx, csk, x, y, tile, tile)) {
+          ctx.fillStyle = TERRAIN_COLORS.collider;
+          ctx.fillRect(x + tile * 0.15, y + tile * 0.15, tile * 0.7, tile * 0.7);
         }
       } else if (SPRITES_ENABLED && t.terrain === 'elevator') {
         // Terrain « élévateur » (île 6/7) : tuile aménagée vue de dessus (comme tile_port_terre).
