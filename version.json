@@ -1,8 +1,8 @@
 {
-  "build": 264,
-  "version": "Alpha 13.83",
+  "build": 265,
+  "version": "Alpha 13.84",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge: Île 6/Souterrain + Réseau logique (Phases 1→5A) — Alpha 13.83"
+  "notes": "Merge pull request #254 from freredoc/claude/island-6-inventory-fixes-74bpf8"
 }
