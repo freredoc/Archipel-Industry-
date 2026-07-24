@@ -1,8 +1,8 @@
 {
-  "build": 273,
-  "version": "Alpha 13.91",
+  "build": 274,
+  "version": "Alpha 13.92",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.91 (build 273) : couche logique togglable + swap de barre d'outils (#262)"
+  "notes": "Alpha 13.92 (build 274) : remblai souterrain (foreuse) + icône tuile terrain (#263)"
 }
