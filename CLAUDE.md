@@ -17,7 +17,20 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 268`, `GAME_VERSION = 'Alpha 13.87'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 269`, `GAME_VERSION = 'Alpha 13.88'`, `SAVE_VERSION = 27`.**
+  Changement 13.88 : **PATCH rendu souterrain (retour #1 « sprite mal agencé », screenshot reçu).**
+  `SAVE_VERSION` INCHANGÉ (dessin seul). Le souterrain (île 7) réutilisait le système d'auto-tiling
+  du LITTORAL (conçu pour terre↔mer) → l'élévateur « flottait » sur du vide et les tuiles mélangeaient
+  sol/côte/triangles de transition (aspect « boîtes mal alignées »). Corrigés (branche draw île 7
+  UNIQUEMENT, îles 1-6 pixel-identiques) : (1) **Sol de tunnel UNIFORME** — l'île 7 dessine toujours
+  `tile_i7_land` (fini `tile_i7_coast` + `coastTransitionTri`, artefacts de rivage incohérents sous
+  terre) ; les murs viennent seulement de `tunnelBorderPieces` (côté roche). (2) **Sol sous la cage** —
+  l'art d'élévateur (réutilisé de l'île 6) ne remplit pas la tuile → on pose `tile_i7_land` DESSOUS avant
+  la cage (fini la cage flottante). (3) Les stubs de raccordement réseau↔élévateur (13.87) sont désormais
+  visibles sur ce sol continu. Validé : `node --check` (7 blocs) + Chromium E2E (île 7 : cage posée sur
+  sol de tunnel, sol uniforme, stubs route/tuyau/conduit rendus ; îles 1-6 inchangées ; 0 erreur console)
+  + capture. ⚠ Reste : la grille île 7 n'a que **12 tuiles de tunnel** (exiguë) — agrandissement de la
+  grille / art d'élévateur souterrain dédié = piste séparée si le rendu ne suffit pas. Build 268→269.
   Changement 13.87 : **PATCH souterrain — 3 retours (inventaire île 6, connexions élévateur ; #1 signalé).**
   `SAVE_VERSION` INCHANGÉ (affichage seul ; aucune donnée persistée touchée). (1) **Construction
   souterraine = inventaire de l'île 6.** Le moteur payait DÉJÀ depuis le port de l'île 6 (`portPool(7)` →
