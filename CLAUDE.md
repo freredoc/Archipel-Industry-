@@ -17,7 +17,29 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 267`, `GAME_VERSION = 'Alpha 13.86'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 268`, `GAME_VERSION = 'Alpha 13.87'`, `SAVE_VERSION = 27`.**
+  Changement 13.87 : **PATCH souterrain — 3 retours (inventaire île 6, connexions élévateur ; #1 signalé).**
+  `SAVE_VERSION` INCHANGÉ (affichage seul ; aucune donnée persistée touchée). (1) **Construction
+  souterraine = inventaire de l'île 6.** Le moteur payait DÉJÀ depuis le port de l'île 6 (`portPool(7)` →
+  `game.port[6]`) et les 12 tuiles de tunnel (3 `land` + 9 `coast`, coast auto-ajouté aux bâtiments `land`)
+  sont constructibles — MAIS l'UI affichait `game.port[7]` (inexistant → **inventaire VIDE**, pastilles de
+  coût toutes rouges) → la construction SEMBLAIT impossible. Fix : le HUD (inventaire), la barre Bâtiment
+  (affordabilité), l'`InfoPanel` (coût d'amélioration/densification) et le `NetworkPanel` (coût réseau)
+  lisent désormais **`portPool(game, currentIsland)`** → sur l'île 7 ils montrent/évaluent l'inventaire de
+  l'île 6. Vérifié E2E : inventaire île 7 = 36 ressources de l'île 6 ; pose d'une géothermie sur une tuile
+  `coast` débitée du port île 6. (2) **Connexions VISUELLES élévateur ↔ réseaux.** L'élévateur est un
+  TERRAIN (pas un bâtiment) → les tuiles route/tuyau/conduit ne dessinaient aucune branche vers lui (retour
+  « pas de connexions »). Nouveau helper `elevatorEdgeMask` : une tuile route/tuyau/conduit adjacente à
+  l'élévateur ajoute la branche vers lui ; et la tuile élévateur dessine des **stubs** vers chaque réseau
+  voisin (route/tuyau/conduit + jonctions, PAS le câble — l'électricité ne transite pas). Raccord visuel
+  continu surface ↔ souterrain (la mécanique fonctionnait déjà : `net.connected`/`elevatorSurfaceLinked`
+  vérifiés). (3) **⚠ « Sprite souterrain mal agencé » SIGNALÉ, non corrigé** (screenshots non reçus) :
+  l'île 7 est une grille 5×9 avec seulement **12 tuiles de tunnel** groupées autour de l'élévateur (le reste
+  = roche), l'élévateur réutilise l'art `tile_i6_elevateur` de l'île 6, et `tunnelBorderPieces` est un arbre
+  « best-effort ». Diagnostic à confirmer avec le nouveau screenshot : agrandir la grille île 7 (plus de
+  tunnels), refaire les sprites `i7_bord_*`/`tile_i7_*`, et/ou un art d'élévateur souterrain dédié. Validé :
+  `node --check` (7 blocs) + Chromium E2E (inventaire île 6 sur l'île 7 ; pose sur tunnel coast payée depuis
+  port 6 ; sprites de stub présents ; 0 erreur console). Build 267→268.
   Changement 13.86 : **PATCH île 6 — 11 retours (énergie, chaleur souterraine, élévateur, UX).**
   `SAVE_VERSION` INCHANGÉ (aucun champ persisté requis ; migration additive de l'élévateur ; chaleur
   transitoire). (1) **Île 6 sans éoliennes ni centrales charbon/diesel** : nouveau flag def
