@@ -17,7 +17,30 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 270`, `GAME_VERSION = 'Alpha 13.89'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 271`, `GAME_VERSION = 'Alpha 13.90'`, `SAVE_VERSION = 27`.**
+  Changement 13.90 : **PATCH île 6 — pack sprites v2.5 + onglets tungstène/quantique + bouton souterrain déplacé.**
+  `SAVE_VERSION` INCHANGÉ (aucun champ persisté ; assets + UI). (1) **Intégration pack `ile6 v2.5`** :
+  **70 sprites** manquants inlinés dans `window.__SPRITE_DATA__[…]` (couche logique complète — portes
+  AND/OR/NOT/NAND/NOR/XOR/XNOR/BUF ×orientations, senseurs plein/vide/contient/déficit/saveur, émetteurs
+  α/β/γ + `_on`, vanne + `_penalite`, jonction logique NS/EO, sortie collisionneur, entrée data center ;
+  data_center v1-v4 ; collisionneur `p1/p2/p3` `_boot`/`_actif` ; **flèches d'élévateur**
+  `tile_elevateur_fleche_bas`/`_haut`) + **7 sheets d'anim** (`mine_tungstene_v1/v2/v3`,
+  `bat_collisionneur_p{1,2,3}_boot` 256×96=4×64×96, `logic_vanne_penalite` 96×32=3×32×32) inlinées dans
+  `window.__ANIM_DATA__[…]` sous la CLÉ STATIQUE + `Object.assign(ANIM_META, …)` pour les 4 nouvelles metas
+  (mine_tungstene déjà présent). Frame 0 == statique (invariant du pack). **Après ce build, plus AUCUN
+  sprite du pack v2.5 manquant.** (2) **Onglets `Tungstène` + `Quantique`** (demande) : les bâtiments île 6/7
+  sortent de extraction/energy/steel/electronics/chemistry et forment 2 groupes `TOOLBAR_GROUPS` dédiés —
+  Tungstène (`mine_tungstene`, `four_arc_tungstene`, `machine_outil`, `presse_uhp`), Quantique (`foreuse`,
+  `extracteur_souterrain`, `geothermie`, `centrale_gaz`, `separateur_cryogenique`, `fab_ordi_quantique`,
+  `data_center`). Labels i18n en/es/de (Tungsten/Tungsteno/Wolfram · Quantum/Cuántica/Quanten). (3) **Bouton
+  souterrain déplacé** en HAUT À DROITE, sous les alertes (`.underground-btn` : `top:92px;right:8px`, fini
+  `top:50%`) et rendu avec les **sprites flèche** (`tile_elevateur_fleche_bas` en surface → descendre,
+  `_haut` au souterrain → remonter) au lieu des emojis ⛏️/↑ (`img.ug-arrow`). Validé : `node --check`
+  (7 blocs) + 87 ids toolbar sans doublon/perte + sprites/i18n résolus. Build 270→271.
+  ⚠ **Non traité dans ce passage (reportés, à confirmer)** : couche logique togglable + swap de la barre
+  d'outils (bloc/câble logique), remblai souterrain gaté par la foreuse, icône tuile terrain pour le remblai,
+  reset perçu de la taille des badges (chemin `uiPrefs.badgeScale` audité : serialize→loadSave→boot sync
+  cohérent, aucun bug de persistance trouvé dans le code).
   Changement 13.89 : **PATCH souterrain — 3 retours (centrales, construction étalée, priorité élévateur).**
   `SAVE_VERSION` INCHANGÉ (`pl.cb` = champ additif rétro-compatible). (1) **Aucune centrale au souterrain
   hors Géothermie + Accumulateur** : `forbiddenIslands` des éoliennes / centrales charbon-diesel passe de
