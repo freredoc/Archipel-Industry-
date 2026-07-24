@@ -1,8 +1,8 @@
 {
-  "build": 269,
-  "version": "Alpha 13.88",
+  "build": 270,
+  "version": "Alpha 13.89",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #258 from freredoc/claude/patch-island-6-thermal-9xvwei"
+  "notes": "Merge pull request #259 from freredoc/claude/patch-island-6-thermal-9xvwei"
 }
