@@ -1,8 +1,8 @@
 {
-  "build": 270,
-  "version": "Alpha 13.89",
+  "build": 271,
+  "version": "Alpha 13.90",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #259 from freredoc/claude/patch-island-6-thermal-9xvwei"
+  "notes": "Alpha 13.90 (build 271) : pack sprites île 6 v2.5 + onglets tungstène/quantique + bouton souterrain (#260)"
 }
