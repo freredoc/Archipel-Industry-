@@ -17,7 +17,48 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 266`, `GAME_VERSION = 'Alpha 13.85'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 267`, `GAME_VERSION = 'Alpha 13.86'`, `SAVE_VERSION = 27`.**
+  Changement 13.86 : **PATCH île 6 — 11 retours (énergie, chaleur souterraine, élévateur, UX).**
+  `SAVE_VERSION` INCHANGÉ (aucun champ persisté requis ; migration additive de l'élévateur ; chaleur
+  transitoire). (1) **Île 6 sans éoliennes ni centrales charbon/diesel** : nouveau flag def
+  `forbiddenIslands: [N]` posé sur `eolienne`/`eolienne_offshore`/`centrale_charbon(_v2)`/
+  `centrale_diesel(_v2)` = `[6]` (elle n'a que la Centrale à Gaz / Géothermie) — gardes dans `canPlace`/
+  `tryPlace` + masquage dans le menu (`visibleOn`). La **tour aéroréfrigérante** = `[7]` (pas de tour au
+  souterrain, cf. #7). (2) **Animations de sprite** : correctif d'un `ANIM_META` MALFORMÉ (les 3
+  `mine_tungstene_v{1..3}` étaient IMBRIQUÉES dans `tile_i5_coast_tri_sw` → jamais enregistrées, mine
+  figée) + **10 sheets 4 frames GÉNÉRÉS** (Pillow, frame 0 == statique vérifié 0 px, balayage lumineux
+  subtil) pour `bat_machine_outil`/`bat_geothermie`/`bat_presse_uhp`/`bat_centrale_gaz`/
+  `bat_fab_ordi_quantique`/`bat_data_center`/`bat_separateur_cryogenique`/`four_arc_tungstene`/
+  `bat_foreuse`/`bat_extracteur` (clé anim = clé statique → `ANIM_BY_SK` résout, `bat_extracteur` couvre
+  l'override `extracteur_souterrain`). (3) **`ISLAND_KICKSTART_6` élargi** : ≈ 3/4 des ressources de BASE
+  pour monter le refroidissement dès l'arrivée (1 centrale nucléaire + 2 tours + pompe V2 Nv.12 + 4
+  conduits) → acier 6000, béton armé 12000, proc 600, pièce méca 6000, lingot fer 3000, lingot cuivre
+  3000, ciment 1500, polymère 150 (+ irradiés existants). (4) **Ressources île 6/7 en catégorie T5** :
+  ajout `RES_TIER` `t5` (tungstène → quantique → hélium) + `RES_TIER_RANK.t5` + `RES_TIER_LABEL.t5` → fini
+  le 2e « T0 » fourre-tout en bas de l'inventaire. (5) **Conduit de chaleur bloqué en sprite V3** (comme
+  route/tuyau/câble) : `net.unlimited ? 4 : min(lvl, 3)` aux 3 spots de dessin (draw conduit, stub sous
+  bâtiment, vignette du NetworkPanel) — V4 réservé à l'ILLIMITÉ (débit infini, prévu plus tard ; le
+  conduit n'a pas encore de matériau irradié → `unlimited` toujours faux). (6) **Machine-Outil ET Presse
+  UHP génèrent de la chaleur EN FONCTION DE LEUR CONSO** (comme l'usine moteur nuc) : `heatCap: 10` +
+  `heatEmit = HEAT_PER_MW × (power × regime)/1000` → trip après 60 s de chaleur cumulée (heatCapOf commun).
+  Vérifié moteur : Machine-Outil pleine charge = 0,128 MJ/s exact. (7) **L'élévateur fait TRANSITER la
+  chaleur** (île 6 ↔ 7) : la Presse UHP souterraine n'a pas de tour sur place → sa chaleur remonte par la
+  cage. `rebuildNetworks` marque `net.elevatorLinked` sur un conduit touchant la tuile élévateur (île 6 ou 7) ;
+  `processHeat` ajoute un tampon partagé `game.elevatorHeat` (MJ, borné par `elevatorRateAt`) : île 7 = les
+  conduits élévateur-liés y DÉPOSENT (tour virtuelle), île 6 = les tours élévateur-liées le REFROIDISSENT
+  (source virtuelle). Sans tour de surface → le tampon sature → le souterrain surchauffe. Vérifié E2E :
+  chaleur Presse → tampon → tour de surface (drain 1,024 MJ/tick à V1). (8) **Bâtiment en PAUSE évacue
+  encore sa chaleur** : `processHeat` garde les SOURCES en pause/logicOff dans la liste (émission déjà 0,
+  mais la chaleur accumulée continue de se vider vers les tours ; seules les TOURS en pause sont sautées).
+  Vérifié : 4 → 2,976 MJ après un tick. (9) **Nœud #32 (Câble Supra) instantané** : déjà `mode:'auto'`
+  `reqs:[]` (aucune demande de 100 câble supra) — état confirmé. (10) **Réparation élévateur automatique** :
+  la RECHERCHE #31 (livraison) EST le paiement → `applyUnlocks` pose `elevatorRepaired`/`islandUnlocked[7]`
+  et reconstruit les réseaux 6/7 dès la confirmation (fini le 2e paiement sur la tuile) ; migration `loadSave`
+  (nœud #31 confirmé mais pas encore réparé → réparé au chargement). (11) **Bouton flottant surface ↔
+  souterrain** (`.underground-btn`, côté droit, visible sur l'île 6/7 quand l'île 7 est débloquée) : bascule
+  6 ⇄ 7 (« ⛏️ Souterrain » / « ↑ Surface ») — plus besoin de chercher l'onglet île 7. Validé : `node --check`
+  (7 blocs) + Chromium E2E (données ci-dessus ; transit de chaleur réel via `__gameRef` ; pause qui refroidit ;
+  bouton souterrain rendu ; 0 erreur console). Build 266→267.
   Changement 13.85 : **PATCH — pack sprites île 6 v2.2 + 5 retours.** `SAVE_VERSION` INCHANGÉ (terrain
   reconstruit depuis la def ; le reste = data/affichage additifs). (1) **Sprites OFFICIELS** (pack
   `Archipel_sprites_ile6_v2.2`) : `ile_6`/`ile_6_gris` (64×64) remplacent les icônes générées ; le
