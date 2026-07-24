@@ -1,8 +1,8 @@
 {
-  "build": 274,
-  "version": "Alpha 13.92",
+  "build": 275,
+  "version": "Alpha 13.93",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.92 (build 274) : remblai souterrain (foreuse) + icône tuile terrain (#263)"
+  "notes": "Alpha 13.93 (build 275) : puzzle Collisionneur — Phase A (multi-source + 4 portes) (#264)"
 }
