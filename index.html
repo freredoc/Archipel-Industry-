@@ -970,6 +970,18 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .underground-btn .ug-arrow{width:26px;height:26px;image-rendering:pixelated;display:block;}
 .underground-btn .ug-label{font-size:.52rem;letter-spacing:.04em;opacity:.85;
   font-family:'Bebas Neue',sans-serif;}
+/* Bouton couche logique : en haut à gauche, sous la barre d'inventaire (13.91). */
+.logiclayer-btn{position:fixed;left:8px;top:150px;z-index:45;
+  display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 7px;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:9px;color:var(--ink);
+  line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.45);user-select:none;}
+.logiclayer-btn:hover{background:var(--panel);border-color:var(--yellow);}
+.logiclayer-btn.active{border-color:#00E5A0;box-shadow:0 0 8px rgba(0,229,160,.5);}
+.logiclayer-btn .ll-ico{width:26px;height:26px;image-rendering:pixelated;display:block;}
+.logiclayer-btn.active .ll-ico{filter:drop-shadow(0 0 3px #00E5A0);}
+.logiclayer-btn .ll-label{font-size:.52rem;letter-spacing:.04em;opacity:.85;
+  font-family:'Bebas Neue',sans-serif;}
+.tab-btn.tab-logic .tb-name{color:#00E5A0;}
 /* Chronomètre de temps de jeu (au-dessus de la barre de bâtiments) — cliquer bascule 1×/10×. */
 .playclock{display:flex;align-items:center;justify-content:center;gap:8px;
   align-self:center;margin:2px 0 3px;padding:3px 12px;cursor:pointer;
@@ -2523,7 +2535,7 @@ window.__SPRITE_DATA__["logic_porte_not_s"]="data:image/png;base64,iVBORw0KGgoAA
 })(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));
 
 /* i18n — libellés supplémentaires (catégories du menu Bâtiment + Options langue) ajoutés aux 4 langues. */
-(function(){ if(!window.I18N||!I18N.locales) return; var ADD={"en":{" (amplitude)":" (amplitude)","Infrastructure":"Infrastructure","Jonctions":"Junctions","Extraction":"Extraction","Énergie":"Energy","Fer-acier":"Iron & Steel","Ciment & béton":"Cement & Concrete","Cuivre":"Copper","Électronique":"Electronics","Plastique et chimie":"Plastics & Chemicals","Nucléaire":"Nuclear","Tungstène":"Tungsten","Quantique":"Quantum","Langue":"Language","Langue du jeu (système par défaut)":"Game language (system default)","Transit île":"Island transit","Transit archipel":"Archipelago transit","Flux entre îles":"Flows between islands","Aucun flux de transit en cours.":"No transit flow in progress.","Conso. théorique":"Theoretical consumption","Prod. théorique":"Theoretical output","Charge/Déch.":"Charge/Disch.","plein dans ":"full in ","vide dans ":"empty in ","plein":"full","vide":"empty","stable (ni charge ni décharge)":"stable (no charge/discharge)","Cible ⇒ Réserve":"Target ⇒ Reserve","OUI":"YES","NON":"NO","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"When on, editing the target also sets the reserve (one way: target ⇒ reserve) for every resource on this island"," — ce réseau produit ":" — this grid produces "," demandés":" requested"," — câble saturé : débit ":" — cable saturated: throughput ","⚡ Réseau en déficit · 0% batterie":"⚡ Grid in deficit · 0% battery"," réseaux en déficit · 0% batterie":" grids in deficit · 0% battery","nouveau":"new","Débloqué récemment — jamais sélectionné":"Recently unlocked — never selected","Mode rapide":"Fast mode","Cliquer pour accélérer / ralentir le temps de jeu":"Click to speed up / slow down game time","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"Game time runs at ×10 (sound muted). Toggle anytime via the clock.","Production hors-ligne":"Offline production","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Catches up production while you're away. Off: the game only progresses while open."," Densifier ":" Densify ","Densifier → ":"Densify → ","Densification":"Densification","Densification → ":"Densification → ","Recherche requise":"Research required","Recherche requise : ":"Research required: ","Niveau max. atteint — densifier vers ":"Max level reached — densify into ","Y aller":"Go there","Aller à cette île":"Go to this island","Astuces débloquées":"Unlocked tips","Voir l'astuce complète":"Show the full tip","Replier":"Collapse","🔒 D'autres astuces se débloqueront en progressant.":"🔒 More tips will unlock as you progress.","Aide — astuces débloquées":"Help — unlocked tips","Mettre en pause":"Pause","Reprendre la production":"Resume production","en pause (par le joueur)":"paused (by you)","en pause":"paused","production reprise":"production resumed","Relancer la production de ce bâtiment":"Restart this building's production","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Suspend this building (consumes and produces nothing)","transit":"transit","export":"export","import":"import","remplissage":"filling","en attente":"waiting","cible atteinte":"target reached","Reçu et réexpédié : ":"Received and forwarded: ","Exporte ":"Exporting ","/s vers une île voisine":"/s to a neighbouring island","Importe ":"Importing ","/s depuis une île voisine":"/s from a neighbouring island","La production locale remplit le stock vers la cible (":"Local production is filling the stock toward the target (","/s)":"/s)","Cible non atteinte et rien n'arrive : l'île voisine n'a pas de surplus à envoyer":"Target not reached and nothing incoming: the neighbouring island has no surplus to send","Le stock couvre la cible configurée":"Stock covers the configured target","Quitter":"Exit","Quitter le mode en cours":"Exit the current mode","⚠️ Aucune tour aéroréfrigérante fonctionnelle reliée par conduit — la centrale va surchauffer !":"⚠️ No working cooling tower connected by heat pipe — the plant will overheat!","/s évacués":"/s evacuated","Tuiles × débit/tuile : chaleur qui peut transiter par seconde (le conduit ne stocke rien)":"Tiles × throughput/tile: heat that can flow through per second (the duct stores nothing)","Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).":"Heat actually evacuated to the towers this tick. Red: duct saturated (upgrade its level or add tiles).","Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).":"Heat stored in the building. Cap = 1 min of emission — once reached, the building breaks down (overheat)."},"es":{" (amplitude)":" (amplitud)","Infrastructure":"Infraestructura","Jonctions":"Uniones","Extraction":"Extracción","Énergie":"Energía","Fer-acier":"Hierro y acero","Ciment & béton":"Cemento y hormigón","Cuivre":"Cobre","Électronique":"Electrónica","Plastique et chimie":"Plásticos y química","Nucléaire":"Nuclear","Tungstène":"Tungsteno","Quantique":"Cuántica","Langue":"Idioma","Langue du jeu (système par défaut)":"Idioma del juego (sistema por defecto)","Transit île":"Tránsito de la isla","Transit archipel":"Tránsito del archipiélago","Flux entre îles":"Flujos entre islas","Aucun flux de transit en cours.":"Ningún flujo de tránsito en curso.","Conso. théorique":"Consumo teórico","Prod. théorique":"Producción teórica","Charge/Déch.":"Carga/Desc.","plein dans ":"lleno en ","vide dans ":"vacío en ","plein":"lleno","vide":"vacío","stable (ni charge ni décharge)":"estable (sin carga/descarga)","Cible ⇒ Réserve":"Objetivo ⇒ Reserva","OUI":"SÍ","NON":"NO","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"Cuando está activado, editar el objetivo también fija la reserva (un solo sentido: objetivo ⇒ reserva) para todos los recursos de esta isla"," — ce réseau produit ":" — esta red produce "," demandés":" solicitados"," — câble saturé : débit ":" — cable saturado: caudal ","⚡ Réseau en déficit · 0% batterie":"⚡ Red en déficit · 0% batería"," réseaux en déficit · 0% batterie":" redes en déficit · 0% batería","nouveau":"nuevo","Débloqué récemment — jamais sélectionné":"Desbloqueado hace poco — nunca seleccionado","Mode rapide":"Modo rápido","Cliquer pour accélérer / ralentir le temps de jeu":"Pulsa para acelerar / ralentizar el tiempo de juego","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"El tiempo de juego corre a ×10 (sonido silenciado). Conmutable en cualquier momento con el reloj.","Production hors-ligne":"Producción sin conexión","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Recupera la producción durante una ausencia. Desactivado: el juego solo avanza mientras está abierto."," Densifier ":" Densificar ","Densifier → ":"Densificar → ","Densification":"Densificación","Densification → ":"Densificación → ","Recherche requise":"Investigación necesaria","Recherche requise : ":"Investigación necesaria: ","Niveau max. atteint — densifier vers ":"Nivel máx. alcanzado — densificar hacia ","Y aller":"Ir allí","Aller à cette île":"Ir a esta isla","Astuces débloquées":"Consejos desbloqueados","Voir l'astuce complète":"Ver el consejo completo","Replier":"Plegar","🔒 D'autres astuces se débloqueront en progressant.":"🔒 Se desbloquearán más consejos a medida que avances.","Aide — astuces débloquées":"Ayuda — consejos desbloqueados","Mettre en pause":"Pausar","Reprendre la production":"Reanudar la producción","en pause (par le joueur)":"en pausa (por el jugador)","en pause":"en pausa","production reprise":"producción reanudada","Relancer la production de ce bâtiment":"Reiniciar la producción de este edificio","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Suspender este edificio (no consume ni produce nada)","transit":"tránsito","export":"exportación","import":"importación","remplissage":"llenado","en attente":"en espera","cible atteinte":"objetivo alcanzado","Reçu et réexpédié : ":"Recibido y reexpedido: ","Exporte ":"Exporta ","/s vers une île voisine":"/s hacia una isla vecina","Importe ":"Importa ","/s depuis une île voisine":"/s desde una isla vecina","La production locale remplit le stock vers la cible (":"La producción local llena el stock hacia el objetivo (","/s)":"/s)","Cible non atteinte et rien n'arrive : l'île voisine n'a pas de surplus à envoyer":"Objetivo no alcanzado y no llega nada: la isla vecina no tiene excedente que enviar","Le stock couvre la cible configurée":"El stock cubre el objetivo configurado","Quitter":"Salir","Quitter le mode en cours":"Salir del modo actual","⚠️ Aucune tour aéroréfrigérante fonctionnelle reliée par conduit — la centrale va surchauffer !":"⚠️ Ninguna torre de refrigeración funcional conectada por conducto — ¡la central se sobrecalentará!","/s évacués":"/s evacuados","Tuiles × débit/tuile : chaleur qui peut transiter par seconde (le conduit ne stocke rien)":"Casillas × caudal/casilla: calor que puede transitar por segundo (el conducto no almacena nada)","Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).":"Calor realmente evacuado hacia las torres este tick. Rojo: conducto saturado (mejora el nivel o añade casillas).","Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).":"Calor almacenado en el edificio. Límite = 1 min de emisión — al alcanzarlo, el edificio se avería (sobrecalentamiento)."},"de":{" (amplitude)":" (Amplitude)","Infrastructure":"Infrastruktur","Jonctions":"Kreuzungen","Extraction":"Förderung","Énergie":"Energie","Fer-acier":"Eisen & Stahl","Ciment & béton":"Zement & Beton","Cuivre":"Kupfer","Électronique":"Elektronik","Plastique et chimie":"Kunststoff & Chemie","Nucléaire":"Nuklear","Tungstène":"Wolfram","Quantique":"Quanten","Langue":"Sprache","Langue du jeu (système par défaut)":"Spielsprache (System-Standard)","Transit île":"Insel-Transit","Transit archipel":"Archipel-Transit","Flux entre îles":"Flüsse zwischen Inseln","Aucun flux de transit en cours.":"Kein Transitfluss aktiv.","Conso. théorique":"Theoret. Verbrauch","Prod. théorique":"Theoret. Leistung","Charge/Déch.":"Laden/Entl.","plein dans ":"voll in ","vide dans ":"leer in ","plein":"voll","vide":"leer","stable (ni charge ni décharge)":"stabil (kein Laden/Entladen)","Cible ⇒ Réserve":"Ziel ⇒ Reserve","OUI":"JA","NON":"NEIN","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"Wenn aktiv, setzt das Bearbeiten des Ziels auch die Reserve (nur eine Richtung: Ziel ⇒ Reserve) für alle Ressourcen dieser Insel"," — ce réseau produit ":" — dieses Netz erzeugt "," demandés":" angefordert"," — câble saturé : débit ":" — Kabel ausgelastet: Durchsatz ","⚡ Réseau en déficit · 0% batterie":"⚡ Netz im Defizit · 0% Batterie"," réseaux en déficit · 0% batterie":" Netze im Defizit · 0% Batterie","nouveau":"neu","Débloqué récemment — jamais sélectionné":"Kürzlich freigeschaltet — nie ausgewählt","Mode rapide":"Schnellmodus","Cliquer pour accélérer / ralentir le temps de jeu":"Klicken, um die Spielzeit zu beschleunigen / verlangsamen","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"Die Spielzeit läuft mit ×10 (Ton aus). Jederzeit über die Uhr umschaltbar.","Production hors-ligne":"Offline-Produktion","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Holt die Produktion während einer Abwesenheit nach. Aus: Das Spiel läuft nur, solange es geöffnet ist."," Densifier ":" Verdichten ","Densifier → ":"Verdichten → ","Densification":"Verdichtung","Densification → ":"Verdichtung → ","Recherche requise":"Forschung erforderlich","Recherche requise : ":"Forschung erforderlich: ","Niveau max. atteint — densifier vers ":"Max. Stufe erreicht — verdichten zu ","Y aller":"Dorthin","Aller à cette île":"Zu dieser Insel wechseln","Astuces débloquées":"Freigeschaltete Tipps","Voir l'astuce complète":"Vollständigen Tipp anzeigen","Replier":"Einklappen","🔒 D'autres astuces se débloqueront en progressant.":"🔒 Weitere Tipps werden im Spielverlauf freigeschaltet.","Aide — astuces débloquées":"Hilfe — freigeschaltete Tipps","Mettre en pause":"Pausieren","Reprendre la production":"Produktion fortsetzen","en pause (par le joueur)":"pausiert (vom Spieler)","en pause":"pausiert","production reprise":"Produktion fortgesetzt","Relancer la production de ce bâtiment":"Produktion dieses Gebäudes wieder starten","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Gebäude anhalten (verbraucht und produziert nichts mehr)","transit":"Transit","export":"Export","import":"Import","remplissage":"Auffüllen","en attente":"wartet","cible atteinte":"Ziel erreicht","Reçu et réexpédié : ":"Empfangen und weitergeleitet: ","Exporte ":"Exportiert ","/s vers une île voisine":"/s zu einer Nachbarinsel","Importe ":"Importiert ","/s depuis une île voisine":"/s von einer Nachbarinsel","La production locale remplit le stock vers la cible (":"Die lokale Produktion füllt den Bestand Richtung Ziel (","/s)":"/s)","Cible non atteinte et rien n'arrive : l'île voisine n'a pas de surplus à envoyer":"Ziel nicht erreicht und nichts kommt an: die Nachbarinsel hat keinen Überschuss zu senden","Le stock couvre la cible configurée":"Der Bestand deckt das konfigurierte Ziel","Quitter":"Beenden","Quitter le mode en cours":"Aktuellen Modus beenden","⚠️ Aucune tour aéroréfrigérante fonctionnelle reliée par conduit — la centrale va surchauffer !":"⚠️ Kein funktionierender Kühlturm per Leitung verbunden — das Kraftwerk wird überhitzen!","/s évacués":"/s abgeführt","Tuiles × débit/tuile : chaleur qui peut transiter par seconde (le conduit ne stocke rien)":"Felder × Durchsatz/Feld: Wärme, die pro Sekunde durchfließen kann (die Leitung speichert nichts)","Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).":"Tatsächlich zu den Türmen abgeführte Wärme in diesem Tick. Rot: Leitung ausgelastet (Stufe erhöhen oder Felder hinzufügen).","Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).":"Im Gebäude gespeicherte Wärme. Limit = 1 Min. Emission — bei Erreichen fällt das Gebäude aus (Überhitzung)."}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; var ADD={"en":{" (amplitude)":" (amplitude)","Infrastructure":"Infrastructure","Jonctions":"Junctions","Extraction":"Extraction","Énergie":"Energy","Fer-acier":"Iron & Steel","Ciment & béton":"Cement & Concrete","Cuivre":"Copper","Électronique":"Electronics","Plastique et chimie":"Plastics & Chemicals","Nucléaire":"Nuclear","Tungstène":"Tungsten","Quantique":"Quantum","Logique":"Logic","Bloc logique":"Logic block","Câble logique":"Logic cable","Afficher la couche logique":"Show the logic layer","Masquer la couche logique":"Hide the logic layer","Langue":"Language","Langue du jeu (système par défaut)":"Game language (system default)","Transit île":"Island transit","Transit archipel":"Archipelago transit","Flux entre îles":"Flows between islands","Aucun flux de transit en cours.":"No transit flow in progress.","Conso. théorique":"Theoretical consumption","Prod. théorique":"Theoretical output","Charge/Déch.":"Charge/Disch.","plein dans ":"full in ","vide dans ":"empty in ","plein":"full","vide":"empty","stable (ni charge ni décharge)":"stable (no charge/discharge)","Cible ⇒ Réserve":"Target ⇒ Reserve","OUI":"YES","NON":"NO","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"When on, editing the target also sets the reserve (one way: target ⇒ reserve) for every resource on this island"," — ce réseau produit ":" — this grid produces "," demandés":" requested"," — câble saturé : débit ":" — cable saturated: throughput ","⚡ Réseau en déficit · 0% batterie":"⚡ Grid in deficit · 0% battery"," réseaux en déficit · 0% batterie":" grids in deficit · 0% battery","nouveau":"new","Débloqué récemment — jamais sélectionné":"Recently unlocked — never selected","Mode rapide":"Fast mode","Cliquer pour accélérer / ralentir le temps de jeu":"Click to speed up / slow down game time","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"Game time runs at ×10 (sound muted). Toggle anytime via the clock.","Production hors-ligne":"Offline production","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Catches up production while you're away. Off: the game only progresses while open."," Densifier ":" Densify ","Densifier → ":"Densify → ","Densification":"Densification","Densification → ":"Densification → ","Recherche requise":"Research required","Recherche requise : ":"Research required: ","Niveau max. atteint — densifier vers ":"Max level reached — densify into ","Y aller":"Go there","Aller à cette île":"Go to this island","Astuces débloquées":"Unlocked tips","Voir l'astuce complète":"Show the full tip","Replier":"Collapse","🔒 D'autres astuces se débloqueront en progressant.":"🔒 More tips will unlock as you progress.","Aide — astuces débloquées":"Help — unlocked tips","Mettre en pause":"Pause","Reprendre la production":"Resume production","en pause (par le joueur)":"paused (by you)","en pause":"paused","production reprise":"production resumed","Relancer la production de ce bâtiment":"Restart this building's production","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Suspend this building (consumes and produces nothing)","transit":"transit","export":"export","import":"import","remplissage":"filling","en attente":"waiting","cible atteinte":"target reached","Reçu et réexpédié : ":"Received and forwarded: ","Exporte ":"Exporting ","/s vers une île voisine":"/s to a neighbouring island","Importe ":"Importing ","/s depuis une île voisine":"/s from a neighbouring island","La production locale remplit le stock vers la cible (":"Local production is filling the stock toward the target (","/s)":"/s)","Cible non atteinte et rien n'arrive : l'île voisine n'a pas de surplus à envoyer":"Target not reached and nothing incoming: the neighbouring island has no surplus to send","Le stock couvre la cible configurée":"Stock covers the configured target","Quitter":"Exit","Quitter le mode en cours":"Exit the current mode","⚠️ Aucune tour aéroréfrigérante fonctionnelle reliée par conduit — la centrale va surchauffer !":"⚠️ No working cooling tower connected by heat pipe — the plant will overheat!","/s évacués":"/s evacuated","Tuiles × débit/tuile : chaleur qui peut transiter par seconde (le conduit ne stocke rien)":"Tiles × throughput/tile: heat that can flow through per second (the duct stores nothing)","Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).":"Heat actually evacuated to the towers this tick. Red: duct saturated (upgrade its level or add tiles).","Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).":"Heat stored in the building. Cap = 1 min of emission — once reached, the building breaks down (overheat)."},"es":{" (amplitude)":" (amplitud)","Infrastructure":"Infraestructura","Jonctions":"Uniones","Extraction":"Extracción","Énergie":"Energía","Fer-acier":"Hierro y acero","Ciment & béton":"Cemento y hormigón","Cuivre":"Cobre","Électronique":"Electrónica","Plastique et chimie":"Plásticos y química","Nucléaire":"Nuclear","Tungstène":"Tungsteno","Quantique":"Cuántica","Logique":"Lógica","Bloc logique":"Bloque lógico","Câble logique":"Cable lógico","Afficher la couche logique":"Mostrar la capa lógica","Masquer la couche logique":"Ocultar la capa lógica","Langue":"Idioma","Langue du jeu (système par défaut)":"Idioma del juego (sistema por defecto)","Transit île":"Tránsito de la isla","Transit archipel":"Tránsito del archipiélago","Flux entre îles":"Flujos entre islas","Aucun flux de transit en cours.":"Ningún flujo de tránsito en curso.","Conso. théorique":"Consumo teórico","Prod. théorique":"Producción teórica","Charge/Déch.":"Carga/Desc.","plein dans ":"lleno en ","vide dans ":"vacío en ","plein":"lleno","vide":"vacío","stable (ni charge ni décharge)":"estable (sin carga/descarga)","Cible ⇒ Réserve":"Objetivo ⇒ Reserva","OUI":"SÍ","NON":"NO","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"Cuando está activado, editar el objetivo también fija la reserva (un solo sentido: objetivo ⇒ reserva) para todos los recursos de esta isla"," — ce réseau produit ":" — esta red produce "," demandés":" solicitados"," — câble saturé : débit ":" — cable saturado: caudal ","⚡ Réseau en déficit · 0% batterie":"⚡ Red en déficit · 0% batería"," réseaux en déficit · 0% batterie":" redes en déficit · 0% batería","nouveau":"nuevo","Débloqué récemment — jamais sélectionné":"Desbloqueado hace poco — nunca seleccionado","Mode rapide":"Modo rápido","Cliquer pour accélérer / ralentir le temps de jeu":"Pulsa para acelerar / ralentizar el tiempo de juego","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"El tiempo de juego corre a ×10 (sonido silenciado). Conmutable en cualquier momento con el reloj.","Production hors-ligne":"Producción sin conexión","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Recupera la producción durante una ausencia. Desactivado: el juego solo avanza mientras está abierto."," Densifier ":" Densificar ","Densifier → ":"Densificar → ","Densification":"Densificación","Densification → ":"Densificación → ","Recherche requise":"Investigación necesaria","Recherche requise : ":"Investigación necesaria: ","Niveau max. atteint — densifier vers ":"Nivel máx. alcanzado — densificar hacia ","Y aller":"Ir allí","Aller à cette île":"Ir a esta isla","Astuces débloquées":"Consejos desbloqueados","Voir l'astuce complète":"Ver el consejo completo","Replier":"Plegar","🔒 D'autres astuces se débloqueront en progressant.":"🔒 Se desbloquearán más consejos a medida que avances.","Aide — astuces débloquées":"Ayuda — consejos desbloqueados","Mettre en pause":"Pausar","Reprendre la production":"Reanudar la producción","en pause (par le joueur)":"en pausa (por el jugador)","en pause":"en pausa","production reprise":"producción reanudada","Relancer la production de ce bâtiment":"Reiniciar la producción de este edificio","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Suspender este edificio (no consume ni produce nada)","transit":"tránsito","export":"exportación","import":"importación","remplissage":"llenado","en attente":"en espera","cible atteinte":"objetivo alcanzado","Reçu et réexpédié : ":"Recibido y reexpedido: ","Exporte ":"Exporta ","/s vers une île voisine":"/s hacia una isla vecina","Importe ":"Importa ","/s depuis une île voisine":"/s desde una isla vecina","La production locale remplit le stock vers la cible (":"La producción local llena el stock hacia el objetivo (","/s)":"/s)","Cible non atteinte et rien n'arrive : l'île voisine n'a pas de surplus à envoyer":"Objetivo no alcanzado y no llega nada: la isla vecina no tiene excedente que enviar","Le stock couvre la cible configurée":"El stock cubre el objetivo configurado","Quitter":"Salir","Quitter le mode en cours":"Salir del modo actual","⚠️ Aucune tour aéroréfrigérante fonctionnelle reliée par conduit — la centrale va surchauffer !":"⚠️ Ninguna torre de refrigeración funcional conectada por conducto — ¡la central se sobrecalentará!","/s évacués":"/s evacuados","Tuiles × débit/tuile : chaleur qui peut transiter par seconde (le conduit ne stocke rien)":"Casillas × caudal/casilla: calor que puede transitar por segundo (el conducto no almacena nada)","Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).":"Calor realmente evacuado hacia las torres este tick. Rojo: conducto saturado (mejora el nivel o añade casillas).","Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).":"Calor almacenado en el edificio. Límite = 1 min de emisión — al alcanzarlo, el edificio se avería (sobrecalentamiento)."},"de":{" (amplitude)":" (Amplitude)","Infrastructure":"Infrastruktur","Jonctions":"Kreuzungen","Extraction":"Förderung","Énergie":"Energie","Fer-acier":"Eisen & Stahl","Ciment & béton":"Zement & Beton","Cuivre":"Kupfer","Électronique":"Elektronik","Plastique et chimie":"Kunststoff & Chemie","Nucléaire":"Nuklear","Tungstène":"Wolfram","Quantique":"Quanten","Logique":"Logik","Bloc logique":"Logikblock","Câble logique":"Logikkabel","Afficher la couche logique":"Logikebene anzeigen","Masquer la couche logique":"Logikebene ausblenden","Langue":"Sprache","Langue du jeu (système par défaut)":"Spielsprache (System-Standard)","Transit île":"Insel-Transit","Transit archipel":"Archipel-Transit","Flux entre îles":"Flüsse zwischen Inseln","Aucun flux de transit en cours.":"Kein Transitfluss aktiv.","Conso. théorique":"Theoret. Verbrauch","Prod. théorique":"Theoret. Leistung","Charge/Déch.":"Laden/Entl.","plein dans ":"voll in ","vide dans ":"leer in ","plein":"voll","vide":"leer","stable (ni charge ni décharge)":"stabil (kein Laden/Entladen)","Cible ⇒ Réserve":"Ziel ⇒ Reserve","OUI":"JA","NON":"NEIN","Quand activé, modifier la cible fixe aussi la réserve (sens unique : cible ⇒ réserve) pour toutes les ressources de cette île":"Wenn aktiv, setzt das Bearbeiten des Ziels auch die Reserve (nur eine Richtung: Ziel ⇒ Reserve) für alle Ressourcen dieser Insel"," — ce réseau produit ":" — dieses Netz erzeugt "," demandés":" angefordert"," — câble saturé : débit ":" — Kabel ausgelastet: Durchsatz ","⚡ Réseau en déficit · 0% batterie":"⚡ Netz im Defizit · 0% Batterie"," réseaux en déficit · 0% batterie":" Netze im Defizit · 0% Batterie","nouveau":"neu","Débloqué récemment — jamais sélectionné":"Kürzlich freigeschaltet — nie ausgewählt","Mode rapide":"Schnellmodus","Cliquer pour accélérer / ralentir le temps de jeu":"Klicken, um die Spielzeit zu beschleunigen / verlangsamen","Le temps de jeu défile ×10 (son coupé). Basculable à tout moment via le chronomètre.":"Die Spielzeit läuft mit ×10 (Ton aus). Jederzeit über die Uhr umschaltbar.","Production hors-ligne":"Offline-Produktion","Rattrape la production pendant une absence. Désactivé : le jeu ne progresse que lorsqu'il est ouvert.":"Holt die Produktion während einer Abwesenheit nach. Aus: Das Spiel läuft nur, solange es geöffnet ist."," Densifier ":" Verdichten ","Densifier → ":"Verdichten → ","Densification":"Verdichtung","Densification → ":"Verdichtung → ","Recherche requise":"Forschung erforderlich","Recherche requise : ":"Forschung erforderlich: ","Niveau max. atteint — densifier vers ":"Max. Stufe erreicht — verdichten zu ","Y aller":"Dorthin","Aller à cette île":"Zu dieser Insel wechseln","Astuces débloquées":"Freigeschaltete Tipps","Voir l'astuce complète":"Vollständigen Tipp anzeigen","Replier":"Einklappen","🔒 D'autres astuces se débloqueront en progressant.":"🔒 Weitere Tipps werden im Spielverlauf freigeschaltet.","Aide — astuces débloquées":"Hilfe — freigeschaltete Tipps","Mettre en pause":"Pausieren","Reprendre la production":"Produktion fortsetzen","en pause (par le joueur)":"pausiert (vom Spieler)","en pause":"pausiert","production reprise":"Produktion fortgesetzt","Relancer la production de ce bâtiment":"Produktion dieses Gebäudes wieder starten","Suspendre ce bâtiment (ne consomme et ne produit plus rien)":"Gebäude anhalten (verbraucht und produziert nichts mehr)","transit":"Transit","export":"Export","import":"Import","remplissage":"Auffüllen","en attente":"wartet","cible atteinte":"Ziel erreicht","Reçu et réexpédié : ":"Empfangen und weitergeleitet: ","Exporte ":"Exportiert ","/s vers une île voisine":"/s zu einer Nachbarinsel","Importe ":"Importiert ","/s depuis une île voisine":"/s von einer Nachbarinsel","La production locale remplit le stock vers la cible (":"Die lokale Produktion füllt den Bestand Richtung Ziel (","/s)":"/s)","Cible non atteinte et rien n'arrive : l'île voisine n'a pas de surplus à envoyer":"Ziel nicht erreicht und nichts kommt an: die Nachbarinsel hat keinen Überschuss zu senden","Le stock couvre la cible configurée":"Der Bestand deckt das konfigurierte Ziel","Quitter":"Beenden","Quitter le mode en cours":"Aktuellen Modus beenden","⚠️ Aucune tour aéroréfrigérante fonctionnelle reliée par conduit — la centrale va surchauffer !":"⚠️ Kein funktionierender Kühlturm per Leitung verbunden — das Kraftwerk wird überhitzen!","/s évacués":"/s abgeführt","Tuiles × débit/tuile : chaleur qui peut transiter par seconde (le conduit ne stocke rien)":"Felder × Durchsatz/Feld: Wärme, die pro Sekunde durchfließen kann (die Leitung speichert nichts)","Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).":"Tatsächlich zu den Türmen abgeführte Wärme in diesem Tick. Rot: Leitung ausgelastet (Stufe erhöhen oder Felder hinzufügen).","Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).":"Im Gebäude gespeicherte Wärme. Limit = 1 Min. Emission — bei Erreichen fällt das Gebäude aus (Überhitzung)."}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 // Port 13.72 : amélioration gatée sur le déblocage de la prochaine île.
 (function(){ if(!window.I18N||!I18N.locales) return; var ADD={"en":{"🔒 Débloquez l'île ":"🔒 Unlock island "," pour améliorer le transit.":" to upgrade transit."},"es":{"🔒 Débloquez l'île ":"🔒 Desbloquea la isla "," pour améliorer le transit.":" para mejorar el tránsito."},"de":{"🔒 Débloquez l'île ":"🔒 Schalte Insel "," pour améliorer le transit.":" frei, um den Transit zu verbessern."}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 // Menu Bâtiment 13.71 : catégories rabattables + recherche textuelle.
@@ -5641,6 +5653,13 @@ const TOOLBAR_GROUPS = [{
 // (pas le label, qui est traduit par l'i18n).
 const NETWORK_GROUPS = TOOLBAR_GROUPS.filter(g => g.key === 'infra' || g.key === 'junction');
 const BUILD_GROUPS = TOOLBAR_GROUPS.filter(g => g.key !== 'infra' && g.key !== 'junction');
+// Couche logique (13.91) : la barre d'outils bascule vers ces groupes dédiés. Les blocs/câbles
+// logiques VIVENT sur la couche logique — ils sont donc RETIRÉS des menus classiques (Bâtiment/
+// Réseau) et n'apparaissent QUE quand la couche logique est active.
+const LOGIC_BLOCK_GROUPS = [{ key: 'logic', label: 'Bloc logique', ids: (TOOLBAR_GROUPS.find(g => g.key === 'logic') || { ids: [] }).ids }];
+const LOGIC_WIRE_GROUPS = [{ key: 'logicwire', label: 'Câble logique', ids: ['logic_wire'] }];
+const BUILD_GROUPS_NORMAL = BUILD_GROUPS.filter(g => g.key !== 'logic');
+const NETWORK_GROUPS_NORMAL = NETWORK_GROUPS.map(g => g.key === 'infra' ? { ...g, ids: g.ids.filter(id => id !== 'logic_wire') } : g);
 const isNetworkId = id => !!BUILDINGS[id] && (BUILDINGS[id].kind === 'infra' || BUILDINGS[id].kind === 'junction');
 // Déblocage gameplay des réseaux : le tuyau apparaît une fois pompe à eau OU puits
 // de pétrole débloqués ; le câble une fois une éolienne débloquée ; la route est
@@ -6058,12 +6077,12 @@ const SAVE_VERSION = 27;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 272;
-const GAME_VERSION = 'Alpha 13.90';
+const GAME_BUILD = 273;
+const GAME_VERSION = 'Alpha 13.91';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
-const TESTER_BUILD = true;
+const TESTER_BUILD = false;
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -12149,7 +12168,8 @@ function Toolbar({
   boosterCharge,
   boosterOn,
   onToggleBooster,
-  seenBuildings
+  seenBuildings,
+  logicLayer
 }) {
   // Bâtiment dont la fiche détaillée est ouverte (appui long), ou null.
   const [detailId, setDetailId] = useState(null);
@@ -12191,6 +12211,9 @@ function Toolbar({
   };
   const isBuildingTool = tool && tool !== DEMOLISH && tool !== UPGRADE && tool !== COPY && BUILDINGS[tool] && !isNetworkId(tool);
   const isNetworkTool = !!(tool && BUILDINGS[tool] && isNetworkId(tool));
+  // Couche logique : les menus Bâtiment/Réseau basculent vers les groupes logiques dédiés.
+  const buildGroupsEff = logicLayer ? LOGIC_BLOCK_GROUPS : BUILD_GROUPS_NORMAL;
+  const netGroupsEff = logicLayer ? LOGIC_WIRE_GROUPS : NETWORK_GROUPS_NORMAL;
   const renderGroups = (groups, gate, opts) => {
     const q = opts && opts.query ? normSearch(opts.query) : '';
     const nodes = groups.map(g => {
@@ -12250,6 +12273,7 @@ function Toolbar({
   // Tuto bloquant (D3) : seuls les onglets utiles à l'étape courante sont actifs.
   // DÉMOLIR RESTE TOUJOURS ACTIF (D4) — sinon une erreur de pose enferme le joueur.
   const tabAllowed = key => {
+    if (logicLayer && key === 'upg') return false; // amélioration inutilisable en couche logique
     if (!tutStep) return true;
     if (key === 'dem') return true; // D4, non négociable
     const sels = (tutStep.targets || []).map(t => t.sel || '').join(' ');
@@ -12277,8 +12301,8 @@ function Toolbar({
   }));
   // Pastille sur les onglets Bâtiment/Réseau : au moins un élément VISIBLE jamais sélectionné.
   const hasNewIn = (groups, gate) => !!seenBuildings && groups.some(g => g.ids.some(id => visibleOn(id) && (!gate || gate(id)) && !seenBuildings[id]));
-  const newInBuild = hasNewIn(BUILD_GROUPS);
-  const newInNet = hasNewIn(NETWORK_GROUPS, id => networkUnlocked(id, unlockedSet, currentIsland));
+  const newInBuild = hasNewIn(buildGroupsEff);
+  const newInNet = hasNewIn(netGroupsEff, id => networkUnlocked(id, unlockedSet, currentIsland));
   return React.createElement("div", {
     className: "toolbar-wrap"
   }, !TESTER_BUILD && React.createElement("button", {
@@ -12308,29 +12332,29 @@ function Toolbar({
     title: I18N.t("Tout replier / tout déplier les catégories"),
     onClick: () => {
       SFX.play('click');
-      const allC = BUILD_GROUPS.every(g => !!collapsed[g.key || g.label]);
+      const allC = buildGroupsEff.every(g => !!collapsed[g.key || g.label]);
       if (allC) {
         setCollapsed({});
       } else {
         const m = {};
-        BUILD_GROUPS.forEach(g => { m[g.key || g.label] = true; });
+        buildGroupsEff.forEach(g => { m[g.key || g.label] = true; });
         setCollapsed(m);
       }
     }
-  }, BUILD_GROUPS.every(g => !!collapsed[g.key || g.label]) ? '⊞' : '⊟'), search && React.createElement("button", {
+  }, buildGroupsEff.every(g => !!collapsed[g.key || g.label]) ? '⊞' : '⊟'), search && React.createElement("button", {
     className: "bp-search-clear",
     title: I18N.t("Effacer la recherche"),
     onClick: () => {
       SFX.play('click');
       setSearch('');
     }
-  }, "✕")), renderGroups(BUILD_GROUPS, null, {
+  }, "✕")), renderGroups(buildGroupsEff, null, {
     collapsible: true,
     query: search
   })), netOpen && React.createElement("div", {
     className: "build-panel",
     ...keepScroll(netScrollRef)
-  }, renderGroups(NETWORK_GROUPS, id => networkUnlocked(id, unlockedSet, currentIsland), {
+  }, renderGroups(netGroupsEff, id => networkUnlocked(id, unlockedSet, currentIsland), {
     collapsible: true
   })), React.createElement("div", {
     className: "toolbar"
@@ -12342,7 +12366,7 @@ function Toolbar({
     className: "tool-group-label"
   }, I18N.t("Actions")), React.createElement("div", {
     className: "tool-row tabs-row"
-  }, [tab('bat', 'tab-build' + (isBuildingTool ? ' has-sel' : ''), 'batiment', "🏭", isBuildingTool ? BUILDINGS[tool].name : buildOpen ? I18N.t("Fermer") : I18N.t("Ouvrir"), null, buildOpen, onToggleBuild, newInBuild), tab('net', 'tab-net' + (isNetworkTool ? ' has-sel' : ''), 'route', "🛣️", isNetworkTool ? BUILDINGS[tool].name : netOpen ? I18N.t("Fermer") : I18N.t("Ouvrir"), null, netOpen, onToggleNet, newInNet), tab('copy', 'tab-copy', 'copier', "⧉", I18N.t("Copier"), null, tool === COPY, () => onSelect(COPY)), tab('dem', 'tab-dem', 'demolir', "♻", I18N.t("D\xE9molir"), null, tool === DEMOLISH, () => onSelect(DEMOLISH)), tab('upg', 'tab-upg', 'monter', "⬆", I18N.t("Am\xE9liorer"), null, tool === UPGRADE, () => onSelect(UPGRADE)), BOOSTER_UI_ENABLED && tab('boost', 'tab-boost' + (boosterOn ? ' boost-on' : boosterMul <= 1 ? ' boost-locked' : boosterCharge < 1 ? ' boost-empty' : ''), 'booster', "🚀", boosterMul > 1 ? "\xD7" + boosterMul : I18N.t("Booster"), boosterMul > 1 ? fmtBoosterTime(boosterCharge) : null, boosterOn, boosterMul <= 1 || (!boosterOn && boosterCharge < 1) ? undefined : onToggleBooster)])))));
+  }, [tab('bat', 'tab-build' + (isBuildingTool ? ' has-sel' : '') + (logicLayer ? ' tab-logic' : ''), 'batiment', "🏭", isBuildingTool ? BUILDINGS[tool].name : buildOpen ? I18N.t("Fermer") : logicLayer ? I18N.t("Bloc logique") : I18N.t("Ouvrir"), null, buildOpen, onToggleBuild, newInBuild), tab('net', 'tab-net' + (isNetworkTool ? ' has-sel' : '') + (logicLayer ? ' tab-logic' : ''), 'route', "🛣️", isNetworkTool ? BUILDINGS[tool].name : netOpen ? I18N.t("Fermer") : logicLayer ? I18N.t("C\xE2ble logique") : I18N.t("Ouvrir"), null, netOpen, onToggleNet, newInNet), tab('copy', 'tab-copy', 'copier', "⧉", I18N.t("Copier"), null, tool === COPY, () => onSelect(COPY)), tab('dem', 'tab-dem', 'demolir', "♻", I18N.t("D\xE9molir"), null, tool === DEMOLISH, () => onSelect(DEMOLISH)), tab('upg', 'tab-upg', 'monter', "⬆", I18N.t("Am\xE9liorer"), null, tool === UPGRADE, () => onSelect(UPGRADE)), BOOSTER_UI_ENABLED && tab('boost', 'tab-boost' + (boosterOn ? ' boost-on' : boosterMul <= 1 ? ' boost-locked' : boosterCharge < 1 ? ' boost-empty' : ''), 'booster', "🚀", boosterMul > 1 ? "\xD7" + boosterMul : I18N.t("Booster"), boosterMul > 1 ? fmtBoosterTime(boosterCharge) : null, boosterOn, boosterMul <= 1 || (!boosterOn && boosterCharge < 1) ? undefined : onToggleBooster)])))));
 }
 function InfoPanel({
   info,
@@ -16189,7 +16213,8 @@ function App() {
         simplifyOffline: false,
         offlineEnabled: true,
         fastUpgrade: false,
-        theme: 'bleu'
+        theme: 'bleu',
+        logicLayer: false
       },
       drag: {
         active: false,
@@ -16330,6 +16355,7 @@ function App() {
   const [showDeficitPct, setShowDeficitPct] = useState(true);
   const [showDeficitSprite, setShowDeficitSprite] = useState(true);
   const [badgeScale, setBadgeScale] = useState(1);
+  const [logicLayer, setLogicLayer] = useState(false);
   const [fastUpgrade, setFastUpgrade] = useState(false);
   const [tipsEnabled, setTipsEnabled] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
@@ -16610,7 +16636,8 @@ function App() {
         simplifyOffline: !!(g.ui && g.ui.simplifyOffline),
         offlineEnabled: (g.ui && g.ui.offlineEnabled) !== false,
         fastUpgrade: !!(g.ui && g.ui.fastUpgrade),
-        theme: g.ui && g.ui.theme === 'inox' ? 'inox' : 'bleu'
+        theme: g.ui && g.ui.theme === 'inox' ? 'inox' : 'bleu',
+        logicLayer: !!(g.ui && g.ui.logicLayer)
       },
       // Bâtiments déjà « vus » (badge nouveau du menu) — champ additif rétro-compatible.
       seenBuildings: { ...(g.seenBuildings || {}) }
@@ -17248,7 +17275,8 @@ function App() {
       simplifyOffline: false,
       offlineEnabled: true,
       fastUpgrade: false,
-      theme: 'bleu'
+      theme: 'bleu',
+      logicLayer: false
     };
     const up = data.uiPrefs || {};
     g.ui.showLevels = up.showLevels !== false;
@@ -17260,6 +17288,7 @@ function App() {
     g.ui.offlineEnabled = up.offlineEnabled !== false;
     g.ui.fastUpgrade = !!up.fastUpgrade;
     g.ui.theme = up.theme === 'inox' ? 'inox' : 'bleu';
+    g.ui.logicLayer = up.logicLayer === true;
     // Badge « nouveau » : restauré si présent ; absent (save d'avant la fonctionnalité) →
     // null, le boot initialise alors « tout ce qui est débloqué = vu » (pas de spam).
     g.seenBuildings = null;
@@ -19150,6 +19179,20 @@ function App() {
     markDirty();
     scheduleSave();
   }
+  // Couche logique (13.91) : bascule d'affichage. En couche logique, la barre d'outils passe en
+  // mode logique (bloc logique / câble logique) et l'amélioration est désactivée. Fermer tout
+  // outil/panneau pour repartir propre à la bascule.
+  function toggleLogicLayer() {
+    const g = gameRef.current;
+    g.ui.logicLayer = !g.ui.logicLayer;
+    setLogicLayer(g.ui.logicLayer);
+    SFX.play(g.ui.logicLayer ? 'panelOpen' : 'panelClose');
+    deselectAll();
+    setBuildOpen(false);
+    setNetOpen(false);
+    markDirty();
+    scheduleSave();
+  }
   function toggleSimplifyOffline() {
     const g = gameRef.current;
     g.ui.simplifyOffline = g.ui.simplifyOffline === false;
@@ -19703,6 +19746,10 @@ function App() {
     // multi-tile anchor just above the viewport still renders into view.
     const ar0 = Math.max(0, r0 - 2),
       ac0 = Math.max(0, c0 - 2);
+    // Couche logique (13.91) : les blocs/câbles logiques ne sont dessinés QUE quand la couche est
+    // affichée ; en couche logique, les bâtiments NON logiques sont estompés pour faire ressortir
+    // le montage. Gate purement visuel — la simulation logique tourne quel que soit l'affichage.
+    const logicOn = !!(g.ui && g.ui.logicLayer);
     for (let r = ar0; r <= r1; r++) for (let c = ac0; c <= c1; c++) {
       const t = tiles[r][c];
       if (!t.building) continue;
@@ -19710,6 +19757,9 @@ function App() {
         y = oy + r * tile;
       const bid = t.building.id;
       const bdef = BUILDINGS[bid];
+      const isLogicEl = !!(bdef && (bdef.logic || bdef.logicSource || bdef.logicSink || bdef.logicGate));
+      if (isLogicEl && !logicOn) continue;
+      ctx.globalAlpha = logicOn && !isLogicEl ? 0.32 : 1;
       // Câble logique : dessin vectoriel (pas de sprite). Couleur VIVE (#00E5A0) quand le réseau
       // est à 1, TERNE (#0d5a45) à 0 → état lisible d'un coup d'œil. Se raccorde aux autres câbles
       // logiques ET aux bâtiments logiques (capteur/actionneur/porte) adjacents.
@@ -20135,6 +20185,7 @@ function App() {
         ctx.restore();
       }
     }
+    ctx.globalAlpha = 1; // fin passe bâtiments : restaure l'alpha (couche logique)
     // Overlay d'influence d'antenne : effet de boost pulsé (sprite fx_boost) sur chaque tuile des
     // zones boostées (les 8 cases autour d'une antenne reliée). Le clignotement utilise l'horloge
     // d'animation et force le redessin continu (_animPlayed) tant qu'une zone est visible.
@@ -20653,6 +20704,7 @@ function App() {
     setShowDeficitPct(gameRef.current.ui.showDeficitPct !== false);
     setShowDeficitSprite(gameRef.current.ui.showDeficitSprite !== false);
     setBadgeScale(gameRef.current.ui.badgeScale || 1);
+    setLogicLayer(!!gameRef.current.ui.logicLayer);
     setSimplifyOffline(gameRef.current.ui.simplifyOffline === true);
     setOfflineEnabled(gameRef.current.ui.offlineEnabled !== false);
     setFastUpgrade(!!gameRef.current.ui.fastUpgrade);
@@ -21243,8 +21295,19 @@ function App() {
     boosterCharge: game.boosterCharge || 0,
     boosterOn: !!game.boosterOn,
     onToggleBooster: toggleBooster,
-    seenBuildings: game.seenBuildings
-  }), game.islandUnlocked && game.islandUnlocked[7] && (game.currentIsland === 6 || game.currentIsland === 7) && React.createElement("button", {
+    seenBuildings: game.seenBuildings,
+    logicLayer: logicLayer
+  }), React.createElement("button", {
+    className: "logiclayer-btn" + (logicLayer ? ' active' : ''),
+    onClick: toggleLogicLayer,
+    title: logicLayer ? I18N.t("Masquer la couche logique") : I18N.t("Afficher la couche logique")
+  }, React.createElement("img", {
+    className: "ll-ico",
+    src: (window.__SPRITE_DATA__ || {})['logic_porte_and'],
+    alt: ""
+  }), React.createElement("span", {
+    className: "ll-label"
+  }, I18N.t("Logique"))), game.islandUnlocked && game.islandUnlocked[7] && (game.currentIsland === 6 || game.currentIsland === 7) && React.createElement("button", {
     className: "underground-btn" + (game.currentIsland === 7 ? ' below' : ''),
     onClick: () => switchIsland(game.currentIsland === 6 ? 7 : 6),
     title: game.currentIsland === 6 ? I18N.t("Descendre au souterrain (île 7)") : I18N.t("Remonter à la surface (île 6)")

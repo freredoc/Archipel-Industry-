@@ -17,7 +17,26 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 272`, `GAME_VERSION = 'Alpha 13.90'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 273`, `GAME_VERSION = 'Alpha 13.91'`, `SAVE_VERSION = 27`.**
+  Changement 13.91 : **COUCHE LOGIQUE togglable + swap de barre d'outils.** `SAVE_VERSION` INCHANGÉ
+  (`uiPrefs.logicLayer` = champ additif rétro-compatible ; absent = false). (1) **Bouton bascule** en
+  HAUT À GAUCHE, sous la barre d'inventaire (`.logiclayer-btn` `left:8px;top:150px`, miroir du bouton
+  souterrain ; sprite `logic_porte_and`, liseré vert `#00E5A0` + halo quand actif). État
+  `game.ui.logicLayer` (persisté serialize/loadSave/newGame ; state React `logicLayer` + handler
+  `toggleLogicLayer` qui ferme les panneaux + désélectionne). (2) **Affichage** (`draw`) : les blocs/câbles
+  logiques (`bdef.logic||logicSource||logicSink||logicGate`) ne sont dessinés QUE quand la couche est ON ;
+  en couche ON, les bâtiments NON logiques sont estompés (`ctx.globalAlpha=0.32`, reset en tête de chaque
+  itération + après la passe) → la logique ressort « par-dessus l'île ». Gate PUREMENT visuel (la sim
+  logique tourne toujours). (3) **Barre d'outils** (Toolbar prop `logicLayer`) : en couche ON, le menu
+  Bâtiment bascule sur `LOGIC_BLOCK_GROUPS` (groupe `logic` : capteur/actionneur/portes) → onglet
+  **« Bloc logique »**, le menu Réseau sur `LOGIC_WIRE_GROUPS` (`logic_wire`) → onglet **« Câble logique »**,
+  l'onglet **Améliorer est verrouillé** (`tabAllowed`), Copier/Démolir restent actifs. En couche OFF, les
+  éléments logiques sont RETIRÉS des menus classiques (`BUILD_GROUPS_NORMAL` sans `logic`,
+  `NETWORK_GROUPS_NORMAL` sans `logic_wire`) → ils n'existent QUE via la couche. Labels i18n en/es/de
+  (Logic block/Logic cable · Bloque/Cable lógico · Logikblock/Logikkabel). Validé : `node --check` (7 blocs)
+  + Chromium E2E (boot 0 erreur JS ; bouton présent ; clic → `ui.logicLayer` bascule true/false ; en ON :
+  onglets « Logic block »/« Logic cable », Améliorer verrouillé, bouton actif ; draw sans erreur ON et OFF).
+  Build 272→273.
   Changement 13.90b : **CORRECTIF retours screenshots.** `SAVE_VERSION` INCHANGÉ (assets + CSS). (1) **Bouton
   souterrain trop haut** → `.underground-btn` `top:92px` → **`top:150px`** (clair sous la barre INVENTAIRE/
   Production). (2) **Tuiles de bordure du tunnel « plantées dans le nommage »** : 12 tuiles `i7_bord_*`
