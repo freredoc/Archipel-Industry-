@@ -17,7 +17,28 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 269`, `GAME_VERSION = 'Alpha 13.88'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 270`, `GAME_VERSION = 'Alpha 13.89'`, `SAVE_VERSION = 27`.**
+  Changement 13.89 : **PATCH souterrain — 3 retours (centrales, construction étalée, priorité élévateur).**
+  `SAVE_VERSION` INCHANGÉ (`pl.cb` = champ additif rétro-compatible). (1) **Aucune centrale au souterrain
+  hors Géothermie + Accumulateur** : `forbiddenIslands` des éoliennes / centrales charbon-diesel passe de
+  `[6]` à **`[6, 7]`**, et la centrale nucléaire reçoit `[7]` → seuls la Géothermie (producteur) et
+  l'Accumulateur (batterie) sont posables sur l'île 7 (gardes `canPlace`/`tryPlace` + masquage `visibleOn`).
+  (2) **Construction souterraine ÉTALÉE dans le temps** (nouveau) : poser un bâtiment sur l'île 7 paie le
+  coût au port de l'île 6 (réservé) puis le marque **en construction** (`bld.construction {rem, tot, rate}`,
+  fantôme INACTIF) ; la matière (somme des unités du coût, `costUnits`) DESCEND par l'élévateur à
+  `rem`/s → à 0 le bâtiment s'ACTIVE. Rendu : **sprite fantôme translucide clignotant + barre de
+  progression + décompte** (s restantes au débit courant, ⏸ si rien ne descend) ; fiche = « en construction ·
+  X% · ~Ys ». Persisté (`pl.cb`, reprend au chargement). Îles 1-6 = construction INSTANTANÉE (inchangé).
+  (3) **Priorité de l'élévateur RÉORDONNÉE par CATÉGORIE** (au lieu de la priorité de flux haute/normale/
+  basse) : **1) construction, 2) sortants non immédiatement consommés (dépôts au port île 6), 3) intrants**.
+  Le budget `elevatorRateAt` sert la construction d'abord, puis les sortants (`elevOutFac`), puis les
+  intrants (`elevInFac`). `game.elevatorFlow` ventile `{construction, out, in}` ; le panneau Élévateur
+  affiche la ligne « Priorité : constr. → sortants → intrants ». Souterrain non relié (`undergroundBlocked`)
+  → budget 0 (rien ne descend, construction en attente). Validé : `node --check` (7 blocs) + Chromium E2E :
+  éolienne/charbon/diesel/nucléaire refusés sur l'île 7, géo/accu acceptés ; géothermie (1350 unités) posée
+  → fantôme, descente linéaire 16 u/s (niv 0), finalisée à ~85 ticks, puis active ; construction préempte
+  le débit (constr. 16/16) ; île 1 = pas de fantôme ; round-trip `pl.cb` ; 0 erreur console + captures
+  (fantôme « 64s », sol de tunnel). Build 269→270.
   Changement 13.88 : **PATCH rendu souterrain (retour #1 « sprite mal agencé », screenshot reçu).**
   `SAVE_VERSION` INCHANGÉ (dessin seul). Le souterrain (île 7) réutilisait le système d'auto-tiling
   du LITTORAL (conçu pour terre↔mer) → l'élévateur « flottait » sur du vide et les tuiles mélangeaient
