@@ -1,8 +1,8 @@
 {
-  "build": 271,
+  "build": 272,
   "version": "Alpha 13.90",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.90 (build 271) : pack sprites île 6 v2.5 + onglets tungstène/quantique + bouton souterrain (#260)"
+  "notes": "Alpha 13.90b (build 272) : correctifs — bouton souterrain + bordures tunnel i7 (#261)"
 }
