@@ -958,6 +958,16 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   display:flex;align-items:stretch;gap:0;overflow-x:auto;scrollbar-width:thin;
   scrollbar-color:var(--line) transparent;}
 .toolbar-wrap{flex-shrink:0;display:flex;flex-direction:column;}
+/* Bouton flottant surface ↔ souterrain (île 6 ⇄ 7). Sur le côté droit, au-dessus de la barre
+   d'actions ; visible seulement quand l'île 7 est débloquée et qu'on est sur l'île 6 ou 7. */
+.underground-btn{position:fixed;right:10px;top:50%;transform:translateY(-50%);z-index:45;
+  display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 9px;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:9px;color:var(--ink);
+  font-size:19px;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.45);user-select:none;}
+.underground-btn:hover{background:var(--panel);border-color:var(--yellow);}
+.underground-btn.below{border-color:#7E8AA2;}
+.underground-btn .ug-label{font-size:.52rem;letter-spacing:.04em;opacity:.85;
+  font-family:'Bebas Neue',sans-serif;}
 /* Chronomètre de temps de jeu (au-dessus de la barre de bâtiments) — cliquer bascule 1×/10×. */
 .playclock{display:flex;align-items:center;justify-content:center;gap:8px;
   align-self:center;margin:2px 0 3px;padding:3px 12px;cursor:pointer;
@@ -2265,6 +2275,16 @@ window.__SPRITE_DATA__["tile_i6_collisionneur_5"]="data:image/png;base64,iVBORw0
 window.__ANIM_DATA__["mine_tungstene_v1"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAABu0lEQVR4nO2aMW7CMBSGf6qeIQMjUxQ5axT1DEgsiF6j7VCpS48AXKOoCy1nQKnUoRJRGtGKkYFLpEsTUkSEbWJT4P8WBsL7nv2eFdsCIIQQQgghhBBCyLnQkHnIabYyneCr5UIqPv2H81/KyO8fHpXlk9cXAMj2nQT6zfp3NkCZNE2lnnNdVyUs/Qf0SzdAEAYIwkA68G8H1gb9ZvzSDRC9vUvLTUC/Gb90A8w/EyMJ0H9Y/4WRqORoYAOcOdIN4Louvr/mALDz08QumH4z/p1n1PwcqrOrTeKPvS9D6Dfr17oJHPSHAIBZHK9lSYIomv75nambsEF/iFkcwxeiyMO2/2k0gud5AFDkcXt3Y80PrMfteZ72+KVOAeVAeTKbBVCRqrLNnyTrXbEvBHwhEEVTa/7rXq8oQDkfW/58/n0h9pp/pZvATXJxuQC2qCqALaoKYIuqBaCKdgOUB14uhC1OpQC61LUAtBug6hVgi1MpgC51LQDl95XTbGXP48nW77qdtpF3IP3m/MoXQavlotHttGuR60B/vX7thJ1mKwvDKwAwtvum///6iyR0/61C//H7CSGEEELIkfIDaH/aD+4X2OoAAAAASUVORK5CYII=";
 window.__ANIM_DATA__["mine_tungstene_v2"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAACX0lEQVR4nO2aPWvbQBjH/w79DBo0ahJGhk5G5DMEsgTna7QdAl06lHRNspXSOUNMOrTN1j2okKFgcTVJ8ejBX0IZwsVnVb433SMR/PyWYOvufs/pHuteFIBhGCY4UZxU7N9RfxQn1eW3X1VfQbDf3r9HFcTXL5+pmmZ/QD9ZAjAvg1e6iyEeYVGcVKvlYuBbl/20/q0XojipTt5/aOvHzc8fEOUfuN4E9nfj1z4BJPP53EuepqlXPfZ35zcmwDgfY5yPvQIAnjKwDeyn9RsToPh95y0PAftp/cYEuP8rSANgf79+3gbuOJwAOw4nwI5jTIA0TfHv4R4AnP+G2Aaxn9ZvPAhqu40B0OoghP20fu0uQJ4iqZyfXWBWlhhlGQBgVpZrkRAoituN8sPstU/MW/15vo/hcPj8WY2jC7/svxCiMY63796Q+4H1fVfj8Om/1UmgzB71bFoG0JQITeXboLZ3PJlsDIAaxyjLUBS3pH7pkqhxCCEay4f2qz9ANY5t5XVYJYCOpgGgxjQA1JgGgJKr6fS/xG8Tg3YR+PHTaeP39c4DTzflajq1bsOGbXXlAIyybOPx59KGr1/2cVaWjXFQ+48nEwDr/qpxyGsufu3CpP4qMYqTymYNUK/T5nVovS2bNQCl32YNQO0H9GsAF792CtBV1K0BbNsw0VTXZg1A6ZcuiWkKovC7TEEmv/PW5Pr7jbbM0eFBq06zv1u/00ngarkYHB0eBJO7wv7wfu+5Kc/3N76rzz2UsD+c3+tdwGq5GKhzbZedZ3///meiOOntf9/Z37+fYRiGYZiXyyOJK9zWZ6niMAAAAABJRU5ErkJggg==";
 window.__ANIM_DATA__["mine_tungstene_v3"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAACjklEQVR4nO2bMUvDQBTHX8XPkCFjUAlF11L8DFIpSP0a6iC4OIiu6ibi7GBQxNrNXSI4CA1nUenYoV8iDnK1Te+SdzHvUun7L9Izye9/uX/v3iUUgFiO68XUDObPKN9xvfj67ikuywTzs/kL1CauLi+oEcz/A588AKzZ1qKqkWLKclwvHg76FeyxzLfDn2pwXC/ePzgsmg+dxzaI6A2ybgLz7fKVM4BUr9crBO77fq7zmE/P1wagVq9BrV4rxADATwJNxHw7fG0AwpfXwuB5xHw7fG0APt6FFQPML5fP28A5FwdgzsUBmHNxAOZc2gD4vg9fnx8AAH/+m2cfzHw7fO2TQNN9K0YmT8KYb4ev3AZ2HtuwtLwC7ftgov3s9By6UQRrq6sAANCNommIEBCGzxNtjWZrlEaMsvhSKh/U/JsggGq1OtE+7sNW/4UQWh+7eztovnYJaN8H0Gi2AACmUtONolEQJDQpeU6j2ZrqCEY6vhC/++M0H1R8edN1PrZbk+cUzZf91Pm4CQIjfmoRKE3o3k6lDYDjenHezqfxsQNAxccOABU/eb9VPkz4ygAcnRwDwE+KxpOok2oAJFwmUV4TozQ+dgCo+NgBoOJLDzofpnxlQZJ8dywTeHZ6PjKg0/gamLyGyftwHV9Xg8g10QZfKqsGoeCb1CAYvnIGSB44/jlr7cdcI0tZ52K+AVR80xqkaL5pDZLFz/UgCFMEUgk7AFTCDgCVsEsgVuhUOq4X3z50UMdubW4YJZ755fHRM8Bw0K9sbW4UCjcR82n4xkYd14vr9XXl/8LwmaTzzKfjG9cAw0G/knzSlReeR8wvlp+rCEyasNV55s8GfyTH9Ur72RPzy+ezWCwW61/rG7JKvXQ4jwWOAAAAAElFTkSuQmCC";
+window.__ANIM_DATA__["bat_machine_outil"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAAEgElEQVR42u1aX2gcRRz+Nl1uJlJbC8cWrsRi9aGIlArBHtGktIaKASU+iA99a/vkgyAUoYIVtVAVsdqHKq0VRBSaB7FRFELJnaXKnQZckbYHDWmwpeAlh80Rkp29S9eH8y57t39m9252T7j54Mhkd26+b375svv7zQwgISEhISEh0YtQgnbUUjusMAMX78wpIoUOpoctxhgMo/ZhzIyVX0vtsAhJgFICSgkIIY32uqZ1fbduFoTz8/rY9f35+6+B+NUwItLpIW4fXddhGCuRuDWdHuIaIGp+ngFyuTwMg0XGzzNAoXAdwFrgMdWwIkb2jXINECVG9o1yDRA1P88AUfPzDYDoDFAoFLr6zioUCoFeAVHy+xkgDn4/A4RFn0yDehvSAD0OtZNMv92s1StDH3hop+WXZEXN3+35i+QfTA9bXlXKjet/KK5loHVmpxWH65SX3Usk6/wuC5QAlADkv5+UAAarfRiztU3x/Lz5kwRE6Gubn1sHBtOnHPxNcX0CbD1h4rVjx/H5+c8cYy8W7ziunfrwI1yYmEAu94vjXlJLeX7PCw+eMHH8rTfx9dkvHU+A23/dBGMmDKP2YcwUzs+bPyEApQooVUCIgk/OfIyLkxeRzWYamur67t+cFM7Pi79d37aBbaCUYLlcaoqZYZjtVQH1gIa9Z69fO6nRk1oKXgtBcfG3LgTZ77UuBNn1ieLn3bPrc1s/yeedaxSxJYHKq+e6muxI/ne7WwUsvXOwqwGQ/K+IN8DAw4/g6LHXA/Xd/MZXwicl+cPwn+aXga04dPiI6/V7Sh/SewYbv3967ixy+Rn0Wfccfd8/+Xbb/wGHDh9xLWNWWAWP794VC3/rShulBIn+fuwdebKJP/vTz6gYq44cQCQ/L/79CdWxV3H61Hu+TwBfA1zOXEJ5eQWbNt4HAI32U/sPIJefCdS/jsz4NWz/INzK8+XMJZjVNSTUDTAMhoXSP0ioGzA4tDc2fvt4rFKFltyC0bHnkMvPNFUp9f7FxZpGxkzh/EHib1bXoCW3gBACs7q+KfTF+DU8cTWkAbxwZXrKVZgXdF3Hdl0V9ui7Mj2FhdLdrvKzSi3QlJLGHz1Ofrf4e+0F6LqO4ZwKt11Ccap8ENX2rOQPzu+1WRV5FZBODyGppZDUUnj0sd2xT17y+/P7PgFm5+YBAMXi+rVO2mExOzfveeKGMTMWfvsYhCRQLi81kqx620ufaH5eu56klstLjSSwXF7y5XAY4PvvJqFpGsaeH8cPk98CQFM7KNr5jp3/hRdfwvTUj6CUYP+BZ/HNxAWEORLWKb/b/MMcCXv6mTHh/DzY9dnj53deobEpIHInKghad8TCnrnr9ECIG3+YAHeqrx1+kfrqZxbV1vdFHHDbvKnzx2EAP/44DNAuvygDZLMZ91fA7Nw8lst3sXHTA00Di77m986rmqtIalubJrBY/Btqor8pwKWFYiT8fmPYA1xhNZ32AJcWajrtBhDJz7tWYSsNTfX4Vc1VmybWvc0gif8npAF6HDIJ7PEkUEJCopfxLwT/Vv4fLbujAAAAAElFTkSuQmCC";
+window.__ANIM_DATA__["bat_geothermie"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAAFCElEQVR42u2ZXUwcVRTH/6vbuUAIGLvdtQRQsCSyxRZaA4m+qOlDE5MaEgMVY2OrMY0vND40NQI2zT4ZH3w09sVgNC0+0O5DjTUxJKUqhLJUPrppCSA127IuatbNMndYMz4sd5i7XzMLM3OTsieZsDtzM79zDmfO/85ZoGQlM7Ir10ZUkfy5+WV1J8cvmg8A+HUyLNSJSOxfdSfHL5R/fWRCaPBLkb+E8kXHbyffZbTAW9PIwaORBZeTwR85+poqyxSyTEEpxXRo3FG+Pn5CJNxfDAvj25F/w5t9cynIOfDW8WOOJmB67h5XAEdeedFRvj5+QiS80XlUGN+O/JvqAKdOvYfY33EEh4eEdICenrfxx4M/8d2lr4V0ABb/D9euCOkAdub/sdI7zs42txO6lcvs7CSi+XUNz6mUKsL4z7e1q4QQlJWlD72Ess+sk9lSACt9krH2fGBfVYvmL/dJABXH/61PAogElG0cspo+qKp9dr1rYwfwBRSc/WgA4XA469r8vbuYm5myta2J5tcHFPR+eE4Y/0BAQf/5T7A0u5jVAWampzE5MWavBDD7+eZodnv2eh3TtxJ/NKsAqqqqc+8BzOhmMeuYDVQsofvsCVz+dBAXks8UvC8hkqZbTMMyran5oJoORrGcb+Z+Tc0HVb1/+TTWLn6hdSx/mfE3n+vGLxcu4mO6N/8msLBuDgI1wMX9kqmk+wIZ/5wfb5jTbb1ucRo2CDxJ0d+n1zMb+Abx41A+/3iNre+jtvAN87/h04HPYJrvNtLN4PAQAMDf0qqdYxp2rLPLMn3zBRT0nx/QdIs9Yde/vwpZVtC4z689YZMTY6BUsZxvFD97whbm74AQF7re7OY6wOwMr69W843yf395CQvzd3J2TtOvgXrdikUj8Le0oqqyQjsXTyQ1Z4LDQ/B4ayzVN6ZbhBAk4qs49EIHJPfj6Ra7K/3X39IKShXb+PniJ0SCkvpvoxgIgsNDqK1v0AqgurraVr5R/uvqaq0ZBM2+tPmKqof3PBzhvudab4X9JJhfbPzDgvnbiT9nAey/qWa1HQD49qmXue/sOltvlb0qmF9s/J2C+duJ39QouOfhCADg6t7fAQCnE+OOjisZ/0vB/CHBfDvyb1gA8URSq7zXHzyNeCKJLyrbHQtez39fML9LMN+O/BcsALbbjCeSiCeSWiVmXrfLSnz7+YabQL1ttfIuhxa3vAkUwZ99xPihAnx3oU2Ix1ujVVmu91D9K0g+KzT9KrQJJGSTL8sUjfuaOT6lim18M/ETQlBb3yCMX0z+N6eT2dMzl37EmLnr3E7bKnSvuZmprJ9DvTWNatvh9qxRcL5Ra75R8Hb4RvHnGlVn+jc5MQZZpni2yW8538gIkbRBUNvhjrz5m5wY034OdjE4BBhLAuObSbBRAWyHbybBVvpXLN9q/6KRBZc7853ydGI8S2usPpdrA8NGrWdSt/GVp4ML4J3YDXzubuUCOLk6ajnf6B76BPeup/3UJ/jkatpPfQFYyTc617s+pfnE8ncmdVvn02b+QrfGwXUAK9p/sVKhfwL0s3YnOkAuvpMdYCt8K/0L3RrnO0A0GkUi/g8qq57gburEOcZfp0l4vD4ugJSyBrdUzgUQi65gF6mwnG+0niU4paxh9x4fl+C0T+VcAVjNNzq3e4+XK4CUsgaP18cVQCy6ArdUXtwksGSPrpU2gTt8E1h6BEpWsp1s/wPCJc4lo2+qZAAAAABJRU5ErkJggg==";
+window.__ANIM_DATA__["bat_presse_uhp"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAAE1UlEQVR42u2ab2gbZRzHvycxz9NSq9A1gcIESyulpFLHcEPm1mLeOAd9K4i+URiICL4wENxS1hWEDbeBoyCFMRnqwFdCKYKB7k+pbVezuJQ2LDGrdgyWFtQQ0rtb6/ki5LxL7i53l+cujNwPDp48zT2f3+/J957n93uugGeeeda6xlUagZ5eyU1w/lGOU34O9PRKhPhBKQGlBIQQuc3zAnhegCAIirbInF/vHpb+2eGz9G/zQZoDAJ9ygEg05sqPf+6LCc3+SDTmigCM+G4IwC6flQAmxj+X71EJ4NZcHIViydEfP5e9r/u3W3NxiLt7jgqgHt8ofhYCaITPQgBrqynVPc94u2BrmycALwksmzQ14GoSyH2UViVB0tSABOIHKClfhPzf5oXyJQiKtsieX3eNZeefLT5D/7gP7qmTwOCk2FQlBifFss+UA6UcCOHkNs+L4HkRgiCq2qz59fdY5/xjMf9W/NNMAiPRGNLptPw5m7mPtdWkZskSicbw5+ZDAMC9ZMLwe1pj6mXBGxsP5CTm4eYfyGXXMX8jrhp3/0sDjvHNxD/06mtSJBpDfmsLlBIsL/6CxMoSUneXXeHrzX+ltKvYkZGwFInGkEz+JieBq6kUEitL7lUBVsbUqgLc5jc7fif4+e2/ZAFUm0oAR0fDNQps1KyMeXQ0XLMCuM1vdvxO8KtXAK8K8MwTgGdVZWCgp1c6fPj1mj1IL2Exa3pjaiU2x46N1OQAuex6QyeBVvj14rdzEsiSb+ckcGRkVJUD8LyAxMqS9rsAoz3o4oVLph2ZvnJVdpxVDnDxwiXTAmiEbxS/WQF8NfU17v66zJxvVgDXvvsev2fWTeUAPitP89zthaYuV3O3F5i9DbTLNyMAJ/lmBGDFfFae6mba9JWrTF8H2+GbXQGc4lvZAmzlAAAwGBpmtv9b3QMJ8ePAwUPyBOey6w2/DbTCrxe/0zlAo/NvJwdQVQGDoWF0drSrPrOoQ/v6X5YvI/P47vN91fDs0An0pWZk1Q6GhrG2mgSl7eh475QpaPHaJHherfqtd8bRff1M3eCzQycQyvwM4cme3J9YWQKl7Xju/XFTK0CjfL34uz6cMLUCbE+frvGPBb/e/FdWgN0fzkOS9qr4H6Pzmy+Nc4BCsYS+1Ay4T6eBs+9qQvrDY4ZOZOI/avYbBV/Dj04B5z7R4R8Hz/+rKwAmfMP4j4PSyouX8sXz5UsQgNTMrMP8MUMBbM7/pMO/DMFMElgolnThygnuD49ptrXOogvFEp4//S3+MRhXyRfPngQhRIc/C54X8OIbbznGN45/FpQShN5+E5n4HVBKsP/IK8jE5zXP2tnz9edfqwqovAsgn51H/tRJ/ZNAvYRDr1854XqTr9yDuq+fMdwDnz7+vKJ95ymI/7Im3/EqQCuRcbMKsMJ3ogpgybdTBRw4eKjGP2UVwCnhbltlEip8N/8tXItvZ4Ib8c8qn7V/+Uc5zqesl920xcWFmnrdTQFo8d0UgB0+S/9u3ryhTgKzuQ0UC3+jo/MFdUnlQl+F/0QoYV8gqApgV9yBz9+mLrPyj/EsaWfOr/d9ucwSd9DVHVRNcNmnNpUAWPPr9XV1B1QC2BV3sC8QVAlgO/8YPn9bbRLoWWualwO0eA7gPQKeedbK9h+Spl2Z4ViwXQAAAABJRU5ErkJggg==";
+window.__ANIM_DATA__["bat_centrale_gaz"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAAEr0lEQVR42u2ZXWhbZRjH/2lj3tPh7KDZCaYGJHYr/RCpjBELwiZVBG86byYIE286dxNG2QeytIh2oCIy2hsJZbCKjNx08+Ni7EJb2UqEYaO0sdaSdusaacjAzmLfNxaPF6c5OadNcz5yzslF3z8c+vTk4/c8T5487/s+Abi4uLgc1+DQ5xLn106jY4na8MVgWBodG5fEYFgSg2GJ891Vz+tvSD8mU9KRyMvS811Hd/A9Tjtw7LU3NdCJ2+MeNxOw1/nRc5ckShkoZWCMIfFlXMOv44vT3hYvAF4Azio9k0Lk6BG0HDqM9EzK9QA5vzKfdwDeAbh4AXDtWXnV59VaOiIGwxIhPggCgSAQEEIUW32MKdkF2/l6z3HSPzvyX84/wwWwGvM58sEGhowlYjXmA4gPELYutU0l+WKSynaAr5th8/7Zyrfg36ufGSyAwFABF94fxNzcnC0f/MIf86Z2vYGhAgY+GMTS7KIt3zArfL34zXSA2ZkZ2/lmOsDyg/vILPym2wW8229M3b2DlvCzWMgsAYBlWxRFS0FM3b2DzvZWLK/8CUEg6GxvxUz6d1DKEGp+WmUHHePvFltH22E8zMp+dbS1KvYzQdkvxphiNzYesJ2vZxPiQ2e77FcoFDK3B3BSV6+O7ljrctmMayNRzh8FpfKadKjtBYlShuXFOc+uBVCsrHwui3wuq9zXs/1i6VupViTSrdipVAqU/lO5fWeWQAhBPpdF8vEjpa2uLC+q7CVH+eXiT67llRabXHuk2A8fyH7tb2xylK9nN4fkTrC97Uci3coSlUz+pBSDoQ4gCPsMVZleUF/33MPxm+2mq1fm1wOoh8dTr7K9LvIr7wGAek1SneJXk/+Rnnt4K/Gc+SXg01PGRgXReOXHrQRf5FMqX4xpbbf4pQKogyDIl9qmtA59w87zq8n/OzfbUe7oZGgPcPJEpOLjiRtJ3ff4oTdtOQldJyIAZQBj8l/KANUpwGm+Ej/xAQKRL0IUe/r6pDv8KvJ/rTdtrQOoASfPfojElcEdthFZDR4Apm8kQSnDS+9ewq0rF0EpQ++ZmGt8Jf6LH+PWF5chCATH3vsE09cvGxq22MavIv+WO0A0vq6y+8vaRtQ48BXWPnrbdPDR+HrpnD3Sr9inR9zjF3X+Wv/Wuv8viMrWW//t4leX/2HkYqfNFYBfDNZ0Tu0Xg66Ngo3Eb2QQ5CTfCWkK4Ltvv7E8QKmkVCqFLgCZhfmKzyvy7Z61m+XbMQlU+2cX38wkcHv8bbvwPerhhNsqDkOKfLd/DNrON5NgO/wzy7fbv1w2UzpMq4cVbiiZnNoxrHCzAMrx3SwAK3w7/ZucnJCXAOmXPkneZf6KC2P/4f65TXTE/cqbrj/+C08+dUADqnRvti+vvN7Ia9X8gYQX87F6vDLWrASwWdiA19egCSCfW8UTZJ/tfL34iwneLGyg6WBAk2DZpwZ8f2oFLw7vB2MF2/l695oOivg5+reSv83CBvxiQFMA+dwqvL6G0h7g+Pk8gJatf+c1cCsy+3otfwndcT8EoVb86uPvjvth+Ldqh/hm8ueduD3uEYNhqVY7fs6vLZ9vAvf4JhBcXFx7WP8D/CdqirRADcUAAAAASUVORK5CYII=";
+window.__ANIM_DATA__["bat_fab_ordi_quantique"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAAEZ0lEQVR42u2aTWgTQRTHXyRk1g9ERFLJSQqCYA8iFYK0JWCspZaigrV4EaoELRYEoYh46EFEPAm1QYIE9VBCKyqhil9gqKIVRERUCpW2qFRsaykiTTYV1kOy6cx+zOzH7C6Y/UOY2Q07v/cmb9+8yS6AL1++fPmqUgX0vghHaiW5PzszGbAyuJ0x6qONkiAgEAQEzx49cJ3vtf88+A2xuCQICAoFEV7mngVMBcCT3NuKAc2xeksG2BljfPJHJQA2b1zrOt9r/3nwp2cWKgGwJbIxYDp6z124JOGRaOUOsDpGfbRRSt/OSPGW/Z7wvfafB78hFpcGh+5JDbG47hir/FWwuuUHQJUrqFV00AoSO+kQP1YWNuFIrYRQCOR1X5nKCgURRFGEQqH0EcUidz7rWtw+hFClv2KTvn08+Cwp7VMuqbh936bGA0QRKCW3SW5GXqB7nJgAKblNAhQCEFDpg9BKvyCWPqKI9Yv8+cwZ5mefJT5H+wLHPwSIDFBzsQi50VFYWFh09IcfyWYhnb6hOl9zsQiv34zC0lLe0h3Gg8/y304G4ME3mwG07LszNAzJ5IB6CZCVSJx0NADa21qp3ycSJx0NACN8JwPADp9HADTH9xgrAq+0vSBaq7p2Zg3RGtWVtky5TXnE99p/d/i6AdA70ki0VnX66hLRGlXvSGe5TXjE99p/d/iqJSCVuk4d8NCBdur3d+9nmWswTanUdWoKa23ZR02xPPi0FHu08zDVvsHMMLMGsMpnzT9CIXj46DGzBtANgFhTk6kftnPHJQAAyLw/bzpQtBRratJdwwYzw67wzfovCAhujp31jE/zX69GoWaATeGIarD52RlNQ4b6PlLvOtZYetcoA+D71ymCL99hTvFZ/sv2ZS9PKGwiJ9gpvt78IxTSnEs8APC51K0BtvY/JVqlhvo+VuD4MX5OWYSY0db+e+X2lkd8r/13jx/UOjnRs5doleroqyMiUD6mFSFmNNFzEBBCMNFzTPWvoMzDMwB/Ptt/PAN09NXpplin+Frzr8wARvjUDEDTYnY70cePadsRMxnAO74R/zdg/dXEsTt8Pv5TMwBNG9o/AbzD+ga3I2YygHd8I/4vAnyW+/lyBnCTr+V/yDR/ld1IxFOR3chX8295zH/63/ODdiKxeecR5h1oZQ1c4WvXAO7xWf7vAkEAEJrzqrXfHb59/4NmtymqNESRmbHwa5TbQLf5xv3Pl7dZXvE/GZpLfBuoVOWRZDhSK3V1nQA3lE7f0HwefupUt+2HLXb4LP95PAyyw2fJqH3J5ID6fQAeL32YEeuFECcDQI/Pa4KN2GeFz9M+OQCIJSAa3e3Kjz829krzfDS625UAoPHdCACrfF4BkMs9164BvkxOw5/fi7BuPbmn5X1OT18mp+FvMQ+bwjWEA/OzPyEYWk1M8K+5WUf4tDHwCV4WS3biE/xrrmQnHgA8+axzy+JSxSZ5/v4W85hN6j+q/JdCq1x+DVDlNYAvX76qWf8A6rDFpzQi418AAAAASUVORK5CYII=";
+window.__ANIM_DATA__["bat_data_center"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAAE3klEQVR42u2aX2hTVxzHf51d7m2RkaK2MNiLWx+cg4n4EIqRis3oQ5EFhs1TCwVhSMMEIWzF+SC++OehWHEgIw9usJAxumWZih2sUphFtA7qRmlC7IMGGirWIelNrMSHeG/OOffPObn3nJOH3h9ccv+ccz+/3y+/nPO9JxfAN9988823LWpt5Inu93fXyHOlYsFVO9Z7oda759OaqiqgKAqoan3789Yf0visfQ6EwjXdP02rgKZV4P78nDQ+S7uD/QM11L9KpQKLD+9hbdqtnDgaPWbsZ6bTts6ytGO9F9lHL4DbN39rCZ81fj3B6Z9+aAmfJX69AH5OmX18x6pTPrcMh8N9kM8tOzrK0o71Xj6/NXzLoUVVO41jTSvbDkG0dqz3IqeAYLDLGAEAXttOASL4rH0OhMK1YLDLGAHW159bTgGi+CztDvYP1ILBLmMEePHiuWkKaLObT2SY7rDOV5SAMe+jGgCdwxr7Ve58mvH2r1k+b/9KxUJbOwDA6ulAaxToifqnwVcCAOrbDd3XavWtUkP2BfCpGebrX9N8zv61nXgrAnvOVSHxzRlYWlqS8sXnc8vw36N/jGOd//jfgpQRwI5Pi5/XCOCWz2sEeLS4CA8f3DM/BWSm0xAK9Qn98ufn/4aPP9lneS0znYb+/sNCC4DGd4qfRwF44fMogNnZv2D3R3vsHwPzhRW4MDQHiWy4IcymZiAXjxjHV052wvhkufGocX0/ZEYWjGNaf8dfZ2EFLn9xA76diRkBfHDxGuSPx4wEX/pyGxw/vy6Mb9dfT/D3X3fBqe9eG/59dm0vpI/dNfw7O3ADvvqFP5+Wf90/p/yZHgP7rv5oEiCJbBh6p2aM41w8AldONhTn+GQZjl7f36jckQW4MDTn2B+9jpo1Pwq9Uymk/6hkvpv4U0j/Iy3gzznmD/XPcSForVSsfw7vxc7HJvB2ycEidjyW/BC/D9GfvG5na6UiqKoCd4cPYUNYbAIfYpODK8L4dvGjQ2xyMIv5N5Y8hPn3VACfln/UPzJ/un+mAoh8PgT5c2dMK0uiRaBuJF+WCLTjyxKBbvg8RaBRADO/ZlsqAkm+bBHYTPwiRCDP/HMTgV5FnlcR5lVkeeV7EVk8RKDb/LsSgVZOjE+WMVGRGVnAREkiG8au5+IR03VUtOTiEUy00KzOTxF8XGSJ5zvFH8X8y8VHTf6J5dPyHyX4o7Z8WxHYrKhqVrTQROBYEhcxT4ZxkSWSbxcfOsTS/ItNVLnzaflH/YtNPMP8Sw4+thaB5F+HskUgyZctApuJX4QI5Jl/VyIQVaGtEIEkX7YIbCZ+ESKQZ/5diUBUhbKuRHldKUTNiu9VZHnlexFZLCuVbvmsItBJRDOJQNpKVCIbxkQFudI1PlnG+pMrVTSjrQQmskcE82nxRwk+vtImns+S/5TtSqW/EuivBJoLIPt7xvZfKhmm82W+EGLFlyEC3fJ5iUBNaxSC/0YQ+G8EAQAIV/9Wahi1UKhPagFY8WUWgBs+T//u3JnFp4B8YQVe/r8O298LYjeVcU7nv6qUYWd3DxbAZnUD2gMdWABrpVV4V+nkzqe11xO8Wd2AHbt6sATXferACoA3n3Zux65urAA2qxuws7sHK4C10iq0BzqcnwJ82zrma4AtrgH8n4Bvvm1lewOTIZ+7rNtsmQAAAABJRU5ErkJggg==";
+window.__ANIM_DATA__["bat_separateur_cryogenique"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAAEmklEQVR42u2bX2gcRRzHvxvWm02RYGl6gaAUw+WoaSPNSxtLLVZi8cK1/nkR32oRMWs406KWSiEoBal/kljiISLaZx+qthFLKZhAKKWguZpLPNqQuzQ1oZcQS5Vm94ycD+dubu9ub2f3ZneFzg+ObDZz85nfj+/O77czE4AbN27cuHHjdj+aYKdxsLklb/a37MKs4PZg2zt25hVFhaKoUNWc5/xHHt2alyQCSSIgpPBTkggURcX46CXX+W7EX7T7hcGBobJ7R472eabYwYGhMgF4zS8VQI/c4ymfZfxtC2BxaQWpVEr/febGdU+nrMWlFSQS13QB+MHPZNK6AG7Nz3nOZxn/Ortf6I50+ZqzOJ8tX7SbW2Q5BgDIPf8iAt+dZZrbCAmgNMeW5lZZjkFRVPwZiTLn0/ovSQTCSy+j4cIPkCTiOZ9l/EW7uSV64GBhCppKAq1hZlPw4MBQmQCOv3usIj+RuAbVBT6t/5lMGmQqCak1zCwF+BV/sdbcEo+fxlN799ZcrS4urSCdntUFMH9zznO+E/8//egkntz3TNnbQulbilv8Sv63d+zMl76lFApnFZMTV4WKAuiOdBkGQGvalFRrtdod6cJn8S985Tvx/823T/jKr+Z/qQDkN3rMZwCto9d3z+DzyyFT4Mj5c1Q5yK6iZTkGQgLoe3oeZ37ZBkKIKZ+mBnDCp/WfpgZwk08b/0wmrQsgOTlZ/S0geuAgQq1hXFrqRqg1bNqx1q5tKlm1nd1qlfP94ddVyy21mCzHMHPjOho3NjgqVDjfG35d/8KdfOjE+9S5xa6il/+4W1WpnO8vXxw7dBgBACP/3WCVg2iqVQAo5rOsAZzwWdYAbvKdxv+JXbvKZ4DRi2eF6WSCeQ6iVTTn+8uvg0s2cv5cTTmQ873huyYA2hzE+f7yxWLFzM6sK6UlFDZVFk07ALj44whVO63f3+cz+uLFY9vaTdtNJyf13UCWfFr/F27N6XsVbdvbPefbib+2DtD88BbrdQAAmPt2t6WyAOCV8XEqJX751RlqxQLArz7zqf3/6YK/fEb+l6WALS9cpur46z17LBUNAK8ePmRr6nrcZz61//ue9ZfPyH/DgZD9kSjV0iVNO33XinIpVOuXZjNofyRqeSDEKZ/Wf6sDIW7zaeJvaymY2/1pAgDk41vzvsDllJFPAoBECh9C1q8VtfBR1aLrHHu+lTEen20+4/EJckoQAaDpZA6dnYXi4/v+DXjuvXuWrI7hYUz09lq26431Yfj0UNn9K1fWc53GJySAbz7YiNdO/QOz/Wztuu2TAeZ8K/+LD6x0xgfx2/F+0/FpKYol3yr+lU5UvfXOMXz84amy8Y2Nja7PAMHmlnzb9h2ePv3TyYR+OELjV3LAKsAs+ZYPGMPxOeGzHN/Ez1eRXZgV9CIwm83ir7t38GDDQ4ZOvbin8f9W76Ex2GRwYC23CjFQb3BgOXsbD5ANzPlW7bUAr+VWsWlzkyHAhTHVGwTAmm91b9PmoEEAa7lVNAabDAJYzt6GGKg31gDVjlC5acVPAOsnzAnfyxnACZ/1+Lz4Zxpu3Lj9n+1fjWuiotGWpskAAAAASUVORK5CYII=";
+window.__ANIM_DATA__["four_arc_tungstene"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAAFY0lEQVR42u2b/0skZRzH35rN83BgqNSep3R5gqHlIXVSFygdsneuX8qvnaTJ6V1R7IV3dIIo9AfoTx2UdZSeoAaeVnoslt2yFVpEdAUlx6HgyWqebofoLzUTh9MPuzPM7s7uzOw+u/PDzgdk55l9dl6fz8fP85lnPs88gCUpLWl6OtnyCsXQc76ttTTld5HaLKTilF3keQGCIIDn/X8b9+4mjS9dkxAOlBJQSvDn77+kAYDdUSfyvICl791pAFBUUiYq9WPJ1+P/opIyUalf3AFgyysU7bWNcvudt98EALQ21AMAZuZcEdss/gl2R51YUVUDKQC6znWC5wW84jiTFL7SfkI4XL50EZQSdJxtAaUEroVb4HkB9dWnIQgCJqa+kPVjzdfyPyEcXAu3ZP1+/XlRk5+hVxH3/CwAwLuyjIKCQvn8wJXLUdusxD0/C0EQsPLHbeTm5pvCJ4SDz7uK4uKSIF6oPso2S75e/yv105L0WJRZX18z1GYtFp8dP6YACB1hWm3WYvHZ8a0MYGUAawRaGcAagVYGsEaglQF0FSCMRKAtr1CMdA29BSAz+WbbHy+/4pRdtDvqxJgKQaEFCEmk59AD7pCutvQMa7QoUn6yUqxvbgOlRK7+KesA/4oZCeWr2a+sAzyamQ1KCXzeVeTm5uOfg0dU9WPJ17JXTT9KCVxfTsmVyqgBoIy40YkbAIDHMg/hk2ufob29HQDw25ETAIDn79/W1Zbk/BtnNZ3w5LFiUVJ6cnoOlBLYnsjGB1c/QnNzCwRBwE/ZT4HngWfX2fO17CeEw51jx0Ep8NLuNigluJOfDf4AeObetqp+LPla9qrpJw2g9tYG1cpgmhI+OnEDbrdb/rK56VWsrK7B5/MF/egtZzc+Hb4OAHhY3Y2Mheth5wFgc3PTX678fEyX8ZPTs1haWgSlBIQQtL/+Grwbf8Hr3YByLaCzqxUfXmXP17JfWgtwdrVi8qtvQSlBRs3LePj1D+B5AR1NZzA8NhPQ9T/mfC3/v3upG+NjM7L/Hjz4G5QSTIxei5gBwuYAOZ198vHK6ho8Hg8AoJ8bQn8Tj35uCI/f/1huv/9dier55eVlAMDe3p6h+15Op1OV38EN4XwTDyc3hMydkQTyI9v/XoAPYRod3BBaang0/NiMlhoeHYHzzkC/RPC1/J+5MwJnwE96+VEzQGlpKQCERaBeiTcDlJefAKUkLANII4w1X8t+5WogISQoxarpx5qvJaH6xZQBQqPQDMnpvGAyvy9l+KoBsDs+KB9LKUhKKUY/jaZAP3/EZP5gyvDTtaKvqqoqKB0Z/czKyop5DmAOvy+l+OnRos8M2R0fNpk/mFL8qJXAgd4eeDwe2Gy2mFOQngmQxU8sP9IEUNdaQKwpyGjqs/jm8NNhSUqLZgDEOguVZp/22kbEsyBi8ePnR1pUS8otwD0/G5cTLD4bfvnJSlV+RqJTzPDUor+ufe4KnG2VIsv39S2+Hr4LPA/Utl3EhcYXxdD9ApoBMNDbEzPc/876flC7taHe0MaNgd6eiKXWZPEjlVq1SsGs+VoSqp9/jwDAQwAPATNzLtRXnw7auCLvLql21CZ18rHwzXzQ7pZqR61hB7PmG3VwPPrFwmep3805/zsKcgbY39s1dTa6v7cLQjgIlEAIGCAdJyIA1Ph6HJwo/Vj434h+YbeA7a0tUwNge2srqRlAjZ/MDBALn6V+kgQtBwNAwdGjWPd6dQGN9A3tH3oPtOUVioRwKH66CNu+HV0OZs3XsinUwZKuegMgXr6W/7UC4Mjhw7i7soqom1eNPK4YfbTR07+opMxUvpFrRnu+TgbfqP3Hn3shrP//pqiD+5iC258AAAAASUVORK5CYII=";
+window.__ANIM_DATA__["bat_foreuse"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAAEDklEQVR42u2ZXWjTUBTHT4csQXyYIBWrHdr5MdNONhlai4Oh81sEfXL4Mjb0QdAnHYgyEPVFfHP4oCgiiHtThih+jznnutbawVaL82OuIloGW6uMpDiOD91imyVLmtw0Su4fwr39yu+cy7nnnpMCUFHpVXcoht2hGNqV/z3F44SA9vT/YvstdLo86HR58GL7LbQbv6PzGW6ub8CGnXvw3uMe2/kPTpcHb3d0Yv32A+h0edBu/Fp/HYYig3j8xGncXN/w3/pfYsSIazduwuHmJsuOIMo3zjcUAIebm+DajZuWLQDlG+fTDEAzAN2BNAPoKECkEVjMQsy9otJSflXNhln8Wn9d0fgk199hxACpkt8+OYoVAIKQsYxfVbMBGYYBls1ePC8AzwsQ7nvpKGYAkPB/nl4jWk+1QfeLp+Lrvr7eoqa/f4Hf//qlGABdXS/+S/9LgMrWogFgc80r9JzRczbpOZ9q/XUoPWMFQRDnZvPl7sUwpcCyzJy1wV9bM8T5WmqjmTWT1ig9XU8dBRWBeKVS0YDF5zOy7/84U6pcbR6NF7QAeH8rAssAsAwAL2QvITuWn/kJckUgUb6c/0wpAMvAuksOkCsCQycxx9YMeb7a+p9bAOKaMQzkrp+j4UFhAeB0ebD1VBvE43FDKebD8HuIDUZ1ZYC2sxdgZOSzbAaQCwCSfDn/ZzKA3A5Tso8kX01y9n1NfIFIOKiYAWSPgL1bAtgf/w4AAL2veoy1LE5nwb9padyHA5/HRb6RANDDV/JfTwCQ5OsJgPJyd+FF4P3nvab0s3u3BDSda9fvdFrKt9p/s/gtjftQdxcwdGQsb1TSqstP8kZSjj2c5vZaxB/SzH9gKn9IM79D08Yq0Rql3quL8kYlDR/bljdKxVW459wFh/bvkP181zQ3YDJfzX91/m5T+V7N/IOyn29az6FiAHAVbjQr/cwo9jGheP8argJv331kGd9q/4vBfx2JORS7AGnvyfmqyTg9GNXUE0v72PW1G1WLLJJ8Nf/1FIEk+XqKQJZlIBIO5tk3/G7AodgF+P0BAMg+W5YabkR+fwCi0Sjw/KTq91iWgbdv30BsMEokAArlK/mvNwBI8fUGwMx9g8HgrIdoik8COV81JJNJWOlZDulfk4bnAACelas1O8X5qiGdToGPWwPJsXEYHU2Ae+mSnLnLdL70Ht61qyHzewrS6RR4164R58tcWbsSiUTO/Ctxvto8lZoAH5e1K5VKifPR0YTIj4SD6l1A+tekqXM1UX7x+PTPIJuLBoDNNasLYNn5pgJ5fnLOLqCsbKGuIosEX81/I0UgCb7eIjDXvomJ8bm7ALUq1Wxl+VOAOAUA2YtkAGjjywvxt2iTWfYZWX8t9lFRUVFRUU3rD81gfoakzz2RAAAAAElFTkSuQmCC";
+window.__ANIM_DATA__["bat_extracteur"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAAGIklEQVR42u2af2gTZxjHv2ey3G047ZiL4Mw264RWuzb+wJ1xdil0jlLJ2ooZhQ6kwzmHcx1sk0ERNhwM1oGo6JiuuNmhtKy6MtF1hbaiJY7ZWltrmKUZOgSrYqkl3qUJ7/643vXy8+7Su8ukeeDIj3vv/TzPw3Pv87w/gKxkJStZycosFUpLY/uiXKK27ejtEUpvZV9ZuZZwHA+O48HzIdP5jiV5hGFoMAwNmhY+GYbGtE689P1WwK87X8n/NG2TdBro+1MV36pFgTv1NvWR9YH+0Xq13gZwRLh48/k3620AM3XRsu+STkT6Tr2rP1/R/zKdqM3q+tQUAAv3hsCyLqw8eBDdW2vx+rFGdG+tle53VgzhxQYrOC5oyHBVuDcEp3MN8hu+RXt1jen8F/aG4Havx7qjh+DbvgtvHtmPS5/WS2/9j2V9KGywYmzsoSF8Rf+/PYzCBiuAkHEpgGGeUmzHcUHDUgBgUUwBRvEdS/JITs4ziilgbOyBYSkglf/FFABEjEkBonMzKRwXVFUDGMkHIiAkAkC4YgPAeH5iISQMIDIVBAaMAGIUfvb5Hvj9/rh7wzf+xtDgFUPePlGW5ReRXR/vRn//1Yzx93zxFQKBQNwIcG1wAL1/XcKN6/2G8VP5/9bNfzAyfF0T35quIj0XL8QrZ7eb9ib+H/ixATB//vyM2u9wLNbcz5yZKpLz3vsZTQlZ/sz4qkaAhgPHyPnODlUdsqwLgIsAQHFJKT75cOuMh8O238+T9rNnVOVYI/ii/dNFVmq+07ma8HxId75a/7vdJYSmaWwsK4fnzWJqxiPA+c4OjE8kLj7eqNiU8P/xiSDUKv1Y89eveqztVzUCtLU2UfIipLikVLr3x+nfotr6fD26F2ENX39JyYuwtes2mMqX278sv4hsLCuf5l/sjePrXQRq9X9aRaC4zOip9E6DTzUDSH9ZVUuf9kW5hKZt8Fa/I82z28/+Coah0XHujCn8TNuvN/81dylhGBoby96SpqnNJ45HLVVbRbin0ou8vDzpYb/fLynTdqqZaFVCS59i26KiQqmyDgQC8FR6xSqbXOjqMJyfafv15K9hNxBPpRdOZ5E0S+nv74en0guO49FysomM3h6hpBpADn+4uSLqNwB4qmqIp6qGCEVW8hzEsi54qmqImj7lEt22PK7tzrrdZNuOOpP4ie3fUl0bz4+pAVjWhS3VtYbw1fp/2466eL6nNCF/TuywAwBP/3I6Gl7pTVqExOYg+TNKfSZveybDfA32x9QApvPV2t/WkfC+6nWArvZWqq21ifL5elK28/l6oooWveSnoweoI4f3ZYzf1d5KtZxoVMVvOdFoCF+t/48c3qe9CGy1JJgQrCgAACy/NpiW0lr6bLVYQVusYKYu2mIFs6IADEMj9/JlU/iZtt8IPmOxgrNEwFki4C0RcCsKwHE8lvb2TgdA26lmeFJNQ6aq0WTz0Jbvv0v4jNo+xbbyAw3y3bZmk/hp2b9+FY7vR+b4Kez3pjiw0jLVp+q9ALGwUspB4kqc0lClVXbW7SaJVgLN4nuqakiilcDYGkBcCezu7tKdr9b/bncJ6etTN2pSauahLOvC+EQQ8+YKe9HFJaVo/OFo/NTHbpfajE8EMTR4BXqsAzidqzF67wHoJ4SzAGvXbcDhQ4d05yvZ/9yzORDm1eX4uel4ws0gm1XQ8e79Md35Sv53OBbDvkA4r8BPRjAyfB1K6wBpbQcvL3AmvW/Gdmzuy/lJzwOYwV+15tWkB0LM2A5O5n+atmneDo4bAcySZCOA2kOXMz0QkuwNTCV66pcOX0/9olYCo/On8ZIsP7Osy5QASMU3IwDS5esVAF1dnfHTQDFvxkpnxRBKTi9PSyGtz45PBBEKRxAKR0BPCp/fbBrA9pNL0wqAdPip+qAnw3H6hcKRpAGgN18xAGL0O7BpAB+dW5nyyFpUClhgX4SJ8THMnZcT1Ujv/+6N3k44BD7veAnh0CMssC+MiuB7o3dgtT0Z5eD7d0d15yvZL3/DJnlBT/kbdv+uoKc8QPXkK/03yQclnUT/hUOPZDoJev57MyClgDnIyqyWbBE4y4vArGQlK7NZ/gPCuqBTvbqLpgAAAABJRU5ErkJggg==";
 </script>
 <script>
 /* ===================================================================
@@ -2797,7 +2817,21 @@ const RES_TIER = {
   beton_arme_irradie: 't4',
   cable_irradie: 't4',
   ciment_irradie: 't4',
-  plutonium: 't4'
+  plutonium: 't4',
+  // T5 = ressources de l'île 6 / souterrain (tungstène → quantique → hélium). Sans cette
+  // affectation, elles étaient regroupées sous un 2e « T0 » en bas de l'inventaire (retour
+  // testeur) : elles ont désormais leur propre catégorie T5.
+  tungstene: 't5',
+  alliage_tungstene: 't5',
+  piece_precision: 't5',
+  cable_supraconducteur: 't5',
+  gaz_fossiles: 't5',
+  methane: 't5',
+  helium3: 't5',
+  helium4: 't5',
+  ordinateur_quantique: 't5',
+  information_quantique: 't5',
+  matiere_exotique: 't5'
 };
 // Rang fixe d'affichage (ordre de déclaration de RES_TIER) : chaque ressource garde sa
 // place dans l'inventaire quel que soit l'ordre de déblocage.
@@ -2809,7 +2843,8 @@ const RES_TIER_RANK = {
   t1: 1,
   t2: 2,
   t3: 3,
-  t4: 4
+  t4: 4,
+  t5: 5
 };
 const resTierRank = k => RES_TIER_RANK[RES_TIER[k]] != null ? RES_TIER_RANK[RES_TIER[k]] : 5;
 const RES_TIER_LABEL = {
@@ -2817,7 +2852,8 @@ const RES_TIER_LABEL = {
   t1: 'T1',
   t2: 'T2',
   t3: 'T3',
-  t4: 'T4'
+  t4: 'T4',
+  t5: 'T5'
 };
 const RES_HUD_EXTRA = {
   2: [['minerai_cuivre', 'Min. cuivre'], ['lingot_cuivre', 'Lingot cuivre'], ['acier', I18N.t('Acier')], ['cable', I18N.t('Câble')]]
@@ -2915,7 +2951,7 @@ function spriteImg(fileKey) {
 // Sheets inlinées dans window.__ANIM_DATA__ (clé = `cle` du manifest). Méta (frames/taille/fps)
 // dans ANIM_META. frame 0 = sprite statique EXACT → transition transparente.
 const ANIM_DATA = typeof window !== 'undefined' && window.__ANIM_DATA__ || {};
-const ANIM_META = {"centrale_diesel_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"centrale_nucleaire_v2":{"frames":4,"fw":64,"fh":64,"fps":6},"fonderie_or_v2":{"frames":4,"fw":32,"fh":32,"fps":7},"raffinerie_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"usine_polymere_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"distillerie_v2":{"frames":4,"fw":32,"fh":32,"fps":6},"circuit_v2":{"frames":4,"fw":32,"fh":32,"fps":6},"raffineur_silicium_v2":{"frames":4,"fw":32,"fh":32,"fps":7},"fab_processeur_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"broyeur_uranium_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"centrale_enrichissement_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"separateur_air":{"frames":4,"fw":32,"fh":32,"fps":8},"separateur_air_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"puits_petrole_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"fx_boost":{"frames":4,"fw":32,"fh":32,"fps":8},"fx_boost_productivite":{"frames":4,"fw":32,"fh":32,"fps":8},"fx_explosion":{"frames":4,"fw":32,"fh":32,"fps":10},"accumulateur":{"frames":4,"fw":32,"fh":32,"fps":6},"acierie":{"frames":4,"fw":32,"fh":32,"fps":7},"antenne":{"frames":4,"fw":32,"fh":32,"fps":8},"atelier_meca":{"frames":4,"fw":32,"fh":32,"fps":8},"betonniere":{"frames":4,"fw":32,"fh":32,"fps":6},"betonniere_v2":{"frames":4,"fw":32,"fh":32,"fps":6},"broyeur":{"frames":4,"fw":32,"fh":32,"fps":8},"broyeur_uranium":{"frames":4,"fw":32,"fh":32,"fps":8},"broyeur_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"cablerie":{"frames":4,"fw":32,"fh":32,"fps":7},"carriere_v1":{"frames":4,"fw":32,"fh":32,"fps":6},"carriere_v2":{"frames":4,"fw":32,"fh":32,"fps":6},"carriere_v3":{"frames":4,"fw":32,"fh":32,"fps":6},"centrale_charbon":{"frames":4,"fw":32,"fh":32,"fps":8},"centrale_charbon_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"centrale_diesel":{"frames":4,"fw":32,"fh":32,"fps":8},"centrale_enrichissement":{"frames":4,"fw":32,"fh":32,"fps":8},"centrale_nucleaire":{"frames":4,"fw":64,"fh":64,"fps":6},"cimenterie":{"frames":4,"fw":32,"fh":32,"fps":6},"cimenterie_v2":{"frames":4,"fw":32,"fh":32,"fps":6},"circuit":{"frames":4,"fw":32,"fh":32,"fps":6},"distillerie":{"frames":4,"fw":32,"fh":32,"fps":6},"eolienne":{"frames":4,"fw":32,"fh":32,"fps":8},"eolienne_offshore":{"frames":4,"fw":32,"fh":32,"fps":8},"fab_processeur":{"frames":4,"fw":32,"fh":32,"fps":8},"fonderie_or":{"frames":4,"fw":32,"fh":32,"fps":7},"four_arc_acier":{"frames":4,"fw":32,"fh":32,"fps":10},"four_arc_cable":{"frames":4,"fw":32,"fh":32,"fps":10},"four_arc_meca":{"frames":4,"fw":32,"fh":32,"fps":10},"four_cuivre_v1":{"frames":4,"fw":32,"fh":32,"fps":7},"four_cuivre_v2":{"frames":4,"fw":32,"fh":32,"fps":7},"four_fer_v1":{"frames":4,"fw":32,"fh":32,"fps":7},"four_fer_v2":{"frames":4,"fw":32,"fh":32,"fps":7},"mine_charbon_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_charbon_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_charbon_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_cuivre_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_cuivre_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_cuivre_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_fer_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_fer_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_fer_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_or_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_or_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_or_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_pierre_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_pierre_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_pierre_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_uranium_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_uranium_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_uranium_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"plateforme_petroliere":{"frames":4,"fw":32,"fh":32,"fps":9},"pompe_eau":{"frames":4,"fw":32,"fh":32,"fps":6},"pompe_eau_v2":{"frames":4,"fw":32,"fh":32,"fps":6},"puits_petrole_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"raffinerie":{"frames":4,"fw":32,"fh":32,"fps":9},"raffineur_silicium":{"frames":4,"fw":32,"fh":32,"fps":7},"refroidisseur":{"frames":4,"fw":32,"fh":32,"fps":10},"usine_moteur_nucleaire":{"frames":4,"fw":32,"fh":32,"fps":8},"usine_polymere":{"frames":4,"fw":32,"fh":32,"fps":8},"tour_aerorefrigerante":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_port_mer":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_port_terre":{"frames":4,"fw":32,"fh":32,"fps":3},"coast_L_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_L_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_L_se":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_L_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_U_e":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_U_n":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_U_s":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_U_w":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_coin_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_coin_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_coin_se":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_coin_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_dcoin_e":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_dcoin_n":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_dcoin_ne_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_dcoin_nw_se":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_dcoin_s":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_dcoin_w":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_lac":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_ligne_e":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_ligne_ew":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_ligne_n":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_ligne_ns":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_ligne_s":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_ligne_w":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_U_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_coin_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_coin_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_coin_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_coin_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_crique_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_crique_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_e":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_s_ew":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_w":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_U_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_coin_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_coin_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_coin_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_coin_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_crique_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_crique_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_e":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_s_ew":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_w":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_U_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_coin_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_coin_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_coin_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_coin_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_crique_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_crique_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_e":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_s_ew":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_w":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_U_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_coin_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_coin_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_coin_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_coin_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_crique_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_crique_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_e":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_s_ew":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_w":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_U_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_coin_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_coin_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_coin_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_coin_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_crique_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_crique_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_e":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_s_ew":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_w":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i1_coast_tri_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i1_coast_tri_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i1_coast_tri_se":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i1_coast_tri_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i2_coast_tri_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i2_coast_tri_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i2_coast_tri_se":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i2_coast_tri_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i3_coast_tri_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i3_coast_tri_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i3_coast_tri_se":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i3_coast_tri_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i4_coast_tri_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i4_coast_tri_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i4_coast_tri_se":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i4_coast_tri_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i5_coast_tri_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i5_coast_tri_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i5_coast_tri_se":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i5_coast_tri_sw":{"frames":4,"fw":32,"fh":32,"fps":4,"mine_tungstene_v1":{"frames": 4, "fw": 32, "fh": 32, "fps": 9},"mine_tungstene_v2":{"frames": 4, "fw": 32, "fh": 32, "fps": 9},"mine_tungstene_v3":{"frames": 4, "fw": 32, "fh": 32, "fps": 9}}};
+const ANIM_META = {"centrale_diesel_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"centrale_nucleaire_v2":{"frames":4,"fw":64,"fh":64,"fps":6},"fonderie_or_v2":{"frames":4,"fw":32,"fh":32,"fps":7},"raffinerie_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"usine_polymere_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"distillerie_v2":{"frames":4,"fw":32,"fh":32,"fps":6},"circuit_v2":{"frames":4,"fw":32,"fh":32,"fps":6},"raffineur_silicium_v2":{"frames":4,"fw":32,"fh":32,"fps":7},"fab_processeur_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"broyeur_uranium_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"centrale_enrichissement_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"separateur_air":{"frames":4,"fw":32,"fh":32,"fps":8},"separateur_air_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"puits_petrole_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"fx_boost":{"frames":4,"fw":32,"fh":32,"fps":8},"fx_boost_productivite":{"frames":4,"fw":32,"fh":32,"fps":8},"fx_explosion":{"frames":4,"fw":32,"fh":32,"fps":10},"accumulateur":{"frames":4,"fw":32,"fh":32,"fps":6},"acierie":{"frames":4,"fw":32,"fh":32,"fps":7},"antenne":{"frames":4,"fw":32,"fh":32,"fps":8},"atelier_meca":{"frames":4,"fw":32,"fh":32,"fps":8},"betonniere":{"frames":4,"fw":32,"fh":32,"fps":6},"betonniere_v2":{"frames":4,"fw":32,"fh":32,"fps":6},"broyeur":{"frames":4,"fw":32,"fh":32,"fps":8},"broyeur_uranium":{"frames":4,"fw":32,"fh":32,"fps":8},"broyeur_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"cablerie":{"frames":4,"fw":32,"fh":32,"fps":7},"carriere_v1":{"frames":4,"fw":32,"fh":32,"fps":6},"carriere_v2":{"frames":4,"fw":32,"fh":32,"fps":6},"carriere_v3":{"frames":4,"fw":32,"fh":32,"fps":6},"centrale_charbon":{"frames":4,"fw":32,"fh":32,"fps":8},"centrale_charbon_v2":{"frames":4,"fw":32,"fh":32,"fps":8},"centrale_diesel":{"frames":4,"fw":32,"fh":32,"fps":8},"centrale_enrichissement":{"frames":4,"fw":32,"fh":32,"fps":8},"centrale_nucleaire":{"frames":4,"fw":64,"fh":64,"fps":6},"cimenterie":{"frames":4,"fw":32,"fh":32,"fps":6},"cimenterie_v2":{"frames":4,"fw":32,"fh":32,"fps":6},"circuit":{"frames":4,"fw":32,"fh":32,"fps":6},"distillerie":{"frames":4,"fw":32,"fh":32,"fps":6},"eolienne":{"frames":4,"fw":32,"fh":32,"fps":8},"eolienne_offshore":{"frames":4,"fw":32,"fh":32,"fps":8},"fab_processeur":{"frames":4,"fw":32,"fh":32,"fps":8},"fonderie_or":{"frames":4,"fw":32,"fh":32,"fps":7},"four_arc_acier":{"frames":4,"fw":32,"fh":32,"fps":10},"four_arc_cable":{"frames":4,"fw":32,"fh":32,"fps":10},"four_arc_meca":{"frames":4,"fw":32,"fh":32,"fps":10},"four_cuivre_v1":{"frames":4,"fw":32,"fh":32,"fps":7},"four_cuivre_v2":{"frames":4,"fw":32,"fh":32,"fps":7},"four_fer_v1":{"frames":4,"fw":32,"fh":32,"fps":7},"four_fer_v2":{"frames":4,"fw":32,"fh":32,"fps":7},"mine_charbon_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_charbon_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_charbon_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_cuivre_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_cuivre_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_cuivre_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_fer_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_fer_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_fer_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_or_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_or_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_or_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_pierre_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_pierre_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_pierre_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_uranium_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_uranium_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_uranium_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"plateforme_petroliere":{"frames":4,"fw":32,"fh":32,"fps":9},"pompe_eau":{"frames":4,"fw":32,"fh":32,"fps":6},"pompe_eau_v2":{"frames":4,"fw":32,"fh":32,"fps":6},"puits_petrole_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"raffinerie":{"frames":4,"fw":32,"fh":32,"fps":9},"raffineur_silicium":{"frames":4,"fw":32,"fh":32,"fps":7},"refroidisseur":{"frames":4,"fw":32,"fh":32,"fps":10},"usine_moteur_nucleaire":{"frames":4,"fw":32,"fh":32,"fps":8},"usine_polymere":{"frames":4,"fw":32,"fh":32,"fps":8},"tour_aerorefrigerante":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_port_mer":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_port_terre":{"frames":4,"fw":32,"fh":32,"fps":3},"coast_L_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_L_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_L_se":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_L_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_U_e":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_U_n":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_U_s":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_U_w":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_coin_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_coin_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_coin_se":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_coin_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_dcoin_e":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_dcoin_n":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_dcoin_ne_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_dcoin_nw_se":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_dcoin_s":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_dcoin_w":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_lac":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_ligne_e":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_ligne_ew":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_ligne_n":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_ligne_ns":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_ligne_s":{"frames":4,"fw":32,"fh":32,"fps":4},"coast_ligne_w":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_U_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_coin_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_coin_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_coin_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_coin_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_crique_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_crique_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_e":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_s_ew":{"frames":4,"fw":32,"fh":32,"fps":4},"i1_falaise_w":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_U_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_coin_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_coin_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_coin_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_coin_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_crique_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_crique_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_e":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_s_ew":{"frames":4,"fw":32,"fh":32,"fps":4},"i2_falaise_w":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_U_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_coin_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_coin_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_coin_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_coin_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_crique_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_crique_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_e":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_s_ew":{"frames":4,"fw":32,"fh":32,"fps":4},"i3_falaise_w":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_U_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_coin_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_coin_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_coin_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_coin_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_crique_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_crique_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_e":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_s_ew":{"frames":4,"fw":32,"fh":32,"fps":4},"i4_falaise_w":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_U_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_coin_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_coin_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_coin_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_coin_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_crique_se":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_crique_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_e":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_s":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_s_ew":{"frames":4,"fw":32,"fh":32,"fps":4},"i5_falaise_w":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i1_coast_tri_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i1_coast_tri_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i1_coast_tri_se":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i1_coast_tri_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i2_coast_tri_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i2_coast_tri_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i2_coast_tri_se":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i2_coast_tri_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i3_coast_tri_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i3_coast_tri_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i3_coast_tri_se":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i3_coast_tri_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i4_coast_tri_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i4_coast_tri_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i4_coast_tri_se":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i4_coast_tri_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i5_coast_tri_ne":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i5_coast_tri_nw":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i5_coast_tri_se":{"frames":4,"fw":32,"fh":32,"fps":4},"tile_i5_coast_tri_sw":{"frames":4,"fw":32,"fh":32,"fps":4},"mine_tungstene_v1":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_tungstene_v2":{"frames":4,"fw":32,"fh":32,"fps":9},"mine_tungstene_v3":{"frames":4,"fw":32,"fh":32,"fps":9},"bat_machine_outil":{"frames":4,"fw":32,"fh":32,"fps":8},"bat_geothermie":{"frames":4,"fw":32,"fh":32,"fps":8},"bat_presse_uhp":{"frames":4,"fw":32,"fh":32,"fps":8},"bat_centrale_gaz":{"frames":4,"fw":32,"fh":32,"fps":8},"bat_fab_ordi_quantique":{"frames":4,"fw":32,"fh":32,"fps":8},"bat_data_center":{"frames":4,"fw":32,"fh":32,"fps":8},"bat_separateur_cryogenique":{"frames":4,"fw":32,"fh":32,"fps":8},"four_arc_tungstene":{"frames":4,"fw":32,"fh":32,"fps":8},"bat_foreuse":{"frames":4,"fw":32,"fh":32,"fps":8},"bat_extracteur":{"frames":4,"fw":32,"fh":32,"fps":8}};
 // Indexé par CLÉ DE SPRITE STATIQUE du jeu (le draw connaît cette clé) → infos d'anim.
 const ANIM_BY_SK = (() => {
   const out = {};
@@ -3648,6 +3684,7 @@ const BUILDINGS = {
   },
   eolienne: {
     name: 'Éolienne V1',
+    forbiddenIslands: [6],
     color: '#87CEEB',
     label: 'ÉOL',
     kind: 'build',
@@ -3683,6 +3720,7 @@ const BUILDINGS = {
   },
   centrale_charbon: {
     name: 'Centrale Charbon V1',
+    forbiddenIslands: [6],
     color: '#455A64',
     label: 'C.CH',
     kind: 'build',
@@ -3870,6 +3908,7 @@ const BUILDINGS = {
   },
   centrale_charbon_v2: {
     name: 'Centrale Charbon V2',
+    forbiddenIslands: [6],
     color: '#546E7A',
     label: 'CCH2',
     kind: 'build',
@@ -4153,6 +4192,7 @@ const BUILDINGS = {
   },
   centrale_diesel: {
     name: 'Centrale Diesel V1',
+    forbiddenIslands: [6],
     color: '#37474F',
     label: 'C.DSL',
     kind: 'build',
@@ -4177,6 +4217,7 @@ const BUILDINGS = {
   // Nv.11 : 1536 diesel + 2048 oxygène → 524 288 kW (base ÷1024 : 1,5 diesel + 2 O₂ → 512 kW).
   centrale_diesel_v2: {
     name: 'Centrale Diesel V2',
+    forbiddenIslands: [6],
     color: '#263238',
     label: 'DSL2',
     kind: 'build',
@@ -4629,6 +4670,7 @@ const BUILDINGS = {
   },
   eolienne_offshore: {
     name: 'Éolienne Offshore V2',
+    forbiddenIslands: [6],
     color: '#4DB6AC',
     label: 'OFF.W',
     kind: 'build',
@@ -4767,6 +4809,9 @@ const BUILDINGS = {
     kind: 'build',
     tier: 't3',
     tour: true,
+    // Pas de tour dans le souterrain (île 7) : la chaleur de la Presse UHP remonte par l'élévateur
+    // vers les tours de SURFACE (île 6). Voir processHeat / game.elevatorHeat.
+    forbiddenIslands: [7],
     terrains: ['land', 'resource', 'coast'],
     size: [1, 1],
     power: 0,
@@ -5035,6 +5080,10 @@ const BUILDINGS = {
     terrains: ['land', 'resource'],
     exclusiveIsland: 6,
     size: [1, 1],
+    // Génère de la chaleur EN FONCTION DE SA CONSOMMATION (comme l'usine moteur nucléaire) :
+    // heatEmit = HEAT_PER_MW × kW consommés (voir tickIsland). Trip après 60 s de chaleur cumulée
+    // non évacuée (mécanique heatCapOf commune). heatCap = flag « bâtiment à chaleur ».
+    heatCap: 10,
     power: 1024,
     cost: {
       alliage_tungstene: 800,
@@ -5083,6 +5132,11 @@ const BUILDINGS = {
     terrains: ['land'],
     exclusiveIsland: 7,
     size: [1, 1],
+    // Génère de la chaleur EN FONCTION DE SA CONSOMMATION (comme l'usine moteur nucléaire). Trip
+    // après 60 s de chaleur cumulée. SOUTERRAINE → pas de tour possible sur place : la chaleur doit
+    // remonter par l'élévateur (conduit relié à la tuile élévateur → tampon game.elevatorHeat →
+    // tours de surface île 6). heatCap = flag « bâtiment à chaleur ».
+    heatCap: 10,
     power: 0,
     sigmoid: {
       base: 128,
@@ -5882,8 +5936,8 @@ const SAVE_VERSION = 27;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 266;
-const GAME_VERSION = 'Alpha 13.85';
+const GAME_BUILD = 267;
+const GAME_VERSION = 'Alpha 13.86';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -6625,6 +6679,10 @@ function rebuildNetworks(game, islandId) {
   // Un réseau route/tuyau touchant cette cible devient `connected` (→ bascule pipePort / port I/O).
   let connTarget = port;
   if (islandId === 7) connTarget = game.elevatorRepaired ? elevatorTileOf(game, 7) : null;
+  // Conduit de chaleur : un réseau conduit qui touche la tuile ÉLÉVATEUR (île 6 ou 7) est marqué
+  // `elevatorLinked` → processHeat le relie au tampon de chaleur partagé (transit surface ↔ souterrain,
+  // car les tours ne se construisent qu'en surface). Recalculé à chaque rebuild (pas de persistance).
+  const elevTile = (islandId === 6 || islandId === 7) ? elevatorTileOf(game, islandId) : null;
   // Une jonction appartient aux DEUX réseaux porteurs qu'elle croise : le flood-fill
   // la traverse pour chaque porteur et stocke un networkId par porteur dans t.netIds.
   // Ainsi route ET câble (ou tuyau) « passent » à travers, quelle que soit l'orientation.
@@ -6684,6 +6742,15 @@ function rebuildNetworks(game, islandId) {
         else for (const [dr, dc] of DIRS4) {
           if (curOk(dr, dc) && cr + dr === connTarget.r && cc + dc === connTarget.c) {
             net.connected = true;
+            break;
+          }
+        }
+      }
+      if (type === 'conduit' && elevTile) {
+        if (cr === elevTile.r && cc === elevTile.c) net.elevatorLinked = true;
+        else for (const [dr, dc] of DIRS4) {
+          if (cr + dr === elevTile.r && cc + dc === elevTile.c) {
+            net.elevatorLinked = true;
             break;
           }
         }
@@ -7059,6 +7126,15 @@ function processHeat(game, isl) {
   if (!game.conduitLoad) game.conduitLoad = {};
   game.conduitLoad[isl] = {};
   const load = game.conduitLoad[isl];
+  // Transit de chaleur par l'élévateur (île 6 ↔ 7) : les tours ne se construisent qu'en surface,
+  // donc la chaleur du souterrain (Presse UHP) remonte par la cage vers un tampon partagé
+  // (game.elevatorHeat, MJ). Île 7 : les conduits reliés à la tuile élévateur y déposent la chaleur ;
+  // île 6 : les tours reliées à la tuile élévateur la refroidissent. Tampon borné (→ sans tours de
+  // surface, il sature et le souterrain finit par surchauffer). Île 6 tickée AVANT l'île 7 (1 tick
+  // de latence, sans conséquence sur ce système lent).
+  if (game.elevatorHeat == null) game.elevatorHeat = 0;
+  const elevActive = !!game.elevatorRepaired && (isl === 6 || isl === 7);
+  const elevHeatCap = elevatorRateAt(game.elevatorLevel || 0);
   const sources = [],
     tours = [];
   for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
@@ -7066,16 +7142,17 @@ function processHeat(game, isl) {
     if (!bld) continue;
     const b = BUILDINGS[bld.id];
     if (!b) continue;
-    // Tour en PAUSE ou ÉTEINTE PAR LA LOGIQUE : n'évacue plus rien (une source en pause a déjà
-    // heatEmit = 0 via le tick, mais on la sort aussi de la liste — chaleur résiduelle gelée).
-    if (bld.paused || bld.logicOff) {
-      if (b.tour) {
-        bld.heatAbsorb = 0;
-        bld.onConduit = false;
-      }
+    // Tour en PAUSE ou ÉTEINTE PAR LA LOGIQUE : n'absorbe plus rien (skip).
+    if ((bld.paused || bld.logicOff) && b.tour) {
+      bld.heatAbsorb = 0;
+      bld.onConduit = false;
       continue;
     }
-    if (b.tour) tours.push({ bld, r, c });else if (b.heatCap) sources.push({ bld, r, c });
+    if (b.tour) tours.push({ bld, r, c });
+    // Une SOURCE en pause / éteinte par la logique reste dans la liste : son émission est déjà 0
+    // (posée par le tick), mais sa chaleur ACCUMULÉE peut continuer à s'évacuer vers les tours
+    // (demande testeur : « un bâtiment mis en pause peut continuer à évacuer sa chaleur »).
+    else if (b.heatCap) sources.push({ bld, r, c });
   }
   // 1) Émission : on ajoute la chaleur produite ce tick (gelée si endommagé).
   for (const s of sources) {
@@ -7169,16 +7246,28 @@ function processHeat(game, isl) {
     // de chaque tour (eau) et la chaleur stockée dans chaque source. Rien ne reste dans le conduit.
     let budget = cn.through,
       moved = 0;
-    for (const to of cn.towers) {
+    const elevLinked = elevActive && cn.net.elevatorLinked;
+    // Île 6 : le tampon de l'élévateur (chaleur remontée du souterrain) devient une SOURCE de plus
+    // que les tours de surface peuvent refroidir.
+    const srcs = cn.sources.slice();
+    if (elevLinked && isl === 6) srcs.push({ elevator: true });
+    // Île 7 : la cage de l'élévateur devient une TOUR virtuelle qui aspire la chaleur du souterrain
+    // vers le tampon (bornée par l'espace libre du tampon).
+    const outlets = cn.towers.slice();
+    if (elevLinked && isl === 7) outlets.push({ elevator: true });
+    for (const to of outlets) {
       if (budget <= 1e-9) break;
-      let want = Math.min(to.absorb, budget);
-      for (const sb of cn.sources) {
+      let want = to.elevator ? Math.min(Math.max(0, elevHeatCap - game.elevatorHeat), budget) : Math.min(to.absorb, budget);
+      for (const sb of srcs) {
         if (want <= 1e-9) break;
-        const pull = Math.min(sb.heat || 0, want);
+        const avail = sb.elevator ? game.elevatorHeat : sb.heat || 0;
+        const pull = Math.min(avail, want);
         if (pull > 0) {
-          sb.heat -= pull;
-          sb.heatCool = (sb.heatCool || 0) + pull;
-          to.bld.heatAbsorb = (to.bld.heatAbsorb || 0) + pull;
+          if (sb.elevator) game.elevatorHeat -= pull;else {
+            sb.heat -= pull;
+            sb.heatCool = (sb.heatCool || 0) + pull;
+          }
+          if (to.elevator) game.elevatorHeat += pull;else to.bld.heatAbsorb = (to.bld.heatAbsorb || 0) + pull;
           want -= pull;
           budget -= pull;
           moved += pull;
@@ -7905,7 +7994,14 @@ function tickIsland(game, isl) {
     // Émission de chaleur de l'usine moteur nucléaire : 1,024 MJ/s (1024 kJ) au Nv.1, ×2 par
     // niveau (2048 kJ au Nv.2…) — échelle binaire alignée conduit/tour : au Nv.1, évacuable par
     // UNE ligne de conduit V1 (1,024 MJ/s/tuile) + 1 tour (1,024 MJ/s), sans splitter (bâtiment 1×1).
-    if (b.heatCap) bld.heatEmit = bld.id === 'usine_moteur_nuc' ? 1.024 * mult * regime : 0;
+    // Émission de chaleur : usine moteur nuc = 1,024 MJ/s × niveau (plat). Machine-Outil et Presse
+    // UHP = EN FONCTION DE LA CONSOMMATION (comme la centrale/antenne) : HEAT_PER_MW × MW réellement
+    // consommés (power kW × regime ÷ 1000). Le plafond de trip (60 s) suit automatiquement (heatCapOf).
+    if (b.heatCap) {
+      bld.heatEmit = bld.id === 'usine_moteur_nuc' ? 1.024 * mult * regime
+        : bld.id === 'machine_outil' || bld.id === 'presse_uhp' ? HEAT_PER_MW * (power * regime) / 1000
+        : 0;
+    }
     // Plus AUCUN intrant → arrêt franc (on saute le bâtiment). On NE saute PAS sur un déficit
     // d'élec. (pwrF bas) : le bâtiment doit rester dans energyConsumers pour que la boucle énergie
     // compte sa demande et fasse converger pwrAvg (sinon oscillation/blocage). Sa production sera
@@ -9793,11 +9889,24 @@ const ISLAND_KICKSTART_5 = {
 // Île 6 : simple amorçage (phase 2 : les imports maritimes 5→6 fonctionnent). `element_moteur_nuc`
 // retiré (produit île 5, transite normalement). L'acide arrive AUSSI par transit maritime (dépôt au
 // port île 6, puis bascule pipe→pipePort dès qu'un réseau tuyau touche le port) → pas dans le kickstart.
+// Île 6 : amorçage + ~3/4 des ressources de BASE pour monter une chaîne de refroidissement dès
+// l'arrivée (retour testeur) : 1 centrale nucléaire (acier 8000 · béton armé 12000 · proc 800 ·
+// pièce méca 8000, coûts ×8 t3) + 2 tours aéroréfrigérantes (béton armé 4000 · lingot fer 2000) +
+// 1 pompe à eau V2 montée au Nv.12 (ciment / lingot fer / béton armé + polymère) + 4 conduits de
+// chaleur (lingot cuivre 4000 · polymère 40). On dépose ≈ 75 % de ces totaux — le reste s'importe
+// par la mer (5→6) ou se produit sur place.
 const ISLAND_KICKSTART_6 = {
   acier_irradie: 500,
   beton_arme_irradie: 500,
   cable_irradie: 500,
-  piece_meca: 250
+  acier: 6000,
+  beton_arme: 12000,
+  processeur: 600,
+  piece_meca: 6000,
+  lingot_fer: 3000,
+  lingot_cuivre: 3000,
+  ciment: 1500,
+  polymere: 150
 };
 const ISLAND_KICKSTART = {
   2: ISLAND_KICKSTART_BASE,
@@ -9828,6 +9937,18 @@ function applyUnlocks(game, def) {
     if (!wasUnlocked) SFX.play(isl >= 5 ? 'endgameUnlock' : 'islandUnlock');
   }
   if (u.boats) game.boats = (game.boats || 0) + u.boats;
+  // Réparation de l'élévateur : la RECHERCHE (nœud #31, livraison) EST le paiement → l'élévateur
+  // est réparé et l'île 7 accessible DIRECTEMENT, sans refaire payer un coût sur la tuile (demande
+  // testeur). Idempotent (garde !elevatorRepaired). Reconstruit les réseaux de l'île 7 (la tuile
+  // élévateur devient cible de connexion + transit de chaleur).
+  if (u.elevatorRepair && !game.elevatorRepaired) {
+    game.elevatorRepaired = true;
+    if (!game.islandUnlocked) game.islandUnlocked = {};
+    game.islandUnlocked[7] = true;
+    if (game.islands && game.islands[7]) rebuildNetworks(game, 7);
+    if (game.islands && game.islands[6]) rebuildNetworks(game, 6);
+    SFX.play('islandUnlock');
+  }
 }
 function unlockedBuildingSet(game) {
   const s = new Set();
@@ -11907,6 +12028,10 @@ function Toolbar({
   const visibleOn = id => {
     const ex = BUILDINGS[id].exclusiveIsland;
     if (!(ex == null || ex === currentIsland)) return false;
+    // Bâtiments interdits sur certaines îles (ex. éoliennes / centrales charbon-diesel sur
+    // l'île 6, qui n'utilise que la Centrale à Gaz / Géothermie) → masqués du menu.
+    const fb = BUILDINGS[id].forbiddenIslands;
+    if (fb && fb.indexOf(currentIsland) !== -1) return false;
     // Pendant le tutoriel (île 1), on ne montre que les bâtiments déjà révélés.
     if (tutorialRevealed && !tutorialRevealed.has(id)) return false;
     return BUILDING_NODE[id] == null || unlockedSet && unlockedSet.has(id);
@@ -14318,7 +14443,7 @@ function NetworkPanel({
     // Vignette = sprite représentatif du réseau (tuile pleinement connectée au niveau courant),
     // au lieu d'un simple carré de couleur.
     const pfx = NET_PREFIX[netObj.type];
-    const svl = netObj.type === 'conduit' ? Math.min(lvl, 4) : unlimited ? 4 : Math.min(lvl, 3);
+    const svl = unlimited ? 4 : Math.min(lvl, 3);
     const sk = pfx ? pfx + '_v' + svl + '_15_NESO' : null;
     const sd = SPRITES_ENABLED && sk && SPRITE_DATA[sk];
     return sd ? React.createElement("img", {
@@ -16846,6 +16971,14 @@ function App() {
     // AVANT ensureIslandDefaults pour que les gisements NE SOIENT PAS régénérés (sinon ils se
     // déplaceraient). Une save < 24 n'a pas ces champs → ensure les initialise une fois.
     g.elevatorRepaired = !!data.elevatorRepaired;
+    // Migration : la réparation de l'élévateur est désormais AUTOMATIQUE dès le nœud #31 confirmé
+    // (la recherche EST le paiement, plus de coût sur la tuile). Une vieille save qui a confirmé #31
+    // sans avoir cliqué-réparé la tuile obtient l'élévateur réparé + l'île 7 au chargement.
+    if (!g.elevatorRepaired && isElevatorRepairUnlocked(g)) {
+      g.elevatorRepaired = true;
+      if (!g.islandUnlocked) g.islandUnlocked = {};
+      g.islandUnlocked[7] = true;
+    }
     g.elevatorLevel = Math.max(0, +data.elevatorLevel || 0);
     if (Array.isArray(data.he3Deposits)) g.he3Deposits = data.he3Deposits.map(d => ({ r: d.r, c: d.c }));
     g.drillsCount = {};
@@ -17549,6 +17682,7 @@ function App() {
       return b.terrains.includes(t.terrain);
     }
     if (t.building || t.occupied) return false;
+    if (b.forbiddenIslands && b.forbiddenIslands.indexOf(gameRef.current.currentIsland) !== -1) return false;
     const {
       h,
       w
@@ -17671,6 +17805,10 @@ function App() {
     if (!b) return false;
     if (b.kind === 'junction') return tryPlaceJunction(r, c, id, verbose);
     if (t.building || t.occupied) return false;
+    if (b.forbiddenIslands && b.forbiddenIslands.indexOf(gameRef.current.currentIsland) !== -1) {
+      if (verbose) { showToast(`❌ ${b.name} : ${I18N.t('non constructible sur cette île')}`, 'var(--red)'); SFX.play('invalid'); }
+      return false;
+    }
     const {
       h,
       w
@@ -19379,7 +19517,9 @@ function App() {
         }
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
-        const slvl = Math.max(1, Math.min(lvl, 4));
+        // Sprite BLOQUÉ à V3 comme les autres réseaux (route/tuyau/câble) : le V4 est réservé au
+        // statut ILLIMITÉ (débit infini — possible plus tard pour le conduit). Repli vectoriel sinon.
+        const slvl = net && net.unlimited ? 4 : Math.max(1, Math.min(lvl, 3));
         const loadV = g.conduitLoad && g.conduitLoad[isl] && g.conduitLoad[isl][t.networkId] || 0;
         const f = Math.max(0, Math.min(1, loadV));
         const cx = x + tile / 2,
@@ -19553,7 +19693,8 @@ function App() {
       if (SPRITES_ENABLED && bdef && (bdef.heatCap || bdef.tour)) {
         let cmask = 0,
           clvl = 1,
-          cload = 0;
+          cload = 0,
+          cunl = false;
         for (const [dr, dc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
           let nt = tiles[r + dr] && tiles[r + dr][c + dc];
           if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
@@ -19561,11 +19702,12 @@ function App() {
           cmask |= bit;
           const nnet = g.networks[isl] && g.networks[isl][nt.networkId];
           if (nnet && (nnet.level || 1) > clvl) clvl = nnet.level;
+          if (nnet && nnet.unlimited) cunl = true;
           const lv = g.conduitLoad && g.conduitLoad[isl] && g.conduitLoad[isl][nt.networkId] || 0;
           if (lv > cload) cload = lv;
         }
         if (cmask) {
-          const cslvl = Math.max(1, Math.min(clvl, 4));
+          const cslvl = cunl ? 4 : Math.max(1, Math.min(clvl, 3));
           const cbase = 'conduit_v' + cslvl + '_' + NET_MASK_SUFFIX[cmask];
           const cf = Math.max(0, Math.min(1, cload));
           let cdrew = false;
@@ -20847,7 +20989,13 @@ function App() {
     boosterOn: !!game.boosterOn,
     onToggleBooster: toggleBooster,
     seenBuildings: game.seenBuildings
-  }), researchOpen && React.createElement(ResearchPanel, {
+  }), game.islandUnlocked && game.islandUnlocked[7] && (game.currentIsland === 6 || game.currentIsland === 7) && React.createElement("button", {
+    className: "underground-btn" + (game.currentIsland === 7 ? ' below' : ''),
+    onClick: () => switchIsland(game.currentIsland === 6 ? 7 : 6),
+    title: game.currentIsland === 6 ? I18N.t("Descendre au souterrain (île 7)") : I18N.t("Remonter à la surface (île 6)")
+  }, game.currentIsland === 6 ? "⛏️" : "↑", React.createElement("span", {
+    className: "ug-label"
+  }, game.currentIsland === 6 ? I18N.t("Souterrain") : I18N.t("Surface"))), researchOpen && React.createElement(ResearchPanel, {
     game: game,
     currentIsland: game.currentIsland,
     onDeliver: doDeliver,
@@ -21035,6 +21183,7 @@ if (typeof window !== 'undefined') {
     elevatorRateAt, elevatorUpgradeCost, elevatorSurfaceLinked, elevatorTileOf, tickIsland,
     rawShippable, evaluateTechTree, techConfirm, techDeliver, PORT_PIPE_RES, BUILDING_NODE,
     processLogic, reqValue, unlockedBuildingSet, networkUnlocked, networkUnitCost, LOGIC_MAX_ITER,
+    RES_TIER, RES_TIER_LABEL, ANIM_BY_SK, ANIM_META, applyUnlocks, TIER_STEP,
     InfoPanel: typeof InfoPanel === 'function' ? InfoPanel : null
   };
 }
