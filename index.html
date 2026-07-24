@@ -5948,8 +5948,8 @@ const SAVE_VERSION = 27;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 268;
-const GAME_VERSION = 'Alpha 13.87';
+const GAME_BUILD = 269;
+const GAME_VERSION = 'Alpha 13.88';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -19427,6 +19427,10 @@ function App() {
         // Terrain « élévateur » (île 6/7) : tuile aménagée vue de dessus (comme tile_port_terre).
         // Rendu conditionnel à l'état de partie : cassé au départ, réparé après le nœud #31 +
         // l'action tryRepairElevator (art dédié île 6 réutilisé sur les deux grilles).
+        // Île 7 : poser d'abord le SOL de tunnel sous la cage — l'art d'élévateur (réutilisé de
+        // l'île 6) ne remplit pas toute la tuile → sans ce fond la cage « flotte » sur du vide
+        // (retour testeur « sprite souterrain mal agencé »).
+        if (isl === 7) drawSprite(ctx, 'tile_i7_land', x, y, tile, tile);
         const elevKey = g.elevatorRepaired ? 'tile_i6_elevateur' : 'tile_i6_elevateur_casse';
         if (!drawSprite(ctx, elevKey, x, y, tile, tile)) {
           ctx.fillStyle = TERRAIN_COLORS.elevator;
@@ -19453,10 +19457,12 @@ function App() {
           drawSprite(ctx, NET_PREFIX[carrier] + '_v' + nslvl + '_' + NET_MASK_SUFFIX[bit], x, y, tile, tile);
         }
       } else if (SPRITES_ENABLED) {
-        // Tuile de TERRE : base coast (si elle touche l'eau) ou land, recalculée pour rester
-        // cohérente avec l'écume ; puis triangle de transition ; puis overlay de feature
-        // (accidenté/ressource/pétrole) qui remplace les anciennes tuiles cuites.
-        const baseKey = 'tile_i' + isl + '_' + (coastIsCoast(tiles, def, r, c) ? 'coast' : 'land');
+        // Île 7 (souterrain) : SOL DE TUNNEL UNIFORME (`tile_i7_land`), PAS d'auto-tiling « côte ».
+        // Les sprites `tile_i7_coast` + triangles de transition sont des artefacts de LITTORAL
+        // (conçus pour terre↔mer) et paraissaient « mal agencés » sous terre (retour testeur). Les
+        // murs de roche viennent uniquement de `tunnelBorderPieces` (côté roche). Îles 1-6 inchangées.
+        const isTun = isl === 7;
+        const baseKey = isTun ? 'tile_i7_land' : 'tile_i' + isl + '_' + (coastIsCoast(tiles, def, r, c) ? 'coast' : 'land');
         if (!drawTileAnim(ctx, baseKey, x, y, tile, r, c) && !drawSprite(ctx, baseKey, x, y, tile, tile)) {
           const tk = 'tile_i' + isl + '_' + t.terrain;
           if (!drawSprite(ctx, tk, x, y, tile, tile)) {
@@ -19464,7 +19470,8 @@ function App() {
             ctx.fillRect(x, y, tile, tile);
           }
         }
-        const tri = coastTransitionTri(tiles, def, r, c);
+        // Pas de triangle de transition « littoral » sous terre (île 7).
+        const tri = isTun ? null : coastTransitionTri(tiles, def, r, c);
         if (tri) {
           const trk = 'tile_i' + isl + '_coast_tri_' + tri;
           if (!drawAnimFrame(ctx, trk, x, y, tile, tile)) drawSprite(ctx, trk, x, y, tile, tile);
