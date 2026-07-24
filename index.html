@@ -5532,6 +5532,72 @@ const BUILDINGS = {
       processeur: 10
     }
   },
+  // Portes ajoutées (puzzle Collisionneur, §3.1). XOR/XNOR à >2 entrées = PARITÉ du nombre
+  // d'entrées à 1 (seule généralisation cohérente pour 3 faces d'entrée).
+  porte_nand: {
+    name: 'Porte NON-ET',
+    color: '#00E5A0',
+    label: 'NAND',
+    kind: 'build',
+    tier: 't5',
+    logicGate: 'nand',
+    terrains: ['land', 'resource'],
+    size: [1, 1],
+    power: 0,
+    cost: {
+      piece_precision: 25,
+      cable_supraconducteur: 10,
+      processeur: 10
+    }
+  },
+  porte_nor: {
+    name: 'Porte NON-OU',
+    color: '#00E5A0',
+    label: 'NOR',
+    kind: 'build',
+    tier: 't5',
+    logicGate: 'nor',
+    terrains: ['land', 'resource'],
+    size: [1, 1],
+    power: 0,
+    cost: {
+      piece_precision: 25,
+      cable_supraconducteur: 10,
+      processeur: 10
+    }
+  },
+  porte_xor: {
+    name: 'Porte OU-EX',
+    color: '#00E5A0',
+    label: 'XOR',
+    kind: 'build',
+    tier: 't5',
+    logicGate: 'xor',
+    terrains: ['land', 'resource'],
+    size: [1, 1],
+    power: 0,
+    cost: {
+      piece_precision: 25,
+      cable_supraconducteur: 10,
+      processeur: 10
+    }
+  },
+  porte_xnor: {
+    name: 'Porte NON-OU-EX',
+    color: '#00E5A0',
+    label: 'XNOR',
+    kind: 'build',
+    tier: 't5',
+    logicGate: 'xnor',
+    terrains: ['land', 'resource'],
+    size: [1, 1],
+    power: 0,
+    cost: {
+      piece_precision: 25,
+      cable_supraconducteur: 10,
+      processeur: 10
+    }
+  },
   port: {
     name: 'Port',
     color: '#2A6090',
@@ -5647,7 +5713,7 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'logic',
   label: 'Logique',
-  ids: ['capteur', 'actionneur', 'porte_and', 'porte_or', 'porte_not']
+  ids: ['capteur', 'actionneur', 'porte_and', 'porte_or', 'porte_not', 'porte_nand', 'porte_nor', 'porte_xor', 'porte_xnor']
 }];
 // Onglet « Réseau » (infra + jonctions) séparé de l'onglet « Bâtiment ». Filtres sur la CLÉ stable
 // (pas le label, qui est traduit par l'i18n).
@@ -6077,12 +6143,12 @@ const SAVE_VERSION = 27;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 274;
-const GAME_VERSION = 'Alpha 13.92';
+const GAME_BUILD = 275;
+const GAME_VERSION = 'Alpha 13.93';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
-const TESTER_BUILD = true;
+const TESTER_BUILD = false;
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
@@ -7493,7 +7559,8 @@ function processLogic(game, isl) {
   // récupère les dispositifs logiques (un dispositif en PAUSE est inerte).
   const sensors = [],
     gates = [],
-    sinks = [];
+    sinks = [],
+    emitters = [];
   let anyLogic = false;
   for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
     const trow = tiles[r];
@@ -7502,9 +7569,9 @@ function processLogic(game, isl) {
     if (bld.logicOff) bld.logicOff = false;
     const b = BUILDINGS[bld.id];
     if (!b) continue;
-    if (b.logic || b.logicSource || b.logicSink || b.logicGate) anyLogic = true;
+    if (b.logic || b.logicSource || b.logicSink || b.logicGate || b.logicMultiSource) anyLogic = true;
     if (bld.paused) continue;
-    if (b.logicSource) sensors.push({ bld, r, c });else if (b.logicGate) gates.push({ bld, r, c });else if (b.logicSink) sinks.push({ bld, r, c });
+    if (b.logicMultiSource) emitters.push({ bld, r, c });else if (b.logicSource) sensors.push({ bld, r, c });else if (b.logicGate) gates.push({ bld, r, c });else if (b.logicSink) sinks.push({ bld, r, c });
   }
   if (!game.logicState) game.logicState = {};
   const state = game.logicState[isl] = {};
@@ -7542,6 +7609,19 @@ function processLogic(game, isl) {
     s.bld.logicOut = v;
     if (v) for (const nid of adjacentNetworks(game, isl, s.r, s.c, 'logic_wire')) base[nid] = 1;
   }
+  // Multi-source par face (§1) : un bloc émetteur écrit UNE valeur par direction (pas un OU global).
+  // Mapping FIXE non orientable : dir 0 → α (poids fort), 1 → β, 2 → γ (poids faible), 3 → face inerte
+  // (toujours 0, réservée). Les bits proviennent de `bld.emitBits` (posé par le parent, §3.2) ; absent
+  // → tout à 0. N'écrit QUE des 1 (OR par réseau, comme les capteurs) → ne baisse jamais un réseau.
+  for (const e of emitters) {
+    const bits = e.bld.emitBits || [0, 0, 0, 0];
+    for (let d = 0; d < 4; d++) {
+      const bit = d === 3 ? 0 : bits[d] ? 1 : 0; // face 3 explicitement inerte
+      if (!bit) continue;
+      const nn = dirNet(e.r, e.c, d);
+      if (nn != null) base[nn] = 1;
+    }
+  }
   // Portes : entrées/sortie par orientation.
   const gateIO = gates.map(gt => {
     const dir = gt.bld.gateDir || 0;
@@ -7563,7 +7643,9 @@ function processLogic(game, isl) {
     for (const g of gateIO) {
       const ins = g.inNets.map(n => cur[n] ? 1 : 0);
       let out;
-      if (g.op === 'and') out = ins.length > 0 && ins.every(x => x) ? 1 : 0;else if (g.op === 'or') out = ins.some(x => x) ? 1 : 0;else out = ins.some(x => x) ? 0 : 1; // not = NON(OU des entrées)
+      // XOR/XNOR à >2 entrées = parité (nombre d'entrées à 1). NAND/NOR = négations d'AND/OR.
+      const ones = ins.reduce((a, x) => a + (x ? 1 : 0), 0);
+      if (g.op === 'and') out = ins.length > 0 && ins.every(x => x) ? 1 : 0;else if (g.op === 'or') out = ins.some(x => x) ? 1 : 0;else if (g.op === 'nand') out = ins.length > 0 && ins.every(x => x) ? 0 : 1;else if (g.op === 'nor') out = ins.some(x => x) ? 0 : 1;else if (g.op === 'xor') out = ones % 2 === 1 ? 1 : 0;else if (g.op === 'xnor') out = ones % 2 === 0 ? 1 : 0;else out = ins.some(x => x) ? 0 : 1; // not = NON(OU des entrées)
       g.gt.bld.logicOut = out;
       if (out && g.outNet != null) next[g.outNet] = 1;
     }
@@ -9935,7 +10017,10 @@ const TECH_NODES = [{
     n: 1
   }],
   unlocks: {
-    buildings: ['porte_and', 'porte_or', 'porte_not']
+    // Les 4 portes ajoutées (NAND/NOR/XOR/XNOR) sont provisoirement débloquées ici avec les 3 de
+    // base — leur gating définitif (nœuds 39/40, paliers P2/P3 du Collisionneur) viendra avec le
+    // runtime du puzzle. En attendant elles servent de composants logiques génériques.
+    buildings: ['porte_and', 'porte_or', 'porte_not', 'porte_nand', 'porte_nor', 'porte_xor', 'porte_xnor']
   }
 }, {
   // PHASE 5 : « Circuit Logique 2 » — au moins une PORTE construite (+ #33 confirmé via prereq).

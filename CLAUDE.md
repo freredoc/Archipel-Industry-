@@ -17,7 +17,31 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 274`, `GAME_VERSION = 'Alpha 13.92'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 275`, `GAME_VERSION = 'Alpha 13.93'`, `SAVE_VERSION = 27`.**
+  Changement 13.93 : **PUZZLE COLLISIONNEUR — Phase A (fondations : multi-source par face + 4 portes ;
+  brief `briefcouchelogiqueile6`).** PÉRIMÈTRE = les briques moteur non-régressives et testables ; le
+  runtime du puzzle (émetteur/vanne/Collisionneur/Data Center/nœuds 39-41/tutos) est REPORTÉ. `SAVE_VERSION`
+  INCHANGÉ (aucun champ persisté ajouté : portes = ids additifs ; `emitBits` lu au runtime, aucun bâtiment
+  ne le pose encore). (1) **§1 Multi-source par face** (`computeLogic`) : nouveau flag def `logicMultiSource`
+  + branche de collecte `emitters` (parallèle à sensors/gates/sinks) + boucle qui écrit **UNE valeur par
+  direction** dans `base` via `dirNet(r,c,d)` (mapping FIXE non orientable : dir 0→α, 1→β, 2→γ, 3→face
+  INERTE toujours 0). Les bits proviennent de `bld.emitBits` (posé par le parent, §3.2 non implémenté ;
+  absent → tout 0). N'écrit QUE des 1 (OR par réseau) → **non-régression** : un `logicSource` classique
+  continue de mettre à 1 TOUS ses réseaux adjacents (code inchangé). (2) **§3.1 Quatre portes** `porte_nand`/
+  `porte_nor`/`porte_xor`/`porte_xnor` (clones de `porte_not`, t5, `logicGate` = `nand/nor/xor/xnor`, coût
+  identique) + évaluation étendue dans la boucle de propagation (NAND=NON(ET), NOR=NON(OU), **XOR/XNOR =
+  PARITÉ** du nb d'entrées à 1 — seule généralisation cohérente pour 3 faces d'entrée). Sprites orientés
+  déjà intégrés (build 271, pack v2.5). Gating PROVISOIRE au nœud #33 (avec les 3 portes de base ; le split
+  définitif nœuds 39/40 = paliers P2/P3 viendra avec le runtime). (3) **§9** : les 8 clés `fil_logique_v1_*`
+  dites manquantes (07_NES_on, 09_NO(_on), 12_SO(_on), 13_NSO(_on), 15_NESO_on) sont **déjà présentes**
+  (intégrées au build 271) — vérifié, rien à faire. Validé : `node --check` (7 blocs) + tests unitaires
+  des tables de vérité (AND2/OR2/NAND2/NOR2/XOR2/XNOR2, XOR3/XNOR3 parité, NOT, XNOR = égalité 2 bits) +
+  Chromium boot 0 erreur JS + sprites de portes résolus. **⚠ REPORTÉ (runtime interlocké, prochain
+  passage) :** §3.2 bloc émetteur enfant/parent (cycle de vie + émission de saveurs aléatoires),
+  §3.3 bloc vanne + compteur `colliderConfirms` + pénalité (→ `SAVE_VERSION` 28), §3.4 jonction logique +
+  split de câble, §4 Collisionneur (démarrage 10 min, sigmoïde 5 min montante/descendante, paliers
+  P1/P2/P3 1→32→512→8192 MW), §5 débit Data Center (0,0625/tick ×2/niveau, bascule 4/s), §7 nœuds tech
+  39/40/41, §8 tutos. Build 274→275.
   Changement 13.92 : **REMBLAI SOUTERRAIN (gaté par la foreuse) + icône tuile terrain.** `SAVE_VERSION`
   INCHANGÉ (terrain persisté via `terrainMods` existant). (1) **Remblai île 7** : `tryExtend` +
   branche `handleTap` acceptent désormais l'île 7. La roche (`water`) adjacente à un tunnel (`land`/
