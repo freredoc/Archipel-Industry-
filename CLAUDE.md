@@ -17,7 +17,17 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 271`, `GAME_VERSION = 'Alpha 13.90'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 272`, `GAME_VERSION = 'Alpha 13.90'`, `SAVE_VERSION = 27`.**
+  Changement 13.90b : **CORRECTIF retours screenshots.** `SAVE_VERSION` INCHANGÉ (assets + CSS). (1) **Bouton
+  souterrain trop haut** → `.underground-btn` `top:92px` → **`top:150px`** (clair sous la barre INVENTAIRE/
+  Production). (2) **Tuiles de bordure du tunnel « plantées dans le nommage »** : 12 tuiles `i7_bord_*`
+  (`coin`/`ext`/`chenal`) étaient l'ART PRÉ-v2.5 (coin/ext inversés, chenal en U 3 côtés — cf. §« Correction
+  v2.5 » du README pack) car déjà présentes en jeu → non ré-injectées par le passage 13.90 (« missing » only).
+  Comparaison byte-à-byte pack v2.5 ↔ jeu : **18 sprites STALE** (les 12 `i7_bord_*` + `bat_collisionneur_p1/p2`
+  + `logic_porte_not_{e,n,o,s}`) → ré-inlinés en **override d'assignation** en fin de bloc `__SPRITE_DATA__`
+  (dernière assignation gagne au runtime, au-dessus de l'objet littéral). Vérifié : la dernière valeur de chaque
+  clé == pack. (Les `tile_i7_land/water/coast` sont IDENTIQUES pack↔jeu — le brun du tunnel est l'art voulu,
+  seul le bord était faux.) Validé : `node --check` (7 blocs). Build 271→272.
   Changement 13.90 : **PATCH île 6 — pack sprites v2.5 + onglets tungstène/quantique + bouton souterrain déplacé.**
   `SAVE_VERSION` INCHANGÉ (aucun champ persisté ; assets + UI). (1) **Intégration pack `ile6 v2.5`** :
   **70 sprites** manquants inlinés dans `window.__SPRITE_DATA__[…]` (couche logique complète — portes
