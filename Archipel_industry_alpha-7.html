@@ -3497,6 +3497,18 @@ function netConnectMask(tiles, r, c, carriers, junctionAxis) {
   }
   return mask;
 }
+// Directions (bitmask N=1/E=2/S=4/O=8) vers une tuile ÉLÉVATEUR adjacente. Le réseau route/tuyau
+// (matières) ET conduit (chaleur) s'y raccordent VISUELLEMENT — la cage relie surface ↔ souterrain.
+// L'électricité (câble) ne transite PAS par l'élévateur → non concernée (retour testeur : « pas de
+// connexions entre l'élévateur et les réseaux »).
+function elevatorEdgeMask(tiles, r, c) {
+  let m = 0;
+  for (const [dr, dc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
+    const nt = tiles[r + dr] && tiles[r + dr][c + dc];
+    if (nt && nt.terrain === 'elevator') m |= bit;
+  }
+  return m;
+}
 // Non-storable resources: never accumulate in pipe pools. Produced and consumed
 // within the same tick; any leftover is purged from all pools at end of tick.
 const NON_STORABLE = {
@@ -5936,8 +5948,8 @@ const SAVE_VERSION = 27;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 267;
-const GAME_VERSION = 'Alpha 13.86';
+const GAME_BUILD = 268;
+const GAME_VERSION = 'Alpha 13.87';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -12461,7 +12473,9 @@ function InfoPanel({
   const bRandomP = arcIO ? null : b.randomP;
   const upgradable = isUpgradable(info.id);
   const dev = game.ui && game.ui.dev;
-  const port = game.port[currentIsland] || {};
+  // Île 7 (souterrain) : l'amélioration/densification puise dans le port de l'île 6 (portPool) →
+  // la fiche évalue le coût sur le bon stock (avant : port[7] inexistant → tout en rouge).
+  const port = portPool(game, currentIsland) || {};
   const upCost = upgradable ? upgradeCost(b.cost, upg + 1, info.id) : null;
   const canUp = !!upCost && (dev || Object.keys(upCost).every(k => (port[k] || 0) >= upCost[k]));
   const downRefund = upgradable && upg > 0 ? upgradeCost(b.cost, upg, info.id) : null;
@@ -14386,7 +14400,8 @@ function NetworkPanel({
   const condSat = isConduit && condThrough > 0 && condFlow >= condThrough * 0.99;
   const cap = isConduit ? condThrough : isWire && wi ? wi.cap : unlimited ? Infinity : networkThroughput(lvl, netObj.type);
   const dev = game.ui && game.ui.dev;
-  const port = game.port[currentIsland] || {};
+  // Île 7 : coût d'amélioration réseau évalué sur le port de l'île 6 (portPool).
+  const port = portPool(game, currentIsland) || {};
   // Amélioration : un SEUL matériau par type de réseau (ciment / lingot de fer / câble) —
   // plus d'option « premium » béton armé / acier depuis le build 209.
   const hiMats = NETWORK_HI_MATS[netObj.type] || {};
@@ -15820,6 +15835,7 @@ function App() {
   // Hook de test (inoffensif, comme window.__heat) : accès à l'état de la partie en cours
   // pour les E2E Chromium (forger un bâtiment, lire un réseau…).
   if (typeof window !== 'undefined') window.__gameRef = gameRef;
+  if (typeof window !== 'undefined') window.__ui = () => ({ tryPlace, canPlace, switchIsland });
   if (gameRef.current === null) {
     const islands = {};
     for (const def of ISLAND_TERRAINS) islands[def.id] = buildIslandTiles(def);
@@ -19416,6 +19432,26 @@ function App() {
           ctx.fillStyle = TERRAIN_COLORS.elevator;
           ctx.fillRect(x, y, tile, tile);
         }
+        // Stubs de raccordement : la cage « aspire » les réseaux route/tuyau/conduit adjacents.
+        // L'élévateur est un TERRAIN (pas un bâtiment) → sans ceci les tuiles réseau ne dessinaient
+        // rien vers lui (retour testeur : « pas de connexions entre l'élévateur et les réseaux »).
+        // Un segment depuis le centre de la cage vers chaque réseau voisin = raccord visuel continu.
+        for (const [dr, dc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
+          const nt = tiles[r + dr] && tiles[r + dr][c + dc];
+          if (!nt || !nt.building) continue;
+          const nid = nt.building.id,
+            nd = BUILDINGS[nid];
+          let carrier = null;
+          if (nid === 'road' || nid === 'pipe' || nid === 'conduit') carrier = nid;else if (nd && nd.kind === 'junction' && nd.junction) {
+            for (const cc of ['road', 'pipe']) if (nd.junction.indexOf(cc) !== -1) { carrier = cc; break; }
+          }
+          if (!carrier) continue;
+          const nnid = nd && nd.kind === 'junction' ? nt.netIds && nt.netIds[carrier] : nt.networkId;
+          const nnet = g.networks[isl] && g.networks[isl][nnid];
+          const nlvl = nnet && nnet.level || 1;
+          const nslvl = nnet && nnet.unlimited ? 4 : Math.min(nlvl, 3);
+          drawSprite(ctx, NET_PREFIX[carrier] + '_v' + nslvl + '_' + NET_MASK_SUFFIX[bit], x, y, tile, tile);
+        }
       } else if (SPRITES_ENABLED) {
         // Tuile de TERRE : base coast (si elle touche l'eau) ou land, recalculée pour rester
         // cohérente avec l'écume ; puis triangle de transition ; puis overlay de feature
@@ -19515,6 +19551,8 @@ function App() {
             if (nb && (nb.heatCap || nb.tour)) mask |= bit;
           }
         }
+        // Branche vers la tuile élévateur adjacente (la chaleur transite par la cage, île 6 ↔ 7).
+        mask |= elevatorEdgeMask(tiles, r, c);
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
         // Sprite BLOQUÉ à V3 comme les autres réseaux (route/tuyau/câble) : le V4 est réservé au
@@ -19569,7 +19607,9 @@ function App() {
         // Côtés connectés (route/tuyau/câble portent un seul carrier) -> variante.
         // junctionAxis : pas de branche vers une jonction dont l'axe de CE porteur ne fait
         // pas face à la tuile (elle n'y est pas raccordée mécaniquement, règle 13.18).
-        const mask = netConnectMask(tiles, r, c, [carrier], true);
+        let mask = netConnectMask(tiles, r, c, [carrier], true);
+        // Route/tuyau : branche vers une tuile élévateur adjacente (raccord surface ↔ souterrain).
+        if (carrier === 'road' || carrier === 'pipe') mask |= elevatorEdgeMask(tiles, r, c);
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
         // Visuel bloqué à V3 pour les niveaux >= 3 ; le sprite V4 est réservé à
@@ -20721,7 +20761,10 @@ function App() {
   return React.createElement("div", {
     className: "app"
   }, React.createElement(Hud, {
-    resources: game.port[game.currentIsland] || {},
+    // Île 7 (souterrain) : l'inventaire affiché EST celui de l'île 6 (l'élévateur relie les deux ;
+    // portPool renvoie game.port[6] pour l'île 7). Ainsi la construction souterraine « puise » dans
+    // l'inventaire de l'île 6 et le joueur le VOIT (avant : port[7] inexistant → inventaire vide).
+    resources: portPool(game, game.currentIsland) || {},
     unlockedRes: unlockedResourceSet(game),
     invTrends: invTrends,
     energy: game.energy[game.currentIsland],
@@ -20980,7 +21023,9 @@ function App() {
     tutorialRevealed: game.tutorial && game.tutorial.active && game.currentIsland === 1 ? tutorialRevealedSet(game.tutorial.step) : null,
     // Tuto bloquant : étape courante (ou null hors tutoriel) → gate des onglets d'action.
     tutStep: tutorialStep >= 0 && game.tutorial && game.tutorial.active && game.currentIsland === 1 ? TUTORIAL_STEPS[tutorialStep] || null : null,
-    port: game.port[game.currentIsland] || {},
+    // Menu Bâtiment : coût affiché/évalué sur l'inventaire de l'île 6 quand on est au souterrain
+    // (île 7) → les pastilles de coût ne sont plus toutes « rouge » (portPool → port[6]).
+    port: portPool(game, game.currentIsland) || {},
     playTicks: game.playTicks || 0,
     timeScale: timeScale,
     onToggleFast: toggleFastMode,
