@@ -3696,7 +3696,7 @@ const BUILDINGS = {
   },
   eolienne: {
     name: 'Éolienne V1',
-    forbiddenIslands: [6],
+    forbiddenIslands: [6, 7],
     color: '#87CEEB',
     label: 'ÉOL',
     kind: 'build',
@@ -3732,7 +3732,7 @@ const BUILDINGS = {
   },
   centrale_charbon: {
     name: 'Centrale Charbon V1',
-    forbiddenIslands: [6],
+    forbiddenIslands: [6, 7],
     color: '#455A64',
     label: 'C.CH',
     kind: 'build',
@@ -3920,7 +3920,7 @@ const BUILDINGS = {
   },
   centrale_charbon_v2: {
     name: 'Centrale Charbon V2',
-    forbiddenIslands: [6],
+    forbiddenIslands: [6, 7],
     color: '#546E7A',
     label: 'CCH2',
     kind: 'build',
@@ -4204,7 +4204,7 @@ const BUILDINGS = {
   },
   centrale_diesel: {
     name: 'Centrale Diesel V1',
-    forbiddenIslands: [6],
+    forbiddenIslands: [6, 7],
     color: '#37474F',
     label: 'C.DSL',
     kind: 'build',
@@ -4229,7 +4229,7 @@ const BUILDINGS = {
   // Nv.11 : 1536 diesel + 2048 oxygène → 524 288 kW (base ÷1024 : 1,5 diesel + 2 O₂ → 512 kW).
   centrale_diesel_v2: {
     name: 'Centrale Diesel V2',
-    forbiddenIslands: [6],
+    forbiddenIslands: [6, 7],
     color: '#263238',
     label: 'DSL2',
     kind: 'build',
@@ -4682,7 +4682,7 @@ const BUILDINGS = {
   },
   eolienne_offshore: {
     name: 'Éolienne Offshore V2',
-    forbiddenIslands: [6],
+    forbiddenIslands: [6, 7],
     color: '#4DB6AC',
     label: 'OFF.W',
     kind: 'build',
@@ -4837,6 +4837,8 @@ const BUILDINGS = {
   },
   centrale_nucleaire: {
     name: 'Centrale Nucléaire V1',
+    // Aucune centrale au souterrain (île 7) hors Géothermie + Accumulateur (demande testeur).
+    forbiddenIslands: [7],
     color: '#7E57C2',
     label: 'NUC',
     kind: 'build',
@@ -5948,8 +5950,8 @@ const SAVE_VERSION = 27;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 269;
-const GAME_VERSION = 'Alpha 13.88';
+const GAME_BUILD = 270;
+const GAME_VERSION = 'Alpha 13.89';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -6869,6 +6871,10 @@ function rebuildNetworks(game, islandId) {
 // UHP demande 16 câble irr. + 1 supra = 17/s → tourne à ~94 % au niveau 0, plafond ressenti d'emblée).
 const ELEVATOR_BASE_RATE = 16;
 const elevatorRateAt = lvl => ELEVATOR_BASE_RATE * Math.pow(2, lvl || 0);
+// Somme des unités de matière d'un coût. Sert à la CONSTRUCTION SOUTERRAINE étalée : la matière
+// doit DESCENDRE par l'élévateur (unités/s, priorité n°1 sur le débit) avant que le bâtiment soit
+// finalisé — un décompte + un sprite fantôme accompagnent la descente.
+const costUnits = cost => { let s = 0; if (cost) for (const k in cost) if (cost[k] > 0) s += cost[k]; return s; };
 // Coût d'amélioration (payé depuis le port de l'île 6, ×2/niveau — aligné sur portUpgradeCost).
 const ELEVATOR_BASE_COST = {
   piece_precision: 250,
@@ -7766,6 +7772,18 @@ function tickIsland(game, isl) {
       if (bld.active !== pA0) activeChanged = true;
       continue;
     }
+    // Bâtiment SOUTERRAIN en cours de CONSTRUCTION : fantôme inactif tant que la matière n'a pas
+    // fini de descendre par l'élévateur (bld.construction.rem > 0). Finalisé par la passe élévateur.
+    if (bld.construction && (bld.construction.rem || 0) > 0) {
+      const pAc = bld.active;
+      bld.active = false;
+      bld.disc = false;
+      bld.discReason = 'building';
+      bld.regime = 0;
+      bld.heatEmit = 0;
+      if (pAc !== false) activeChanged = true;
+      continue;
+    }
     if (b.accumulator) {
       const asz = b.size || [1, 1];
       accList.push({
@@ -8144,36 +8162,51 @@ function tickIsland(game, isl) {
   }
   if (!game.solidFactor) game.solidFactor = {};
   game.solidFactor[isl] = solidF;
-  // Débit de l'élévateur (île 7) : enveloppe PARTAGÉE bornant la somme de TOUT le port I/O (road +
-  // pipePort, intrants + sortants) × régime, tous sens confondus. Allocation par priorité de flux
-  // (haute → normale → basse, même schéma que la saturation réseau via addTier). elevFacOf(pri) =
-  // fraction servie de ce niveau. Nul pour les îles 1-6 (elevTierFactor null → facteur 1).
-  let elevTierFactor = null;
+  // Débit de l'élévateur (île 7) : enveloppe PARTAGÉE (elevCap unités/s) allouée par CATÉGORIE, dans
+  // l'ordre de PRIORITÉ voulu (retour testeur) :
+  //   1) CONSTRUCTION — la matière qui descend pour finaliser un bâtiment fantôme (bld.construction),
+  //   2) SORTANTS non immédiatement consommés — dépôts qui remontent au port de l'île 6,
+  //   3) INTRANTS — puisés au port de l'île 6.
+  // elevOutFac / elevInFac = fraction servie des sortants / intrants. = 1 pour les îles 1-6.
+  let elevOutFac = 1,
+    elevInFac = 1;
   if (isl === 7) {
-    const elevTierDemand = {};
-    let elevTotal = 0;
+    let outDem = 0,
+      inDem = 0;
     for (const a of actives) {
       const rg = a.regime != null ? a.regime : 1;
-      let d = 0;
-      for (const k in a.inByType.road || {}) d += rg * a.inByType.road[k];
-      for (const k in a.inByType.pipePort || {}) d += rg * a.inByType.pipePort[k];
-      for (const k in a.outByType.road || {}) d += rg * a.outByType.road[k];
-      for (const k in a.outByType.pipePort || {}) d += rg * a.outByType.pipePort[k];
-      if (d > 0) { elevTierDemand[a.pri] = (elevTierDemand[a.pri] || 0) + d; elevTotal += d; }
+      for (const k in a.outByType.road || {}) outDem += rg * a.outByType.road[k];
+      for (const k in a.outByType.pipePort || {}) outDem += rg * a.outByType.pipePort[k];
+      for (const k in a.inByType.road || {}) inDem += rg * a.inByType.road[k];
+      for (const k in a.inByType.pipePort || {}) inDem += rg * a.inByType.pipePort[k];
     }
-    elevTierFactor = {};
-    let remaining = elevCap;
-    for (const tier of PRI_ORDER) {
-      const dd = elevTierDemand[tier] || 0;
-      if (dd <= 0) { elevTierFactor[tier] = 1; continue; }
-      const give = Math.min(remaining, dd);
-      elevTierFactor[tier] = dd > 0 ? give / dd : 1;
-      remaining -= give;
+    // Construction : bâtiments île 7 dont la matière n'a pas fini de descendre.
+    const consBlds = [];
+    let consDem = 0;
+    for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
+      const bb = tiles[r][c].building;
+      if (bb && bb.construction && (bb.construction.rem || 0) > 1e-6) { consBlds.push(bb); consDem += bb.construction.rem; }
     }
-    // Retour temps réel pour le panneau élévateur (débit consommé / max).
-    game.elevatorFlow = { demand: elevTotal, cap: elevCap, used: Math.min(elevTotal, elevCap), level: game.elevatorLevel || 0 };
+    // Si le souterrain n'est pas relié à la surface (élévateur non réparé / non relié au port),
+    // RIEN ne descend : ni construction, ni I/O (undergroundBlocked coupe déjà le régime des I/O).
+    let remaining = undergroundBlocked ? 0 : elevCap;
+    const consGive = Math.min(remaining, consDem); remaining -= consGive;
+    const outGive = Math.min(remaining, outDem); remaining -= outGive;
+    const inGive = Math.min(remaining, inDem); remaining -= inGive;
+    elevOutFac = outDem > 0 ? outGive / outDem : 1;
+    elevInFac = inDem > 0 ? inGive / inDem : 1;
+    // Faire descendre la matière de construction (proportionnel) ; finaliser (activer) à 0.
+    const consFrac = consDem > 0 ? consGive / consDem : 0;
+    for (const bb of consBlds) {
+      const cst = bb.construction;
+      const served = cst.rem * consFrac;
+      cst.rem -= served;
+      cst.rate = served; // unités/s réellement descendues → décompte du fantôme
+      if (cst.rem <= 1e-6) { delete bb.construction; activeChanged = true; }
+    }
+    // Retour temps réel pour le panneau élévateur (débit consommé / max + ventilation par catégorie).
+    game.elevatorFlow = { demand: consDem + outDem + inDem, cap: elevCap, used: consGive + outGive + inGive, construction: consGive, out: outGive, in: inGive, level: game.elevatorLevel || 0 };
   }
-  const elevFacOf = pri => elevTierFactor ? (elevTierFactor[pri] != null ? elevTierFactor[pri] : 1) : 1;
   const facOf = (route, ty, pri) => {
     const nid = route[ty];
     if (nid == null) return 1;
@@ -8183,7 +8216,7 @@ function tickIsland(game, isl) {
   };
   for (const a of actives) {
     const rg = a.regime != null ? a.regime : 1; // bride conso au régime (intrants/élec.)
-    const ef = elevFacOf(a.pri); // bridage élévateur (île 7 ; = 1 ailleurs)
+    const ef = elevInFac; // bridage élévateur des INTRANTS (île 7 ; = 1 ailleurs)
     if (a.inByType.road) {
       const fc = facOf(a.routeIn, 'road', a.pri) * rg * ef;
       for (const k in a.inByType.road) port[k] = (port[k] || 0) - fc * a.inByType.road[k];
@@ -8201,7 +8234,7 @@ function tickIsland(game, isl) {
   const prod = game.techTree && game.techTree.produced;
   for (const a of actives) {
     const rg = a.regime != null ? a.regime : 1; // bride production au régime
-    const ef = elevFacOf(a.pri); // bridage élévateur (île 7 ; = 1 ailleurs)
+    const ef = elevOutFac; // bridage élévateur des SORTANTS (île 7 ; = 1 ailleurs)
     if (a.outByType.road) {
       const fc = facOf(a.routeOut, 'road', a.pri) * rg * ef;
       for (const k in a.outByType.road) {
@@ -12314,6 +12347,10 @@ function InfoPanel({
         React.createElement("span", { className: "lbl" }, I18N.t('Débit (consommé / max)')),
         React.createElement("span", { className: "val", style: { color: used > rate - 0.5 ? 'var(--orange)' : 'var(--ink)' } }, fmtR(used) + ' / ' + fmtR(rate) + I18N.t(' par seconde'))
       ),
+      React.createElement("div", { className: "ip-row ip-theo" },
+        React.createElement("span", { className: "lbl" }, I18N.t('Priorité : constr. → sortants → intrants')),
+        React.createElement("span", { className: "val" }, fmtR(flow.construction || 0) + ' · ' + fmtR(flow.out || 0) + ' · ' + fmtR(flow.in || 0) + I18N.t(' /s'))
+      ),
       React.createElement("div", { className: "ip-row" },
         React.createElement("span", { className: "lbl" }, I18N.t('Après amélioration')),
         React.createElement("span", { className: "val" }, fmtR(rate) + ' → ' + fmtR(nextRate) + I18N.t(' /s'))
@@ -12606,7 +12643,8 @@ function InfoPanel({
     elevator: I18N.t('élévateur non relié (réparé + relié au port en surface + bâtiment relié à l\'élévateur)'),
     // Éteint par un actionneur du réseau logique (distinct d'un manque d'intrant).
     logic: I18N.t('éteint par la logique (actionneur)'),
-    paused: I18N.t('en pause (par le joueur)')
+    paused: I18N.t('en pause (par le joueur)'),
+    building: I18N.t('en construction (matière en descente par l\'élévateur)')
   };
   // Régime RÉEL du bâtiment = min(intrants disponibles, élec. disponible) × saturation réseau.
   // `bld.regime` (calculé au tick) bride conso ET production au prorata : un déficit partiel
@@ -12617,7 +12655,14 @@ function InfoPanel({
   const drawsPower = nominalPower(bld) > 0;
   const netDisc = bld.active === false && (bld.disc || bld.discReason === 'road' || bld.discReason === 'pipe' || bld.discReason === 'wire');
   let speedPct, speedReason;
-  if (bld.paused) {
+  if (bld.construction && (bld.construction.rem || 0) > 1e-6) {
+    // Fantôme en construction : décompte + % de matière descendue (au débit courant de l'élévateur).
+    speedPct = 0;
+    const cst = bld.construction;
+    const secs = (cst.rate || 0) > 1e-6 ? Math.ceil(cst.rem / cst.rate) : null;
+    const pct = cst.tot > 0 ? Math.round((1 - cst.rem / cst.tot) * 100) : 0;
+    speedReason = I18N.t('en construction') + ' · ' + pct + '%' + (secs != null ? ' · ~' + secs + 's' : ' · ' + I18N.t('en attente de l\'élévateur'));
+  } else if (bld.paused) {
     speedPct = 0;
     speedReason = I18N.t('en pause (par le joueur)');
   } else if (netDisc) {
@@ -16275,6 +16320,9 @@ function App() {
           if (b.fluxPri === 'haute' || b.fluxPri === 'basse') pl.fp = b.fluxPri;
           // Pause joueur — champ additionnel rétro-compatible (absent = actif).
           if (b.paused) pl.pz = 1;
+          // Construction souterraine en cours (matière qui descend) — rem/tot persistés (rétro-compat ;
+          // rate transitoire recalculé au tick). Sans ça, un reload finaliserait/perdrait le fantôme.
+          if (b.construction && (b.construction.rem || 0) > 1e-6) pl.cb = { rem: b.construction.rem, tot: b.construction.tot };
           // Réseau logique (phase 5) — réglages d'instance (champs additifs rétro-compatibles).
           // logicOff n'est PAS persisté : recalculé par processLogic dès le 1er tick.
           if (b.sensorMode) pl.sm = b.sensorMode;
@@ -16822,6 +16870,8 @@ function App() {
           }
           if (p.fp === 'haute' || p.fp === 'basse') t.building.fluxPri = p.fp;
           if (p.pz) t.building.paused = true;
+          // Construction souterraine en cours (fantôme) — reprend la descente au chargement.
+          if (p.cb && +p.cb.rem > 1e-6) t.building.construction = { rem: +p.cb.rem, tot: +p.cb.tot || +p.cb.rem, rate: 0 };
           // Réseau logique (phase 5) : réglages d'instance (capteur/actionneur/porte).
           if (p.sm) t.building.sensorMode = p.sm;
           if (p.sd != null) t.building.sensorDir = +p.sd;
@@ -17903,6 +17953,14 @@ function App() {
     // Nv.11, et démoli il ne remboursait même pas le forfait.)
     if (TIER_STEP[id]) t.building.upgrade = tierEntry(id);
     if (ARC_DEF[id]) t.building.arc = arcDefaultState(id);
+    // Construction SOUTERRAINE étalée (île 7, bâtiments) : la matière (déjà payée au port de l'île 6)
+    // doit DESCENDRE par l'élévateur avant que le bâtiment soit finalisé. On le marque « en
+    // construction » (fantôme inactif) ; la passe élévateur de tickIsland fait descendre `rem`
+    // unités/s (priorité n°1) → à 0, le bâtiment s'active. En dev : construction instantanée.
+    if (gameRef.current.currentIsland === 7 && b.kind === 'build' && !dev) {
+      const u = costUnits(costToPay);
+      if (u > 0) t.building.construction = { rem: u, tot: u, rate: 0 };
+    }
     // Dispositifs logiques : défauts. Capteur/actionneur → cible = 1er voisin bâtiment trouvé
     // (choix explicite modifiable au clic). Capteur → condition 'active'. Porte → sortie au Nord.
     if (b.logicSource || b.logicSink || b.logicGate) {
@@ -19152,10 +19210,47 @@ function App() {
       ctx.fill();
     }
   }
-  function drawBuilding(ctx, x, y, tile, id, inactive, disconnected, upg, wTiles, hTiles, discReason, regime, inFac, pwrAvg) {
+  function drawBuilding(ctx, x, y, tile, id, inactive, disconnected, upg, wTiles, hTiles, discReason, regime, inFac, pwrAvg, ghost) {
     const b = BUILDINGS[id];
     const W = (wTiles || 1) * tile,
       H = (hTiles || 1) * tile;
+    // FANTÔME de construction souterraine (la matière descend encore par l'élévateur) : sprite
+    // translucide clignotant + barre de progression + décompte (s restantes au débit courant, ou
+    // ⏸ si rien ne descend). Pas de badges (le bâtiment n'existe pas encore).
+    if (ghost && (ghost.rem || 0) > 1e-6) {
+      const sk = SPRITES_ENABLED && b.kind !== 'infra' && b.kind !== 'junction' ? buildingSpriteKey(id, upg) : null;
+      ctx.save();
+      ctx.globalAlpha = 0.38 + 0.14 * Math.sin((typeof performance !== 'undefined' ? performance.now() : Date.now()) / 300);
+      if (!(sk && drawSprite(ctx, sk, x, y, W, H))) {
+        ctx.fillStyle = b.color || '#888';
+        ctx.fillRect(x + tile * 0.15, y + tile * 0.15, W - tile * 0.3, H - tile * 0.3);
+      }
+      ctx.restore();
+      _animPlayed = true; // clignotement → redraw continu
+      const prog = ghost.tot > 0 ? 1 - ghost.rem / ghost.tot : 0;
+      const bw = W * 0.78,
+        bh = Math.max(3, tile * 0.09),
+        bx = x + (W - bw) / 2,
+        by = y + H - bh - tile * 0.1;
+      ctx.fillStyle = 'rgba(0,0,0,.6)';
+      ctx.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
+      ctx.fillStyle = '#4FC3F7';
+      ctx.fillRect(bx, by, bw * Math.max(0, Math.min(1, prog)), bh);
+      if (tile >= 18) {
+        const secs = (ghost.rate || 0) > 1e-6 ? Math.ceil(ghost.rem / ghost.rate) : null;
+        const txt = secs != null ? secs + 's' : '⏸';
+        ctx.font = 'bold ' + Math.round(tile * 0.32) + "px 'DM Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(0,0,0,.75)';
+        ctx.fillText(txt, x + W / 2 + 1, y + H * 0.4 + 1);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(txt, x + W / 2, y + H * 0.4);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+      }
+      return;
+    }
     // Efficacité réelle [0..1] : 0 si arrêté/déconnecté, sinon le régime calculé au tick.
     const eff = inactive || disconnected ? 0 : regime != null ? Math.max(0, Math.min(1, regime)) : 1;
     // En déficit (au ralenti) si actif mais sous ~99,5 % — on garde le sprite à PLEINE taille
@@ -19785,7 +19880,7 @@ function App() {
       if (logicSpriteKey) {
         drawSprite(ctx, logicSpriteKey, x, y, tile, tile);
       } else {
-        drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime, t.building.inFac, t.building.pwrAvg);
+        drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime, t.building.inFac, t.building.pwrAvg, t.building.construction);
       }
       // Pastille d'état (signal 0/1) TOUJOURS ; flèche d'orientation SEULEMENT en repli vectoriel
       // (le sprite officiel encode déjà l'orientation).
