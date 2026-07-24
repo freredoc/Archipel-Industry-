@@ -17,7 +17,18 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 273`, `GAME_VERSION = 'Alpha 13.91'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 274`, `GAME_VERSION = 'Alpha 13.92'`, `SAVE_VERSION = 27`.**
+  Changement 13.92 : **REMBLAI SOUTERRAIN (gaté par la foreuse) + icône tuile terrain.** `SAVE_VERSION`
+  INCHANGÉ (terrain persisté via `terrainMods` existant). (1) **Remblai île 7** : `tryExtend` +
+  branche `handleTap` acceptent désormais l'île 7. La roche (`water`) adjacente à un tunnel (`land`/
+  `coast`) est remblayable → devient du **SOL DE TUNNEL (`land`)** (en surface : `coast`, inchangé),
+  MAIS exige une **FOREUSE adjacente** (4-dir, comme le forage — « il faut la foreuse ») : garde dans
+  `handleTap` (pas de panneau sans foreuse) ET dans `tryExtend` (toast « Foreuse requise à côté »).
+  Payé depuis le port île 6 (`portPool(7)`→`port[6]`, résolution île courante). (2) **Icône** : le
+  bouton « Remblayer » de l'`InfoPanel` (mode `extend`) affiche un **sprite de tuile terrain** (île 7 →
+  `tile_i7_land`, surface → `tile_i<N>_coast`) au lieu de l'emoji 🏗️ (`iconSprite` → `<img.ui-ico>`).
+  i18n toast en/es/de. Validé : `node --check` (7 blocs) + sprites présents + Chromium boot 0 erreur JS.
+  Build 273→274.
   Changement 13.91 : **COUCHE LOGIQUE togglable + swap de barre d'outils.** `SAVE_VERSION` INCHANGÉ
   (`uiPrefs.logicLayer` = champ additif rétro-compatible ; absent = false). (1) **Bouton bascule** en
   HAUT À GAUCHE, sous la barre d'inventaire (`.logiclayer-btn` `left:8px;top:150px`, miroir du bouton
