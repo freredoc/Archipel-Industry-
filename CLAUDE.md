@@ -17,7 +17,38 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 282`, `GAME_VERSION = 'Alpha 14.00'`, `SAVE_VERSION = 28`.**
+- **État au dernier passage : `GAME_BUILD = 283`, `GAME_VERSION = 'Alpha 14.01'`, `SAVE_VERSION = 29`.**
+  Changement 14.01 : **RESTRUCTURATION de l'arbre de recherche (nœuds 33-43) + 4 boutons de direction
+  N/E/S/O dans le panneau logique.** `SAVE_VERSION` **28→29** (renumérotation → migration obligatoire).
+  (1) **Panneau logique** : le bouton de rotation qui faisait tourner à l'aveugle est remplacé par
+  **4 boutons À SUIVRE sur la largeur, ordre NORD · EST · SUD · OUEST** (grid 4 colonnes ; l'index
+  moteur `DIRS4` étant `[N, S, O, E]`, l'ordre d'AFFICHAGE remappe vers 0, 3, 1, 2). La face courante
+  est surlignée. (2) **Arbre restructuré (43 nœuds contigus)** : **33 = Batterie V2** (ex-39) ;
+  **34 = Forage Profond** → la FOREUSE (elle venait de l'ancienne « Réparation du Collisionneur » — or
+  la foreuse sert à trouver l'He3 qui ALIMENTE le Collisionneur : l'incohérence signalée depuis la
+  phase 4 est enfin levée) ; la chaîne He3/Quantique/Data Center glisse de −1 (**35** Hélium, **36**
+  Ordi Quantique, **37** Data Center) ; puis **3 RÉPARATIONS (livraison) alternées avec 3 PUZZLES
+  (confirmations)** : **38** Réparation I → `porte_and/or/not`, **39** P1 (100) → *ensemble production
+  or v2*, **40** Réparation II → `porte_nand/nor`, **41** P2 (1 000) → *ensemble prod nucléaire v2*,
+  **42** Réparation III → `porte_xor/xnor` (toutes les portes), **43** P3 (10 000) → *stabilisateur
+  quantique + antenne v2 + usine moteur nuc v2 + mines v4*. Les nœuds « Circuit Logique » et « Poser une
+  porte logique » sont **SUPPRIMÉS** (les portes sont désormais la récompense des réparations).
+  ⚠ **BRANCHEMENTS PRÉPARÉS** : les récompenses des 3 puzzles référencent des ids de bâtiments qui
+  **N'EXISTENT PAS** (aucune def créée — demande explicite « préparer les branchements, ne pas créer »).
+  C'est SANS RISQUE : `applyUnlocks` ne touche pas `unlocks.buildings`, `unlockedBuildingSet` ne fait
+  qu'ajouter des chaînes, et les 2 sites d'affichage utilisent `BUILDINGS[b] && BUILDINGS[b].name || b`
+  (repli null-safe → l'id brut s'affiche). (3) **Constantes nommées** `COLLIDER_REPAIR_NODES [38,40,42]`
+  / `COLLIDER_PUZZLE_NODES [39,41,43]` + helpers `isNodeConfirmed`/`colliderRepaired` : les 3 sites qui
+  codaient `nodes[34]` en dur (et `colliderPalier`) passent par ces constantes — ces ids avaient DÉJÀ
+  dérivé une fois. Palier = 1 + nb de PUZZLES résolus. (4) **Migration < 29** (remappage par SENS, pas
+  par numéro) : 39→33 (Batterie V2), 35→34 (Forage, MÊME récompense = foreuse), 36→35, 37→36, 38→37,
+  **ancien 33 « Circuit Logique » → 38 Réparation I** (le joueur NE PERD PAS ses 3 portes de base),
+  40→39, 41→41, 42→43. LOCALES `tech` 33-43 réécrites ×4 langues. Validé : `node --check` (7 blocs) +
+  Chromium E2E : arbre **43 nœuds contigus**, paliers 1→2→3 pilotés par les puzzles, Réparation I
+  confirmée → le Collisionneur démarre ; **4 boutons N/E/S/O en 4 colonnes**, clic RÉEL sur chacun →
+  `gateDir` 3/1/2/0 exacts + surlignage ; **save v28 forgée (ancien arbre) → migration** : foreuse,
+  Batterie V2 et portes de base CONSERVÉES, palier 2, Réparation II en `condition_ok` ; 0 erreur JS.
+  Build 282→283.
   Changement 14.00 : **PUZZLE COLLISIONNEUR — §8 tutos + panneau d'état (le brief est COMPLET).**
   `SAVE_VERSION` INCHANGÉ (tips = `tipsSeen` existant ; panneau = lecture seule). (1) **§8 — 4 tutos**
   ajoutés à `GAME_TIPS` : **`collider_cmp1`** « Comparer deux bits » (déblocage des 3 portes de base :
