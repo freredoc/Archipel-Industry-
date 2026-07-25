@@ -17,7 +17,30 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 281`, `GAME_VERSION = 'Alpha 13.99'`, `SAVE_VERSION = 28`.**
+- **État au dernier passage : `GAME_BUILD = 282`, `GAME_VERSION = 'Alpha 14.00'`, `SAVE_VERSION = 28`.**
+  Changement 14.00 : **PUZZLE COLLISIONNEUR — §8 tutos + panneau d'état (le brief est COMPLET).**
+  `SAVE_VERSION` INCHANGÉ (tips = `tipsSeen` existant ; panneau = lecture seule). (1) **§8 — 4 tutos**
+  ajoutés à `GAME_TIPS` : **`collider_cmp1`** « Comparer deux bits » (déblocage des 3 portes de base :
+  explique le tirage aléatoire des saveurs, la vanne, et que le comparateur 1 bit coûte **5 portes**
+  = 2 NOT + 2 AND + 1 OR) ; **`collider_cmp2`** « NAND & NOR : le comparateur en 3 portes » (déblocage
+  NAND/NOR au nœud 40 : **`NOR(a,b) OU AND(a,b)`** = XNOR, 2 portes de moins) ; **`collider_cmp3`**
+  « XNOR natif — et les leptons » (déblocage XOR/XNOR au 41 : 1 porte par bit, MAIS le détecteur
+  000/111 reste nécessaire — NOR des 3 bits / AND des 3 bits + OU final) ; **`collider_penalite`**
+  « Le Collisionneur s'est éteint » (`when: () => false`, ouvert par le TICK). (2) **Notification de
+  pénalité** : le flag `colliderPenaltyNotify` posé par `colliderPenalty` est consommé dans la boucle
+  `frame` (à côté de `nucNotify`/`heatTrip`) → **toast rouge** systématique + **popup la PREMIÈRE fois**
+  (garde `tipsSeen` + `!activeTipRef.current` → ne vole jamais le canal à une astuce déjà ouverte).
+  C'est le tuto le plus important du brief : sans lui le joueur croit à un bug. (3) **Panneau d'état du
+  Collisionneur** (`InfoPanel`, `info.mode === 'collider'`, ouvert en touchant le landmark — `handleTap`
+  accepte désormais `t.terrain === 'collider'`) : **État** (en ruine / démarrage / en service / arrêt),
+  **Palier** (P1-P3 · nb de saveurs · nb de bits), **Démarrage restant** (mm:ss), **Puissance**
+  (courante / plafond du palier), **Électricité insuffisante** si `powered === false`, **Confirmations**
+  (courant / objectif du palier), **Pénalités**, et les **codes émis** (Collisionneur / Data Center) en
+  service. i18n en/es/de des 20 nouveaux libellés. Validé : `node --check` (7 blocs) + Chromium E2E :
+  **tap réel sur le landmark → panneau** (« P3 · 6 flavors · 3 bits », « Startup remaining 09:59 »,
+  « 21,3 MW / 8,39 GW », « insufficient — startup is falling back », « 0 / 10 000 ») ; les **3 tutos de
+  portes s'affichent** au déblocage ; **pénalité réelle → popup « Le Collisionneur s'est éteint »**
+  marquée vue (une seule fois) ; 0 erreur JS. Build 281→282.
   Changement 13.99 : **PUZZLE COLLISIONNEUR — runtime complet (§2/§3.2/§3.3/§3.4/§4/§5/§7 du brief).**
   `SAVE_VERSION` INCHANGÉ (champs additifs : `collider`, `techTree.colliderConfirms`, éléments enfants
   dans `t.logic` déjà couvert par `logicPlacements`). (1) **§2 Encodage PRÉFIXE des saveurs**
