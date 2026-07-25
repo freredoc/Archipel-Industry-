@@ -17,7 +17,44 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 280`, `GAME_VERSION = 'Alpha 13.98'`, `SAVE_VERSION = 28`.**
+- **État au dernier passage : `GAME_BUILD = 281`, `GAME_VERSION = 'Alpha 13.99'`, `SAVE_VERSION = 28`.**
+  Changement 13.99 : **PUZZLE COLLISIONNEUR — runtime complet (§2/§3.2/§3.3/§3.4/§4/§5/§7 du brief).**
+  `SAVE_VERSION` INCHANGÉ (champs additifs : `collider`, `techTree.colliderConfirms`, éléments enfants
+  dans `t.logic` déjà couvert par `logicPlacements`). (1) **§2 Encodage PRÉFIXE des saveurs**
+  (`COLLIDER_FLAVORS`) : 2 → 4 → 6 saveurs (P1 `up/down` 1 bit, P2 +`top/bottom` 2 bits, P3
+  +`charm/strange` 3 bits) — un code appris ne change JAMAIS (invariant testé). **Leptons**
+  `COLLIDER_EXCEPTIONS` 000/111 émis par le **Collisionneur SEUL** (jamais le Data Center → aucun cas
+  ambigu) → le joueur doit envoyer 1 quelle que soit la comparaison, ce qui impose un détecteur de
+  motif EN PLUS du comparateur. (2) **§3.2 Bloc ÉMETTEUR** `logic_emetteur` (`logicMultiSource`,
+  `childOnly`) : **enfant** créé/détruit avec son porteur par `syncColliderChildren` (Collisionneur :
+  bas-gauche du landmark 3×2 ; Data Center : sa tuile), **jamais posable** ; réseaux logiques
+  reconstruits à chaque apparition/disparition. Publie les bits de SON support (`co.code` / `co.dcCode`)
+  via `emitBits` (mapping fixe dir 0→α, 1→β, 2→γ, 3→INERTE). (3) **§3.3 Bloc VANNE** `logic_vanne`
+  (`logicValve`, childOnly, haut-gauche) : lit le **OU de ses faces** ; 1 + codes égaux **ou lepton** →
+  `techTree.colliderConfirms += max(1, dcReward)` ; 1 + codes différents → **`colliderPenalty`**
+  (extinction, `state='off'`, timer remis à 0 → **les 10 min sont à refaire**, `colliderPenaltyNotify`) ;
+  0 → rien. (4) **§3.4 JONCTION logique** `logic_jonction` : `rebuildLogicNetworks` réécrit en parcours
+  de **NŒUDS « r,c,axe »** — une jonction porte **2 réseaux indépendants** (`netNS`/`netEO`), traverser
+  ne change jamais d'axe → deux fils se croisent sans se connecter ; `dirNet` entre par l'axe du
+  déplacement. Le **SPLIT en T marche déjà** (le flood-fill est un broadcast). (5) **§4 Collisionneur** :
+  `processCollider` — machine `off→starting→running`, **démarrage 600 s** (`COLLIDER_START`), **sigmoïde
+  300 s** (`COLLIDER_RAMP`) **montante ET descendante** (≠ nucléaire), puissance `COLLIDER_POWER`
+  P1 32 MW / P2 512 MW / P3 8192 MW (plancher 1 MW), palier = 1 + nb de nœuds 40/41 confirmés
+  (`colliderPalier`), **consommateur géant** ajouté à la demande de l'île 6 (pas assez d'élec. →
+  `co.powered=false` → le démarrage RECULE et la puissance redescend). (6) **§5 Data Center** :
+  `DC_BASE_RATE` 0,0625/tick ×2/niveau, **borné à 4/s** (`DC_RATE_CAP`) — au-delà le surplus devient un
+  **multiplicateur de RÉCOMPENSE** (`dcEffective` : u7 → 4/s ×2, u8 → 4/s ×4). (7) **§7 nœuds tech
+  40/41/42** « Collisionneur P1/P2/P3 » (⚠ le brief disait 39/40/41 mais **39 = Batterie V2** → décalés)
+  + **nouveau type de `reqs` `colliderConfirm`** (100 / 1 000 / 10 000). Le nœud **33 rend les 3 portes
+  de base** ; **NAND/NOR au nœud 40**, **XOR/XNOR au 41** (progression du brief) ; LOCALES ×4 pour 39-42.
+  Validé : `node --check` (7 blocs) + **tests unitaires** (comparateur 3 bits sur les **64 combinaisons**
+  `sortie === (a===b)` ; XNOR en 3 portes `NOR ou AND` == XNOR natif ; détecteurs 000/111 ; XOR/XNOR à
+  2 ET 3 entrées = parité ; invariant PRÉFIXE des saveurs) + Chromium E2E : enfants auto-créés
+  (1 émetteur + 1 vanne), P3 = **8 388 608 kW exact**, **codes égaux → confirmations**, **codes
+  différents → pénalité (state running→starting, timer 500→1, compteur, notify)**, 300 tirages P3
+  (leptons présents côté Collisionneur, **0 côté Data Center**, 0 code invalide), débits DC exacts,
+  paliers 1/2/3 selon les nœuds ; 0 erreur JS. **⚠ REPORTÉ : §8 tutos** (4 popups de déblocage) et
+  l'affichage UI dédié du Collisionneur (état/compteur dans un panneau). Build 280→281.
   Changement 13.98 : **4 retours — gating du bouton couche logique, boutons flottants masqués par
   l'inventaire, FIX démolition qui rasait la couche physique, FIX nœud 34 insatisfiable.**
   `SAVE_VERSION` INCHANGÉ. (1) **Bouton couche logique gaté sur la RECHERCHE** : rendu seulement si
