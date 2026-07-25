@@ -1,8 +1,8 @@
 {
-  "build": 282,
-  "version": "Alpha 14.00",
+  "build": 283,
+  "version": "Alpha 14.01",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 14.00 (build 282) : puzzle Collisionneur — §8 tutos + panneau d'état (#271)"
+  "notes": "Alpha 14.01 (build 283) : restructuration de l'arbre (33-43) + 4 boutons N/E/S/O (#272)"
 }
