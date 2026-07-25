@@ -17,7 +17,30 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 276`, `GAME_VERSION = 'Alpha 13.94'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 277`, `GAME_VERSION = 'Alpha 13.95'`, `SAVE_VERSION = 27`.**
+  Changement 13.95 : **SPRITES LOGIQUE v2.6 (état 0/1 + flèches DANS le sprite) + animations île 6 +
+  badge pause logique.** `SAVE_VERSION` INCHANGÉ (assets + dessin). (1) **Intégration pack `ile6 v2.6`** :
+  **160 sprites** inlinés/rafraîchis (`window.__SPRITE_DATA__[…]`, override d'assignation, dernière gagne)
+  — **106 nouveaux** (senseur unifié `logic_senseur_<dir>_<0|1>`, actionneur `logic_actionneur_<dir>_<0|1>`,
+  7 portes `logic_porte_<op>_<dir>_<0|1>`, blocs α/αβ/αβγ, `ui_pause_logique` 16×16…) + **54 rafraîchis**
+  (bordures i7, collisionneur, bases logiques). **9 sheets d'anim île 6** (`centrale_gaz`, `extracteur`,
+  `fab_ordi_quantique`, `foreuse`, `four_arc_tungstene`, `geothermie`, `machine_outil`, `presse_uhp`,
+  `separateur_cryogenique`) rafraîchies (art dédié v2.6) sous leurs clés existantes (`bat_<id>` /
+  `four_arc_tungstene`) → ANIM_META déjà présent, `ANIM_BY_SK` résout. (2) **Rendu des dispositifs
+  logiques réécrit** (`draw`) : sprite UNIFIÉ v2.6 avec l'ÉTAT 0/1 (bandeau) ET la flèche de direction
+  DESSINÉS dans le sprite (`_<dir>_<0|1>`, chaîne de repli vers `_<dir>` puis base, puis packs
+  antérieurs). Le **senseur** a UN seul visuel (plus de sprite par mode ; la condition est un réglage du
+  panneau). Quand le sprite v2.6 est utilisé (`logicStateSprite`), la **pastille verte 0/1 ET la flèche
+  vectorielle sont RETIRÉES** (déjà encodées) ; repli conservé pour les anciens sprites. (3) **Badge
+  pause logique** : tout bâtiment mis en pause PAR un actionneur (`bld.logicOff`) porte l'icône
+  `ui_pause_logique` (coin haut-gauche), distincte de la pause manuelle. (4) **Overrides menu** : `capteur`
+  →`logic_senseur_n_1`, `actionneur`→`logic_actionneur_n_1` (fini le sprite « sortie collisionneur »).
+  Validé : `node --check` (7 blocs) + Chromium (boot 0 erreur JS ; 5 sprites v2.6 présents ; anim
+  `bat_centrale_gaz` == pack v2.6 ; badge/pastille non-régressifs). **⚠ REPORTÉ (refonte behavior,
+  prochain passage) :** §2 pose de logique EN SURCOUCHE (slot `t.logic` parallèle, n'importe où y compris
+  par-dessus bâtiments/réseaux) + §6 modes de senseur PAR PORTEUR (bâtiment : déficit élec./intrant ;
+  route/tuyau : état/seuil/déficit de stock ; câble : déficit élec. ; batterie : 0%/100%) + actionneur =
+  mise en pause du bâtiment support. Build 276→277.
   Changement 13.94 : **PATCH (5 demandes) — Batterie V2 + recherche « 33 bis », sprites logique dans le
   menu, split Bloc/Porte logique, portes non améliorables, booster masqué en dev.** `SAVE_VERSION`
   INCHANGÉ (accumulateur_v2 = id additif ; nœud 39 additif, `techTree.nodes` reconstruit depuis
