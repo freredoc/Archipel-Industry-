@@ -17,7 +17,32 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 275`, `GAME_VERSION = 'Alpha 13.93'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 276`, `GAME_VERSION = 'Alpha 13.94'`, `SAVE_VERSION = 27`.**
+  Changement 13.94 : **PATCH (5 demandes) — Batterie V2 + recherche « 33 bis », sprites logique dans le
+  menu, split Bloc/Porte logique, portes non améliorables, booster masqué en dev.** `SAVE_VERSION`
+  INCHANGÉ (accumulateur_v2 = id additif ; nœud 39 additif, `techTree.nodes` reconstruit depuis
+  `TECH_NODES` par id au chargement → save ancienne : nœud 39 `locked`, aucun crash ; le cap `TIER_NEXT`
+  ne s'applique qu'à `fromV<16` → batteries actuelles NON rétro-cappées). (1) **Batterie V2** :
+  nouveau bâtiment `accumulateur_v2` (`chargeLossless:true` → **rendement de charge 1** au lieu de 0,8
+  dans la boucle énergie) ; densification `accumulateur`→`accumulateur_v2` (`TIER_NEXT` cap 9 ;
+  `TIER_STEP` forfait **100 alliage_tungstene + 50 cable_supraconducteur**) ; nouveau nœud tech **id 39
+  « Batterie V2 »** (prereq 32, produire 1000 câble supraconducteur → débloque `accumulateur_v2`).
+  ⚠ Les futurs nœuds Collisionneur prendront 40/41/42 (le brief disait 39/40/41). (2) **Sprites logique
+  au menu** (`BLD_SPRITE_OVERRIDE`) : `capteur`→`logic_senseur_plein`, `actionneur`→
+  `logic_sortie_collisionneur`, 7 portes→`logic_porte_<op>`, `logic_wire`→`fil_logique_v1_15_NESO`,
+  `accumulateur_v2`→`bat_accumulateur` (fini les carrés de couleur). (3) **Split menu couche logique** :
+  le groupe `logic` devient DEUX groupes — **`logicblock`** (capteur/actionneur) et **`logicgate`**
+  (7 portes) ; `LOGIC_BLOCK_GROUPS`/`BUILD_GROUPS_NORMAL` mis à jour ; i18n « Porte logique » en/es/de.
+  (4) **Portes non améliorables** : `isUpgradable` exclut `logic/logicSource/logicSink/logicGate/
+  logicMultiSource` (conso élec. déjà 0). (5) **Booster masqué en dev** : le 6e onglet est gaté sur
+  `!dev` (prop `dev` de la Toolbar). Validé : `node --check` (7 blocs) + Chromium E2E (boot 0 erreur JS ;
+  onglet booster absent en dev ; couche logique → 2 groupes « Logic block »/« Logic gate », 9 boutons
+  logiques rendus en SPRITE (0 carré de couleur)). **⚠ REPORTÉ (refonte interlockée, prochain passage) :**
+  §2 pose de logique EN SURCOUCHE (n'importe où, y compris par-dessus bâtiments/réseaux — couche
+  abstraite, slot `t.logic` parallèle) ; §6 modes de senseur par porteur (bâtiment : déficit élec./
+  intrant ; route/tuyau : état/seuil/déficit de stock ; câble : déficit élec. ; batterie : 0%/100%) +
+  actionneur = pause ; §4/§8 rotation de tous les outputs + flèche de direction PAR-DESSUS le sprite ;
+  §10 indication 0/1 sur le sprite + badge pause logique + animations bâtiments île 6. Build 275→276.
   Changement 13.93 : **PUZZLE COLLISIONNEUR — Phase A (fondations : multi-source par face + 4 portes ;
   brief `briefcouchelogiqueile6`).** PÉRIMÈTRE = les briques moteur non-régressives et testables ; le
   runtime du puzzle (émetteur/vanne/Collisionneur/Data Center/nœuds 39-41/tutos) est REPORTÉ. `SAVE_VERSION`
