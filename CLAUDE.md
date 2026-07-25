@@ -17,7 +17,42 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 283`, `GAME_VERSION = 'Alpha 14.01'`, `SAVE_VERSION = 29`.**
+- **État au dernier passage : `GAME_BUILD = 284`, `GAME_VERSION = 'Alpha 14.02'`, `SAVE_VERSION = 29`.**
+  Changement 14.02 : **FIX hardcap de l'antenne au Nv.5 + capteur « stock ≥ seuil » sur route/tuyau.**
+  `SAVE_VERSION` INCHANGÉ (2 champs additifs optionnels dans `logicPlacements`). (1) **Antenne — plafond
+  de VITESSE retiré** : `antSpeedMul(f) = 1 + min(1, 0,05×f)` rabotait le bonus à +100 % dès que
+  `0,05×f > 1`, c'est-à-dire **exactement au Nv.5** (f = 2^(upg+1) = 32 → +160 % ramenés à +100 %) →
+  améliorer l'antenne au-delà du Nv.4 ne servait plus à rien côté vitesse. Le `Math.min(1, …)` est
+  **supprimé** → Nv.1 ×1,1 · Nv.2 ×1,2 · Nv.3 ×1,4 · Nv.4 ×1,8 · **Nv.5 ×2,6 (+160 %)** · Nv.6 ×4,2…
+  (les niveaux 1-4 sont **inchangés**, seul le rabot disparaît). Les 8 sites d'affichage passent déjà
+  par le helper (fiche antenne « Effet », aperçu d'amélioration, fiche du bâtiment boosté, badge carte
+  « ×N ») → ils suivent automatiquement. Textes MAJ : tooltip du bouton **Vitesse** (clé i18n ET les
+  3 traductions en/es/de), astuces **`antenne`** (inline + les **4 entrées LOCALES** — `applyToData`
+  écrase l'inline) et **`antenne_modes`**, + 4 commentaires moteur. ⚠ **SIGNALÉ, non touché** :
+  `antElecBoost` garde SON plafond (+200 %, atteint lui aussi au Nv.5) — la conso boostée cesse donc de
+  monter alors que le gain de vitesse continue ; l'antenne devient strictement plus rentable à chaque
+  niveau au-delà du Nv.5. À arbitrer (le patch demandé ne portait que sur la vitesse).
+  (2) **Capteur `seuil` sur route/tuyau** (« un capteur sur une route/tuyaux peut lire un intrant et un
+  seuil, ex. 1e7 acier = 1 ») : `sensorModesFor` renvoie désormais **`[sature, seuil]`** pour un support
+  route/tuyau (câble inchangé = `elec`, le défaut reste `sature`). Deux réglages par capteur :
+  **`sensorRes`** (ressource lue) et **`sensorSeuil`** (seuil) ; `evalSensor` sort **1 dès que le stock
+  ≥ seuil**, **0 sans ressource choisie** ; **seuil 0 = « il y en a »** (stock strictement positif, pas
+  de nombre magique). Nouveau helper **`logicNetStock(game, isl, net, res)`** : un réseau **relié au
+  port** lit le PORT (les liquides d'un tuyau relié y sont flushés chaque tick depuis 10.82), un réseau
+  isolé lit sa **citerne** (`net.pool`). Nouveau **`sensorSeuilResources(game, carrier)`** : ressources
+  du bon porteur (`CARRIER_BY_RES`), débloquées par la recherche (ou en stock), triées comme
+  l'inventaire. **Panneau de config** (mode `seuil` sélectionné) : grille **« Ressource lue »** en
+  SPRITES (3 colonnes), champ **« Seuil »** (`NumField` → accepte `1e4`, virgule fr) et ligne
+  **« Stock lu »** en direct. Persistance `logicPlacements` : **`sr`** / **`sq`** (sérialisés +
+  restaurés dans les DEUX chemins de chargement) — champs additifs, aucune migration. i18n en/es/de
+  des 7 nouveaux libellés. `__heat` étendu (`sensorSeuilResources`, `logicNetStock`). Validé :
+  `node --check` (7 blocs) + Chromium E2E : courbe d'antenne exacte `[1,1 · 1,2 · 1,4 · 1,8 · 2,6 ·
+  4,2]` + badges `×2,6` au Nv.5 ; capteur forgé sur une VRAIE route reliée au port → **1e7 acier = 1**,
+  9 999 999 = 0, seuil 0 + stock 0 = 0 / stock 1 = 1, sans ressource = 0 ; **tap RÉEL** sur le capteur
+  en couche logique → panneau avec les 2 modes, 5 ressources en sprite, champ seuil et « Stock lu » ;
+  **clic RÉEL** sur « ling.fer » → `sensorRes` posé, saisie `1e4` → `sensorSeuil = 10000`, stock 12 345
+  → **signal 1** ; round-trip de sauvegarde (`sm/sr/sq/sd` restaurés à l'identique après reload) ;
+  0 erreur JS. Build 283→284.
   Changement 14.01 : **RESTRUCTURATION de l'arbre de recherche (nœuds 33-43) + 4 boutons de direction
   N/E/S/O dans le panneau logique.** `SAVE_VERSION` **28→29** (renumérotation → migration obligatoire).
   (1) **Panneau logique** : le bouton de rotation qui faisait tourner à l'aveugle est remplacé par
