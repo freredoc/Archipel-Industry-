@@ -17,7 +17,31 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 277`, `GAME_VERSION = 'Alpha 13.95'`, `SAVE_VERSION = 27`.**
+- **État au dernier passage : `GAME_BUILD = 278`, `GAME_VERSION = 'Alpha 13.96'`, `SAVE_VERSION = 28`.**
+  Changement 13.96 : **COUCHE LOGIQUE EN SURCOUCHE ABSTRAITE (`t.logic`) — pose n'importe où + lien
+  monde réel (§2 + §6).** `SAVE_VERSION` **27→28**. (1) **Slot `t.logic` PARALLÈLE à `t.building`** :
+  un élément logique (capteur/actionneur/porte/câble logique/émetteur — `isLogicId`) vit dans `t.logic`,
+  posable **N'IMPORTE OÙ** (mer/sol, **par-dessus** bâtiments et réseaux) — vraie couche abstraite.
+  `tryPlaceLogic` (intercepté en tête de `tryPlace`) + `canPlace` (logique → `!t.logic`). Chaque câble
+  logique coûte **1 câble supraconducteur**. Démolition/rotation gérées dans la couche. (2) **Réseau
+  logique SÉPARÉ** : `rebuildLogicNetworks` (flood-fill 4-dir des `logic_wire` de `t.logic` → `t.logic.netId`,
+  `game.logicNets[isl]`), appelé en tête de `processLogic`. Aucun niveau/jonction/port (broadcast). (3)
+  **`processLogic` réécrit sur `t.logic`** : capteurs/portes/actionneurs/émetteurs lus depuis `t.logic` ;
+  **le SUPPORT = le bâtiment SOUS l'élément (même tuile, emprise résolue)** → un **capteur sur un bâtiment
+  le lit**, un **actionneur sur un bâtiment le met en PAUSE** (`logicOff`). Capteur = sortie DIRIGÉE
+  (`sensorDir`, la flèche = direction du signal) ; porte inchangée ; actionneur lit l'OU des faces.
+  (4) **§6 modes de capteur PAR SUPPORT** (`sensorMode`) : bâtiment → **déficit élec.** (`pwrAvg<1`) ou
+  **déficit d'intrant** (`inFac<1`) ; batterie → **0 %** / **100 %** ; câble → déficit élec. du réseau ;
+  route/tuyau → réseau saturé. (5) **Rotation LIBRE** (`setLogicConfig` sur `t.logic`, cycle 4 dir) ;
+  **tap en couche logique** (mode Sélection) fait TOURNER le dispositif. (6) **Rendu** : passe overlay
+  DÉDIÉE sur `t.logic` (par-dessus l'île estompée, couche ON) — câbles (`fil_logique` connection-aware) +
+  dispositifs (sprites v2.6 `_<dir>_<0|1>`) ; le rendu logique est retiré de la boucle `t.building`
+  (désormais toujours estompée en couche ON). (7) **Persistance** : `logicPlacements` par île
+  (serialize/loadSave) ; **migration <28** : les éléments logiques d'un ancien `t.building` (placements)
+  sont routés vers `t.logic`. Validé : `node --check` (7 blocs) + Chromium E2E : **capteur(batterie 0%)
+  →câble→actionneur(mine)** met la mine en pause ; batterie 100 % → relâche ; round-trip save v28
+  (porte+câble restaurés) ; boot 0 erreur JS. **⚠ REPORTÉ :** panneau de choix du MODE de capteur
+  (défaut sensé par support) ; copier en couche logique ; jonction/split de câble logique ; saveurs.
   Changement 13.95 : **SPRITES LOGIQUE v2.6 (état 0/1 + flèches DANS le sprite) + animations île 6 +
   badge pause logique.** `SAVE_VERSION` INCHANGÉ (assets + dessin). (1) **Intégration pack `ile6 v2.6`** :
   **160 sprites** inlinés/rafraîchis (`window.__SPRITE_DATA__[…]`, override d'assignation, dernière gagne)
