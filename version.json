@@ -1,8 +1,8 @@
 {
-  "build": 280,
-  "version": "Alpha 13.98",
+  "build": 281,
+  "version": "Alpha 13.99",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #269 from freredoc/claude/patch-underground-update-55yvo1"
+  "notes": "Alpha 13.99 (build 281) : puzzle Collisionneur — runtime complet (#270)"
 }
