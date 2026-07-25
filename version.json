@@ -1,8 +1,8 @@
 {
-  "build": 279,
-  "version": "Alpha 13.97",
+  "build": 280,
+  "version": "Alpha 13.98",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.97 (build 279) : sprite Batterie V2 + panneau config couche logique + copier logique + booster dev (#268)"
+  "notes": "Merge pull request #269 from freredoc/claude/patch-underground-update-55yvo1"
 }
