@@ -1,8 +1,8 @@
 {
-  "build": 278,
-  "version": "Alpha 13.96",
+  "build": 279,
+  "version": "Alpha 13.97",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Alpha 13.96 (build 278) : couche logique en surcouche abstraite (t.logic) (#267)"
+  "notes": "Alpha 13.97 (build 279) : sprite Batterie V2 + panneau config couche logique + copier logique + booster dev (#268)"
 }
