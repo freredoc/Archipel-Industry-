@@ -17,7 +17,32 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 278`, `GAME_VERSION = 'Alpha 13.96'`, `SAVE_VERSION = 28`.**
+- **État au dernier passage : `GAME_BUILD = 279`, `GAME_VERSION = 'Alpha 13.97'`, `SAVE_VERSION = 28`.**
+  Changement 13.97 : **Sprite Batterie V2 (pack v2.7) + panneau de config de la couche logique (§6 modes
+  par support) + copier en couche logique + booster retiré COMPLÈTEMENT en dev.** `SAVE_VERSION` INCHANGÉ.
+  (1) **Sprite `bat_accumulateur_v2`** (pack `ile6 v2.7` — seule ADDITION du pack, les 307 autres sprites
+  byte-identiques à v2.6) inliné ; l'override `accumulateur_v2 → bat_accumulateur` est **RETIRÉ** → la
+  résolution naturelle `bat_<id>` prend le nouvel art (vérifié distinct du V1). ⚠ Aucun autre pack du repo
+  (COMPLET/OFFICIEL, y compris `_nouveau_v2/`) ne contenait d'art de batterie V2 — d'où l'attente de v2.7.
+  (2) **`sensorModesFor(support)`** (module, source de vérité UNIQUE panneau + `processLogic`) : modes
+  DISPONIBLES selon le support, le 1er étant le **défaut sensé** → bâtiment `[elec, intrant]`, batterie
+  `[batt_empty, batt_full]`, câble `[elec]`, route/tuyau `[sature]`. `processLogic` utilise
+  `sensorDefaultMode(sup)` quand `sensorMode` est absent (fini le défaut `elec` inadapté à une batterie).
+  (3) **Panneau de config de la surcouche** (`InfoPanel`, `info.mode === 'logic'`) : ligne **Support**,
+  bouton de **ROTATION LIBRE** (4 dir — « Face de sortie / Signal sortant / Face lue »), **sélecteur de
+  condition** (modes du support), **polarité** de l'actionneur, état du signal. Le tap sur un dispositif
+  en couche logique OUVRE ce panneau (au lieu de tourner à l'aveugle) — la rotation reste à 1 clic dedans.
+  L'ancien bloc logique de l'InfoPanel (sur `t.building`) devient inerte (la logique vit dans `t.logic`).
+  (4) **FIX réel** : `evalSensor` lisait `networkId`/`netIds` sur `t.building` alors qu'ils sont portés par
+  la **TUILE** → nouveau `supportTileAt` (ancre résolue) ; les modes câble/route/tuyau fonctionnent
+  vraiment. (5) **Copier en couche logique** : en mode Copier, toucher un élément de `t.logic` le capture
+  comme outil actif. (6) **Booster retiré COMPLÈTEMENT en dev** : l'onglet était déjà gaté `!dev` ; son
+  **astuce** l'est désormais aussi (`when` += `!(g.ui && g.ui.dev)`) → ni bouton ni tuto en dev.
+  i18n en/es/de des 15 nouveaux libellés. `__heat` étendu (sensorModesFor/sensorDefaultMode/isLogicId/
+  rebuildLogicNetworks). Validé : `node --check` (7 blocs) + Chromium E2E (sprite V2 présent ET distinct du
+  V1 ; chaîne capteur(batterie, SANS mode explicite)→câble→actionneur met la mine en pause via le DÉFAUT
+  `batt_empty` ; modes par support exacts `[elec,intrant]` / `[batt_empty,batt_full]` ; onglet booster
+  absent en dev ; 0 erreur JS). Build 278→279.
   Changement 13.96 : **COUCHE LOGIQUE EN SURCOUCHE ABSTRAITE (`t.logic`) — pose n'importe où + lien
   monde réel (§2 + §6).** `SAVE_VERSION` **27→28**. (1) **Slot `t.logic` PARALLÈLE à `t.building`** :
   un élément logique (capteur/actionneur/porte/câble logique/émetteur — `isLogicId`) vit dans `t.logic`,
