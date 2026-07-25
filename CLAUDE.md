@@ -17,7 +17,30 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 279`, `GAME_VERSION = 'Alpha 13.97'`, `SAVE_VERSION = 28`.**
+- **État au dernier passage : `GAME_BUILD = 280`, `GAME_VERSION = 'Alpha 13.98'`, `SAVE_VERSION = 28`.**
+  Changement 13.98 : **4 retours — gating du bouton couche logique, boutons flottants masqués par
+  l'inventaire, FIX démolition qui rasait la couche physique, FIX nœud 34 insatisfiable.**
+  `SAVE_VERSION` INCHANGÉ. (1) **Bouton couche logique gaté sur la RECHERCHE** : rendu seulement si
+  `isBuildingUnlocked(game,'logic_wire')` (le nœud #32 qui donne câble/capteur/actionneur) — avant il
+  s'affichait dès le début sur une couche vide. **Filet de save** : une save des builds 273-279 peut
+  avoir `uiPrefs.logicLayer = true` SANS le déblocage → le boot force la couche OFF (sinon joueur
+  coincé en couche logique, bouton masqué, aucune sortie). (2) **Boutons flottants masqués quand
+  l'inventaire est ouvert** (`!invOpen &&` sur `.logiclayer-btn` ET `.underground-btn`) — ils
+  chevauchaient le panneau d'inventaire ouvert. (3) **FIX démolition en couche logique** : le garde
+  ne traitait la surcouche QUE si `t.logic` existait, sinon il tombait dans le chemin normal et
+  **détruisait le bâtiment/réseau du dessous**. Désormais, couche logique active ⇒ la démolition est
+  **exclusivement** cantonnée à `t.logic` (tuile sans élément logique → toast « Rien à démolir dans la
+  couche logique », le bâtiment est INTACT). (4) **FIX nœud 34 « ne fonctionne pas »** : `countBuildings`/
+  `countBuildingsOnIsland` ne scrutaient que `t.building` — or depuis 13.96 les portes vivent dans
+  `t.logic` → le `reqs` `buildAny` du nœud 34 était **INSATISFIABLE**. Les deux compteurs scrutent
+  désormais **LES DEUX slots**. Le nœud est aussi **clarifié** : renommé « Poser une porte logique »
+  (l'ancien « Circuit Logique 2 » ne disait pas quoi faire — ⚠ renommé AUSSI dans les 4 entrées
+  LOCALES `tech`, sinon `applyToData` réécrit l'ancien nom) et ses `ids` couvrent **les 7 portes**
+  (avant : seules les 3 de base → poser un XOR ne validait rien). i18n en/es/de du nouveau toast.
+  Validé : `node --check` (7 blocs) + Chromium E2E par les VRAIS chemins de code : bouton absent en
+  partie neuve / présent après déblocage ; les 2 boutons disparaissent inventaire ouvert ; **tap de
+  démolition réel en couche logique → le bâtiment SURVIT** ; **nœud 34 `available` → `condition_ok`
+  dès qu'une porte est posée dans la couche** ; 0 erreur JS. Build 279→280.
   Changement 13.97 : **Sprite Batterie V2 (pack v2.7) + panneau de config de la couche logique (§6 modes
   par support) + copier en couche logique + booster retiré COMPLÈTEMENT en dev.** `SAVE_VERSION` INCHANGÉ.
   (1) **Sprite `bat_accumulateur_v2`** (pack `ile6 v2.7` — seule ADDITION du pack, les 307 autres sprites
