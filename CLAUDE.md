@@ -48,14 +48,15 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   n'est pas améliorable. Sans scène d'illustration (précédent `nuc_mix`). (5) **Antenne — mode
   PRODUCTIVITÉ déplafonné + le PRIX suit** : `antProdEffect` rabotait le **rendement** à +100 % (Nv.5,
   même symptôme que la vitesse en 14.02) → plafond **retiré** (Nv.1 +10 % · Nv.2 +20 % · Nv.3 +40 % ·
-  Nv.4 +80 % · **Nv.5 +160 %** · Nv.6 +320 %…). Le **malus de vitesse reste borné à −50 %** : c'est le
-  prix du mode, sans borne il passerait −100 % au Nv.6 (production nulle puis négative). Et le plafond
+  Nv.4 +80 % · **Nv.5 +160 %** · Nv.6 +320 %…). Le **malus de vitesse suit sa propre courbe** : 2,5 %×f
+  (Nv.1 −5 % · Nv.2 −10 % · Nv.3 −20 % · Nv.4 −40 % · **Nv.5 −80 %**) et **hard cap à −80 %**, atteint
+  pile au Nv.5 — sans borne il passerait −160 % au Nv.6 (production négative). Et le plafond
   d'**`antElecBoost`** (+200 %, signalé en 14.02) **saute aussi** → la conso boostée reste le double du
   gain à tous les niveaux (Nv.5 ×1→×4,2) et la **chaleur** d'antenne en mode prod (HEAT_PER_MW × kW
   consommés en plus) **suit automatiquement**. Textes MAJ (astuce `antenne` inline + 4 LOCALES, astuce
   `antenne_modes`, commentaires moteur). i18n en/es/de des 15 nouveaux libellés. `__heat` étendu
   (`isUpgradable`, `costUnits`). Validé : `node --check` (7 blocs) + Chromium E2E **par la vraie UI** :
-  courbes exactes (rendement `[10, 20, 40, 80, 160, 320]` %, malus `[5, 10, 20, 40, 50, 50]` %, élec.
+  courbes exactes (rendement `[10, 20, 40, 80, 160, 320]` %, malus `[5, 10, 20, 40, 80, 80]` %, élec.
   `[0,2 … 6,4]`, vitesse `[1,1 … 4,2]`) ; `isUpgradable('foreuse') === false` ; parcours réel île 6 →
   bouton souterrain → île 7 → outil Améliorer → tap sur la géothermie → **bouton Améliorer ENFIN actif** →
   `construction {rem: 3645, up: 1}`, niveau TOUJOURS 0, matière descendue à 1024 u/s, **niveau appliqué
