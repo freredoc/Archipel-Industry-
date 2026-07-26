@@ -1,8 +1,8 @@
 {
-  "build": 284,
-  "version": "Alpha 14.02",
+  "build": 285,
+  "version": "Alpha 14.03",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Antenne : retrait du hardcap de vitesse (Nv.5 = +160 %) + capteur « stock ≥ seuil » sur route/tuyau (#273)"
+  "notes": "Souterrain : améliorations étalées, foreuse pilotée et non améliorable, tuto — antenne productivité déplafonnée (#274)"
 }
