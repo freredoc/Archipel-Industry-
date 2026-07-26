@@ -1,8 +1,8 @@
 {
-  "build": 285,
-  "version": "Alpha 14.03",
+  "build": 286,
+  "version": "Alpha 14.04",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Souterrain : améliorations étalées, foreuse pilotée et non améliorable, tuto — antenne productivité déplafonnée (#274)"
+  "notes": "Fix : le Collisionneur puisait l'électricité de l'île 6 sans avoir été réparé (#275)"
 }
