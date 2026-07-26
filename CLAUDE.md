@@ -17,7 +17,30 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 285`, `GAME_VERSION = 'Alpha 14.03'`, `SAVE_VERSION = 29`.**
+- **État au dernier passage : `GAME_BUILD = 286`, `GAME_VERSION = 'Alpha 14.04'`, `SAVE_VERSION = 30`.**
+  Changement 14.04 : **FIX — le Collisionneur puisait l'électricité de l'île 6 SANS avoir été réparé.**
+  `SAVE_VERSION` **29→30** (correctif de save obligatoire). **Cause** : la migration 14.01 (< 29) faisait
+  `set(38, keep(old[33]))` — pour ne pas retirer au joueur ses 3 portes de base, elle confirmait le
+  nœud **38 « Réparation du Collisionneur I »** dès que l'ANCIEN nœud 33 « Circuit Logique » (précoce et
+  bon marché) l'était. Or `colliderRepaired()` ne teste QUE le nœud 38 → le Collisionneur démarrait tout
+  seul et ajoutait sa demande géante à l'île 6 (1 MW au 1er tick, sigmoïde jusqu'à **32 MW** au palier P1)
+  alors que la livraison de réparation (10 000 × 3) n'avait jamais été faite. **Partie NEUVE non touchée**
+  (tous les nœuds `locked` → conso 0, vérifié). **Correctif** : (1) nouveau champ persisté
+  **`techTree.grantedBuildings`** (liste de bâtiments débloqués HORS nœud) + helper `isBuildingGranted`,
+  lus par `unlockedBuildingSet` et `isBuildingUnlocked` → une migration peut conserver un déblocage acquis
+  **sans** confirmer le nœud qui le donne aujourd'hui ; (2) la migration < 29 n'écrit plus les nœuds de
+  RÉPARATION (38/40/42) : elle pousse les portes correspondantes dans `grantedBuildings` (ancien 33 ou 40
+  → and/or/not, ancien 41 → nand/nor, ancien 42 → xor/xnor) ; les 3 PUZZLES (39/41/43) gardent leur
+  héritage inchangé ; (3) **correctif < 30** pour les saves DÉJÀ migrées par 14.01 : tout nœud de
+  `COLLIDER_REPAIR_NODES` confirmé alors que son `prereq` ne l'est pas est **impossible en jeu** → on
+  retire la confirmation (le Collisionneur redevient en ruine) et on bascule ses portes dans
+  `grantedBuildings`. Idempotent, et la chaîne LÉGITIME (37 confirmé puis 38) n'est jamais touchée.
+  Validé : `node --check` (7 blocs) + Chromium : partie neuve → collisionneur `off`, demande île 6 = 0 ;
+  **repro du bug** (38 confirmé, 37 `locked`) → `starting`, +1040 kW dès le 1er tick ; après correctif,
+  les 3 saves forgées donnent — v29 corrompue → 38 `locked`, 3 portes conservées, `repaired false`,
+  demande 0 ; v28 « Circuit Logique » → idem ; v29 légitime (37+38) → `repaired true`, collisionneur qui
+  démarre (aucune régression) ; round-trip v30 (`grantedBuildings` sérialisé/restauré) ; 0 erreur JS.
+  Build 285→286.
   Changement 14.03 : **PATCH 5 retours — améliorations souterraines étalées, foreuse (non améliorable,
   direction + démarrage manuel, tuto), antenne productivité déplafonnée.** `SAVE_VERSION` INCHANGÉ
   (3 champs additifs optionnels : `pl.cb.up`, `pl.cb.to`, `pl.dd`). (1) **Améliorations SOUTERRAINES
