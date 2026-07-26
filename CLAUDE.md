@@ -17,7 +17,53 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 284`, `GAME_VERSION = 'Alpha 14.02'`, `SAVE_VERSION = 29`.**
+- **État au dernier passage : `GAME_BUILD = 285`, `GAME_VERSION = 'Alpha 14.03'`, `SAVE_VERSION = 29`.**
+  Changement 14.03 : **PATCH 5 retours — améliorations souterraines étalées, foreuse (non améliorable,
+  direction + démarrage manuel, tuto), antenne productivité déplafonnée.** `SAVE_VERSION` INCHANGÉ
+  (3 champs additifs optionnels : `pl.cb.up`, `pl.cb.to`, `pl.dd`). (1) **Améliorations SOUTERRAINES
+  étalées** : améliorer/densifier sur l'île 7 était **instantané** alors que la CONSTRUCTION descend par
+  l'élévateur depuis 13.89. Le champ `bld.construction` gagne **`up`** (niveau visé) et **`to`** (id du
+  palier pour une densification) ; `scheduleUnderWork(t, cost, up, toId)` (île 7, `kind build`, hors dev)
+  pose `{rem = costUnits(coût), tot, rate, up}` au lieu d'appliquer le niveau. ⚠ **Différence VOULUE avec
+  la construction** : une amélioration en cours **n'arrête PAS le bâtiment** (il tourne à son niveau
+  ACTUEL, le nouveau s'applique quand la matière arrive) — la garde du tick et le fantôme du draw ne
+  s'appliquent donc QUE si `up == null`. Rendu : le bâtiment est dessiné normalement + **barre de travaux
+  VIOLETTE** (helper `drawWorkBar` extrait du fantôme, bleu pour la construction) ; fiche : nouvelle ligne
+  **« Travaux 🚧 <cible> · X% · ~Ys »**. Priorité élévateur n°1 inchangée (construction ET travaux).
+  `tryUpgrade`/`tryDensify`/**`upgradeAllSameType`** (le groupé aussi) passent par le même chemin ;
+  `underWorks()` refuse d'empiler deux chantiers. **FIX au passage** : `UpgradePanel` lisait
+  `game.port[currentIsland]` au lieu de **`portPool`** → au souterrain l'inventaire vu était VIDE et le
+  bouton « Améliorer » **toujours grisé** (13.87 avait corrigé HUD/barre/InfoPanel/NetworkPanel, pas ce
+  panneau) ; même correctif sur le panneau terrain (réparer/remblayer). (2) **Foreuse NON améliorable** :
+  nouveau flag def **`noUpgrade`** (lu par `isUpgradable`) — elle n'a ni intrant ni sortant, améliorer ne
+  faisait que **doubler ses 512 kW pour zéro effet** (piège à ressources). (3) **Foreuse pilotée depuis sa
+  fiche** (nouveau flag def **`driller`**) : **4 boutons N · E · S · O** (même ordre d'affichage que la
+  couche logique — `DIRS4` = [N, S, O, E] → 0, 3, 1, 2), ligne **Cible** (« sol de tunnel — forable » /
+  « déjà foré » / « occupée » / « pas du sol de tunnel » / « hors du tunnel »), **Coût** en pastilles
+  (port île 6), **Forages effectués**, et bouton **« ⛏ Démarrer le forage »** (grisé si la cible n'est pas
+  forable ou si le port ne couvre pas). Réglage `bld.drillDir` persisté (`pl.dd`) ; handler `setDrillDir`.
+  Le forage par tap sur la tuile voisine reste disponible (aucune régression). (4) **Tuto `foreuse`**
+  (`GAME_TIPS`, `when` = foreuse débloquée) : où la poser, viser puis déclencher, coût ×4 par forage payé
+  au port de l'île 6, **3 poches d'He3 cachées**, l'Extracteur se pose sur le gisement révélé, et elle
+  n'est pas améliorable. Sans scène d'illustration (précédent `nuc_mix`). (5) **Antenne — mode
+  PRODUCTIVITÉ déplafonné + le PRIX suit** : `antProdEffect` rabotait le **rendement** à +100 % (Nv.5,
+  même symptôme que la vitesse en 14.02) → plafond **retiré** (Nv.1 +10 % · Nv.2 +20 % · Nv.3 +40 % ·
+  Nv.4 +80 % · **Nv.5 +160 %** · Nv.6 +320 %…). Le **malus de vitesse suit sa propre courbe** : 2,5 %×f
+  (Nv.1 −5 % · Nv.2 −10 % · Nv.3 −20 % · Nv.4 −40 % · **Nv.5 −80 %**) et **hard cap à −80 %**, atteint
+  pile au Nv.5 — sans borne il passerait −160 % au Nv.6 (production négative). Et le plafond
+  d'**`antElecBoost`** (+200 %, signalé en 14.02) **saute aussi** → la conso boostée reste le double du
+  gain à tous les niveaux (Nv.5 ×1→×4,2) et la **chaleur** d'antenne en mode prod (HEAT_PER_MW × kW
+  consommés en plus) **suit automatiquement**. Textes MAJ (astuce `antenne` inline + 4 LOCALES, astuce
+  `antenne_modes`, commentaires moteur). i18n en/es/de des 15 nouveaux libellés. `__heat` étendu
+  (`isUpgradable`, `costUnits`). Validé : `node --check` (7 blocs) + Chromium E2E **par la vraie UI** :
+  courbes exactes (rendement `[10, 20, 40, 80, 160, 320]` %, malus `[5, 10, 20, 40, 80, 80]` %, élec.
+  `[0,2 … 6,4]`, vitesse `[1,1 … 4,2]`) ; `isUpgradable('foreuse') === false` ; parcours réel île 6 →
+  bouton souterrain → île 7 → outil Améliorer → tap sur la géothermie → **bouton Améliorer ENFIN actif** →
+  `construction {rem: 3645, up: 1}`, niveau TOUJOURS 0, matière descendue à 1024 u/s, **niveau appliqué
+  au bout de ~4 s** ; fiche foreuse RÉELLE (4 boutons dir → `drillDir` 0/3/1/2 exacts, cible recalculée,
+  aucun bouton « Monter ») → clic RÉEL sur « ⛏ Démarrer le forage » → **compteur 0→1, tuile `drilled`,
+  gisement révélé** ; tuto `foreuse` bien ouvert dans la file d'astuces ; round-trip de sauvegarde
+  (`cb.up`/`cb.to`/`dd` restaurés à l'identique) ; 0 erreur JS. Build 284→285.
   Changement 14.02 : **FIX hardcap de l'antenne au Nv.5 + capteur « stock ≥ seuil » sur route/tuyau.**
   `SAVE_VERSION` INCHANGÉ (2 champs additifs optionnels dans `logicPlacements`). (1) **Antenne — plafond
   de VITESSE retiré** : `antSpeedMul(f) = 1 + min(1, 0,05×f)` rabotait le bonus à +100 % dès que
