@@ -1,8 +1,8 @@
 {
-  "build": 286,
-  "version": "Alpha 14.04",
+  "build": 287,
+  "version": "Alpha 14.05",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Fix : le Collisionneur puisait l'électricité de l'île 6 sans avoir été réparé (#275)"
+  "notes": "Merge pull request #276 from freredoc/claude/infinite-network-patches-sr79h0"
 }
