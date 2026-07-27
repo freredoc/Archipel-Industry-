@@ -17,7 +17,48 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 287`, `GAME_VERSION = 'Alpha 14.05'`, `SAVE_VERSION = 30`.**
+- **État au dernier passage : `GAME_BUILD = 288`, `GAME_VERSION = 'Alpha 14.06'`, `SAVE_VERSION = 30`.**
+  Changement 14.06 : **FOREUSE refaite selon la SPEC D'ORIGINE (fournie après coup par l'utilisateur) —
+  machine à usage unique qui creuse un mur en 5 min, extrait 8 pierre/s par l'élévateur, monte de 0 à
+  8192 kW, s'arrête 30 s quand le courant manque, et DISPARAÎT en laissant une tuile constructible.**
+  `SAVE_VERSION` INCHANGÉ (`pl.dg` étendu d'un champ `st` optionnel ; `dig` retiré — il valait toujours
+  vrai). ⚠ **Remplace intégralement la foreuse du 14.05** (30 s, coût d'extension, prospection de sol).
+  (1) **Usage unique** : au bout des 5 min (`DRILL_TIME = 300`), le mur visé devient du **sol de tunnel
+  constructible** et la **foreuse est consommée** — sa tuile est libérée. C'est « l'extension de terrain
+  en mer, en plus sophistiqué » : **on ne paie PLUS de coût d'extension** (`extensionCost`/
+  `extensionsCount` ne concernent plus l'île 7), le coût EST la foreuse. `tryDrill` ne débite donc RIEN
+  au démarrage, et `tryExtend` sur l'île 7 délègue entièrement à la foreuse (sans gate sur la techno de
+  remblai : la foreuse EST l'outil). (2) **8 pierre/s pendant l'opération**, injectés dynamiquement comme
+  sortie route (`effOutputs` passe en `let`) → ils remontent par l'ÉLÉVATEUR comme n'importe quel sortant,
+  donc **élévateur bridé = foreuse ralentie** (le fix de régime du 14.05 s'applique tel quel). Corollaire
+  voulu : sans route jusqu'à l'élévateur, elle ne creuse pas. (3) **Conso 0 → max en 5 min**,
+  **proportionnelle à l'AVANCEMENT** (pas au temps) : au ralenti « elle monte très doucement » au lieu de
+  s'arrêter, exactement comme demandé. (4) **Manque de courant → arrêt de 30 s** (`DRILL_STALL`) puis
+  reprise **au même point** : la coupure est détectée via `active === false && discReason === 'power'`
+  (posé par `cutBld`), le compteur `drillStall` met la conso à 0 (le réseau peut respirer) et gèle
+  l'avancement. ⚠ Deux pièges corrigés au passage : (a) le régime de la foreuse **n'utilise plus
+  `pwrAvg`** (le duty-cycle lissé l'aurait fait creuser au ralenti ~20 s après chaque reprise — le manque
+  de courant est en TOUT OU RIEN) ; (b) le garde `if (!effOutputs && power <= 0) continue;` sautait la
+  foreuse en pause (ni sortie ni conso) → **son compte à rebours ne s'écoulait jamais** : exception
+  ajoutée pour une foreuse en opération. (5) **COUCHES autour de l'élévateur** (`drillLayer`, distance de
+  Tchebychev, 1 = la tuile élévateur) : coût de la foreuse **×2 par couche** (`drillCostMult` : 2e cercle
+  ×1, 3e ×2, 4e ×4) et puissance max **×2 par couche** (`drillPowerAt` : **4096 / 8192 / 16384 kW**). Le
+  coût est appliqué à la POSE (`drillPlaceCost` dans `tryPlace`), puisque la foreuse est consommée.
+  (6) **Poche d'He3 = 10 % par mur percé** (`DRILL_POCKET_CHANCE`) — la **prospection d'une tuile de sol
+  a disparu** (plus de `mode: 'drill'` au tap, plus de `drillCost`/`drillsCount` en jeu ; les champs
+  restent lus par les vieilles saves). (7) **UI** : plus de compteur de murs percés — la fiche affiche la
+  **couche** (« cercle N · coût ×N · X kW »), la ligne « 5 min · 8 pierre/s · 0 → max », l'avancement
+  (ou « reprise dans Ns » pendant un arrêt) et le rappel que la foreuse disparaît. La ligne « Élec. »
+  générique est masquée pour la foreuse (sa conso dépend de la couche). Tuto réécrit. Validé :
+  `node --check` (7 blocs) + Chromium **4 suites, 69 assertions, 0 erreur JS** — barème exact
+  (300 s / 8 pierre/s / 30 s / 10 % ; puissances 4096·8192·16384·32768 ; coûts ×1·×2·×4·×8) ; **parcours
+  réel par l'UI** : foreuse posée (coût = base × couche), **0 kW au repos**, tap → fiche (couche, durée,
+  cible « mur de roche », plus de compteur) → clic « Percer le mur » → **rien débité**, conso qui monte
+  depuis ~0, **8 pierre/s exactement au port de l'île 6**, avancement 1 s/tick ; **chantier concurrent →
+  la foreuse n'avance plus** (élévateur préempté) puis repart ; **coupure de courant → arrêt de 30 s,
+  0 kW, avancement gelé, compte à rebours qui s'écoule** ; fin d'opération → **mur percé + foreuse
+  disparue + 0 kW + notification** ; round-trip de sauvegarde par rechargement réel (creusement, mur
+  visé, pause de courant, drapeau ∞). Build 287→288.
   Changement 14.05 : **PATCH 6 retours — élévateur qui bride VRAIMENT les machines, batteries (badge
   fantôme + charge homogène), foreuse (sens visible, forage de mur, 0 kW au repos), réseau infini
   remboursé puis gratuit.** `SAVE_VERSION` INCHANGÉ (3 champs additifs optionnels : `pl.dg`
