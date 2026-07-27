@@ -5497,10 +5497,13 @@ const BUILDINGS = {
     terrains: ['land'],
     exclusiveIsland: 7,
     size: [1, 1],
-    power: 512,
-    // Machine à forer : pilotée depuis sa fiche (choix de la DIRECTION puis démarrage manuel du
-    // forage) — voir `driller`. NON améliorable (`noUpgrade`) : elle n'a ni intrant ni sortant,
-    // améliorer ne faisait que doubler ses 512 kW pour zéro effet (piège à ressources).
+    // Puissance de RÉFÉRENCE (3e cercle) atteinte au bout des 5 min de creusement. La conso réelle
+    // est calculée au tick : 0 kW au repos, puis 0 → ce maximum ×2 par couche d'éloignement de
+    // l'élévateur (cf. DRILL_MAX_POWER / drillPowerAt — littéral ici, la const vient plus bas).
+    power: 8192,
+    // Machine à creuser à USAGE UNIQUE : pilotée depuis sa fiche (direction puis démarrage), elle
+    // perce le mur visé en 5 min (8 pierre/s remontées par l'élévateur) puis DISPARAÎT en laissant
+    // une tuile de tunnel constructible. NON améliorable (`noUpgrade`).
     driller: true,
     noUpgrade: true,
     cost: {
@@ -6456,8 +6459,8 @@ const SAVE_VERSION = 30;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 287;
-const GAME_VERSION = 'Alpha 14.05';
+const GAME_BUILD = 288;
+const GAME_VERSION = 'Alpha 14.06';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7029,9 +7032,41 @@ function extensionCost(n) {
     beton_arme_irradie: 100 * f
   };
 }
-// Durée (secondes) d'une opération de foreuse — prospection d'He3 comme creusement de mur. La
-// foreuse ne consomme ses 512 kW QUE pendant ce temps (14.05) ; sans courant, le forage se fige.
-const DRILL_TIME = 30;
+// ===== FOREUSE (île 7) — spec d'origine, 14.06 ==============================================
+// La foreuse est une machine à USAGE UNIQUE : elle creuse pendant 5 min le MUR qu'elle vise, puis
+// DISPARAÎT en laissant une tuile de tunnel constructible. C'est l'équivalent souterrain de
+// l'extension de terrain en mer, en plus sophistiqué : on ne paie PAS de coût d'extension, le coût
+// EST la foreuse elle-même.
+const DRILL_TIME = 300; // 5 min de creusement (à plein régime)
+// Pendant l'opération elle extrait 8 pierre/s, évacués par l'ÉLÉVATEUR comme n'importe quel
+// sortant : élévateur bridé → la foreuse elle-même ralentit (et sa conso monte d'autant moins vite).
+const DRILL_STONE_RATE = 8;
+// Conso : 0 kW au démarrage → maximum de sa couche au bout des 5 min (proportionnelle à
+// l'AVANCEMENT, donc au ralenti elle « monte très doucement » au lieu de s'arrêter).
+const DRILL_MAX_POWER = 8192; // kW au bout des 5 min, sur la couche de référence (3e cercle)
+// Manque de courant : l'extraction s'ARRÊTE et reprend 30 s plus tard LÀ OÙ elle s'est arrêtée.
+const DRILL_STALL = 30;
+// Une poche d'Hélium-3 n'est plus « prospectée » : chaque mur percé a 10 % de chances d'en révéler une.
+const DRILL_POCKET_CHANCE = 0.10;
+// COUCHE (cercle) autour de l'élévateur : 1 = la tuile élévateur, 2 = le premier anneau, etc.
+// (distance de Tchebychev → des anneaux carrés bien lisibles sur la grille).
+function drillLayer(game, r, c) {
+  const e = elevatorTileOf(game, 7);
+  if (!e) return 3;
+  return Math.max(Math.abs(r - e.r), Math.abs(c - e.c)) + 1;
+}
+// Plus on s'éloigne de l'élévateur, plus creuser coûte cher ET pompe de courant (×2 par couche) :
+//   2e cercle : coût ×1   · 4096 kW      3e cercle : coût ×2 · 8192 kW      4e : coût ×4 · 16384 kW
+const drillCostMult = layer => Math.pow(2, Math.max(0, layer - 2));
+const drillPowerAt = layer => DRILL_MAX_POWER * Math.pow(2, Math.max(0, layer - 2) - 1);
+// Coût de POSE d'une foreuse sur une tuile donnée (= le coût du creusement : elle y est consommée).
+function drillPlaceCost(game, r, c) {
+  const base = (BUILDINGS.foreuse && BUILDINGS.foreuse.cost) || {};
+  const m = drillCostMult(drillLayer(game, r, c));
+  const out = {};
+  for (const k in base) out[k] = base[k] * m;
+  return out;
+}
 // Coût progressif du forage (île 7). Facteur ×4 (pas ×10) : seulement 3 gisements pour 11 tuiles
 // forables → un ×10 rendrait le 3e forage absurde. À ré-ajuster au playtest.
 function drillCost(n) {
@@ -8609,6 +8644,7 @@ function tickIsland(game, isl) {
   const energyConsumers = [];
   const accList = [];
   const nucList = [];
+  const drillList = []; // foreuses (île 7) : avancement traité APRÈS le bridage de l'élévateur
   // Production électrique ventilée par réseau câble (sous-réseau électrique distinct).
   const wireProd = {};
   // Sous-réseaux électriques « fusionnés » (option : puiser sur tous les câbles adjacents) :
@@ -8777,7 +8813,8 @@ function tickIsland(game, isl) {
     // (single/mix/auto) — l'entrée reste fixe, le mode ne répartit que sortie et conso.
     const arcEff = ARC_DEF[bld.id] ? arcEffective(bld, workPort) : null;
     const effInputs = arcEff ? arcEff.inputs : b.inputs;
-    const effOutputs = arcEff ? arcEff.outputs : b.outputs;
+    // `let` : la FOREUSE se donne dynamiquement une sortie (8 pierre/s) pendant un creusement.
+    let effOutputs = arcEff ? arcEff.outputs : b.outputs;
     const effSigmoid = arcEff ? arcEff.sigmoid : b.sigmoid;
     const effRandomP = arcEff ? null : b.randomP;
     let basePower = b.power || 0;
@@ -8792,10 +8829,25 @@ function tickIsland(game, isl) {
       }
       basePower = bld.randomPower;
     }
-    // 14.05 — FOREUSE : 0 kW tant qu'aucun forage n'est DÉMARRÉ (retour testeur). Elle n'a ni
-    // intrant ni sortant : hors opération, c'est une machine à l'arrêt, pas un radiateur à 512 kW.
-    // Ses 512 kW ne sont tirés que pendant un forage/creusement (voir `bld.drilling` plus bas).
-    if (b.driller && !bld.drilling) basePower = 0;
+    // FOREUSE (14.06) : 0 kW tant qu'aucun creusement n'est DÉMARRÉ, puis montée PROGRESSIVE de
+    // 0 au maximum de sa couche sur les 5 min — la conso suit l'AVANCEMENT, donc si la foreuse est
+    // ralentie (élévateur bridé) elle « monte très doucement » au lieu de s'arrêter.
+    if (b.driller) {
+      basePower = 0;
+      const dw = bld.drilling;
+      if (dw) {
+        // Manque de courant au tick précédent (le bâtiment a été coupé par la boucle énergie) :
+        // l'extraction s'arrête et ne reprendra que DRILL_STALL secondes plus tard, au même point.
+        if (!(bld.drillStall > 0) && bld.active === false && bld.discReason === 'power') bld.drillStall = DRILL_STALL;
+        if (!(bld.drillStall > 0)) {
+          const tot = dw.tot || DRILL_TIME;
+          const prog = Math.max(0, Math.min(1, 1 - dw.rem / tot));
+          basePower = drillPowerAt(drillLayer(game, r, c)) * prog;
+          // Extraction : 8 pierre/s remontées par l'élévateur (bridage → la foreuse ralentit).
+          effOutputs = { pierre: DRILL_STONE_RATE };
+        }
+      }
+    }
     // Boost d'antenne : un bâtiment de production (kind build avec sorties) sur une tuile influencée
     // tourne plus vite — INTRANTS & SORTIES ×antSpeedMul(f) (13.70 : +5 %×f, Nv.1 ×1,1, SANS plafond
     // depuis 14.02)
@@ -8831,7 +8883,10 @@ function tickIsland(game, isl) {
     const antPE = debuffed ? antProdEffect(prodFac) : null;
     const outMul = mult * (buffed ? antSpeedMul(speedFac) : antPE ? antPE.outMul : 1);
     const inMul = mult * (buffed ? antSpeedMul(speedFac) : antPE ? antPE.inMul : 1);
-    if (!effOutputs && power <= 0) continue;
+    // Rien à produire ni à consommer → bâtiment sans effet ce tick, on passe. EXCEPTION : une
+    // foreuse EN PAUSE de courant (arrêt de 30 s) n'a ni sortie ni conso mais doit quand même être
+    // traitée, sinon son compte à rebours de reprise ne s'écoulerait jamais.
+    if (!effOutputs && power <= 0 && !(b.driller && bld.drilling)) continue;
     const inByType = {},
       outByType = {};
     let energyOut = 0;
@@ -8991,7 +9046,10 @@ function tickIsland(game, isl) {
     // Régime [0..1] = min(intrants dispo, élec. dispo via duty-cycle lissé pwrAvg du tick précédent).
     // On bride conso ET production au prorata. À 0 (aucun intrant / aucune élec.) le bâtiment est
     // arrêté ; entre 0 et 1 il tourne au ralenti (jamais à plein quand il manque quelque chose).
-    const pwrF = power > 0 && bld.pwrAvg != null ? Math.max(0, Math.min(1, bld.pwrAvg)) : 1;
+    // ⚠ FOREUSE : son régime ne suit PAS le duty-cycle électrique lissé. Le manque de courant est
+    // géré en TOUT OU RIEN (arrêt de 30 s puis reprise, cf. `drillStall`) — sinon, après une coupure,
+    // `pwrAvg` remonterait lentement et la foreuse aurait creusé au ralenti pendant ~20 s de plus.
+    const pwrF = !b.driller && power > 0 && bld.pwrAvg != null ? Math.max(0, Math.min(1, bld.pwrAvg)) : 1;
     const regime = Math.max(0, Math.min(1, Math.min(inFac, pwrF)));
     bld.inFac = inFac;
     bld.inAvail = inAvail;
@@ -9008,33 +9066,9 @@ function tickIsland(game, isl) {
         : bld.id === 'machine_outil' || bld.id === 'presse_uhp' ? HEAT_PER_MW * (power * regime) / 1000
         : 0;
     }
-    // 14.05 — FOREUSE en opération : le forage AVANCE au régime électrique (pas de courant = pas
-    // d'avancement, la barre se fige). À 0 il s'applique : gisement révélé (prospection) ou mur
-    // creusé en sol de tunnel (extension). Le terrain change ici, mais on ne reconstruit PAS les
-    // réseaux au milieu du tick (les `routeIn`/`routeOut` déjà résolus pointeraient dans le vide) :
-    // on empile une notification que la boucle `frame` consomme (toast + rebuild + redraw).
-    if (b.driller && bld.drilling) {
-      const dr = bld.drilling;
-      dr.rem -= regime;
-      dr.rate = regime;
-      if (dr.rem <= 1e-6) {
-        const dt = tiles[dr.r] && tiles[dr.r][dr.c];
-        let found = false;
-        if (dt && !dt.building) {
-          if (dr.dig) {
-            // Creusement d'un MUR : la roche devient du sol de tunnel (comme une extension).
-            if (dt.terrain === 'water') dt.terrain = 'land';
-          } else if (dt.terrain === 'land' && !dt.drilled) {
-            dt.drilled = true;
-            found = Array.isArray(game.he3Deposits) && game.he3Deposits.some(d => d.r === dr.r && d.c === dr.c);
-            if (found) dt.terrain = 'resource'; // veine d'He3 révélée
-          }
-        }
-        delete bld.drilling;
-        (game.drillNotify || (game.drillNotify = [])).push({ isl, dig: !!dr.dig, found });
-        activeChanged = true;
-      }
-    }
+    // La FOREUSE avance dans une passe DÉDIÉE, après le bridage de l'élévateur (plus bas) : son
+    // creusement suit le régime FINAL, élévateur compris.
+    if (b.driller) drillList.push({ bld, r, c });
     // Plus AUCUN intrant → arrêt franc (on saute le bâtiment). On NE saute PAS sur un déficit
     // d'élec. (pwrF bas) : le bâtiment doit rester dans energyConsumers pour que la boucle énergie
     // compte sa demande et fasse converger pwrAvg (sinon oscillation/blocage). Sa production sera
@@ -9259,6 +9293,47 @@ function tickIsland(game, isl) {
     }
     // Retour temps réel pour le panneau élévateur (débit consommé / max + ventilation par catégorie).
     game.elevatorFlow = { demand: consDem + outDem + inDem, cap: elevCap, used: consGive + outGive + inGive, construction: consGive, out: outGive, in: inGive, level: game.elevatorLevel || 0 };
+  }
+  // ── FOREUSES : avancement du creusement (après le bridage de l'élévateur, donc au régime FINAL) ──
+  // La pierre extraite doit être évacuée : si l'élévateur ne suit pas, la foreuse creuse d'autant
+  // moins vite. Sans courant, l'extraction est en pause 30 s (`drillStall`) puis reprend au même point.
+  for (const d of drillList) {
+    const bld = d.bld,
+      dw = bld.drilling;
+    if (!dw) {
+      if (bld.drillStall) delete bld.drillStall;
+      continue;
+    }
+    if (bld.drillStall > 0) {
+      bld.drillStall -= 1;
+      dw.rate = 0;
+      if (bld.drillStall <= 0) delete bld.drillStall;
+      continue;
+    }
+    const rg = bld.regime != null ? bld.regime : 1;
+    dw.rem -= rg;
+    dw.rate = rg;
+    if (dw.rem > 1e-6) continue;
+    // ── Creusement terminé ──────────────────────────────────────────────────────────────────
+    // Le mur devient du sol de tunnel constructible, avec 10 % de chances d'y révéler une poche
+    // d'Hélium-3, et la FOREUSE DISPARAÎT (elle est consommée par l'opération) en libérant sa tuile.
+    const dt = tiles[dw.r] && tiles[dw.r][dw.c];
+    let found = false;
+    if (dt && !dt.building && dt.terrain === 'water') {
+      found = Math.random() < DRILL_POCKET_CHANCE;
+      dt.terrain = found ? 'resource' : 'land';
+    }
+    if (tiles[d.r] && tiles[d.r][d.c] && tiles[d.r][d.c].building === bld) {
+      tiles[d.r][d.c].building = null;
+      tiles[d.r][d.c].networkId = null;
+      tiles[d.r][d.c].netIds = null;
+    }
+    // Le terrain ET les bâtiments ont changé : on ne reconstruit JAMAIS les réseaux au milieu d'un
+    // tick (les routeIn/routeOut déjà résolus pointeraient dans le vide) → la boucle `frame` s'en
+    // charge en consommant cette notification (rebuild + toast + redraw).
+    (game.drillNotify || (game.drillNotify = [])).push({ isl, found });
+    activeChanged = true;
+    resChanged = true;
   }
   const facOf = (route, ty, pri) => {
     const nid = route[ty];
@@ -11655,7 +11730,7 @@ const GAME_TIPS = [{
   id: 'foreuse',
   icon: '⛏️',
   title: 'La foreuse et les poches d\'Hélium-3',
-  body: ["Pose la <b>foreuse</b> sur le <b>sol de tunnel</b> (île 7). Elle ne produit rien toute seule : c'est une machine qu'on <b>vise</b> puis qu'on <b>déclenche</b>.", "Touche-la : sa fiche propose <b>4 directions (N · E · S · O)</b> — la <b>flèche sur la carte</b> montre en permanence la face visée. Choisis-la, puis appuie sur <b>⛏ Démarrer le forage</b>.", "Deux cibles possibles : une tuile de <b>sol de tunnel</b> encore vierge (on y <b>cherche de l'Hélium-3</b>, coût ×4 à chaque forage) ou un <b>mur de roche</b>, qu'elle <b>perce</b> pour agrandir le tunnel (coût d'extension de l'île). Tout se paie sur le <b>port de l'île 6</b>.", "Un forage <b>prend " + DRILL_TIME + " secondes</b> et c'est le SEUL moment où la foreuse consomme ses <b>512 kW</b> : au repos elle ne tire <b>rien</b>. Sans courant, la barre de progression se fige.", "Le tunnel cache <b>3 poches d'Hélium-3</b>. Un forage réussi transforme la tuile en <b>gisement</b> : c'est là, et seulement là, que se pose l'<b>Extracteur Souterrain</b>.", "La foreuse n'est <b>pas améliorable</b> — inutile d'y investir."],
+  body: ["La <b>foreuse</b> agrandit le tunnel : posée sur le sol de l'île 7, elle <b>perce le mur de roche</b> qu'elle vise et le transforme en tuile constructible. C'est l'équivalent souterrain du remblai en mer — en plus musclé.", "Touche-la : sa fiche propose <b>4 directions (N · E · S · O)</b> — la <b>flèche sur la carte</b> montre la face visée. Choisis un mur, puis <b>⛏ Percer le mur</b>. Le creusement dure <b>5 minutes</b>, pendant lesquelles elle extrait <b>8 pierre/s</b> qui remontent par l'élévateur : si l'élévateur est saturé, <b>elle creuse d'autant moins vite</b>.", "Sa consommation part de <b>0 kW</b> et monte jusqu'à son maximum au fil des 5 min (au ralenti, elle monte simplement plus doucement). <b>Si le courant manque, l'extraction s'arrête 30 s</b> puis repart exactement là où elle en était — prévois large.", "<b>Elle est consommée par l'opération</b> : à la fin, la foreuse disparaît et laisse deux tuiles libres. Il n'y a rien d'autre à payer que la foreuse elle-même — et <b>10 % des murs percés révèlent une poche d'Hélium-3</b>, seul endroit où poser l'<b>Extracteur Souterrain</b>.", "⚠ Le prix de la foreuse ET sa consommation <b>doublent à chaque couche</b> en s'éloignant de l'élévateur (sa fiche indique la couche) : creuse près de l'élévateur tant que tu peux.", "La foreuse n'est <b>pas améliorable</b> — inutile d'y investir."],
   when: g => isBuildingUnlocked(g, 'foreuse')
 }, {
   // Déblocage XOR/XNOR (nœud 41, palier P3) : XNOR natif + détecteur de leptons.
@@ -13736,10 +13811,10 @@ function InfoPanel({
     ), React.createElement("div", { className: "ip-rows" }, React.createElement("div", { className: "ip-fluxpri" }, rows)));
   }
   // Terrain contextual panels (repair / extension) — tiles without a building.
-  if (info.mode === 'repair' || info.mode === 'extend' || info.mode === 'elevator' || info.mode === 'drill') {
+  if (info.mode === 'repair' || info.mode === 'extend' || info.mode === 'elevator') {
     const mode = info.mode;
-    // Le forage se paie sur le port de l'île 6 (surface) ; les autres actions sur l'île courante.
-    const port = (mode === 'drill' ? game.port[6] : portPool(game, currentIsland)) || {};
+    // Île 7 : portPool résout déjà vers le port de l'île 6 (le souterrain n'a pas d'inventaire).
+    const port = portPool(game, currentIsland) || {};
     const dev = game.ui && game.ui.dev;
     // Chaque mode de terrain fournit : cost, count (null = pas de ligne compteur), countLabel,
     // unlocked (techno), title, swatch, btnLabel, icon (fallback emoji), onAct (action).
@@ -13752,14 +13827,16 @@ function InfoPanel({
       title = I18N.t('Terrain accidenté'); swatch = 'var(--orange)'; btnLabel = I18N.t(' Réparer');
       icon = 'reparation'; emoji = "\u{1F527}"; onAct = onRepair;
     } else if (mode === 'extend') {
-      count = game.extensionsCount[currentIsland] || 0;
-      cost = extensionCost(count);
-      countLabel = I18N.t('Extensions effectuées sur cette île');
-      unlocked = isTerrainExtendUnlocked(game);
-      // Souterrain : « remblayer » un mur, c'est le PERCER à la foreuse (opération de DRILL_TIME s).
-      title = currentIsland === 7 ? I18N.t('Percer un mur') : I18N.t('Extension de terrain');
+      // Souterrain (île 7) : agrandir le tunnel = CREUSER le mur avec la foreuse adjacente. Rien à
+      // payer ici (le coût, c'est la foreuse, consommée par l'opération) et pas de compteur.
+      const under = currentIsland === 7;
+      count = under ? null : game.extensionsCount[currentIsland] || 0;
+      cost = under ? {} : extensionCost(count);
+      countLabel = under ? null : I18N.t('Extensions effectuées sur cette île');
+      unlocked = under ? true : isTerrainExtendUnlocked(game);
+      title = under ? I18N.t('Percer un mur') : I18N.t('Extension de terrain');
       swatch = 'var(--blue, #0277BD)';
-      btnLabel = currentIsland === 7 ? I18N.t(' Percer le mur') : I18N.t(' Remblayer');
+      btnLabel = under ? I18N.t(' Percer le mur (5 min)') : I18N.t(' Remblayer');
       icon = 'batiment'; emoji = "\u{1F3D7}"; onAct = onExtend;
       // Icône = sprite de TUILE TERRAIN produite par le remblai (souterrain île 7 → sol de tunnel
       // `tile_i7_land` ; en surface → littoral `tile_i<N>_coast`).
@@ -13770,15 +13847,7 @@ function InfoPanel({
       unlocked = isElevatorRepairUnlocked(game);
       title = I18N.t('Élévateur (cassé)'); swatch = '#FF9628'; btnLabel = I18N.t(" Réparer l'élévateur");
       icon = 'reparation'; emoji = "\u{1F6D7}"; onAct = onRepairElevator;
-    } else {
-      // drill
-      count = (game.drillsCount && game.drillsCount[7]) || 0;
-      cost = drillCost(count);
-      countLabel = I18N.t('Forages effectués');
-      unlocked = isBuildingUnlocked(game, 'foreuse');
-      title = I18N.t('Forer le tunnel'); swatch = '#B0752A'; btnLabel = I18N.t(' Forer');
-      icon = 'batiment'; emoji = "⛏️"; onAct = onDrill;
-    }
+    } else return null; // (le mode 'drill' — prospection d'une tuile de sol — n'existe plus en 14.06)
     const affordable = dev || Object.keys(cost).every(k => (port[k] || 0) >= cost[k]);
     return React.createElement("div", {
       ref: ref,
@@ -14558,7 +14627,7 @@ function InfoPanel({
     if (d > 1e-6) return cap - st <= 0 ? '🔋 ' + I18N.t('plein') : '⬆ ' + I18N.t('plein dans ') + fmtT((cap - st) / d);
     if (d < -1e-6) return st <= 0 ? I18N.t('vide') : '⬇ ' + I18N.t('vide dans ') + fmtT(st / -d);
     return I18N.t('stable (ni charge ni décharge)');
-  })())), !b.nuclear && !b.accumulator && React.createElement("div", {
+  })())), !b.nuclear && !b.accumulator && !b.driller && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -14683,8 +14752,8 @@ function InfoPanel({
     // Le forage se paie sur le PORT DE L'ÎLE 6 (l'île 7 n'a pas d'inventaire propre).
     const dtiles = game.islands[currentIsland] || [];
     const ddir = bld.drillDir != null ? bld.drillDir : 0;
-    // 14.05 — la cible peut aussi être un MUR de roche : le forage le perce et en fait du sol de
-    // tunnel (« creuser comme une extension »). `dig` distingue les deux natures d'opération.
+    // 14.06 — la foreuse ne creuse QUE la roche (les murs) : elle y consacre 5 min, en extrait
+    // 8 pierre/s, puis DISPARAÎT en laissant une tuile de tunnel constructible.
     const tgtOf = d => {
       const dd = DIRS4[d];
       if (!dd) return null;
@@ -14692,51 +14761,41 @@ function InfoPanel({
         cc = info.c + dd[1];
       const tt = dtiles[rr] && dtiles[rr][cc];
       if (!tt) return null;
-      const dig = tt.terrain === 'water';
-      return { r: rr, c: cc, t: tt, dig, ok: !tt.building && (dig || tt.terrain === 'land' && !tt.drilled) };
+      return { r: rr, c: cc, t: tt, ok: !tt.building && tt.terrain === 'water' };
     };
     const tgt = tgtOf(ddir);
-    const isDig = !!(tgt && tgt.dig);
-    // Prospection → coût de FORAGE (×4) ; creusement de mur → coût d'EXTENSION de l'île (×10),
-    // la même économie que le remblai puisque le résultat est identique.
-    const dcount = isDig ? (game.extensionsCount && game.extensionsCount[7] || 0) : (game.drillsCount && game.drillsCount[7]) || 0;
-    const dcost = isDig ? extensionCost(dcount) : drillCost(dcount);
-    const p6 = game.port[6] || {};
-    const ddev = !!(game.ui && game.ui.dev);
-    const afford = ddev || Object.keys(dcost).every(k => (p6[k] || 0) >= dcost[k]);
-    const work = bld.drilling; // opération en cours sur CETTE foreuse
-    const why = !tgt ? I18N.t('hors du tunnel') : tgt.t.building ? I18N.t('occupée') : tgt.dig ? I18N.t('mur de roche — à percer') : tgt.t.drilled ? I18N.t('déjà foré') : tgt.t.terrain !== 'land' ? I18N.t('pas du sol de tunnel') : I18N.t('sol de tunnel — forable');
-    const ready = !work && !!(tgt && tgt.ok) && afford;
+    const work = bld.drilling; // creusement en cours sur CETTE foreuse
+    // Couche (cercle) autour de l'élévateur : elle fixe le coût de la foreuse ET sa conso max.
+    const layer = drillLayer(game, info.r, info.c);
+    const maxKw = drillPowerAt(layer);
+    const why = !tgt ? I18N.t('hors de la grille') : tgt.t.building ? I18N.t('occupée') : tgt.t.terrain === 'water' ? I18N.t('mur de roche — à percer') : I18N.t('déjà creusé (pas un mur)');
+    const ready = !work && !!(tgt && tgt.ok);
     return React.createElement("div", { className: "ip-fluxpri" },
-      React.createElement("div", { className: "ip-fluxpri-lbl" }, I18N.t("Direction du forage")),
+      React.createElement("div", { className: "ip-fluxpri-lbl" }, I18N.t("Direction du creusement")),
       React.createElement("div", { className: "ip-nuc-mats", style: { gridTemplateColumns: '1fr 1fr 1fr 1fr' } }, [[0, 'N'], [3, 'E'], [1, 'S'], [2, 'O']].map(([d, dl]) => {
         const q = tgtOf(d);
         return React.createElement("button", {
           key: dl,
           className: 'ip-nuc-mat' + (ddir === d ? ' on' : ''),
           style: q && q.ok ? null : { opacity: 0.45 },
-          title: q && q.ok ? q.dig ? I18N.t('Mur perçable') : I18N.t('Tuile forable') : I18N.t('Rien à forer de ce côté'),
+          title: q && q.ok ? I18N.t('Mur perçable') : I18N.t('Pas de mur de ce côté'),
           onClick: () => onDrillDir && onDrillDir(info.r, info.c, d)
         }, dl);
       })),
       React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Cible")), React.createElement("span", { className: "val", style: { color: tgt && tgt.ok ? 'var(--green)' : 'var(--ink-dim)' } }, why)),
-      // Opération en cours : progression + secondes restantes au régime électrique courant.
-      work ? React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Forage en cours")), React.createElement("span", { className: "val", style: { color: 'var(--yellow)' } },
-        Math.round((1 - work.rem / (work.tot || DRILL_TIME)) * 100) + '% · ' + ((work.rate || 0) > 1e-6 ? '~' + Math.ceil(work.rem / work.rate) + 's' : I18N.t('sans courant')))) : null,
-      React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Coût")), React.createElement("span", { className: "val ip-cost-chips" }, Object.keys(dcost).map(k => {
-        const ik = SPRITES_ENABLED ? itemSpriteKey(k) : null;
-        const idata = ik && SPRITE_DATA[ik];
-        return React.createElement("span", { key: k, className: 'dr-res ipc-ci' + (!ddev && (p6[k] || 0) < dcost[k] ? ' miss' : ''), title: RES_SHORT[k] || k },
-          idata && React.createElement("img", { className: "inv-ico", src: idata, alt: "" }),
-          React.createElement("span", { className: "dr-q" }, (RES_SHORT[k] || k) + ' ' + fmtPort(dcost[k])));
-      }))),
-      React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Durée · élec.")), React.createElement("span", { className: "val" }, DRILL_TIME + 's · ' + fmtPower(b.power || 0))),
-      React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, isDig ? I18N.t("Murs percés") : I18N.t("Forages effectués")), React.createElement("span", { className: "val" }, dcount)),
+      // Couche autour de l'élévateur → coût de la foreuse et puissance max (×2 par couche).
+      React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Couche (élévateur)")), React.createElement("span", { className: "val", title: I18N.t("Coût de la foreuse et puissance de creusement ×2 par couche en s'éloignant de l'élévateur") },
+        I18N.t("cercle ") + layer + ' · ' + I18N.t("coût ×") + fxDec(drillCostMult(layer)) + ' · ' + fmtPower(maxKw))),
+      React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Creusement")), React.createElement("span", { className: "val" }, Math.round(DRILL_TIME / 60) + I18N.t(" min · ") + DRILL_STONE_RATE + I18N.t(" pierre/s · 0 → ") + fmtPower(maxKw))),
+      // Opération en cours : progression + secondes restantes au régime courant (élévateur inclus).
+      work ? React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("En cours")), React.createElement("span", { className: "val", style: { color: 'var(--yellow)' } },
+        Math.round((1 - work.rem / (work.tot || DRILL_TIME)) * 100) + '% · ' + (bld.drillStall > 0 ? I18N.t('reprise dans ') + Math.ceil(bld.drillStall) + 's' : (work.rate || 0) > 1e-6 ? '~' + Math.ceil(work.rem / work.rate) + 's' : I18N.t('à l\'arrêt')))) : null,
+      work ? React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Fin de l'opération")), React.createElement("span", { className: "val" }, I18N.t("la foreuse disparaît · 10 % de poche d'He3"))) : null,
       React.createElement("button", {
         className: "ip-up densify-btn" + (ready ? '' : ' locked'),
         disabled: !ready,
         onClick: () => ready && onDrill && onDrill(tgt.r, tgt.c)
-      }, work ? "⛏ " + I18N.t("Forage en cours…") : isDig ? "⛏ " + I18N.t("Percer le mur") : "⛏ " + I18N.t("Démarrer le forage")));
+      }, work ? "⛏ " + I18N.t("Creusement en cours…") : "⛏ " + I18N.t("Percer le mur")));
   })(), (usesNet || drawsPower) && React.createElement("div", {
     className: "ip-fluxpri"
   }, React.createElement("div", {
@@ -17815,15 +17874,18 @@ function App() {
             if (b.construction.to) pl.cb.to = b.construction.to;
           }
           if (b.drillDir != null) pl.dd = b.drillDir;
-          // Forage EN COURS (14.05) : cible + temps restant. Le coût est déjà payé au démarrage →
-          // sans persistance, un reload le perdrait purement et simplement. Champ additif.
-          if (b.drilling && (b.drilling.rem || 0) > 1e-6) pl.dg = {
-            r: b.drilling.r,
-            c: b.drilling.c,
-            rem: b.drilling.rem,
-            tot: b.drilling.tot || DRILL_TIME,
-            dig: b.drilling.dig ? 1 : 0
-          };
+          // Creusement EN COURS (14.05/14.06) : mur visé + temps restant (+ pause « manque de
+          // courant » en cours). La foreuse est consommée par l'opération → sans persistance, un
+          // reload la perdrait ou l'offrirait. Champs additifs.
+          if (b.drilling && (b.drilling.rem || 0) > 1e-6) {
+            pl.dg = {
+              r: b.drilling.r,
+              c: b.drilling.c,
+              rem: b.drilling.rem,
+              tot: b.drilling.tot || DRILL_TIME
+            };
+            if (b.drillStall > 0) pl.dg.st = b.drillStall;
+          }
           // Réseau logique (phase 5) — réglages d'instance (champs additifs rétro-compatibles).
           // logicOff n'est PAS persisté : recalculé par processLogic dès le 1er tick.
           if (b.sensorMode) pl.sm = b.sensorMode;
@@ -18470,15 +18532,17 @@ function App() {
             if (p.cb.to && BUILDINGS[p.cb.to]) t.building.construction.to = p.cb.to;
           }
           if (p.dd != null) t.building.drillDir = +p.dd;
-          // Forage en cours (14.05) : reprend là où il s'était arrêté (coût déjà payé).
-          if (p.dg && +p.dg.rem > 1e-6) t.building.drilling = {
-            r: +p.dg.r,
-            c: +p.dg.c,
-            rem: +p.dg.rem,
-            tot: +p.dg.tot || DRILL_TIME,
-            rate: 0,
-            dig: !!p.dg.dig
-          };
+          // Creusement en cours : reprend exactement là où il s'était arrêté (foreuse déjà payée).
+          if (p.dg && +p.dg.rem > 1e-6) {
+            t.building.drilling = {
+              r: +p.dg.r,
+              c: +p.dg.c,
+              rem: +p.dg.rem,
+              tot: +p.dg.tot || DRILL_TIME,
+              rate: 0
+            };
+            if (+p.dg.st > 0) t.building.drillStall = +p.dg.st;
+          }
           // Réseau logique (phase 5) : réglages d'instance (capteur/actionneur/porte).
           if (p.sm) t.building.sensorMode = p.sm;
           if (p.sd != null) t.building.sensorDir = +p.sd;
@@ -19613,6 +19677,9 @@ function App() {
     // Bâtiment de palier posé directement : on paie le cumul V1→…→ce palier (pose + montées +
     // forfaits de densification), pas le simple coût de base.
     if (TIER_STEP[id]) costToPay = cumulativeInvested(id, tierEntry(id));
+    // FOREUSE (île 7) : son coût EST le coût du creusement (elle est consommée par l'opération) et
+    // il DOUBLE à chaque couche en s'éloignant de l'élévateur — comme sa consommation électrique.
+    if (id === 'foreuse' && gameRef.current.currentIsland === 7) costToPay = drillPlaceCost(gameRef.current, r, c);
     if (!dev) {
       const miss = missingFor(costToPay);
       if (miss.length) {
@@ -20026,14 +20093,14 @@ function App() {
       isl = g.currentIsland;
     const t = curTiles()[r] && curTiles()[r][c];
     if (!t || t.terrain !== 'water' || t.building) return false;
+    // Souterrain (île 7) : agrandir le tunnel, c'est CREUSER le mur à la foreuse — pas un remblai.
+    // On délègue donc entièrement à la foreuse adjacente : aucun coût d'extension (le coût, c'est
+    // la foreuse), 5 min d'opération, et pas de gate sur la techno de remblai (la foreuse EST l'outil).
+    if (isl === 7) return tryDrill(r, c);
     if (!isTerrainExtendUnlocked(g)) {
       showToast(I18N.t('❌ Technologie non débloquée'), 'var(--red)');
       return false;
     }
-    // Souterrain (île 7) : « remblayer » un mur, c'est le CREUSER — une seule et même opération que
-    // le forage (14.05). On délègue à la foreuse : même coût (extension), mais le mur tombe au bout
-    // du temps de forage au lieu d'être instantané, et la foreuse consomme pendant ce temps.
-    if (isl === 7) return tryDrill(r, c);
     const count = g.extensionsCount[isl] || 0;
     const cost = extensionCost(count);
     if (!g.ui.dev) {
@@ -20124,12 +20191,9 @@ function App() {
     scheduleSave();
     return true;
   }
-  // DÉMARRE une opération de forage sur la tuile (r, c) — le résultat n'est plus immédiat (14.05) :
-  // la foreuse adjacente travaille pendant DRILL_TIME secondes EN CONSOMMANT ses 512 kW (elle ne tire
-  // rien au repos), puis le tick applique le résultat. Deux cibles possibles :
-  //   • sol de tunnel vierge → PROSPECTION d'une poche d'He3 (coût progressif ×4, port île 6) ;
-  //   • MUR de roche → CREUSEMENT, la roche devient du sol de tunnel — exactement le résultat du
-  //     remblai, avec la même économie (coût d'extension de l'île, ×10 par extension).
+  // DÉMARRE le creusement du MUR (r, c) par la foreuse adjacente (spec d'origine, 14.06).
+  // Rien à payer ici : le coût, c'est la foreuse — elle est CONSOMMÉE par l'opération (5 min), au
+  // bout de laquelle le mur devient du sol de tunnel constructible et la foreuse disparaît.
   function tryDrill(r, c) {
     const g = gameRef.current,
       isl = g.currentIsland;
@@ -20137,44 +20201,32 @@ function App() {
     const tiles = curTiles();
     const t = tiles[r] && tiles[r][c];
     if (!t || t.building) return false;
-    const dig = t.terrain === 'water'; // mur de roche → creusement (extension du tunnel)
-    if (!dig && (t.terrain !== 'land' || t.drilled)) return false;
-    // Une foreuse doit être posée sur une tuile adjacente (4-voisinage) et être LIBRE.
+    if (t.terrain !== 'water') {
+      showToast(I18N.t('❌ La foreuse ne creuse que la roche (un mur)'), 'var(--red)');
+      return false;
+    }
+    // Une foreuse doit être posée sur une tuile adjacente (4-voisinage), construite et LIBRE.
     let foreuse = null,
-      busy = false;
+      busy = false,
+      building = false;
     for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
       const nt = tiles[r + dr] && tiles[r + dr][c + dc];
       const nb = nt && nt.building ? nt.building : nt && nt.occupied && tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c].building;
       if (nb && nb.id === 'foreuse') {
+        if (nb.construction && (nb.construction.rem || 0) > 1e-6) { building = true; continue; }
         if (nb.drilling) { busy = true; continue; }
         foreuse = nb;
         break;
       }
     }
     if (!foreuse) {
-      showToast(busy ? I18N.t('❌ Foreuse déjà en train de forer') : I18N.t('❌ Aucune foreuse adjacente'), 'var(--red)');
+      showToast(busy ? I18N.t('❌ Foreuse déjà en train de creuser') : building ? I18N.t('❌ Foreuse encore en construction') : I18N.t('❌ Aucune foreuse adjacente'), 'var(--red)');
       return false;
     }
-    const count = dig ? (g.extensionsCount[7] || 0) : (g.drillsCount && g.drillsCount[7]) || 0;
-    const cost = dig ? extensionCost(count) : drillCost(count);
-    // Le forage est payé depuis le PORT DE L'ÎLE 6 (surface) : l'île 7 n'a pas d'inventaire.
-    if (!g.ui.dev) {
-      const miss = missingFor(cost, 6);
-      if (miss.length) {
-        showToast(I18N.t('❌ Manque (port île 6) ') + miss.join(', '), 'var(--red)');
-        return false;
-      }
-      pay(cost, 6);
-    }
-    // Compteur incrémenté au DÉMARRAGE (le coût est déjà engagé), comme pour la construction.
-    if (dig) g.extensionsCount[7] = count + 1;
-    else {
-      if (!g.drillsCount) g.drillsCount = {};
-      g.drillsCount[7] = count + 1;
-    }
-    foreuse.drilling = { r, c, rem: DRILL_TIME, tot: DRILL_TIME, rate: 0, dig };
+    foreuse.drilling = { r, c, rem: DRILL_TIME, tot: DRILL_TIME, rate: 0 };
+    delete foreuse.drillStall;
     SFX.play('place');
-    showToast(dig ? I18N.t('⛏️ Creusement du mur en cours…') : I18N.t('⛏️ Forage en cours…'), 'var(--yellow)');
+    showToast(I18N.t('⛏️ Creusement du mur en cours (5 min)'), 'var(--yellow)');
     bumpHud();
     markDirty();
     scheduleSave();
@@ -22340,7 +22392,7 @@ function App() {
       // Terrain actions: obstacle -> repair, eligible water -> extension.
       // Only when no build tool is active (a tap to act on terrain, not to place).
       const toolActive = gameRef.current.ui.tool != null && gameRef.current.ui.tool !== COPY;
-      if (!toolActive && t && (t.terrain === 'obstacle' || t.terrain === 'water' || t.terrain === 'elevator' || t.terrain === 'collider' || (gameRef.current.currentIsland === 7 && t.terrain === 'land' && !t.drilled))) {
+      if (!toolActive && t && (t.terrain === 'obstacle' || t.terrain === 'water' || t.terrain === 'elevator' || t.terrain === 'collider')) {
         const g = gameRef.current;
         const tiles = curTiles();
         const DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
@@ -22349,7 +22401,8 @@ function App() {
         // pas débloquée (sinon on ouvre un panneau inutile sur chaque tuile).
         if (t.terrain === 'obstacle') {
           if (isTerrainRepairUnlocked(g)) mode = 'repair';
-        } else if (t.terrain === 'water' && isTerrainExtendUnlocked(g)) {
+          // Souterrain : creuser un mur ne dépend pas de la techno de remblai mais de la FOREUSE.
+        } else if (t.terrain === 'water' && (g.currentIsland === 7 || isTerrainExtendUnlocked(g))) {
           // Eligible only if adjacent (4-dir) to an existing land or coast tile.
           let adj = false;
           for (const [dr, dc] of DIRS) {
@@ -22361,15 +22414,16 @@ function App() {
               break;
             }
           }
-          // Souterrain (île 7) : le remblai = creuser la roche pour agrandir le tunnel → exige une
-          // FOREUSE adjacente (comme le forage). En surface, aucune foreuse requise.
+          // Souterrain (île 7) : creuser la roche pour agrandir le tunnel exige une FOREUSE
+          // adjacente, déjà construite et libre. En surface, aucune foreuse requise (remblai).
           let drillOk = true;
           if (g.currentIsland === 7) {
             drillOk = false;
             for (const [dr, dc] of DIRS) {
               let nt = tiles[tr + dr] && tiles[tr + dr][tc + dc];
               if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
-              if (nt && nt.building && nt.building.id === 'foreuse') { drillOk = true; break; }
+              const nb = nt && nt.building;
+              if (nb && nb.id === 'foreuse' && !nb.drilling && !(nb.construction && (nb.construction.rem || 0) > 1e-6)) { drillOk = true; break; }
             }
           }
           if (adj && drillOk) mode = 'extend';
@@ -22380,18 +22434,9 @@ function App() {
           // Élévateur : panneau de réparation (non réparé + techno débloquée) OU d'amélioration
           // du débit (déjà réparé).
           if (g.elevatorRepaired || isElevatorRepairUnlocked(g)) mode = 'elevator';
-        } else if (g.currentIsland === 7 && t.terrain === 'land' && !t.building && !t.drilled) {
-          // Forage : tuile de tunnel vierge, foreuse débloquée ET posée sur une tuile adjacente.
-          if (isBuildingUnlocked(g, 'foreuse')) {
-            let adjF = false;
-            for (const [dr, dc] of DIRS) {
-              let nt = tiles[tr + dr] && tiles[tr + dr][tc + dc];
-              if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
-              if (nt && nt.building && nt.building.id === 'foreuse') { adjF = true; break; }
-            }
-            if (adjF) mode = 'drill';
-          }
         }
+        // (14.06 : la prospection d'une tuile de sol a disparu — une poche d'He3 se découvre
+        //  désormais en PERÇANT un mur, avec 10 % de chances.)
         if (mode) {
           setNetwork(null);
           const cam = gameRef.current.cam;
@@ -22648,9 +22693,8 @@ function App() {
           rebuildNetworks(g, ev.isl);
           markDirty();
           scheduleSave();
-          if (ev.dig) showToast(I18N.t('⛏️ Mur percé — nouveau sol de tunnel'), 'var(--green)');
-          else if (ev.found) showToast(I18N.t("💎 Gisement d'Hélium-3 découvert"), 'var(--green)');
-          else showToast(I18N.t('⛏️ Forage terminé — rien trouvé'), 'var(--ink-dim)');
+          if (ev.found) showToast(I18N.t("💎 Mur percé — poche d'Hélium-3 découverte !"), 'var(--green)');
+          else showToast(I18N.t('⛏️ Mur percé — nouveau sol de tunnel (foreuse consommée)'), 'var(--green)');
         }
         // Surchauffe (trip) : un bâtiment à chaleur a atteint son plafond → arrêt 5 min.
         if (g.heatTrip && g.heatTrip.length) {
@@ -23343,7 +23387,9 @@ if (typeof window !== 'undefined') {
     SHIP_LINKS, linkActive, transferLink, transitForwardBudget, tickShips, onTick,
     tradeCfgFor, isElevatorRepairUnlocked, drillCost, generateHe3Deposits, ensureIslandDefaults,
     isUpgradable, costUnits, colliderRepaired, isBuildingGranted,
-    networkInvested, netInfPaidFor, networkUnlimitedInfo, networkTileCount, DRILL_TIME, extensionCost, accCapacity,
+    networkInvested, netInfPaidFor, networkUnlimitedInfo, networkTileCount, extensionCost, accCapacity,
+    DRILL_TIME, DRILL_STONE_RATE, DRILL_MAX_POWER, DRILL_STALL, DRILL_POCKET_CHANCE,
+    drillLayer, drillCostMult, drillPowerAt, drillPlaceCost,
     isPortPipe, portPool,
     elevatorRateAt, elevatorUpgradeCost, elevatorSurfaceLinked, elevatorTileOf, tickIsland,
     rawShippable, evaluateTechTree, techConfirm, techDeliver, PORT_PIPE_RES, BUILDING_NODE,
