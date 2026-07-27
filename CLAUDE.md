@@ -17,7 +17,76 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 286`, `GAME_VERSION = 'Alpha 14.04'`, `SAVE_VERSION = 30`.**
+- **État au dernier passage : `GAME_BUILD = 287`, `GAME_VERSION = 'Alpha 14.05'`, `SAVE_VERSION = 30`.**
+  Changement 14.05 : **PATCH 6 retours — élévateur qui bride VRAIMENT les machines, batteries (badge
+  fantôme + charge homogène), foreuse (sens visible, forage de mur, 0 kW au repos), réseau infini
+  remboursé puis gratuit.** `SAVE_VERSION` INCHANGÉ (3 champs additifs optionnels : `pl.dg`
+  = forage en cours, `netInfPaid` = forfait ∞ acquis par île/type ; `elevFac` transitoire).
+  (1) **ÉLÉVATEUR — le bridage entre enfin dans le RÉGIME** (retour « quand on construit, mes machines
+  fonctionnent alors que cela ne devrait pas »). `elevInFac`/`elevOutFac` ne multipliaient QUE les
+  écritures au port : une machine privée d'élévateur — cas typique d'une **CONSTRUCTION, qui préempte
+  100 % du débit** (priorité n°1 depuis 13.89) — continuait de tourner à plein régime (animée, tirant
+  toute son électricité) et pouvait même **produire dans un pool tuyau LOCAL (non bridé) sans rien
+  prélever au port** = matière créée du néant. La passe élévateur replie désormais le facteur dans
+  `a.regime` (+ `bld.regime`, `bld.elevFac`) PUIS remet `elevInFac`/`elevOutFac` à 1 pour ne pas
+  l'appliquer deux fois — la demande étant proportionnelle au régime, **les totaux déplacés sont
+  identiques**, seule la vitesse des machines change. Régime à 0 → arrêt FRANC : `discReason`
+  **`elevbusy`** (nouveau libellé « élévateur saturé (construction et travaux servis en premier) »,
+  distinct de `elevator` = non relié) et **retrait de `energyConsumers`** (même convention qu'un
+  bâtiment totalement privé d'intrants : il ne tire plus de courant). Bridage partiel → la fiche
+  nomme la cause (« élévateur saturé »). `actives` transporte désormais `bld`. Au passage,
+  `drawBuilding` : quand ni les intrants ni l'élec. ne sont en cause (réseau saturé, élévateur), la
+  petite icône de déficit est celle des **intrants** et non celle du courant. (2) **BATTERIE — badge
+  d'arrêt FANTÔME** (retour « batterie avec badge pause ? », screenshot) : la branche `accumulator` de
+  `tickIsland` faisait `continue` **sans jamais remettre `bld.active` à true** → une batterie passée
+  par la construction souterraine (qui pose `active=false`, motif `building`) gardait le badge
+  `etat_arret` À VIE une fois construite. L'état est maintenant réinitialisé dans la branche : une
+  batterie n'a ni intrant ni sortant, elle est **opérationnelle dès qu'elle touche un câble** ; sinon
+  **déconnectée avec le motif `wire`** (ce qui explique enfin une batterie figée à 0 %). `pwrAvg = 1`
+  → plus d'icône ⚡ trompeuse. (3) **BATTERIES — charge/décharge HOMOGÈNES sur l'île** (retour « une
+  à 100 %, l'autre à 0 % ») : la boucle était **séquentielle** (la 1re se remplissait entièrement
+  avant que la 2e reçoive quoi que ce soit). Charge répartie **au prorata de la place libre**,
+  décharge **au prorata du stock**, avec 4 passes de résidu pour redistribuer ce qu'une batterie
+  saturée n'a pas pu prendre → toutes convergent vers le même % et y restent. **Totaux et rendements
+  inchangés** (0,8 en V1, 1 en V2 `chargeLossless`, bornes de débit du câble conservées) ; une
+  batterie seule se comporte exactement comme avant. (4) **FOREUSE — 3 retours.** (a) **Le SENS est
+  visible sur la carte** : flèche vectorielle vers la face visée (`drillDir`), **ambre au repos,
+  jaune vif pendant un forage**. (b) **On peut creuser un MUR** : la cible peut être de la roche
+  (`water`) → percée en **sol de tunnel**, exactement le résultat du remblai et **avec la même
+  économie** (`extensionCost` + `extensionsCount[7]`) ; la fiche annonce « mur de roche — à percer »
+  et le bouton devient « ⛏ Percer le mur ». `tryExtend` sur l'île 7 **délègue à `tryDrill`** → un
+  seul chemin (le remblai souterrain exigeait déjà une foreuse adjacente). (c) **0 kW tant qu'on n'a
+  pas démarré** : le forage devient une **opération TIMÉE** (`DRILL_TIME = 30 s`, état persisté
+  `bld.drilling {r,c,rem,tot,rate,dig}`) ; `basePower` est **forcé à 0 hors opération** (la foreuse
+  n'entre même plus dans `energyConsumers`) et ses **512 kW ne sont tirés que pendant le forage**, qui
+  **avance au régime électrique** (pas de courant → barre figée, « sans courant » dans la fiche).
+  Le résultat (gisement révélé / mur percé) est appliqué par le tick, qui empile `game.drillNotify` :
+  la boucle `frame` fait le `rebuildNetworks` + le toast (on ne reconstruit JAMAIS les réseaux au
+  milieu d'un tick, les `routeIn`/`routeOut` déjà résolus pointeraient dans le vide). Barre de
+  progression jaune sur la tuile (helper `drawWorkBar` réutilisé) + lignes « Forage en cours » et
+  « Durée · élec. » dans la fiche. Tuto `foreuse` réécrit. (5) **RÉSEAU INFINI — remboursement puis
+  gratuité** : passer un réseau en ILLIMITÉ **rembourse l'intégralité des ressources investies dans
+  ses paliers** (nouveau `networkInvested` = Σ coût unitaire des crans V1→niveau × tuiles) et
+  **ramène son niveau à 1** — les paliers ne servent plus à rien à débit infini, et le niveau 1 rend
+  le remboursement **non rejouable** (re-limiter puis re-passer en ∞ ne rend plus rien). Une fois le
+  forfait payé, nouveau drapeau persisté **`game.netInfPaid[île][type]`** → **tous les ∞ suivants de
+  ce type sur cette île sont GRATUITS** (bouton ∞ proposé **dès le niveau 1** dans ce cas, inutile de
+  refaire monter les paliers pour se les faire rembourser) et **étendre un réseau ∞ ne coûte plus
+  aucun rattrapage**. ⚠ Drapeau par île **ET par type** : payer l'infini pour la route ne donne pas le
+  câble (un drapeau global offrirait 3 réseaux pour le prix d'un). Sous-libellé du bouton : « gratuit »
+  et « ↩ <remboursement> ». Validé : `node --check` (7 blocs) + Chromium E2E **3 suites, 56 assertions,
+  0 erreur JS** — batteries (3 accus : charge ET décharge au même niveau au 1e-3 près, batterie câblée
+  sans badge, non câblée → motif `wire`) ; réseau ∞ **par la vraie UI** (tap canvas → panneau câble →
+  bouton ∞ armé/confirmé : illimité, niveau ramené à 1, 10 000 câble irr. débités, **paliers rendus au
+  port**, drapeau posé ; ∞ suivant gratuit y compris sur un réseau neuf ; route de l'île 1 et câble de
+  l'île 2 NON offerts) ; souterrain réel (presse UHP alimentée à **régime 0,9375 = 15/16 du débit**,
+  puis chantier → **flux 16/16 en construction, machine ARRÊTÉE avec le motif `elevbusy`**, chantier
+  fini → elle repart) ; foreuse **par la vraie UI** (fiche au tap, 4 boutons N/E/S/O, cible « mur de
+  roche — à percer », clic réel sur « Percer le mur » → forage démarré, coût d'extension débité au port
+  île 6, **0 kW au repos → 512 kW en forage**, mur percé au bout de 30 s, notification empilée, retour
+  à 0 kW) ; **round-trip de sauvegarde par RECHARGEMENT réel** (forage en cours + direction + drapeau ∞
+  restaurés) ; non-régression batterie seule (charge = surplus × 0,8 exact, capacité 8192).
+  Build 286→287.
   Changement 14.04 : **FIX — le Collisionneur puisait l'électricité de l'île 6 SANS avoir été réparé.**
   `SAVE_VERSION` **29→30** (correctif de save obligatoire). **Cause** : la migration 14.01 (< 29) faisait
   `set(38, keep(old[33]))` — pour ne pas retirer au joueur ses 3 portes de base, elle confirmait le

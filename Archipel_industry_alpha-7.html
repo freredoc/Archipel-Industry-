@@ -6456,8 +6456,8 @@ const SAVE_VERSION = 30;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 286;
-const GAME_VERSION = 'Alpha 14.04';
+const GAME_BUILD = 287;
+const GAME_VERSION = 'Alpha 14.05';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7029,6 +7029,9 @@ function extensionCost(n) {
     beton_arme_irradie: 100 * f
   };
 }
+// Durée (secondes) d'une opération de foreuse — prospection d'He3 comme creusement de mur. La
+// foreuse ne consomme ses 512 kW QUE pendant ce temps (14.05) ; sans courant, le forage se fige.
+const DRILL_TIME = 30;
 // Coût progressif du forage (île 7). Facteur ×4 (pas ×10) : seulement 3 gisements pour 11 tuiles
 // forables → un ×10 rendrait le 3e forage absurde. À ré-ajuster au playtest.
 function drillCost(n) {
@@ -8262,8 +8265,30 @@ function networkLevelChange(game, islandId, networkId, dir, payMat) {
     blocked: false
   };
 }
+// Ressources RÉELLEMENT investies dans les paliers d'un réseau : somme, pour chaque cran V1→niveau
+// actuel, du coût unitaire × nombre de tuiles. Sert au remboursement intégral au passage en ILLIMITÉ
+// (14.05) : une fois le débit infini payé, les paliers ne servent plus à rien, on rend leur matière.
+// Matériau « cheap » (le seul accepté depuis 13.28 → aucune ambiguïté sur ce qui a été payé).
+function networkInvested(game, islandId, networkId) {
+  const nets = game.networks[islandId] || {};
+  const n = nets[networkId];
+  const out = {};
+  if (!n) return out;
+  const tiles = networkTileCount(game, islandId, networkId);
+  for (let lvl = 1; lvl < (n.level || 1); lvl++) {
+    const per = networkUnitCost(n.type, lvl, 'cheap');
+    for (const k in per) out[k] = (out[k] || 0) + per[k] * tiles;
+  }
+  return out;
+}
+// Le forfait ILLIMITÉ a-t-il DÉJÀ été payé pour ce type de réseau sur cette île ? (14.05) Si oui,
+// tous les passages en illimité suivants de ce type y sont GRATUITS — la technique est acquise.
+// Le drapeau est par ÎLE **et par TYPE** : payer l'infini pour la route ne donne pas le câble.
+function netInfPaidFor(game, islandId, type) {
+  return !!(game.netInfPaid && game.netInfPaid[islandId] && game.netInfPaid[islandId][type]);
+}
 // Coût pour rendre un réseau ILLIMITÉ (débit infini) via le matériau irradié.
-// Forfait NETWORK_UNLIMITED_COST par réseau (et par réseau couplé).
+// Forfait NETWORK_UNLIMITED_COST par réseau (et par réseau couplé) — GRATUIT si déjà payé sur l'île.
 function networkUnlimitedInfo(game, islandId, networkId) {
   const nets = game.networks[islandId] || {};
   const net = nets[networkId];
@@ -8281,12 +8306,21 @@ function networkUnlimitedInfo(game, islandId, networkId) {
     blocked: true,
     reason: I18N.t('Indisponible')
   };
+  const free = netInfPaidFor(game, islandId, net.type);
   const cost = {};
-  for (const id of ids) cost[irr] = (cost[irr] || 0) + NETWORK_UNLIMITED_COST;
+  if (!free) for (const id of ids) cost[irr] = (cost[irr] || 0) + NETWORK_UNLIMITED_COST;
+  // Matière rendue au joueur : tout ce qu'il a investi dans les paliers des réseaux concernés.
+  const refundInv = {};
+  for (const id of ids) {
+    const inv = networkInvested(game, islandId, id);
+    for (const k in inv) refundInv[k] = (refundInv[k] || 0) + inv[k];
+  }
   return {
     cost,
     ids,
     mat: irr,
+    free,
+    refundInv,
     blocked: false
   };
 }
@@ -8705,11 +8739,27 @@ function tickIsland(game, isl) {
     }
     if (b.accumulator) {
       const asz = b.size || [1, 1];
+      const awn = wireRepFor(r, c, asz[1] || 1, asz[0] || 1);
+      // 14.05 — L'état de l'accumulateur est RÉINITIALISÉ ici. Avant, cette branche faisait
+      // `continue` sans jamais remettre `active` à true : une batterie passée par la CONSTRUCTION
+      // souterraine (qui pose active=false, motif 'building') gardait le badge « arrêt » À VIE une
+      // fois construite (retour testeur : « batterie avec badge pause ? »). Une batterie n'a ni
+      // intrant ni sortant : elle est opérationnelle dès qu'elle touche un CÂBLE — sinon elle est
+      // déconnectée (motif 'wire'), ce qui explique enfin une batterie figée à 0 %.
+      const pAa = bld.active,
+        pDa = bld.disc;
+      bld.active = awn != null;
+      bld.disc = awn == null;
+      bld.discReason = awn == null ? 'wire' : null;
+      bld.regime = awn != null ? 1 : 0;
+      bld.inFac = 1;
+      bld.pwrAvg = 1; // la batterie ne « manque » jamais de courant : pas d'icône ⚡ trompeuse
+      if (bld.active !== pAa || bld.disc !== pDa) activeChanged = true;
       accList.push({
         bld,
         capacity: accCapacity(bld),
         stored: bld.stored || 0,
-        wnid: wireRepFor(r, c, asz[1] || 1, asz[0] || 1)
+        wnid: awn
       });
       continue;
     }
@@ -8742,6 +8792,10 @@ function tickIsland(game, isl) {
       }
       basePower = bld.randomPower;
     }
+    // 14.05 — FOREUSE : 0 kW tant qu'aucun forage n'est DÉMARRÉ (retour testeur). Elle n'a ni
+    // intrant ni sortant : hors opération, c'est une machine à l'arrêt, pas un radiateur à 512 kW.
+    // Ses 512 kW ne sont tirés que pendant un forage/creusement (voir `bld.drilling` plus bas).
+    if (b.driller && !bld.drilling) basePower = 0;
     // Boost d'antenne : un bâtiment de production (kind build avec sorties) sur une tuile influencée
     // tourne plus vite — INTRANTS & SORTIES ×antSpeedMul(f) (13.70 : +5 %×f, Nv.1 ×1,1, SANS plafond
     // depuis 14.02)
@@ -8942,6 +8996,7 @@ function tickIsland(game, isl) {
     bld.inFac = inFac;
     bld.inAvail = inAvail;
     bld.regime = regime;
+    bld.elevFac = 1; // remis à 1 chaque tick ; la passe élévateur (île 7) le rabaisse si elle bride
     // Émission de chaleur de l'usine moteur nucléaire : 1,024 MJ/s (1024 kJ) au Nv.1, ×2 par
     // niveau (2048 kJ au Nv.2…) — échelle binaire alignée conduit/tour : au Nv.1, évacuable par
     // UNE ligne de conduit V1 (1,024 MJ/s/tuile) + 1 tour (1,024 MJ/s), sans splitter (bâtiment 1×1).
@@ -8952,6 +9007,33 @@ function tickIsland(game, isl) {
       bld.heatEmit = bld.id === 'usine_moteur_nuc' ? 1.024 * mult * regime
         : bld.id === 'machine_outil' || bld.id === 'presse_uhp' ? HEAT_PER_MW * (power * regime) / 1000
         : 0;
+    }
+    // 14.05 — FOREUSE en opération : le forage AVANCE au régime électrique (pas de courant = pas
+    // d'avancement, la barre se fige). À 0 il s'applique : gisement révélé (prospection) ou mur
+    // creusé en sol de tunnel (extension). Le terrain change ici, mais on ne reconstruit PAS les
+    // réseaux au milieu du tick (les `routeIn`/`routeOut` déjà résolus pointeraient dans le vide) :
+    // on empile une notification que la boucle `frame` consomme (toast + rebuild + redraw).
+    if (b.driller && bld.drilling) {
+      const dr = bld.drilling;
+      dr.rem -= regime;
+      dr.rate = regime;
+      if (dr.rem <= 1e-6) {
+        const dt = tiles[dr.r] && tiles[dr.r][dr.c];
+        let found = false;
+        if (dt && !dt.building) {
+          if (dr.dig) {
+            // Creusement d'un MUR : la roche devient du sol de tunnel (comme une extension).
+            if (dt.terrain === 'water') dt.terrain = 'land';
+          } else if (dt.terrain === 'land' && !dt.drilled) {
+            dt.drilled = true;
+            found = Array.isArray(game.he3Deposits) && game.he3Deposits.some(d => d.r === dr.r && d.c === dr.c);
+            if (found) dt.terrain = 'resource'; // veine d'He3 révélée
+          }
+        }
+        delete bld.drilling;
+        (game.drillNotify || (game.drillNotify = [])).push({ isl, dig: !!dr.dig, found });
+        activeChanged = true;
+      }
     }
     // Plus AUCUN intrant → arrêt franc (on saute le bâtiment). On NE saute PAS sur un déficit
     // d'élec. (pwrF bas) : le bâtiment doit rester dans energyConsumers pour que la boucle énergie
@@ -9020,7 +9102,8 @@ function tickIsland(game, isl) {
       routeIn,
       routeOut,
       pri,
-      regime
+      regime,
+      bld // 14.05 : la passe élévateur (île 7) rebride le régime de CE bâtiment
     });
   }
   // Chaleur de l'antenne (mode PRODUCTIVITÉ) : HEAT_PER_MW (0,125) MJ/s par MW consommé EN PLUS par les voisins.
@@ -9117,6 +9200,43 @@ function tickIsland(game, isl) {
     const inGive = Math.min(remaining, inDem); remaining -= inGive;
     elevOutFac = outDem > 0 ? outGive / outDem : 1;
     elevInFac = inDem > 0 ? inGive / inDem : 1;
+    // 14.05 — Le bridage de l'élévateur s'applique au RÉGIME, pas seulement au dépôt/prélèvement.
+    // Avant, elevInFac/elevOutFac ne multipliaient que les écritures au port : une machine privée
+    // d'élévateur (typiquement pendant une CONSTRUCTION, qui préempte 100 % du débit) continuait de
+    // tourner à plein régime — animée, consommant toute son électricité — et pouvait même produire
+    // dans un pool tuyau LOCAL (non bridé) sans rien prélever au port : de la matière créée du néant.
+    // Désormais le facteur entre dans `regime` : la machine RALENTIT (ou s'arrête) visiblement, sa
+    // fiche affiche le motif 'elevator', et l'énergie suit. Comme la demande est proportionnelle au
+    // régime, mettre le régime à l'échelle du servi conserve exactement les totaux → on neutralise
+    // ensuite elevInFac/elevOutFac pour ne PAS appliquer le facteur deux fois au dépôt.
+    if (elevInFac < 1 - 1e-9 || elevOutFac < 1 - 1e-9) {
+      for (const a of actives) {
+        const usesIn = !!(a.inByType.road || a.inByType.pipePort);
+        const usesOut = !!(a.outByType.road || a.outByType.pipePort);
+        if (!usesIn && !usesOut) continue; // 100 % local (pools tuyau) : l'élévateur ne le concerne pas
+        const f = Math.min(usesIn ? elevInFac : 1, usesOut ? elevOutFac : 1);
+        if (f >= 1 - 1e-9) continue;
+        a.regime = (a.regime != null ? a.regime : 1) * f;
+        if (a.bld) {
+          a.bld.regime = a.regime;
+          a.bld.elevFac = f; // → fiche : « élévateur saturé » (cause distincte des intrants/élec.)
+          // Motif affiché : c'est l'élévateur (pas les intrants ni l'élec.) qui bride.
+          if (a.regime <= 1e-6) {
+            if (a.bld.active !== false) activeChanged = true;
+            a.bld.active = false;
+            a.bld.disc = true;
+            a.bld.discReason = 'elevbusy';
+            // Arrêt FRANC : le bâtiment ne tire plus de courant (même convention qu'un bâtiment
+            // totalement privé d'intrants, qui n'entre jamais dans energyConsumers).
+            const ix = energyConsumers.findIndex(cc => cc.bld === a.bld);
+            if (ix >= 0) energyConsumers.splice(ix, 1);
+          }
+          if (a.bld.heatEmit) a.bld.heatEmit *= f;
+        }
+      }
+      elevInFac = 1;
+      elevOutFac = 1;
+    }
     // Faire descendre la matière de construction (proportionnel) ; finaliser (activer) à 0.
     const consFrac = consDem > 0 ? consGive / consDem : 0;
     for (const bb of consBlds) {
@@ -9598,34 +9718,61 @@ function tickIsland(game, isl) {
     let disc = 0;
     if (accs.length) {
       for (const acc of accs) acc._d = 0; // delta kWh/tick (charge + / décharge −), pour l'estimation de temps
+      // 14.05 — Charge et décharge HOMOGÈNES sur toute la composante (retour testeur : « une
+      // batterie à 100 %, l'autre à 0 % »). Avant, la boucle était SÉQUENTIELLE : la première
+      // batterie de la liste se remplissait (et se vidait) entièrement avant que la suivante ne
+      // reçoive quoi que ce soit. Désormais la charge est répartie au prorata de la PLACE LIBRE et
+      // la décharge au prorata du STOCK → toutes les batteries convergent vers le même % et y
+      // restent. Les passes de résidu (max 4) redistribuent ce qu'une batterie saturée n'a pas pu
+      // prendre : les totaux déplacés sont EXACTEMENT les mêmes qu'avant, seule la ventilation change.
+      const ACC_PASSES = 4;
       if (bal > 1e-6) {
         // Surplus stockable = production excédentaire réellement livrable (≤ débit) au-delà de la demande.
         let surplus = cap === Infinity ? bal : Math.max(0, Math.min(prod, cap) - netDem);
-        for (const acc of accs) {
-          if (surplus <= 1e-6) break;
-          const free = acc.capacity - acc.stored;
-          if (free <= 0) continue;
-          // Rendement de charge : 0,8 (V1) ; 1 (Accumulateur V2 `chargeLossless` — sans perte).
-          const eff = BUILDINGS[acc.bld.id] && BUILDINGS[acc.bld.id].chargeLossless ? 1 : 0.8;
-          const store = Math.min(free, acc.capacity, surplus * eff);
-          if (store > 0) {
-            acc.stored += store;
-            acc._d = store;
-            surplus -= store / eff;
+        for (let pass = 0; pass < ACC_PASSES && surplus > 1e-6; pass++) {
+          let freeTot = 0;
+          for (const acc of accs) freeTot += Math.max(0, acc.capacity - acc.stored);
+          if (freeTot <= 1e-9) break;
+          const budget = surplus;
+          let used = 0;
+          for (const acc of accs) {
+            const free = Math.max(0, acc.capacity - acc.stored);
+            if (free <= 0) continue;
+            // Rendement de charge : 0,8 (V1) ; 1 (Accumulateur V2 `chargeLossless` — sans perte).
+            const eff = BUILDINGS[acc.bld.id] && BUILDINGS[acc.bld.id].chargeLossless ? 1 : 0.8;
+            // Part d'énergie PRÉLEVÉE sur le réseau, au prorata de la place libre.
+            const store = Math.min(free, budget * (free / freeTot) * eff);
+            if (store > 0) {
+              acc.stored += store;
+              acc._d += store;
+              used += store / eff;
+            }
           }
+          surplus -= used;
+          if (used <= 1e-9) break;
         }
       } else if (bal < -1e-6) {
         // Déficit comblable = ce qui manque pour servir la demande LIVRABLE (bornée par le débit).
         let need = cap === Infinity ? -bal : Math.max(0, Math.min(netDem, cap) - prod);
-        for (const acc of accs) {
-          if (need <= 1e-6) break;
-          const give = Math.min(acc.stored, acc.capacity, need);
-          if (give > 0) {
-            acc.stored -= give;
-            acc._d = -give;
-            need -= give;
-            disc += give;
+        for (let pass = 0; pass < ACC_PASSES && need > 1e-6; pass++) {
+          let stoTot = 0;
+          for (const acc of accs) stoTot += Math.max(0, acc.stored);
+          if (stoTot <= 1e-9) break;
+          const budget = need;
+          let got = 0;
+          for (const acc of accs) {
+            if (acc.stored <= 0) continue;
+            // Chaque batterie cède la MÊME FRACTION de son stock → elles se vident de concert.
+            const give = Math.min(acc.stored, budget * (acc.stored / stoTot));
+            if (give > 0) {
+              acc.stored -= give;
+              acc._d -= give;
+              got += give;
+            }
           }
+          need -= got;
+          disc += got;
+          if (got <= 1e-9) break;
         }
       }
       for (const acc of accs) {
@@ -11508,7 +11655,7 @@ const GAME_TIPS = [{
   id: 'foreuse',
   icon: '⛏️',
   title: 'La foreuse et les poches d\'Hélium-3',
-  body: ["Pose la <b>foreuse</b> sur le <b>sol de tunnel</b> (île 7). Elle ne produit rien toute seule : c'est une machine qu'on <b>vise</b> puis qu'on <b>déclenche</b>.", "Touche-la : sa fiche propose <b>4 directions (N · E · S · O)</b>. Choisis la face à percer, puis appuie sur <b>⛏ Démarrer le forage</b>. Seule une tuile de <b>sol de tunnel</b> encore vierge est forable — une tuile déjà forée ne se refore pas.", "Chaque forage est payé sur le <b>port de l'île 6</b> (le souterrain n'a pas d'inventaire) et son coût est <b>×4 à chaque fois</b> : creuse au jugé, pas partout.", "Le tunnel cache <b>3 poches d'Hélium-3</b>. Un forage réussi transforme la tuile en <b>gisement</b> : c'est là, et seulement là, que se pose l'<b>Extracteur Souterrain</b>.", "La foreuse n'est <b>pas améliorable</b> — inutile d'y investir, elle consomme déjà ses 512 kW."],
+  body: ["Pose la <b>foreuse</b> sur le <b>sol de tunnel</b> (île 7). Elle ne produit rien toute seule : c'est une machine qu'on <b>vise</b> puis qu'on <b>déclenche</b>.", "Touche-la : sa fiche propose <b>4 directions (N · E · S · O)</b> — la <b>flèche sur la carte</b> montre en permanence la face visée. Choisis-la, puis appuie sur <b>⛏ Démarrer le forage</b>.", "Deux cibles possibles : une tuile de <b>sol de tunnel</b> encore vierge (on y <b>cherche de l'Hélium-3</b>, coût ×4 à chaque forage) ou un <b>mur de roche</b>, qu'elle <b>perce</b> pour agrandir le tunnel (coût d'extension de l'île). Tout se paie sur le <b>port de l'île 6</b>.", "Un forage <b>prend " + DRILL_TIME + " secondes</b> et c'est le SEUL moment où la foreuse consomme ses <b>512 kW</b> : au repos elle ne tire <b>rien</b>. Sans courant, la barre de progression se fige.", "Le tunnel cache <b>3 poches d'Hélium-3</b>. Un forage réussi transforme la tuile en <b>gisement</b> : c'est là, et seulement là, que se pose l'<b>Extracteur Souterrain</b>.", "La foreuse n'est <b>pas améliorable</b> — inutile d'y investir."],
   when: g => isBuildingUnlocked(g, 'foreuse')
 }, {
   // Déblocage XOR/XNOR (nœud 41, palier P3) : XNOR natif + détecteur de leptons.
@@ -13609,7 +13756,10 @@ function InfoPanel({
       cost = extensionCost(count);
       countLabel = I18N.t('Extensions effectuées sur cette île');
       unlocked = isTerrainExtendUnlocked(game);
-      title = I18N.t('Extension de terrain'); swatch = 'var(--blue, #0277BD)'; btnLabel = I18N.t(' Remblayer');
+      // Souterrain : « remblayer » un mur, c'est le PERCER à la foreuse (opération de DRILL_TIME s).
+      title = currentIsland === 7 ? I18N.t('Percer un mur') : I18N.t('Extension de terrain');
+      swatch = 'var(--blue, #0277BD)';
+      btnLabel = currentIsland === 7 ? I18N.t(' Percer le mur') : I18N.t(' Remblayer');
       icon = 'batiment'; emoji = "\u{1F3D7}"; onAct = onExtend;
       // Icône = sprite de TUILE TERRAIN produite par le remblai (souterrain île 7 → sol de tunnel
       // `tile_i7_land` ; en surface → littoral `tile_i<N>_coast`).
@@ -13867,6 +14017,9 @@ function InfoPanel({
     // Île 7 : élévateur non réparé, ou bâtiment non relié à la tuile élévateur, ou élévateur non
     // relié au port en surface (île 6). Motif dédié (phase 3) — plus l'approximation 'road'.
     elevator: I18N.t('élévateur non relié (réparé + relié au port en surface + bâtiment relié à l\'élévateur)'),
+    // Élévateur RELIÉ mais saturé : tout son débit part ailleurs (la construction/les travaux sont
+    // servis en premier) → plus rien ne monte ni ne descend pour ce bâtiment, il s'arrête.
+    elevbusy: I18N.t('élévateur saturé (construction et travaux servis en premier)'),
     // Éteint par un actionneur du réseau logique (distinct d'un manque d'intrant).
     logic: I18N.t('éteint par la logique (actionneur)'),
     paused: I18N.t('en pause (par le joueur)'),
@@ -13880,6 +14033,8 @@ function InfoPanel({
   const pwrAvg = bld.pwrAvg;
   const drawsPower = nominalPower(bld) > 0;
   const netDisc = bld.active === false && (bld.disc || bld.discReason === 'road' || bld.discReason === 'pipe' || bld.discReason === 'wire');
+  // Bridage par l'ÉLÉVATEUR (île 7) : cause distincte des intrants / de l'élec. (< 1 = saturé).
+  const elevFac = bld.elevFac != null ? bld.elevFac : 1;
   let speedPct, speedReason;
   if (bld.construction && (bld.construction.rem || 0) > 1e-6 && bld.construction.up == null) {
     // Fantôme en construction : décompte + % de matière descendue (au débit courant de l'élévateur).
@@ -13899,7 +14054,8 @@ function InfoPanel({
     const lackInput = inFac < 0.995;
     const lackPower = drawsPower && pwrAvg != null && pwrAvg < 0.995;
     const lackNet = speedF < 0.999;
-    let cause = lackInput && lackPower ? I18N.t('intrants + élec. insuffisants') : lackInput ? I18N.t('intrants insuffisants') : lackPower ? I18N.t('élec. insuffisante') : lackNet ? I18N.t('réseau saturé') : '';
+    const lackElev = elevFac < 0.995;
+    let cause = lackInput && lackPower ? I18N.t('intrants + élec. insuffisants') : lackInput ? I18N.t('intrants insuffisants') : lackPower ? I18N.t('élec. insuffisante') : lackElev ? I18N.t('élévateur saturé (construction et travaux servis en premier)') : lackNet ? I18N.t('réseau saturé') : '';
     // Détail élec. : bilan du réseau électrique DE CE bâtiment. Le HUD peut afficher un
     // surplus global alors que le surplus est sur un AUTRE câble — seul le réseau auquel le
     // bâtiment est raccordé compte. On précise production/demande (ou saturation) du réseau.
@@ -14527,6 +14683,8 @@ function InfoPanel({
     // Le forage se paie sur le PORT DE L'ÎLE 6 (l'île 7 n'a pas d'inventaire propre).
     const dtiles = game.islands[currentIsland] || [];
     const ddir = bld.drillDir != null ? bld.drillDir : 0;
+    // 14.05 — la cible peut aussi être un MUR de roche : le forage le perce et en fait du sol de
+    // tunnel (« creuser comme une extension »). `dig` distingue les deux natures d'opération.
     const tgtOf = d => {
       const dd = DIRS4[d];
       if (!dd) return null;
@@ -14534,16 +14692,21 @@ function InfoPanel({
         cc = info.c + dd[1];
       const tt = dtiles[rr] && dtiles[rr][cc];
       if (!tt) return null;
-      return { r: rr, c: cc, t: tt, ok: tt.terrain === 'land' && !tt.building && !tt.drilled };
+      const dig = tt.terrain === 'water';
+      return { r: rr, c: cc, t: tt, dig, ok: !tt.building && (dig || tt.terrain === 'land' && !tt.drilled) };
     };
     const tgt = tgtOf(ddir);
-    const dcount = (game.drillsCount && game.drillsCount[7]) || 0;
-    const dcost = drillCost(dcount);
+    const isDig = !!(tgt && tgt.dig);
+    // Prospection → coût de FORAGE (×4) ; creusement de mur → coût d'EXTENSION de l'île (×10),
+    // la même économie que le remblai puisque le résultat est identique.
+    const dcount = isDig ? (game.extensionsCount && game.extensionsCount[7] || 0) : (game.drillsCount && game.drillsCount[7]) || 0;
+    const dcost = isDig ? extensionCost(dcount) : drillCost(dcount);
     const p6 = game.port[6] || {};
     const ddev = !!(game.ui && game.ui.dev);
     const afford = ddev || Object.keys(dcost).every(k => (p6[k] || 0) >= dcost[k]);
-    const why = !tgt ? I18N.t('hors du tunnel') : tgt.t.drilled ? I18N.t('déjà foré') : tgt.t.building ? I18N.t('occupée') : tgt.t.terrain !== 'land' ? I18N.t('pas du sol de tunnel') : I18N.t('sol de tunnel — forable');
-    const ready = !!(tgt && tgt.ok) && afford;
+    const work = bld.drilling; // opération en cours sur CETTE foreuse
+    const why = !tgt ? I18N.t('hors du tunnel') : tgt.t.building ? I18N.t('occupée') : tgt.dig ? I18N.t('mur de roche — à percer') : tgt.t.drilled ? I18N.t('déjà foré') : tgt.t.terrain !== 'land' ? I18N.t('pas du sol de tunnel') : I18N.t('sol de tunnel — forable');
+    const ready = !work && !!(tgt && tgt.ok) && afford;
     return React.createElement("div", { className: "ip-fluxpri" },
       React.createElement("div", { className: "ip-fluxpri-lbl" }, I18N.t("Direction du forage")),
       React.createElement("div", { className: "ip-nuc-mats", style: { gridTemplateColumns: '1fr 1fr 1fr 1fr' } }, [[0, 'N'], [3, 'E'], [1, 'S'], [2, 'O']].map(([d, dl]) => {
@@ -14552,11 +14715,14 @@ function InfoPanel({
           key: dl,
           className: 'ip-nuc-mat' + (ddir === d ? ' on' : ''),
           style: q && q.ok ? null : { opacity: 0.45 },
-          title: q && q.ok ? I18N.t('Tuile forable') : I18N.t('Rien à forer de ce côté'),
+          title: q && q.ok ? q.dig ? I18N.t('Mur perçable') : I18N.t('Tuile forable') : I18N.t('Rien à forer de ce côté'),
           onClick: () => onDrillDir && onDrillDir(info.r, info.c, d)
         }, dl);
       })),
       React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Cible")), React.createElement("span", { className: "val", style: { color: tgt && tgt.ok ? 'var(--green)' : 'var(--ink-dim)' } }, why)),
+      // Opération en cours : progression + secondes restantes au régime électrique courant.
+      work ? React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Forage en cours")), React.createElement("span", { className: "val", style: { color: 'var(--yellow)' } },
+        Math.round((1 - work.rem / (work.tot || DRILL_TIME)) * 100) + '% · ' + ((work.rate || 0) > 1e-6 ? '~' + Math.ceil(work.rem / work.rate) + 's' : I18N.t('sans courant')))) : null,
       React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Coût")), React.createElement("span", { className: "val ip-cost-chips" }, Object.keys(dcost).map(k => {
         const ik = SPRITES_ENABLED ? itemSpriteKey(k) : null;
         const idata = ik && SPRITE_DATA[ik];
@@ -14564,12 +14730,13 @@ function InfoPanel({
           idata && React.createElement("img", { className: "inv-ico", src: idata, alt: "" }),
           React.createElement("span", { className: "dr-q" }, (RES_SHORT[k] || k) + ' ' + fmtPort(dcost[k])));
       }))),
-      React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Forages effectués")), React.createElement("span", { className: "val" }, dcount)),
+      React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Durée · élec.")), React.createElement("span", { className: "val" }, DRILL_TIME + 's · ' + fmtPower(b.power || 0))),
+      React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, isDig ? I18N.t("Murs percés") : I18N.t("Forages effectués")), React.createElement("span", { className: "val" }, dcount)),
       React.createElement("button", {
         className: "ip-up densify-btn" + (ready ? '' : ' locked'),
         disabled: !ready,
         onClick: () => ready && onDrill && onDrill(tgt.r, tgt.c)
-      }, "⛏ " + I18N.t("Démarrer le forage")));
+      }, work ? "⛏ " + I18N.t("Forage en cours…") : isDig ? "⛏ " + I18N.t("Percer le mur") : "⛏ " + I18N.t("Démarrer le forage")));
   })(), (usesNet || drawsPower) && React.createElement("div", {
     className: "ip-fluxpri"
   }, React.createElement("div", {
@@ -15779,7 +15946,10 @@ function NetworkPanel({
   const showWireRange = isWire && wi && wi.variable && wi.demandMax - wi.demandMin > 0.5;
   // Réserve d'énergie : kWh stockés dans les accumulateurs branchés sur cette composante câble.
   const showWireAcc = isWire && wi && wi.accCount > 0 && wi.accCap > 0;
-  const showUnlBtn = lvl >= 3 && !unlimited && hiMats.irradie;
+  // Bouton ∞ : à partir du niveau 3 normalement, mais DÈS LE NIVEAU 1 quand le forfait a déjà été
+  // payé pour ce type de réseau sur l'île (14.05) — inutile de refaire monter les paliers d'un
+  // réseau neuf pour ensuite se les faire rembourser.
+  const showUnlBtn = (lvl >= 3 || unlInfo.free) && !unlimited && hiMats.irradie;
   return React.createElement("div", {
     ref: ref,
     className: "info-panel",
@@ -15975,10 +16145,12 @@ function NetworkPanel({
         onMakeUnlimited(net.r, net.c);
       } else setArmed('unl');
     },
-    title: unlInfo.blocked ? unlInfo.reason : I18N.t('Coût : ') + (formatCost(unlInfo.cost) || '—') + I18N.t(' — débit illimité')
+    // 14.05 — Sous-libellé : « gratuit » si le forfait a déjà été payé sur l'île pour ce type de
+    // réseau, et rappel du remboursement intégral des paliers investis.
+    title: unlInfo.blocked ? unlInfo.reason : (unlInfo.free ? I18N.t('Déjà payé sur cette île : gratuit') : I18N.t('Coût : ') + (formatCost(unlInfo.cost) || '—')) + I18N.t(' — débit illimité, paliers remboursés')
   }, "∞ ", armed === 'unl' ? I18N.t('Confirmer ?') : I18N.t('Rendre illimité'), React.createElement("span", {
     className: "ip-sub"
-  }, formatCost(unlInfo.cost) || '—'))));
+  }, (unlInfo.free ? I18N.t('gratuit') : formatCost(unlInfo.cost) || '—') + (unlInfo.refundInv && Object.keys(unlInfo.refundInv).length ? ' · ↩ ' + formatCost(unlInfo.refundInv) : '')))));
 }
 /* ============================================================================
  *  ARCHIPEL INDUSTRY — Rendu des illustrations d'astuces (tip scenes)
@@ -17228,6 +17400,9 @@ function App() {
         }
       },
       networks: {},
+      // Forfait « débit illimité » déjà payé, par île et par type de réseau (14.05) → les passages
+      // en illimité suivants de ce type y sont gratuits.
+      netInfPaid: {},
       currentIsland: 1,
       techTree: {
         nodes: TECH_NODES.map(n => ({
@@ -17640,6 +17815,15 @@ function App() {
             if (b.construction.to) pl.cb.to = b.construction.to;
           }
           if (b.drillDir != null) pl.dd = b.drillDir;
+          // Forage EN COURS (14.05) : cible + temps restant. Le coût est déjà payé au démarrage →
+          // sans persistance, un reload le perdrait purement et simplement. Champ additif.
+          if (b.drilling && (b.drilling.rem || 0) > 1e-6) pl.dg = {
+            r: b.drilling.r,
+            c: b.drilling.c,
+            rem: b.drilling.rem,
+            tot: b.drilling.tot || DRILL_TIME,
+            dig: b.drilling.dig ? 1 : 0
+          };
           // Réseau logique (phase 5) — réglages d'instance (champs additifs rétro-compatibles).
           // logicOff n'est PAS persisté : recalculé par processLogic dès le 1er tick.
           if (b.sensorMode) pl.sm = b.sensorMode;
@@ -17761,6 +17945,8 @@ function App() {
       } : null,
       he3Deposits: Array.isArray(g.he3Deposits) ? g.he3Deposits.map(d => ({ r: d.r, c: d.c })) : [],
       drillsCount: { ...g.drillsCount },
+      // Forfait illimité acquis par île/type (champ additif rétro-compatible).
+      netInfPaid: JSON.parse(JSON.stringify(g.netInfPaid || {})),
       islandUnlocked: {
         ...g.islandUnlocked
       },
@@ -18171,6 +18357,16 @@ function App() {
       }
     }
     // Lien « Cible ⇒ Réserve » par île (rétro-compat : absent = désactivé).
+    // Forfait « débit illimité » déjà payé (île → type) — absent d'une save antérieure = jamais payé.
+    g.netInfPaid = {};
+    if (data.netInfPaid) for (const id in data.netInfPaid) {
+      const row = data.netInfPaid[id];
+      if (!row) continue;
+      for (const ty in row) if (row[ty]) {
+        if (!g.netInfPaid[+id]) g.netInfPaid[+id] = {};
+        g.netInfPaid[+id][ty] = true;
+      }
+    }
     g.tradeLinkReserve = {};
     if (data.tradeLinkReserve) for (const id in data.tradeLinkReserve) {
       if (data.tradeLinkReserve[id]) g.tradeLinkReserve[+id] = true;
@@ -18274,6 +18470,15 @@ function App() {
             if (p.cb.to && BUILDINGS[p.cb.to]) t.building.construction.to = p.cb.to;
           }
           if (p.dd != null) t.building.drillDir = +p.dd;
+          // Forage en cours (14.05) : reprend là où il s'était arrêté (coût déjà payé).
+          if (p.dg && +p.dg.rem > 1e-6) t.building.drilling = {
+            r: +p.dg.r,
+            c: +p.dg.c,
+            rem: +p.dg.rem,
+            tot: +p.dg.tot || DRILL_TIME,
+            rate: 0,
+            dig: !!p.dg.dig
+          };
           // Réseau logique (phase 5) : réglages d'instance (capteur/actionneur/porte).
           if (p.sm) t.building.sensorMode = p.sm;
           if (p.sd != null) t.building.sensorDir = +p.sd;
@@ -19378,10 +19583,16 @@ function App() {
       const g = gameRef.current,
         isl = g.currentIsland;
       const nets = g.networks[isl] || {};
+      // 14.05 — Rejoindre un réseau ILLIMITÉ ne coûte AUCUN rattrapage : le forfait infini a déjà
+      // été payé pour ce réseau, « toutes les prochaines constructions du réseau infini » sont
+      // gratuites (demande utilisateur). On reste au coût de pose de base (nul pour route/câble/tuyau).
+      let joinUnl = false;
       for (const nid of adjacentNetworks(g, isl, r, c, id)) {
+        if (nets[nid] && nets[nid].unlimited) joinUnl = true;
         const lv = nets[nid] && nets[nid].level || 1;
         if (lv > joinLvl) joinLvl = lv;
       }
+      if (joinUnl) joinLvl = 1;
       if (joinLvl >= 2 && NETWORK_UPGRADE_COST[id]) {
         extCost = {};
         for (let k = 1; k < joinLvl; k++) {
@@ -19819,21 +20030,10 @@ function App() {
       showToast(I18N.t('❌ Technologie non débloquée'), 'var(--red)');
       return false;
     }
-    // Souterrain (île 7) : le remblai exige une FOREUSE adjacente (creusement du tunnel).
-    if (isl === 7) {
-      const tiles = curTiles();
-      const DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-      let drillOk = false;
-      for (const [dr, dc] of DIRS) {
-        let nt = tiles[r + dr] && tiles[r + dr][c + dc];
-        if (nt && nt.occupied) nt = tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c];
-        if (nt && nt.building && nt.building.id === 'foreuse') { drillOk = true; break; }
-      }
-      if (!drillOk) {
-        showToast(I18N.t('❌ Foreuse requise à côté'), 'var(--red)');
-        return false;
-      }
-    }
+    // Souterrain (île 7) : « remblayer » un mur, c'est le CREUSER — une seule et même opération que
+    // le forage (14.05). On délègue à la foreuse : même coût (extension), mais le mur tombe au bout
+    // du temps de forage au lieu d'être instantané, et la foreuse consomme pendant ce temps.
+    if (isl === 7) return tryDrill(r, c);
     const count = g.extensionsCount[isl] || 0;
     const cost = extensionCost(count);
     if (!g.ui.dev) {
@@ -19924,26 +20124,39 @@ function App() {
     scheduleSave();
     return true;
   }
+  // DÉMARRE une opération de forage sur la tuile (r, c) — le résultat n'est plus immédiat (14.05) :
+  // la foreuse adjacente travaille pendant DRILL_TIME secondes EN CONSOMMANT ses 512 kW (elle ne tire
+  // rien au repos), puis le tick applique le résultat. Deux cibles possibles :
+  //   • sol de tunnel vierge → PROSPECTION d'une poche d'He3 (coût progressif ×4, port île 6) ;
+  //   • MUR de roche → CREUSEMENT, la roche devient du sol de tunnel — exactement le résultat du
+  //     remblai, avec la même économie (coût d'extension de l'île, ×10 par extension).
   function tryDrill(r, c) {
     const g = gameRef.current,
       isl = g.currentIsland;
     if (isl !== 7) return false;
     const tiles = curTiles();
     const t = tiles[r] && tiles[r][c];
-    if (!t || t.terrain !== 'land' || t.building || t.drilled) return false;
-    // Une foreuse doit être posée sur une tuile adjacente (4-voisinage).
-    let hasForeuse = false;
+    if (!t || t.building) return false;
+    const dig = t.terrain === 'water'; // mur de roche → creusement (extension du tunnel)
+    if (!dig && (t.terrain !== 'land' || t.drilled)) return false;
+    // Une foreuse doit être posée sur une tuile adjacente (4-voisinage) et être LIBRE.
+    let foreuse = null,
+      busy = false;
     for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
       const nt = tiles[r + dr] && tiles[r + dr][c + dc];
       const nb = nt && nt.building ? nt.building : nt && nt.occupied && tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c].building;
-      if (nb && nb.id === 'foreuse') { hasForeuse = true; break; }
+      if (nb && nb.id === 'foreuse') {
+        if (nb.drilling) { busy = true; continue; }
+        foreuse = nb;
+        break;
+      }
     }
-    if (!hasForeuse) {
-      showToast(I18N.t('❌ Aucune foreuse adjacente'), 'var(--red)');
+    if (!foreuse) {
+      showToast(busy ? I18N.t('❌ Foreuse déjà en train de forer') : I18N.t('❌ Aucune foreuse adjacente'), 'var(--red)');
       return false;
     }
-    const count = (g.drillsCount && g.drillsCount[7]) || 0;
-    const cost = drillCost(count);
+    const count = dig ? (g.extensionsCount[7] || 0) : (g.drillsCount && g.drillsCount[7]) || 0;
+    const cost = dig ? extensionCost(count) : drillCost(count);
     // Le forage est payé depuis le PORT DE L'ÎLE 6 (surface) : l'île 7 n'a pas d'inventaire.
     if (!g.ui.dev) {
       const miss = missingFor(cost, 6);
@@ -19953,16 +20166,15 @@ function App() {
       }
       pay(cost, 6);
     }
-    if (!g.drillsCount) g.drillsCount = {};
-    g.drillsCount[7] = count + 1;
-    t.drilled = true;
-    const hit = Array.isArray(g.he3Deposits) && g.he3Deposits.some(d => d.r === r && d.c === c);
-    if (hit) {
-      t.terrain = 'resource'; // veine d'He3 révélée (tile_i7_resource)
-      showToast(I18N.t("💎 Gisement d'Hélium-3 découvert"), 'var(--green)');
-    } else {
-      showToast(I18N.t('⛏️ Rien trouvé'), 'var(--ink-dim)');
+    // Compteur incrémenté au DÉMARRAGE (le coût est déjà engagé), comme pour la construction.
+    if (dig) g.extensionsCount[7] = count + 1;
+    else {
+      if (!g.drillsCount) g.drillsCount = {};
+      g.drillsCount[7] = count + 1;
     }
+    foreuse.drilling = { r, c, rem: DRILL_TIME, tot: DRILL_TIME, rate: 0, dig };
+    SFX.play('place');
+    showToast(dig ? I18N.t('⛏️ Creusement du mur en cours…') : I18N.t('⛏️ Forage en cours…'), 'var(--yellow)');
     bumpHud();
     markDirty();
     scheduleSave();
@@ -20048,7 +20260,8 @@ function App() {
       return false;
     }
     const nets = g.networks[isl] || {};
-    if (!g.ui.dev) {
+    const type = nets[t.networkId] && nets[t.networkId].type;
+    if (!g.ui.dev && Object.keys(info.cost).length) {
       const miss = missingFor(info.cost);
       if (miss.length) {
         showToast(I18N.t('❌ Manque ') + miss.join(', '), 'var(--red)');
@@ -20056,11 +20269,26 @@ function App() {
       }
       pay(info.cost);
     }
-    for (const id of info.ids) if (nets[id]) nets[id].unlimited = true;
+    // 14.05 — Le débit devient INFINI : les paliers n'ont plus aucun effet. On REMBOURSE donc
+    // intégralement ce qui a été investi dans leur montée et on ramène le réseau au niveau 1
+    // (le sprite reste le V4 « illimité »). Le niveau à 1 rend aussi le remboursement NON
+    // REJOUABLE : re-limiter puis re-passer en illimité ne rend plus rien.
+    for (const id of info.ids) if (nets[id]) {
+      nets[id].unlimited = true;
+      nets[id].level = 1;
+    }
+    if (!g.ui.dev && info.refundInv && Object.keys(info.refundInv).length) refund(info.refundInv);
+    // La technique est acquise pour CE TYPE de réseau sur CETTE île → les suivants sont gratuits.
+    if (type) {
+      if (!g.netInfPaid) g.netInfPaid = {};
+      if (!g.netInfPaid[isl]) g.netInfPaid[isl] = {};
+      g.netInfPaid[isl][type] = true;
+    }
     bumpHud();
     markDirty();
     scheduleSave();
-    showToast(I18N.t('∞ Réseau → débit ILLIMITÉ'), 'var(--green)');
+    const back = info.refundInv && Object.keys(info.refundInv).length ? ' · ' + I18N.t('paliers remboursés') : '';
+    showToast(I18N.t('∞ Réseau → débit ILLIMITÉ') + back, 'var(--green)');
     return true;
   }
   function selectTool(id) {
@@ -20828,7 +21056,9 @@ function App() {
     if (throttled) {
       const lackInput = inFac != null && inFac < 0.995;
       const lackPower = pwrAvg != null && pwrAvg < 0.995;
-      reason = lackInput && (!lackPower || inFac <= pwrAvg) ? 'input' : 'power';
+      // Ni intrants ni élec. en cause → c'est la MATIÈRE qui n'arrive pas (réseau saturé, élévateur
+      // préempté par des travaux) : l'icône « intrants » est la bonne, pas celle du courant.
+      reason = lackPower && (!lackInput || pwrAvg < inFac) ? 'power' : 'input';
     }
     const showIcon = inactive || throttled;
     // Sprite path for actual buildings (not infra/junction; those are drawn in the
@@ -21475,6 +21705,37 @@ function App() {
           const wk = t.building.construction;
           if (wk && (wk.rem || 0) > 1e-6 && wk.up != null) {
             drawWorkBar(ctx, x, y, sz.w * tile, sz.h * tile, tile, wk, '#B084F7');
+            _animPlayed = true;
+          }
+        }
+        // 14.05 — FOREUSE : on doit VOIR le sens de la foreuse (retour testeur). Flèche vers la face
+        // visée (`drillDir`), ambre au repos, jaune vif pendant un forage, + barre de progression
+        // du forage en cours (l'opération dure DRILL_TIME s et n'avance qu'avec du courant).
+        if (bdef && bdef.driller && tile >= 14) {
+          const dd = DIRS4[t.building.drillDir != null ? t.building.drillDir : 0];
+          const wk = t.building.drilling;
+          if (dd) {
+            const cx = x + sz.w * tile / 2,
+              cy = y + sz.h * tile / 2,
+              ex = cx + dd[1] * tile * 0.36,
+              ey = cy + dd[0] * tile * 0.36,
+              a = Math.atan2(dd[0], dd[1]),
+              s = tile * 0.17;
+            ctx.save();
+            ctx.fillStyle = wk ? '#FFC400' : '#E0A346';
+            ctx.strokeStyle = 'rgba(0,0,0,.7)';
+            ctx.lineWidth = Math.max(1, tile * 0.03);
+            ctx.beginPath();
+            ctx.moveTo(ex + Math.cos(a) * s, ey + Math.sin(a) * s);
+            ctx.lineTo(ex + Math.cos(a + 2.5) * s, ey + Math.sin(a + 2.5) * s);
+            ctx.lineTo(ex + Math.cos(a - 2.5) * s, ey + Math.sin(a - 2.5) * s);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+          }
+          if (wk && (wk.rem || 0) > 1e-6) {
+            drawWorkBar(ctx, x, y, sz.w * tile, sz.h * tile, tile, wk, '#FFC400');
             _animPlayed = true;
           }
         }
@@ -22380,6 +22641,17 @@ function App() {
             showTip('collider_penalite');
           }
         }
+        // 14.05 — Fin d'un FORAGE (île 7) : le tick a changé le terrain, on fait ici ce qui ne peut
+        // pas se faire au milieu d'un tick (reconstruction des réseaux) + le toast de résultat.
+        if (g.drillNotify && g.drillNotify.length) {
+          const ev = g.drillNotify.shift();
+          rebuildNetworks(g, ev.isl);
+          markDirty();
+          scheduleSave();
+          if (ev.dig) showToast(I18N.t('⛏️ Mur percé — nouveau sol de tunnel'), 'var(--green)');
+          else if (ev.found) showToast(I18N.t("💎 Gisement d'Hélium-3 découvert"), 'var(--green)');
+          else showToast(I18N.t('⛏️ Forage terminé — rien trouvé'), 'var(--ink-dim)');
+        }
         // Surchauffe (trip) : un bâtiment à chaleur a atteint son plafond → arrêt 5 min.
         if (g.heatTrip && g.heatTrip.length) {
           const ev = g.heatTrip.shift();
@@ -23071,6 +23343,7 @@ if (typeof window !== 'undefined') {
     SHIP_LINKS, linkActive, transferLink, transitForwardBudget, tickShips, onTick,
     tradeCfgFor, isElevatorRepairUnlocked, drillCost, generateHe3Deposits, ensureIslandDefaults,
     isUpgradable, costUnits, colliderRepaired, isBuildingGranted,
+    networkInvested, netInfPaidFor, networkUnlimitedInfo, networkTileCount, DRILL_TIME, extensionCost, accCapacity,
     isPortPipe, portPool,
     elevatorRateAt, elevatorUpgradeCost, elevatorSurfaceLinked, elevatorTileOf, tickIsland,
     rawShippable, evaluateTechTree, techConfirm, techDeliver, PORT_PIPE_RES, BUILDING_NODE,
