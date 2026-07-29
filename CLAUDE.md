@@ -17,7 +17,55 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 288`, `GAME_VERSION = 'Alpha 14.06'`, `SAVE_VERSION = 30`.**
+- **État au dernier passage : `GAME_BUILD = 289`, `GAME_VERSION = 'Alpha 14.07'`, `SAVE_VERSION = 30`.**
+  Changement 14.07 : **PATCH 5 retours — raccord route de la foreuse, barème de creusement ré-ancré sur
+  la DISTANCE à l'élévateur, Collisionneur (vanne déplacée + sprite réparé + interrupteur), double badge
+  de pause.** `SAVE_VERSION` INCHANGÉ (`collider.enabled` = champ additif ; absent = allumé).
+  (1) **FOREUSE — la route ne se raccordait pas VISUELLEMENT** (retour + screenshot) : sa sortie (pierre)
+  est injectée AU TICK et n'est pas déclarée dans la def → `buildingConnectsCarrier('foreuse','road')`
+  répondait faux, donc ni branche de route vers elle ni stub sous elle. La mécanique, elle, marchait
+  (elle évacuait bien). Cas explicite ajouté pour `driller` + `road`. (2) **Barème RÉ-ANCRÉ sur la
+  distance de Tchebychev à l'élévateur** (la spec disait « le cercle de 4096 commence à deux cases
+  autour de l'élévateur, l'élévateur serait à 1024 ») : `drillLayer` renvoie désormais la DISTANCE BRUTE
+  (avant : distance+1). `DRILL_MAX_POWER` devient **1024 kW sur la tuile élévateur**, ×2 par cercle →
+  **cercle 2 = 4096 kW, 3 = 8192, 4 = 16384** (valeurs inchangées, seul l'ancrage bouge d'un cran) ;
+  coût de la foreuse ×1 / ×2 / ×4 sur ces mêmes cercles. (3) **Évacuation indexée sur la puissance**
+  (`DRILL_KW_PER_STONE = 64`, helper `drillStoneAt`) : **64 pierre/s au cercle 2**, ×2 par cercle (128,
+  256) — le débit fixe de 8/s du 14.06 est remplacé. ⚠ **Conséquence de jeu VÉRIFIÉE et voulue** :
+  l'élévateur de base (16 u/s) ne peut évacuer que le quart d'une foreuse de cercle 2 → elle creuse à
+  25 % (20 min au lieu de 5) tant qu'on ne l'améliore pas. C'est exactement la règle « si l'élévateur est
+  bridé, la foreuse est ralentie ». (4) **COLLISIONNEUR — vanne d'entrée en HAUT À DROITE**
+  (`syncColliderChildren` : `put(minR, maxC)` ; l'émetteur reste en bas à gauche). Une partie en cours a
+  sa vanne à l'ancienne place → la passe de nettoyage retire toute vanne **mal placée** (sinon le
+  landmark en porterait deux). (5) **Sprite du Collisionneur à la 1re réparation** : 18 nouvelles
+  tranches `tile_i6_collisionneur_p{1,2,3}_{0..5}` générées depuis les sprites officiels
+  `bat_collisionneur_p1/p2/p3` (64×96 → ROTATE_270 → 96×64 → 3×2, **exactement la découpe de la ruine**,
+  vérifiée au pixel sur `tile_i6_collisionneur_0..5`). Le draw choisit ruine / P1 / P2 / P3 selon
+  `colliderRepaired` + `colliderPalier` (repli sur la ruine si une tranche manque). (6) **Interrupteur
+  marche/arrêt** (`collider.enabled`, bouton dans le panneau du landmark) : éteint, il ne tire plus un
+  seul kW (`state='off'` → sa demande n'est plus ajoutée à l'île) et son **compte à rebours de démarrage
+  est GELÉ** — rallumer reprend où on en était (≠ pénalité des codes faux, qui remet les 10 min à zéro).
+  (7) **DOUBLE BADGE DE PAUSE** (screenshot : une pastille bleue ET une rouge sur la même tuile) : un
+  bâtiment éteint par un actionneur porte `ui_pause_logique` (bleu, coin haut-gauche) ET recevait
+  l'icône d'état `etat_arret` (rouge, haut-droite) via `statusSpriteKey('logic')`. Désormais **UNE SEULE
+  pastille** : `drawDeficitIcon` sort si le motif est `logic`, et le badge bleu ne s'affiche que si la
+  logique est la cause ACTIVE (`discReason === 'logic'`) — une pause MANUELLE par-dessus un actionneur
+  ne montre donc que le badge d'arrêt. (8) **AUDIT EMOJI** (demande « lister les carrés ») : les
+  **4 familles CSS** (`ArchipelPixel`, `Bebas Neue`, `Barlow Condensed`, `DM Mono`) pointent toutes vers
+  le **MÊME pixel-font de 116 glyphes** (ASCII + accents FR + `— … → ─ ═ ▴ ▾ ◆ ○ ♻ ⚠ ⛔ ✓ ❌ ⬆ ⬇`).
+  **Tout le reste tombe en police de secours** : 115 caractères distincts / 1310 occurrences, dont
+  ~356 dans les panneaux, 46 dans les toasts, 59 dans les astuces et 845 dans les LOCALES. Les plus
+  exposés : `§ − ÷ ≥ ≤ ≈ ≠ ∞ • α β γ ₂ ᵉ ʳ` (aucune police emoji ne les couvre), les accents ES/DE
+  (`ó í á ñ ß Ö Ü ¡ ¿`) des traductions, et les emoji récents `🪨 🪫 🛗` (Android < 12). Inventaire
+  complet livré dans la réponse ; AUCUN remplacement effectué (le patch demandait de lister).
+  Validé : `node --check` (7 blocs) + Chromium **5 suites, 92 assertions, 0 erreur JS** — raccord
+  route/câble/tuyau de la foreuse ; barème (4096/8192/16384/32768 kW, coûts ×1·×2·×4·×8, 64·128·256
+  pierre/s, débit = puissance/64) ; **parcours réel** (fiche → « Percer le mur » → pierre au port île 6
+  au débit du cercle → 1 s/tick élévateur non limitant → chantier concurrent qui fige → coupure de
+  courant → mur percé + foreuse disparue) ; Collisionneur **par la vraie UI** (vanne haut-droite, ancienne
+  retirée, émetteur inchangé, 18 tranches présentes et distinctes de la ruine, tap → panneau → clic réel
+  sur « Éteindre » → 0 kW + timer gelé → rallumage qui reprend) ; badge unique dans les deux cas ;
+  round-trips de sauvegarde. Build 288→289.
   Changement 14.06 : **FOREUSE refaite selon la SPEC D'ORIGINE (fournie après coup par l'utilisateur) —
   machine à usage unique qui creuse un mur en 5 min, extrait 8 pierre/s par l'élévateur, monte de 0 à
   8192 kW, s'arrête 30 s quand le courant manque, et DISPARAÎT en laissant une tuile constructible.**
