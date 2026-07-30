@@ -39,11 +39,24 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   dépasserait un **budget de gel de 8 s**, on repasse au mode « échauffon + extrapolation »
   (`simplify`) — le joueur retrouve la main en ~1 s au lieu de plusieurs minutes. L'option
   « Calcul hors-ligne simplifié » n'est PAS touchée : c'est un filet, pas un changement de défaut.
-  Validé : `node --check` (7 blocs) + Chromium **5 suites, 94 assertions, 0 erreur JS** dont une
+  **(3) ISOLATION PAR ÎLE — un gel ne peut plus être SILENCIEUX.** Retour affiné du testeur :
+  « ça part en couilles **1 seconde après le chargement initial** » = au TOUT PREMIER tick. Une
+  exception dans `tickIsland` remontait jusqu'à la boucle `frame` : `playTicks` n'était plus
+  incrémenté (d'où l'horloge figée **sur la valeur sauvegardée**), `draw()` n'était jamais atteint,
+  et `markDirty()` restait sans effet → écran noir + jeu qui ne répond plus, **sans le moindre
+  message**. Désormais `onTick` enveloppe CHAQUE île dans un try/catch : l'île fautive est isolée
+  (`game.tickErrors[isl]`), le reste du jeu continue de tourner et de se dessiner, et un **toast
+  rouge nomme l'île et l'erreur** (+ `console.error('Archipel tick error (île N)')`). ⚠ Ce n'est PAS
+  la cause racine — elle dépend de la sauvegarde du testeur, non reproduite en laboratoire (partie
+  synthétique « fin de jeu », 7 îles peuplées, changements d'île par les VRAIS onglets, 2 tours
+  complets : 0 erreur) — mais le jeu redevient jouable et le défaut devient DIAGNOSTICABLE.
+  Validé : `node --check` (7 blocs) + Chromium **5 suites, 97 assertions, 0 erreur JS** dont une
   suite dédiée qui **REPRODUIT le gel** (les `setTimeout` sont avalés après 2 tranches, comme une
   WebView qui passe en arrière-plan) : `catchingUp` constaté à `true` avec le jeu figé, puis la
   soupape le clôt, **l'horloge repart, le canvas est repeint et le zoom répond de nouveau** ; +
-  un rattrapage de 8 h qui se termine en **183 ms** au lieu de plusieurs minutes. Build 294→295.
+  un rattrapage de 8 h qui se termine en **185 ms** au lieu de plusieurs minutes ; + une **île
+  sabotée** (tuile qui lève à la lecture) : l'exception est capturée et attribuée, **l'horloge
+  continue d'avancer et le canvas continue d'être peint**. Build 294→295.
   Changement 14.12 : **le chien de garde du 14.10 provoquait LUI-MÊME le clignotement.** `SAVE_VERSION`
   INCHANGÉ (rendu seul). Retour testeur sur le build 292 : « **il y a animation et ça repart au noir
   après 1 seconde** » — ma détection de canvas vide battait en boucle. Deux défauts, tous deux dans
