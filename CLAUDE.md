@@ -17,7 +17,23 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 290`, `GAME_VERSION = 'Alpha 14.08'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 291`, `GAME_VERSION = 'Alpha 14.09'`, `SAVE_VERSION = 31`.**
+  Changement 14.09 : **Mine Tungstène — densification DIRECTE en V4 au Nv.11 (sprite du pack v2.8).**
+  `SAVE_VERSION` INCHANGÉ (nouvel id additif). Retour utilisateur juste après le 14.08 : la chaîne
+  tungstène **saute V2 ET V3** — la Mine Tungstène V1 densifie directement en **`mine_tungstene_v4`**
+  (`TIER_NEXT.mine_tungstene` cap 9, `TIER_STEP` entrée **u10 = Nv.11**, même forfait que les autres
+  mines V4 : **100 alliage de tungstène + 10 pièce de précision**), exactement comme l'or et l'uranium
+  sautent le V2. Elle prend le sprite `mine_tungstene_v4` (+ son anim) du pack v2.8, déjà inliné et
+  jusque-là inerte. **Recette CONSERVÉE** (16 acide → 1 tungstène + 8 pierre) ; la conso **PLATE de
+  512 kW du V1 devient une SIGMOÏDE 144 → 1152** selon la règle des paliers (pic V1 ×1,125 = 576 →
+  plancher 576/4 = 144, plafond 576×2 = 1152, ratio 1→8) — à l'entrée u10 le pic vaut donc ×1024, dans
+  la continuité du niveau 9 du V1. Débloquée avec les autres mines V4 au **nœud 43** (puzzle P3) et
+  ajoutée au groupe **Tungstène** de la barre d'outils. ⚠ Les sprites `mine_tungstene_v2/v3` du pack
+  restent donc **inutilisés** : il n'y a AUCUN palier intermédiaire (choix explicite de l'utilisateur).
+  Validé : `node --check` (7 blocs) + Chromium **46 assertions, 0 erreur JS** (les 5 nouvelles portent
+  sur le tungstène : V1 → V4 direct, entrée u10, forfait, sprite du pack, recette conservée, sigmoïde
+  144 → 1152, coût cumulé de la chaîne). Build 290→291.
+
   Changement 14.08 : **PATCH 9 retours + 15 NOUVEAUX BÂTIMENTS (mines V4, chaîne or/silicium/processeur V2,
   chaîne nucléaire V2, quantique) selon `Classeur1.xlsx` + pack sprites v2.8.** `SAVE_VERSION` **30→31**
   (une seule migration : la polarité par défaut de l'ACTIONNEUR s'inverse → on retourne `actInvert` des
