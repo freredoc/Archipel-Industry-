@@ -17,7 +17,33 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 294`, `GAME_VERSION = 'Alpha 14.12'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 295`, `GAME_VERSION = 'Alpha 14.13'`, `SAVE_VERSION = 31`.**
+  Changement 14.13 : **LE GEL — le rattrapage hors-ligne pouvait bloquer le jeu DÉFINITIVEMENT.**
+  `SAVE_VERSION` INCHANGÉ. Le vrai symptôme n'était ni le noir ni les sprites : « je ne peux plus
+  zoomer, toucher les bâtiments… on dirait que c'est freeze ». **L'indice était sous mes yeux depuis
+  la 1re capture** : le chronomètre affiche **43:28:36 sur TOUTES les captures**, sur plusieurs jours
+  — `playTicks` n'avançait plus. Je l'avais mis sur le compte du hasard ; c'était la preuve du gel.
+  **Cause** : `runCatchUp` simule l'absence par TRANCHES de 80 ms enchaînées en **`setTimeout(step, 0)`**,
+  avec `g.catchingUp = true` pendant toute l'opération. Or la boucle `frame` fait `if (g.catchingUp)
+  { … return; }` → **ni tick, ni dessin, et `markDirty()` reste sans effet** (les taps ne produisent
+  plus rien). Si Android **gèle ou tue ses timers** au milieu du rattrapage (l'app part en
+  arrière-plan), la chaîne ne repart JAMAIS : `catchingUp` reste vrai à vie, et **chaque `onResume`
+  est gaté par `!catchingUp`** → aucune sortie possible, même en relançant l'app (le boot refait un
+  rattrapage qui se re-gèle). Aggravé par le défaut du 13.34 (`simplifyOffline` = **false**) : une
+  absence de 8 h = **28 800 ticks SIMULÉS** — sur une grosse partie c'est plusieurs MINUTES d'écran
+  figé, indistinguables d'un plantage. **Deux correctifs.** (1) **SOUPAPE dans la boucle rAF** (seule
+  horloge fiable : le rAF ne tourne que quand l'app est visible) — chaque tranche horodate
+  `g._catchUpTs` ; si plus rien n'a progressé depuis **4 s**, le rattrapage est déclaré mort, on
+  appelle `finishCatchUp` et **on rend la main au joueur**. (2) **Bascule AUTOMATIQUE en
+  extrapolation** : on mesure le débit réel (`ms/tick`) et, si finir la simulation complète
+  dépasserait un **budget de gel de 8 s**, on repasse au mode « échauffon + extrapolation »
+  (`simplify`) — le joueur retrouve la main en ~1 s au lieu de plusieurs minutes. L'option
+  « Calcul hors-ligne simplifié » n'est PAS touchée : c'est un filet, pas un changement de défaut.
+  Validé : `node --check` (7 blocs) + Chromium **5 suites, 94 assertions, 0 erreur JS** dont une
+  suite dédiée qui **REPRODUIT le gel** (les `setTimeout` sont avalés après 2 tranches, comme une
+  WebView qui passe en arrière-plan) : `catchingUp` constaté à `true` avec le jeu figé, puis la
+  soupape le clôt, **l'horloge repart, le canvas est repeint et le zoom répond de nouveau** ; +
+  un rattrapage de 8 h qui se termine en **183 ms** au lieu de plusieurs minutes. Build 294→295.
   Changement 14.12 : **le chien de garde du 14.10 provoquait LUI-MÊME le clignotement.** `SAVE_VERSION`
   INCHANGÉ (rendu seul). Retour testeur sur le build 292 : « **il y a animation et ça repart au noir
   après 1 seconde** » — ma détection de canvas vide battait en boucle. Deux défauts, tous deux dans
