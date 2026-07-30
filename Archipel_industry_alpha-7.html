@@ -3050,10 +3050,17 @@ let spriteRedrawPending = false;
 let spriteOnReady = null;
 // Decode a filename (no extension) into a cached HTMLImageElement. Returns the
 // image if already decoded, else null (and kicks off async decode + redraw).
+// Une image n'est DESSINABLE que si elle est chargée ET décodée (bitmap présent). Une WebView
+// Android qui repasse au premier plan peut avoir JETÉ les bitmaps décodés : l'objet Image est
+// toujours là mais `naturalWidth` retombe à 0 et `drawImage` ne peint plus rien.
+const spriteUsable = img => !!(img && img.complete && img.naturalWidth > 0);
 function spriteImg(fileKey) {
   if (!fileKey) return null;
   const cached = spriteImgCache[fileKey];
-  if (cached !== undefined) return cached && cached.complete ? cached : cached || null;
+  // ⚠ Ne JAMAIS renvoyer une image non dessinable : `drawSprite` renverrait « réussi » alors que
+  // rien n'est peint, et l'appelant sauterait son repli (couleur de terrain / vectoriel) → tuile
+  // INVISIBLE (fond noir). On renvoie null : le repli s'affiche et `spriteOnReady` redessinera.
+  if (cached !== undefined) return spriteUsable(cached) ? cached : null;
   const data = SPRITE_DATA[fileKey];
   if (!data) {
     spriteImgCache[fileKey] = null;
@@ -3068,7 +3075,7 @@ function spriteImg(fileKey) {
     spriteImgCache[fileKey] = null;
   };
   img.src = data;
-  return img.complete ? img : null;
+  return spriteUsable(img) ? img : null;
 }
 // --- Animations de bâtiments (spritesheets 4 frames, lecture G→D en boucle) -------------------
 // Sheets inlinées dans window.__ANIM_DATA__ (clé = `cle` du manifest). Méta (frames/taille/fps)
@@ -3338,7 +3345,7 @@ const ANIM_BY_SK = (() => {
 const animImgCache = {};
 function animImg(cle) {
   const cached = animImgCache[cle];
-  if (cached !== undefined) return cached && cached.complete ? cached : cached || null;
+  if (cached !== undefined) return spriteUsable(cached) ? cached : null;
   const data = ANIM_DATA[cle];
   if (!data) {
     animImgCache[cle] = null;
@@ -3353,7 +3360,17 @@ function animImg(cle) {
     animImgCache[cle] = null;
   };
   img.src = data;
-  return img.complete ? img : null;
+  return spriteUsable(img) ? img : null;
+}
+// Vide les caches d'images (statiques + anims) → tout est RE-DÉCODÉ depuis les data-URL au
+// prochain dessin. Indispensable au retour d'arrière-plan : la WebView jette les bitmaps décodés,
+// et sans purge les entrées restent des Image mortes (rien ne se dessine plus jamais).
+// `spriteOnReady` redessine au fil des décodages, donc l'image revient progressivement.
+function resetSpriteCaches() {
+  let n = 0;
+  for (const k in spriteImgCache) { delete spriteImgCache[k]; n++; }
+  for (const k in animImgCache) { delete animImgCache[k]; n++; }
+  return n;
 }
 // Mis à true par drawAnimFrame quand une anim est rendue → la boucle force le redraw suivant.
 let _animPlayed = false;
@@ -6917,8 +6934,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 292;
-const GAME_VERSION = 'Alpha 14.10';
+const GAME_BUILD = 293;
+const GAME_VERSION = 'Alpha 14.11';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -23498,7 +23515,9 @@ function App() {
       if (!canvasLooksBlank()) { blankStrikes = 0; return; }
       blankStrikes++;
       if (blankStrikes === 1) {
-        // 1re fois : ça peut être une frame ratée → on redemande simplement un dessin.
+        // 1re fois : ça peut être une frame ratée, ou des bitmaps jetés → on purge le cache
+        // d'images et on redemande un dessin.
+        resetSpriteCaches();
         layout();
         g.dirty = true;
         start();
@@ -23689,6 +23708,13 @@ function App() {
         const g = gameRef.current;
         g.lastFrameTs = performance.now();
         g.lastActiveTs = Date.now();
+        // 14.11 — RETOUR SUR L'APPLICATION : la WebView Android a pu JETER les bitmaps décodés
+        // pendant l'arrière-plan. Les entrées du cache restent alors des Image mortes
+        // (`naturalWidth` 0) et plus rien ne se dessine : terrain absent (fond noir) et bâtiments
+        // réduits à leur carré de couleur — exactement le symptôme rapporté. On repart donc d'un
+        // cache VIDE : tout est re-décodé depuis les data-URL, et `spriteOnReady` redessine au fur
+        // et à mesure.
+        resetSpriteCaches();
         layout();
         if (ctxValid()) {
           g.dirty = true;
@@ -23721,6 +23747,7 @@ function App() {
     };
     // Le navigateur a rendu le contexte : on refait le layout (transform DPR) et on redessine.
     const onCtxRestored = () => {
+      resetSpriteCaches();
       layout();
       gameRef.current.dirty = true;
       start();
@@ -24335,7 +24362,8 @@ if (typeof window !== 'undefined') {
     processLogic, reqValue, unlockedBuildingSet, networkUnlocked, networkUnitCost, LOGIC_MAX_ITER,
     RES_TIER, RES_TIER_LABEL, ANIM_BY_SK, ANIM_META, applyUnlocks, TIER_STEP,
     sensorModesFor, sensorDefaultMode, sensorSeuilResources, logicNetStock, isLogicId, rebuildLogicNetworks,
-    quantumStabFactor, elevatorAllocate, ELEVATOR_MODES, elevatorModeOf, isFilledTile, tierForfait, cumulativeInvested, isUpgradable, processCollider, colliderPenalty, processLogic, nominalPower, minPower, TIER_STEP, TIER_NEXT, CARRIER_BY_RES, GAME_BUILD, GAME_VERSION, SAVE_VERSION, RES_SHORT, itemSpriteKey,
+    quantumStabFactor, elevatorAllocate, ELEVATOR_MODES, elevatorModeOf, isFilledTile, tierForfait, cumulativeInvested, isUpgradable,
+    resetSpriteCaches, spriteImg, spriteUsable, drawSprite, spriteImgCache, animImgCache, processCollider, colliderPenalty, processLogic, nominalPower, minPower, TIER_STEP, TIER_NEXT, CARRIER_BY_RES, GAME_BUILD, GAME_VERSION, SAVE_VERSION, RES_SHORT, itemSpriteKey,
     colliderPalier, COLLIDER_FLAVORS, COLLIDER_EXCEPTIONS, COLLIDER_POWER, COLLIDER_GOALS,
     pickFlavorCode, codeToBits, dcEffective, dcRateOf, countBuildings,
     InfoPanel: typeof InfoPanel === 'function' ? InfoPanel : null
