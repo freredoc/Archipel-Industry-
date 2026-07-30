@@ -6934,8 +6934,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 294;
-const GAME_VERSION = 'Alpha 14.12';
+const GAME_BUILD = 295;
+const GAME_VERSION = 'Alpha 14.13';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -19712,13 +19712,21 @@ function App() {
       onDone && onDone();
       return;
     }
-    const simplify = g.ui.simplifyOffline === true && ticks > 3600;
+    // `simplify` = extrapolation après un échauffon (au lieu de tout simuler). Choisi par
+    // l'option, MAIS aussi imposé automatiquement si la simulation complète s'avère trop longue
+    // (voir plus bas) : pendant tout le rattrapage le jeu est GELÉ (ni tick, ni dessin, ni
+    // interaction), donc une simulation de plusieurs minutes est indistinguable d'un plantage.
+    let simplify = g.ui.simplifyOffline === true && ticks > 3600;
     const SAMPLE = 300;
-    const WARM = simplify ? Math.min(ticks, 900) : ticks;
-    const sampleStart = Math.max(0, WARM - SAMPLE);
+    let WARM = simplify ? Math.min(ticks, 900) : ticks;
+    let sampleStart = Math.max(0, WARM - SAMPLE);
     let done = 0;
     let baseSnap = null;
+    // Budget de gel ACCEPTABLE (ms) : au-delà, on bascule en extrapolation.
+    const CATCHUP_BUDGET_MS = 8000;
+    const startedAt = performance.now();
     g.catchingUp = true;
+    g._catchUpTs = startedAt; // horodatage de la dernière tranche → chien de garde de `frame`
     catchUpSkipRef.current = false;
     setCatchUp({
       pct: 0,
@@ -19726,12 +19734,26 @@ function App() {
     });
     const step = () => {
       const t0 = performance.now();
+      g._catchUpTs = t0;
       while (done < WARM && performance.now() - t0 < 80) {
         if (catchUpSkipRef.current) break;
         if (simplify && done === sampleStart && baseSnap == null) baseSnap = snapshotPort(g);
         onTick(g);
         tickShips(g);
         done++;
+      }
+      g._catchUpTs = performance.now();
+      // BASCULE AUTOMATIQUE : on mesure le débit réel ; si finir la simulation complète
+      // dépasserait le budget de gel, on repasse en mode « échauffon + extrapolation » (le
+      // joueur retrouve la main en ~1 s au lieu de plusieurs minutes d'écran figé).
+      if (!simplify && done > 0 && done < WARM) {
+        const msPerTick = (performance.now() - startedAt) / done;
+        if ((WARM - done) * msPerTick > CATCHUP_BUDGET_MS) {
+          simplify = true;
+          WARM = Math.min(ticks, done + SAMPLE);
+          sampleStart = Math.max(0, WARM - SAMPLE);
+          if (baseSnap == null && done >= sampleStart) baseSnap = snapshotPort(g);
+        }
       }
       // « Passer » : on arrête la simulation et on entre dans le jeu avec ce qui est calculé
       // (production restante hors-ligne abandonnée — choix explicite du joueur).
@@ -23554,6 +23576,18 @@ function App() {
       if (g.catchingUp) {
         g.lastFrameTs = now;
         g.tickAcc = 0;
+        // SOUPAPE (14.13) : le rattrapage avance par tranches enchaînées en `setTimeout`. Une
+        // WebView Android GÈLE (voire tue) ses timers quand l'app passe en arrière-plan : si ça
+        // arrive au milieu d'un rattrapage, la chaîne ne repart JAMAIS et `catchingUp` reste vrai
+        // → plus de tick, plus de dessin, plus aucune réaction au toucher : le jeu paraît planté,
+        // définitivement (chaque `onResume` est gaté par `!catchingUp`). Ici on est dans le rAF,
+        // qui ne tourne QUE quand l'app est visible : si aucune tranche n'a progressé depuis 4 s,
+        // le rattrapage est mort → on le clôt et on rend la main au joueur.
+        if (now - (g._catchUpTs || 0) > 4000) {
+          g._catchUpTs = now;
+          finishCatchUp(g, sumPortAll(g), 0);
+          g.dirty = true;
+        }
         return;
       }
       const prev = g.lastFrameTs || now;
