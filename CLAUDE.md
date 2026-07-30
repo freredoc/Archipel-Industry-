@@ -17,7 +17,24 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 293`, `GAME_VERSION = 'Alpha 14.11'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 294`, `GAME_VERSION = 'Alpha 14.12'`, `SAVE_VERSION = 31`.**
+  Changement 14.12 : **le chien de garde du 14.10 provoquait LUI-MÊME le clignotement.** `SAVE_VERSION`
+  INCHANGÉ (rendu seul). Retour testeur sur le build 292 : « **il y a animation et ça repart au noir
+  après 1 seconde** » — ma détection de canvas vide battait en boucle. Deux défauts, tous deux dans
+  mon code du 14.10 : (1) son test « **tous les pixels identiques** » jugeait VIDE une vue
+  parfaitement dessinée mais **UNIFORME** — une vue 100 % océan, ou un terrain rendu en couleur de
+  repli quand les bitmaps sont morts (cas du 14.11 !) → il recréait le canvas, **ce qui efface
+  l'écran** → image, noir, image, noir jusqu'au plafond de 8 recréations. Le test porte désormais sur
+  l'**ALPHA** : `draw()` commence par un `clearRect` (alpha 0), donc si tous les points échantillonnés
+  ont ENCORE alpha 0, aucune primitive n'a abouti ; une vue uniforme opaque a alpha 255 et n'est plus
+  jugée vide. (2) Le 1er palier appelait **`layout()`**, qui réassigne `canvas.width` et **EFFACE le
+  canvas** → il provoquait exactement le noir qu'il devait corriger. Retiré (les dimensions n'ont pas
+  changé) : on ne fait plus que purger le cache d'images + redemander un dessin. ⚠ Les deux défauts se
+  RENFORÇAIENT avec le bug 14.11 : bitmaps morts → terrain en couleur de repli → vue uniforme → jugée
+  vide → recréation → écran effacé → re-décodage partiel → uniforme → … Validé : `node --check`
+  (7 blocs) + Chromium **4 suites, 87 assertions, 0 erreur JS**, dont l'assertion dédiée : un écran
+  peint d'UNE seule couleur opaque (cas « 100 % océan ») traverse **3 cycles du chien de garde sans
+  aucune recréation de canvas**. Build 293→294.
   Changement 14.11 : **LA VRAIE CAUSE du « noir / bloqué » — les BITMAPS DÉCODÉS sont jetés par la
   WebView au retour d'arrière-plan.** `SAVE_VERSION` INCHANGÉ (rendu seul). Le 14.10 visait la perte
   de SURFACE ; deux nouvelles captures ont montré autre chose : rendu **PARTIEL** — le contour de
