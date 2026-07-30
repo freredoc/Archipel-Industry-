@@ -6934,8 +6934,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 295;
-const GAME_VERSION = 'Alpha 14.13';
+const GAME_BUILD = 296;
+const GAME_VERSION = 'Alpha 14.14';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -10187,7 +10187,7 @@ function tickIsland(game, isl) {
     }
     // Chaleur émise : HEAT_PER_MW MJ/s par MW (16384 kW → 2,048 MJ/s à pleine puissance V1).
     // Centrale V2 (`noHeat`) : AUCUNE chaleur — plus besoin de tours ni de conduit (14.08).
-    bld.heatEmit = b.noHeat ? 0 : (bld.nucCur || 0) * HEAT_PER_MW / 1000;
+    bld.heatEmit = nb && nb.noHeat ? 0 : (bld.nucCur || 0) * HEAT_PER_MW / 1000;
     // Série de fonctionnement (conservée, inoffensive).
     if (bld.nucState === 'running') {
       if (!game.nucRun) game.nucRun = {};
@@ -19757,8 +19757,15 @@ function App() {
       while (done < WARM && performance.now() - t0 < 80) {
         if (catchUpSkipRef.current) break;
         if (simplify && done === sampleStart && baseSnap == null) baseSnap = snapshotPort(g);
-        onTick(g);
-        tickShips(g);
+        // Une exception ici ne doit JAMAIS tuer la chaîne `setTimeout` : `catchingUp`
+        // resterait vrai à vie et la boucle `frame` ne ferait plus ni tick, ni dessin, ni
+        // interaction — c'est-à-dire un GEL DÉFINITIF du jeu, y compris après relance.
+        try {
+          onTick(g);
+          tickShips(g);
+        } catch (err) {
+          try { if (typeof console !== 'undefined') console.error('Archipel catch-up error :', err); } catch (_) {}
+        }
         done++;
       }
       g._catchUpTs = performance.now();
