@@ -17,7 +17,41 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 291`, `GAME_VERSION = 'Alpha 14.09'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 292`, `GAME_VERSION = 'Alpha 14.10'`, `SAVE_VERSION = 31`.**
+  Changement 14.10 : **FIX « l'affichage des îles est soit noir soit bloqué » — le canvas se répare
+  tout seul.** `SAVE_VERSION` INCHANGÉ (rendu seul). Retour testeur avec 2 captures : HUD, horloge,
+  bilan élec. et barre d'actions parfaitement rendus (DOM), mais la **zone de l'île entièrement
+  NOIRE** ; une autre capture de la même partie montre l'île normalement. **Non reproduit en
+  laboratoire** malgré : parcours de MAJ réel (partie build 289 → save v30 → rechargement en v31 :
+  0 erreur, canvas à 98,8 %), balayage **7 îles × couche logique ON/OFF** avec ~55 bâtiments par île
+  + les 13 éléments logiques + foreuse en opération + Collisionneur réparé (14 relevés, 0 erreur
+  console, `Archipel frame error` jamais émis). **Diagnostic** : les deux branches de terrain ont
+  déjà un repli `TERRAIN_COLORS` → un sprite non décodé donne une tuile COLORÉE, jamais du noir ; et
+  `clampPan` empêche de sortir de la grille. Reste la cause classique en WebView Android : la
+  **surface de rendu du canvas est perdue** (pression mémoire, retour d'arrière-plan, reset GPU).
+  Deux pièges qui la rendaient DÉFINITIVE : (a) `contextlost`/`isContextLost()` **n'existent pas sur
+  un contexte 2D avant Chromium 105** → `ctxValid()` répond « valide », le jeu dessine dans le vide
+  et la vue reste noire À VIE (la boucle et le tick continuent → l'horloge et le bilan élec. bougent,
+  exactement ce que montrent les captures) ; (b) même quand l'événement existe il n'est pas toujours
+  émis. **Correctif : on ne teste plus l'API, on teste le RÉSULTAT.** Nouveau `canvasLooksBlank()`
+  (~400 points échantillonnés via un seul `getImageData` ; un canvas dont TOUS les pixels sont
+  identiques est vide — une vue d'île, même 100 % océan, a de la texture) + `checkBlankCanvas()`
+  appelé (1) par le chien de garde **une fois sur 5 (~3 s)** et (2) **immédiatement au retour
+  d'arrière-plan** (cause n°1). Escalade en 2 temps : 1er constat → `layout()` + `dirty` + `start()`
+  (simple frame ratée) ; 2e constat consécutif → **l'élément canvas est RECRÉÉ** (`setCanvasKey`,
+  seul remède quand la surface est morte), plafonné à 8 recréations par session. Gardes anti-faux
+  positif : on ne juge JAMAIS pendant le splash, le rattrapage hors-ligne (`catchingUp`) ou le choix
+  de mode, ni si la grille n'est pas prête, ni si `getImageData` échoue. Ajout aussi de
+  **`contextrestored`** (→ `layout()` + redessin) et retrait propre des deux listeners au cleanup ;
+  `contextlost` gardait déjà son `preventDefault()` (sans lui le contexte n'est jamais restauré).
+  Validé : `node --check` (7 blocs) + Chromium **3 suites, 76 assertions, 0 erreur JS** dont une
+  suite dédiée : surface morte SIMULÉE (`drawImage`/`fillRect`/`fill`/`stroke`/`fillText`
+  neutralisés + effacement) → canvas vide constaté, **la boucle continue de tourner**, puis retour
+  des primitives → **la vue revient SANS aucune interaction du joueur** ; `contextlost` intercepté
+  puis `contextrestored` → vue dessinée ; **non-régression : aucun remontage parasite** (1 seul
+  canvas dans le DOM après 7 s de jeu normal). ⚠ Deux assertions de la suite 14.07 devenues FAUSSES
+  ont été corrigées (elles vérifiaient l'ancienne règle « la pause GÈLE le démarrage du
+  Collisionneur », remplacée en 14.08 par « la pause le remet à ZÉRO »). Build 291→292.
   Changement 14.09 : **Mine Tungstène — densification DIRECTE en V4 au Nv.11 (sprite du pack v2.8).**
   `SAVE_VERSION` INCHANGÉ (nouvel id additif). Retour utilisateur juste après le 14.08 : la chaîne
   tungstène **saute V2 ET V3** — la Mine Tungstène V1 densifie directement en **`mine_tungstene_v4`**
