@@ -6934,8 +6934,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 295;
-const GAME_VERSION = 'Alpha 14.13';
+const GAME_BUILD = 296;
+const GAME_VERSION = 'Alpha 14.14';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -10187,7 +10187,7 @@ function tickIsland(game, isl) {
     }
     // Chaleur émise : HEAT_PER_MW MJ/s par MW (16384 kW → 2,048 MJ/s à pleine puissance V1).
     // Centrale V2 (`noHeat`) : AUCUNE chaleur — plus besoin de tours ni de conduit (14.08).
-    bld.heatEmit = b.noHeat ? 0 : (bld.nucCur || 0) * HEAT_PER_MW / 1000;
+    bld.heatEmit = nb && nb.noHeat ? 0 : (bld.nucCur || 0) * HEAT_PER_MW / 1000;
     // Série de fonctionnement (conservée, inoffensive).
     if (bld.nucState === 'running') {
       if (!game.nucRun) game.nucRun = {};
@@ -10591,7 +10591,26 @@ function onTick(game) {
     energyChanged: false
   };
   for (const def of ISLAND_TERRAINS) {
-    const res = tickIsland(game, def.id);
+    // ISOLATION PAR ÎLE (14.13) : une exception dans le tick d'UNE île ne doit JAMAIS geler tout
+    // le jeu. Avant, elle remontait jusqu'à la boucle `frame` : le compteur de temps n'était plus
+    // incrémenté, `draw()` n'était jamais atteint, et les taps ne produisaient plus rien →
+    // l'horloge restait figée sur la valeur chargée et l'écran devenait noir ~1 s après le
+    // chargement, sans le moindre message. On journalise l'île fautive et on continue.
+    let res;
+    try {
+      res = tickIsland(game, def.id);
+    } catch (err) {
+      if (!game.tickErrors) game.tickErrors = {};
+      const msg = String(err && err.message || err);
+      if (!game.tickErrors[def.id]) {
+        game.tickErrors[def.id] = msg;
+        game.tickErrorNotify = { isl: def.id, msg };
+        try {
+          if (typeof console !== 'undefined') console.error('Archipel tick error (île ' + def.id + ') :', err);
+        } catch (_) {}
+      }
+      res = { resChanged: false, activeChanged: false, energyChanged: false };
+    }
     if (def.id === game.currentIsland) cur = res;
   }
   const techChanged = evaluateTechTree(game);
@@ -19738,8 +19757,15 @@ function App() {
       while (done < WARM && performance.now() - t0 < 80) {
         if (catchUpSkipRef.current) break;
         if (simplify && done === sampleStart && baseSnap == null) baseSnap = snapshotPort(g);
-        onTick(g);
-        tickShips(g);
+        // Une exception ici ne doit JAMAIS tuer la chaîne `setTimeout` : `catchingUp`
+        // resterait vrai à vie et la boucle `frame` ne ferait plus ni tick, ni dessin, ni
+        // interaction — c'est-à-dire un GEL DÉFINITIF du jeu, y compris après relance.
+        try {
+          onTick(g);
+          tickShips(g);
+        } catch (err) {
+          try { if (typeof console !== 'undefined') console.error('Archipel catch-up error :', err); } catch (_) {}
+        }
         done++;
       }
       g._catchUpTs = performance.now();
@@ -23667,6 +23693,14 @@ function App() {
           scheduleSave();
           if (ev.found) showToast(I18N.t("💎 Mur percé — poche d'Hélium-3 découverte !"), 'var(--green)');
           else showToast(I18N.t('⛏️ Mur percé — nouveau sol de tunnel (foreuse consommée)'), 'var(--green)');
+        }
+        // Erreur de simulation sur une île : le jeu continue (île isolée), mais on le DIT — un
+        // gel silencieux est indébogable pour le joueur comme pour le développeur.
+        if (g.tickErrorNotify) {
+          const ev = g.tickErrorNotify;
+          g.tickErrorNotify = null;
+          showToast('⚠ Erreur de simulation (Île ' + ev.isl + ') : ' + String(ev.msg).slice(0, 80), 'var(--red)');
+          SFX.playThrottled('powerAlert', 8000);
         }
         // Surchauffe (trip) : un bâtiment à chaleur a atteint son plafond → arrêt 5 min.
         if (g.heatTrip && g.heatTrip.length) {
