@@ -5725,6 +5725,34 @@ const BUILDINGS = {
       uranium: 1
     }
   },
+  // Mine Tungstène V4 — la chaîne tungstène SAUTE V2 et V3 : la Mine Tungstène V1 densifie
+  // directement en V4 au Nv.11 (entrée u10), comme l'or et l'uranium sautent le V2. Recette
+  // inchangée ; la conso plate de 512 kW devient une SIGMOÏDE selon la règle des paliers
+  // (pic V1 ×1,125 = 576 → plancher 144, plafond 1152, ratio 1→8).
+  mine_tungstene_v4: {
+    name: 'Mine Tungstène V4',
+    color: '#DDE3EC',
+    label: 'TUN4',
+    kind: 'build',
+    tier: 't5',
+    terrains: ['resource'],
+    exclusiveIsland: 6,
+    size: [1, 1],
+    cost: {},
+    power: 0,
+    sigmoid: {
+      base: 144,
+      amp: 1008,
+      period: 60
+    },
+    inputs: {
+      acide: 16
+    },
+    outputs: {
+      tungstene: 1,
+      pierre: 8
+    }
+  },
   // ===== CHAÎNE « PRODUCTION OR / SILICIUM / PROCESSEUR » V2 (nœud 39, puzzle P1) =====
   // Règle des V2 (13.59) : pic V1 ×1,125 → plancher = pic/4, plafond = pic×2 (ratio 1→8).
   fonderie_or_v2: {
@@ -6398,7 +6426,7 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'tungstene',
   label: 'Tungstène',
-  ids: ['mine_tungstene', 'four_arc_tungstene', 'machine_outil', 'presse_uhp']
+  ids: ['mine_tungstene', 'mine_tungstene_v4', 'four_arc_tungstene', 'machine_outil', 'presse_uhp']
 }, {
   key: 'quantique',
   label: 'Quantique',
@@ -6889,8 +6917,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 290;
-const GAME_VERSION = 'Alpha 14.08';
+const GAME_BUILD = 291;
+const GAME_VERSION = 'Alpha 14.09';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7313,6 +7341,8 @@ const TIER_NEXT = {
   mine_cuivre_v3:  { next: 'mine_cuivre_v4',  cap: 29 },
   mine_or_v3:      { next: 'mine_or_v4',      cap: 19 },
   mine_uranium_v3: { next: 'mine_uranium_v4', cap: 19 },
+  // Tungstène : pas de V2 ni de V3 → la V1 densifie DIRECTEMENT en V4 (entrée u10 = Nv.11).
+  mine_tungstene:  { next: 'mine_tungstene_v4', cap: 9 },
   // 14.08 — Chaînes or/silicium/processeur et nucléaire en V2, + antenne V2.
   fonderie_or:            { next: 'fonderie_or_v2',            cap: 9 },
   raffineur_silicium:     { next: 'raffineur_silicium_v2',     cap: 9 },
@@ -7363,6 +7393,7 @@ const TIER_STEP = {
   mine_cuivre_v4:  { entry: 30, forfait: { alliage_tungstene: 100, piece_precision: 10 } },
   mine_or_v4:      { entry: 20, forfait: { alliage_tungstene: 100, piece_precision: 10 } },
   mine_uranium_v4: { entry: 20, forfait: { alliage_tungstene: 100, piece_precision: 10 } },
+  mine_tungstene_v4: { entry: 10, forfait: { alliage_tungstene: 100, piece_precision: 10 } },
   // 14.08 — Chaînes V2 « or/silicium/processeur » (P1) puis nucléaire (P2), et antenne V2 (P3).
   fonderie_or_v2:             { entry: 10, forfait: { alliage_tungstene: 300, cable_supraconducteur: 300, element_moteur_nuc: 10 } },
   raffineur_silicium_v2:      { entry: 10, forfait: { alliage_tungstene: 200, cable_supraconducteur: 200, piece_precision: 100 } },
@@ -11720,7 +11751,7 @@ const TECH_NODES = [{
     n: 10000
   }],
   unlocks: {
-    buildings: ['stabilisateur_quantique', 'antenne_v2', 'usine_moteur_quantique', 'mine_fer_v4', 'mine_charbon_v4', 'mine_cuivre_v4', 'carriere_v4', 'mine_or_v4', 'mine_uranium_v4']
+    buildings: ['stabilisateur_quantique', 'antenne_v2', 'usine_moteur_quantique', 'mine_fer_v4', 'mine_charbon_v4', 'mine_cuivre_v4', 'carriere_v4', 'mine_or_v4', 'mine_uranium_v4', 'mine_tungstene_v4']
   }
 }];
 const TECH_BY_ID = {};
@@ -24234,7 +24265,7 @@ if (typeof window !== 'undefined') {
     processLogic, reqValue, unlockedBuildingSet, networkUnlocked, networkUnitCost, LOGIC_MAX_ITER,
     RES_TIER, RES_TIER_LABEL, ANIM_BY_SK, ANIM_META, applyUnlocks, TIER_STEP,
     sensorModesFor, sensorDefaultMode, sensorSeuilResources, logicNetStock, isLogicId, rebuildLogicNetworks,
-    quantumStabFactor, elevatorAllocate, ELEVATOR_MODES, elevatorModeOf, isFilledTile, processCollider, colliderPenalty, processLogic, nominalPower, minPower, TIER_STEP, TIER_NEXT, CARRIER_BY_RES, GAME_BUILD, GAME_VERSION, SAVE_VERSION, RES_SHORT, itemSpriteKey,
+    quantumStabFactor, elevatorAllocate, ELEVATOR_MODES, elevatorModeOf, isFilledTile, tierForfait, cumulativeInvested, isUpgradable, processCollider, colliderPenalty, processLogic, nominalPower, minPower, TIER_STEP, TIER_NEXT, CARRIER_BY_RES, GAME_BUILD, GAME_VERSION, SAVE_VERSION, RES_SHORT, itemSpriteKey,
     colliderPalier, COLLIDER_FLAVORS, COLLIDER_EXCEPTIONS, COLLIDER_POWER, COLLIDER_GOALS,
     pickFlavorCode, codeToBits, dcEffective, dcRateOf, countBuildings,
     InfoPanel: typeof InfoPanel === 'function' ? InfoPanel : null
