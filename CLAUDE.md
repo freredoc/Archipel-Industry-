@@ -17,7 +17,35 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 292`, `GAME_VERSION = 'Alpha 14.10'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 293`, `GAME_VERSION = 'Alpha 14.11'`, `SAVE_VERSION = 31`.**
+  Changement 14.11 : **LA VRAIE CAUSE du « noir / bloqué » — les BITMAPS DÉCODÉS sont jetés par la
+  WebView au retour d'arrière-plan.** `SAVE_VERSION` INCHANGÉ (rendu seul). Le 14.10 visait la perte
+  de SURFACE ; deux nouvelles captures ont montré autre chose : rendu **PARTIEL** — le contour de
+  côte (écume) dessiné, quelques machines dessinées, mais **le terrain absent (fond noir)** et la
+  plupart des bâtiments réduits à leur **carré de couleur** (leur repli vectoriel). Précision
+  décisive du testeur : « **quand je reviens sur l'application** ». Ce n'est donc pas le contexte
+  canvas, c'est le **cache d'images**. **Deux défauts trouvés.** (1) **`spriteImg` renvoyait une
+  image INUTILISABLE** : `return cached && cached.complete ? cached : cached || null` — une Image en
+  cours de décodage (ou dont le bitmap a été jeté) était renvoyée telle quelle, `drawSprite` faisait
+  `drawImage` (qui ne peint RIEN sans lever d'erreur) puis renvoyait **`true`** → l'appelant sautait
+  son repli (`TERRAIN_COLORS`, vectoriel) → **tuile INVISIBLE**, c'est-à-dire du NOIR. C'est pour ça
+  que mes sondes n'avaient rien vu : en laboratoire les images sont déjà décodées. Nouveau garde
+  **`spriteUsable(img)` = `complete && naturalWidth > 0`** (le `naturalWidth` retombe à 0 quand
+  Android jette le bitmap, alors que `complete` reste `true` — d'où l'échec silencieux) ; `spriteImg`
+  ET `animImg` renvoient désormais **null** tant que l'image n'est pas dessinable → le repli COLORÉ
+  s'affiche et `spriteOnReady` redessine au décodage. (2) **Aucune re-décodage au retour
+  d'arrière-plan** : les entrées du cache restaient des Image mortes, définitivement. Nouveau
+  **`resetSpriteCaches()`** (vide `spriteImgCache` + `animImgCache` → tout est re-décodé depuis les
+  data-URL) appelé (a) **au retour sur l'application** (`onResume`, avant `layout()`/`draw()`),
+  (b) au 1er constat du chien de garde 14.10 et (c) sur `contextrestored`. Le cache étant peuplé
+  PARESSEUSEMENT (sprite par sprite au fil des dessins), la purge ne coûte que le re-décodage de ce
+  qui est réellement visible (~32 sprites sur une vue d'île), pas des ~900 inlinés. Validé :
+  `node --check` (7 blocs) + Chromium **4 suites, 86 assertions, 0 erreur JS** dont une suite dédiée
+  qui REPRODUIT le symptôme (`naturalWidth` forcé à 0 sur le prototype `Image` → toutes les images du
+  cache deviennent mortes) : rendu dégradé constaté, **mais le terrain garde son repli coloré au lieu
+  de devenir invisible** (fix n°1), puis `visibilitychange`/`pageshow` → **la vue redevient riche
+  sans aucune interaction du joueur** (fix n°2) ; + `spriteUsable` sur les 3 cas (bitmap jeté / pas
+  encore décodée / décodée). Build 292→293.
   Changement 14.10 : **FIX « l'affichage des îles est soit noir soit bloqué » — le canvas se répare
   tout seul.** `SAVE_VERSION` INCHANGÉ (rendu seul). Retour testeur avec 2 captures : HUD, horloge,
   bilan élec. et barre d'actions parfaitement rendus (DOM), mais la **zone de l'île entièrement
