@@ -17,7 +17,92 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 289`, `GAME_VERSION = 'Alpha 14.07'`, `SAVE_VERSION = 30`.**
+- **État au dernier passage : `GAME_BUILD = 290`, `GAME_VERSION = 'Alpha 14.08'`, `SAVE_VERSION = 31`.**
+  Changement 14.08 : **PATCH 9 retours + 15 NOUVEAUX BÂTIMENTS (mines V4, chaîne or/silicium/processeur V2,
+  chaîne nucléaire V2, quantique) selon `Classeur1.xlsx` + pack sprites v2.8.** `SAVE_VERSION` **30→31**
+  (une seule migration : la polarité par défaut de l'ACTIONNEUR s'inverse → on retourne `actInvert` des
+  actionneurs existants pour que les montages en cours fassent EXACTEMENT la même chose).
+  (1) **CHALEUR île 6 « rien n'est évacué en haut »** : le mécanisme est **CORRECT** (probe : chaleur locale
+  5 → 0,904 MJ à 1,024 MJ/s, **tampon de la cage 10 → 4,88 MJ** avec une tour alimentée en eau sur un conduit
+  élévateur-lié). C'est un problème de **DIAGNOSTIC** : rien ne disait si le conduit de SURFACE touche la tuile
+  élévateur. Deux indicateurs ajoutés : panneau **Conduit** → ligne « Élévateur : relié à la cage / ⚠ non relié
+  à la cage » (+ « Tampon de la cage X / cap » quand il est relié) ; panneau **Élévateur** → ligne
+  « 🔥 Tampon de chaleur X / cap » (rouge à saturation = le souterrain surchauffe). (2) **CÂBLES LOGIQUES non
+  connectés aux jonctions ni à la vanne** : le masque de connexion du câble logique n'acceptait que
+  capteur/actionneur/porte/émetteur → il ignorait **`logicJunction` ET `logicValve`** (mécaniquement tout allait
+  bien : la jonction est un CONDUCTEUR, la vanne lit l'OU de ses faces). Le masque accepte désormais **tout
+  élément logique** (`isLogicId`). Au passage : la **jonction** affiche enfin son état RÉEL par axe (variantes
+  d'art `_ns` / `_eo` / `_both`) et la **vanne** son art dédié `logic_vanne_collisionneur_<dir>_<0|1>` (v2.8,
+  repli sur `logic_vanne`). (3) **COLLISIONNEUR — conso OSCILLANTE + séquence manuelle** : la puissance n'est
+  plus fixe, c'est une **sinusoïde de période 600 s** (`COLLIDER_START`) entre le plancher 1 MW et le plafond du
+  palier (même forme que les autres sigmoïdes) ; pendant les 10 min de démarrage l'oscillation est écrasée sur
+  le plancher puis prend son amplitude. Nouvel état **`ready`** : à la fin du démarrage la machine est PRÊTE mais
+  **n'émet AUCUN code** tant que le joueur n'a pas cliqué **« ▶ Lancer la séquence »** (nouveau bouton du
+  panneau, drapeau persisté `launched`). ⚠ **Changement de règle du 14.07** : une **PAUSE remet le démarrage à
+  ZÉRO** (et annule la séquence) — ce n'est plus un gel ; idem pour une **pénalité**. Un simple manque de courant,
+  lui, ne perd PAS le lancement (il fait juste reculer le démarrage). (4) **ÉLÉVATEUR — mode de répartition au
+  choix** : `game.elevatorMode` (persisté, défaut `priority`) + helper `elevatorAllocate(dems, budget, mode)` →
+  **prioritaire** (ordre strict constr. → sortants → intrants, comportement d'avant), **équitable** (parts égales
+  entre les catégories qui demandent, résidu redistribué en 3 passes) ou **proportionnel** (prorata). Switch
+  3 boutons dans le panneau Élévateur. (5) **ACTIONNEUR** : le **sens disparaît** de son panneau (la mécanique
+  n'a JAMAIS utilisé `actDir` — il lit déjà l'OU de ses 4 faces) et la **polarité par défaut s'inverse** :
+  **signal 0 → bâtiment DÉSACTIVÉ** (il tourne quand le signal vaut 1). Libellés du sélecteur devenus explicites
+  (« 0 → désactivé » / « 1 → désactivé »). Migration < 31 : `actInvert` retourné sur tous les actionneurs
+  existants (les deux chemins de chargement). (6) **ANNULER UN REMBLAI** : helper `isFilledTile` (tuile dont
+  `baseTerrain === 'water'` comblée par le joueur) ; toucher une telle tuile VIDE ouvre le panneau d'extension en
+  mode **annulation** → bouton « ↩ Annuler le remblai » (surface : la tuile redevient de la mer, le compteur
+  d'extensions est décrémenté et le coût de la DERNIÈRE extension rendu au port) / « ↩ Reboucher le tunnel »
+  (île 7 : aucun remboursement, la foreuse a été consommée). Refus si un bâtiment, un réseau ou un élément
+  logique s'y trouve encore. (7) **CARRÉS EMOJI → SPRITES** : les carrés de couleur `.ip-swatch` des en-têtes
+  (indiscernables d'un glyphe manquant) sont remplacés par de vrais sprites — **tuile de mer** pour l'extension,
+  terrain accidenté pour la réparation, cage pour l'élévateur, **sprite du Collisionneur** (ruine ou palier
+  réparé) pour son panneau. (8) **`he4` → « Hélium », `he3` → « Hélium 3 »** (`RES_SHORT` ; les LOCALES ne
+  contiennent pas ces clés → aucune réécriture par `applyToData`). (9) **« La distillerie bloque les tuyaux ? »**
+  → **NON, vérifié** : probe sur une vraie île — tuyau · tuyau · **distillerie** · tuyau · tuyau donne **UN SEUL
+  réseau** (`networkId` identique de part en part, règle de traversée 10.59, idem raffinerie), alors qu'un four à
+  charbon (aucune E/S tuyau) coupe bien le réseau. Aucun correctif : ce qui peut ressembler à un blocage, c'est
+  (a) la **fusion** qui additionne la demande des deux côtés sur UN débit (saturation plus rapide, visible dans
+  le panneau réseau) et (b) la distillerie **V2** qui exige de l'**oxygène**, gaz produit seulement par le
+  Séparateur d'Air et **non transitable** entre îles. (10) **15 NOUVEAUX BÂTIMENTS** (coûts/effets = `Classeur1.xlsx`,
+  art = pack v2.8 + les 6 sprites V2 « île 6 » livrés dès 13.59 et restés inertes) : **6 mines V4**
+  (`mine_fer_v4`/`mine_charbon_v4`/`carriere_v4`/`mine_cuivre_v4`/`mine_or_v4`/`mine_uranium_v4` — paliers des V3,
+  sigmoïde ×2 du V3 `0,0625 → 0,5`, forfait **100 alliage tungstène + 10 pièce de précision**, entrée **u30**
+  sauf or/uranium **u20** puisqu'ils sautent le V2 ; `carriere_v4` → art `mine_pierre_v4` via
+  `BLD_SPRITE_OVERRIDE`) ; **chaîne or/silicium/processeur V2** (`fonderie_or_v2` 18→144 kW,
+  `raffineur_silicium_v2` 36→288, `fab_processeur_v2` 288→2304 — **règle des V2 13.59** : pic V1 ×1,125 puis
+  plancher = pic/4 et plafond = pic×2, ratio 1→8) ; **chaîne nucléaire V2** (`broyeur_uranium_v2` 18→144,
+  **`centrale_enrichissement_v2`** 72→576 avec **−25 % de yellowcake (2 → 1,5) + 0,1 plutonium/s incorporé**,
+  **`centrale_nucleaire_v2`** — même moteur mais nouveau flag **`noHeat`** → **elle n'émet plus AUCUNE chaleur**,
+  ni tour ni conduit, et aucun trip possible faute de `heatCap`) ; **quantique** —
+  **`stabilisateur_quantique`** (nouveau flag `quantumStab`, 1/île, 8192 kW à plat au Nv.1 ; helper
+  `quantumStabFactor` = **0,95^(niveau+1)**, MULTIPLICATIF, appliqué au profil sigmoïde de TOUS les bâtiments de
+  son île → Nv.1 −5 %, Nv.2 −9,75 %, Nv.3 −14,3 % ; `bld.qStab` est relu par `nominalPower`/`minPower` donc les
+  plages « min → max » affichées suivent aussi ; un stabilisateur en pause / éteint par la logique / non câblé ne
+  stabilise rien, et le `min` sur plusieurs unités empêche tout empilement jusqu'à zéro), **`antenne_v2`**
+  (palier de l'antenne ; nouveau flag **`antRadius: 2`** → **24 cases influencées (5×5)** au lieu de 8, modes et
+  courbes d'amélioration INCHANGÉS ; la boucle d'antenne construit désormais ses offsets depuis le rayon) et
+  **`usine_moteur_quantique`** (île 6 ; sigmoïde **4096 → 32768 kW** = pic 32 MW, chaleur « règle habituelle »
+  `HEAT_PER_MW × MW consommés`, recette 1 ordi quantique + 1 élém. moteur + 10 pièce précision + 15 câble supra
+  + **8192 azote** → **0,1 `moteur_quantique`/s**). **Nouvelle ressource `moteur_quantique`** (t5, porteur route,
+  icône générée par recoloration d'`item_ordinateur_quantique` — le pack v2.8 n'en livre pas). (11)
+  **BRANCHEMENTS DES PUZZLES ENFIN RÉELS** : les ids « préparés » du 14.01 pointaient dans le vide → nœud **39**
+  (P1, 100 confirmations) = chaîne or/silicium/processeur V2 (l'`mine_or_v2` prévu n'existe pas : l'or saute le
+  V2 par design), nœud **41** (P2) = chaîne nucléaire V2, nœud **43** (P3) = stabilisateur + antenne V2 +
+  **usine moteur quantique** (l'`usine_moteur_nuc_v2` prévu est remplacé : l'Excel demande le moteur QUANTIQUE)
+  + les 6 mines V4. **Plus aucun id de déblocage orphelin** (assertion E2E). Coûts de réparation du Collisionneur
+  repris de l'Excel : **P1** 20 000 alliage + 20 000 supra + 10 000 élém. moteur, **P2** 1 000 ordi quantique +
+  30 000 pièce précision, **P3** 1 000 moteur quantique. (12) **3 valeurs de l'Excel corrigées sur l'existant** :
+  **Extracteur Souterrain 0 → 512 kW**, **Séparateur Cryogénique pic 1024 → 2048**, **Data Center 0 → 1024 kW**.
+  ⚠ **NON traité, signalé** : les sprites `mine_tungstene_v2/v3/v4` du pack restent inutilisés (la Mine Tungstène
+  n'a qu'un V1 ; créer sa chaîne complète n'était pas demandé) ; l'Excel écrit « 8196 kW », implémenté **8192**
+  (échelle binaire du jeu, comme la foreuse en 14.06). Validé : `node --check` (7 blocs) + Chromium **41
+  assertions, 0 erreur JS** — les 15 defs + leurs sprites, barèmes exacts (mines V4, forfaits, recettes,
+  puissances de l'Excel), 0 id orphelin ; **stabilisateur par le moteur réel** (facteurs 0,95 / 0,9025, pic
+  1024 → 972,8 kW, sans effet en pause) ; **antenne 8 → 24 cases** ; **Collisionneur** (1 200 ticks : état
+  `ready` sans code émis, oscillation plancher↔plafond sur une période complète, lancement → codes, pause ET
+  pénalité → démarrage à zéro + séquence annulée) ; les **3 modes d'élévateur** (10·5·0 / 5·5·5 / 5·5·5 +
+  redistribution du résidu 2·6,5·6,5) ; **actionneur** (signal 0 → désactivé, polarité inversée → ne coupe plus) ;
+  détection de tuile remblayée. Build 289→290.
   Changement 14.07 : **PATCH 5 retours — raccord route de la foreuse, barème de creusement ré-ancré sur
   la DISTANCE à l'élévateur, Collisionneur (vanne déplacée + sprite réparé + interrupteur), double badge
   de pause.** `SAVE_VERSION` INCHANGÉ (`collider.enabled` = champ additif ; absent = allumé).
