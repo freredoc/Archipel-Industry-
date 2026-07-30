@@ -17,7 +17,37 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 295`, `GAME_VERSION = 'Alpha 14.13'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 296`, `GAME_VERSION = 'Alpha 14.14'`, `SAVE_VERSION = 31`.**
+  Changement 14.14 : **LA VRAIE CAUSE DU GEL — une FAUTE DE FRAPPE de mon code du 14.08 tuait le tick
+  de toute île possédant une CENTRALE NUCLÉAIRE.** `SAVE_VERSION` INCHANGÉ (1 ligne de correctif).
+  Le testeur a fourni son EXPORT de sauvegarde : chargé tel quel, il donne l'exception en 9 secondes —
+  `ReferenceError: b is not defined` dans `tickIsland`, **sur les îles 2, 3, 4, 5 ET 6**. La ligne
+  fautive est celle que j'ai écrite au 14.08 pour le flag `noHeat` de la Centrale V2 :
+  `bld.heatEmit = b.noHeat ? …` — or dans la boucle `for (const nu of nucList)` la définition
+  s'appelle **`nb`** (`const nb = BUILDINGS[bld.id]`), **`b` n'existe pas dans ce scope**. Corrigé en
+  `nb && nb.noHeat`. **Pourquoi je ne l'ai pas trouvé en 4 passages** : la ligne n'est atteinte QUE
+  s'il y a une centrale sur l'île → **une partie neuve ne plante jamais**, et toutes mes reproductions
+  (îles peuplées à la main, balayage 7 îles, parcours de MAJ) posaient des bâtiments 1×1 — la centrale
+  est **2×2** et mes forgeurs la SAUTAIENT (`if (b.size && …) continue;`). Le testeur me l'avait dit
+  dès le départ : « ma save depuis l'update ne fonctionne plus », partie neuve OK. **Mécanique du
+  gel** : `onTick` avorte à la 1re île qui a une centrale → l'exception remonte à `frame`, dont le
+  `try/catch` la mange → **`draw()` n'est JAMAIS atteint**, à chaque frame. D'où, exactement : écran
+  noir (le canvas est effacé au 1er `layout()` et plus rien ne le repeint), **chronomètre figé à
+  43:28:36 sur toutes les captures**, et « je ne peux plus zoomer, toucher les bâtiments ». ⚠ **Ma
+  théorie du 14.13 (rattrapage hors-ligne bloqué) N'ÉTAIT PAS son cas** : sa save a
+  **`offlineEnabled: false`** — le rattrapage ne tourne même pas chez lui. Les filets du 14.13
+  (soupape rAF, bascule en extrapolation) restent utiles mais ne visaient pas la bonne panne ; en
+  revanche l'**isolation par île du 14.13 fait sa preuve ici** : avec elle, la même faute ne gèle plus
+  le jeu, elle arrête UNE île et lève un toast rouge. **Durcissement ajouté** : `step()` de
+  `runCatchUp` enveloppe `onTick`/`tickShips` dans un `try/catch` — une exception ne peut plus tuer la
+  chaîne `setTimeout` (ce qui laisserait `catchingUp` vrai à vie = gel définitif, y compris après
+  relance). Validé : `node --check` (7 blocs) + **la sauvegarde RÉELLE du testeur** (711 bâtiments,
+  7 îles, 156 516 ticks) rejouée par le vrai chemin de chargement : **0 erreur, 0 `tickErrors`,
+  canvas 100 %, horloge qui avance, zoom qui répond, les 7 onglets d'île en 2 tours tous dessinés, et
+  les ports qui bougent** (22 assertions) ; + **suite dédiée** (8 assertions) qui pose une centrale V1
+  et une V2 et vérifie 0 exception, V1 émettant 2,04 MJ/s et **V2 exactement 0** — suite dont j'ai
+  **vérifié qu'elle ÉCHOUE (4 KO) si je remets la ligne fautive** ; + non-régression 5 suites
+  (22 + 46 + 11 + 10 assertions). Build 295→296.
   Changement 14.13 : **LE GEL — le rattrapage hors-ligne pouvait bloquer le jeu DÉFINITIVEMENT.**
   `SAVE_VERSION` INCHANGÉ. Le vrai symptôme n'était ni le noir ni les sprites : « je ne peux plus
   zoomer, toucher les bâtiments… on dirait que c'est freeze ». **L'indice était sous mes yeux depuis
@@ -39,11 +69,24 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   dépasserait un **budget de gel de 8 s**, on repasse au mode « échauffon + extrapolation »
   (`simplify`) — le joueur retrouve la main en ~1 s au lieu de plusieurs minutes. L'option
   « Calcul hors-ligne simplifié » n'est PAS touchée : c'est un filet, pas un changement de défaut.
-  Validé : `node --check` (7 blocs) + Chromium **5 suites, 94 assertions, 0 erreur JS** dont une
+  **(3) ISOLATION PAR ÎLE — un gel ne peut plus être SILENCIEUX.** Retour affiné du testeur :
+  « ça part en couilles **1 seconde après le chargement initial** » = au TOUT PREMIER tick. Une
+  exception dans `tickIsland` remontait jusqu'à la boucle `frame` : `playTicks` n'était plus
+  incrémenté (d'où l'horloge figée **sur la valeur sauvegardée**), `draw()` n'était jamais atteint,
+  et `markDirty()` restait sans effet → écran noir + jeu qui ne répond plus, **sans le moindre
+  message**. Désormais `onTick` enveloppe CHAQUE île dans un try/catch : l'île fautive est isolée
+  (`game.tickErrors[isl]`), le reste du jeu continue de tourner et de se dessiner, et un **toast
+  rouge nomme l'île et l'erreur** (+ `console.error('Archipel tick error (île N)')`). ⚠ Ce n'est PAS
+  la cause racine — elle dépend de la sauvegarde du testeur, non reproduite en laboratoire (partie
+  synthétique « fin de jeu », 7 îles peuplées, changements d'île par les VRAIS onglets, 2 tours
+  complets : 0 erreur) — mais le jeu redevient jouable et le défaut devient DIAGNOSTICABLE.
+  Validé : `node --check` (7 blocs) + Chromium **5 suites, 97 assertions, 0 erreur JS** dont une
   suite dédiée qui **REPRODUIT le gel** (les `setTimeout` sont avalés après 2 tranches, comme une
   WebView qui passe en arrière-plan) : `catchingUp` constaté à `true` avec le jeu figé, puis la
   soupape le clôt, **l'horloge repart, le canvas est repeint et le zoom répond de nouveau** ; +
-  un rattrapage de 8 h qui se termine en **183 ms** au lieu de plusieurs minutes. Build 294→295.
+  un rattrapage de 8 h qui se termine en **185 ms** au lieu de plusieurs minutes ; + une **île
+  sabotée** (tuile qui lève à la lecture) : l'exception est capturée et attribuée, **l'horloge
+  continue d'avancer et le canvas continue d'être peint**. Build 294→295.
   Changement 14.12 : **le chien de garde du 14.10 provoquait LUI-MÊME le clignotement.** `SAVE_VERSION`
   INCHANGÉ (rendu seul). Retour testeur sur le build 292 : « **il y a animation et ça repart au noir
   après 1 seconde** » — ma détection de canvas vide battait en boucle. Deux défauts, tous deux dans
