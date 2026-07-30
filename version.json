@@ -1,8 +1,8 @@
 {
-  "build": 293,
-  "version": "Alpha 14.11",
+  "build": 294,
+  "version": "Alpha 14.12",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #282 from freredoc/claude/infinite-network-patches-sr79h0"
+  "notes": "Merge pull request #283 from freredoc/claude/infinite-network-patches-sr79h0"
 }

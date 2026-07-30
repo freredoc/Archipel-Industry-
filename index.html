@@ -6934,8 +6934,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 293;
-const GAME_VERSION = 'Alpha 14.11';
+const GAME_BUILD = 294;
+const GAME_VERSION = 'Alpha 14.12';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -23488,6 +23488,11 @@ function App() {
     // est vide (une vue d'île, même 100 % océan, a de la texture). Si c'est le cas alors qu'on
     // devrait voir quelque chose, on force un relayout + redessin, puis on RECRÉE l'élément
     // canvas (le seul remède quand la surface est morte).
+    // « Vide » = RIEN n'a été peint. `draw()` commence par un `clearRect` (donc alpha 0) : si tous
+    // les points échantillonnés ont encore alpha 0, aucune primitive n'a abouti. ⚠ On ne teste PAS
+    // « tous les pixels identiques » : une vue 100 % océan, ou un terrain rendu en couleur de repli,
+    // est UNIFORME mais parfaitement dessinée (alpha 255) — la juger vide déclenchait une recréation
+    // de canvas… qui efface l'écran, d'où le clignotement « image pendant 1 s puis noir ».
     const canvasLooksBlank = () => {
       const c = canvasRef.current;
       if (!c || !c.width || !c.height) return false; // pas encore dimensionné : on ne conclut pas
@@ -23498,10 +23503,7 @@ function App() {
         return false; // canvas « tainted » ou contexte indisponible : on ne conclut pas
       }
       const step = 4 * Math.max(1, Math.floor(px.length / 4 / 400)); // ~400 points suffisent
-      const r0 = px[0], g0 = px[1], b0 = px[2];
-      for (let i = 0; i < px.length; i += step) {
-        if (px[i] !== r0 || px[i + 1] !== g0 || px[i + 2] !== b0) return false;
-      }
+      for (let i = 0; i < px.length; i += step) if (px[i + 3] !== 0) return false;
       return true;
     };
     let blankStrikes = 0,
@@ -23516,9 +23518,10 @@ function App() {
       blankStrikes++;
       if (blankStrikes === 1) {
         // 1re fois : ça peut être une frame ratée, ou des bitmaps jetés → on purge le cache
-        // d'images et on redemande un dessin.
+        // d'images et on redemande un dessin. ⚠ PAS de `layout()` ici : réassigner canvas.width
+        // EFFACE le canvas, ce qui provoquerait justement l'écran noir qu'on cherche à éviter
+        // (les dimensions n'ont de toute façon pas changé).
         resetSpriteCaches();
-        layout();
         g.dirty = true;
         start();
         return;
