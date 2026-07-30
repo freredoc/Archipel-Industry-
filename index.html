@@ -6917,8 +6917,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 291;
-const GAME_VERSION = 'Alpha 14.09';
+const GAME_BUILD = 292;
+const GAME_VERSION = 'Alpha 14.10';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -23460,6 +23460,58 @@ function App() {
       const x = c.getContext('2d');
       return !!x && !(x.isContextLost && x.isContextLost());
     };
+    // ── CANVAS NOIR : détection + remontage (retour testeur « l'affichage des îles est soit noir
+    // soit bloqué ») ────────────────────────────────────────────────────────────────────────────
+    // Une WebView Android peut perdre la surface de rendu du canvas (pression mémoire, retour
+    // d'arrière-plan, reset GPU). Deux pièges :
+    //  • `contextlost`/`isContextLost()` n'existent PAS sur un contexte 2D avant Chromium 105 →
+    //    `ctxValid()` répond « valide », le jeu dessine dans le vide et la vue reste NOIRE à vie ;
+    //  • même quand l'événement existe, il n'est pas toujours émis.
+    // On teste donc le RÉSULTAT : un canvas dont TOUS les pixels échantillonnés sont identiques
+    // est vide (une vue d'île, même 100 % océan, a de la texture). Si c'est le cas alors qu'on
+    // devrait voir quelque chose, on force un relayout + redessin, puis on RECRÉE l'élément
+    // canvas (le seul remède quand la surface est morte).
+    const canvasLooksBlank = () => {
+      const c = canvasRef.current;
+      if (!c || !c.width || !c.height) return false; // pas encore dimensionné : on ne conclut pas
+      let px;
+      try {
+        px = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      } catch (_) {
+        return false; // canvas « tainted » ou contexte indisponible : on ne conclut pas
+      }
+      const step = 4 * Math.max(1, Math.floor(px.length / 4 / 400)); // ~400 points suffisent
+      const r0 = px[0], g0 = px[1], b0 = px[2];
+      for (let i = 0; i < px.length; i += step) {
+        if (px[i] !== r0 || px[i + 1] !== g0 || px[i + 2] !== b0) return false;
+      }
+      return true;
+    };
+    let blankStrikes = 0,
+      canvasResets = 0;
+    const checkBlankCanvas = () => {
+      const g = gameRef.current;
+      // On ne juge pas pendant le splash, le rattrapage hors-ligne ou le choix de mode : l'écran
+      // est légitimement vide à ces moments-là.
+      if (g.catchingUp || needModeRef.current || document.getElementById('splash')) { blankStrikes = 0; return; }
+      if (!g.islands || !g.islands[g.currentIsland]) { blankStrikes = 0; return; }
+      if (!canvasLooksBlank()) { blankStrikes = 0; return; }
+      blankStrikes++;
+      if (blankStrikes === 1) {
+        // 1re fois : ça peut être une frame ratée → on redemande simplement un dessin.
+        layout();
+        g.dirty = true;
+        start();
+        return;
+      }
+      // Toujours vide au coup suivant → la surface est morte : on recrée le canvas.
+      if (canvasResets < 8) {
+        canvasResets++;
+        blankStrikes = 0;
+        stop();
+        setCanvasKey(k => k + 1);
+      }
+    };
     const frame = () => {
       // CORPS PROTÉGÉ : une exception (notamment dans draw()) ne doit JAMAIS empêcher la
       // reprogrammation de la frame. Sinon la boucle de rendu MEURT et la vue de l'île gèle
@@ -23643,6 +23695,9 @@ function App() {
           draw();
         }
         start();
+        // Cause n°1 du canvas noir : la WebView a lâché sa surface pendant l'arrière-plan. On
+        // vérifie donc IMMÉDIATEMENT que le dessin a bien produit quelque chose.
+        requestAnimationFrame(() => checkBlankCanvas());
       });
       if (gg.lastActiveTs && !gg.catchingUp) runCatchUp((Date.now() - gg.lastActiveTs) / 1000, finishResume);else finishResume();
     };
@@ -23660,18 +23715,30 @@ function App() {
     document.addEventListener('visibilitychange', onHide);
     window.addEventListener('pagehide', onHide);
     const onCtxLost = e => {
-      e.preventDefault();
+      e.preventDefault(); // sans ça, le contexte n'est jamais restauré
       stop();
       setCanvasKey(k => k + 1);
     };
-    if (canvasEl) canvasEl.addEventListener('contextlost', onCtxLost);
+    // Le navigateur a rendu le contexte : on refait le layout (transform DPR) et on redessine.
+    const onCtxRestored = () => {
+      layout();
+      gameRef.current.dirty = true;
+      start();
+    };
+    if (canvasEl) {
+      canvasEl.addEventListener('contextlost', onCtxLost);
+      canvasEl.addEventListener('contextrestored', onCtxRestored);
+    }
     // Chien de garde : si la boucle de rendu s'est arrêtée (perte de contexte GPU, retour
     // d'arrière-plan…), on la relance vite. Seuil abaissé (1,2 s / vérif 0,6 s) pour que la vue
     // ne reste pas figée plusieurs secondes. (Le try/finally de `frame` empêche déjà la mort
     // par exception ; ce garde couvre les arrêts hors-exception.)
+    let beatN = 0;
     const beat = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
       if (performance.now() - (gameRef.current.lastFrameTs || 0) > 1200) start();
+      // Une fois sur 5 (~3 s) : la vue est-elle RÉELLEMENT dessinée ? (cf. canvasLooksBlank)
+      if (++beatN % 5 === 0) checkBlankCanvas();
     }, 600);
     return () => {
       stop();
@@ -23680,7 +23747,10 @@ function App() {
       window.removeEventListener('pageshow', onResume);
       document.removeEventListener('visibilitychange', onHide);
       window.removeEventListener('pagehide', onHide);
-      if (canvasEl) canvasEl.removeEventListener('contextlost', onCtxLost);
+      if (canvasEl) {
+        canvasEl.removeEventListener('contextlost', onCtxLost);
+        canvasEl.removeEventListener('contextrestored', onCtxRestored);
+      }
     };
   }, [canvasKey]);
   useEffect(() => {
