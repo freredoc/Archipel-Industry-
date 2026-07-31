@@ -50,6 +50,76 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   0 `tickErrors`, horloge qui avance ; + **dump de l'inventaire RÉEL rendu** confirmant les groupes :
   T2 = `steel, cable, ref. Si, tungstène, oxygène, azote, gaz foss., U235 fuel`, T4 = `… plutonium,
   all.tungst.`, T5 = plus aucune trace des 4 ressources déplacées/supprimées.
+  (4) **MANCHES SYNCHRONISÉES** (demande joueur : « le Data Center n'a pas la même vitesse… il
+  faudrait qu'il envoie autant de données en même temps que le Data Center et qui suivent son
+  amélioration »). Avant, le Collisionneur retirait une saveur à **CHAQUE tick** pendant que le Data
+  Center gardait la sienne **4 à 16 ticks** → émetteurs DÉSYNCHRONISÉS, aucune « manche » observable
+  (un côté clignotait, l'autre était figé). Désormais **une MANCHE = un tirage SIMULTANÉ des deux
+  émetteurs**, à la **cadence du Data Center** (`co.round` incrémenté à chaque tirage). Sans Data
+  Center, **aucune manche n'est tirée** et les DEUX émetteurs restent muets (face VALIDE à 0) → le
+  joueur voit tout de suite ce qui manque. Nouvelle ligne **« Cadence des manches »** dans la fiche
+  du Collisionneur (`1 toutes les N s · Data Center Nv.X`). (5) **UN SEUL verdict par MANCHE**
+  (`co.roundDone`) : les codes étant maintenant TENUS plusieurs ticks, une vanne laissée ouverte
+  était jugée à chaque tick → une manche gagnante rapportait jusqu'à **16 confirmations** et une
+  manche perdue coûtait jusqu'à **16 pénalités** (constaté sur la save du joueur : 2 pénalités
+  d'affilée pour un seul code du Data Center). (6) **`DC_RATE_CAP` 4 → 1** : un tick ne peut porter
+  qu'UNE manche, donc au-delà de 1 manche/tick le débit était **purement perdu** — les niveaux 5, 6
+  et 7 du Data Center donnaient EXACTEMENT la même cadence (1/s) pour un coût croissant, soit
+  **2 améliorations mortes**. Le surplus devient le **multiplicateur de RÉCOMPENSE** déjà prévu par
+  l'intention d'origine (Nv.6 ×2, Nv.7 ×4, Nv.8 ×8) → chaque niveau compte. ⚠ **Conséquence de
+  rythme assumée** : au Nv.1 le puzzle avance à 1 manche/16 s (avant : le Collisionneur spammait
+  chaque tick, ~2 confirmations/s) → **P1 (100 confirmations) demande d'améliorer le Data Center**,
+  ce qui est exactement le but recherché. Validé : `node --check` (7 blocs) + Chromium **7 + 11
+  assertions, 0 erreur JS** — cadence exacte par niveau (16 s / 4 s / 1 s, récompense ×1/×2/×4/×8),
+  **aucun code ne change hors d'une manche**, comparateur sur α → **0 pénalité sur 4000 ticks** vs
+  comparateur sur γ → pénalités (le défaut de câblage reste puni), vanne forcée ouverte 160 ticks →
+  **10 verdicts pour 10 manches** (avant : 160) ; + non-régression complète 14.15/14.16 et boot de
+  la save du joueur (0 `tickErrors`, canvas peint). ⚠ **CAUSE RÉELLE de SES pénalités, re-diagnostiquée
+  sur sa 2ᵉ save** (`penalties: 5`, `confirms: 3`, Data Center **Nv.3**) : il a corrigé l'émetteur du
+  **Data Center** (face **N = α**) mais celui du **Collisionneur est TOUJOURS sur OUEST = γ**
+  (constant 0 au palier 1) → son XNOR calcule `XNOR(0, dc) = NON(dc)`, la vanne s'ouvre donc
+  exactement quand le Data Center émet 0, et le verdict est alors un pur tirage à pile ou face sur
+  le code du Collisionneur. La désynchronisation n'était PAS la cause de ses pénalités (un
+  comparateur correct n'en prenait aucune, même désynchronisé) — mais elle rendait le puzzle
+  illisible, et la correction est bonne en soi.
+  (7) **LE DATA CENTER DOIT ÊTRE EN SERVICE POUR CALCULER** (question du joueur : « est-ce que
+  mettre en pause le data center fait quelque chose ? » — réponse : **non, et c'était un bug**).
+  `processCollider` ne testait que l'**EXISTENCE** du bâtiment (`findDataCenter`) : le mettre en
+  PAUSE ne changeait RIEN au puzzle alors qu'il cessait de consommer ses intrants ET ses 1024 kW →
+  **le puzzle tournait gratuitement**. Nouveau helper **`dataCenterState(tile)`** →
+  `absent` / `paused` / `logic` (actionneur) / `damaged` / `starved` (intrants ou courant) / `on` ;
+  seul `on` tire des manches. ⚠ `active` est posé par la boucle bâtiment, donc lu avec **un tick de
+  retard** (`processCollider` tourne avant) — imperceptible, et `undefined` (jamais tické) vaut
+  « en service ». Corollaire **voulu** : un Data Center à l'arrêt rend les DEUX émetteurs muets →
+  **aucune pénalité n'est possible** (vérifié : vanne forcée ouverte 500 ticks → 0 pénalité), et la
+  fiche du Collisionneur **nomme la cause** (nouvelle ligne « Data Center » + `DC_STATE_LABEL`).
+  Validé : `node --check` (7 blocs) + Chromium **8 + 12 assertions, 0 erreur JS** — pause / coupure
+  logique / manque d'intrants → 0 manche et émetteurs muets, retour en service → les manches
+  repartent ; + non-régression 14.15/14.16 (comparateur correct : **0 pénalité sur 3000 ticks**) et
+  boot de la 4ᵉ save du joueur. ⚠ **Sa 4ᵉ save re-confirme le diagnostic** : Data Center dé-pausé,
+  circuit logique **INCHANGÉ**, émetteur du Collisionneur **toujours sur OUEST = γ** → 6ᵉ pénalité.
+  (8) **LE CÂBLE LOGIQUE NE SE RACCORDE PLUS À UNE FACE MUETTE** (demande joueur : « le câble
+  logique ne doit pas connecter tant qu'on n'a pas débloqué le signal β et γ, je pense aux sprites
+  aussi »). C'est le correctif qui rend l'erreur **IMPOSSIBLE** au lieu de seulement lisible : au
+  palier 1, β (SUD) et γ (OUEST) sont constants à 0 ; un comparateur câblé dessus compare 0 avec 0,
+  répond « égal » en permanence et fait pénaliser — c'est exactement ce que le joueur a reproduit
+  **3 saves d'affilée**. Deux helpers module : **`emitterFaceCarries(game, isl, dir)`** (dir 3 =
+  VALIDE toujours exploitable, sinon `dir < colliderBits(palier)`) et **`emitterFaceFromStep(dr, dc)`**
+  (le pas va du CÂBLE vers l'émetteur → la face est la direction OPPOSÉE, index `DIRS4 = [N,S,O,E]`).
+  Le masque de connexion du câble logique les consulte : une face muette n'est plus raccordée → le
+  fil apparaît **visiblement détaché**. ⚠ Purement VISUEL côté mécanique (l'émetteur n'écrivait déjà
+  que des 1, donc une face muette ne pilotait rien) : aucune régression de simulation, et le
+  raccordement **réapparaît tout seul** quand le palier débloque β puis γ. (9) **Sprites de
+  l'émetteur** : le pack fournit un écran par SIGNAL (`logic_emetteur_alpha/beta/gamma` + `_on`) et
+  un écran VIDE (`logic_emetteur_inactif`) — jusqu'ici le draw affichait `..._alpha` EN PERMANENCE,
+  même émetteur à l'arrêt. Désormais : **écran éteint quand l'émetteur est muet** (face VALIDE à 0 :
+  pas de Data Center, en pause, sans intrants…), sinon **le signal du palier courant** (P1 → α,
+  P2 → β, P3 → γ) **allumé quand son bit vaut 1** → le joueur voit le code changer sur la carte.
+  Validé : `node --check` (7 blocs) + Chromium **10 + 6 assertions, 0 erreur JS** — mapping des
+  4 pas exact (N↔S, O↔E), faces porteuses par palier (P1 `α+VALIDE`, P2 `+β`, P3 `+γ`), masque de
+  raccordement **`SO` en P1 → `NSO` en P2 → `NESO` en P3** (la face γ, celle du fil mal branché du
+  joueur, est REFUSÉE en P1 et acceptée en P3), 7 variantes de sprite présentes ; + non-régression
+  14.15/14.16 (comparateur correct : **0 pénalité sur 3000 ticks**) et boot de la save.
   Changement 14.15 : **COMPARATEUR DU COLLISIONNEUR — « que des erreurs avec un comparateur normal ».**
   `SAVE_VERSION` INCHANGÉ (aucun champ persisté ajouté ; `lastVerdict` transitoire). Le testeur a
   fourni sa save : **palier 1, 3 pénalités, 0 confirmation**. **CAUSE RACINE (diagnostiquée sur sa
