@@ -17,7 +17,39 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 297`, `GAME_VERSION = 'Alpha 14.15'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 298`, `GAME_VERSION = 'Alpha 14.16'`, `SAVE_VERSION = 31`.**
+  Changement 14.16 : **suppression d'`information_quantique` + 3 ressources retriées.** `SAVE_VERSION`
+  INCHANGÉ (purge idempotente au chargement, aucun champ ajouté). (1) **`information_quantique`
+  SUPPRIMÉE** (demande utilisateur, suite au signalement du 14.15 : elle n'avait **aucun consommateur**
+  dans tout le jeu et s'accumulait sans usage — 325 au port du testeur). Retirée des **4** points de
+  déclaration : sprite `item_information_quantique`, `RES_SHORT`, `RES_TIER`, `CARRIER_BY_RES` — et
+  la clé `outputs` du **Data Center**, qui **n'a donc plus AUCUNE sortie**. ⚠ **Le Data Center garde
+  tout son rôle** : il est le **2ᵉ émetteur du puzzle du Collisionneur** (il publie `collider.dcCode`),
+  et `processCollider` ne teste que son EXISTENCE (`findDataCenter`), jamais sa production → **le
+  puzzle est intact** (vérifié). Ses intrants (processeur 1 + azote 1024 + He4 8) et ses 1024 kW sont
+  **conservés** : ils deviennent le coût de fonctionnement du puzzle (les retirer serait un choix
+  d'équilibrage non demandé). **2 conséquences vérifiées, assumées** : (a) sans `outputs`, il sort
+  d'`eligible` → **l'antenne ne le booste plus** (elle n'aurait rien à booster) ; (b) il reste
+  **raccordé à la ROUTE** (via l'intrant `processeur`, carrier road) **et au TUYAU** (azote/He4), et
+  **continue de consommer** — le garde `if (!effOutputs && power <= 0)` ne le saute pas puisque
+  `power = 1024 > 0`. (2) **`REMOVED_RESOURCES`** (nouvelle constante module, à côté de `RES_TIER`) +
+  **purge au chargement** dans `loadSave` : sans elle, le stock hérité restait dans `game.port` et
+  **l'inventaire du HUD l'affichait cassé** — la boucle `for (const k in resources) if (… > 0.5)
+  invSet.add(k)` ajoute TOUTE ressource en stock, or la clé n'a plus ni sprite, ni nom court, ni tier
+  (elle serait tombée en T5 avec un libellé `undefined`). Purge idempotente, réutilisable pour toute
+  future suppression. (3) **3 ressources retriées** (demande utilisateur) : **minerai de tungstène
+  `tungstene` t5 → t2**, **`gaz_fossiles` t5 → t2**, **`alliage_tungstene` t5 → t4**. ⚠ L'ordre de
+  DÉCLARATION de `RES_TIER` vaut **place fixe** dans l'inventaire (`RES_ORDER_RANK`) → les 3 lignes ont
+  été **DÉPLACÉES** dans leur nouveau bloc (et pas seulement ré-étiquetées), sinon elles auraient gardé
+  un rang de fin de liste. ⚠ Piège rencontré : `gaz_fossiles` s'est retrouvé **en double** (t2 + t5
+  résiduel) — en JS **la dernière clé gagne**, il serait resté en t5 ; doublon retiré, contrôle
+  automatique ajouté au test (46 entrées, 0 doublon). Validé : `node --check` (7 blocs) + Chromium
+  **6 assertions, 0 erreur JS** sur la **save RÉELLE du testeur** — `information_quantique` purgée du
+  port (325 → absente), **aucune entrée « info.quant. » ni « undefined » dans l'inventaire**, Data
+  Center sans sortie mais toujours raccordé route+tuyau, **Data Center émettant toujours son code**,
+  0 `tickErrors`, horloge qui avance ; + **dump de l'inventaire RÉEL rendu** confirmant les groupes :
+  T2 = `steel, cable, ref. Si, tungstène, oxygène, azote, gaz foss., U235 fuel`, T4 = `… plutonium,
+  all.tungst.`, T5 = plus aucune trace des 4 ressources déplacées/supprimées.
   Changement 14.15 : **COMPARATEUR DU COLLISIONNEUR — « que des erreurs avec un comparateur normal ».**
   `SAVE_VERSION` INCHANGÉ (aucun champ persisté ajouté ; `lastVerdict` transitoire). Le testeur a
   fourni sa save : **palier 1, 3 pénalités, 0 confirmation**. **CAUSE RACINE (diagnostiquée sur sa
