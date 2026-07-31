@@ -17,7 +17,39 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 300`, `GAME_VERSION = 'Alpha 14.17'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 301`, `GAME_VERSION = 'Alpha 14.18'`, `SAVE_VERSION = 31`.**
+  Changement 14.18 : **He3 ×2 par palier + « la tour bloque le tuyau » DIAGNOSTIQUÉ SUR LA SAVE DU
+  JOUEUR.** `SAVE_VERSION` INCHANGÉ (`bld.waterFrom`/`waterAvail` transitoires).
+  (1) **`COLLIDER_HE3` ×8 → ×2 par palier** (demande) : **P1 1 /s · P2 2 /s · P3 4 /s** (était
+  1/8/64). En ×8, le palier 3 demandait 64 He3/s alors que le Séparateur Cryogénique n'en sort que
+  0,01/s de base (×2/niveau) → il fallait le monter ~6 niveaux de plus rien que pour suivre.
+  (2) **« LA TOUR AÉRORÉFRIGÉRANTE BLOQUE LE TUYAU » — RÉFUTÉ, sur la save du joueur elle-même.**
+  Sonde sur les **23 tours** de ses 7 îles : **chaque tour a TOUS ses côtés tuyau sur LE MÊME
+  réseau** (0 tour non fusionnée), et il n'existe dans TOUTE la partie **AUCUN endroit** où deux
+  réseaux tuyau différents se font face de part et d'autre d'une tuile. La tour ne coupe rien : la
+  passe de fusion « traversée » (10.59) la traverse bien, elle consomme de l'eau donc
+  `buildingConnectsCarrier(tour,'pipe')` est vrai. **LA VRAIE CAUSE, mesurée** : une seule tour est
+  à sec dans sa partie — **île 4, tour Nv.1 en (14,14)** — et elle est branchée sur le tuyau **RELIÉ
+  AU PORT**, donc elle lit le **stock du PORT**, qui est à **0** ; pendant ce temps **948 952 221
+  d'eau** dorment dans les CITERNES des tuyaux ISOLÉS de la MÊME île (île 5 : **10,6 milliards**
+  piégés, port à 0 ; île 2 : **83 milliards** piégés). Les deux sources sont DISTINCTES par design
+  (10.82 / 13.82) : un tuyau relié au port stocke AU PORT, un tuyau isolé garde sa citerne — mais
+  RIEN ne le disait, d'où « la tour bloque le tuyau ». (3) **Correctif de DIAGNOSTIC** : nouvelle
+  ligne **« Puise dans »** dans la fiche de la tour → **« le PORT · <stock> »** ou **« la citerne du
+  tuyau · <stock> »**, en ROUGE si le stock est vide. Le joueur voit immédiatement que c'est le PORT
+  qui est à sec, pas le tuyau qui est coupé. `bld.waterFrom` / `bld.waterAvail` posés par
+  `processHeat`. ⚠ **Aucun changement de mécanique** : c'est de l'affichage.
+  ⚠ **PISTE OUVERTE (non traitée, à arbitrer)** : l'eau (et tout liquide) s'accumule **sans plafond
+  et sans usage** dans la citerne d'un tuyau isolé, invisible depuis l'inventaire. C'est ce qui rend
+  le diagnostic si difficile. Options possibles : plafonner la citerne d'un réseau isolé, l'afficher
+  dans une alerte, ou permettre un déversement vers le port. Décision de game design, non prise ici.
+  Validé : `node --check` (7 blocs) + Chromium **7 suites, 112 assertions, 0 KO, 0 erreur JS**, dont
+  la **save RÉELLE du joueur rejouée** (barème 1/2/4, les 23 tours savent d'où elles puisent, la
+  tour à sec est bien identifiée « PORT · 0 », inventaire de l'eau piégée par île) ; i18n en/es/de.
+  ⚠ **Outil réutilisable créé** : `scratchpad/decode.js` décode un export `ARCHv1:` (LZW+base64) en
+  JSON, et `loadsave.js` le rejoue par le VRAI chemin de chargement — indispensable pour diagnostiquer
+  un retour joueur sur sa partie.
+- **État précédent : `GAME_BUILD = 300`, `GAME_VERSION = 'Alpha 14.17'`, `SAVE_VERSION = 31`.**
   Changement 14.17 : **PATCH 9 retours joueur — He3 du Collisionneur, cadence du Data Center, pause
   sur déficit, illimité par île, hors-ligne, conduit illimité, tour/tuyau, port au souterrain.**
   `SAVE_VERSION` INCHANGÉ (aucun champ persisté ajouté : `co.halt`/`co.want`/`co.he3Need`,
