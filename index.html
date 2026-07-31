@@ -6934,8 +6934,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 296;
-const GAME_VERSION = 'Alpha 14.14';
+const GAME_BUILD = 297;
+const GAME_VERSION = 'Alpha 14.15';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -8504,10 +8504,31 @@ function pickFlavorCode(palier, allowException) {
   const keys = Object.keys(set);
   return set[keys[Math.floor(Math.random() * keys.length)]];
 }
-// Bits d'un code, mappés sur les faces : dir 0 → α (poids fort), 1 → β, 2 → γ, 3 → INERTE (0).
+// Bits d'un code, mappés sur les faces : dir 0 → α (poids fort), 1 → β, 2 → γ,
+// 3 → VALIDE (14.15). La 4ᵉ face était « réservée, toujours 0 » : elle porte désormais un STROBE
+// qui vaut 1 dès que l'émetteur publie un code RÉEL. Sans lui, un code « 0 » (saveur `down`) et
+// « aucun code » sortaient tous deux 0000 sur les 4 faces → le joueur ne pouvait pas distinguer
+// « le Data Center dit 0 » de « le Data Center ne dit rien », et son comparateur concluait à
+// juste titre « égal » avant de se prendre une pénalité.
 function codeToBits(code) {
-  const s = String(code || '');
-  return [s[0] === '1' ? 1 : 0, s[1] === '1' ? 1 : 0, s[2] === '1' ? 1 : 0, 0];
+  const s = code == null ? '' : String(code);
+  return [s[0] === '1' ? 1 : 0, s[1] === '1' ? 1 : 0, s[2] === '1' ? 1 : 0, s.length ? 1 : 0];
+}
+// 14.15 — Comparaison des codes du Collisionneur et du Data Center.
+// Le joueur ne voit QUE les bits publiés par les émetteurs : la vanne doit donc comparer
+// EXACTEMENT ces bits, sur la largeur du palier, et JAMAIS les chaînes brutes. L'ancienne
+// comparaison `a === b2` pénalisait des cas où les bits émis étaient pourtant IDENTIQUES —
+// ex. P3, Collisionneur '100' vs Data Center de niveau 0 qui n'émet qu'un bit '1' : faces
+// 1000 des deux côtés, comparateur juste, chaînes différentes → pénalité imméritée.
+// Renvoie null quand un des deux côtés n'a pas de code : la manche est INVALIDE (ni confirmation
+// ni pénalité) — on ne peut pas demander de comparer à quelque chose qui n'est pas émis.
+function colliderCompare(a, b, palier) {
+  if (a == null || b == null) return null;
+  const x = codeToBits(a),
+    y = codeToBits(b);
+  const n = Math.max(1, Math.min(3, palier || 1));
+  for (let i = 0; i < n; i++) if (x[i] !== y[i]) return false;
+  return true;
 }
 // État par défaut du Collisionneur (une seule machine par partie : landmark 3×2 de l'île 6).
 function defaultColliderState() {
@@ -8715,13 +8736,14 @@ function processLogic(game, isl) {
     if (v && on != null) base[on] = 1;
   }
   // Multi-source par face (§1) : un bloc émetteur écrit UNE valeur par direction (pas un OU global).
-  // Mapping FIXE non orientable : dir 0 → α (poids fort), 1 → β, 2 → γ (poids faible), 3 → face inerte
-  // (toujours 0, réservée). Les bits proviennent de `bld.emitBits` (posé par le parent, §3.2) ; absent
-  // → tout à 0. N'écrit QUE des 1 (OR par réseau, comme les capteurs) → ne baisse jamais un réseau.
+  // Mapping FIXE non orientable : dir 0 → α (poids fort), 1 → β, 2 → γ (poids faible),
+  // 3 → VALIDE (14.15) : 1 tant que l'émetteur publie un code réel, 0 quand il est muet.
+  // Les bits proviennent de `bld.emitBits` (posé par le parent, §3.2) ; absent → tout à 0.
+  // N'écrit QUE des 1 (OR par réseau, comme les capteurs) → ne baisse jamais un réseau.
   for (const e of emitters) {
     const bits = e.bld.emitBits || [0, 0, 0, 0];
     for (let d = 0; d < 4; d++) {
-      const bit = d === 3 ? 0 : bits[d] ? 1 : 0; // face 3 explicitement inerte
+      const bit = bits[d] ? 1 : 0;
       if (!bit) continue;
       const nn = dirNet(e.r, e.c, d);
       if (nn != null) base[nn] = 1;
@@ -8750,7 +8772,13 @@ function processLogic(game, isl) {
       let out;
       // XOR/XNOR à >2 entrées = parité (nombre d'entrées à 1). NAND/NOR = négations d'AND/OR.
       const ones = ins.reduce((a, x) => a + (x ? 1 : 0), 0);
-      if (g.op === 'and') out = ins.length > 0 && ins.every(x => x) ? 1 : 0;else if (g.op === 'or') out = ins.some(x => x) ? 1 : 0;else if (g.op === 'nand') out = ins.length > 0 && ins.every(x => x) ? 0 : 1;else if (g.op === 'nor') out = ins.some(x => x) ? 0 : 1;else if (g.op === 'xor') out = ones % 2 === 1 ? 1 : 0;else if (g.op === 'xnor') out = ones % 2 === 0 ? 1 : 0;else out = ins.some(x => x) ? 0 : 1; // not = NON(OU des entrées)
+      // 14.15 — Une porte dont AUCUNE face d'entrée ne touche un réseau logique sort 0.
+      // Avant, seul le AND avait ce garde (`ins.length > 0`) : un NOT/NAND/NOR/XNOR non câblé
+      // sortait 1 en permanence. Deux NOT flottants → AND à 1 → OU à 1 → la VANNE restait
+      // OUVERTE en permanence et pénalisait à chaque tirage différent, alors que le joueur
+      // croyait avoir posé un comparateur correct (cas réel remonté sur le build 296).
+      // Une porte CÂBLÉE dont l'entrée vaut 0 est inchangée (ins = [0] → NOT sort bien 1).
+      if (!ins.length) out = 0;else if (g.op === 'and') out = ins.every(x => x) ? 1 : 0;else if (g.op === 'or') out = ins.some(x => x) ? 1 : 0;else if (g.op === 'nand') out = ins.every(x => x) ? 0 : 1;else if (g.op === 'nor') out = ins.some(x => x) ? 0 : 1;else if (g.op === 'xor') out = ones % 2 === 1 ? 1 : 0;else if (g.op === 'xnor') out = ones % 2 === 0 ? 1 : 0;else out = ins.some(x => x) ? 0 : 1; // not = NON(OU des entrées)
       g.gt.bld.logicOut = out;
       if (out && g.outNet != null) next[g.outNet] = 1;
     }
@@ -8801,14 +8829,24 @@ function processLogic(game, isl) {
       b2 = co.dcCode;
     if (a == null) continue;
     const isException = Object.prototype.hasOwnProperty.call(COLLIDER_EXCEPTIONS, a);
-    // Comparaison sur la LONGUEUR du code du Collisionneur (même nb de bits des deux côtés).
-    const ok = isException || b2 != null && a === b2;
-    if (ok) {
+    // 14.15 — Comparaison sur les BITS RÉELLEMENT ÉMIS (cf. colliderCompare), plus sur les chaînes.
+    const cmp = isException ? true : colliderCompare(a, b2, co.palier || colliderPalier(game));
+    // MANCHE INVALIDE : le Data Center n'émet aucun code (absent, pas encore calculé, démoli).
+    // Ses 4 faces sont à 0 — exactement comme une saveur « 0 » — donc un comparateur CORRECT
+    // conclut « égal » et ouvre la vanne. Pénaliser ici punissait le joueur pour un montage juste :
+    // on ne compte plus rien du tout (ni confirmation, ni pénalité).
+    if (cmp === null) {
+      co.lastVerdict = 'invalid';
+      continue;
+    }
+    if (cmp) {
       if (!game.techTree) game.techTree = {};
       const gain = Math.max(1, Math.round(co.dcReward || 1));
       game.techTree.colliderConfirms = (game.techTree.colliderConfirms || 0) + gain;
       co.confirms = game.techTree.colliderConfirms;
+      co.lastVerdict = 'ok';
     } else {
+      co.lastVerdict = 'penalty';
       colliderPenalty(game);
     }
   }
@@ -9080,6 +9118,11 @@ function processCollider(game, isl) {
       const eff = dcEffective(dcTile.building);
       co.dcReward = eff.reward;
       co.dcAcc = (co.dcAcc || 0) + eff.rate;
+      // 14.15 — 1er calcul IMMÉDIAT. Au niveau 0 le Data Center ne tire qu'un code tous les
+      // 16 ticks (0,0625/tick) : au lancement de la séquence il restait MUET ~16 s pendant que le
+      // Collisionneur émettait déjà à chaque tick. Le joueur comparait donc à du vide dès la
+      // 1ʳᵉ seconde — c'est là que tombaient les pénalités.
+      if (co.dcCode == null) co.dcAcc = Math.max(co.dcAcc, 1);
       while (co.dcAcc >= 1) {
         co.dcAcc -= 1;
         // Le nb de BITS du Data Center suit son niveau (niv 1 → α seul, 2 → αβ, 3+ → αβγ), borné
@@ -9196,6 +9239,9 @@ function colliderPenalty(game) {
   co.from = co.cur || 0;
   co.cur = 0;
   co.code = null;
+  // 14.15 — on repart d'une manche propre : le Data Center retirera un code au 1er tick de service.
+  co.dcCode = null;
+  co.dcAcc = 0;
   co.launched = false; // la séquence devra être relancée à la main après les 10 min
   co.penalties = (co.penalties || 0) + 1;
   game.colliderPenaltyNotify = true; // toast + tuto « première pénalité »
@@ -12357,7 +12403,7 @@ const GAME_TIPS = [{
   id: 'collider_cmp1',
   icon: '🔀',
   title: 'Comparer deux bits',
-  body: ["Le <b>Collisionneur</b> et le <b>Data Center</b> tirent chacun une <b>saveur de quark au hasard</b>, encodée en binaire sur les fils <b>α β γ</b>. Les deux tirages sont <b>indépendants</b>.", "Ton circuit doit détecter l'<b>égalité</b> des deux codes et renvoyer <b>1</b> vers la <b>vanne</b> posée sur le Collisionneur.", "Avec AND/OR/NOT seuls, comparer <b>un seul bit</b> demande <b>5 portes</b> : <b>2 NOT + 2 AND + 1 OR</b> (les deux bits sont égaux s'ils sont tous les deux à 1, ou tous les deux à 0).", "⚠️ Envoyer <b>1</b> alors que les codes <b>diffèrent</b> éteint le Collisionneur. Envoyer <b>0</b> ne coûte jamais rien."],
+  body: ["Le <b>Collisionneur</b> et le <b>Data Center</b> tirent chacun une <b>saveur de quark au hasard</b>, encodée en binaire sur les fils <b>α β γ</b>. Les deux tirages sont <b>indépendants</b>.", "Ton circuit doit détecter l'<b>égalité</b> des deux codes et renvoyer <b>1</b> vers la <b>vanne</b> posée sur le Collisionneur.", "⚠️ <b>Le plan des faces d'un émetteur est FIXE</b> (il ne tourne pas) : <b>NORD = α</b>, <b>SUD = β</b>, <b>OUEST = γ</b>, <b>EST = VALIDE</b>. Au palier <b>P1</b> un seul bit est utilisé : <b>seule la face NORD porte la donnée</b> — β et γ restent à <b>0</b>. Touche un émetteur : sa fiche affiche le plan des faces et le bit courant de chacune. Câbler ton comparateur sur une face inutilisée revient à comparer <b>0 avec 0</b> : il répondra « égal » en permanence et la vanne te pénalisera.", "Avec AND/OR/NOT seuls, comparer <b>un seul bit</b> demande <b>5 portes</b> : <b>2 NOT + 2 AND + 1 OR</b> (les deux bits sont égaux s'ils sont tous les deux à 1, ou tous les deux à 0).", "Chaque émetteur a une <b>4ᵉ face « VALIDE »</b> : elle vaut <b>1</b> tant qu'il publie un code réel, et <b>0</b> quand il est muet (pas de Data Center, calcul pas encore fait). Elle est indispensable, car une saveur codée <b>0</b> et un émetteur <b>muet</b> mettent tous les deux les fils α β γ à zéro — sans elle, impossible de les distinguer.", "⚠️ Envoyer <b>1</b> alors que les codes <b>diffèrent</b> éteint le Collisionneur. Envoyer <b>0</b> ne coûte jamais rien. Tant qu'un émetteur est <b>muet</b>, la manche est <b>sans effet</b> : ni confirmation, ni pénalité."],
   when: g => isBuildingUnlocked(g, 'porte_and')
 }, {
   // Déblocage NAND/NOR (nœud 40, palier P2) : XNOR en 3 portes.
@@ -12387,7 +12433,7 @@ const GAME_TIPS = [{
   id: 'collider_penalite',
   icon: '⚠️',
   title: 'Le Collisionneur s\'est éteint',
-  body: ["Tu as envoyé <b>1</b> à la vanne alors que les deux codes <b>différaient</b> : c'est une <b>pénalité</b>.", "Le Collisionneur est <b>complètement éteint</b> et ses <b>10 minutes de démarrage repartent de zéro</b>. Ce n'est pas un bug.", "Envoyer <b>0</b> ne coûte jamais rien : mieux vaut <b>ne rien envoyer</b> qu'envoyer un 1 douteux.", "Vérifie ton comparateur — et au palier 3, n'oublie pas le <b>détecteur de leptons</b> (000 / 111), sur lesquels il FAUT envoyer 1."],
+  body: ["Tu as envoyé <b>1</b> à la vanne alors que les deux codes <b>différaient</b> : c'est une <b>pénalité</b>.", "Le Collisionneur est <b>complètement éteint</b> et ses <b>10 minutes de démarrage repartent de zéro</b>. Ce n'est pas un bug.", "Envoyer <b>0</b> ne coûte jamais rien : mieux vaut <b>ne rien envoyer</b> qu'envoyer un 1 douteux.", "La fiche du Collisionneur affiche les <b>deux codes</b>, les <b>faces émises</b> et le <b>verdict de la dernière manche</b> : touche-le pour voir ce que ton montage a réellement comparé.", "Vérifie ton comparateur — et au palier 3, n'oublie pas le <b>détecteur de leptons</b> (000 / 111), sur lesquels il FAUT envoyer 1."],
   when: () => false
 }, {
   id: 'plutonium',
@@ -14375,8 +14421,19 @@ function InfoPanel({
     row('cf', I18N.t('Confirmations'), fmtPort(conf) + (goal ? ' / ' + fmtPort(goal) : ''), conf >= goal && goal ? 'var(--green)' : null);
     if (co.penalties) row('pe', I18N.t('Pénalités'), fmtPort(co.penalties), 'var(--red)');
     if (repaired && co.state === 'running') {
-      row('cc', I18N.t('Code émis'), co.code || '—');
-      row('dc', I18N.t('Code Data Center'), co.dcCode || I18N.t('aucun Data Center'));
+      // 14.15 — On montre le code ET les 4 faces réellement publiées par l'émetteur
+      // (α β γ + VALIDE), c'est-à-dire EXACTEMENT ce que le montage logique du joueur lit.
+      const faces = code => codeToBits(code).join('');
+      const hasDC = !!findDataCenter(game, 6);
+      row('cc', I18N.t('Code émis'), (co.code || '—') + ' · ' + I18N.t('faces') + ' ' + faces(co.code));
+      row('dc', I18N.t('Code Data Center'), co.dcCode ? co.dcCode + ' · ' + I18N.t('faces') + ' ' + faces(co.dcCode) : hasDC ? I18N.t('calcul en cours…') : I18N.t('aucun Data Center'), co.dcCode ? null : 'var(--orange)');
+      // Verdict de la DERNIÈRE manche où la vanne a reçu un 1 : lève l'ambiguïté « pourquoi
+      // ça a compté / pourquoi ça a sauté / pourquoi il ne se passe rien ».
+      if (co.lastVerdict) {
+        row('vd', I18N.t('Dernière manche'), co.lastVerdict === 'ok' ? I18N.t('confirmée ✓') : co.lastVerdict === 'penalty' ? I18N.t('codes différents → pénalité') : I18N.t('sans effet — le Data Center n\'émet rien'), co.lastVerdict === 'ok' ? 'var(--green)' : co.lastVerdict === 'penalty' ? 'var(--red)' : 'var(--orange)');
+      }
+      // Rappel de la 4ᵉ face : c'est elle qui distingue « saveur 0 » de « rien émis ».
+      row('vb', I18N.t('4ᵉ face (VALIDE)'), I18N.t('1 = code réel · 0 = émetteur muet'));
     }
     return React.createElement("div", {
       ref: ref, className: "info-panel",
@@ -14438,7 +14495,9 @@ function InfoPanel({
     // Choix direct de la face au lieu d'un bouton qui fait tourner à l'aveugle.
     // ⚠ 14.08 — L'ACTIONNEUR n'a PLUS de sens : il lit déjà le OU de ses 4 faces (la mécanique n'a
     // jamais utilisé `actDir`) → les boutons de direction ne sont plus proposés pour lui.
-    if (!lb.logicSink) {
+    // 14.15 — seuls la PORTE et le CAPTEUR sont orientables. L'émetteur a un plan de faces FIXE
+    // et la vanne lit le OU de ses 4 faces : leur proposer une rotation serait mensonger.
+    if (lb.logicGate || lb.logicSource) {
       rows.push(React.createElement("div", { className: "ip-fluxpri-lbl", key: 'rl' },
         lb.logicGate ? I18N.t("Face de sortie") : I18N.t("Signal sortant")));
       rows.push(React.createElement("div", {
@@ -14448,6 +14507,41 @@ function InfoPanel({
         className: 'ip-nuc-mat' + (curDir === d ? ' on' : ''),
         onClick: () => onLogicSet && onLogicSet(info.r, info.c, { [dirField]: d })
       }, lbl))));
+    }
+    // 14.15 — VANNE : ce qu'elle a reçu et ce qu'elle en a fait. Sans ça le joueur voyait le
+    // Collisionneur s'éteindre sans jamais savoir quel signal l'avait déclenché.
+    if (lb.logicValve) {
+      const cov = game.collider || {};
+      rows.push(React.createElement("div", { className: "ip-row", key: 'vin' }, React.createElement("span", { className: "lbl" }, I18N.t("Signal reçu")), React.createElement("span", { className: "val", style: { color: lg.logicIn ? 'var(--green)' : 'var(--ink-dim)', fontWeight: 700 } }, lg.logicIn ? '1 — ' + I18N.t('vanne OUVERTE') : '0 — ' + I18N.t('vanne fermée'))));
+      rows.push(React.createElement("div", { className: "ip-row", key: 'vcodes' }, React.createElement("span", { className: "lbl" }, I18N.t("Codes comparés")), React.createElement("span", { className: "val" }, (cov.code || '—') + ' / ' + (cov.dcCode || '—'))));
+      if (cov.lastVerdict) rows.push(React.createElement("div", { className: "ip-row", key: 'vvd' }, React.createElement("span", { className: "lbl" }, I18N.t("Dernière manche")), React.createElement("span", { className: "val", style: { color: cov.lastVerdict === 'ok' ? 'var(--green)' : cov.lastVerdict === 'penalty' ? 'var(--red)' : 'var(--orange)', fontWeight: 700 } }, cov.lastVerdict === 'ok' ? I18N.t('confirmée ✓') : cov.lastVerdict === 'penalty' ? I18N.t('codes différents → pénalité') : I18N.t('sans effet — émetteur muet'))));
+      rows.push(React.createElement("div", { className: "ip-note", key: 'vnote', style: { color: '#ffcf6b', fontSize: '11px', padding: '2px 0' } }, I18N.t("Envoyer 1 sur des codes différents ÉTEINT le Collisionneur. Envoyer 0 ne coûte jamais rien.")));
+    }
+    // 14.15 — ÉMETTEUR : plan des faces. C'était l'information MANQUANTE du puzzle : le mapping
+    // α/β/γ est FIXE et non orientable (dir 0→α, 1→β, 2→γ, 3→VALIDE), l'ordre moteur est
+    // [N, S, O, E], et RIEN à l'écran ne le disait. Un joueur qui câble la face OUEST croit lire α
+    // alors qu'il lit γ — constant à 0 aux paliers 1 et 2 → son comparateur, pourtant JUSTE,
+    // conclut « égal » en permanence et ouvre la vanne à chaque tirage (cas réel du build 296).
+    if (lb.logicMultiSource) {
+      const pal = (game.collider && game.collider.palier) || colliderPalier(game);
+      const bitsE = lg.emitBits || [0, 0, 0, 0];
+      const isDCsup = !!(sup && sup.id === 'data_center');
+      rows.push(React.createElement("div", { className: "ip-row", key: 'esrc' }, React.createElement("span", { className: "lbl" }, I18N.t("Émetteur")), React.createElement("span", { className: "val" }, isDCsup ? I18N.t("Data Center") : I18N.t("Collisionneur"))));
+      rows.push(React.createElement("div", { className: "ip-row", key: 'ecode' }, React.createElement("span", { className: "lbl" }, I18N.t("Code émis")), React.createElement("span", { className: "val" }, lg.emitCode || I18N.t("muet"))));
+      rows.push(React.createElement("div", { className: "ip-fluxpri-lbl", key: 'efl' }, I18N.t("Plan des faces (fixe — non orientable)")));
+      rows.push(React.createElement("div", { className: "ip-nuc-mats", key: 'efaces', style: { gridTemplateColumns: '1fr 1fr 1fr 1fr' } },
+        [[0, 'N', 'α'], [1, 'S', 'β'], [2, 'O', 'γ'], [3, 'E', I18N.t('VAL')]].map(([d, face, sym]) => {
+          // Une face est PORTEUSE de donnée si son rang est < nb de bits du palier ; au-delà elle
+          // est constante à 0 (câbler dessus = comparer deux zéros → faux « égal » permanent).
+          const carries = d === 3 || d < colliderBits(pal);
+          return React.createElement("button", {
+            key: face,
+            className: 'ip-nuc-mat' + (bitsE[d] ? ' on' : ''),
+            title: (d === 3 ? I18N.t('VALIDE : 1 = code réel, 0 = émetteur muet') : sym + ' — ' + (carries ? I18N.t('bit utile à ce palier') : I18N.t('TOUJOURS 0 à ce palier — ne pas câbler dessus'))),
+            style: carries ? null : { opacity: .45 }
+          }, face + ' ' + sym + ' = ' + (bitsE[d] ? 1 : 0));
+        })));
+      if (colliderBits(pal) < 3) rows.push(React.createElement("div", { className: "ip-note", key: 'ewarn', style: { color: '#ffcf6b', fontSize: '11px', padding: '2px 0' } }, I18N.t("⚠ Les faces grisées restent à 0 à ce palier. Y câbler ton comparateur revient à comparer 0 avec 0 : il répondra « égal » EN PERMANENCE et la vanne pénalisera à chaque tirage différent.")));
     }
     if (lb.logicSource) {
       const modes = sensorModesFor(sup);
@@ -14494,7 +14588,9 @@ function InfoPanel({
         title: v ? I18N.t("Met en pause quand le signal est VRAI (1)") : I18N.t("Met en pause quand le signal est FAUX (0) — le bâtiment tourne quand le signal est à 1")
       }, label))));
       rows.push(React.createElement("div", { className: "ip-row", key: 'as' }, React.createElement("span", { className: "lbl" }, I18N.t("Signal reçu → action")), React.createElement("span", { className: "val", style: { color: lg.logicOut ? 'var(--orange)' : 'var(--green)', fontWeight: 700 } }, (lg.logicIn ? '1' : '0') + ' → ' + (lg.logicOut ? I18N.t('en pause') : I18N.t('actif')))));
-    } else {
+    } else if (!lb.logicMultiSource && !lb.logicValve) {
+      // 14.15 — ni pour l'ÉMETTEUR (4 sorties distinctes : le plan des faces les détaille déjà,
+      // un « signal émis » unique serait faux) ni pour la VANNE (son bloc dédié dit tout).
       rows.push(React.createElement("div", { className: "ip-row", key: 'so' }, React.createElement("span", { className: "lbl" }, I18N.t("Signal émis")), React.createElement("span", { className: "val", style: { color: lg.logicOut ? '#00E5A0' : 'var(--ink-dim)', fontWeight: 700 } }, lg.logicOut ? '1 ● ' + I18N.t('vrai') : '0 ○ ' + I18N.t('faux'))));
     }
     return React.createElement("div", {
@@ -23291,7 +23387,10 @@ function App() {
       }
       if (gLay.ui.logicLayer && t && t.logic && gLay.ui.tool == null) {
         const lbd = BUILDINGS[t.logic.id];
-        if (lbd && (lbd.logicGate || lbd.logicSource || lbd.logicSink)) {
+        // 14.15 — l'ÉMETTEUR et la VANNE sont désormais inspectables. Ils en étaient exclus, or
+        // c'est sur la fiche de l'émetteur que vit le plan des faces (α/β/γ/VALIDE) — la seule
+        // information qui permet de câbler un comparateur juste.
+        if (lbd && (lbd.logicGate || lbd.logicSource || lbd.logicSink || lbd.logicMultiSource || lbd.logicValve)) {
           // Ouvre le panneau de config de la SURCOUCHE (rotation + mode de capteur + polarité).
           setNetwork(null);
           const cam = gLay.cam;
@@ -24436,6 +24535,7 @@ if (typeof window !== 'undefined') {
     quantumStabFactor, elevatorAllocate, ELEVATOR_MODES, elevatorModeOf, isFilledTile, tierForfait, cumulativeInvested, isUpgradable,
     resetSpriteCaches, spriteImg, spriteUsable, drawSprite, spriteImgCache, animImgCache, processCollider, colliderPenalty, processLogic, nominalPower, minPower, TIER_STEP, TIER_NEXT, CARRIER_BY_RES, GAME_BUILD, GAME_VERSION, SAVE_VERSION, RES_SHORT, itemSpriteKey,
     colliderPalier, COLLIDER_FLAVORS, COLLIDER_EXCEPTIONS, COLLIDER_POWER, COLLIDER_GOALS,
+    colliderCompare, codeToBits, findDataCenter, dcEffective,
     pickFlavorCode, codeToBits, dcEffective, dcRateOf, countBuildings,
     InfoPanel: typeof InfoPanel === 'function' ? InfoPanel : null
   };
