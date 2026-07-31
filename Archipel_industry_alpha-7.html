@@ -9134,10 +9134,16 @@ function processCollider(game, isl) {
     // aucune « manche » observable (un côté clignotait, l'autre était figé), et un même code du
     // Data Center pouvait déclencher plusieurs verdicts d'affilée. Désormais les deux codes sont
     // tirés ENSEMBLE, au débit du Data Center (0,0625 manche/tick au niveau 0, ×2 par amélioration,
-    // plafonné à 4/s — au-delà le surplus devient un multiplicateur de RÉCOMPENSE, `dcReward`).
-    // Améliorer le Data Center accélère donc réellement le puzzle.
+    // plafonné à 1 manche/tick — au-delà le surplus devient un multiplicateur de RÉCOMPENSE,
+    // `dcReward`). Améliorer le Data Center accélère donc réellement le puzzle.
+    // ⚠ 14.16 — le Data Center doit être EN SERVICE pour calculer (cf. dataCenterState) : jusqu'ici
+    // seule son EXISTENCE était testée, donc le mettre en PAUSE ne changeait RIEN au puzzle alors
+    // qu'il cessait de consommer ses intrants et ses 1024 kW — le puzzle tournait gratuitement
+    // (question du joueur : « est-ce que mettre en pause le data center fait quelque chose ? »).
     const dcTile = findDataCenter(game, isl);
-    if (dcTile && dcTile.building) {
+    const dcSt = dataCenterState(dcTile);
+    co.dcState = dcSt;
+    if (dcSt === 'on') {
       const eff = dcEffective(dcTile.building);
       co.dcReward = eff.reward;
       co.dcAcc = (co.dcAcc || 0) + eff.rate;
@@ -9159,8 +9165,10 @@ function processCollider(game, isl) {
         co.round = (co.round || 0) + 1; // une manche = UN verdict (cf. vanne)
       }
     } else {
-      // Sans Data Center il n'y a rien à comparer : aucune manche n'est tirée et les DEUX
-      // émetteurs restent muets (face VALIDE à 0) → le joueur voit immédiatement ce qui manque.
+      // Data Center absent, en pause, coupé par la logique, endommagé ou privé d'intrants/courant :
+      // il ne calcule pas, donc il n'y a RIEN à comparer. Aucune manche n'est tirée et les DEUX
+      // émetteurs restent muets (face VALIDE à 0) → le joueur voit immédiatement ce qui manque,
+      // et surtout il ne peut plus être pénalisé pour une manche qui n'existe pas.
       co.code = null;
       co.dcCode = null;
       co.dcReward = 1;
@@ -9261,6 +9269,30 @@ function findDataCenter(game, isl) {
   }
   return null;
 }
+// 14.16 — État de calcul du Data Center. Il n'émet son code QUE s'il tourne réellement : une
+// pause joueur, un actionneur qui le coupe, un dégât ou un manque d'intrants/de courant
+// l'arrêtent. Avant, seule son EXISTENCE comptait → le mettre en pause ne changeait rien au
+// puzzle alors qu'il ne consommait plus rien (question du joueur).
+// ⚠ `active` est posé par la boucle bâtiment, donc lu ici avec un tick de retard (processCollider
+// tourne avant) — imperceptible, et `undefined` (jamais tické) est traité comme « en service ».
+function dataCenterState(tile) {
+  const b = tile && tile.building;
+  if (!b) return 'absent';
+  if (b.paused) return 'paused';
+  if (b.logicOff) return 'logic';
+  if (b.damaged) return 'damaged';
+  if (b.active === false) return 'starved';
+  return 'on';
+}
+// Libellé lisible de l'état ci-dessus (fiche du Collisionneur).
+const DC_STATE_LABEL = {
+  absent: 'aucun Data Center',
+  paused: 'Data Center EN PAUSE',
+  logic: 'Data Center coupé par un actionneur',
+  damaged: 'Data Center endommagé',
+  starved: 'Data Center à l\'arrêt (intrants ou courant)',
+  on: 'en service'
+};
 // Pénalité (§3.3) : le joueur a envoyé 1 alors que les codes DIFFÈRENT → extinction complète,
 // les 10 minutes de démarrage sont à refaire intégralement.
 function colliderPenalty(game) {
@@ -14468,8 +14500,12 @@ function InfoPanel({
       // C'est la ligne qui explique pourquoi le puzzle va plus ou moins vite.
       {
         const dcT = findDataCenter(game, 6);
-        const rate = dcT && dcT.building ? dcEffective(dcT.building).rate : 0;
-        row('cad', I18N.t('Cadence des manches'), rate > 0 ? (rate >= 1 ? fmtSig(rate) + ' /s' : '1 ' + I18N.t('toutes les') + ' ' + fmtSig(1 / rate) + ' s') + (dcT && dcT.building ? ' · ' + I18N.t('Data Center Nv.') + ((dcT.building.upgrade || 0) + 1) : '') : I18N.t('aucune — Data Center requis'), rate > 0 ? null : 'var(--orange)');
+        const dcSt = dataCenterState(dcT);
+        // État du Data Center : c'est LUI qui rythme les manches — s'il ne calcule pas, rien ne
+        // se passe. On nomme la cause exacte plutôt que de laisser le joueur deviner.
+        row('dcst', I18N.t('Data Center'), I18N.t(DC_STATE_LABEL[dcSt] || dcSt), dcSt === 'on' ? 'var(--green)' : 'var(--orange)');
+        const rate = dcSt === 'on' ? dcEffective(dcT.building).rate : 0;
+        row('cad', I18N.t('Cadence des manches'), rate > 0 ? (rate >= 1 ? fmtSig(rate) + ' /s' : '1 ' + I18N.t('toutes les') + ' ' + fmtSig(1 / rate) + ' s') + ' · ' + I18N.t('Data Center Nv.') + ((dcT.building.upgrade || 0) + 1) : I18N.t('aucune manche — le Data Center ne calcule pas'), rate > 0 ? null : 'var(--orange)');
       }
       // Rappel de la 4ᵉ face : c'est elle qui distingue « saveur 0 » de « rien émis ».
       row('vb', I18N.t('4ᵉ face (VALIDE)'), I18N.t('1 = code réel · 0 = émetteur muet'));

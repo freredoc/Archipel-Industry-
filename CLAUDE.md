@@ -82,6 +82,22 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   le code du Collisionneur. La désynchronisation n'était PAS la cause de ses pénalités (un
   comparateur correct n'en prenait aucune, même désynchronisé) — mais elle rendait le puzzle
   illisible, et la correction est bonne en soi.
+  (7) **LE DATA CENTER DOIT ÊTRE EN SERVICE POUR CALCULER** (question du joueur : « est-ce que
+  mettre en pause le data center fait quelque chose ? » — réponse : **non, et c'était un bug**).
+  `processCollider` ne testait que l'**EXISTENCE** du bâtiment (`findDataCenter`) : le mettre en
+  PAUSE ne changeait RIEN au puzzle alors qu'il cessait de consommer ses intrants ET ses 1024 kW →
+  **le puzzle tournait gratuitement**. Nouveau helper **`dataCenterState(tile)`** →
+  `absent` / `paused` / `logic` (actionneur) / `damaged` / `starved` (intrants ou courant) / `on` ;
+  seul `on` tire des manches. ⚠ `active` est posé par la boucle bâtiment, donc lu avec **un tick de
+  retard** (`processCollider` tourne avant) — imperceptible, et `undefined` (jamais tické) vaut
+  « en service ». Corollaire **voulu** : un Data Center à l'arrêt rend les DEUX émetteurs muets →
+  **aucune pénalité n'est possible** (vérifié : vanne forcée ouverte 500 ticks → 0 pénalité), et la
+  fiche du Collisionneur **nomme la cause** (nouvelle ligne « Data Center » + `DC_STATE_LABEL`).
+  Validé : `node --check` (7 blocs) + Chromium **8 + 12 assertions, 0 erreur JS** — pause / coupure
+  logique / manque d'intrants → 0 manche et émetteurs muets, retour en service → les manches
+  repartent ; + non-régression 14.15/14.16 (comparateur correct : **0 pénalité sur 3000 ticks**) et
+  boot de la 4ᵉ save du joueur. ⚠ **Sa 4ᵉ save re-confirme le diagnostic** : Data Center dé-pausé,
+  circuit logique **INCHANGÉ**, émetteur du Collisionneur **toujours sur OUEST = γ** → 6ᵉ pénalité.
   Changement 14.15 : **COMPARATEUR DU COLLISIONNEUR — « que des erreurs avec un comparateur normal ».**
   `SAVE_VERSION` INCHANGÉ (aucun champ persisté ajouté ; `lastVerdict` transitoire). Le testeur a
   fourni sa save : **palier 1, 3 pénalités, 0 confirmation**. **CAUSE RACINE (diagnostiquée sur sa
