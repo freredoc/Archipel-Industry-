@@ -3883,7 +3883,7 @@ function buildingConnectsCarrier(buildingId, carrier) {
 // `carriers` donnés (un réseau a un seul carrier, une jonction en couple deux).
 // Sert à amincir réseaux ET jonctions sans casser les raccords : on n'insère la
 // marge que sur les côtés sans connexion.
-function netConnectMask(tiles, r, c, carriers, junctionAxis) {
+function netConnectMask(tiles, r, c, carriers, junctionAxis, infraOnly) {
   let mask = 0;
   const nb = [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]];
   for (const [dr, dc, bit] of nb) {
@@ -3905,7 +3905,14 @@ function netConnectMask(tiles, r, c, carriers, junctionAxis) {
         // opt-in car junctionAxisH (orientation d'une jonction) passe par ici : l'activer là
         // créerait une récursion entre jonctions adjacentes.
         connects = !junctionAxis || junctionDirOk(tiles, r + dr, c + dc, ndef, carrier, -dr, -dc);
-      } else if (ndef && ndef.kind !== 'infra' && ndef.kind !== 'junction') {
+      } else if (!infraOnly && ndef && ndef.kind !== 'infra' && ndef.kind !== 'junction') {
+        // 14.21 — `infraOnly` EXCLUT les bâtiments. Indispensable pour DÉDUIRE L'AXE d'une jonction
+        // (junctionAxisH) : un bâtiment est un CONSOMMATEUR en bout de ligne, il ne dit RIEN du sens
+        // dans lequel le réseau court. En le comptant, une simple pompe/tour/raffineur posé à l'EST
+        // d'une jonction faisait croire que le tuyau allait EST-OUEST, ce qui BASCULAIT l'axe et
+        // COUPAIT le tracé NORD-SUD qui la traversait (45 configurations sur 128 au balayage).
+        // Partout ailleurs (sprites, stubs) les bâtiments comptent toujours : on veut bien dessiner
+        // une branche vers eux.
         connects = buildingConnectsCarrier(nid, carrier); // bâtiment desservi
       }
       if (connects) break;
@@ -6971,8 +6978,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 303;
-const GAME_VERSION = 'Alpha 14.20';
+const GAME_BUILD = 304;
+const GAME_VERSION = 'Alpha 14.21';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7756,8 +7763,10 @@ function addInto(dst, src) {
 function junctionAxisH(tiles, r, c, def) {
   const cA = def.junction[0],
     cB = def.junction[1];
-  const mA = netConnectMask(tiles, r, c, [cA]),
-    mB = netConnectMask(tiles, r, c, [cB]);
+  // 14.21 — `infraOnly` : l'axe se déduit des TRACÉS RÉELS (infra + jonctions), jamais des
+  // bâtiments desservis. Voir le commentaire dans netConnectMask.
+  const mA = netConnectMask(tiles, r, c, [cA], false, true),
+    mB = netConnectMask(tiles, r, c, [cB], false, true);
   const anyH = m => !!((m & 2) || (m & 8)),
     anyV = m => !!((m & 1) || (m & 4));
   const spanH = m => !!((m & 2) && (m & 8)),
@@ -15585,30 +15594,10 @@ function InfoPanel({
       style: {
         color: wf >= 0.995 ? 'var(--green)' : 'var(--orange)'
       }
-    }, Math.round(wf * 100) + "% · " + fmtPort(bld.waterDrawn != null ? bld.waterDrawn : 0) + " / " + fmtPort(256 * up) + I18N.t(" eau/s")),
-      // 14.18 — D'OÙ vient l'eau, et combien il y en avait. Une tour à sec n'affichait que « 0 % »
-      // sans dire où chercher. Or les deux sources sont DISTINCTES : un tuyau relié au port puise
-      // dans le stock du PORT, un tuyau isolé dans sa propre CITERNE. Sur la save du testeur, une
-      // tour à 0 % était sur le tuyau du port (stock 0) pendant que des milliards d'eau dormaient
-      // dans les citernes de tuyaux isolés — d'où l'impression que « la tour bloque le tuyau ».
-      bld.waterFrom && React.createElement("div", {
-        className: "ip-row", key: 'toursrc'
-      }, React.createElement("span", { className: "lbl" }, I18N.t("Puise dans")),
-        React.createElement("span", {
-          className: "val",
-          style: { color: (bld.waterAvail || 0) > 0 ? null : 'var(--red)', fontWeight: 700 },
-          title: I18N.t("Un tuyau RELIÉ AU PORT puise dans le stock du port ; un tuyau ISOLÉ puise dans sa propre citerne. Une tour à sec sur le tuyau du port veut dire que c'est le PORT qui n'a plus d'eau — pas que le tuyau est bloqué.")
-        }, (bld.waterFrom === 'port' ? I18N.t('le PORT') : I18N.t('la citerne du tuyau')) + ' · ' + fmtPort(bld.waterAvail || 0)),
-      ),
-      // 14.17 — La soif d'une tour DOUBLE à chaque niveau (256 → 131 072 eau/s au Nv.10) et elle se
-      // sert sur le stock commun de l'île : c'est la cause n°1 des machines à eau tombées à 0 %
-      // (« la tour semble bloquer le tuyau »). On le dit ici, et sa conso apparaît désormais dans le
-      // panneau du réseau tuyau qui la dessert.
-      React.createElement("div", {
-        className: "ip-note",
-        key: 'tourwarn',
-        style: { color: 'var(--ink-dim)', fontSize: '11px', padding: '2px 0' }
-      }, I18N.t("Sa soif DOUBLE à chaque niveau et se sert sur l'eau de l'île : une tour très améliorée peut assécher les autres machines. Sa conso est visible dans le panneau du tuyau."))));
+      // 14.21 — Les commentaires ajoutés en 14.17/14.18 sur la tour sont RETIRÉS (demande joueur) :
+      // ils accusaient la tour, or elle n'était pour rien dans le blocage signalé. On revient à la
+      // ligne d'origine « X% · N eau/s ».
+    }, Math.round(wf * 100) + "% · " + fmtPort(256 * up) + I18N.t(" eau/s"))));
   })(),
   // 14.17 — DATA CENTER : c'est LUI qui rythme le puzzle du Collisionneur (une MANCHE par tirage),
   // mais sa fiche n'en disait rien — le joueur ne pouvait pas savoir ce que lui rapportait une
