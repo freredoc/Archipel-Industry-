@@ -1,8 +1,8 @@
 {
-  "build": 297,
-  "version": "Alpha 14.15",
+  "build": 298,
+  "version": "Alpha 14.16",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #286 — Collisionneur : le comparateur pénalisait des montages corrects"
+  "notes": "Merge pull request #287 from freredoc/claude/collisionneur-comparateur-erreurs-lbrvje"
 }
