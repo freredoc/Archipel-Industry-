@@ -98,6 +98,28 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   repartent ; + non-régression 14.15/14.16 (comparateur correct : **0 pénalité sur 3000 ticks**) et
   boot de la 4ᵉ save du joueur. ⚠ **Sa 4ᵉ save re-confirme le diagnostic** : Data Center dé-pausé,
   circuit logique **INCHANGÉ**, émetteur du Collisionneur **toujours sur OUEST = γ** → 6ᵉ pénalité.
+  (8) **LE CÂBLE LOGIQUE NE SE RACCORDE PLUS À UNE FACE MUETTE** (demande joueur : « le câble
+  logique ne doit pas connecter tant qu'on n'a pas débloqué le signal β et γ, je pense aux sprites
+  aussi »). C'est le correctif qui rend l'erreur **IMPOSSIBLE** au lieu de seulement lisible : au
+  palier 1, β (SUD) et γ (OUEST) sont constants à 0 ; un comparateur câblé dessus compare 0 avec 0,
+  répond « égal » en permanence et fait pénaliser — c'est exactement ce que le joueur a reproduit
+  **3 saves d'affilée**. Deux helpers module : **`emitterFaceCarries(game, isl, dir)`** (dir 3 =
+  VALIDE toujours exploitable, sinon `dir < colliderBits(palier)`) et **`emitterFaceFromStep(dr, dc)`**
+  (le pas va du CÂBLE vers l'émetteur → la face est la direction OPPOSÉE, index `DIRS4 = [N,S,O,E]`).
+  Le masque de connexion du câble logique les consulte : une face muette n'est plus raccordée → le
+  fil apparaît **visiblement détaché**. ⚠ Purement VISUEL côté mécanique (l'émetteur n'écrivait déjà
+  que des 1, donc une face muette ne pilotait rien) : aucune régression de simulation, et le
+  raccordement **réapparaît tout seul** quand le palier débloque β puis γ. (9) **Sprites de
+  l'émetteur** : le pack fournit un écran par SIGNAL (`logic_emetteur_alpha/beta/gamma` + `_on`) et
+  un écran VIDE (`logic_emetteur_inactif`) — jusqu'ici le draw affichait `..._alpha` EN PERMANENCE,
+  même émetteur à l'arrêt. Désormais : **écran éteint quand l'émetteur est muet** (face VALIDE à 0 :
+  pas de Data Center, en pause, sans intrants…), sinon **le signal du palier courant** (P1 → α,
+  P2 → β, P3 → γ) **allumé quand son bit vaut 1** → le joueur voit le code changer sur la carte.
+  Validé : `node --check` (7 blocs) + Chromium **10 + 6 assertions, 0 erreur JS** — mapping des
+  4 pas exact (N↔S, O↔E), faces porteuses par palier (P1 `α+VALIDE`, P2 `+β`, P3 `+γ`), masque de
+  raccordement **`SO` en P1 → `NSO` en P2 → `NESO` en P3** (la face γ, celle du fil mal branché du
+  joueur, est REFUSÉE en P1 et acceptée en P3), 7 variantes de sprite présentes ; + non-régression
+  14.15/14.16 (comparateur correct : **0 pénalité sur 3000 ticks**) et boot de la save.
   Changement 14.15 : **COMPARATEUR DU COLLISIONNEUR — « que des erreurs avec un comparateur normal ».**
   `SAVE_VERSION` INCHANGÉ (aucun champ persisté ajouté ; `lastVerdict` transitoire). Le testeur a
   fourni sa save : **palier 1, 3 pénalités, 0 confirmation**. **CAUSE RACINE (diagnostiquée sur sa

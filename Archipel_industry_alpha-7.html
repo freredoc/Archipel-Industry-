@@ -9269,6 +9269,21 @@ function findDataCenter(game, isl) {
   }
   return null;
 }
+// 14.16 — Une face d'ÉMETTEUR porte-t-elle un signal exploitable au palier courant ?
+// Mapping FIXE : dir 0 → α, 1 → β, 2 → γ, 3 → VALIDE. Au palier 1 seul α porte la donnée ; β et γ
+// restent CONSTANTS à 0 tant que les paliers 2 et 3 ne sont pas atteints. La face VALIDE (3) est
+// toujours exploitable (elle dit si l'émetteur parle). Un câble branché sur une face muette lit un
+// faux 0 : un comparateur correct y répond « égal » en permanence et fait pénaliser le joueur.
+function emitterFaceCarries(game, isl, dir) {
+  if (dir === 3) return true;
+  if (isl !== 6) return true;
+  return dir < colliderBits(colliderPalier(game));
+}
+// Face de l'émetteur qui REGARDE un voisin situé à (dr, dc) de lui… vu depuis le voisin : le pas
+// (dr, dc) va du câble VERS l'émetteur, la face est donc la direction OPPOSÉE (index DIRS4 [N,S,O,E]).
+function emitterFaceFromStep(dr, dc) {
+  return dr === 1 ? 0 : dr === -1 ? 1 : dc === 1 ? 2 : 3;
+}
 // 14.16 — État de calcul du Data Center. Il n'émet son code QUE s'il tourne réellement : une
 // pause joueur, un actionneur qui le coupe, un dégât ou un manque d'intrants/de courant
 // l'arrêtent. Avant, seule son EXISTENCE comptait → le mettre en pause ne changeait rien au
@@ -23032,6 +23047,9 @@ function App() {
     // DESSUS l'île estompée, uniquement quand la couche est affichée. Système parallèle à t.building.
     if (g.ui && g.ui.logicLayer) {
       const lstate = g.logicState && g.logicState[isl] || {};
+      // 14.16 — Nb de signaux RÉELLEMENT en jeu au palier courant (P1 → α seul, P2 → αβ, P3 → αβγ),
+      // pour le choix du sprite d'émetteur (cf. emitterFaceCarries pour le raccordement des câbles).
+      const _lpal = isl === 6 ? colliderBits(colliderPalier(g)) : 3;
       for (let r = ar0; r <= r1; r++) for (let c = ac0; c <= c1; c++) {
         const t = tiles[r][c];
         const lg = t && t.logic;
@@ -23047,7 +23065,13 @@ function App() {
           let mask = 0;
           for (const [dr, dc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
             const nt = tiles[r + dr] && tiles[r + dr][c + dc];
-            if (nt && nt.logic && isLogicId(nt.logic.id)) mask |= bit;
+            if (!(nt && nt.logic && isLogicId(nt.logic.id))) continue;
+            // 14.16 — Face MUETTE d'un émetteur : pas de raccordement. La face de l'émetteur qui
+            // regarde ce câble est la direction OPPOSÉE au pas (dr,dc) ; l'index moteur suit
+            // DIRS4 = [N, S, O, E]. Tant que β/γ ne sont pas débloqués (palier), leur face reste
+            // sans signal → le câble ne s'y branche pas et le montage ne peut plus lire un faux 0.
+            if (BUILDINGS[nt.logic.id].logicMultiSource && !emitterFaceCarries(g, isl, emitterFaceFromStep(dr, dc))) continue;
+            mask |= bit;
           }
           const st = lstate[lg.netId] || 0;
           const letters = mask === 0 ? 'iso' : (mask & 1 ? 'N' : '') + (mask & 2 ? 'E' : '') + (mask & 4 ? 'S' : '') + (mask & 8 ? 'O' : '');
@@ -23083,6 +23107,21 @@ function App() {
           const jsuf = sNS && sEO ? '_both' : sNS ? '_ns' : sEO ? '_eo' : '';
           cands = [dbase + jsuf, dbase];
           if (sNS || sEO) _animPlayed = true;
+        } else if (lbd.logicMultiSource) {
+          // 14.16 — ÉMETTEUR : l'art du pack a un écran par SIGNAL (α / β / γ, + `_on` allumé) et un
+          // écran VIDE `logic_emetteur_inactif`. On montre le signal du PALIER courant (P1 → α,
+          // P2 → β, P3 → γ) allumé quand son bit vaut 1 — le joueur voit le code changer sur la
+          // carte — et l'écran ÉTEINT quand l'émetteur est muet (pas de Data Center, en pause,
+          // sans intrants…). Avant, il affichait « α » en permanence, même à l'arrêt.
+          const bitsE = lg.emitBits || [0, 0, 0, 0];
+          if (!bitsE[3]) {
+            cands = ['logic_emetteur_inactif', dbase]; // face VALIDE à 0 → muet
+          } else {
+            const sig = ['alpha', 'beta', 'gamma'][Math.max(0, Math.min(2, _lpal - 1))];
+            const lit = bitsE[Math.max(0, Math.min(2, _lpal - 1))] ? '_on' : '';
+            cands = ['logic_emetteur_' + sig + lit, 'logic_emetteur_' + sig, dbase];
+            if (lit) _animPlayed = true;
+          }
         } else {
           // La VANNE du Collisionneur : art dédié `logic_vanne_collisionneur_<dir>_<0|1>` (v2.8),
           // repli sur l'ancien `logic_vanne`(_on).
@@ -24615,7 +24654,8 @@ if (typeof window !== 'undefined') {
     quantumStabFactor, elevatorAllocate, ELEVATOR_MODES, elevatorModeOf, isFilledTile, tierForfait, cumulativeInvested, isUpgradable,
     resetSpriteCaches, spriteImg, spriteUsable, drawSprite, spriteImgCache, animImgCache, processCollider, colliderPenalty, processLogic, nominalPower, minPower, TIER_STEP, TIER_NEXT, CARRIER_BY_RES, GAME_BUILD, GAME_VERSION, SAVE_VERSION, RES_SHORT, itemSpriteKey,
     colliderPalier, COLLIDER_FLAVORS, COLLIDER_EXCEPTIONS, COLLIDER_POWER, COLLIDER_GOALS,
-    colliderCompare, codeToBits, findDataCenter, dcEffective,
+    colliderCompare, codeToBits, findDataCenter, dcEffective, colliderBits,
+    emitterFaceCarries, emitterFaceFromStep, dataCenterState,
     pickFlavorCode, codeToBits, dcEffective, dcRateOf, countBuildings,
     InfoPanel: typeof InfoPanel === 'function' ? InfoPanel : null
   };
