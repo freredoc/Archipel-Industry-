@@ -17,7 +17,42 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 302`, `GAME_VERSION = 'Alpha 14.19'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 303`, `GAME_VERSION = 'Alpha 14.20'`, `SAVE_VERSION = 31`.**
+  Changement 14.20 : **l'illimité devient une TECHNIQUE D'ÎLE + écran noir du petit hors-ligne.**
+  `SAVE_VERSION` INCHANGÉ (`netInfPaid` et `unlimited` existent déjà).
+  (1) **PLUS DE 2ᵉ BOUTON — « c'est forcément toute l'île »** (demande). Le bouton « ∞ Toute l'île »
+  du 14.17 est SUPPRIMÉ : l'illimité n'est plus un attribut qu'on pose tracé par tracé, c'est une
+  **technique acquise pour un TYPE de réseau sur une ÎLE**. `networkUnlimitedInfo` a désormais pour
+  portée `networksOfType(île, type)` (au lieu de `coupledNetworkIds`) → un seul achat bascule TOUS
+  les tracés. **Le forfait devient FORFAITAIRE** (`NETWORK_UNLIMITED_COST` une fois, plus ×nb de
+  réseaux couplés) : découper son réseau en dix morceaux ne coûte plus dix fois le prix.
+  (2) **Un tracé posé APRÈS l'achat naît ILLIMITÉ** : `rebuildNetworks` marque `net.unlimited` dès la
+  création si `netInfPaidFor(île, type)`. Sans ça, le joueur payait « toute l'île » puis voyait chaque
+  nouveau tronçon repartir en V1 limité — la demande vaut aussi pour la suite. ⚠ Le drapeau reste **par
+  île ET par type** (payer la route ne donne pas le câble — vérifié par contre-épreuve).
+  (3) **GATE V3 JUGÉ À L'ÉCHELLE DE L'ÎLE** (`islandHasUnlimitableNet`) : l'illimité s'achetant pour
+  l'île, gater sur le niveau du seul tracé CLIQUÉ était arbitraire. C'était la cause du retour
+  « impossible de faire les conduits de chaleur illimité » : sur la save du joueur, **3 conduits sur
+  11 étaient V2** et n'affichaient donc AUCUN bouton, même à côté d'un V4 sur la même île. Désormais
+  il suffit qu'UN réseau de ce type ait atteint V3. ⚠ **L'AUTRE moitié du blocage est le COÛT** :
+  10 000 câbles supraconducteurs, produits **1/s par la seule Presse UHP** (≈ 2 h 45 de production
+  dédiée), alors que le joueur en a **0 à 200 par île**. Le chiffre est celui qu'il a demandé en
+  14.17 — signalé, non modifié, à trancher.
+  (4) **ÉCRAN NOIR SUR UN PETIT HORS-LIGNE — cause trouvée et corrigée.** Le raccourci « absence
+  ≤ 5 min → simuler d'un bloc, sans overlay » (14.71) simulait jusqu'à **300 ticks EN BLOQUANT le
+  thread**. Mesuré sur la save du joueur : **4 min d'absence = 21 SECONDES de calcul**, pendant
+  lesquelles la boucle rAF ne tourne pas et rien n'est peint — alors que le canvas vient d'être
+  effacé par le `layout()` du retour d'arrière-plan. D'où « des fois dans les cas où il y a peu de
+  hors ligne c'est un écran noir ». Le raccourci est **SUPPRIMÉ** : on passe toujours par le chemin
+  DÉCOUPÉ (tranches de 80 ms), et c'est l'**OVERLAY qui devient différé** (`OVERLAY_AFTER_MS = 180`)
+  → toujours pas de clignotement quand c'est rapide, mais jamais d'écran noir figé.
+  Validé : `node --check` (7 blocs) + Chromium **10 suites, 146 assertions, 0 KO, 0 erreur JS** —
+  portée « toute l'île » et forfait unique, gate V3 par île (un seul tracé V4 ouvre le bouton pour
+  toute l'île), tracé posé après l'achat né illimité + contre-épreuve tuyau non payé, bouton unique
+  dans le panneau **cliqué pour de vrai** ; et sur la **save RÉELLE** : rattrapage de 4 min →
+  **blocage max 103 ms** (au lieu de 21 s), overlay affiché, canvas peint à l'arrivée ; les 11
+  conduits du joueur passent tous au bouton ∞ sauf l'île 7 (aucun V3 dessus). i18n en/es/de.
+- **État précédent : `GAME_BUILD = 302`, `GAME_VERSION = 'Alpha 14.19'`, `SAVE_VERSION = 31`.**
   Changement 14.19 : **3 ajustements de recettes (acide).** `SAVE_VERSION` INCHANGÉ (la save ne
   stocke qu'id + niveau, jamais les recettes). (1) **Mine Tungstène : acide 16 → 8** (÷2, demande).
   Appliqué au **V1 ET au V4** : c'est la MÊME recette, le V4 n'ayant jamais fait que la reprendre
