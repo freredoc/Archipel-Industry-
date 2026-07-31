@@ -17,7 +17,27 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 301`, `GAME_VERSION = 'Alpha 14.18'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 302`, `GAME_VERSION = 'Alpha 14.19'`, `SAVE_VERSION = 31`.**
+  Changement 14.19 : **3 ajustements de recettes (acide).** `SAVE_VERSION` INCHANGÉ (la save ne
+  stocke qu'id + niveau, jamais les recettes). (1) **Mine Tungstène : acide 16 → 8** (÷2, demande).
+  Appliqué au **V1 ET au V4** : c'est la MÊME recette, le V4 n'ayant jamais fait que la reprendre
+  telle quelle (14.09). Sortie inchangée (1 tungstène + 8 pierre). (2) **Fonderie Or : acide RETIRÉ**
+  (V1 et V2) → il ne lui reste que `minerai_or: 16`. (3) **Raffineur Silicium : acide RETIRÉ**
+  (V1 et V2) → `silicium: 8 + oxygene: 32`. ⚠ **EFFET DE BORD IDENTIFIÉ ET TESTÉ** : l'acide était le
+  SEUL liquide de la **Fonderie Or** → `buildingConnectsCarrier('fonderie_or','pipe')` devient
+  **FAUX**. Conséquences : (a) plus de stub de tuyau dessiné sous elle ; (b) surtout, elle **ne fait
+  plus PONT** entre deux tronçons de tuyau (règle de traversée 10.59) → un tuyau qui la traversait
+  se retrouve **COUPÉ EN DEUX**. Vérifié par sonde sur la save du joueur : ses **2 fonderies d'or ne
+  touchent qu'UN seul côté tuyau** → aucun réseau cassé chez lui. **Le Raffineur Si, lui, garde
+  l'oxygène** (liquide) → il continue de faire pont, aucun changement. À garder en tête si un joueur
+  signale un tuyau coupé près d'une fonderie d'or. ⚠ **L'acide garde 8 consommateurs**
+  (puits_petrole_v2, usine_polymere_v2, four_arc_cuivre, broyeur_uranium(_v2), mine_tungstene(_v4),
+  extracteur_souterrain) → il ne devient pas une ressource morte. Validé : `node --check` (7 blocs)
+  + Chromium **8 suites, 127 assertions, 0 KO, 0 erreur JS** (dont les 6 recettes exactes, le
+  raccordement tuyau des 3 bâtiments, la **coupure de tuyau reproduite** pour la fonderie d'or et la
+  **contre-épreuve** « le raffineur Si laisse toujours passer », + non-régression 14.17/14.18 et
+  rejeu de la save du joueur).
+- **État précédent : `GAME_BUILD = 301`, `GAME_VERSION = 'Alpha 14.18'`, `SAVE_VERSION = 31`.**
   Changement 14.18 : **He3 ×2 par palier + « la tour bloque le tuyau » DIAGNOSTIQUÉ SUR LA SAVE DU
   JOUEUR.** `SAVE_VERSION` INCHANGÉ (`bld.waterFrom`/`waterAvail` transitoires).
   (1) **`COLLIDER_HE3` ×8 → ×2 par palier** (demande) : **P1 1 /s · P2 2 /s · P3 4 /s** (était
