@@ -17,7 +17,40 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 303`, `GAME_VERSION = 'Alpha 14.20'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 304`, `GAME_VERSION = 'Alpha 14.21'`, `SAVE_VERSION = 31`.**
+  Changement 14.21 : **VRAI BUG DE RÉSEAU TROUVÉ — l'axe d'une jonction était déduit des BÂTIMENTS
+  voisins.** `SAVE_VERSION` INCHANGÉ (les réseaux sont reconstruits à chaque chargement).
+  (1) **Texte de la tour aéroréfrigérante RETIRÉ** (demande) : les lignes « Puise dans » (14.18) et
+  l'avertissement sur sa soif (14.17) sont supprimés — ils accusaient la tour, qui n'était pour rien
+  dans le blocage. La fiche revient à « Eau X% · N eau/s ». (La publication de sa conso sur le réseau
+  tuyau, elle, est conservée : c'est une donnée juste et utile.)
+  (2) **LE BUG (retour : « si on met un bâtiment sur le tuyau… ça bloque le raffineur silicium ; si je
+  mets un séparateur d'air, même problème ; on a l'impression que les réseaux sont séparés »).**
+  Reproduit par **BALAYAGE EXHAUSTIF** (256 configurations autour d'une jonction) : **45 configurations
+  sur 128 COUPAIENT** un tuyau qui traverse VISUELLEMENT la jonction. Symptôme exact du joueur (capture) :
+  un réseau tuyau à **« TUILES 1 · FLUX 0 · TRANSIT aucun »** et le raffineur à 0 %.
+  **CAUSE RACINE** : `junctionAxisH` déduit l'axe d'une jonction (quel porteur va horizontalement,
+  lequel verticalement) à partir de `netConnectMask` — **qui compte AUSSI les BÂTIMENTS raccordés au
+  porteur** (c'est voulu pour les SPRITES : on veut dessiner une branche vers un bâtiment desservi).
+  Résultat : poser une pompe / une tour / un séparateur d'air / un raffineur Si à l'EST d'une jonction
+  faisait croire que le tuyau courait EST-OUEST → **l'axe basculait** → le tracé NORD-SUD qui la
+  traversait était **coupé en deux**, sans que rien ne le signale. Un bâtiment est un CONSOMMATEUR EN
+  BOUT DE LIGNE : il ne dit rien du sens dans lequel le réseau court.
+  **CORRECTIF** : `netConnectMask` gagne un 6ᵉ paramètre **`infraOnly`** (opt-in) ; `junctionAxisH`
+  l'active → l'axe se déduit des **TRACÉS RÉELS uniquement** (infra + jonctions). Partout ailleurs
+  (sprites, stubs sous bâtiments) les bâtiments comptent toujours. **45 coupures → 2.**
+  ⚠ **Les 2 restantes sont INHÉRENTES au design** (règle 13.18, « une jonction est un CROISEMENT
+  strict ») : avec du tuyau sur les **QUATRE** côtés, un seul axe peut passer — il faut une tuile de
+  tuyau ordinaire, pas une jonction. Non corrigé, c'est la règle.
+  ⚠ **La save du joueur n'en portait plus la trace** (il avait démoli le bâtiment avant d'exporter) :
+  le bug a été trouvé par balayage, pas par lecture de sa partie. Le scan « pont manqué » sur ses
+  7 îles est propre, et ses réseaux ne changent pas avec le correctif.
+  Validé : `node --check` (7 blocs) + Chromium **11 suites, 159 assertions, 0 KO, 0 erreur JS** — le
+  cas EXACT du joueur (tuyau N-S + séparateur d'air / raffineur Si / pompe / tour à l'E comme à l'O)
+  ; non-régression du croisement (les deux porteurs traversent et restent des réseaux DISTINCTS), de
+  la règle 13.18 (pas de diffusion perpendiculaire) et du raccordement d'un bâtiment en bout de ligne
+  à travers la jonction ; + tout 14.17 → 14.20 et la save du joueur.
+- **État précédent : `GAME_BUILD = 303`, `GAME_VERSION = 'Alpha 14.20'`, `SAVE_VERSION = 31`.**
   Changement 14.20 : **l'illimité devient une TECHNIQUE D'ÎLE + écran noir du petit hors-ligne.**
   `SAVE_VERSION` INCHANGÉ (`netInfPaid` et `unlimited` existent déjà).
   (1) **PLUS DE 2ᵉ BOUTON — « c'est forcément toute l'île »** (demande). Le bouton « ∞ Toute l'île »
