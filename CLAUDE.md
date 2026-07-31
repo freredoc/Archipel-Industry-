@@ -17,7 +17,54 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 296`, `GAME_VERSION = 'Alpha 14.14'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 297`, `GAME_VERSION = 'Alpha 14.15'`, `SAVE_VERSION = 31`.**
+  Changement 14.15 : **COMPARATEUR DU COLLISIONNEUR — « que des erreurs avec un comparateur normal ».**
+  `SAVE_VERSION` INCHANGÉ (aucun champ persisté ajouté ; `lastVerdict` transitoire). Le testeur a
+  fourni sa save : **palier 1, 3 pénalités, 0 confirmation**. **CAUSE RACINE (diagnostiquée sur sa
+  save)** : son comparateur XNOR est **PARFAITEMENT JUSTE** (2 NOT + 2 AND + 1 OR, exactement le
+  montage du tuto `collider_cmp1`) — mais ses DEUX émetteurs ne sont câblés que sur la face
+  **OUEST**, or le mapping des faces est **FIXE et non orientable** : `DIRS4 = [N, S, O, E]` →
+  **dir 0 = NORD = α**, 1 = SUD = β, **2 = OUEST = γ**. Au palier 1 **seul α porte la donnée** ; γ est
+  **constant à 0**. Son XNOR comparait donc **0 avec 0** → il répondait « égal » **à chaque tick** →
+  la vanne s'ouvrait en permanence → pénalité à chaque tirage où les vrais codes différaient (~50 %).
+  **Et RIEN à l'écran ne disait quelle face est α** (ni la fiche, ni le tuto). D'où « on est dans le
+  flou ». **5 défauts corrigés.** (1) **La vanne comparait les CHAÎNES** (`a === b2`) alors que le
+  joueur ne voit que les **BITS émis** : au P3, Collisionneur `'100'` vs Data Center niveau 0 `'1'`
+  donne **les mêmes faces `1000`** mais des chaînes différentes → **pénalité imméritée**. Nouveau
+  helper **`colliderCompare(a, b, palier)`** : comparaison **sur les bits, sur la largeur du palier**.
+  (2) **`dcCode` absent → PÉNALITÉ GARANTIE.** Sans Data Center (ou avant son 1er calcul) `dcCode`
+  vaut `null`, l'émetteur sort `0000` = exactement une saveur `'0'` → un comparateur CORRECT conclut
+  « égal », envoie 1, et `b2 != null` était faux → **pénalité**. Désormais `colliderCompare` renvoie
+  **`null` = manche INVALIDE** : **ni confirmation ni pénalité**. (3) **Le Data Center restait muet
+  ~16 ticks** (0,0625 tirage/tick au niveau 0) pendant que le Collisionneur émettait déjà à chaque
+  tick → c'est **là** que tombaient les pénalités. **1er calcul désormais IMMÉDIAT.** (4) **4ᵉ face =
+  STROBE « VALIDE »** : elle était « réservée, toujours 0 » ; elle vaut maintenant **1 dès que
+  l'émetteur publie un code réel** → une saveur `'0'` et un émetteur **muet** sont enfin
+  **DISTINGUABLES** (ils sortaient tous deux `0000`). (5) **Une porte sans AUCUNE entrée câblée sort
+  désormais 0** : seul le `AND` avait ce garde (`ins.length > 0`) — un **NOT/NAND/NOR/XNOR flottant
+  sortait 1**, donc un montage incomplet **ouvrait la vanne** (l'action destructrice). Une porte
+  câblée dont l'entrée vaut 0 est **inchangée** (`ins = [0]` → NOT sort bien 1). **UX (le vrai
+  correctif « flou »)** : fiche de l'**ÉMETTEUR** = **plan des faces** (`N α / S β / O γ / E VALIDE`)
+  avec le **bit courant de chacune**, les faces **inutiles au palier grisées** + avertissement
+  explicite ; fiche de la **VANNE** = signal reçu, codes comparés, verdict ; fiche du
+  **COLLISIONNEUR** = codes **et faces émises** + **verdict de la dernière manche**. ⚠ **L'émetteur
+  et la vanne n'étaient PAS inspectables** (le tap en couche logique n'acceptait que
+  porte/capteur/actionneur) → le plan des faces aurait été inatteignable : condition élargie à
+  `logicMultiSource`/`logicValve`, et la **rotation retirée** pour eux (faces fixes / OU des 4 faces —
+  la proposer était mensonger). Tutos `collider_cmp1` et `collider_penalite` réécrits (mapping des
+  faces énoncé noir sur blanc). Validé : `node --check` (7 blocs) + Chromium **25 assertions ×3 runs,
+  0 échec, 0 erreur JS** — les 3 cas qui pénalisaient à tort ; strobe sur les 3 états ; **save RÉELLE
+  du testeur** rejouée (diagnostic automatique : « face NORD câblée sur AUCUN des 2 émetteurs, le
+  comparateur est sur OUEST=γ ») ; **un comparateur correctement câblé → 0 pénalité sur 4000 tirages
+  en P1 ET P3**, détecteur de leptons **+68 % de confirmations** (le puzzle garde son intérêt) ;
+  non-régression : vanne forcée sur tirages aléatoires → pénalités ET confirmations ; + **rendu réel
+  des 2 nouveaux panneaux** par tap canvas (gel du tick via `catchingUp`) ; + boot de la save du
+  testeur (0 `tickErrors`, horloge qui avance, canvas peint). ⚠ **SIGNALÉ, non traité** :
+  `information_quantique` (sortie du Data Center) **n'a AUCUN consommateur** dans tout le jeu — elle
+  s'accumule sans usage (325 au port du testeur). C'est le « pas de stockage d'informations
+  quantique » remonté : la ressource existe et EST bien stockée, mais elle ne sert à rien. Lui donner
+  un débouché (alimenter les manches du Collisionneur ? recette d'endgame ?) est une **décision de
+  game design** à trancher, pas un bug — non inventée ici.
   Changement 14.14 : **LA VRAIE CAUSE DU GEL — une FAUTE DE FRAPPE de mon code du 14.08 tuait le tick
   de toute île possédant une CENTRALE NUCLÉAIRE.** `SAVE_VERSION` INCHANGÉ (1 ligne de correctif).
   Le testeur a fourni son EXPORT de sauvegarde : chargé tel quel, il donne l'exception en 9 secondes —
