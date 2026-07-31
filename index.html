@@ -4921,8 +4921,8 @@ const BUILDINGS = {
       cable: 100
     },
     inputs: {
-      minerai_or: 16,
-      acide: 4
+      // 14.19 — l'acide est RETIRÉ de la fonderie d'or (demande joueur), V1 comme V2.
+      minerai_or: 16
     },
     outputs: {
       lingot_or: 1
@@ -4945,8 +4945,8 @@ const BUILDINGS = {
       circuit: 30
     },
     inputs: {
+      // 14.19 — l'acide est RETIRÉ du raffineur de silicium (demande joueur), V1 comme V2.
       silicium: 8,
-      acide: 4,
       oxygene: 32
     },
     outputs: {
@@ -5482,7 +5482,9 @@ const BUILDINGS = {
       element_moteur_nuc: 1
     },
     inputs: {
-      acide: 16
+      // 14.19 — acide ÷2 (16 → 8, demande joueur). Appliqué au V1 ET au V4 : c'est la même
+      // recette, le V4 n'ayant jamais fait que la reprendre telle quelle (cf. 14.09).
+      acide: 8
     },
     outputs: {
       tungstene: 1,
@@ -5775,7 +5777,9 @@ const BUILDINGS = {
       period: 60
     },
     inputs: {
-      acide: 16
+      // 14.19 — acide ÷2 (16 → 8, demande joueur). Appliqué au V1 ET au V4 : c'est la même
+      // recette, le V4 n'ayant jamais fait que la reprendre telle quelle (cf. 14.09).
+      acide: 8
     },
     outputs: {
       tungstene: 1,
@@ -5801,8 +5805,8 @@ const BUILDINGS = {
       period: 60
     },
     inputs: {
-      minerai_or: 16,
-      acide: 4
+      // 14.19 — l'acide est RETIRÉ de la fonderie d'or (demande joueur), V1 comme V2.
+      minerai_or: 16
     },
     outputs: {
       lingot_or: 1
@@ -5825,8 +5829,8 @@ const BUILDINGS = {
       period: 60
     },
     inputs: {
+      // 14.19 — l'acide est RETIRÉ du raffineur de silicium (demande joueur), V1 comme V2.
       silicium: 8,
-      acide: 4,
       oxygene: 32
     },
     outputs: {
@@ -6966,8 +6970,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 301;
-const GAME_VERSION = 'Alpha 14.18';
+const GAME_BUILD = 302;
+const GAME_VERSION = 'Alpha 14.19';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.

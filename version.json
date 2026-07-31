@@ -1,8 +1,8 @@
 {
-  "build": 301,
-  "version": "Alpha 14.18",
+  "build": 302,
+  "version": "Alpha 14.19",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge PR #291 — Alpha 14.18 (build 301) : He3 ×2 + diagnostic tour/tuyau"
+  "notes": "Merge PR #292 — Alpha 14.19 (build 302) : ajustements acide"
 }
