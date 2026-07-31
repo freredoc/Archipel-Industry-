@@ -17,7 +17,101 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 299`, `GAME_VERSION = 'Alpha 14.16'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 300`, `GAME_VERSION = 'Alpha 14.17'`, `SAVE_VERSION = 31`.**
+  Changement 14.17 : **PATCH 9 retours joueur — He3 du Collisionneur, cadence du Data Center, pause
+  sur déficit, illimité par île, hors-ligne, conduit illimité, tour/tuyau, port au souterrain.**
+  `SAVE_VERSION` INCHANGÉ (aucun champ persisté ajouté : `co.halt`/`co.want`/`co.he3Need`,
+  `bld.waterNeed`/`waterDrawn` sont transitoires ; `unlimited` du conduit passe par le champ `unl`
+  déjà générique de la sérialisation des réseaux).
+  (1) **LE COLLISIONNEUR CONSOMME ENFIN DE L'HÉLIUM 3** (« le collisionneur ne consomme pas d'hélium
+  3 »). C'était le chaînon manquant du souterrain, exactement le même défaut qu'`information_quantique`
+  au 14.16 : la foreuse révèle les poches d'He3, le Séparateur Cryogénique le raffine… et **personne
+  ne le consommait**. Nouveau barème **`COLLIDER_HE3` = P1 1 /s · P2 8 /s · P3 64 /s** (échelle
+  binaire ×8 par palier ; le plafond de PUISSANCE, lui, fait ×16). Approvisionnement par **TUYAU sur
+  le landmark**, même chemin que la tour aéroréfrigérante (`colliderDrawHe3` + `colliderBounds`) :
+  réseau relié au port → lecture du PORT (les liquides d'un tuyau relié y sont flushés chaque tick),
+  réseau isolé → lecture de sa CITERNE. **TOUT OU RIEN** : soit la manche est payée entièrement, soit
+  **rien n'est prélevé** (sinon l'He3 brûlerait pendant que la machine est en pause). ⚠ **Rupture
+  assumée pour les parties en cours** : un Collisionneur sans tuyau d'He3 se met en pause tant que le
+  joueur ne l'a pas raccordé (c'est le but de la demande). ⚠ **Ordre de grandeur à surveiller** : le
+  Séparateur Cryogénique sort 0,01 He3/s de base (×2^niveau) → il faut ~Nv.8 pour couvrir le palier 1,
+  ~Nv.14 pour le palier 3. À rééquilibrer si c'est trop raide au playtest.
+  (2) **TOUT DÉFICIT MET EN PAUSE** (« si il y a un quelconque déficit dans le Colisionneur ou le data
+  center ça se met en pause »). **Collisionneur** : nouveau `co.halt` (`'power'` | `'fuel'` | null).
+  Avant, un manque de courant faisait **RECULER** le démarrage (jusqu'à repartir de zéro) sans que rien
+  ne le dise. Désormais le compte à rebours est **GELÉ**, la machine tombe à 0 kW, n'émet aucun code et
+  ne tire aucune manche → **aucune pénalité n'est possible pendant une panne**, et elle reprend
+  EXACTEMENT où elle en était. ⚠ **Piège évité, à ne pas défaire** : la DEMANDE électrique reste
+  publiée en pause via un champ séparé **`co.want`** (la boucle énergie compare `want` au disponible
+  pour poser `co.powered`, mais ne consomme que `co.cur` = 0). Si on mettait la demande à zéro, le tick
+  suivant conclurait « alimenté » (0 kW suffisent toujours) et la machine battrait marche/arrêt à chaque
+  tick. **Data Center** : nouveau flag de def **`allOrNothing`** lu dans la boucle bâtiment → au moindre
+  déficit (intrants OU courant) son régime tombe à **0** au lieu de tourner au ralenti. Il n'a AUCUNE
+  sortie : tourner à 40 % ne produisait rien tout en brûlant azote et hélium. ⚠ **Piège évité, à ne pas
+  défaire** : il reste inscrit dans `energyConsumers` et `bld.active` reste `true` — c'est
+  indispensable pour que la boucle énergie le serve et que `pwrAvg` remonte, sinon il resterait à 0 % à
+  vie une fois coupé (**interblocage**, testé). L'affichage « 0 % + cause » vient de `regime`/`inFac`/
+  `pwrAvg`, pas d'`active`. `dataCenterState` gagne l'état **`deficit`**.
+  (3) **DATA CENTER : VALIDATIONS PAR SECONDE** (« le data center doit indiquer combien de validation
+  par seconde »). Sa fiche gagne **Validations** (= `rate × reward`, ce qu'un comparateur correct
+  rapporte réellement), **Cadence** (manches/s, ou « 1 manche toutes les N s ») et **Récompense** (×N).
+  On voit enfin ce que rapporte une amélioration. (4) **UN SEUL DATA CENTER PAR ÎLE**
+  (`maxPerIsland: 1`) : le moteur n'en a de toute façon jamais utilisé qu'un (`findDataCenter` renvoie
+  le PREMIER trouvé) — en poser un second coûtait très cher pour rien.
+  (5) **RÉSEAUX ILLIMITÉS SUR TOUTE L'ÎLE** (« j'ai amélioré plusieurs réseaux en illimité mais il y en
+  a pas sur toute l'île »). **Ce n'était PAS un bug** (vérifié : l'héritage d'`unlimited` à la scission
+  et à la fusion est correct depuis 13.33) : `unlimited` est un attribut de RÉSEAU et une île en porte
+  facilement une dizaine du même type — il fallait tous les retrouver un par un. Nouveaux helpers
+  `networksOfType` / `networkUnlimitedAllInfo` + bouton **« ∞ Toute l'île (N) »** dans le panneau
+  réseau + handler `makeAllNetworksUnlimited`. **Ne coûte pas plus cher** : le forfait est déjà acquis
+  une fois par île ET par type (`netInfPaid`, 14.05), donc les suivants sont gratuits.
+  (6) **CONDUIT DE CHALEUR ILLIMITÉ : 10 000 CÂBLES SUPRACONDUCTEURS** (demande). Il lui manquait
+  l'état illimité que les 3 autres réseaux ont depuis longtemps — le sprite V4 lui était **déjà
+  réservé** depuis 13.86 mais aucun matériau n'était défini, donc `unlimited` restait faux à vie.
+  Entrée `conduit` ajoutée à `NETWORK_HI_MATS` (`irradie: 'cable_supraconducteur'`, `cheap`/`premium`
+  nuls → le coût des PALIERS garde sa formule dédiée ×10). `processHeat` : débit `Infinity` quand
+  illimité → le conduit n'est plus jamais le facteur limitant (restent l'émission des sources et
+  l'absorption des tours) ; teinte « chauffe » jamais saturée.
+  (7) **CALCUL HORS-LIGNE : L'OPTION EST ENFIN RESPECTÉE** (« des fois le calcul hors ligne est quasi
+  instantané malgré l'option calcul rapide désactivée »). **Cause trouvée** : le filet anti-gel du
+  14.13 (bascule automatique en extrapolation) avait un budget de **8 s**, vite dépassé sur une grosse
+  partie → l'option « simplifié » désactivée n'était de fait presque jamais respectée, **en silence**.
+  Désormais le budget vaut **90 s quand le joueur a demandé le calcul complet** (8 s sinon) — le filet
+  ne sert plus que d'anti-plantage — et quand il se déclenche quand même, **le récap le DIT**
+  (`report.approx` → ligne « ≈ Production APPROXIMÉE… », et « ⏭ Rattrapage interrompu » après un
+  « Passer »). (8) **RÉCAP HORS-LIGNE DÉFILABLE** (« possibilité de scroller les ressources eues
+  pendant le temps hors ligne ») : la liste n'est plus **coupée à 12 entrées** (elle l'était en dur) et
+  `.offline-gains` défile (`max-height:46vh; overflow-y:auto`).
+  (9) **TOUR AÉRORÉFRIGÉRANTE / TUYAU : elle NE bloque PAS** (« la tour semble bloquer le tuyau, alors
+  qu'aucune règle ne l'interdit »). **Vérifié par sonde** : tuyau · tuyau · TOUR · tuyau · tuyau donne
+  **UN SEUL réseau** (la tour consomme de l'eau → `buildingConnectsCarrier(tour,'pipe')` vrai → la
+  passe de fusion 10.59 la traverse), et un four à charbon coupe bien en contre-épreuve. **La vraie
+  cause du ressenti** : la tour puise son eau dans `processHeat`, HORS de la boucle bâtiment → sa
+  consommation n'apparaissait **ni** dans « Consommation /s » du panneau réseau, **ni** dans la demande
+  du tuyau. Or elle est énorme (**256 eau/s × 2^niveau**, soit 131 072 /s au Nv.10) et se sert sur le
+  stock commun → les autres machines à eau tombaient à 0 % sans que rien ne désigne le coupable.
+  Correctif de **LISIBILITÉ** : sa demande et son flux sont publiés sur le réseau tuyau qui la dessert,
+  sa fiche affiche « pris / besoin » et un avertissement sur le doublement par niveau. ⚠ **Affichage
+  SEUL** : `netFactor`/`netTierFactor` sont déjà figés quand `processHeat` tourne → **aucun changement
+  d'équilibrage**. (10) **BOUTON PORT AU SOUTERRAIN** (« quand on est dans le souterrain et qu'on
+  clique sur le bouton port cela doit afficher le port de l'île 6 ») : le panneau s'ouvrait **VIDE**
+  (l'île 7 n'a pas de port, `game.port[7]` n'existe jamais). Nouveau helper **`portIslandOf`** (7 → 6,
+  identité ailleurs) passé au `PortPanel` → il affiche « Port — Île 6 », et tous ses handlers reçoivent
+  déjà l'île en paramètre donc agissent sur la bonne. Aligne le panneau sur ce que faisaient déjà le
+  moteur (`portPool`), le HUD et les coûts depuis 13.87.
+  Validé : `node --check` (7 blocs) + Chromium **5 suites, 107 assertions, 0 KO, 0 erreur JS** —
+  barèmes He3 et tout-ou-rien du plein ; pause sur manque d'He3 ET de courant avec **timer gelé** et
+  **demande toujours publiée** ; 200 ticks en pause → **0 manche, 0 pénalité** ; reprise exacte au
+  retour du carburant ; Data Center **par le moteur réel** (régime 100 % → déficit partiel → régime 0
+  avec **0 azote et 0 hélium brûlés** → reprise) ; **non-régression anti-interblocage** (production
+  coupée 40 ticks → `pwrAvg` effondré → courant rétabli → **régime 100 % retrouvé**) ; **cadence des
+  manches inchangée** (20 manches sur 320 ticks au Nv.1) et 320 He3 consommés ; conduit V1 borné à
+  1,024 MJ/s → **illimité = seule l'absorption de la tour limite** ; conso d'eau de la tour visible
+  dans `netDemand`/`netFlow` ; récap hors-ligne **30 ressources listées + scroll effectif** + mention
+  d'approximation ; bouton « ∞ Toute l'île (3) » **cliqué pour de vrai** (armement puis confirmation) ;
+  fiche Data Center « 4 /s » au Nv.7 ; fiche Collisionneur « EN PAUSE » + ligne Hélium 3 ; **boot réel**
+  (horloge qui avance, canvas peint, 0 `tickErrors`) ; i18n en/es/de des 23 nouveaux libellés.
+  ⚠ **Le sprite du conduit V4 existait déjà** — rien à générer.
   Changement 14.16 : **suppression d'`information_quantique` + 3 ressources retriées.** `SAVE_VERSION`
   INCHANGÉ (purge idempotente au chargement, aucun champ ajouté). (1) **`information_quantique`
   SUPPRIMÉE** (demande utilisateur, suite au signalement du 14.15 : elle n'avait **aucun consommateur**
