@@ -1,8 +1,8 @@
 {
-  "build": 302,
-  "version": "Alpha 14.19",
+  "build": 303,
+  "version": "Alpha 14.20",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge PR #292 — Alpha 14.19 (build 302) : ajustements acide"
+  "notes": "Merge PR #293 — Alpha 14.20 (build 303) : illimité par île, conduits, écran noir hors-ligne"
 }
