@@ -17,7 +17,7 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 298`, `GAME_VERSION = 'Alpha 14.16'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 299`, `GAME_VERSION = 'Alpha 14.16'`, `SAVE_VERSION = 31`.**
   Changement 14.16 : **suppression d'`information_quantique` + 3 ressources retriées.** `SAVE_VERSION`
   INCHANGÉ (purge idempotente au chargement, aucun champ ajouté). (1) **`information_quantique`
   SUPPRIMÉE** (demande utilisateur, suite au signalement du 14.15 : elle n'avait **aucun consommateur**
@@ -120,6 +120,22 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   raccordement **`SO` en P1 → `NSO` en P2 → `NESO` en P3** (la face γ, celle du fil mal branché du
   joueur, est REFUSÉE en P1 et acceptée en P3), 7 variantes de sprite présentes ; + non-régression
   14.15/14.16 (comparateur correct : **0 pénalité sur 3000 ticks**) et boot de la save.
+  (10) **BUILD 298 → 299 : deux APK DIFFÉRENTS avaient été publiés sous le MÊME numéro de build.**
+  Le 14.16 a été mergé en **DEUX PR** (#287 = suppression d'`information_quantique` + retri des
+  tiers ; #288 = manches synchronisées + pause du Data Center + sprites/faces), chacune déclenchant
+  un build. Or `GAME_BUILD` n'avait été bumpé qu'UNE fois (297 → 298) : les **deux** APK se sont
+  publiés en « build 298 », le second écrasant le premier dans la release `apk-latest`. Conséquence
+  exacte remontée par le testeur (« j'ai pas les dernières modifications avec les sprites ») : ayant
+  installé l'APK de la PR #287, son jeu comparait `version.json` (298) à son `GAME_BUILD` (298) →
+  `build > GAME_BUILD` FAUX → **aucune notification de mise à jour**, alors que l'APK en ligne
+  contenait bien tout (vérifié en téléchargeant la release et en grepant l'HTML embarqué :
+  `emitterFaceCarries`, `logic_emetteur_inactif`, `dataCenterState`, `REMOVED_RESOURCES`,
+  `co.roundDone` tous PRÉSENTS). Même piège pour le **cache du service worker** (`archipel-$BUILD`,
+  identique → pas de re-fetch). ⚠ **RÈGLE À RETENIR** : le bump de `GAME_BUILD` doit être fait
+  **par LIVRAISON (par merge sur `main`)**, pas par « lot de travail » — si un même lot part en
+  plusieurs PR, il faut **re-bumper à chaque PR**, sinon les installations restent bloquées sur la
+  première. Contournement immédiat pour un joueur déjà coincé : réinstaller l'APK à la main depuis
+  la release (le lien fonctionne, c'est seulement la NOTIFICATION qui ne part pas).
   Changement 14.15 : **COMPARATEUR DU COLLISIONNEUR — « que des erreurs avec un comparateur normal ».**
   `SAVE_VERSION` INCHANGÉ (aucun champ persisté ajouté ; `lastVerdict` transitoire). Le testeur a
   fourni sa save : **palier 1, 3 pénalités, 0 confirmation**. **CAUSE RACINE (diagnostiquée sur sa
