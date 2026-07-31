@@ -8479,7 +8479,12 @@ const COLLIDER_GOALS = { 1: 100, 2: 1000, 3: 10000 };
 // §5 Data Center : débit de base 0,0625 particule/tick, ×2 par niveau ; au-delà de 4/s le niveau
 // suivant multiplie la RÉCOMPENSE (pas le nb de calculs) — sinon la charge de calcul explose.
 const DC_BASE_RATE = 0.0625;
-const DC_RATE_CAP = 4;
+// 14.16 — plafond ramené de 4 à 1. Depuis que les DEUX émetteurs tirent ENSEMBLE (une MANCHE par
+// tirage), un tick ne peut porter qu'UNE manche : au-delà de 1 manche/tick le débit supplémentaire
+// était purement perdu, et les niveaux 5, 6 et 7 du Data Center donnaient EXACTEMENT la même
+// cadence (1/s) pour un coût croissant — 2 améliorations mortes. Le surplus devient donc, comme le
+// prévoyait déjà l'intention d'origine, un multiplicateur de RÉCOMPENSE : chaque niveau compte.
+const DC_RATE_CAP = 1;
 function dcRateOf(bld) {
   return DC_BASE_RATE * Math.pow(2, bld && bld.upgrade || 0);
 }
@@ -8835,6 +8840,12 @@ function processLogic(game, isl) {
     const a = co.code,
       b2 = co.dcCode;
     if (a == null) continue;
+    // 14.16 — UN SEUL verdict par MANCHE. Les codes sont désormais tenus plusieurs ticks (cadence
+    // du Data Center) : une vanne laissée ouverte était jugée à CHAQUE tick, donc une manche
+    // gagnante rapportait jusqu'à 16 confirmations et une manche perdue coûtait jusqu'à 16
+    // pénalités (constaté sur la save du joueur : 2 pénalités d'affilée pour un seul code).
+    // La manche est consommée dès qu'elle est jugée ; la suivante rouvre le droit de vote.
+    if (co.round != null && co.round === co.roundDone) continue;
     const isException = Object.prototype.hasOwnProperty.call(COLLIDER_EXCEPTIONS, a);
     // 14.15 — Comparaison sur les BITS RÉELLEMENT ÉMIS (cf. colliderCompare), plus sur les chaînes.
     const cmp = isException ? true : colliderCompare(a, b2, co.palier || colliderPalier(game));
@@ -8846,6 +8857,7 @@ function processLogic(game, isl) {
       co.lastVerdict = 'invalid';
       continue;
     }
+    co.roundDone = co.round; // manche consommée (14.16)
     if (cmp) {
       if (!game.techTree) game.techTree = {};
       const gain = Math.max(1, Math.round(co.dcReward || 1));
@@ -9116,30 +9128,43 @@ function processCollider(game, isl) {
   co.goal = COLLIDER_GOALS[palier] || 0;
   // ── Émission des saveurs : uniquement une fois le démarrage terminé ──
   if (co.state === 'running') {
-    // Le Collisionneur tire une saveur à chaque tick (exceptions autorisées : leptons 000/111).
-    co.code = pickFlavorCode(palier, true);
-    // Le Data Center tire à SON débit (0,0625/tick ×2/niveau, borné à 4/s ; au-delà le surplus
-    // devient un multiplicateur de RÉCOMPENSE). Jamais 000 ni 111 → aucun cas ambigu.
+    // 14.16 — UNE MANCHE = un tirage SIMULTANÉ des deux émetteurs, à la CADENCE DU DATA CENTER.
+    // Avant, le Collisionneur retirait une saveur à CHAQUE tick pendant que le Data Center gardait
+    // la sienne 4 à 16 ticks : les deux émetteurs étaient DÉSYNCHRONISÉS. Le joueur ne voyait
+    // aucune « manche » observable (un côté clignotait, l'autre était figé), et un même code du
+    // Data Center pouvait déclencher plusieurs verdicts d'affilée. Désormais les deux codes sont
+    // tirés ENSEMBLE, au débit du Data Center (0,0625 manche/tick au niveau 0, ×2 par amélioration,
+    // plafonné à 4/s — au-delà le surplus devient un multiplicateur de RÉCOMPENSE, `dcReward`).
+    // Améliorer le Data Center accélère donc réellement le puzzle.
     const dcTile = findDataCenter(game, isl);
     if (dcTile && dcTile.building) {
       const eff = dcEffective(dcTile.building);
       co.dcReward = eff.reward;
       co.dcAcc = (co.dcAcc || 0) + eff.rate;
-      // 14.15 — 1er calcul IMMÉDIAT. Au niveau 0 le Data Center ne tire qu'un code tous les
-      // 16 ticks (0,0625/tick) : au lancement de la séquence il restait MUET ~16 s pendant que le
-      // Collisionneur émettait déjà à chaque tick. Le joueur comparait donc à du vide dès la
-      // 1ʳᵉ seconde — c'est là que tombaient les pénalités.
-      if (co.dcCode == null) co.dcAcc = Math.max(co.dcAcc, 1);
+      co.dcRate = eff.rate; // cadence courante (manches/tick) — affichée dans la fiche
+      // 1ʳᵉ manche IMMÉDIATE : sinon la machine reste muette jusqu'à 16 s au niveau 0 juste après
+      // le lancement de la séquence, et le joueur compare à du vide.
+      if (co.code == null || co.dcCode == null) co.dcAcc = Math.max(co.dcAcc, 1);
+      let draw = false;
       while (co.dcAcc >= 1) {
         co.dcAcc -= 1;
+        draw = true;
+      }
+      if (draw) {
         // Le nb de BITS du Data Center suit son niveau (niv 1 → α seul, 2 → αβ, 3+ → αβγ), borné
         // par le palier courant du Collisionneur (on ne compare que des codes de même longueur).
         const dcBits = Math.min(palier, Math.max(1, (dcTile.building.upgrade || 0) + 1));
-        co.dcCode = pickFlavorCode(Math.min(palier, dcBits), false);
+        co.code = pickFlavorCode(palier, true); // exceptions autorisées : leptons 000/111
+        co.dcCode = pickFlavorCode(dcBits, false); // jamais 000/111 → aucun cas ambigu
+        co.round = (co.round || 0) + 1; // une manche = UN verdict (cf. vanne)
       }
     } else {
+      // Sans Data Center il n'y a rien à comparer : aucune manche n'est tirée et les DEUX
+      // émetteurs restent muets (face VALIDE à 0) → le joueur voit immédiatement ce qui manque.
+      co.code = null;
       co.dcCode = null;
       co.dcReward = 1;
+      co.dcRate = 0;
     }
   } else {
     co.code = null;
@@ -14438,6 +14463,13 @@ function InfoPanel({
       // ça a compté / pourquoi ça a sauté / pourquoi il ne se passe rien ».
       if (co.lastVerdict) {
         row('vd', I18N.t('Dernière manche'), co.lastVerdict === 'ok' ? I18N.t('confirmée ✓') : co.lastVerdict === 'penalty' ? I18N.t('codes différents → pénalité') : I18N.t('sans effet — le Data Center n\'émet rien'), co.lastVerdict === 'ok' ? 'var(--green)' : co.lastVerdict === 'penalty' ? 'var(--red)' : 'var(--orange)');
+      }
+      // 14.16 — Cadence des manches : les DEUX émetteurs tirent ENSEMBLE, au débit du Data Center.
+      // C'est la ligne qui explique pourquoi le puzzle va plus ou moins vite.
+      {
+        const dcT = findDataCenter(game, 6);
+        const rate = dcT && dcT.building ? dcEffective(dcT.building).rate : 0;
+        row('cad', I18N.t('Cadence des manches'), rate > 0 ? (rate >= 1 ? fmtSig(rate) + ' /s' : '1 ' + I18N.t('toutes les') + ' ' + fmtSig(1 / rate) + ' s') + (dcT && dcT.building ? ' · ' + I18N.t('Data Center Nv.') + ((dcT.building.upgrade || 0) + 1) : '') : I18N.t('aucune — Data Center requis'), rate > 0 ? null : 'var(--orange)');
       }
       // Rappel de la 4ᵉ face : c'est elle qui distingue « saveur 0 » de « rien émis ».
       row('vb', I18N.t('4ᵉ face (VALIDE)'), I18N.t('1 = code réel · 0 = émetteur muet'));

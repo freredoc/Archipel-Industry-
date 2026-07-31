@@ -50,6 +50,38 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   0 `tickErrors`, horloge qui avance ; + **dump de l'inventaire RÉEL rendu** confirmant les groupes :
   T2 = `steel, cable, ref. Si, tungstène, oxygène, azote, gaz foss., U235 fuel`, T4 = `… plutonium,
   all.tungst.`, T5 = plus aucune trace des 4 ressources déplacées/supprimées.
+  (4) **MANCHES SYNCHRONISÉES** (demande joueur : « le Data Center n'a pas la même vitesse… il
+  faudrait qu'il envoie autant de données en même temps que le Data Center et qui suivent son
+  amélioration »). Avant, le Collisionneur retirait une saveur à **CHAQUE tick** pendant que le Data
+  Center gardait la sienne **4 à 16 ticks** → émetteurs DÉSYNCHRONISÉS, aucune « manche » observable
+  (un côté clignotait, l'autre était figé). Désormais **une MANCHE = un tirage SIMULTANÉ des deux
+  émetteurs**, à la **cadence du Data Center** (`co.round` incrémenté à chaque tirage). Sans Data
+  Center, **aucune manche n'est tirée** et les DEUX émetteurs restent muets (face VALIDE à 0) → le
+  joueur voit tout de suite ce qui manque. Nouvelle ligne **« Cadence des manches »** dans la fiche
+  du Collisionneur (`1 toutes les N s · Data Center Nv.X`). (5) **UN SEUL verdict par MANCHE**
+  (`co.roundDone`) : les codes étant maintenant TENUS plusieurs ticks, une vanne laissée ouverte
+  était jugée à chaque tick → une manche gagnante rapportait jusqu'à **16 confirmations** et une
+  manche perdue coûtait jusqu'à **16 pénalités** (constaté sur la save du joueur : 2 pénalités
+  d'affilée pour un seul code du Data Center). (6) **`DC_RATE_CAP` 4 → 1** : un tick ne peut porter
+  qu'UNE manche, donc au-delà de 1 manche/tick le débit était **purement perdu** — les niveaux 5, 6
+  et 7 du Data Center donnaient EXACTEMENT la même cadence (1/s) pour un coût croissant, soit
+  **2 améliorations mortes**. Le surplus devient le **multiplicateur de RÉCOMPENSE** déjà prévu par
+  l'intention d'origine (Nv.6 ×2, Nv.7 ×4, Nv.8 ×8) → chaque niveau compte. ⚠ **Conséquence de
+  rythme assumée** : au Nv.1 le puzzle avance à 1 manche/16 s (avant : le Collisionneur spammait
+  chaque tick, ~2 confirmations/s) → **P1 (100 confirmations) demande d'améliorer le Data Center**,
+  ce qui est exactement le but recherché. Validé : `node --check` (7 blocs) + Chromium **7 + 11
+  assertions, 0 erreur JS** — cadence exacte par niveau (16 s / 4 s / 1 s, récompense ×1/×2/×4/×8),
+  **aucun code ne change hors d'une manche**, comparateur sur α → **0 pénalité sur 4000 ticks** vs
+  comparateur sur γ → pénalités (le défaut de câblage reste puni), vanne forcée ouverte 160 ticks →
+  **10 verdicts pour 10 manches** (avant : 160) ; + non-régression complète 14.15/14.16 et boot de
+  la save du joueur (0 `tickErrors`, canvas peint). ⚠ **CAUSE RÉELLE de SES pénalités, re-diagnostiquée
+  sur sa 2ᵉ save** (`penalties: 5`, `confirms: 3`, Data Center **Nv.3**) : il a corrigé l'émetteur du
+  **Data Center** (face **N = α**) mais celui du **Collisionneur est TOUJOURS sur OUEST = γ**
+  (constant 0 au palier 1) → son XNOR calcule `XNOR(0, dc) = NON(dc)`, la vanne s'ouvre donc
+  exactement quand le Data Center émet 0, et le verdict est alors un pur tirage à pile ou face sur
+  le code du Collisionneur. La désynchronisation n'était PAS la cause de ses pénalités (un
+  comparateur correct n'en prenait aucune, même désynchronisé) — mais elle rendait le puzzle
+  illisible, et la correction est bonne en soi.
   Changement 14.15 : **COMPARATEUR DU COLLISIONNEUR — « que des erreurs avec un comparateur normal ».**
   `SAVE_VERSION` INCHANGÉ (aucun champ persisté ajouté ; `lastVerdict` transitoire). Le testeur a
   fourni sa save : **palier 1, 3 pénalités, 0 confirmation**. **CAUSE RACINE (diagnostiquée sur sa
