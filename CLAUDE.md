@@ -17,7 +17,71 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 307`, `GAME_VERSION = 'Alpha 14.24'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 308`, `GAME_VERSION = 'Alpha 14.25'`, `SAVE_VERSION = 31`.**
+  Changement 14.25 : **FIX du double comptage du panneau Production (régression 14.24) + Broyeur
+  Uranium hard cap Nv.10 et remplacement du V2 par la CENTRIFUGEUSE URANIUM.** `SAVE_VERSION`
+  INCHANGÉ (le renommage d'id se fait dans `migratePlacement`, qui tourne pour TOUTES les versions).
+  (1) **RÉGRESSION 14.24 CORRIGÉE — l'onglet « Toutes » comptait l'île 6 DEUX FOIS.** Retour joueur
+  « la conso d'He3 du Collisionneur est invisible dans l'onglet production ». **Reproduit dans le VRAI
+  panneau, moteur et rAF réels** : la ligne était bien PRÉSENTE, mais à **2 /s pour une conso réelle
+  de 1**. Cause : depuis le §1ter du 14.24, `islandFlowAgg(6)` ET `islandFlowAgg(7)` renvoient tous
+  deux le total FUSIONNÉ ; or `ProductionPanel` somme sur toutes les îles débloquées → tout ce qui
+  vit sur l'île 6 et le souterrain était additionné deux fois. **CORRECTIF** : l'onglet « Toutes » ne
+  garde qu'UN représentant par groupe d'îles à port commun (`portSharingIslands`). ⚠ **Le bilan
+  ÉLECTRIQUE, lui, continue d'itérer sur les îles NON dédupliquées** (`scopeRaw`) : l'électricité ne
+  traverse PAS l'élévateur (règle 13.81 §7), chaque grille garde son bilan — dédupliquer là aurait
+  fait disparaître toute la production et la demande du souterrain. Les onglets d'une île donnée
+  restent le total fusionné (c'est l'objet du §1ter).
+  ⚠ **Sur le build 307 la conso d'He3 s'affiche bien** (vérifié) : si le joueur ne la voit pas, c'est
+  soit qu'il est resté sur le 306, soit que son Collisionneur est en PAUSE (`co.halt`) — depuis 14.24
+  une machine en pause ne brûle plus d'He3, donc elle n'affiche rien, ce qui est correct. La fiche du
+  Collisionneur nomme la cause (« Hélium 3 · MANQUANT (tuyau ?) » / « Électricité insuffisante »).
+  (2) **BROYEUR URANIUM HARD CAP AU Nv.10** (demande) : `TIER_NEXT.broyeur_uranium.cap = 9` — le cap
+  était DÉJÀ à 9 (upgrade 0-indexé → Nv.10 affiché), la vraie demande était le changement de cible de
+  densification. Il densifie désormais vers `centrifugeuse_uranium`.
+  (3) **`broyeur_uranium_v2` SUPPRIMÉ**, remplacé par **`centrifugeuse_uranium`** (même palier :
+  entrée upgrade 10 = **Nv.11**, même forfait `alliage_tungstene: 400 + element_moteur_nuc: 50`).
+  ⚠ **MIGRATION OBLIGATOIRE, sinon perte de bâtiment** : sans renommage, la boucle de chargement
+  saute la tuile (`!BUILDINGS[p.b] → continue`) et le joueur PERD le bâtiment ET son investissement.
+  `migratePlacement` renomme l'id en TÊTE, pour toutes les versions de save (testé par round-trip
+  réel : bâtiment conservé, niveau 12 intact).
+  (4) **RECETTE (valeurs demandées AU Nv.11, donc ÷1024 dans la def)** : intrants **uranium 2,62e5 +
+  plutonium 25,6 + acier 256** → sortie **combustible_u235 256**. ⚠ **Ce n'est PLUS un broyeur** :
+  elle court-circuite la chaîne yellowcake → enrichissement et fabrique DIRECTEMENT le combustible.
+  ⚠ **Le plutonium devient un INTRANT** (2ᵉ débouché après l'usine moteur nuc.) : il vient de la
+  centrale nucléaire, qui consomme du combustible U235 → **boucle douce**, amorçable uniquement par
+  la chaîne V1 (broyeur Nv.≤10 → enrichissement). Garder quelques broyeurs au cap est donc NÉCESSAIRE.
+  ⚠ **Effet de bord vérifié (même classe qu'en 14.19 pour la fonderie d'or)** : la centrifugeuse n'a
+  plus AUCUN liquide (le V2 consommait de l'acide) → `buildingConnectsCarrier(…, 'pipe')` devient
+  **FAUX**, elle ne fait plus **PONT** entre deux tronçons de tuyau (règle 10.59) : un tuyau qui
+  traversait un Broyeur V2 sera **COUPÉ EN DEUX** après densification/migration. À garder en tête si
+  un joueur signale un tuyau coupé près d'une centrifugeuse.
+  (5) **CONSO ÉLECTRIQUE : sigmoïde `{base: 72, amp: 432}`** → **73 728 → 516 096 kW au Nv.11**
+  (73,7 MW → 516 MW). ⚠ **`amp` est l'AMPLITUDE, pas le plafond : max = base + amp.** Un ×4 littéral
+  des deux champs du V2 (18/126) donnerait 72/504, soit un plafond de **590 MW, pas 516**. On a calé
+  sur les DEUX valeurs explicitement confirmées par le joueur (73,7 → 516), ce qui vaut ×4 sur le
+  PLANCHER et `amp = 504 − 72 = 432`. **Piège à ne pas refaire** : ne jamais annoncer un plafond
+  égal à `amp`.
+  (6) **CHALEUR** : `heatCap: 10` (flag) + `centrifugeuse_uranium` ajouté à la liste
+  `HEAT_PER_MW × MW consommés` de `tickIsland` (règle habituelle, comme machine_outil / presse UHP /
+  usine moteur quantique). Le plafond de trip reste dynamique (60 s d'émission, `heatCapOf`).
+  (7) **Art** : aucun sprite de centrifugeuse livré → `BLD_SPRITE_OVERRIDE.centrifugeuse_uranium =
+  'bat_broyeur_uranium_v2'` (statique ET animation, `ANIM_BY_SK` résolvant depuis la clé de sprite).
+  Le nom reste en français dans les 4 langues : **les LOCALES n'ont AUCUNE section `bld`**, les noms
+  de bâtiments ne sont traduits nulle part (état existant, le V2 l'était aussi).
+  Validé : `node --check` (7 blocs) + Chromium **6 suites, 58 assertions, 0 KO, 0 erreur JS** —
+  def/paliers/forfait/sprite exacts, 0 id orphelin (déblocages ET barre d'outils) ; **VRAI panneau
+  Production** (moteur + rAF réels, Collisionneur alimenté par une éolienne câblée) : ligne
+  « Hélium 3 » présente et à **1 /s** (et non 2) ; **moteur réel** : centrifugeuse Nv.11 → 2,62e5
+  uranium, 25,6 plutonium, 256 acier consommés et **256 combustible U235 produits** en un tick,
+  516 096 kW nominaux, chaleur émise, plus de raccord tuyau ; migration d'une save contenant un
+  Broyeur V2 par **rechargement réel** ; non-régression 14.24 + boot réel.
+  ⚠ **Pièges de harnais** : l'électricité circule **PAR COMPOSANTE CÂBLE** — un générateur et sa
+  machine doivent toucher LE MÊME réseau, sinon `discReason: 'power'` (deux tuiles de câble
+  séparées ne suffisent pas) ; un générateur **sans câble adjacent** est coupé (`discReason: 'wire'`)
+  même si l'ampleur du bilan d'île suffirait ; forger un id INCONNU sur une tuile vivante fait lever
+  `drawBuilding` → geler le dessin avec `catchingUp` avant la forge.
+- **État précédent : `GAME_BUILD = 307`, `GAME_VERSION = 'Alpha 14.24'`, `SAVE_VERSION = 31`.**
   Changement 14.24 : **PATCH 7 retours — He3 du Collisionneur enfin compté, ordre de l'élévateur au
   choix, totaux île 6 / île 6 S réconciliés, He3 ×4/palier, « Île 7 » → « Île 6 S », 2 garde-fous de
   lancement, Data Center en veille.** `SAVE_VERSION` INCHANGÉ (`elevatorPriorityOrder` est un champ
