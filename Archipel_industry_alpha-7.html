@@ -5959,9 +5959,11 @@ const BUILDINGS = {
     size: [1, 1],
     cost: {},
     power: 0,
+    // 14.26 — Conso élec. ×4 (demande) : 72/504 → 288/2016, soit 294,9 MW → 2,36 GW au Nv.11
+    // (contre 73,7 → 590 MW avant). La RECETTE est inchangée.
     sigmoid: {
-      base: 72,
-      amp: 504,
+      base: 288,
+      amp: 2016,
       period: 60
     },
     inputs: {
@@ -6505,7 +6507,7 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'energy',
   label: 'Énergie',
-  ids: ['eolienne', 'centrale_charbon', 'centrale_charbon_v2', 'centrale_diesel', 'centrale_diesel_v2', 'eolienne_offshore', 'accumulateur']
+  ids: ['eolienne', 'centrale_charbon', 'centrale_charbon_v2', 'centrale_diesel', 'centrale_diesel_v2', 'eolienne_offshore', 'centrale_gaz', 'geothermie', 'accumulateur']
 }, {
   key: 'cement',
   label: 'Ciment & béton',
@@ -6533,11 +6535,11 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'tungstene',
   label: 'Tungstène',
-  ids: ['mine_tungstene', 'mine_tungstene_v4', 'four_arc_tungstene', 'machine_outil', 'presse_uhp']
+  ids: ['mine_tungstene', 'mine_tungstene_v4', 'four_arc_tungstene', 'machine_outil', 'foreuse']
 }, {
   key: 'quantique',
   label: 'Quantique',
-  ids: ['foreuse', 'extracteur_souterrain', 'geothermie', 'centrale_gaz', 'separateur_cryogenique', 'fab_ordi_quantique', 'data_center', 'usine_moteur_quantique', 'stabilisateur_quantique']
+  ids: ['extracteur_souterrain', 'separateur_cryogenique', 'presse_uhp', 'fab_ordi_quantique', 'data_center', 'usine_moteur_quantique', 'stabilisateur_quantique']
 }, {
   key: 'logicblock',
   label: 'Bloc logique',
@@ -7034,8 +7036,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 308;
-const GAME_VERSION = 'Alpha 14.25';
+const GAME_BUILD = 310;
+const GAME_VERSION = 'Alpha 14.27';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -8161,7 +8163,9 @@ function elevatorTileOf(game, islandId) {
 }
 // §4.2 (a) : le souterrain n'est alimenté que si la tuile élévateur de l'ÎLE 6 est reliée par
 // route/tuyau au PORT de l'île 6 (réseau `connected` adjacent à — ou passant par — la tuile).
-function elevatorSurfaceLinked(game) {
+// 14.26 — Variante PAR PORTEUR : la tuile élévateur de l'île 6 est-elle reliée au PORT par un
+// réseau de CE type (`road` ou `pipe`) ? `carrier` null = l'un OU l'autre (comportement d'origine).
+function elevatorSurfaceLinkedFor(game, carrier) {
   const tiles = game.islands && game.islands[6];
   const e = elevatorTileOf(game, 6);
   if (!tiles || !e) return false;
@@ -8170,12 +8174,19 @@ function elevatorSurfaceLinked(game) {
     const nt = tiles[r] && tiles[r][c];
     if (!nt) return false;
     const ids = nt.netIds ? Object.values(nt.netIds) : (nt.networkId != null ? [nt.networkId] : []);
-    for (const nid of ids) { const n = nets[nid]; if (n && (n.type === 'road' || n.type === 'pipe') && n.connected) return true; }
+    for (const nid of ids) {
+      const n = nets[nid];
+      if (!n || !n.connected) continue;
+      if (carrier ? n.type === carrier : (n.type === 'road' || n.type === 'pipe')) return true;
+    }
     return false;
   };
   if (hit(e.r, e.c)) return true; // infra posée SUR la tuile élévateur (réseau reliant le port)
   for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) if (hit(e.r + dr, e.c + dc)) return true;
   return false;
+}
+function elevatorSurfaceLinked(game) {
+  return elevatorSurfaceLinkedFor(game, null);
 }
 function portPool(game, islandId) {
   const id = islandId != null ? islandId : game.currentIsland;
@@ -8325,12 +8336,19 @@ function networkTileCount(game, islandId, networkId) {
 const HEAT_PER_MW = 0.125;
 // Coût TOTAL cumulé d'un bâtiment = coût de construction + toutes les améliorations payées.
 // Sert à calculer la pénalité de réparation (20 %) après une surchauffe (trip).
+// ⚠ 14.26 — On prend le niveau le PLUS HAUT entre le niveau COURANT et celui figé au moment de la
+// surchauffe (`dmgUp`). Sans ça : « Baisser » REMBOURSE le coût du palier, donc le joueur baissait
+// son bâtiment endommagé, réparait sur une base réduite, puis remontait avec l'argent rendu —
+// il empochait 20 % de l'écart à CHAQUE surchauffe. Baisser reste permis, ça ne rapporte plus rien.
+// Save antérieure (sans `dmgUp`) → repli sur le niveau courant = comportement d'avant.
+// Source de vérité UNIQUE : l'aperçu de la fiche ET le paiement passent tous deux par ici.
 function buildingTotalCost(bld) {
   const b = bld && BUILDINGS[bld.id];
   if (!b) return {};
   const out = {};
   for (const k in b.cost || {}) out[k] = (out[k] || 0) + b.cost[k];
-  const cum = cumulativeUpgradeCost(b.cost, bld.upgrade || 0, bld.id);
+  const lvl = Math.max(bld.upgrade || 0, bld.damaged && bld.dmgUp != null ? bld.dmgUp : 0);
+  const cum = cumulativeUpgradeCost(b.cost, lvl, bld.id);
   for (const k in cum) out[k] = (out[k] || 0) + cum[k];
   return out;
 }
@@ -8624,6 +8642,12 @@ function processHeat(game, isl) {
     if (rising && (bld.heat || 0) >= cap - 1e-9) {
       bld.heat = cap;
       bld.damaged = true;
+      // 14.26 — EXPLOIT FERMÉ : le coût de réparation (20 % du coût TOTAL cumulé) était calculé sur
+      // le niveau COURANT au moment de réparer. Or « Baisser » REMBOURSE le coût du palier → le
+      // joueur baissait le bâtiment, réparait pour moins cher, puis remontait avec l'argent rendu,
+      // et empochait 20 % de l'écart à chaque surchauffe. On fige donc le niveau AU MOMENT DU TRIP :
+      // la facture ne peut plus être rabotée après coup. Baisser reste permis, ça ne rapporte plus.
+      bld.dmgUp = bld.upgrade || 0;
       bld.dmgTimer = 0;
       bld.active = false;
       bld.nucState = 'off';
@@ -9716,6 +9740,15 @@ function tickIsland(game, isl) {
   // 'elevator', dédié — plus l'approximation 'road' de la phase 2). L'électricité (wire) et les
   // fluides non stockables ne passent JAMAIS par l'élévateur (jamais dans road/pipePort).
   const undergroundBlocked = isl === 7 && !(game.elevatorRepaired && elevatorSurfaceLinked(game));
+  // 14.26 — EXPLOIT FERMÉ : une simple ROUTE entre le port et la tuile élévateur suffisait à faire
+  // descendre AUSSI les liquides (acide, eau…). Les bâtiments souterrains puisaient donc dans le
+  // port sans qu'aucun tuyau ne relie le port à l'élévateur en surface. Désormais le passage des
+  // LIQUIDES au port (chemin `pipePort`) exige un réseau TUYAU reliant le port à l'élévateur.
+  // ⚠ Rupture ASSUMÉE pour les parties en cours : une partie qui n'a qu'une route verra ses
+  // machines souterraines à liquides s'arrêter (motif « élévateur ») jusqu'à la pose d'un tuyau.
+  // ⚠ Le cas MIROIR n'est volontairement PAS traité (décision joueur) : un tuyau seul continue de
+  // débloquer le souterrain côté solides, la route restant exigée par `roadReachesPort`.
+  const underLiquidBlocked = isl === 7 && !elevatorSurfaceLinkedFor(game, 'pipe');
   const elevCap = isl === 7 ? elevatorRateAt(game.elevatorLevel || 0) : Infinity;
   let activeChanged = false,
     resChanged = false;
@@ -10072,7 +10105,20 @@ function tickIsland(game, isl) {
         // une route. Les intrants/extrants tuyau STOCKABLES de ce bâtiment basculent du pool
         // vers le port (chemin pipePort). Les NON_STORABLE (ex. eau_froide du nucléaire) restent
         // dans le pool : tampon transitoire jamais stocké.
-        const pipeToPort = adj.some(nid => nets[nid] && nets[nid].connected);
+        // 14.26 — au souterrain, la bascule vers le PORT exige en plus un TUYAU port ↔ élévateur
+        // en surface (cf. underLiquidBlocked). Sans lui, les liquides restent dans la CITERNE
+        // locale du réseau : le bâtiment n'est plus servi par le port, et sa fiche le montre.
+        const pipeToPort = adj.some(nid => nets[nid] && nets[nid].connected) && !underLiquidBlocked;
+        // Motif explicite quand c'est bien le lien d'élévateur qui manque (et pas le tuyau local).
+        if (underLiquidBlocked && adj.some(nid => nets[nid] && nets[nid].connected)) {
+          const wantsPort = k => !NON_STORABLE[k];
+          const anyPortLiquid = Object.keys(inByType.pipe || {}).some(wantsPort) || Object.keys(outByType.pipe || {}).some(wantsPort);
+          if (anyPortLiquid) {
+            ok = false;
+            disc = true;
+            discReason = 'elevator';
+          }
+        }
         if (pipeToPort) {
           if (inByType.pipe) {
             for (const k in inByType.pipe) {
@@ -12303,7 +12349,12 @@ const TECH_NODES = [{
     n: 1000
   }],
   unlocks: {
-    buildings: ['centrifugeuse_uranium', 'centrale_enrichissement_v2', 'centrale_nucleaire_v2']
+    // 14.27 — `usine_moteur_quantique` DÉPLACÉE ici (elle était au nœud 43) : elle est l'UNIQUE
+    // productrice de `moteur_quantique`, or le nœud 42 en exige 1 000 EN LIVRAISON et le nœud 43
+    // a le 42 pour prérequis → dépendance CIRCULAIRE, tout l'endgame (P3, stabilisateur, antenne
+    // V2, mines V4) était INATTEIGNABLE. Au nœud 41, tous ses coûts et intrants sont déjà
+    // disponibles (alliage/pièce précision/câble supra/ordi quantique/élém. moteur/azote).
+    buildings: ['centrifugeuse_uranium', 'centrale_enrichissement_v2', 'centrale_nucleaire_v2', 'usine_moteur_quantique']
   }
 }, {
   // Réparation III → TOUTES les portes (les 2 dernières : XOR / XNOR).
@@ -12331,7 +12382,7 @@ const TECH_NODES = [{
     n: 10000
   }],
   unlocks: {
-    buildings: ['stabilisateur_quantique', 'antenne_v2', 'usine_moteur_quantique', 'mine_fer_v4', 'mine_charbon_v4', 'mine_cuivre_v4', 'carriere_v4', 'mine_or_v4', 'mine_uranium_v4', 'mine_tungstene_v4']
+    buildings: ['stabilisateur_quantique', 'antenne_v2', 'mine_fer_v4', 'mine_charbon_v4', 'mine_cuivre_v4', 'carriere_v4', 'mine_or_v4', 'mine_uranium_v4', 'mine_tungstene_v4']
   }
 }];
 const TECH_BY_ID = {};
@@ -19358,6 +19409,9 @@ function App() {
           if (b.damaged) {
             pl.dmg = 1;
             pl.dt = b.dmgTimer || 0;
+            // 14.26 — niveau figé au moment de la surchauffe (base de la facture de réparation).
+            // Sans persistance, un simple rechargement rouvrirait l'exploit « baisser puis réparer ».
+            if (b.dmgUp != null) pl.du = b.dmgUp;
           }
           if (b.fluxPri === 'haute' || b.fluxPri === 'basse') pl.fp = b.fluxPri;
           // Pause joueur — champ additionnel rétro-compatible (absent = actif).
@@ -20038,6 +20092,8 @@ function App() {
             if (p.dmg) {
               t.building.damaged = true;
               t.building.dmgTimer = Math.max(0, +p.dt || 0);
+              // Champ additif : absent (save < 14.26) → repli sur le niveau courant.
+              if (p.du != null) t.building.dmgUp = Math.max(0, +p.du || 0);
             }
           }
           if (p.fp === 'haute' || p.fp === 'basse') t.building.fluxPri = p.fp;
@@ -22365,6 +22421,7 @@ function App() {
     }
     bld.damaged = false;
     bld.dmgTimer = 0;
+    delete bld.dmgUp; // le niveau figé n'a plus de raison d'être une fois la facture payée
     bld.heat = 0;
     bld.heatWarned = false;
     bld.heatEmitPk = 0; // le plafond dynamique (60 s d'émission) repart de l'émission réelle
@@ -25272,7 +25329,8 @@ if (typeof window !== 'undefined') {
     DRILL_TIME, DRILL_KW_PER_STONE, DRILL_MAX_POWER, DRILL_STALL, DRILL_POCKET_CHANCE,
     drillLayer, drillCostMult, drillPowerAt, drillStoneAt, drillPlaceCost,
     isPortPipe, portPool,
-    elevatorRateAt, elevatorUpgradeCost, elevatorSurfaceLinked, elevatorTileOf, tickIsland,
+    elevatorRateAt, elevatorUpgradeCost, elevatorSurfaceLinked, elevatorSurfaceLinkedFor, elevatorTileOf, tickIsland,
+    buildingTotalCost, // 14.26
     rawShippable, evaluateTechTree, techConfirm, techDeliver, PORT_PIPE_RES, BUILDING_NODE,
     processLogic, reqValue, unlockedBuildingSet, networkUnlocked, networkUnitCost, LOGIC_MAX_ITER,
     RES_TIER, RES_TIER_LABEL, ANIM_BY_SK, ANIM_META, applyUnlocks, TIER_STEP,

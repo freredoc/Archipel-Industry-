@@ -17,7 +17,85 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 308`, `GAME_VERSION = 'Alpha 14.25'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 310`, `GAME_VERSION = 'Alpha 14.27'`, `SAVE_VERSION = 31`.**
+  Changement 14.27 : **DÉBLOCAGE DE L'ENDGAME — l'Usine de Moteur Quantique passe du nœud 43 au
+  nœud 41.** `SAVE_VERSION` INCHANGÉ (les nœuds sont reconstruits depuis `TECH_NODES` au chargement ;
+  un joueur ayant déjà confirmé le 41 gagne simplement le déblocage au prochain `evaluateTechTree`).
+  **LE BLOCAGE** (trouvé en répondant à « où est l'usine de moteur quantique ? ») :
+  `usine_moteur_quantique` est l'**UNIQUE** productrice de `moteur_quantique` ; elle était débloquée
+  par le nœud **43** (Collisionneur P3), dont le prérequis est le **42** (Réparation III), dont la
+  LIVRAISON exige **1 000 moteur_quantique**. Dépendance **circulaire** → l'usine n'apparaissait
+  JAMAIS dans la barre d'outils, et tout l'endgame (P3, stabilisateur quantique, antenne V2, mines
+  V4) était définitivement hors d'atteinte. **CORRECTIF** : elle est déplacée dans les `unlocks` du
+  nœud **41** (Collisionneur P2). Vérifié : tous ses coûts ET ses intrants (alliage de tungstène,
+  pièce de précision, câble supraconducteur, ordi quantique, élém. moteur nuc., azote) proviennent de
+  bâtiments débloqués BIEN AVANT le 41 → elle est réellement constructible à ce stade. Les autres
+  récompenses des nœuds 41 et 43 sont inchangées.
+  ⚠ **DÉTECTEUR AJOUTÉ À LA SUITE DE TESTS** (le piège s'est produit DEUX fois : 13.82 avec le
+  Séparateur Cryogénique, puis ici) : une fermeture avant de l'arbre confirme les nœuds un à un et
+  signale ceux qu'on ne peut jamais atteindre — un nœud n'est atteignable que si son prérequis l'est
+  ET si toutes les ressources qu'il exige (`delivery` + reqs `produce`) sont produites par un
+  bâtiment débloqué AVANT lui. ⚠ La centrale nucléaire produisant ses irradiés/plutonium
+  DYNAMIQUEMENT (hors `outputs`), ils sont ajoutés à la main au détecteur, sinon il crie au loup.
+  **Contre-épreuve incluse** : sur l'arbre d'AVANT le correctif, le détecteur signale bien les
+  nœuds **42 et 43**. À rejouer à chaque livraison qui exige une ressource de fin de chaîne.
+  Validé : `node --check` (7 blocs) + Chromium **17 assertions, 0 KO, 0 erreur JS** (déplacement,
+  récompenses intactes, détecteur + contre-épreuve, non-régression 14.24→14.26, boot réel).
+- **État précédent : `GAME_BUILD = 309`, `GAME_VERSION = 'Alpha 14.26'`, `SAVE_VERSION = 31`.**
+  Changement 14.26 : **2 EXPLOITS FERMÉS + élec ×4 de la Centrale Enrichissement V2 + barre d'outils
+  réorganisée.** `SAVE_VERSION` INCHANGÉ (`pl.du` = champ additif avec repli).
+  (1) **EXPLOIT « baisser avant de réparer »** (signalé joueur). La facture de réparation après
+  surchauffe = **20 % du coût TOTAL cumulé** (`buildingTotalCost`), calculée sur le niveau COURANT.
+  Or « Baisser » **REMBOURSE** le coût du palier (`tryDowngrade` → `refund(upgradeCost(...))`) : le
+  joueur baissait son bâtiment endommagé, réparait sur une base réduite, puis remontait avec l'argent
+  rendu → il empochait **20 % de l'écart à chaque surchauffe**. **CORRECTIF** : nouveau champ
+  **`bld.dmgUp`**, figé au moment du TRIP (dans `processHeat`), et `buildingTotalCost` prend le
+  niveau le PLUS HAUT entre le courant et `dmgUp` **tant que le bâtiment est `damaged`**. Baisser
+  reste permis, ça ne rapporte plus rien. ⚠ **Persisté** (`pl.du`) : sans ça un simple rechargement
+  rouvrait l'exploit. ⚠ Correction placée dans `buildingTotalCost` et non dans `tryHeatRepair` :
+  l'APERÇU de la fiche et le PAIEMENT passent tous deux par là, ils ne peuvent plus diverger.
+  Repli save antérieure (pas de `dmgUp`) → niveau courant = comportement d'avant.
+  (2) **EXPLOIT « la route fait transiter les liquides »** (signalé joueur) : une simple ROUTE entre
+  le port et la tuile élévateur suffisait à faire descendre AUSSI les liquides — les machines du
+  souterrain puisaient l'acide/l'eau directement au port sans qu'aucun tuyau ne relie port et
+  élévateur en surface. Cause : `elevatorSurfaceLinked` acceptait **route OU tuyau**, sans distinguer
+  le porteur, et la bascule `pipe → pipePort` ne testait que le réseau LOCAL de l'île 7. **CORRECTIF**
+  : nouveau **`elevatorSurfaceLinkedFor(game, carrier)`** ; la bascule vers le PORT exige désormais
+  un **réseau TUYAU** port ↔ élévateur (`underLiquidBlocked`). Sans lui les liquides restent dans la
+  CITERNE locale et le bâtiment affiche le motif **`elevator`**.
+  ⚠ **RUPTURE ASSUMÉE pour les parties en cours** (choix joueur : « appliquer sans toast ») : une
+  partie qui n'a qu'une route verra ses machines souterraines à liquides s'arrêter jusqu'à la pose
+  d'un tuyau. Le seul indice est le motif « élévateur » dans la fiche.
+  ⚠ **Le cas MIROIR n'est PAS traité** (décision joueur) : un tuyau seul continue de débloquer le
+  souterrain côté solides — `roadReachesPort` exige bien une route côté ÎLE 7, mais pas côté surface.
+  (3) **Centrale Enrichissement V2 : conso élec. ×4** (demande, capture à l'appui) — sigmoïde
+  **72/504 → 288/2016**, soit **294,9 MW → 2,36 GW au Nv.11** (contre 73,7 → 590 MW). **Recette
+  INCHANGÉE** (yellowcake 1536 + acier 256 + plutonium 102,4 → comb.U235 256 au Nv.11).
+  (4) **Barre d'outils réorganisée** (demande) : `centrale_gaz` + `geothermie` → **Énergie** (ce sont
+  des producteurs d'électricité), `foreuse` → **Tungstène**, `presse_uhp` → **Quantique**. Vérifié :
+  0 doublon, 0 id orphelin, aucun bâtiment perdu.
+  ⚠ **BLOCAGE DUR TROUVÉ, NON CORRIGÉ (décision de game design)** — réponse à « où est l'usine de
+  moteur quantique ? » : elle est bien dans le groupe **Quantique**, mais elle est **INATTEIGNABLE**.
+  `usine_moteur_quantique` est l'**UNIQUE** producteur de `moteur_quantique` ; elle est débloquée par
+  le nœud **43** (Collisionneur P3), dont le prérequis est le nœud **42** (Réparation III), dont la
+  LIVRAISON exige **1 000 moteur_quantique**. Dépendance **circulaire** : 42 exige une ressource que
+  seul 43 permet de produire, et 43 exige 42. Tout l'endgame (P3, stabilisateur quantique, antenne
+  V2, mines V4) est donc hors d'atteinte. **Correctif d'une ligne proposé** : déplacer
+  `usine_moteur_quantique` des `unlocks` du nœud 43 vers ceux du nœud **41** (Collisionneur P2) — à
+  arbitrer, ça change le rythme de l'endgame. (Le même schéma existait déjà en 13.82 avec le
+  Séparateur Cryogénique : à surveiller à chaque nouvelle livraison qui exige une ressource de fin.)
+  Validé : `node --check` (7 blocs) + Chromium **4 suites, 45 assertions, 0 KO, 0 erreur JS** —
+  élec ×4 et recette inchangée ; barre d'outils (4 déplacements, 0 doublon/orphelin) ; **exploit 1**
+  par TRIP RÉEL (`processHeat` appelé jusqu'à la surchauffe → `dmgUp` figé à 8, facture inchangée
+  après une baisse, **round-trip de sauvegarde** confirmant que `dmgUp` survit) ; **exploit 2** en
+  MOTEUR RÉEL (route seule port↔élévateur + mine de tungstène souterraine reliée route ET tuyau
+  local → **0 acide prélevé au port**, motif `elevator` ; pose d'un tuyau de surface → **l'acide
+  redescend**) ; non-régression 14.24/14.25 + boot réel.
+  ⚠ **Pièges de harnais** : pour provoquer un trip il faut appeler **`processHeat` directement** —
+  la boucle bâtiment recalcule `heatEmit` à 0 pour un bâtiment non alimenté, et le trip n'arrive
+  jamais ; côté île 7, le réseau tuyau doit **TOUCHER la tuile élévateur** pour être `connected`
+  (sinon on teste une citerne isolée et le motif est `input`, pas `elevator`).
+- **État précédent : `GAME_BUILD = 308`, `GAME_VERSION = 'Alpha 14.25'`, `SAVE_VERSION = 31`.**
   Changement 14.25 : **FIX du double comptage du panneau Production (régression 14.24) + Broyeur
   Uranium hard cap Nv.10 et remplacement du V2 par la CENTRIFUGEUSE URANIUM.** `SAVE_VERSION`
   INCHANGÉ (le renommage d'id se fait dans `migratePlacement`, qui tourne pour TOUTES les versions).
