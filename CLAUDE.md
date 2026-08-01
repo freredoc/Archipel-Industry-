@@ -17,7 +17,65 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 304`, `GAME_VERSION = 'Alpha 14.21'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 305`, `GAME_VERSION = 'Alpha 14.22'`, `SAVE_VERSION = 31`.**
+  Changement 14.22 : **méthane en T3 · plancher de 15 min pour l'extrapolation hors-ligne · L'ÉLÉVATEUR
+  FAIT PONT (le vrai « tuyau coupé » du joueur) · sens N/E/S/O en PAVÉ DIRECTIONNEL.**
+  `SAVE_VERSION` INCHANGÉ (aucun champ persisté ajouté ; `_catchUpStats` est transitoire).
+  (1) **`methane` t5 → t3** (demande). ⚠ L'ordre de DÉCLARATION de `RES_TIER` vaut **place fixe** dans
+  l'inventaire (`RES_ORDER_RANK`) → la ligne a été **DÉPLACÉE** dans le bloc t3 (après `eau_froide`),
+  pas seulement ré-étiquetée, sinon elle aurait gardé son rang de fin de liste (même piège qu'en 14.16).
+  (2) **HORS-LIGNE : au moins 15 min SIMULÉES avant la multiplication** (« Production approximatif hors
+  ligne : simuler un minimum 15 min avant de faire la multiplication »). Le mode simplifié CHOISI le
+  faisait déjà (`WARM = min(ticks, 900)`), mais la **bascule AUTOMATIQUE** (filet anti-gel du 14.13,
+  budget 90 s quand le joueur a demandé le calcul complet) coupait où elle voulait et n'ajoutait que
+  `SAMPLE` : mesuré, un rattrapage de 8 h était extrapolé à partir de **301 ticks (5 min)**, sur des
+  machines encore en régime TRANSITOIRE (stocks qui se remplissent, chantiers en cours) — puis multiplié
+  par 28 500 ticks. Nouveau **`MIN_WARM = 900`** appliqué aux DEUX chemins. Le débit reste mesuré sur les
+  **300 derniers** ticks de l'échauffon (fenêtre de régime ÉTABLI, après les transitoires).
+  ⚠ **Bug annexe corrigé** : le diviseur du débit était figé à `SAMPLE` alors que la fenêtre réelle
+  pouvait être plus courte (bascule en cours d'échauffon) → **débit sous-estimé jusqu'à ×3**. On mémorise
+  désormais `sampleFrom` (tick du snapshot) et on divise par `WARM - sampleFrom`, la fenêtre RÉELLE.
+  Nouveau diagnostic transitoire **`g._catchUpStats`** `{ticks, warm, simulated, sampleFrom, approx,
+  skipped}` — indispensable pour instruire un futur retour joueur sur le hors-ligne.
+  (3) **« LES TUYAUX SONT CENSÉS TRAVERSER MAIS ILS SONT COUPÉS » — ce n'était PAS une jonction.**
+  Capture décodée tuile par tuile (identification des sprites contre `__SPRITE_DATA__`) : le croisement
+  est la **TUILE ÉLÉVATEUR** de l'île 6 — tuyau V4 au nord ET au sud, conduit V4 à l'ouest, route à l'est.
+  Ce que le joueur voit n'est pas un réseau continu, ce sont les **STUBS que la cage dessine** vers chacun
+  de ses voisins depuis 13.87 (« la cage aspire les réseaux route/tuyau/conduit »). Or l'élévateur est un
+  **TERRAIN, pas un bâtiment** → il échappait à la règle de traversée 10.59 (qui ne teste que
+  `t.building`) : les deux tronçons de tuyau restaient **DEUX réseaux distincts**, chacun avec sa citerne
+  et son niveau, sans que rien ne le signale — le dessin promettait une continuité que la mécanique
+  n'avait pas. **CORRECTIF** : `rebuildNetworks` fusionne les réseaux d'un même porteur adjacents à la
+  tuile élévateur, exactement comme autour d'un bâtiment qui fait pont — pour **route, tuyau ET conduit**
+  (les trois porteurs vers lesquels la cage dessine déjà un raccord). ⚠ **Le CÂBLE en est EXCLU** :
+  l'électricité ne transite PAS par l'élévateur (règle 13.81 §7 — couper la géothermie de l'île 7 doit
+  arrêter le souterrain même si l'île 6 est excédentaire) ; **vérifié par contre-épreuve**. ⚠ Gaté sur
+  `elevatorRepaired` : une cage en ruine ne relie rien. `elevatorLinked` (conduit ↔ tampon de chaleur
+  6 ↔ 7) est désormais reporté à la fusion.
+  (4) **SENS N/E/S/O = PAVÉ DIRECTIONNEL** (demande + croquis) : les 4 boutons alignés « à suivre »
+  deviennent une **CROIX 3×3** (N en haut, O à gauche, E à droite, S en bas) — la POSITION du bouton
+  donne le sens, on ne lit plus une lettre pour savoir où l'on vise. Nouveau helper module **`dirPad(cur,
+  onPick, cellOf)`** + CSS `.ip-dpad*`, branché aux **2** endroits qui proposent une direction : porte &
+  capteur de la **couche logique** et **foreuse** (qui garde ses faces grisées « pas de mur de ce côté »).
+  ⚠ L'index moteur `DIRS4` est `[N, S, O, E]` : la grille remappe (N→0, O→2, E→3, S→1). ⚠ La case
+  CENTRALE reste **VIDE** : y répéter la lettre de la face courante la faisait lire comme un 5ᵉ bouton
+  aligné avec O et E ; la face choisie se voit à son bouton surligné. Aucune clé i18n nouvelle (les
+  libellés « Face de sortie » / « Signal sortant » / « Direction du creusement » sont inchangés).
+  Validé : `node --check` (7 blocs) + Chromium **6 suites, 49 assertions, 0 KO, 0 erreur JS** — méthane
+  t3 et RANG déplacé dans le bloc t3 (0 doublon sur 45 entrées) ; hors-ligne 8 h forgé en localStorage
+  (`savedAt` antidaté, `Storage.prototype.setItem` gelé) → **900 ticks simulés / fenêtre 300** en mode
+  simplifié ET sur la bascule automatique (horloge `performance.now` accélérée ×200 pour forcer le filet)
+  avec **contre-épreuve : sans le correctif, 301 ticks** ; élévateur → tuyau/route/conduit fusionnés,
+  **câble NON fusionné**, cage en ruine → toujours coupé ; pavé directionnel **rendu par le VRAI
+  `InfoPanel`** (grille 3×3, N au-dessus de S, O à gauche de E, N et O centrés sur la croix) avec
+  **clics réels** E·S·O·N → `[3,1,2,0]` exacts et `gateDir=2` sur OUEST ; non-régression **13.18** (les
+  deux porteurs traversent la jonction et restent distincts), **10.59** (la raffinerie fait pont tuyau, le
+  four à charbon coupe) et **13.81** (routes adjacentes à la cage toujours `connected` sur l'île 7) ;
+  boot réel (horloge qui avance, canvas 100 %, 0 `tickErrors`).
+  ⚠ **Piège de test rencontré** : `useGhostGuard` (13.50) avale le 1ᵉʳ click d'un panneau tant qu'aucun
+  `pointerdown` interne n'a eu lieu → un test qui clique un bouton de fiche doit d'abord dispatcher un
+  `pointerdown` dans le panneau, sinon le premier clic est perdu (constaté, non un bug).
+- **État précédent : `GAME_BUILD = 304`, `GAME_VERSION = 'Alpha 14.21'`, `SAVE_VERSION = 31`.**
   Changement 14.21 : **VRAI BUG DE RÉSEAU TROUVÉ — l'axe d'une jonction était déduit des BÂTIMENTS
   voisins.** `SAVE_VERSION` INCHANGÉ (les réseaux sont reconstruits à chaque chargement).
   (1) **Texte de la tour aéroréfrigérante RETIRÉ** (demande) : les lignes « Puise dans » (14.18) et

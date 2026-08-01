@@ -842,6 +842,12 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-nuc-mat{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:5px 6px;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;}
 .ip-nuc-mat.on{background:#7E57C2;color:#fff;border-color:#7E57C2;}
 .ip-nuc-mat:hover{border-color:#7E57C2;}
+/* 14.22 — PAVÉ DIRECTIONNEL (croix N/O/E/S) : remplace les 4 boutons N·E·S·O alignés. La
+   POSITION du bouton donne le sens ; plus besoin de lire une lettre pour savoir où l'on vise. */
+.ip-dpad{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:186px;margin:2px auto 6px;}
+.ip-dpad-gap{visibility:hidden;}
+.ip-dpad-btn{display:flex;align-items:center;justify-content:center;min-height:34px;line-height:1;}
+.ip-dpad-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:34px;border:1px dashed var(--line);border-radius:5px;background:rgba(126,87,194,.08);font-family:'DM Mono',monospace;font-size:.82rem;font-weight:700;color:#c4a7f0;}
 /* Sous-fenêtre « matériau irradié (optionnel) » de la centrale, différenciée (encadré violet). */
 .ip-nuc-irr{margin:8px 0 2px;padding:8px 9px;border:1px solid var(--line);border-radius:6px;background:rgba(126,87,194,.10);}
 .ip-nuc-irr-hd{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.04em;color:#c4a7f0;margin-bottom:5px;}
@@ -2941,6 +2947,10 @@ const RES_TIER = {
   circuit: 't3',
   processeur: 't3',
   eau_froide: 't3',
+  // 14.22 — le MÉTHANE descend de T5 à T3 (demande utilisateur). L'ordre de DÉCLARATION vaut
+  // place fixe dans l'inventaire (RES_ORDER_RANK) → la ligne est DÉPLACÉE ici, pas seulement
+  // ré-étiquetée (sinon elle garderait son rang de fin de liste).
+  methane: 't3',
   element_moteur_nuc: 't4',
   acier_irradie: 't4',
   beton_arme_irradie: 't4',
@@ -2956,7 +2966,6 @@ const RES_TIER = {
   // leurs blocs respectifs plus haut, l'ordre de déclaration valant place fixe à l'inventaire.
   piece_precision: 't5',
   cable_supraconducteur: 't5',
-  methane: 't5',
   helium3: 't5',
   helium4: 't5',
   moteur_quantique: 't5',
@@ -6978,8 +6987,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 304;
-const GAME_VERSION = 'Alpha 14.21';
+const GAME_BUILD = 305;
+const GAME_VERSION = 'Alpha 14.22';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7955,6 +7964,30 @@ function rebuildNetworks(game, islandId) {
       }
     }
   }
+  // ── 14.22 — L'ÉLÉVATEUR FAIT PONT (route / tuyau / conduit) ────────────────────────────────
+  // La cage est un TERRAIN, pas un bâtiment : elle échappait donc à la règle de traversée
+  // ci-dessus. Or elle DESSINE déjà un raccord vers chacun de ses réseaux route/tuyau/conduit
+  // voisins (stubs de 13.87) → un tuyau qui la traverse du nord au sud PARAISSAIT continu alors
+  // qu'il formait DEUX réseaux distincts, chacun avec sa citerne et son niveau (retour joueur,
+  // capture à l'appui : « les tuyaux sont censés traverser mais ils sont coupés »). Les réseaux
+  // d'un même porteur adjacents à la cage fusionnent donc, exactement comme autour d'un bâtiment
+  // qui fait pont — le dessin ne ment plus.
+  // ⚠ Le CÂBLE en est EXCLU : l'électricité ne transite PAS par l'élévateur (règle 13.81 §7 —
+  // couper la géothermie de l'île 7 doit arrêter le souterrain même si l'île 6 est excédentaire).
+  // ⚠ Gaté sur `elevatorRepaired` : une cage en ruine ne relie rien.
+  if (elevTile && game.elevatorRepaired) {
+    for (const carrier of ['road', 'pipe', 'conduit']) {
+      const ids = adjacentNetworks(game, islandId, elevTile.r, elevTile.c, carrier);
+      for (let i = 1; i < ids.length; i++) {
+        const ra = mFind(ids[0]),
+          rb = mFind(ids[i]);
+        if (ra !== rb) {
+          mUF[ra] = rb;
+          didMerge = true;
+        }
+      }
+    }
+  }
   if (didMerge) {
     const rootOf = {};
     for (const idStr in newNets) rootOf[+idStr] = mFind(+idStr);
@@ -7969,6 +8002,7 @@ function rebuildNetworks(game, islandId) {
         if ((n.level || 1) > (rn.level || 1)) rn.level = n.level;
         if (n.unlimited) rn.unlimited = true;
         if (n.connected) rn.connected = true;
+        if (n.elevatorLinked) rn.elevatorLinked = true;
       }
       delete newNets[id];
     }
@@ -14519,6 +14553,39 @@ function Toolbar({
     className: "tool-row tabs-row"
   }, [tab('bat', 'tab-build' + (isBuildingTool ? ' has-sel' : '') + (logicLayer ? ' tab-logic' : ''), 'batiment', "🏭", isBuildingTool ? BUILDINGS[tool].name : buildOpen ? I18N.t("Fermer") : logicLayer ? I18N.t("Bloc logique") : I18N.t("Ouvrir"), null, buildOpen, onToggleBuild, newInBuild), tab('net', 'tab-net' + (isNetworkTool ? ' has-sel' : '') + (logicLayer ? ' tab-logic' : ''), 'route', "🛣️", isNetworkTool ? BUILDINGS[tool].name : netOpen ? I18N.t("Fermer") : logicLayer ? I18N.t("C\xE2ble logique") : I18N.t("Ouvrir"), null, netOpen, onToggleNet, newInNet), tab('copy', 'tab-copy', 'copier', "⧉", I18N.t("Copier"), null, tool === COPY, () => onSelect(COPY)), tab('dem', 'tab-dem', 'demolir', "♻", I18N.t("D\xE9molir"), null, tool === DEMOLISH, () => onSelect(DEMOLISH)), tab('upg', 'tab-upg', 'monter', "⬆", I18N.t("Am\xE9liorer"), null, tool === UPGRADE, () => onSelect(UPGRADE)), BOOSTER_UI_ENABLED && !dev && tab('boost', 'tab-boost' + (boosterOn ? ' boost-on' : boosterMul <= 1 ? ' boost-locked' : boosterCharge < 1 ? ' boost-empty' : ''), 'booster', "🚀", boosterMul > 1 ? "\xD7" + boosterMul : I18N.t("Booster"), boosterMul > 1 ? fmtBoosterTime(boosterCharge) : null, boosterOn, boosterMul <= 1 || (!boosterOn && boosterCharge < 1) ? undefined : onToggleBooster)])))));
 }
+// ── PAVÉ DIRECTIONNEL (14.22) ───────────────────────────────────────────────────────────────
+// Partout où l'on choisit un sens N/E/S/O (porte & capteur de la couche logique, foreuse), on
+// n'aligne plus 4 boutons à la suite : on dessine une CROIX (N en haut, O à gauche, E à droite,
+// S en bas) — la position du bouton EST le sens visé (demande joueur, croquis à l'appui).
+// ⚠ L'index moteur `DIRS4` est [N, S, O, E] : la grille remappe vers 0 (N), 2 (O), 3 (E), 1 (S).
+const DPAD_DIRS = { n: 0, s: 1, o: 2, e: 3 };
+const DPAD_LABEL = ['N', 'S', 'O', 'E'];
+// `cur` = direction courante (index DIRS4) ; `onPick(d)` ; `cellOf(d)` (optionnel) renvoie
+// `{ style, title, disabled }` pour nuancer une face (ex. foreuse : pas de mur de ce côté).
+// ⚠ La case CENTRALE reste VIDE (simple repère) : y répéter la lettre de la face courante la
+// faisait lire comme un 5ᵉ bouton, aligné avec O et E. La face choisie se voit à son bouton
+// surligné — c'est tout l'intérêt de la croix.
+function dirPad(cur, onPick, cellOf) {
+  const cell = d => {
+    const extra = cellOf ? cellOf(d) || {} : {};
+    return React.createElement("button", {
+      key: 'd' + d,
+      className: 'ip-nuc-mat ip-dpad-btn' + (cur === d ? ' on' : ''),
+      style: extra.style || null,
+      title: extra.title || null,
+      disabled: !!extra.disabled,
+      onClick: () => onPick && onPick(d)
+    }, DPAD_LABEL[d]);
+  };
+  const gap = k => React.createElement("span", { key: k, className: 'ip-nuc-mat ip-dpad-gap' }, '');
+  return React.createElement("div", { className: "ip-dpad" }, [
+    gap('g0'), cell(DPAD_DIRS.n), gap('g1'),
+    cell(DPAD_DIRS.o),
+    React.createElement("span", { key: 'mid', className: "ip-dpad-mid" }, ''),
+    cell(DPAD_DIRS.e),
+    gap('g2'), cell(DPAD_DIRS.s), gap('g3')
+  ]);
+}
 function InfoPanel({
   info,
   game,
@@ -14790,9 +14857,8 @@ function InfoPanel({
     const curDir = lg[dirField] || 0;
     const rows = [];
     rows.push(React.createElement("div", { className: "ip-row", key: 'sup' }, React.createElement("span", { className: "lbl" }, I18N.t("Support")), React.createElement("span", { className: "val" }, supName)));
-    // Rotation : 4 boutons À SUIVRE sur la largeur, dans l'ordre NORD · EST · SUD · OUEST
-    // (l'index moteur DIRS4 est [N, S, O, E] → l'ordre d'AFFICHAGE remappe vers 0, 3, 1, 2).
-    // Choix direct de la face au lieu d'un bouton qui fait tourner à l'aveugle.
+    // Rotation : PAVÉ DIRECTIONNEL en croix (14.22 — la position du bouton donne le sens ; avant,
+    // 4 boutons alignés N·E·S·O qu'il fallait lire). Choix direct de la face, jamais à l'aveugle.
     // ⚠ 14.08 — L'ACTIONNEUR n'a PLUS de sens : il lit déjà le OU de ses 4 faces (la mécanique n'a
     // jamais utilisé `actDir`) → les boutons de direction ne sont plus proposés pour lui.
     // 14.15 — seuls la PORTE et le CAPTEUR sont orientables. L'émetteur a un plan de faces FIXE
@@ -14800,13 +14866,8 @@ function InfoPanel({
     if (lb.logicGate || lb.logicSource) {
       rows.push(React.createElement("div", { className: "ip-fluxpri-lbl", key: 'rl' },
         lb.logicGate ? I18N.t("Face de sortie") : I18N.t("Signal sortant")));
-      rows.push(React.createElement("div", {
-        className: "ip-nuc-mats", key: 'rot', style: { gridTemplateColumns: '1fr 1fr 1fr 1fr' }
-      }, [[0, 'N'], [3, 'E'], [1, 'S'], [2, 'O']].map(([d, lbl]) => React.createElement("button", {
-        key: lbl,
-        className: 'ip-nuc-mat' + (curDir === d ? ' on' : ''),
-        onClick: () => onLogicSet && onLogicSet(info.r, info.c, { [dirField]: d })
-      }, lbl))));
+      rows.push(React.createElement("div", { key: 'rot' },
+        dirPad(curDir, d => onLogicSet && onLogicSet(info.r, info.c, { [dirField]: d }))));
     }
     // 14.15 — VANNE : ce qu'elle a reçu et ce qu'elle en a fait. Sans ça le joueur voyait le
     // Collisionneur s'éteindre sans jamais savoir quel signal l'avait déclenché.
@@ -15906,8 +15967,8 @@ function InfoPanel({
   })(), b.driller && (() => {
     // ── FOREUSE : choix de la DIRECTION puis démarrage MANUEL du forage (14.03) ──
     // Avant, le forage ne s'amorçait qu'en touchant la tuile voisine : impossible de viser depuis
-    // la foreuse elle-même. On choisit ici la face (N/E/S/O, même ordre d'affichage que la couche
-    // logique — DIRS4 est [N, S, O, E], donc l'ordre remappe vers 0, 3, 1, 2) puis on lance.
+    // la foreuse elle-même. On choisit ici la face sur le PAVÉ DIRECTIONNEL (14.22, même croix que
+    // la couche logique) puis on lance.
     // Le forage se paie sur le PORT DE L'ÎLE 6 (l'île 7 n'a pas d'inventaire propre).
     const dtiles = game.islands[currentIsland] || [];
     const ddir = bld.drillDir != null ? bld.drillDir : 0;
@@ -15931,16 +15992,13 @@ function InfoPanel({
     const ready = !work && !!(tgt && tgt.ok);
     return React.createElement("div", { className: "ip-fluxpri" },
       React.createElement("div", { className: "ip-fluxpri-lbl" }, I18N.t("Direction du creusement")),
-      React.createElement("div", { className: "ip-nuc-mats", style: { gridTemplateColumns: '1fr 1fr 1fr 1fr' } }, [[0, 'N'], [3, 'E'], [1, 'S'], [2, 'O']].map(([d, dl]) => {
+      dirPad(ddir, d => onDrillDir && onDrillDir(info.r, info.c, d), d => {
         const q = tgtOf(d);
-        return React.createElement("button", {
-          key: dl,
-          className: 'ip-nuc-mat' + (ddir === d ? ' on' : ''),
+        return {
           style: q && q.ok ? null : { opacity: 0.45 },
-          title: q && q.ok ? I18N.t('Mur perçable') : I18N.t('Pas de mur de ce côté'),
-          onClick: () => onDrillDir && onDrillDir(info.r, info.c, d)
-        }, dl);
-      })),
+          title: q && q.ok ? I18N.t('Mur perçable') : I18N.t('Pas de mur de ce côté')
+        };
+      }),
       React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Cible")), React.createElement("span", { className: "val", style: { color: tgt && tgt.ok ? 'var(--green)' : 'var(--ink-dim)' } }, why)),
       // Couche autour de l'élévateur → coût de la foreuse et puissance max (×2 par couche).
       React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Couche (élévateur)")), React.createElement("span", { className: "val", title: I18N.t("Coût de la foreuse et puissance de creusement ×2 par couche en s'éloignant de l'élévateur") },
@@ -20183,10 +20241,23 @@ function App() {
     const wantSimplify = g.ui.simplifyOffline === true;
     let simplify = wantSimplify && ticks > 3600;
     const SAMPLE = 300;
-    let WARM = simplify ? Math.min(ticks, 900) : ticks;
+    // 14.22 — PLANCHER D'ÉCHAUFFON : on simule TOUJOURS au moins 15 min de jeu réel (900 ticks)
+    // avant d'extrapoler (demande joueur « simuler un minimum 15 min avant de faire la
+    // multiplication »). Le mode simplifié CHOISI le faisait déjà, mais la bascule AUTOMATIQUE
+    // (filet anti-gel) coupait où elle voulait et n'ajoutait que SAMPLE : un rattrapage de 8 h
+    // pouvait être extrapolé à partir de ~6 min de simulation, mesurées sur des machines encore
+    // en régime transitoire (stocks qui se remplissent, chantiers en cours) → débits faux, puis
+    // multipliés par des milliers de ticks. Le débit reste mesuré sur les SAMPLE derniers ticks
+    // de l'échauffon (fenêtre de RÉGIME ÉTABLI, après les transitoires du départ).
+    const MIN_WARM = 900;
+    let WARM = simplify ? Math.min(ticks, MIN_WARM) : ticks;
     let sampleStart = Math.max(0, WARM - SAMPLE);
     let done = 0;
     let baseSnap = null;
+    // Tick auquel `baseSnap` a été pris : le débit se mesure sur (WARM - sampleFrom) ticks RÉELS.
+    // (Avant : diviseur figé à SAMPLE, donc sous-estimation du débit quand la fenêtre de mesure
+    // se retrouvait plus courte — cas de la bascule automatique en cours d'échauffon.)
+    let sampleFrom = 0;
     // Budget de gel ACCEPTABLE (ms) : au-delà, on bascule en extrapolation.
     // 14.17 — Retour joueur : « des fois le calcul hors ligne est quasi instantané malgré l'option
     // calcul rapide désactivée ». C'était CE filet qui se déclenchait, en silence : un budget de 8 s
@@ -20217,7 +20288,7 @@ function App() {
       g._catchUpTs = t0;
       while (done < WARM && performance.now() - t0 < 80) {
         if (catchUpSkipRef.current) break;
-        if (simplify && done === sampleStart && baseSnap == null) baseSnap = snapshotPort(g);
+        if (simplify && done === sampleStart && baseSnap == null) { baseSnap = snapshotPort(g); sampleFrom = done; }
         // Une exception ici ne doit JAMAIS tuer la chaîne `setTimeout` : `catchingUp`
         // resterait vrai à vie et la boucle `frame` ne ferait plus ni tick, ni dessin, ni
         // interaction — c'est-à-dire un GEL DÉFINITIF du jeu, y compris après relance.
@@ -20238,9 +20309,12 @@ function App() {
         if ((WARM - done) * msPerTick > CATCHUP_BUDGET_MS) {
           simplify = true;
           approximated = true;
-          WARM = Math.min(ticks, done + SAMPLE);
+          // ⚠ Le plancher de 15 min s'applique AUSSI ici : on ne renonce jamais à simuler avant
+          // MIN_WARM ticks, même quand le filet anti-gel prend la main. Le joueur garde la main
+          // via le bouton « Passer » de l'overlay (le rattrapage reste découpé en tranches).
+          WARM = Math.min(ticks, Math.max(MIN_WARM, done + SAMPLE));
           sampleStart = Math.max(0, WARM - SAMPLE);
-          if (baseSnap == null && done >= sampleStart) baseSnap = snapshotPort(g);
+          if (baseSnap == null && done >= sampleStart) { baseSnap = snapshotPort(g); sampleFrom = done; }
         }
       }
       // « Passer » : on arrête la simulation et on entre dans le jeu avec ce qui est calculé
@@ -20254,7 +20328,7 @@ function App() {
       // Échauffon terminé → extrapolation du reste au débit moyen (mode simplifié).
       if (!skipped && simplify && ticks > WARM) {
         const remaining = ticks - WARM;
-        const sampleTicks = Math.min(SAMPLE, WARM) || 1;
+        const sampleTicks = (baseSnap ? WARM - sampleFrom : WARM) || 1;
         const base = baseSnap || before;
         for (const isl in g.port) {
           // Île apparue APRÈS le snapshot (débloquée pendant l'échauffon) : son port a reçu un
@@ -20268,6 +20342,10 @@ function App() {
           }
         }
       }
+      // Diagnostic du dernier rattrapage (transitoire, non sauvegardé) : combien de ticks ont été
+      // RÉELLEMENT simulés avant l'éventuelle extrapolation, et sur quelle fenêtre le débit a été
+      // mesuré. Sert à vérifier le plancher de 15 min (et à instruire un futur retour joueur).
+      g._catchUpStats = { ticks, warm: WARM, simulated: done, sampleFrom, approx: approximated, skipped };
       finishCatchUp(g, before, elapsedSec, { approx: approximated, skipped });
       onDone && onDone();
     };
