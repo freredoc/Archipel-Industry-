@@ -17,7 +17,91 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 306`, `GAME_VERSION = 'Alpha 14.23'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 307`, `GAME_VERSION = 'Alpha 14.24'`, `SAVE_VERSION = 31`.**
+  Changement 14.24 : **PATCH 7 retours — He3 du Collisionneur enfin compté, ordre de l'élévateur au
+  choix, totaux île 6 / île 6 S réconciliés, He3 ×4/palier, « Île 7 » → « Île 6 S », 2 garde-fous de
+  lancement, Data Center en veille.** `SAVE_VERSION` INCHANGÉ (`elevatorPriorityOrder` est un champ
+  additif avec repli ; `co.he3Used`/`he3Net`, `bld.dcIdle` sont transitoires).
+  (1) **CONSO D'HÉLIUM 3 DU COLLISIONNEUR INVISIBLE** — le Collisionneur est un landmark de TERRAIN,
+  pas un bâtiment : son prélèvement passe par `colliderDrawHe3` (déduction directe au port / à la
+  citerne) et n'apparaissait dans AUCUN `b.inputs`. ⚠ **Le correctif du brief (`resourceRates` seul)
+  aurait été INOPÉRANT en pratique** : le panneau Production et le popover lisent `islandFlowAgg`
+  (flux RÉELS du dernier tick) et ne retombent sur `resourceRates` que si prod ET conso valent 0 —
+  or un Séparateur Cryogénique qui produit de l'He3 rend prod > 0. Le flux est donc désormais inscrit
+  dans **`netFlow`** au tick (`addFlow(co.he3Net, 'cons', 'helium3', co.he3Used)`), sur le réseau
+  tuyau où la machine a réellement puisé ; `resourceRates` le gagne aussi (repli avant le 1ᵉʳ tick).
+  On publie la quantité **MESURÉE** (`co.he3Used`) et non le barème du palier : la machine boit aussi
+  pendant son démarrage et son état « prêt », rien du tout en pause.
+  ⚠ **BUG ANNEXE TROUVÉ ET CORRIGÉ** : `colliderDrawHe3` était appelé AVANT le calcul de `co.halt` →
+  sur une panne de COURANT l'He3 était prélevé PUIS la machine mise en pause dans le même tick :
+  elle brûlait son carburant pendant toute la panne, exactement ce que le « tout ou rien » de 14.17
+  voulait éviter. L'ordre est inversé (le manque de courant court-circuite le plein).
+  (2) **ORDRE DE L'ÉLÉVATEUR AU CHOIX DU JOUEUR** (mode `priority`) : l'ordre des 3 catégories était
+  câblé en dur (`[consDem, outDem, inDem]`). Nouveau `game.elevatorPriorityOrder` (persisté, défaut =
+  ordre historique) + `elevatorPriorityOrderOf`/`isElevatorPriorityOrder` ; le tick permute les
+  demandes avant `elevatorAllocate` puis redistribue par catégorie (`elevatorAllocate` INCHANGÉ).
+  Setter `promoteElevatorCategory(cat)` = **remonte d'un rang** (permutation de 2 éléments → un ordre
+  invalide est impossible par construction). UI : liste classée **1./2./3.** avec le débit servi et un
+  bouton **▲** par ligne (la 1ʳᵉ n'en a pas) — pattern retenu contre le drag (fragile au doigt) et
+  les 3 dropdowns (peuvent produire des ordres invalides). ⚠ Le bloc n'est affiché **qu'en mode
+  Prioritaire** : en équitable/proportionnel l'ordre n'a aucun effet, l'afficher promettrait du faux.
+  (3) **TOTAUX ÎLE 6 ≠ ÎLE 6 S POUR UN MÊME STOCK** : `game.netFlow` est indexé par GRILLE, or l'île 6
+  et le souterrain partagent UN SEUL port (`portPool(7)` → `port[6]`) → chaque panneau n'affichait que
+  la moitié des flux. Nouveau helper **`portSharingIslands`** (générique via `portIslandOf` : le jour
+  où une vraie île 7 autonome existera, la fusion s'arrêtera d'elle-même), utilisé par
+  **`islandFlowAgg` ET `resourceRates`** → les deux panneaux affichent désormais EXACTEMENT le même
+  total.
+  (4) **`COLLIDER_HE3` ×2 → ×4 par palier** (demande) : **P1 1 /s · P2 4 /s · P3 16 /s**. ⚠ À
+  RE-PLAYTESTER : le Séparateur Cryogénique sort 0,01 He3/s de base (×2/niveau) → ~Nv.7 pour P1,
+  ~Nv.9 pour P2, ~Nv.11 pour P3. C'est le genre de raideur que le 14.18 avait justement corrigé en
+  passant de ×8 à ×2.
+  (5) **« Île 7 » → « Île 6 S » côté joueur** : nouveau **`islandLabel(id)`** (à côté d'`islandIcon`),
+  **16 sites** d'affichage migrés (les 13 du brief + 3 trouvés en plus : toast « Erreur de simulation
+  (Île N) », toast « ne se construit que sur l'île N » — `exclusiveIsland` vaut 7 pour 4 bâtiments —,
+  et le bouton surface/souterrain). Le titre du panneau Port et le sélecteur d'île y passent aussi
+  (par robustesse : `currentIsland` y est déjà résolu par `portIslandOf`, donc jamais 7).
+  ⚠ `islStr` de l'alerte de stock est bien une **clé de for-in (string)** → `islandLabel(+islStr)`,
+  sinon le `id === 7` strict ne matcherait jamais. Usages internes (`isl === 7`, clés d'état,
+  commentaires) volontairement INCHANGÉS. Garde-fou documenté dans la fonction : ne jamais réutiliser
+  l'id 7 pour autre chose que le souterrain sans repasser par `islandLabel`.
+  (6) **2 GARDE-FOUS DE LANCEMENT** (fusionnés dans `launchCollider`, via un point de décision UNIQUE
+  **`colliderLaunchBlock(game)`** partagé avec l'état grisé du bouton) : **§5** le Collisionneur ne
+  peut plus être lancé s'il n'est relié à AUCUN réseau logique (`colliderLogicLinked` : l'émetteur
+  bas-gauche ET la vanne haut-droite doivent chacun toucher un conducteur — nouveau helper
+  module-scope **`hasAdjacentLogicConductor`**, car `adjLogicNets` est une closure interne à
+  `processLogic`, inaccessible, et résoudrait tout le graphe pour rien) ; **§4** une fois
+  `COLLIDER_GOALS[palier]` atteint, la RELANCE est bloquée tant que le nœud de palier (39/41/43) n'est
+  pas confirmé (`colliderGoalLocked`) → fini le sur-farming qui pré-validait le palier suivant.
+  ⚠ Aucune machine en marche n'est coupée : `co.confirms` peut dépasser légèrement le seuil, c'est
+  attendu. Le bouton est **grisé avec la cause nommée** (2 nouvelles lignes dans la fiche), au lieu de
+  laisser cliquer dans le vide.
+  (7) **DATA CENTER EN VEILLE tant que la séquence n'est pas lancée** : il n'a aucune sortie (14.16),
+  son seul rôle est d'être le 2ᵉ émetteur du puzzle — or `processCollider` ne tire de manche qu'en
+  `state === 'running'`. Nouveau flag transitoire `bld.dcIdle` → régime 0 **et retrait de
+  `energyConsumers`** (donc **0 azote, 0 hélium 4, 0 processeur, 0 kW**). ⚠ **PAS le même cas que le
+  `allOrNothing` de 14.17** (qui DOIT rester inscrit) : ici la condition de sortie de veille est
+  EXTERNE (l'état du Collisionneur), elle ne dépend ni de `pwrAvg` ni du régime → aucun interblocage
+  possible, et le retirer GÈLE son `pwrAvg` au lieu de l'effondrer. Nouvel état `dataCenterState`
+  **`idle`** (+ libellé) : « en veille » n'est pas un déficit, il ne manque rien au joueur.
+  Validé : `node --check` (7 blocs) + Chromium **7 suites, 151 assertions, 0 KO, 0 erreur JS** —
+  helpers et barèmes exacts ; i18n en/es/de des 22 nouveaux libellés (`islandLabel(7)` → « Island 6 U »
+  / « Isla 6 S » / « Insel 6 U ») ; **moteur RÉEL** : Data Center posé + relié (route/tuyau/câble) →
+  **0 consommé et demande d'île à 0 kW** avant la séquence, puis recette EXACTE (ratios azote/hélium
+  **512** et azote/processeur **1024**), retour en veille, **reprise (anti-interblocage)** ; He3
+  prélevé au port au barème du palier (1 puis 4 /s), **visible dans `islandFlowAgg`**, **0 brûlé en
+  pause de courant** ; élévateur en PÉNURIE réelle (presse UHP alimentée + chantier, débit 16/s) →
+  l'ordre change VRAIMENT qui est servi, et ne change rien en fair/proportional ; **UI réelle** (vrai
+  `InfoPanel`) : clics RÉELS sur ▲ → ordre permuté, bloc masqué en mode équitable ; bouton « Lancer »
+  grisé sans réseau logique puis ACTIF une fois câblé (clic réel → lancement), grisé au palier atteint
+  puis réactivé dès la recherche validée ; round-trip save/reload (SAVE_VERSION 31, champ additif) ;
+  boot réel (horloge qui avance, canvas peint, 0 `tickErrors`).
+  ⚠ **Pièges de harnais (re)confirmés** : sans passer les réseaux en `unlimited`, le débit V1 (tuyau
+  64/s, **câble 2048 kW**) bride tout et on mesure le plafond du réseau, pas la recette ; le terrain
+  `collider` n'existe QUE sur les grandes îles du **mode Normal** (une partie « Difficile » n'a pas de
+  Collisionneur) ; `co.palier` est un CACHE posé par `processCollider` (la fiche affiche l'ancien
+  palier tant qu'un tick n'a pas eu lieu) ; les popups d'astuce et `.research-backdrop` volent les
+  clics d'un harnais UI.
+- **État précédent : `GAME_BUILD = 306`, `GAME_VERSION = 'Alpha 14.23'`, `SAVE_VERSION = 31`.**
   Changement 14.23 : **hélium du Data Center ÷4** (demande). `SAVE_VERSION` INCHANGÉ (la save ne stocke
   qu'id + niveau, jamais les recettes). `data_center.inputs.helium4` **8 → 2**. Azote (1024), processeur
   (1), conso (1024 kW), `allOrNothing` et `maxPerIsland: 1` **inchangés** ; il n'a toujours AUCUNE sortie

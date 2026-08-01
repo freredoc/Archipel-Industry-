@@ -884,11 +884,25 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-fluxpri-btn{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:5px 4px;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;}
 .ip-fluxpri-btn.on{background:#0277BD;color:#fff;border-color:#0277BD;}
 .ip-fluxpri-btn:hover{border-color:#0277BD;}
+/* 14.24 — Ordre des catégories de l'élévateur (mode prioritaire) : liste classée 1/2/3, chaque
+   ligne remonte d'un rang au clic sur ▲ (la 1re n'a pas de bouton). Pas de drag : impossible à
+   rater au doigt, et l'ordre reste valide par construction (simple permutation de 2 éléments). */
+.ip-elevord{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
+.ip-elevord-row{display:flex;align-items:center;gap:6px;background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:4px 6px;}
+.ip-elevord-rank{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--ink-dim);min-width:14px;}
+.ip-elevord-name{flex:1;font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:600;color:var(--ink);}
+.ip-elevord-up{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:1px 8px;font-size:.72rem;cursor:pointer;line-height:1.3;}
+.ip-elevord-up:hover{border-color:#FF9628;color:#FF9628;}
+.ip-elevord-row.first .ip-elevord-rank{color:#FF9628;}
 .ip-up,.ip-down{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;border-radius:5px;
   padding:6px 4px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;
   font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;transition:background .1s,opacity .1s;}
 .ip-up{background:rgba(76,175,80,.14);border:1px solid rgba(76,175,80,.5);color:#86d98a;}
 .ip-up:hover:not(:disabled){background:rgba(76,175,80,.24);}
+/* 14.24 — Bouton « Lancer la séquence » indisponible (réseau logique absent, ou palier atteint
+   sans recherche validée) : grisé + curseur interdit, la cause est dans le title et dans les
+   lignes du panneau. Même esprit que .ip-up.densify-btn.locked. */
+.ip-up.locked{background:rgba(90,90,122,.14);border:1px solid rgba(120,120,150,.5);color:#9aa0b5;cursor:not-allowed;}
 .ip-unl{flex:none;flex-direction:row;gap:6px;background:rgba(126,87,194,.18);border:1px solid rgba(126,87,194,.6);color:#c4a7f0;font-weight:700;}
 .ip-unl:hover:not(:disabled){background:rgba(126,87,194,.3);}
 .ip-down{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--ink-dim);}
@@ -2720,6 +2734,7 @@ for(var code in G){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; va
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.17 */ var ADD={"en": {"Hélium 3": "Helium 3", "MANQUANT (tuyau ?)": "MISSING (pipe?)", "EN PAUSE — hélium 3 manquant": "PAUSED — helium 3 missing", "EN PAUSE — électricité insuffisante": "PAUSED — not enough power", "insuffisante — la machine est en pause (démarrage gelé)": "insufficient — the machine is paused (startup frozen)", "Data Center EN PAUSE — déficit (intrants ou courant)": "Data Center PAUSED — deficit (inputs or power)", "Validations": "Validations", "Cadence": "Rate", "Récompense": "Reward", " manche/s": " round/s", "manche toutes les": "one round every", "Toute l'île": "Whole island", "Aucun réseau à rendre illimité": "No network left to make unlimited", "réseaux de l'île → débit ILLIMITÉ": "island networks → UNLIMITED throughput", "≈ Production APPROXIMÉE : le jeu a simulé un échantillon puis extrapolé le reste (absence trop longue pour tout simuler).": "≈ APPROXIMATED production: the game simulated a sample then extrapolated the rest (absence too long to simulate fully).", "⏭ Rattrapage interrompu (« Passer ») : la production restante a été abandonnée.": "⏭ Catch-up interrupted (\"Skip\"): the remaining production was discarded.", "Sa soif DOUBLE à chaque niveau et se sert sur l'eau de l'île : une tour très améliorée peut assécher les autres machines. Sa conso est visible dans le panneau du tuyau.": "Its thirst DOUBLES with every level and draws on the island's water: a heavily upgraded tower can dry out the other machines. Its consumption is now shown in the pipe network panel.", "Le forfait ILLIMITÉ est acquis une fois par île et par type de réseau : passer les autres tracés en illimité ne coûte rien de plus.": "The UNLIMITED package is paid once per island and per network type: making the other runs unlimited costs nothing extra.", "Confirmations par seconde qu'un comparateur correctement câblé rapporte : cadence × récompense. C'est ce que mesure le nœud de recherche du Collisionneur.": "Confirmations per second that a correctly wired comparator yields: rate × reward. That is what the Collider research node measures.", "Une manche = un tirage SIMULTANÉ des deux émetteurs. Le Data Center donne le tempo ; l'améliorer accélère le puzzle jusqu'à 1 manche/s, puis multiplie la récompense.": "One round = a SIMULTANEOUS draw from both emitters. The Data Center sets the tempo; upgrading it speeds up the puzzle to 1 round/s, then multiplies the reward.", "Au-delà d'1 manche par tick, le débit supplémentaire ne peut plus tirer de manches : il multiplie la valeur de chacune.": "Beyond 1 round per tick, the extra throughput can no longer draw rounds: it multiplies the value of each one.", "Le Data Center est TOUT OU RIEN : au moindre déficit d'intrant ou de courant il se met en pause et le puzzle s'arrête (aucune pénalité possible).": "The Data Center is ALL OR NOTHING: at the slightest input or power deficit it pauses and the puzzle stops (no penalty possible)."}, "es": {"Hélium 3": "Helio 3", "MANQUANT (tuyau ?)": "FALTA (¿tubería?)", "EN PAUSE — hélium 3 manquant": "EN PAUSA — falta helio 3", "EN PAUSE — électricité insuffisante": "EN PAUSA — electricidad insuficiente", "insuffisante — la machine est en pause (démarrage gelé)": "insuficiente — la máquina está en pausa (arranque congelado)", "Data Center EN PAUSE — déficit (intrants ou courant)": "Data Center EN PAUSA — déficit (entradas o corriente)", "Validations": "Validaciones", "Cadence": "Cadencia", "Récompense": "Recompensa", " manche/s": " ronda/s", "manche toutes les": "una ronda cada", "Toute l'île": "Toda la isla", "Aucun réseau à rendre illimité": "Ninguna red que volver ilimitada", "réseaux de l'île → débit ILLIMITÉ": "redes de la isla → caudal ILIMITADO", "≈ Production APPROXIMÉE : le jeu a simulé un échantillon puis extrapolé le reste (absence trop longue pour tout simuler).": "≈ Producción APROXIMADA: el juego simuló una muestra y extrapoló el resto (ausencia demasiado larga para simularla entera).", "⏭ Rattrapage interrompu (« Passer ») : la production restante a été abandonnée.": "⏭ Recuperación interrumpida («Saltar»): la producción restante se descartó.", "Sa soif DOUBLE à chaque niveau et se sert sur l'eau de l'île : une tour très améliorée peut assécher les autres machines. Sa conso est visible dans le panneau du tuyau.": "Su sed SE DUPLICA en cada nivel y se sirve del agua de la isla: una torre muy mejorada puede secar las demás máquinas. Su consumo se ve en el panel de la tubería.", "Le forfait ILLIMITÉ est acquis une fois par île et par type de réseau : passer les autres tracés en illimité ne coûte rien de plus.": "La tarifa ILIMITADA se paga una vez por isla y por tipo de red: volver ilimitados los demás trazados no cuesta nada más.", "Confirmations par seconde qu'un comparateur correctement câblé rapporte : cadence × récompense. C'est ce que mesure le nœud de recherche du Collisionneur.": "Confirmaciones por segundo que da un comparador bien cableado: cadencia × recompensa. Es lo que mide el nodo de investigación del Colisionador.", "Une manche = un tirage SIMULTANÉ des deux émetteurs. Le Data Center donne le tempo ; l'améliorer accélère le puzzle jusqu'à 1 manche/s, puis multiplie la récompense.": "Una ronda = una tirada SIMULTÁNEA de los dos emisores. El Data Center marca el ritmo; mejorarlo acelera el puzle hasta 1 ronda/s y luego multiplica la recompensa.", "Au-delà d'1 manche par tick, le débit supplémentaire ne peut plus tirer de manches : il multiplie la valeur de chacune.": "Más allá de 1 ronda por tick, el caudal extra ya no puede sacar rondas: multiplica el valor de cada una.", "Le Data Center est TOUT OU RIEN : au moindre déficit d'intrant ou de courant il se met en pause et le puzzle s'arrête (aucune pénalité possible).": "El Data Center es TODO O NADA: al mínimo déficit de entrada o de corriente se pone en pausa y el puzle se detiene (ninguna penalización posible)."}, "de": {"Hélium 3": "Helium 3", "MANQUANT (tuyau ?)": "FEHLT (Rohr?)", "EN PAUSE — hélium 3 manquant": "PAUSIERT — Helium 3 fehlt", "EN PAUSE — électricité insuffisante": "PAUSIERT — zu wenig Strom", "insuffisante — la machine est en pause (démarrage gelé)": "unzureichend — die Maschine pausiert (Anlauf eingefroren)", "Data Center EN PAUSE — déficit (intrants ou courant)": "Data Center PAUSIERT — Defizit (Eingänge oder Strom)", "Validations": "Validierungen", "Cadence": "Takt", "Récompense": "Belohnung", " manche/s": " Runde/s", "manche toutes les": "eine Runde alle", "Toute l'île": "Ganze Insel", "Aucun réseau à rendre illimité": "Kein Netz mehr auf unbegrenzt zu setzen", "réseaux de l'île → débit ILLIMITÉ": "Netze der Insel → UNBEGRENZTER Durchsatz", "≈ Production APPROXIMÉE : le jeu a simulé un échantillon puis extrapolé le reste (absence trop longue pour tout simuler).": "≈ ANGENÄHERTE Produktion: Das Spiel hat eine Stichprobe simuliert und den Rest hochgerechnet (Abwesenheit zu lang für eine vollständige Simulation).", "⏭ Rattrapage interrompu (« Passer ») : la production restante a été abandonnée.": "⏭ Nachholen abgebrochen („Überspringen“): Die restliche Produktion wurde verworfen.", "Sa soif DOUBLE à chaque niveau et se sert sur l'eau de l'île : une tour très améliorée peut assécher les autres machines. Sa conso est visible dans le panneau du tuyau.": "Ihr Durst VERDOPPELT sich mit jeder Stufe und bedient sich am Wasser der Insel: Ein stark ausgebauter Turm kann die anderen Maschinen austrocknen. Ihr Verbrauch ist jetzt im Rohrnetz-Panel sichtbar.", "Le forfait ILLIMITÉ est acquis une fois par île et par type de réseau : passer les autres tracés en illimité ne coûte rien de plus.": "Die UNBEGRENZT-Pauschale wird einmal pro Insel und Netztyp bezahlt: Die übrigen Trassen auf unbegrenzt zu setzen kostet nichts extra.", "Confirmations par seconde qu'un comparateur correctement câblé rapporte : cadence × récompense. C'est ce que mesure le nœud de recherche du Collisionneur.": "Bestätigungen pro Sekunde, die ein korrekt verdrahteter Komparator einbringt: Takt × Belohnung. Genau das misst der Forschungsknoten des Colliders.", "Une manche = un tirage SIMULTANÉ des deux émetteurs. Le Data Center donne le tempo ; l'améliorer accélère le puzzle jusqu'à 1 manche/s, puis multiplie la récompense.": "Eine Runde = ein GLEICHZEITIGER Zug beider Sender. Das Data Center gibt das Tempo vor; ein Ausbau beschleunigt das Rätsel bis 1 Runde/s und vervielfacht danach die Belohnung.", "Au-delà d'1 manche par tick, le débit supplémentaire ne peut plus tirer de manches : il multiplie la valeur de chacune.": "Über 1 Runde pro Tick hinaus kann der zusätzliche Durchsatz keine Runden mehr ziehen: Er vervielfacht den Wert jeder einzelnen.", "Le Data Center est TOUT OU RIEN : au moindre déficit d'intrant ou de courant il se met en pause et le puzzle s'arrête (aucune pénalité possible).": "Das Data Center ist ALLES ODER NICHTS: Beim kleinsten Eingangs- oder Stromdefizit pausiert es und das Rätsel stoppt (keine Strafe möglich)."}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.18 */ var ADD={"en": {"Puise dans": "Draws from", "le PORT": "the PORT", "la citerne du tuyau": "the pipe's cistern", "Un tuyau RELIÉ AU PORT puise dans le stock du port ; un tuyau ISOLÉ puise dans sa propre citerne. Une tour à sec sur le tuyau du port veut dire que c'est le PORT qui n'a plus d'eau — pas que le tuyau est bloqué.": "A pipe CONNECTED TO THE PORT draws from the port's stock; an ISOLATED pipe draws from its own cistern. A dry tower on the port's pipe means the PORT has run out of water — not that the pipe is blocked."}, "es": {"Puise dans": "Toma de", "le PORT": "el PUERTO", "la citerne du tuyau": "la cisterna de la tubería", "Un tuyau RELIÉ AU PORT puise dans le stock du port ; un tuyau ISOLÉ puise dans sa propre citerne. Une tour à sec sur le tuyau du port veut dire que c'est le PORT qui n'a plus d'eau — pas que le tuyau est bloqué.": "Una tubería CONECTADA AL PUERTO toma del stock del puerto; una tubería AISLADA toma de su propia cisterna. Una torre seca en la tubería del puerto significa que es el PUERTO el que se quedó sin agua, no que la tubería esté bloqueada."}, "de": {"Puise dans": "Bezieht aus", "le PORT": "dem HAFEN", "la citerne du tuyau": "der Zisterne des Rohrs", "Un tuyau RELIÉ AU PORT puise dans le stock du port ; un tuyau ISOLÉ puise dans sa propre citerne. Une tour à sec sur le tuyau du port veut dire que c'est le PORT qui n'a plus d'eau — pas que le tuyau est bloqué.": "Ein mit dem HAFEN VERBUNDENES Rohr bezieht aus dem Hafenbestand; ein ISOLIERTES Rohr aus seiner eigenen Zisterne. Ein trockener Turm am Hafenrohr bedeutet, dass dem HAFEN das Wasser ausgegangen ist — nicht dass das Rohr blockiert wäre."}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.20 */ var ADD={"en": {"Illimité — toute l'île": "Unlimited — whole island", " — TOUTE L'ÎLE passe en débit illimité (y compris les tracés posés plus tard), paliers remboursés": " — THE WHOLE ISLAND switches to unlimited throughput (including runs built later); tiers refunded"}, "es": {"Illimité — toute l'île": "Ilimitado — toda la isla", " — TOUTE L'ÎLE passe en débit illimité (y compris les tracés posés plus tard), paliers remboursés": " — TODA LA ISLA pasa a caudal ilimitado (incluidos los trazados construidos después); niveles reembolsados"}, "de": {"Illimité — toute l'île": "Unbegrenzt — ganze Insel", " — TOUTE L'ÎLE passe en débit illimité (y compris les tracés posés plus tard), paliers remboursés": " — DIE GANZE INSEL wechselt auf unbegrenzten Durchsatz (auch später gebaute Trassen); Stufen erstattet"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* 14.24 */ var ADD={"en": {"Île 6 S": "Island 6 U", "Ordre de service": "Service order", "Construction & travaux": "Construction & works", "Sortants (dépôts au port)": "Outgoing (port deposits)", "Intrants (machines du souterrain)": "Inputs (underground machines)", "Faire remonter cette catégorie d'un rang": "Move this category up one rank", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Strict order: the 1st category is fully served before the next (order adjustable below)", "Réseau logique": "Logic network", "émetteur et vanne câblés ✓": "emitter and valve wired ✓", "non relié — câblez l'émetteur ET la vanne": "not connected — wire BOTH the emitter and the valve", "Palier atteint": "Tier goal reached", "validez la recherche du palier pour relancer": "confirm the tier research to restart", "❌ Palier atteint — validez la recherche du palier avant de relancer": "❌ Tier goal reached — confirm the tier research before restarting", "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Collider not connected to a logic network (emitter and valve must be wired)", "Réseau logique requis": "Logic network required", "Palier atteint — recherche en cours": "Tier reached — research pending", "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Lay a logic cable touching BOTH the Collider's emitter (bottom-left) and valve (top-right)", "Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer": "The tier's confirmation goal is reached: confirm the tier research to restart", "Data Center en veille — séquence du Collisionneur non lancée": "Data Center idle — Collider sequence not launched", "Envoyer en priorité vers ": "Send first to ", "Descendre au souterrain (": "Go down to the underground (", "Remonter à la surface (": "Back up to the surface ("}, "es": {"Île 6 S": "Isla 6 S", "Ordre de service": "Orden de servicio", "Construction & travaux": "Construcción y obras", "Sortants (dépôts au port)": "Salientes (depósitos en el puerto)", "Intrants (machines du souterrain)": "Entradas (máquinas del subsuelo)", "Faire remonter cette catégorie d'un rang": "Subir esta categoría un puesto", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Orden estricto: la 1.ª categoría se sirve por completo antes que la siguiente (orden ajustable abajo)", "Réseau logique": "Red lógica", "émetteur et vanne câblés ✓": "emisor y válvula cableados ✓", "non relié — câblez l'émetteur ET la vanne": "sin conexión — cablea el emisor Y la válvula", "Palier atteint": "Nivel alcanzado", "validez la recherche du palier pour relancer": "confirma la investigación del nivel para relanzar", "❌ Palier atteint — validez la recherche du palier avant de relancer": "❌ Nivel alcanzado — confirma la investigación del nivel antes de relanzar", "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Colisionador sin conexión a una red lógica (emisor y válvula deben estar cableados)", "Réseau logique requis": "Red lógica requerida", "Palier atteint — recherche en cours": "Nivel alcanzado — investigación pendiente", "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Coloca un cable lógico que toque el emisor (abajo-izq.) Y la válvula (arriba-der.) del Colisionador", "Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer": "Se alcanzó el umbral de confirmaciones del nivel: confirma la investigación del nivel para relanzar", "Data Center en veille — séquence du Collisionneur non lancée": "Centro de datos en espera — secuencia del Colisionador no lanzada", "Envoyer en priorité vers ": "Enviar primero a ", "Descendre au souterrain (": "Bajar al subsuelo (", "Remonter à la surface (": "Volver a la superficie ("}, "de": {"Île 6 S": "Insel 6 U", "Ordre de service": "Bedienreihenfolge", "Construction & travaux": "Bau & Arbeiten", "Sortants (dépôts au port)": "Ausgänge (Einlagerung im Hafen)", "Intrants (machines du souterrain)": "Eingänge (Maschinen im Untergrund)", "Faire remonter cette catégorie d'un rang": "Diese Kategorie einen Rang nach oben", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Strenge Reihenfolge: Die 1. Kategorie wird vollständig bedient, bevor die nächste folgt (Reihenfolge unten einstellbar)", "Réseau logique": "Logiknetz", "émetteur et vanne câblés ✓": "Sender und Ventil verkabelt ✓", "non relié — câblez l'émetteur ET la vanne": "nicht verbunden — verkable Sender UND Ventil", "Palier atteint": "Stufenziel erreicht", "validez la recherche du palier pour relancer": "Stufenforschung bestätigen, um neu zu starten", "❌ Palier atteint — validez la recherche du palier avant de relancer": "❌ Stufenziel erreicht — bestätige die Stufenforschung vor dem Neustart", "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Kollider nicht mit einem Logiknetz verbunden (Sender und Ventil müssen verkabelt sein)", "Réseau logique requis": "Logiknetz erforderlich", "Palier atteint — recherche en cours": "Stufe erreicht — Forschung ausstehend", "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Verlege ein Logikkabel, das Sender (unten links) UND Ventil (oben rechts) des Kolliders berührt", "Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer": "Die Bestätigungsschwelle der Stufe ist erreicht: Bestätige die Stufenforschung zum Neustart", "Data Center en veille — séquence du Collisionneur non lancée": "Rechenzentrum im Leerlauf — Kollider-Sequenz nicht gestartet", "Envoyer en priorité vers ": "Zuerst senden an ", "Descendre au souterrain (": "Hinab in den Untergrund (", "Remonter à la surface (": "Zurück an die Oberfläche ("}}; for(var c in ADD){ var L=I18N.locales[c]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[c]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 </script>
 <script>
 const {
@@ -3790,6 +3805,16 @@ function uiIcon(name, fallback, cls) {
     draggable: false
   });
   return fallback;
+}
+// 14.24 — LIBELLÉ JOUEUR d'une île. Le souterrain (id 7) n'est PAS une île autonome : il n'a ni
+// port ni inventaire propre (portPool(7) → port[6], cf. portIslandOf), c'est le sous-sol de l'île 6
+// — l'appeler « Île 7 » laissait croire à une 7ᵉ île indépendante. On l'affiche « Île 6 S ».
+// ⚠ GARDE-FOU : le jour où une VRAIE île 7 autonome sera ajoutée, elle devra prendre un id
+// DIFFÉRENT (8+) et ce cas spécial devra être revu ici. Ne jamais réutiliser l'id 7 pour autre
+// chose que le souterrain sans repasser par cette fonction.
+// N'affecte QUE le texte affiché : les usages internes (isl === 7, clés d'état…) sont inchangés.
+function islandLabel(id) {
+  return id === 7 ? I18N.t('Île 6 S') : I18N.t('Île ') + id;
 }
 // Petite icône d'île (sprite ile_N) pour l'UI (onglets transit/production) ; repli null si absent.
 function islandIcon(id, cls) {
@@ -6990,8 +7015,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 306;
-const GAME_VERSION = 'Alpha 14.23';
+const GAME_BUILD = 307;
+const GAME_VERSION = 'Alpha 14.24';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -8033,6 +8058,20 @@ const elevatorRateAt = lvl => ELEVATOR_BASE_RATE * Math.pow(2, lvl || 0);
 //   'proportional' : au PRORATA de la demande de chaque catégorie.
 const ELEVATOR_MODES = ['priority', 'fair', 'proportional'];
 const elevatorModeOf = game => ELEVATOR_MODES.indexOf(game && game.elevatorMode) !== -1 ? game.elevatorMode : 'priority';
+// 14.24 — ORDRE des 3 catégories dans le mode 'priority', au choix du joueur (demande). Jusqu'ici
+// le mode 'priority' servait un ordre FIXE câblé en dur (construction → sortants → intrants) : le
+// joueur pouvait choisir ENTRE les 3 modes, jamais l'ordre À L'INTÉRIEUR du mode prioritaire.
+// Défaut = l'ordre historique → une save sans le champ se comporte exactement comme avant.
+// ⚠ N'a d'effet QUE sur 'priority' : elevatorAllocate ne lit l'ordre des demandes que dans cette
+// branche ('fair' et 'proportional' sont symétriques, permuter n'y change rien).
+const ELEVATOR_PRIORITY_CATEGORIES = ['construction', 'sortants', 'intrants'];
+const ELEVATOR_CAT_LABEL = { construction: 'Construction & travaux', sortants: 'Sortants (dépôts au port)', intrants: 'Intrants (machines du souterrain)' };
+const DEFAULT_ELEVATOR_PRIORITY_ORDER = ['construction', 'sortants', 'intrants'];
+const isElevatorPriorityOrder = o => Array.isArray(o) && o.length === ELEVATOR_PRIORITY_CATEGORIES.length && ELEVATOR_PRIORITY_CATEGORIES.every(k => o.indexOf(k) !== -1);
+function elevatorPriorityOrderOf(game) {
+  const o = game && game.elevatorPriorityOrder;
+  return isElevatorPriorityOrder(o) ? o : DEFAULT_ELEVATOR_PRIORITY_ORDER;
+}
 // Alloue `budget` unités/s entre des demandes ordonnées par priorité, selon le mode.
 function elevatorAllocate(dems, budget, mode) {
   const give = dems.map(() => 0);
@@ -8604,7 +8643,12 @@ const COLLIDER_POWER_MIN = 1024; // plancher de la sigmoïde (1 MW)
 // ⚠ 14.18 — progression ramenée de ×8 à **×2 par palier** (demande joueur). En ×8 le palier 3
 // demandait 64 He3/s, or le Séparateur Cryogénique n'en sort que 0,01/s de base (×2 par niveau) :
 // il fallait le monter ~6 niveaux de plus rien que pour suivre les paliers du Collisionneur.
-const COLLIDER_HE3 = { 1: 1, 2: 2, 3: 4 };
+// ⚠ 14.24 — remontée à **×4 par palier** (demande joueur : P2 = 4/s, P3 = 16/s ; P1 inchangé à
+// 1/s, aucune valeur n'ayant été donnée pour lui). À RE-PLAYTESTER : le Séparateur Cryogénique
+// sort toujours 0,01 He3/s de base (×2/niveau) → il faut ~Nv.7 pour couvrir P1, ~Nv.9 pour P2 et
+// ~Nv.11 pour P3. C'est exactement le genre de raideur que le 14.18 avait corrigé en descendant
+// de ×8 à ×2 : si le palier 3 devient injouable, c'est ici qu'il faut redescendre.
+const COLLIDER_HE3 = { 1: 1, 2: 4, 3: 16 };
 const colliderHe3Need = palier => COLLIDER_HE3[palier] || COLLIDER_HE3[1];
 // §6 Confirmations requises par palier (valident les nœuds de recherche).
 const COLLIDER_GOALS = { 1: 100, 2: 1000, 3: 10000 };
@@ -9232,6 +9276,7 @@ function processCollider(game, isl) {
     co.cur = 0;
     co.want = 0;
     co.halt = null;
+    co.he3Used = 0;
     co.code = null;
     return;
   }
@@ -9243,6 +9288,7 @@ function processCollider(game, isl) {
     co.cur = 0;
     co.want = 0;
     co.halt = null;
+    co.he3Used = 0;
     co.timer = 0;
     co.launched = false;
     co.code = null;
@@ -9262,7 +9308,12 @@ function processCollider(game, isl) {
   const osc = COLLIDER_POWER_MIN + (cap - COLLIDER_POWER_MIN) * (1 + Math.sin(2 * Math.PI * co.sigT / COLLIDER_START)) / 2;
   // ── 14.17 — CARBURANT : hélium 3, en tout ou rien (cf. colliderDrawHe3). ──
   co.he3Need = colliderHe3Need(palier);
-  const fueled = colliderDrawHe3(game, isl, co.he3Need);
+  // ⚠ 14.24 — le manque de COURANT est évalué AVANT le plein. Jusqu'ici l'He3 était prélevé PUIS la
+  // machine mise en pause dans le même tick : elle brûlait donc son carburant pendant toute une
+  // panne électrique, exactement ce que le « tout ou rien » de 14.17 voulait éviter (« sinon l'He3
+  // brûlerait pendant que la machine est en pause »). L'ordre est simplement inversé.
+  const powerOut = co.powered === false;
+  const fueled = powerOut ? false : colliderDrawHe3(game, isl, co.he3Need);
   // ── 14.17 — TOUT DÉFICIT MET EN PAUSE (demande joueur) ──────────────────────────────────────
   // Avant : un manque de courant faisait RECULER le démarrage (jusqu'à repartir de zéro), sans que
   // rien ne le dise clairement. Désormais une machine en déficit (courant OU hélium 3) est mise en
@@ -9274,7 +9325,9 @@ function processCollider(game, isl) {
   // conclurait « alimenté » (0 kW suffisent toujours), la machine repartirait à plein, retomberait
   // en déficit… soit un battement marche/arrêt à chaque tick. En pause elle ne CONSOMME rien
   // (`co.cur = 0`, cf. boucle énergie) mais reste inscrite au bilan : le joueur voit le déficit.
-  co.halt = co.powered === false ? 'power' : !fueled ? 'fuel' : null;
+  co.halt = powerOut ? 'power' : !fueled ? 'fuel' : null;
+  // Hélium 3 RÉELLEMENT prélevé ce tick (0 en pause) → conso affichée = conso réelle (14.24).
+  co.he3Used = co.halt ? 0 : co.he3Need;
   if (co.halt) {
     // L'ÉTAT est conservé tel quel (démarrage / prêt / en service) : la pause n'est pas une
     // régression, c'est un gel. Dès que le déficit est comblé, la machine reprend exactement où
@@ -9454,13 +9507,65 @@ function colliderBounds(game, isl) {
   }
   return minR === Infinity ? null : { minR, maxR, minC, maxC };
 }
+// 14.24 — Un voisin direct de (r, c) porte-t-il un composant logique CONDUCTEUR (câble ou
+// jonction) ? Test de connectivité MINIMAL : on ne cherche pas à résoudre l'identité du réseau.
+// ⚠ On n'utilise volontairement PAS `adjLogicNets` : c'est une closure interne à processLogic
+// (inaccessible ici) et elle exige le graphe complet des réseaux logiques, inutile pour ce test.
+function hasAdjacentLogicConductor(game, isl, r, c) {
+  const tiles = game.islands[isl];
+  if (!tiles) return false;
+  for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+    const nt = tiles[r + dr] && tiles[r + dr][c + dc];
+    const lg = nt && nt.logic;
+    if (lg && isLogicConductor(lg.id)) return true;
+  }
+  return false;
+}
+// Le Collisionneur est-il RELIÉ physiquement à un réseau logique posé par le joueur ? Ses deux
+// enfants (émetteur bas-gauche, vanne haut-droite, cf. syncColliderChildren) doivent chacun
+// toucher un conducteur. Sans ça, la machine validait des confirmations sans que le joueur ait eu
+// à construire le moindre comparateur — tout le sens du puzzle logique.
+// Le Collisionneur est toujours sur l'île 6 : l'id est fixé ici, pas remonté en paramètre.
+function colliderLogicLinked(game) {
+  const b = colliderBounds(game, 6);
+  if (!b) return false;
+  return hasAdjacentLogicConductor(game, 6, b.maxR, b.minC) && hasAdjacentLogicConductor(game, 6, b.minR, b.maxC);
+}
+// 14.24 — Garde-fou ANTI-SUR-FARMING : une fois le seuil de confirmations du palier COURANT
+// atteint, le Collisionneur ne peut plus être RELANCÉ tant que le nœud de recherche du palier
+// (39/41/43) n'est pas confirmé. Sans ça, le joueur accumulait bien au-delà du seuil exigé et
+// « pré-validait » le palier suivant sans jamais avoir composé avec ses portes supplémentaires.
+// ⚠ Ne coupe PAS une machine qui tourne : la manche en cours va à son terme, `colliderConfirms`
+// peut donc dépasser légèrement le seuil avant que le blocage prenne effet — c'est attendu.
+function colliderGoalLocked(game) {
+  const palier = colliderPalier(game);
+  const goal = COLLIDER_GOALS[palier] || Infinity;
+  const conf = game && game.techTree && game.techTree.colliderConfirms || 0;
+  return conf >= goal && !isNodeConfirmed(game, COLLIDER_PUZZLE_NODES[palier - 1]);
+}
+// Raison pour laquelle le lancement est refusé (null = lançable). Source de vérité UNIQUE :
+// launchCollider ET l'état grisé du bouton du panneau s'y réfèrent, pour que le joueur voie le
+// blocage AVANT de cliquer au lieu de récolter un toast.
+function colliderLaunchBlock(game) {
+  const co = game && game.collider;
+  if (!co || !colliderRepaired(game) || co.enabled === false) return 'off';
+  if (colliderGoalLocked(game)) return 'goal';
+  if (!colliderLogicLinked(game)) return 'logic';
+  if (co.state !== 'ready') return 'notready';
+  return null;
+}
 // 14.17 — Puise `need` hélium 3 pour le Collisionneur, en TOUT OU RIEN : soit la manche est payée
 // entièrement, soit rien n'est prélevé (sinon l'He3 serait brûlé sans rien produire pendant que la
 // machine est en pause). Même chemin d'approvisionnement que la tour aéroréfrigérante : un réseau
 // TUYAU adjacent au landmark et relié au port → on lit le PORT (les liquides d'un tuyau relié y sont
 // flushés chaque tick) ; sinon on lit la CITERNE du réseau isolé.
 // Renvoie true si le plein a été fait.
+// 14.24 — mémorise AUSSI le réseau tuyau sur lequel le plein a été fait (`co.he3Net`) : le
+// Collisionneur n'étant pas un bâtiment, sa consommation n'entre jamais dans addFlow ; tickIsland
+// l'y inscrit après coup pour que le panneau Production et le détail du réseau la voient.
 function colliderDrawHe3(game, isl, need) {
+  const co = game.collider;
+  if (co) co.he3Net = null;
   if (!(need > 0)) return true;
   const b = colliderBounds(game, isl);
   if (!b) return false;
@@ -9470,12 +9575,14 @@ function colliderDrawHe3(game, isl, need) {
     const port = game.port[isl] || {};
     if ((port['helium3'] || 0) + 1e-9 < need) return false;
     port['helium3'] -= need;
+    if (co) co.he3Net = nid;
     return true;
   }
   for (const nid of ids) {
     const pl = nets[nid] && nets[nid].pool;
     if (pl && (pl['helium3'] || 0) + 1e-9 >= need) {
       pl['helium3'] -= need;
+      if (co) co.he3Net = nid;
       return true;
     }
   }
@@ -9520,6 +9627,9 @@ function dataCenterState(tile) {
   if (b.logicOff) return 'logic';
   if (b.damaged) return 'damaged';
   if (b.active === false) return 'starved';
+  // 14.24 — EN VEILLE : le Collisionneur n'a pas lancé sa séquence, le Data Center ne consomme rien
+  // (cf. tickIsland). Ce n'est PAS un déficit — il ne manque rien au joueur côté logistique.
+  if (b.dcIdle) return 'idle';
   // 14.17 — Déficit PARTIEL : le Data Center est TOUT-OU-RIEN (`allOrNothing`) → dès qu'il manque
   // le moindre intrant ou le moindre kW, son régime tombe à 0 et il ne calcule plus. Sans ce test,
   // un Data Center à 40 % restait « en service » et continuait de rythmer les manches alors qu'il
@@ -9534,6 +9644,7 @@ const DC_STATE_LABEL = {
   logic: 'Data Center coupé par un actionneur',
   damaged: 'Data Center endommagé',
   starved: 'Data Center à l\'arrêt (intrants ou courant)',
+  idle: 'Data Center en veille — séquence du Collisionneur non lancée',
   deficit: 'Data Center EN PAUSE — déficit (intrants ou courant)',
   on: 'en service'
 };
@@ -10034,6 +10145,22 @@ function tickIsland(game, isl) {
     // remonter — sinon il resterait à 0 % à vie une fois coupé (interblocage).
     const allOrNothing = !!b.allOrNothing && regime < 0.999;
     if (allOrNothing) regime = 0;
+    // 14.24 — Le DATA CENTER est EN VEILLE tant que le Collisionneur n'a pas lancé sa séquence
+    // (demande joueur). Il n'a aucune sortie (14.16) : son seul rôle est d'être le 2ᵉ émetteur du
+    // puzzle, or `processCollider` ne tire de manche qu'en `state === 'running'`. Le laisser tourner
+    // avant ne faisait que brûler azote, hélium, processeurs ET 1024 kW pour rien.
+    // ⚠ Placé APRÈS le calcul `allOrNothing` pour ne pas interférer avec son seuil (< 0.999).
+    // ⚠ `processCollider` tourne en TÊTE de tickIsland (avant cette boucle) → l'état lu est bien
+    // celui du tick courant. Au 1ᵉʳ tick après le lancement, dataCenterState lit encore le régime
+    // du tick précédent (0) → la 1ʳᵉ manche est tirée 1 s plus tard, sans conséquence.
+    // ⚠ PAS d'interblocage possible ici (≠ cas `allOrNothing` de 14.17, qui doit rester inscrit dans
+    // energyConsumers) : la condition de sortie de veille est EXTERNE (l'état du Collisionneur), elle
+    // ne dépend ni de `pwrAvg` ni du régime du Data Center. Le retirer des consommateurs GÈLE son
+    // `pwrAvg` (la boucle de lissage ne le voit plus) au lieu de l'effondrer → à la reprise il
+    // repart de sa dernière valeur et reconverge normalement.
+    const dcIdle = bld.id === 'data_center' && !(game.collider && game.collider.state === 'running');
+    bld.dcIdle = dcIdle;
+    if (dcIdle) regime = 0;
     bld.inFac = inFac;
     bld.inAvail = inAvail;
     bld.regime = regime;
@@ -10101,7 +10228,9 @@ function tickIsland(game, isl) {
       energyProduced += energyOut * regime;
       wireProd[wireNid] = (wireProd[wireNid] || 0) + energyOut * regime;
     }
-    if (power > 0) energyConsumers.push({
+    // 14.24 — un Data Center EN VEILLE (Collisionneur pas encore lancé) ne tire pas un seul kW : il
+    // sort de la liste des consommateurs, donc il n'apparaît plus dans la demande de l'île.
+    if (power > 0 && !dcIdle) energyConsumers.push({
       idx: r * def.cols + c,
       power,
       bld,
@@ -10174,6 +10303,12 @@ function tickIsland(game, isl) {
   if (!game.netDemand) game.netDemand = {};
   game.netDemand[isl] = netDemand;
   // Détail par ressource transitant sur chaque réseau (route/tuyau) → panneau réseau.
+  // 14.24 — Le COLLISIONNEUR n'est pas un bâtiment : son prélèvement d'hélium 3 passe par
+  // colliderDrawHe3 (déduction directe au port / à la citerne), donc ni la boucle bâtiment ni
+  // addFlow ne le voyaient — la ligne « Hélium 3 » du panneau Production restait à 0 pendant que la
+  // machine en brûlait réellement. On l'inscrit ici, sur le réseau tuyau où il a effectivement puisé
+  // (`co.he3Net`), et pour la quantité effectivement prélevée (`co.he3Used`, nulle en pause).
+  if (isl === 6 && game.collider && game.collider.he3Used > 0) addFlow(game.collider.he3Net, 'cons', 'helium3', game.collider.he3Used);
   if (!game.netFlow) game.netFlow = {};
   game.netFlow[isl] = netFlow;
   // Backward-compat: island-wide solid factor (min over road networks) for the InfoPanel "Réel" row.
@@ -10212,10 +10347,18 @@ function tickIsland(game, isl) {
     // Si le souterrain n'est pas relié à la surface (élévateur non réparé / non relié au port),
     // RIEN ne descend : ni construction, ni I/O (undergroundBlocked coupe déjà le régime des I/O).
     const elevMode = elevatorModeOf(game);
-    const elevGive = elevatorAllocate([consDem, outDem, inDem], undergroundBlocked ? 0 : elevCap, elevMode);
-    const consGive = elevGive[0],
-      outGive = elevGive[1],
-      inGive = elevGive[2];
+    // 14.24 — l'ordre des 3 catégories est celui choisi par le joueur (défaut = l'ordre historique
+    // construction → sortants → intrants). On permute les demandes avant l'allocation, puis on
+    // redistribue le résultat par catégorie : elevatorAllocate reste inchangé, il continue de
+    // servir `dems` dans l'ordre reçu.
+    const elevOrder = elevatorPriorityOrderOf(game);
+    const catDem = { construction: consDem, sortants: outDem, intrants: inDem };
+    const orderedGive = elevatorAllocate(elevOrder.map(k => catDem[k]), undergroundBlocked ? 0 : elevCap, elevMode);
+    const giveByCat = {};
+    elevOrder.forEach((k, i) => { giveByCat[k] = orderedGive[i]; });
+    const consGive = giveByCat.construction,
+      outGive = giveByCat.sortants,
+      inGive = giveByCat.intrants;
     elevOutFac = outDem > 0 ? outGive / outDem : 1;
     elevInFac = inDem > 0 ? inGive / inDem : 1;
     // 14.05 — Le bridage de l'élévateur s'applique au RÉGIME, pas seulement au dépôt/prélèvement.
@@ -10276,7 +10419,7 @@ function tickIsland(game, isl) {
       }
     }
     // Retour temps réel pour le panneau élévateur (débit consommé / max + ventilation par catégorie).
-    game.elevatorFlow = { demand: consDem + outDem + inDem, cap: elevCap, used: consGive + outGive + inGive, construction: consGive, out: outGive, in: inGive, level: game.elevatorLevel || 0, mode: elevMode };
+    game.elevatorFlow = { demand: consDem + outDem + inDem, cap: elevCap, used: consGive + outGive + inGive, construction: consGive, out: outGive, in: inGive, level: game.elevatorLevel || 0, mode: elevMode, order: elevOrder };
   }
   // ── FOREUSES : avancement du creusement (après le bridage de l'élévateur, donc au régime FINAL) ──
   // La pierre extraite doit être évacuée : si l'élévateur ne suit pas, la foreuse creuse d'autant
@@ -11299,24 +11442,35 @@ function energyConsumerList(game, isl) {
 }
 // Per-second production and consumption of a material resource on an island,
 // summed over currently-active buildings (1 tick = 1 s).
+// 14.24 — deux correctifs :
+//  • comme islandFlowAgg, on somme les grilles qui PARTAGENT un port (île 6 ↔ souterrain), sinon ce
+//    repli affiche un total différent de celui du panneau jumeau avant le 1ᵉʳ tick ;
+//  • on ajoute la conso d'hélium 3 du COLLISIONNEUR, qui est un landmark de TERRAIN et non un
+//    bâtiment : son prélèvement passe par colliderDrawHe3 (déduction directe au port/à la citerne)
+//    et n'apparaissait donc dans AUCUN b.inputs — la ligne « Hélium 3 » restait à 0 alors que la
+//    machine en brûlait réellement.
 function resourceRates(game, isl, res) {
-  const def = defById(isl);
-  const tiles = game.islands[isl];
   let prod = 0,
     conso = 0;
-  if (!def || !tiles) return {
-    prod,
-    conso
-  };
-  for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
-    const bld = tiles[r][c].building;
-    if (!bld) continue;
-    const b = BUILDINGS[bld.id];
-    if (!b || bld.active === false) continue;
-    const mult = upgradeMult(bld.upgrade || 0);
-    if (b.outputs && b.outputs[res]) prod += b.outputs[res] * mult;
-    if (b.inputs && b.inputs[res]) conso += b.inputs[res] * mult;
+  const ids = portSharingIslands(game, isl);
+  for (const id of ids) {
+    const def = defById(id);
+    const tiles = game.islands[id];
+    if (!def || !tiles) continue;
+    for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
+      const bld = tiles[r][c].building;
+      if (!bld) continue;
+      const b = BUILDINGS[bld.id];
+      if (!b || bld.active === false) continue;
+      const mult = upgradeMult(bld.upgrade || 0);
+      if (b.outputs && b.outputs[res]) prod += b.outputs[res] * mult;
+      if (b.inputs && b.inputs[res]) conso += b.inputs[res] * mult;
+    }
   }
+  // Collisionneur (île 6) : hélium 3 réellement prélevé au dernier tick (`co.he3Used`, posé par
+  // processCollider). On lit la valeur MESURÉE plutôt que le barème du palier : la machine boit
+  // aussi pendant son démarrage et pendant l'état « prêt », mais rien du tout en pause (halt).
+  if (res === 'helium3' && ids.indexOf(6) !== -1 && game.collider) conso += game.collider.he3Used || 0;
   return {
     prod,
     conso
@@ -13360,7 +13514,7 @@ function IslandSelector({
     const label = spData ? React.createElement("img", {
       className: "island-tab-ico",
       src: spData,
-      alt: I18N.t("\xCEle ") + id,
+      alt: islandLabel(id),
       draggable: false
     }) : locked ? React.createElement("span", {
       className: "lock"
@@ -13370,23 +13524,39 @@ function IslandSelector({
       className: 'island-tab' + (id === current ? ' active' : '') + (locked ? ' locked' : ''),
       'data-tut': 'island-' + id,
       disabled: locked,
-      title: locked ? I18N.t("\xCEle ") + id + I18N.t(" verrouill\xE9e") : I18N.t("\xCEle ") + id,
+      title: locked ? islandLabel(id) + I18N.t(" verrouill\xE9e") : islandLabel(id),
       onClick: () => {
         if (!locked && id !== current) onSelect(id);
       }
     }, label);
   }));
 }
+// 14.24 — Îles qui PARTAGENT le même port : leurs flux doivent être agrégés ENSEMBLE. L'île 6 et
+// le souterrain (île 7, affiché « Île 6 S ») puisent dans UN SEUL stock (portPool(7) → port[6], cf.
+// portIslandOf) — mais game.netFlow est indexé par GRILLE, donc chaque panneau n'affichait que la
+// moitié des flux et le joueur voyait DEUX totaux différents pour une même ressource d'un même
+// stock. Source de vérité unique, réutilisée par islandFlowAgg ET resourceRates.
+// ⚠ Générique par construction : si un jour une VRAIE île 7 autonome apparaît (port à elle),
+// portIslandOf cessera de les confondre et la fusion s'arrêtera d'elle-même.
+function portSharingIslands(game, isl) {
+  const twin = isl === 6 ? 7 : isl === 7 ? 6 : null;
+  if (twin != null && game.islands && game.islands[twin] && portIslandOf(game, isl) === portIslandOf(game, twin)) return [isl, twin];
+  return [isl];
+}
 // Agrège prod/conso (/s) par ressource sur TOUS les réseaux d'une île (route+tuyau+pipePort),
 // depuis game.netFlow[isl] (rempli chaque tick par tickIsland pour toutes les îles).
+// 14.24 — inclut la grille jumelle quand les deux partagent un port (île 6 ↔ souterrain).
 function islandFlowAgg(game, isl) {
-  const nf = game.netFlow && game.netFlow[isl];
   const prod = {},
     cons = {};
-  if (nf) for (const nid in nf) {
-    const f = nf[nid];
-    if (f && f.prod) for (const k in f.prod) prod[k] = (prod[k] || 0) + f.prod[k];
-    if (f && f.cons) for (const k in f.cons) cons[k] = (cons[k] || 0) + f.cons[k];
+  for (const id of portSharingIslands(game, isl)) {
+    const nf = game.netFlow && game.netFlow[id];
+    if (!nf) continue;
+    for (const nid in nf) {
+      const f = nf[nid];
+      if (f && f.prod) for (const k in f.prod) prod[k] = (prod[k] || 0) + f.prod[k];
+      if (f && f.cons) for (const k in f.cons) cons[k] = (cons[k] || 0) + f.cons[k];
+    }
   }
   return {
     prod,
@@ -13655,7 +13825,7 @@ function ProductionPanel({
     className: "rp-head"
   }, React.createElement("span", {
     className: "rp-title"
-  }, uiIcon('production', "📊"), I18N.t(" Production — "), sel === 'all' ? I18N.t('toutes les îles') : I18N.t('Île ') + sel), React.createElement("button", {
+  }, uiIcon('production', "📊"), I18N.t(" Production — "), sel === 'all' ? I18N.t('toutes les îles') : islandLabel(sel)), React.createElement("button", {
     className: "rp-close",
     onClick: onClose,
     title: I18N.t("Fermer")
@@ -13668,7 +13838,7 @@ function ProductionPanel({
     key: id,
     className: 'prod-tab' + (sel === id ? ' active' : ''),
     onClick: () => setSel(id)
-  }, islandIcon(id), I18N.t("Île "), id))), React.createElement("div", {
+  }, islandIcon(id), islandLabel(id)))), React.createElement("div", {
     className: "prod-body"
   }, React.createElement("div", {
     className: "prod-energy"
@@ -13713,7 +13883,7 @@ function ProductionPanel({
     key: i
   }, React.createElement("span", {
     className: "pt-route"
-  }, I18N.t("Île "), t.src, I18N.t(" → Île "), t.dest), resCell(t.k), React.createElement("span", {
+  }, islandLabel(t.src), " → ", islandLabel(t.dest)), resCell(t.k), React.createElement("span", {
     className: "pt-rate"
   }, fmtRateSci(t.rate), "/s")))))));
 }
@@ -13850,7 +14020,7 @@ function AlertsPanel({
     onClick: () => onGoEnergy && onGoEnergy(a.isl)
   }, React.createElement("span", {
     className: "alert-isl"
-  }, I18N.t("Île ") + a.isl), React.createElement("span", {
+  }, islandLabel(a.isl)), React.createElement("span", {
     className: "alert-res"
   }, a.nets > 1 ? "⚡ " + a.nets + I18N.t(" réseaux en déficit · 0% batterie") : a.nets === 1 ? I18N.t("⚡ Réseau en déficit · 0% batterie") : I18N.t("⚡ Déficit · 0% batterie")), React.createElement("span", {
     className: "alert-val"
@@ -13860,7 +14030,7 @@ function AlertsPanel({
     onClick: () => onGo && onGo(a.isl)
   }, React.createElement("span", {
     className: "alert-isl"
-  }, I18N.t("Île ") + a.isl), React.createElement("span", {
+  }, islandLabel(a.isl)), React.createElement("span", {
     className: "alert-res"
   }, RES_SHORT[a.res] || a.res), React.createElement("span", {
     className: "alert-val"
@@ -14623,7 +14793,8 @@ function InfoPanel({
   onUpgradeElevator,
   onToggleCollider,
   onLaunchCollider,
-  onSetElevatorMode
+  onSetElevatorMode,
+  onPromoteElevatorCategory
 }) {
   const ref = useRef(null);
   // Le tap qui ouvre/déplace la fiche ne doit pas cliquer un bouton sous le doigt.
@@ -14692,6 +14863,10 @@ function InfoPanel({
     const flow = game.elevatorFlow || {};
     const used = flow.used || 0;
     const elevMode = elevatorModeOf(game);
+    // 14.24 — ordre de service des 3 catégories (mode prioritaire) + débit servi à chacune, pour
+    // que le joueur voie l'effet de son réglage sans quitter le panneau.
+    const elevOrder = elevatorPriorityOrderOf(game);
+    const elevOrderFlow = { construction: flow.construction || 0, sortants: flow.out || 0, intrants: flow.in || 0 };
     const fmtR = v => (v >= 100 || v === Math.floor(v)) ? fmtPort(Math.round(v * 10) / 10) : (Math.round(v * 10) / 10).toString().replace('.', ',');
     return React.createElement("div", {
       ref: ref, className: "info-panel",
@@ -14713,13 +14888,30 @@ function InfoPanel({
       // Mode de répartition du débit entre les 3 catégories (14.08), au choix du joueur.
       React.createElement("div", { className: "ip-fluxpri-lbl", key: 'eml' }, I18N.t('Répartition du débit')),
       React.createElement("div", { className: "ip-fluxpri-btns", key: 'emb' },
-        [['priority', I18N.t('Prioritaire'), I18N.t("Ordre strict : construction, puis sortants, puis intrants (défaut)")],
+        [['priority', I18N.t('Prioritaire'), I18N.t("Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)")],
          ['fair', I18N.t('Équitable'), I18N.t("Parts égales entre les catégories qui demandent, le résidu est redistribué")],
          ['proportional', I18N.t('Proportionnel'), I18N.t("Au prorata de la demande de chaque catégorie")]
         ].map(([m, lbl, tip]) => React.createElement("button", {
           key: m, className: 'ip-fluxpri-btn' + (elevMode === m ? ' on' : ''), title: tip,
           onClick: () => onSetElevatorMode && onSetElevatorMode(m)
         }, lbl))),
+      // 14.24 — ORDRE des 3 catégories, réglable par le joueur. N'a de sens qu'en mode
+      // prioritaire (en équitable/proportionnel les 3 catégories sont traitées symétriquement,
+      // permuter ne changerait rien) → le bloc n'apparaît que là, pour ne rien promettre de faux.
+      elevMode === 'priority' && React.createElement("div", { className: "ip-fluxpri-lbl", key: 'eol' }, I18N.t('Ordre de service')),
+      elevMode === 'priority' && React.createElement("div", { className: "ip-elevord", key: 'eob' },
+        elevOrder.map((cat, i) => React.createElement("div", {
+          key: cat, className: 'ip-elevord-row' + (i === 0 ? ' first' : '')
+        },
+          React.createElement("span", { className: "ip-elevord-rank" }, (i + 1) + '.'),
+          React.createElement("span", { className: "ip-elevord-name" }, I18N.t(ELEVATOR_CAT_LABEL[cat] || cat)),
+          React.createElement("span", { className: "ip-elevord-rank" }, fmtR(elevOrderFlow[cat] || 0) + I18N.t(' /s')),
+          i > 0 && React.createElement("button", {
+            className: "ip-elevord-up",
+            title: I18N.t('Faire remonter cette catégorie d\'un rang'),
+            onClick: () => onPromoteElevatorCategory && onPromoteElevatorCategory(cat)
+          }, '▲')
+        ))),
       React.createElement("div", { className: "ip-row" },
         React.createElement("span", { className: "lbl" }, uiIcon('chaleur', "\u{1F525}"), I18N.t(' Tampon de chaleur')),
         React.createElement("span", { className: "val io", style: { color: (game.elevatorHeat || 0) >= rate - 1e-6 ? '#ff8079' : (game.elevatorHeat || 0) > 0.001 ? 'var(--orange)' : 'var(--ink-dim)' },
@@ -14762,6 +14954,11 @@ function InfoPanel({
     const halted = repaired && colOn && co.halt;
     const stLabel = !repaired ? I18N.t('en ruine — réparation à rechercher') : !colOn ? I18N.t('éteint (par le joueur)') : halted ? (co.halt === 'fuel' ? I18N.t('EN PAUSE — hélium 3 manquant') : I18N.t('EN PAUSE — électricité insuffisante')) : co.state === 'running' ? I18N.t('en service') : co.state === 'ready' ? I18N.t('prêt — séquence à lancer') : co.state === 'starting' ? I18N.t('démarrage…') : I18N.t('à l\'arrêt');
     const stColor = !repaired ? 'var(--ink-dim)' : !colOn ? 'var(--orange)' : halted ? 'var(--red)' : co.state === 'running' ? 'var(--green)' : co.state === 'ready' ? 'var(--yellow)' : co.state === 'starting' ? 'var(--orange)' : 'var(--red)';
+    // 14.24 — Conditions de LANCEMENT évaluées AVANT le clic (même helper que launchCollider) :
+    // le bouton est grisé et la cause nommée, au lieu de laisser le joueur cliquer dans le vide.
+    const launchBlock = colliderLaunchBlock(game);
+    const logicLinked = repaired && colliderLogicLinked(game);
+    const goalLocked = repaired && colliderGoalLocked(game);
     const rows = [];
     const row = (k, lbl, val, color) => rows.push(React.createElement("div", { className: "ip-row", key: k }, React.createElement("span", { className: "lbl" }, lbl), React.createElement("span", { className: "val", style: color ? { color, fontWeight: 700 } : null }, val)));
     row('st', I18N.t('État'), stLabel, stColor);
@@ -14778,6 +14975,10 @@ function InfoPanel({
     if (repaired && colOn) row('he3', I18N.t('Hélium 3'), fmtPort(colliderHe3Need(pal)) + ' /s' + (co.halt === 'fuel' ? ' · ' + I18N.t('MANQUANT (tuyau ?)') : ''), co.halt === 'fuel' ? 'var(--red)' : 'var(--green)');
     if (co.halt === 'power') row('nop', I18N.t('Électricité'), I18N.t('insuffisante — la machine est en pause (démarrage gelé)'), 'var(--red)');
     row('cf', I18N.t('Confirmations'), fmtPort(conf) + (goal ? ' / ' + fmtPort(goal) : ''), conf >= goal && goal ? 'var(--green)' : null);
+    // 14.24 — Les deux conditions de lancement, visibles en permanence : le joueur sait AVANT
+    // d'atteindre l'état « prêt » ce qui lui manque (réseau logique câblé, recherche du palier).
+    if (repaired && colOn) row('lk', I18N.t('Réseau logique'), logicLinked ? I18N.t('émetteur et vanne câblés ✓') : I18N.t('non relié — câblez l\'émetteur ET la vanne'), logicLinked ? 'var(--green)' : 'var(--orange)');
+    if (goalLocked) row('gl', I18N.t('Palier atteint'), I18N.t('validez la recherche du palier pour relancer'), 'var(--orange)');
     if (co.penalties) row('pe', I18N.t('Pénalités'), fmtPort(co.penalties), 'var(--red)');
     if (repaired && co.state === 'running' && !halted) {
       // 14.15 — On montre le code ET les 4 faces réellement publiées par l'émetteur
@@ -14824,11 +15025,18 @@ function InfoPanel({
       // LANCEMENT DE LA SÉQUENCE (14.08) : après les 10 min de démarrage la machine est « prête »
       // mais n'émet aucun code tant que le joueur n'appuie pas ici. Une pause ou une pénalité
       // annule le lancement ET remet le démarrage à zéro.
+      // 14.24 — bouton GRISÉ (et cause nommée) tant que le lancement est bloqué : réseau logique
+      // absent (§5) ou palier atteint sans recherche validée (§4).
       repaired && colOn && co.state === 'ready' && React.createElement("button", {
-        className: "ip-up armed", style: { marginTop: '8px' },
+        className: "ip-up" + (launchBlock ? ' locked' : ' armed'), style: { marginTop: '8px' },
+        disabled: !!launchBlock,
         onClick: () => onLaunchCollider && onLaunchCollider(),
-        title: I18N.t("Lancer la séquence de collision (le Collisionneur commence à émettre des codes)")
-      }, '▶ ' + I18N.t('Lancer la séquence')),
+        title: launchBlock === 'logic' ? I18N.t("Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur")
+          : launchBlock === 'goal' ? I18N.t("Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer")
+          : I18N.t("Lancer la séquence de collision (le Collisionneur commence à émettre des codes)")
+      }, launchBlock === 'logic' ? '🔒 ' + I18N.t('Réseau logique requis')
+        : launchBlock === 'goal' ? '🔒 ' + I18N.t('Palier atteint — recherche en cours')
+        : '▶ ' + I18N.t('Lancer la séquence')),
       repaired && colOn && co.state === 'running' && React.createElement("div", { className: "ip-row ip-theo" },
         React.createElement("span", { className: "lbl" }, I18N.t('Séquence')),
         React.createElement("span", { className: "val", style: { color: 'var(--green)' } }, I18N.t('lancée'))),
@@ -16409,7 +16617,7 @@ function ResearchPanel({
       className: "rp-lockhint"
     }, "Livraison \xE0 calibrer \u2014 non activable"), node.status !== 'locked' && node.status !== 'confirmed' && (blds.length > 0 || isls.length > 0) && React.createElement("div", {
       className: "rp-unlocks"
-    }, "\u2192 ", isls.map(i => I18N.t('Île ') + i).concat(blds.map(b => BUILDINGS[b] && BUILDINGS[b].name || b)).join(' · ')), node.status === 'locked' && def.prereq != null && React.createElement("div", {
+    }, "\u2192 ", isls.map(i => islandLabel(i)).concat(blds.map(b => BUILDINGS[b] && BUILDINGS[b].name || b)).join(' · ')), node.status === 'locked' && def.prereq != null && React.createElement("div", {
       className: "rp-lockhint"
     }, I18N.t("Requiert : "), (TECH_BY_ID[def.prereq] || {}).name));
   }))));
@@ -16611,7 +16819,7 @@ function PortPanel({
     className: "rp-head"
   }, React.createElement("span", {
     className: "rp-title"
-  }, uiIcon('port', "\u2693"), " Port \u2014 \xCEle ", currentIsland), React.createElement("button", {
+  }, uiIcon('port', "\u2693"), " Port \u2014 " + islandLabel(currentIsland)), React.createElement("button", {
     className: "rp-close",
     onClick: onClose,
     title: I18N.t("Fermer")
@@ -16828,8 +17036,8 @@ function PortPanel({
         key: d,
         className: "pp-dest-chip" + (d === prio ? " first" : ""),
         onClick: () => onSetDestPriority(currentIsland, res, d),
-        title: I18N.t("Envoyer en priorité vers l'île ") + d
-      }, "Île " + d));
+        title: I18N.t("Envoyer en priorité vers ") + islandLabel(d)
+      }, islandLabel(d)));
     })()))), React.createElement(NumField, {
       className: "pp-c-num",
       value: cfg.stockCible,
@@ -16871,7 +17079,7 @@ function PortPanel({
       key: f.src + '_' + f.dest
     }, React.createElement("div", {
       className: "pp-arch-head"
-    }, islandIcon(f.src), I18N.t("\xCEle ") + f.src + " ", " → ", islandIcon(f.dest), " " + I18N.t("\xCEle ") + f.dest), f.res.map(rr => {
+    }, islandIcon(f.src), islandLabel(f.src) + " ", " → ", islandIcon(f.dest), " " + islandLabel(f.dest)), f.res.map(rr => {
       const ik = SPRITES_ENABLED ? itemSpriteKey(rr.res) : null;
       const idata = ik && SPRITE_DATA[ik];
       return React.createElement("div", {
@@ -17752,7 +17960,7 @@ function ResearchDonePopup({
 }) {
   const blds = info.unlocks && info.unlocks.buildings || [];
   const isls = info.unlocks && info.unlocks.islands || [];
-  const unlockNames = isls.map(i => I18N.t('Île ') + i).concat(blds.map(b => BUILDINGS[b] && BUILDINGS[b].name || b));
+  const unlockNames = isls.map(i => islandLabel(i)).concat(blds.map(b => BUILDINGS[b] && BUILDINGS[b].name || b));
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "research-backdrop",
     onClick: onClose
@@ -18645,6 +18853,7 @@ function ensureIslandDefaults(g) {
   if (g.elevatorRepaired == null) g.elevatorRepaired = false;
   if (g.elevatorLevel == null) g.elevatorLevel = 0;
   if (ELEVATOR_MODES.indexOf(g.elevatorMode) === -1) g.elevatorMode = 'priority';
+  if (!isElevatorPriorityOrder(g.elevatorPriorityOrder)) g.elevatorPriorityOrder = DEFAULT_ELEVATOR_PRIORITY_ORDER.slice();
   if (!g.drillsCount) g.drillsCount = {};
   if (g.drillsCount[7] == null) g.drillsCount[7] = 0;
   if (!Array.isArray(g.he3Deposits)) g.he3Deposits = generateHe3Deposits(g);
@@ -19251,6 +19460,9 @@ function App() {
       elevatorLevel: g.elevatorLevel || 0, // phase 3 : niveau d'amélioration de l'élévateur
       // Mode de répartition du débit de l'élévateur (14.08) — champ additif : absent = 'priority'.
       elevatorMode: elevatorModeOf(g),
+      // 14.24 — ordre des 3 catégories en mode 'priority'. Champ additif : absent = ordre
+      // historique (construction → sortants → intrants) → aucune migration, SAVE_VERSION inchangé.
+      elevatorPriorityOrder: elevatorPriorityOrderOf(g).slice(),
       // Collisionneur : machine d'état (le démarrage de 10 min reprend où il en était). Les CODES
       // (co.code/co.dcCode) sont transitoires — retirés au tirage du 1er tick.
       collider: g.collider ? {
@@ -20007,6 +20219,8 @@ function App() {
     }
     g.elevatorLevel = Math.max(0, +data.elevatorLevel || 0);
     g.elevatorMode = ELEVATOR_MODES.indexOf(data.elevatorMode) !== -1 ? data.elevatorMode : 'priority';
+    // 14.24 — champ additif : une save antérieure (ou corrompue) retombe sur l'ordre historique.
+    g.elevatorPriorityOrder = isElevatorPriorityOrder(data.elevatorPriorityOrder) ? data.elevatorPriorityOrder.slice() : DEFAULT_ELEVATOR_PRIORITY_ORDER.slice();
     // Collisionneur : reprend sa machine d'état (save antérieure → état neuf « off »).
     g.collider = defaultColliderState();
     if (data.collider) {
@@ -20564,7 +20778,7 @@ function App() {
     const v = Math.max(0, Math.floor(value || 0));
     if (v > 0) m[res] = v;else delete m[res];
     if (g.stockAlertState && g.stockAlertState[islandId]) delete g.stockAlertState[islandId][res];
-    if (v > 0) showToast(`⚠️ Alerte réglée : Île ${islandId} ${RES_SHORT[res] || res} < ${fmtInt(v)}`, 'var(--ink-dim)');else showToast(`Alerte retirée : ${RES_SHORT[res] || res}`, 'var(--ink-dim)');
+    if (v > 0) showToast(`⚠️ Alerte réglée : ${islandLabel(islandId)} ${RES_SHORT[res] || res} < ${fmtInt(v)}`, 'var(--ink-dim)');else showToast(`Alerte retirée : ${RES_SHORT[res] || res}`, 'var(--ink-dim)');
     bumpHud();
     scheduleSave();
   }
@@ -20588,7 +20802,7 @@ function App() {
         const below = (pool[res] || 0) < t;
         if (below && !state[res]) {
           state[res] = true;
-          showToast(`⚠️ Île ${islStr} — ${RES_SHORT[res] || res} bas : ${fmtInt(pool[res] || 0)} < ${fmtInt(t)}`, 'var(--orange)');
+          showToast(`⚠️ ${islandLabel(+islStr)} — ${RES_SHORT[res] || res} bas : ${fmtInt(pool[res] || 0)} < ${fmtInt(t)}`, 'var(--orange)');
           SFX.playThrottled('stockFull', 6000);
         } else if (!below && state[res]) state[res] = false;
       }
@@ -21559,9 +21773,13 @@ function App() {
   function launchCollider() {
     const g = gameRef.current;
     const co = g.collider;
-    if (!co || !colliderRepaired(g) || co.enabled === false) return false;
-    if (co.state !== 'ready') {
-      showToast(I18N.t('❌ Le démarrage n\'est pas terminé'), 'var(--red)');
+    // 14.24 — un SEUL point de décision (colliderLaunchBlock), partagé avec l'état grisé du bouton.
+    const block = colliderLaunchBlock(g);
+    if (block === 'off') return false;
+    if (block) {
+      showToast(block === 'goal' ? I18N.t('❌ Palier atteint — validez la recherche du palier avant de relancer')
+        : block === 'logic' ? I18N.t('❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)')
+        : I18N.t('❌ Le démarrage n\'est pas terminé'), 'var(--red)');
       SFX.play('invalid');
       return false;
     }
@@ -21580,6 +21798,23 @@ function App() {
     if (ELEVATOR_MODES.indexOf(m) === -1) return false;
     if (g.elevatorMode === m) return false;
     g.elevatorMode = m;
+    SFX.play('click');
+    bumpHud();
+    markDirty();
+    scheduleSave();
+    return true;
+  }
+  // 14.24 — Ordre des 3 catégories en mode 'priority'. `cat` est promue d'un rang (elle passe
+  // devant sa voisine du dessus) : un seul geste par bouton, réversible, et il est impossible de
+  // produire un ordre invalide (on ne fait que permuter deux éléments d'une liste déjà valide).
+  function promoteElevatorCategory(cat) {
+    const g = gameRef.current;
+    const cur = elevatorPriorityOrderOf(g).slice();
+    const i = cur.indexOf(cat);
+    if (i <= 0) return false; // inconnue, ou déjà en tête
+    cur[i] = cur[i - 1];
+    cur[i - 1] = cat;
+    g.elevatorPriorityOrder = cur;
     SFX.play('click');
     bumpHud();
     markDirty();
@@ -23963,7 +24198,7 @@ function App() {
       if (cb && !cb.fixed && cid !== 'port') {
         // respect island exclusivity
         if (cb.exclusiveIsland != null && cb.exclusiveIsland !== gameRef.current.currentIsland) {
-          showToast(`❌ ${cb.name} ne se construit que sur l'île ${cb.exclusiveIsland}`, 'var(--red)');
+          showToast(`❌ ${cb.name} ne se construit que sur ${islandLabel(cb.exclusiveIsland)}`, 'var(--red)');
         } else {
           gameRef.current.ui.tool = cid;
           setToolState(cid);
@@ -24235,7 +24470,7 @@ function App() {
         }
         if (g.nucNotify && g.nucNotify.length) {
           const isl = g.nucNotify.shift();
-          showToast(`☢️ Centrale Île ${isl} en SÉCURITÉ — manque de refroidissement (redémarrage auto dans 5 min)`, 'var(--red)');
+          showToast(`☢️ Centrale ${islandLabel(isl)} en SÉCURITÉ — manque de refroidissement (redémarrage auto dans 5 min)`, 'var(--red)');
           g.nucNotify.length = 0;
           SFX.playThrottled('fuelLow', 8000);
         }
@@ -24267,14 +24502,14 @@ function App() {
         if (g.tickErrorNotify) {
           const ev = g.tickErrorNotify;
           g.tickErrorNotify = null;
-          showToast('⚠ Erreur de simulation (Île ' + ev.isl + ') : ' + String(ev.msg).slice(0, 80), 'var(--red)');
+          showToast('⚠ Erreur de simulation (' + islandLabel(ev.isl) + ') : ' + String(ev.msg).slice(0, 80), 'var(--red)');
           SFX.playThrottled('powerAlert', 8000);
         }
         // Surchauffe (trip) : un bâtiment à chaleur a atteint son plafond → arrêt 5 min.
         if (g.heatTrip && g.heatTrip.length) {
           const ev = g.heatTrip.shift();
           const nm = BUILDINGS[ev.id] && BUILDINGS[ev.id].name || ev.id;
-          showToast(`🔥 ${nm} (Île ${ev.isl}) en SURCHAUFFE — arrêt 5 min`, 'var(--red)');
+          showToast(`🔥 ${nm} (${islandLabel(ev.isl)}) en SURCHAUFFE — arrêt 5 min`, 'var(--red)');
           SFX.playThrottled('powerAlert', 4000);
         }
         // Accumulation de chaleur : refroidissement insuffisant → alerte AVANT la panne
@@ -24282,14 +24517,14 @@ function App() {
         if (g.heatWarn && g.heatWarn.length) {
           const ev = g.heatWarn.shift();
           const nm = BUILDINGS[ev.id] && BUILDINGS[ev.id].name || ev.id;
-          showToast(`🔥 ${nm} (Île ${ev.isl}) accumule de la chaleur — surchauffe dans ~${ev.secs} s si rien ne change`, 'var(--orange)');
+          showToast(`🔥 ${nm} (${islandLabel(ev.isl)}) accumule de la chaleur — surchauffe dans ~${ev.secs} s si rien ne change`, 'var(--orange)');
           SFX.playThrottled('powerAlert', 8000);
         }
         // Réparation possible : 20 % du coût total cumulé.
         if (g.heatRepairReady && g.heatRepairReady.length) {
           const ev = g.heatRepairReady.shift();
           const nm = BUILDINGS[ev.id] && BUILDINGS[ev.id].name || ev.id;
-          showToast(`🔧 ${nm} (Île ${ev.isl}) réparable : 20 % du coût total`, 'var(--orange)');
+          showToast(`🔧 ${nm} (${islandLabel(ev.isl)}) réparable : 20 % du coût total`, 'var(--orange)');
         }
         g.playTicks = (g.playTicks || 0) + 1;
         g.tickAcc -= 1;
@@ -24711,7 +24946,8 @@ function App() {
     onUpgradeElevator: () => tryUpgradeElevator(),
     onToggleCollider: () => toggleCollider(),
     onLaunchCollider: () => launchCollider(),
-    onSetElevatorMode: m => setElevatorMode(m)
+    onSetElevatorMode: m => setElevatorMode(m),
+    onPromoteElevatorCategory: cat => promoteElevatorCategory(cat)
   }), upgrade && React.createElement(UpgradePanel, {
     up: upgrade,
     game: game,
@@ -24799,7 +25035,7 @@ function App() {
   }, I18N.t("Logique"))), !invOpen && game.islandUnlocked && game.islandUnlocked[7] && (game.currentIsland === 6 || game.currentIsland === 7) && React.createElement("button", {
     className: "underground-btn" + (game.currentIsland === 7 ? ' below' : ''),
     onClick: () => switchIsland(game.currentIsland === 6 ? 7 : 6),
-    title: game.currentIsland === 6 ? I18N.t("Descendre au souterrain (île 7)") : I18N.t("Remonter à la surface (île 6)")
+    title: game.currentIsland === 6 ? I18N.t("Descendre au souterrain (") + islandLabel(7) + ")" : I18N.t("Remonter à la surface (") + islandLabel(6) + ")"
   }, React.createElement("img", {
     className: "ug-arrow",
     src: (window.__SPRITE_DATA__ || {})[game.currentIsland === 6 ? 'tile_elevateur_fleche_bas' : 'tile_elevateur_fleche_haut'],
@@ -25011,6 +25247,11 @@ if (typeof window !== 'undefined') {
     colliderCompare, codeToBits, findDataCenter, dcEffective, colliderBits,
     emitterFaceCarries, emitterFaceFromStep, dataCenterState,
     COLLIDER_HE3, colliderHe3Need, colliderDrawHe3, colliderBounds, DC_STATE_LABEL,
+    // 14.24
+    islandLabel, islandFlowAgg, resourceRates, portSharingIslands,
+    hasAdjacentLogicConductor, colliderLogicLinked, colliderGoalLocked, colliderLaunchBlock,
+    elevatorPriorityOrderOf, isElevatorPriorityOrder, DEFAULT_ELEVATOR_PRIORITY_ORDER,
+    COLLIDER_PUZZLE_NODES, COLLIDER_REPAIR_NODES, isNodeConfirmed, isLogicConductor,
     networksOfType, islandHasUnlimitableNet, portIslandOf, NETWORK_HI_MATS, NETWORK_UNLIMITED_COST,
     pickFlavorCode, codeToBits, dcEffective, dcRateOf, countBuildings,
     InfoPanel: typeof InfoPanel === 'function' ? InfoPanel : null,
