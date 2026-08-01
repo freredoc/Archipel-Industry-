@@ -1,8 +1,8 @@
 {
-  "build": 304,
-  "version": "Alpha 14.21",
+  "build": 306,
+  "version": "Alpha 14.23",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge PR #294 — Alpha 14.21 (build 304) : axe des jonctions, réseaux coupés"
+  "notes": "Merge pull request #295 from freredoc/claude/methane-t3-0zkar8"
 }
