@@ -6173,7 +6173,10 @@ const BUILDINGS = {
     inputs: {
       processeur: 1,
       azote: 1024,
-      helium4: 8
+      // 14.23 — hélium ÷4 (8 → 2, demande joueur). Le Séparateur Cryogénique n'en sort que
+      // 0,1 He4/s de base : à 8/s le Data Center exigeait un séparateur très amélioré rien
+      // que pour le faire tourner. Azote et processeur inchangés.
+      helium4: 2
     }
   },
   // ===== RÉSEAU LOGIQUE — PHASE 5A (capteurs, actionneurs, portes) =====
@@ -6987,8 +6990,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 305;
-const GAME_VERSION = 'Alpha 14.22';
+const GAME_BUILD = 306;
+const GAME_VERSION = 'Alpha 14.23';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.

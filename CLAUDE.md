@@ -17,7 +17,22 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 305`, `GAME_VERSION = 'Alpha 14.22'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 306`, `GAME_VERSION = 'Alpha 14.23'`, `SAVE_VERSION = 31`.**
+  Changement 14.23 : **hélium du Data Center ÷4** (demande). `SAVE_VERSION` INCHANGÉ (la save ne stocke
+  qu'id + niveau, jamais les recettes). `data_center.inputs.helium4` **8 → 2**. Azote (1024), processeur
+  (1), conso (1024 kW), `allOrNothing` et `maxPerIsland: 1` **inchangés** ; il n'a toujours AUCUNE sortie
+  (rôle d'émetteur du puzzle du Collisionneur depuis 14.16). Contexte : le Séparateur Cryogénique ne sort
+  que **0,1 He4/s de base** (×2/niveau) → à 8 He4/s le Data Center exigeait un séparateur très amélioré
+  rien que pour démarrer, alors qu'il ne produit rien. ⚠ Aucun autre consommateur d'`helium4` dans le jeu
+  (seule autre mention : le déblocage du nœud **#37**, « produire 100 helium4 », non touché).
+  Validé : `node --check` (7 blocs) + Chromium **11 assertions, 0 KO, 0 erreur JS** — def exacte
+  (2/1024/1, pas d'`outputs`, 1024 kW) + **moteur réel** : Data Center posé au coin du port de l'île 6
+  (route + tuyau reliés au port, câble + accumulateur chargé pour le courant), 20 ticks →
+  **40 hélium consommés = 2 /s exactement**, ratios azote/hélium **512** et hélium/processeur **2**
+  (c'était 8) ; + non-régression complète 14.22 (élévateur-pont, pavé directionnel, méthane t3).
+  ⚠ **Piège de harnais** : sans passer les réseaux en `unlimited`, le débit V1 du tuyau (64/s) bride
+  azote+hélium et on mesure le PLAFOND du réseau, pas la recette.
+- **État précédent : `GAME_BUILD = 305`, `GAME_VERSION = 'Alpha 14.22'`, `SAVE_VERSION = 31`.**
   Changement 14.22 : **méthane en T3 · plancher de 15 min pour l'extrapolation hors-ligne · L'ÉLÉVATEUR
   FAIT PONT (le vrai « tuyau coupé » du joueur) · sens N/E/S/O en PAVÉ DIRECTIONNEL.**
   `SAVE_VERSION` INCHANGÉ (aucun champ persisté ajouté ; `_catchUpStats` est transitoire).
