@@ -3737,6 +3737,10 @@ const BLD_SPRITE_OVERRIDE = {
   // Pas d'art dédié livré pour la pompe V3 : réutilise l'art V2 (sinon aucune icône
   // dans le menu Bâtiment ni sur la carte — les candidats bat_/id/id_v1 n'existent pas).
   pompe_eau_v3: 'pompe_eau_v2',
+  // 14.25 — La Centrifugeuse Uranium remplace le Broyeur Uranium V2 : aucun art dédié n'a été
+  // livré pour elle, elle reprend celui du V2 (statique ET animation, `ANIM_BY_SK` résolvant
+  // depuis la clé de sprite). À remplacer si un sprite de centrifugeuse arrive dans un pack.
+  centrifugeuse_uranium: 'bat_broyeur_uranium_v2',
   // Phase 4 : l'asset livré est `bat_extracteur` (le nom de fichier n'a pas le suffixe
   // `_souterrain` de l'id) → override pour que la carte/menu rende bien le sprite.
   extracteur_souterrain: 'bat_extracteur',
@@ -5906,27 +5910,42 @@ const BUILDINGS = {
     }
   },
   // ===== CHAÎNE NUCLÉAIRE V2 (nœud 41, puzzle P2) =====
-  broyeur_uranium_v2: {
-    name: 'Broyeur Uranium V2',
+  // 14.25 — CENTRIFUGEUSE URANIUM : remplace le Broyeur Uranium V2 (supprimé). Palier du Broyeur
+  // Uranium, qui est désormais HARD CAP au Nv.10 ; entrée au Nv.11 (upgrade 10, ×1024).
+  // ⚠ Ce n'est PLUS un broyeur : elle court-circuite la chaîne yellowcake → enrichissement et
+  // fabrique DIRECTEMENT du combustible U235, en consommant du plutonium (2ᵉ débouché du plutonium
+  // après l'usine moteur nuc.) et de l'acier. Valeurs demandées AU NIVEAU 11, donc divisées par
+  // 1024 ici : uranium 2,62e5 · plutonium 25,6 · acier 256 → combustible U235 256.
+  centrifugeuse_uranium: {
+    name: 'Centrifugeuse Uranium',
     color: '#7CB342',
-    label: 'BRU2',
+    label: 'CFGU',
     kind: 'build',
     tier: 't3',
     terrains: ['land', 'resource'],
     size: [1, 1],
     cost: {},
     power: 0,
+    // Conso ×4 par rapport au V2 remplacé : 73,7 MW → 516 MW au Nv.11 (chiffres confirmés).
+    // ⚠ `amp` est l'AMPLITUDE, pas le plafond : max = base + amp. Un ×4 littéral des DEUX champs
+    // du V2 (18 / 126) donnerait 72 / 504, soit un plafond de 576 × 1024 = 590 MW — pas 516. On
+    // cale donc sur les deux valeurs demandées (plancher 73,7 MW, plafond 516 MW), ce qui vaut
+    // bien ×4 sur le PLANCHER et amp = 504 − 72 = 432.
     sigmoid: {
-      base: 18,
-      amp: 126,
+      base: 72,
+      amp: 432,
       period: 60
     },
+    // Émet de la chaleur selon la règle habituelle (HEAT_PER_MW × MW consommés, cf. tickIsland) ;
+    // heatCap = flag « bâtiment à chaleur », le plafond réel est dynamique (60 s d'émission).
+    heatCap: 10,
     inputs: {
-      uranium: 128,
-      acide: 4
+      uranium: 256,
+      plutonium: 0.025,
+      acier: 0.25
     },
     outputs: {
-      yellow_cake: 1
+      combustible_u235: 0.25
     }
   },
   // Enrichissement V2 : −25 % de yellowcake (2 → 1,5) MAIS incorpore 0,1 plutonium/s en plus.
@@ -6510,7 +6529,7 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'nuclear',
   label: 'Nucléaire',
-  ids: ['broyeur_uranium', 'broyeur_uranium_v2', 'centrale_enrichissement', 'centrale_enrichissement_v2', 'centrale_nucleaire', 'centrale_nucleaire_v2', 'tour_aerorefrigerante', 'usine_moteur_nuc', 'antenne', 'antenne_v2']
+  ids: ['broyeur_uranium', 'centrifugeuse_uranium', 'centrale_enrichissement', 'centrale_enrichissement_v2', 'centrale_nucleaire', 'centrale_nucleaire_v2', 'tour_aerorefrigerante', 'usine_moteur_nuc', 'antenne', 'antenne_v2']
 }, {
   key: 'tungstene',
   label: 'Tungstène',
@@ -7015,8 +7034,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 307;
-const GAME_VERSION = 'Alpha 14.24';
+const GAME_BUILD = 308;
+const GAME_VERSION = 'Alpha 14.25';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7445,7 +7464,7 @@ const TIER_NEXT = {
   fonderie_or:            { next: 'fonderie_or_v2',            cap: 9 },
   raffineur_silicium:     { next: 'raffineur_silicium_v2',     cap: 9 },
   fab_processeur:         { next: 'fab_processeur_v2',         cap: 9 },
-  broyeur_uranium:        { next: 'broyeur_uranium_v2',        cap: 9 },
+  broyeur_uranium:        { next: 'centrifugeuse_uranium',     cap: 9 },
   centrale_enrichissement:{ next: 'centrale_enrichissement_v2',cap: 9 },
   centrale_nucleaire:     { next: 'centrale_nucleaire_v2',     cap: 9 },
   antenne:                { next: 'antenne_v2',                cap: 9 }
@@ -7496,7 +7515,7 @@ const TIER_STEP = {
   fonderie_or_v2:             { entry: 10, forfait: { alliage_tungstene: 300, cable_supraconducteur: 300, element_moteur_nuc: 10 } },
   raffineur_silicium_v2:      { entry: 10, forfait: { alliage_tungstene: 200, cable_supraconducteur: 200, piece_precision: 100 } },
   fab_processeur_v2:          { entry: 10, forfait: { ordinateur_quantique: 10, piece_precision: 400 } },
-  broyeur_uranium_v2:         { entry: 10, forfait: { alliage_tungstene: 400, element_moteur_nuc: 50 } },
+  centrifugeuse_uranium:      { entry: 10, forfait: { alliage_tungstene: 400, element_moteur_nuc: 50 } },
   centrale_enrichissement_v2: { entry: 10, forfait: { alliage_tungstene: 500, element_moteur_nuc: 100, piece_precision: 50 } },
   centrale_nucleaire_v2:      { entry: 10, forfait: { ordinateur_quantique: 10, alliage_tungstene: 3000, piece_precision: 1000, cable_supraconducteur: 1000 } },
   antenne_v2:                 { entry: 10, forfait: { ordinateur_quantique: 100, alliage_tungstene: 1000, moteur_quantique: 10 } }
@@ -7590,6 +7609,12 @@ const ARC_MODE_FROM_OLD = {
 // arc unifié (mode correspondant), bâtiments de palier → niveau d'ENTRÉE du palier, V1 au-delà
 // du nouveau cap → cap. Pas de remboursement, pas de double-paiement (approche validée).
 function migratePlacement(p, fromV) {
+  // 14.25 — TOUTES versions : le Broyeur Uranium V2 est SUPPRIMÉ, remplacé par la Centrifugeuse
+  // Uranium au même palier (entrée Nv.11) et pour le même forfait. Sans ce renommage, la boucle de
+  // chargement sauterait la tuile (`!BUILDINGS[p.b] → continue`) et le joueur PERDRAIT le bâtiment
+  // ET ce qu'il y avait investi. ⚠ La recette change (yellowcake → combustible U235) : c'est voulu,
+  // la save ne stocke que l'id et le niveau.
+  if (p.b === 'broyeur_uranium_v2') p.b = 'centrifugeuse_uranium';
   // TOUTES versions : un bâtiment de palier SOUS son niveau d'entrée est remonté à l'entrée.
   // (Builds 202-207 : la pose directe d'un V2/V3 depuis la barre d'outils créait le bâtiment
   // à Nv.1 alors que le joueur payait le cumul jusqu'à l'entrée — on répare ces placements.)
@@ -10173,7 +10198,7 @@ function tickIsland(game, isl) {
     // consommés (power kW × regime ÷ 1000). Le plafond de trip (60 s) suit automatiquement (heatCapOf).
     if (b.heatCap) {
       bld.heatEmit = bld.id === 'usine_moteur_nuc' ? 1.024 * mult * regime
-        : bld.id === 'machine_outil' || bld.id === 'presse_uhp' || bld.id === 'usine_moteur_quantique' ? HEAT_PER_MW * (power * regime) / 1000
+        : bld.id === 'machine_outil' || bld.id === 'presse_uhp' || bld.id === 'usine_moteur_quantique' || bld.id === 'centrifugeuse_uranium' ? HEAT_PER_MW * (power * regime) / 1000
         : 0;
     }
     // La FOREUSE avance dans une passe DÉDIÉE, après le bridage de l'élévateur (plus bas) : son
@@ -12278,7 +12303,7 @@ const TECH_NODES = [{
     n: 1000
   }],
   unlocks: {
-    buildings: ['broyeur_uranium_v2', 'centrale_enrichissement_v2', 'centrale_nucleaire_v2']
+    buildings: ['centrifugeuse_uranium', 'centrale_enrichissement_v2', 'centrale_nucleaire_v2']
   }
 }, {
   // Réparation III → TOUTES les portes (les 2 dernières : XOR / XNOR).
@@ -13767,7 +13792,15 @@ function ProductionPanel({
 }) {
   const ids = ISLAND_TERRAINS.map(d => d.id).filter(id => game.islandUnlocked[id]);
   const [sel, setSel] = useState('all');
-  const scopeList = sel === 'all' ? ids : [sel];
+  const scopeRaw = sel === 'all' ? ids : [sel];
+  // ⚠ 14.25 — `islandFlowAgg` renvoie depuis 14.24 le total FUSIONNÉ des îles qui partagent un port
+  // (île 6 ↔ souterrain). Sommer les deux dans l'onglet « Toutes » comptait donc leurs flux DEUX
+  // FOIS (constaté : hélium 3 affiché à 2 /s pour une conso réelle de 1). On ne garde qu'UN
+  // représentant par groupe d'îles à port commun — l'onglet d'une île donnée reste inchangé.
+  const scopeList = scopeRaw.filter((isl, i) => {
+    const grp = portSharingIslands(game, isl);
+    return !scopeRaw.slice(0, i).some(prev => grp.indexOf(prev) !== -1);
+  });
   const prod = {},
     cons = {};
   for (const isl of scopeList) {
@@ -13781,7 +13814,10 @@ function ProductionPanel({
   });
   let enP = 0,
     enD = 0;
-  for (const isl of scopeList) {
+  // ⚠ L'ÉLECTRICITÉ, elle, ne traverse PAS l'élévateur (règle 13.81 §7) : chaque grille garde son
+  // bilan. On itère donc sur `scopeRaw` (îles NON dédupliquées) — dédupliquer ici ferait disparaître
+  // toute la production et la demande du souterrain.
+  for (const isl of scopeRaw) {
     const e = game.energy[isl] || {};
     // Production RÉELLE (générateurs) — `gross` n'inclut PAS la décharge batterie → bilan ⚡ Net intuitif.
     enP += (e.gross != null ? e.gross : e.produced) || 0;
@@ -25247,7 +25283,9 @@ if (typeof window !== 'undefined') {
     colliderCompare, codeToBits, findDataCenter, dcEffective, colliderBits,
     emitterFaceCarries, emitterFaceFromStep, dataCenterState,
     COLLIDER_HE3, colliderHe3Need, colliderDrawHe3, colliderBounds, DC_STATE_LABEL,
-    // 14.24
+    // 14.24 / 14.25
+    upgradeMult, SPRITE_DATA, TOOLBAR_GROUPS,
+    ProductionPanel: typeof ProductionPanel === 'function' ? ProductionPanel : null,
     islandLabel, islandFlowAgg, resourceRates, portSharingIslands,
     hasAdjacentLogicConductor, colliderLogicLinked, colliderGoalLocked, colliderLaunchBlock,
     elevatorPriorityOrderOf, isElevatorPriorityOrder, DEFAULT_ELEVATOR_PRIORITY_ORDER,
