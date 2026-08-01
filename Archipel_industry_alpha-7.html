@@ -7036,8 +7036,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 309;
-const GAME_VERSION = 'Alpha 14.26';
+const GAME_BUILD = 310;
+const GAME_VERSION = 'Alpha 14.27';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -12349,7 +12349,12 @@ const TECH_NODES = [{
     n: 1000
   }],
   unlocks: {
-    buildings: ['centrifugeuse_uranium', 'centrale_enrichissement_v2', 'centrale_nucleaire_v2']
+    // 14.27 — `usine_moteur_quantique` DÉPLACÉE ici (elle était au nœud 43) : elle est l'UNIQUE
+    // productrice de `moteur_quantique`, or le nœud 42 en exige 1 000 EN LIVRAISON et le nœud 43
+    // a le 42 pour prérequis → dépendance CIRCULAIRE, tout l'endgame (P3, stabilisateur, antenne
+    // V2, mines V4) était INATTEIGNABLE. Au nœud 41, tous ses coûts et intrants sont déjà
+    // disponibles (alliage/pièce précision/câble supra/ordi quantique/élém. moteur/azote).
+    buildings: ['centrifugeuse_uranium', 'centrale_enrichissement_v2', 'centrale_nucleaire_v2', 'usine_moteur_quantique']
   }
 }, {
   // Réparation III → TOUTES les portes (les 2 dernières : XOR / XNOR).
@@ -12377,7 +12382,7 @@ const TECH_NODES = [{
     n: 10000
   }],
   unlocks: {
-    buildings: ['stabilisateur_quantique', 'antenne_v2', 'usine_moteur_quantique', 'mine_fer_v4', 'mine_charbon_v4', 'mine_cuivre_v4', 'carriere_v4', 'mine_or_v4', 'mine_uranium_v4', 'mine_tungstene_v4']
+    buildings: ['stabilisateur_quantique', 'antenne_v2', 'mine_fer_v4', 'mine_charbon_v4', 'mine_cuivre_v4', 'carriere_v4', 'mine_or_v4', 'mine_uranium_v4', 'mine_tungstene_v4']
   }
 }];
 const TECH_BY_ID = {};

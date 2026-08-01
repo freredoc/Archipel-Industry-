@@ -17,7 +17,31 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 309`, `GAME_VERSION = 'Alpha 14.26'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 310`, `GAME_VERSION = 'Alpha 14.27'`, `SAVE_VERSION = 31`.**
+  Changement 14.27 : **DÉBLOCAGE DE L'ENDGAME — l'Usine de Moteur Quantique passe du nœud 43 au
+  nœud 41.** `SAVE_VERSION` INCHANGÉ (les nœuds sont reconstruits depuis `TECH_NODES` au chargement ;
+  un joueur ayant déjà confirmé le 41 gagne simplement le déblocage au prochain `evaluateTechTree`).
+  **LE BLOCAGE** (trouvé en répondant à « où est l'usine de moteur quantique ? ») :
+  `usine_moteur_quantique` est l'**UNIQUE** productrice de `moteur_quantique` ; elle était débloquée
+  par le nœud **43** (Collisionneur P3), dont le prérequis est le **42** (Réparation III), dont la
+  LIVRAISON exige **1 000 moteur_quantique**. Dépendance **circulaire** → l'usine n'apparaissait
+  JAMAIS dans la barre d'outils, et tout l'endgame (P3, stabilisateur quantique, antenne V2, mines
+  V4) était définitivement hors d'atteinte. **CORRECTIF** : elle est déplacée dans les `unlocks` du
+  nœud **41** (Collisionneur P2). Vérifié : tous ses coûts ET ses intrants (alliage de tungstène,
+  pièce de précision, câble supraconducteur, ordi quantique, élém. moteur nuc., azote) proviennent de
+  bâtiments débloqués BIEN AVANT le 41 → elle est réellement constructible à ce stade. Les autres
+  récompenses des nœuds 41 et 43 sont inchangées.
+  ⚠ **DÉTECTEUR AJOUTÉ À LA SUITE DE TESTS** (le piège s'est produit DEUX fois : 13.82 avec le
+  Séparateur Cryogénique, puis ici) : une fermeture avant de l'arbre confirme les nœuds un à un et
+  signale ceux qu'on ne peut jamais atteindre — un nœud n'est atteignable que si son prérequis l'est
+  ET si toutes les ressources qu'il exige (`delivery` + reqs `produce`) sont produites par un
+  bâtiment débloqué AVANT lui. ⚠ La centrale nucléaire produisant ses irradiés/plutonium
+  DYNAMIQUEMENT (hors `outputs`), ils sont ajoutés à la main au détecteur, sinon il crie au loup.
+  **Contre-épreuve incluse** : sur l'arbre d'AVANT le correctif, le détecteur signale bien les
+  nœuds **42 et 43**. À rejouer à chaque livraison qui exige une ressource de fin de chaîne.
+  Validé : `node --check` (7 blocs) + Chromium **17 assertions, 0 KO, 0 erreur JS** (déplacement,
+  récompenses intactes, détecteur + contre-épreuve, non-régression 14.24→14.26, boot réel).
+- **État précédent : `GAME_BUILD = 309`, `GAME_VERSION = 'Alpha 14.26'`, `SAVE_VERSION = 31`.**
   Changement 14.26 : **2 EXPLOITS FERMÉS + élec ×4 de la Centrale Enrichissement V2 + barre d'outils
   réorganisée.** `SAVE_VERSION` INCHANGÉ (`pl.du` = champ additif avec repli).
   (1) **EXPLOIT « baisser avant de réparer »** (signalé joueur). La facture de réparation après
