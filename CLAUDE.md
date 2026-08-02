@@ -17,7 +17,69 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 315`, `GAME_VERSION = 'Alpha 14.33'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 316`, `GAME_VERSION = 'Alpha 14.34'`, `SAVE_VERSION = 31`.**
+  Changement 14.34 (**LOT B2** du brief `B2_brief` — pack `archipel_textures_v3.2`, complément) :
+  **foreuse « 1 case ½ » + sélecteur d'émetteur par COMBINAISON de bits.** `SAVE_VERSION` INCHANGÉ
+  (aucun champ persisté ne bouge ; `drillDir` = `pl.dd` existe depuis 14.03).
+  (1) **PURGE de 12 lignes** (les 5 clés de `keys_to_purge_b2.txt`) : `bat_foreuse` était définie
+  **2× dans `SPRITE_DATA` ET 2× dans `ANIM_DATA`** (overrides empilés), les 4 orientations 1× chacune.
+  ⚠ **L'ORDRE COMPTE** : purger d'abord, insérer ensuite. Puis **INSERTION** de `patch_foreuse.js`
+  avant l'ancre `// Indexé par CLÉ DE SPRITE STATIQUE` : 5 sprites + 4 sheets + 4 `ANIM_META`.
+  ⚠ **`bat_foreuse` perd son animation et n'en récupère pas** : ce n'est plus qu'une **icône de menu
+  statique 32×32** (c'est voulu — le menu ne peut pas afficher un sprite débordant). Son entrée
+  `ANIM_META` résiduelle devient **inerte** : `ANIM_BY_SK` n'indexe que ce qui existe dans
+  `ANIM_DATA` (vérifié en lisant la boucle : `for (const cle in ANIM_DATA)`), donc pas de plantage.
+  ⚠ Les `ANIM_META` des 4 orientations ont des **`fw`/`fh` NON CARRÉS** (32×48 en n/s, 48×32 en o/e) —
+  `drawAnimFrame` le gère déjà (il découpe sur `a.fw`/`a.fh` et étire dans le rectangle destination).
+  (2) **FOREUSE « 1 case ½ »** (`drawBuilding`) : seul le **rectangle de DESSIN** est étendu d'une
+  DEMI-case dans le sens de forage (`fx/fy/fw/fh`), **l'emprise logique reste 1×1**. Les appels
+  `drawDeficitIcon` / `drawInfoBadges` qui suivent restent sur `(x, y, W, H)` — sinon l'icône de
+  déficit irait se coller au bout du foret. Repli automatique : si les clés `bat_foreuse_<dir>`
+  manquent, `buildingSpriteKey` retombe sur `bat_foreuse` (32×32) qui n'entre dans aucun des 4 cas.
+  ⚠ **LIMITE CONNUE, VOLONTAIREMENT NON CORRIGÉE** : le terrain est peint en passe complète AVANT les
+  bâtiments (le foret passe donc proprement sur le sol voisin), mais un **bâtiment** situé au SUD ou à
+  l'EST est dessiné APRÈS et **recouvrira la pointe**. En pratique la foreuse creuse vers de la roche.
+  Le correctif propre serait une passe dédiée après les bâtiments — hors périmètre.
+  (3) **ÉMETTEUR : un sprite par COMBINAISON de bits.** Avant, seul le signal du palier COURANT était
+  lisible (à P3 le joueur voyait γ mais ni α ni β, alors que le code émis dépend des trois). Désormais
+  `codeE` = les `palE` premiers bits de `bitsE` (= `[α, β, γ, VALIDE]`, ordre des faces N, S, O) →
+  clé `logic_emetteur[_dc]_p<palE>_<bits>`. Variante **`_dc`** (liseré violet) quand le porteur est le
+  **Data Center** (`tiles[r][c].building.id === 'data_center'`) — l'émetteur du Collisionneur est sur
+  du terrain `collider`, donc sans bâtiment. Les 28 clés ont été **injectées en B1** et dormaient.
+  ⚠ `sig`/`lit` restent déclarés au-dessus : ils ne servent plus qu'au REPLI, ne pas les supprimer.
+  ⚠ Le comportement **muet est inchangé** : face VALIDE à 0 → `logic_emetteur_inactif`, en amont du
+  nouveau code. Mapping des faces inchangé (**α nord, β sud, γ ouest, VALIDE est**).
+  Validé : `node --check` (7 blocs) + Chromium **3 suites, 26 assertions, 0 KO, 0 erreur JS**, suite
+  rejouée **5 fois de suite sans flottement**. Méthode : **espion sur `CanvasRenderingContext2D.
+  prototype.drawImage`** + reverse-map `dataURL → clé` → on mesure le rectangle de dessin RÉEL du vrai
+  `draw()`. Mesures : tuile 26 px → **NORD/SUD 26×39, OUEST/EST 39×26** (26 + 13 = 1 case ½) ; NORD
+  démarre 13 px plus HAUT que SUD et OUEST 13 px plus à GAUCHE qu'EST (le débord part du bon côté) ;
+  SUD et EST partent du coin de la case ; le carter reste cadré sur la case dans l'axe non forant ;
+  **icône de déficit ancrée sur la CASE** (y=175 ≥ haut de case 174), pas sur la pointe ; animation
+  qui tourne en marche (sheet) et **figée à l'arrêt** (statique) ; **les 8 combinaisons P3 donnent
+  chacune LEUR sprite** (table complète 000→111), variante `_dc` sur le Data Center, P1 sur l'île 6 ;
+  les 111 bâtiments résolvent vers un sprite présent.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) les sprites se décodent
+  **PARESSEUSEMENT** → tant qu'une clé n'est pas décodée `drawSprite` rend `false` et le draw tombe
+  sur le **candidat suivant** : on mesure alors le mauvais sprite (symptôme observé : `p3_100` demandé,
+  `p3_000` dessiné). Préchauffer via `__heat.spriteImg` + `spriteUsable` AVANT toute mesure ;
+  (b) la boucle rAF ne redessine QUE si `g.dirty` → une fenêtre de capture d'UNE frame tombe parfois
+  sur un rendu déjà consommé : **réessayer jusqu'à observer un dessin** ; (c) sur l'**île 6**,
+  `syncColliderChildren` **SUPPRIME tout enfant d'émetteur hors position attendue** (même passe de
+  nettoyage qu'en 14.07 pour la vanne mal placée) → une forge d'émetteur y est effacée entre deux
+  frames, il faut la **rejouer avant chaque tentative** ; (d) `processLogic` réécrit `emitBits` à
+  chaque tick → le poser en **getter** (`Object.defineProperty`) pour qu'il survive à la mesure ;
+  (e) la taille de tuile est **`g.cam.tile`** (il n'existe pas de `g.tile`).
+  ⚠ **HORS PÉRIMÈTRE, reporté en B3** : animation du landmark collisionneur (les sheets `_boot`/
+  `_actif` 96×64 supposent d'étendre `drawSprite`/`drawAnimFrame` avec une découpe de SOURCE + un
+  sélecteur d'état lisant `game.collider` — ça touche des primitives partagées par tout le rendu),
+  anneaux de coût de la foreuse (`tile_i7_land_clair`, même passe terrain), `refroidisseur`/`cryostat`
+  dans `BUILDINGS` (en attente de specs), et `logic_emetteur` qui résout `null` via `buildingSpriteKey`
+  (préexistant et inerte — une ligne `logic_emetteur: ['logic_emetteur_inactif']` le fermerait).
+  ⚠ **Taille : 2 886 069 → 2 883 349 o (−2 720 o = −2,7 Ko)**, exactement le delta annoncé par le brief.
+  (Les tailles ABSOLUES du brief — 2 860 849 → 2 858 083 — ne correspondent pas au dépôt réel : c'est
+  le DELTA qui fait foi.)
+- **État précédent : `GAME_BUILD = 315`, `GAME_VERSION = 'Alpha 14.33'`, `SAVE_VERSION = 31`.**
   Changement 14.33 (**LOT B1** du brief `B1_brief` — pack `archipel_textures_v3.2`) : **injection du
   pack sprites « île6 v3.2 ». ASSETS SEULS — aucune ligne de logique de rendu touchée.**
   `SAVE_VERSION` INCHANGÉ (aucune structure de sauvegarde n'est concernée).
