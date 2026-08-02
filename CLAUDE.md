@@ -17,7 +17,84 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 312`, `GAME_VERSION = 'Alpha 14.30'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 313`, `GAME_VERSION = 'Alpha 14.31'`, `SAVE_VERSION = 31`.**
+  Changement 14.31 (**LOT B** du brief `BRIEF_LOT_B_lisibilite_ui`, **B6 tranché sur l'OPTION 2**) :
+  **lisibilité — émission de chaleur max en fiche, charge crête du conduit, réseaux nécessaires,
+  bâtiments des autres îles en gris, annonce de densification, et le Collisionneur exige enfin un
+  vrai câble.** `SAVE_VERSION` INCHANGÉ (`uiPrefs.showOffIsland` = champ additif, absent = défaut).
+  (1) **B1 — ligne « Émission max » en fiche** (`fmtHeat(heatEmitMaxOf(bld))`, source de vérité du
+  lot A, RIEN n'est recalculé) : sur un bâtiment dont la conso OSCILLE, l'émission instantanée ne
+  dit rien du dimensionnement des tours. Affichée si `sigmoid || randomP || antenna || nuclear`.
+  ⚠ **L'exemple du brief est FAUX** : l'Usine Moteur Nucléaire n'est PAS « à conso plate » — elle a
+  une sigmoïde `{64, 448, 60}` depuis 13.43 (seule son ÉMISSION est plate, 1,024 × niveau) → la
+  ligne s'y affiche. Le SEUL bâtiment à chaleur réellement à conso plate est **`machine_outil`**,
+  et lui est bien exclu — c'est exactement l'intention. Tooltip du plafond corrigé (« plafond FIXE
+  = 1 min d'émission MAXIMALE », il ne dépend plus du régime courant depuis 14.30).
+  (2) **B2 — « Charge crête » du réseau conduit** : nouveau registre `game.conduitPeak[isl][nid]`
+  posé par `processHeat` (somme des `heatEmitMaxOf` des sources raccordées), affiché à côté du flux
+  et **ROUGE dès que la crête dépasse le débit** — le signal arrive AVANT la panne, alors que le
+  flux instantané peut rester bas tant que les sigmoïdes ne sont pas en phase. ⚠ Vérifié comme le
+  demandait le brief : `cn.sources` ne contient QUE des `bld` réels (le pseudo-élément
+  `{ elevator: true }` est ajouté à `srcs`, la copie) → aucune garde nécessaire.
+  (3) **B3 — ligne « Réseaux » en fiche** (`buildingConnectsCarrier` sur road/pipe/wire/conduit,
+  complète depuis 14.30). ⚠ **Aucune table de libellés créée** : les noms viennent des defs d'infra
+  elles-mêmes (`BUILDINGS.road/pipe/wire/conduit.name`), déjà traduites par `applyToData`.
+  **Libellés d'île** : `'île ' + b.exclusiveIsland` → **`islandLabel(...)`** (« Île 6 S » pour l'id 7).
+  Balayage exhaustif : **UNE SEULE** composition manuelle existait (la ligne `Exclusif`) ; les 2
+  autres occurrences sont `islandLabel` elle-même et la phrase « pic des sigmoïdes de l'île » (pas
+  une étiquette). Le toast de refus de pose utilisait déjà `islandLabel`.
+  (4) **B4 — bâtiments d'une AUTRE île affichés en GRIS** (défaut ACTIVÉ, découvrabilité) : fonction
+  SŒUR **`offIslandOn(id)`** — `visibleOn` reste booléenne, **aucun de ses appelants n'est touché**.
+  ⚠ Seule l'EXCLUSIVITÉ change de traitement : `forbiddenIslands` et le non-débloqué restent
+  MASQUÉS. Classe `.tool-btn.off-island` (opacité + grayscale, **PAS de `pointer-events:none`**) ;
+  un tap ouvre la **FICHE** et `selectTool` refuse la sélection avec le message EXISTANT du mode
+  Copier (aucun second texte). Les grisés participent à la RECHERCHE (« tungst » depuis l'île 2
+  remonte la Mine Tungstène). Interrupteur en bas du panneau Bâtiment réutilisant le style
+  d'interrupteur du jeu (**`.opt-toggle`** des Options — aucun composant neuf), masqué en couche
+  logique et absent de l'onglet Réseau. Persisté dans `uiPrefs.showOffIsland`.
+  (5) **B5 — ligne « Densification »** (`TIER_NEXT` + `TIER_STEP[next].entry`) : rien n'annonçait
+  qu'un bâtiment allait devenir autre chose avant d'atteindre le palier. C'est aussi la réponse au
+  « où est l'Accumulateur V2 ? » — comme **18 autres cibles**, il ne se pose pas, il s'obtient en
+  améliorant. ⚠ **Le brief annonce « au Nv.10 », c'est un décalage d'UN** : `entry` est l'index
+  d'amélioration 0-based et le jeu affiche partout `upgrade + 1` (cf. 13.27, « u=10 (Nv.11) ») →
+  on affiche **Nv.11**. `TIER_STEP.entry` est présent pour TOUTES les cibles : le repli `cap + 1`
+  n'est jamais utilisé (vérifié).
+  (6) **B6 — OPTION 2 RETENUE (arbitrage joueur) : le Collisionneur EXIGE un réseau CÂBLE adjacent.**
+  Avant, sa demande était prélevée sur le bilan de l'ÎLE 6 entière : n'importe quelle source de
+  l'île l'alimentait, câblée ou non → dessiner un raccord aurait été un **mensonge visuel**. Nouveau
+  **`colliderWireNid(game, isl)`** (adjacence à `colliderBounds`, comme `colliderDrawHe3` le fait
+  pour le tuyau) ; sans câble → `co.powered = false`, plus aucune alimentation. Avec câble, il puise
+  sur **SA composante** (`wireInfo[nid].deliver − served`, donc borné par le DÉBIT du câble) et sa
+  demande est publiée sur cette composante (`demand`/`served`/`netDemand`) → le panneau du câble
+  cesse de sous-estimer la plus grosse charge de la partie. **Stubs de raccord** dessinés sur le
+  landmark pour le **câble ET le tuyau** (l'He3 y était déjà réellement puisé depuis 14.17) → le
+  visuel devient sincère dans les deux sens. Nouvelle ligne « Câble : relié / non relié » dans sa
+  fiche. ⚠ **RUPTURE D'ÉQUILIBRAGE ASSUMÉE** : un Collisionneur qu'aucun câble ne touche perd son
+  alimentation (son démarrage recule) tant que le joueur ne l'a pas raccordé. **Aucune migration de
+  save n'est nécessaire** (aucun champ persisté ne change ; `wireNid`/`wireOk` sont transitoires) —
+  sur la save du joueur le Collisionneur est `off`, donc rien ne casse immédiatement.
+  ⚠ **`__heat` étendu** (`islandLabel`, `colliderWireNid`, `colliderBounds`, `TIER_NEXT`, `TIER_STEP`).
+  i18n en/es/de des 15 nouveaux libellés (bloc d'augmentation `/* 14.31 */`).
+  Validé : `node --check` (7 blocs) + Chromium **3 suites, 45 assertions, 0 KO, 0 erreur JS** —
+  émission max × 60 == plafond sur TOUS les bâtiments à chaleur ; charge crête = somme exacte des
+  2 sources, **rouge à flux instantané NUL** quand la crête dépasse le débit, 0 (pas de NaN) sans
+  source, jamais rouge en illimité ; Presse UHP = route · câble · conduit, éolienne = câble seul,
+  `islandLabel(7)` = « Île 6 S » ; **UI RÉELLE** depuis l'île 2 : 26 bâtiments grisés sur 89, clic →
+  fiche sans sélection d'outil, recherche « tungst » → 3 résultats grisés, switch éteint → ils
+  disparaissent ET le réglage est écrit dans `uiPrefs`, non-régression (non débloqué = masqué) ;
+  **save RÉELLE du joueur** (7 îles, 58 types de bâtiments) : aucun NaN/undefined dans les données
+  des fiches et des panneaux, 0 endommagé après 70 s, centrale île 5 toujours `regime = 1`, les
+  2 centrales en pause toujours en arrêt franc.
+  ⚠ **Pièges de harnais (nouveaux)** : la partie de démarrage est en mode **« difficile »** → le
+  terrain `collider` n'existe pas (appeler `applyGameMode('normal')` + reconstruire l'île 6) ; le
+  navigateur de test est en **locale EN** (forcer `localStorage['archipel_lang'] = 'fr'`) ; sur une
+  save ancienne l'**overlay de rattrapage hors-ligne PUIS le récap** interceptent les clics (les
+  fermer avant toute interaction) ; le **canvas plein écran fait échouer le hit-testing de
+  Playwright** → piloter l'UI en JS (`el.click()`, setter natif + événement `input`) ; l'onglet
+  Bâtiment est un **TOGGLE** (re-cliquer le ferme → helper idempotent).
+  ⚠ **HORS lot B, non traité** : tout le lot C (renommage Centrifugeuse → Centrale d'Enrichissement,
+  ratio uranium/plutonium, boutons ± du mix irradié).
+- **État précédent : `GAME_BUILD = 312`, `GAME_VERSION = 'Alpha 14.30'`, `SAVE_VERSION = 31`.**
   Changement 14.30 (**LOT A** du brief `BRIEF_LOT_A_chaleur_nucleaire`) : **plafond de chaleur FIXE
   (fin des trips fantômes) + antenne qui ne chauffe plus à l'arrêt + le conduit traverse les
   bâtiments + la centrale publie ses champs de rendu et s'arrête franchement.** `SAVE_VERSION`
