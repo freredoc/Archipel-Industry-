@@ -17,7 +17,76 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 314`, `GAME_VERSION = 'Alpha 14.32'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 315`, `GAME_VERSION = 'Alpha 14.33'`, `SAVE_VERSION = 31`.**
+  Changement 14.33 (**LOT B1** du brief `B1_brief` — pack `archipel_textures_v3.2`) : **injection du
+  pack sprites « île6 v3.2 ». ASSETS SEULS — aucune ligne de logique de rendu touchée.**
+  `SAVE_VERSION` INCHANGÉ (aucune structure de sauvegarde n'est concernée).
+  (1) **PURGE de 98 lignes** : les 101 clés de `keys_to_purge.txt` (toutes occurrences dans
+  `__SPRITE_DATA__` ET `__ANIM_DATA__`) **plus 24 lignes orphelines** `logic_bloc_alpha[_beta]
+  [_gamma]_<dir>_<0|1>` — **zéro référence dans le code** (vérifié : `grep -c 'logic_bloc'` sur le
+  fichier filtré → 0) ; elles faisaient doublon avec `logic_emetteur_*`, ce que le rendu utilise
+  réellement. ⚠ **L'ORDRE COMPTE** : purger d'abord, insérer ensuite (sinon la purge effacerait les
+  lignes qu'on vient d'ajouter). 74 lignes pour 61 clés car 4 clés étaient **déjà définies
+  plusieurs fois** (overrides empilés par des packs successifs : `bat_collisionneur_p1`/`_p2` ×3,
+  `bat_collisionneur` ×2, `bat_fab_ordi_quantique` ×2 côté `ANIM_DATA`) → la purge élimine toutes
+  les occurrences, le patch redéfinit une seule fois. `bat_refroidisseur` vit dans le **grand
+  littéral** (~ligne 1657) et non en affectation individuelle : il n'est pas purgé, la
+  **réaffectation tardive** du patch le couvre (la dernière affectation gagne au runtime).
+  (2) **INSERTION** de `patch_assets.js` juste AVANT l'ancre `// Indexé par CLÉ DE SPRITE STATIQUE`
+  (donc après le dernier `Object.assign(ANIM_META, …)` existant et avant `const ANIM_BY_SK`) :
+  **96 sprites + 15 spritesheets + 15 entrées `ANIM_META`**. ⚠ Vérifié que `ANIM_META` est bien
+  **déclaré avant** (ligne ~3250) — sinon l'`Object.assign` du patch lèverait un `ReferenceError`.
+  Les 3 `bat_collisionneur_pN_boot` **passent de `fw:64,fh:96` à `fw:96,fh:64`** (l'art portrait
+  tourné devient nativement PAYSAGE) et les 3 `_actif` sont ajoutés : c'est une **réécriture**, pas
+  un doublon — l'ancien `Object.assign` reste en place et le patch, qui s'exécute après, écrase.
+  (3) ⚠ **LE §3 DU BRIEF ÉTAIT DÉJÀ FAIT, EN MIEUX — ne pas le rejouer.** Le brief (rédigé sur la
+  base 311 / 14.29) demandait de supprimer `centrale_enrichissement_v2: 'bat_broyeur_uranium_v2'`
+  de `BLD_SPRITE_OVERRIDE`, faute de quoi le nouvel art « ne s'afficherait jamais ». **Cette ligne
+  n'existe plus depuis le 14.32** : elle est devenue une **LISTE de candidats**
+  `['bat_centrale_enrichissement_v2', 'bat_broyeur_uranium_v2']` (le premier PRÉSENT gagne). Le
+  patch livre précisément `bat_centrale_enrichissement_v2` → il est pris **automatiquement**, et le
+  repli reste derrière par sûreté. **Aucune retouche de `BLD_SPRITE_OVERRIDE`** (vérifié en jeu :
+  `buildingSpriteKey('centrale_enrichissement_v2')` → `bat_centrale_enrichissement_v2`).
+  (4) **HORS PÉRIMÈTRE, volontairement non traité** (arrive en B2) : la **FOREUSE** — ses sprites
+  32×48 / 48×32 sont **absents du patch**, le rendu dessinant en `tile × tile` ils seraient écrasés
+  dans 32×32 ; les clés `bat_foreuse*` existantes sont **intactes** (vérifié). Sont injectées mais
+  **DORMANTES** (aucun code ne les lit aujourd'hui, c'est voulu) : le sélecteur d'émetteur par
+  combinaison de bits (`logic_emetteur_p1_*`/`p2_*`/`p3_*` et `logic_emetteur_dc_*` — le cumul par
+  palier continue de passer par les clés HISTORIQUES `logic_emetteur_<sig>[_on]`), les sheets
+  `_boot`/`_actif` du landmark (le rendu du terrain `collider` n'appelle que `drawSprite` sur les
+  tranches), et `tile_i7_land_clair` (anneaux de coût de la foreuse). Ni `refroidisseur` ni
+  `cryostat` ne sont créés dans `BUILDINGS` : leur art est injecté, les bâtiments n'existent pas.
+  ⚠ **`logic_emetteur` (le bâtiment) résout sur `null` via `buildingSpriteKey` — c'est PRÉEXISTANT
+  et INERTE**, pas une régression : contre-épreuve exécutée sur le build 314 d'origine → même
+  résultat exact (1 seul id sans sprite, le même). Il est `childOnly` (jamais posable, jamais au
+  menu) et se dessine par sa PROPRE chaîne de candidats (`logic_emetteur_<sig>[_on]` →
+  `logic_emetteur_inactif` → `logic_emetteur_alpha`), toutes présentes → aucun carré de repli.
+  Validé : `node --check` (7 blocs) + Chromium **6 suites, 32 assertions, 0 KO, 0 erreur JS** — les
+  **101 clés purgées sont TOUTES redéfinies** (0 manquante, comparaison ensembliste purge ↔ patch :
+  0 clé orpheline des deux côtés) et **décodent réellement** en `Image` (0 échec) ; 0 clé
+  `logic_bloc_*` résiduelle ; **aucune clé du pack définie 2× dans le MÊME conteneur** (⚠ ne PAS
+  tester les doublons globalement : le fichier en contient une cinquantaine d'origine
+  — `logic_porte_*`, `i7_bord_*`, `bat_foreuse`… — qui sont des overrides INTENTIONNELS de packs
+  successifs, et une clé peut légitimement exister à la fois en statique et en sheet) ;
+  `bat_collisionneur_p1` statique mesuré **96×64 PAYSAGE**, sheet 384×64, les 6 entrées `ANIM_META`
+  du collisionneur en **96×64** (boot @6 fps, actif @10) ; **balayage des 111 bâtiments** → tous
+  résolvent vers un sprite PRÉSENT (hors le `logic_emetteur` préexistant ci-dessus) ; les 7 cibles
+  nommées du brief pointent bien sur l'art dédié v3.2 ; boot réel (canvas peint 100 %, splash
+  retiré, 0 erreur console). **Contrôle visuel** (planche contact rendue) : collisionneur paysage
+  halls en haut à gauche / grand anneau à droite / petit anneau en bas à gauche, et l'aspect change
+  bien à chaque palier (P0 rouillé → P1 → P2 → P3 argenté) ; émetteur en **rose des vents**
+  (α nord, β sud, γ ouest, VALIDE est — le quartier correspondant s'allume en `_on`) ; actionneur
+  **sans flèche**, voyant carré centré, identique dans les 4 sens ; fours V2 / centrifugeuse
+  (rotor + trémie) / refroidisseur / cryostat ; famille quantique + antenne V2 en argenté V4 ;
+  icône `item_moteur_quantique` 16×16.
+  ⚠ **Taille du fichier : 2 934 056 → 2 885 788 o (−47,1 Ko).** Un delta POSITIF signifierait que
+  la purge a échoué. (Le brief annonçait −47,6 Ko, mesurés sur la base 311 : l'écart vient de la
+  base différente, la purge ayant retiré exactement les 98 lignes attendues.)
+  ⚠ **`index.html` / `sw.js` / `version.json` NE SONT PAS à éditer à la main** : `index.html` est
+  l'**édition TESTEUR** (copie du jeu avec `TESTER_BUILD = true`, seule ligne qui diffère) et la CI
+  les régénère tous les trois depuis `Archipel_industry_alpha-7.html` après un build sur `main`
+  (étapes « Sync PWA » et « Sync version.json »).
+- **État précédent : `GAME_BUILD = 314`, `GAME_VERSION = 'Alpha 14.32'`, `SAVE_VERSION = 31`.**
   Changement 14.32 (**LOT C** du brief `BRIEF_LOT_C_enrichissement`) : **renommage Centrale
   Enrichissement V2 (+ son art enfin branché), mélange uranium/plutonium réglable, et mix irradié
   en ± 1 % à somme verrouillée.** `SAVE_VERSION` INCHANGÉ (`pl.enr` = champ additif ; les poids du
