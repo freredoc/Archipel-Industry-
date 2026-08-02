@@ -17,7 +17,64 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 313`, `GAME_VERSION = 'Alpha 14.31'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 314`, `GAME_VERSION = 'Alpha 14.32'`, `SAVE_VERSION = 31`.**
+  Changement 14.32 (**LOT C** du brief `BRIEF_LOT_C_enrichissement`) : **renommage Centrale
+  Enrichissement V2 (+ son art enfin branché), mélange uranium/plutonium réglable, et mix irradié
+  en ± 1 % à somme verrouillée.** `SAVE_VERSION` INCHANGÉ (`pl.enr` = champ additif ; les poids du
+  mix sont renormalisés au chargement, sans changement de format).
+  (1) **C1 — « Centrifugeuse Uranium V2 » redevient « Centrale Enrichissement V2 »** (graphie
+  alignée sur le V1, `Centrale Enrichissement V1`). Seul le NOM change : l'id
+  `centrale_enrichissement_v2`, la recette, `TIER_NEXT`/`TIER_STEP` sont intacts, et la migration
+  d'ids **`broyeur_uranium_v2` / `centrifugeuse_uranium` → `broyeur_uranium` est CONSERVÉE** (ce
+  sont des builds PUBLIÉS 308/310 — vérifié par rechargement réel). Il ne reste du mot
+  « centrifugeuse » que 3 commentaires d'historique et **la chaîne de l'id dans la migration**.
+  ⚠ **DÉCOUVERTE — l'art dédié existait déjà.** `BLD_SPRITE_OVERRIDE` accepte désormais une **LISTE
+  de candidats** (1er présent gagne, même esprit que `cands` dans `buildingSpriteKey`) : on a mis
+  `['bat_centrale_enrichissement_v2', 'bat_broyeur_uranium_v2']` pour qu'Ethan n'ait qu'à déposer
+  son PNG… **et le sprite est DÉJÀ dans le pack depuis 13.59** (il y avait été inliné comme sprite
+  « V2 île 6 » inerte et jamais branché ; le 14.29 pointait le bâtiment sur l'art du Broyeur V2).
+  Il est donc actif immédiatement, **avec sa sheet d'animation 4 frames**, et il est bien DISTINCT
+  du repli. Un nouvel art se substituera sous la MÊME clé, sans retoucher au code.
+  (2) **C2 — MÉLANGE URANIUM / PLUTONIUM réglable PAR BÂTIMENT** (mécanique sœur du four à arc :
+  `ENR_TUNABLE` / `enrDefaultState` / `enrEffective` / `enrClampU`, posés à côté d'`arcDefaultState`).
+  Curseur `u` entier de 10 à 90, défaut 50 ; `s = (u−50)/40`, **uranium ×4^s**, **plutonium ×4^(−s)**,
+  acier et sortie INCHANGÉS. ⚠ **`u` n'est PAS une fraction massique** : c'est un curseur de
+  COMPROMIS (le tooltip le dit explicitement) — plus d'uranium = moins de plutonium, à production
+  de combustible CONSTANTE. Invariants vérifiés : **uranium × plutonium constant** (1,074e8 au
+  Nv.13, écart max 1,4e-16 sur tout le balayage) et rapport U/Pu = **10 240 × 16^s**. Seuls les
+  `inputs` passent par `enrEffective` ; `effOutputs` et la sigmoïde ne sont pas touchés.
+  Sérialisation : **`pl.enr` = un ENTIER** (pas un objet) ; absent → 50, clampé à [10, 90] — une
+  save antérieure reproduit donc EXACTEMENT la recette d'origine (4^0 = 1). UI : boutons ± 1 %
+  (`.ip-nuc-pm`), jauge `u / 100−u`, **`NumField`** pour la saisie directe (80 appuis seraient
+  intenables au doigt) et les débits réels au niveau courant.
+  ⚠ **Piège de mesure** : à un stock de port de 1e14 l'ULP du float64 vaut 0,015625 → les deltas de
+  plutonium (0,00625/s) sont purement absorbés par l'arrondi. Mesurer sur un stock modéré.
+  (3) **C3 — le mix irradié passe en VRAIS POURCENTAGES, somme verrouillée à 100.** C'étaient des
+  **poids libres** normalisés par `wsum` à l'usage (la save du joueur portait 105 et 120 de somme),
+  réglés par un slider au pas de 5 — imprécis au doigt et sans signification lisible.
+  `setNucMixWeight` → **`setNucMixDelta(islandId, mat, ±1)`** : **+1 % PREND 1 % au plus gros des
+  autres**, −1 % le lui REND ; `+` désactivé quand tous les autres sont à 0, `−` à 0 ; égalité
+  départagée par l'ordre de `NUC_MAT_KEYS` (déterministe). La prop est renommée partout
+  (`grep -c onSetNucMixWeight` → **0**). **Migration au chargement** : renormalisation des 4 poids à
+  une somme de 100 par la **méthode du plus grand reste** (un simple arrondi donnerait 99 ou 101),
+  somme nulle → 25/25/25/25, appliquée **quel que soit le mode** (les poids sont stockés même en
+  single/auto). Sur la save du joueur : île 3 `{55,0,50,0}` → **`{52,0,48,0}`**, île 5
+  `{0,100,0,20}` → **`{0,83,0,17}`**, île 4 `{25,25,25,0}` → `{34,33,33,0}` — toutes à 100.
+  ⚠ **Le FOUR À ARC partage la classe CSS `ip-nuc-mix`** et garde ses sliders : le seul site touché
+  est celui qui appelait `onSetNucMixWeight` (vérifié — les 2 `input[type=range]` restants sont
+  l'arc et le slider générique des Options).
+  ⚠ **`__heat` étendu** (`ENR_TUNABLE`, `enrEffective`, `enrDefaultState`, `enrClampU`, bornes,
+  `nucMix`, `NUC_MAT_KEYS`, `BLD_SPRITE_OVERRIDE`, `upgradeMult`).
+  i18n en/es/de des 9 nouveaux libellés (bloc d'augmentation `/* 14.32 */`).
+  Validé : `node --check` (7 blocs) + Chromium **3 suites, 40 assertions, 0 KO, 0 erreur JS** — les
+  6 valeurs du tableau de référence retrouvées aux 3 points (2,62e5/409,6 · 1,05e6/102,4 ·
+  4,19e6/25,6, rapports 640/10 240/163 840) ; **moteur RÉEL** : 2 Centrales d'Enrichissement V2 sur
+  la MÊME île réglées à 10 et 90 → uranium 1088/s et plutonium 0,10625/s = somme exacte des deux
+  recettes, **acier et combustible identiques** (0,5/s chacun) ; somme du mix exactement 100 après
+  50 appuis mélangés ; **rechargements RÉELS** : les 2 ids historiques toujours rabattus, réglages
+  relus `[50, 77, 90]` (absent → 50, 999 → 90) et bien sérialisés ; save du joueur : 7 îles, aucun
+  NaN, 0 endommagé après 70 s (lots A/B intacts).
+- **État précédent : `GAME_BUILD = 313`, `GAME_VERSION = 'Alpha 14.31'`, `SAVE_VERSION = 31`.**
   Changement 14.31 (**LOT B** du brief `BRIEF_LOT_B_lisibilite_ui`, **B6 tranché sur l'OPTION 2**) :
   **lisibilité — émission de chaleur max en fiche, charge crête du conduit, réseaux nécessaires,
   bâtiments des autres îles en gris, annonce de densification, et le Collisionneur exige enfin un

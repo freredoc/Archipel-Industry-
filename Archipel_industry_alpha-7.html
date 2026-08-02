@@ -2743,6 +2743,7 @@ for(var code in G){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; va
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.20 */ var ADD={"en": {"Illimité — toute l'île": "Unlimited — whole island", " — TOUTE L'ÎLE passe en débit illimité (y compris les tracés posés plus tard), paliers remboursés": " — THE WHOLE ISLAND switches to unlimited throughput (including runs built later); tiers refunded"}, "es": {"Illimité — toute l'île": "Ilimitado — toda la isla", " — TOUTE L'ÎLE passe en débit illimité (y compris les tracés posés plus tard), paliers remboursés": " — TODA LA ISLA pasa a caudal ilimitado (incluidos los trazados construidos después); niveles reembolsados"}, "de": {"Illimité — toute l'île": "Unbegrenzt — ganze Insel", " — TOUTE L'ÎLE passe en débit illimité (y compris les tracés posés plus tard), paliers remboursés": " — DIE GANZE INSEL wechselt auf unbegrenzten Durchsatz (auch später gebaute Trassen); Stufen erstattet"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.24 */ var ADD={"en": {"Île 6 S": "Island 6 U", "Ordre de service": "Service order", "Construction & travaux": "Construction & works", "Sortants (dépôts au port)": "Outgoing (port deposits)", "Intrants (machines du souterrain)": "Inputs (underground machines)", "Faire remonter cette catégorie d'un rang": "Move this category up one rank", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Strict order: the 1st category is fully served before the next (order adjustable below)", "Réseau logique": "Logic network", "émetteur et vanne câblés ✓": "emitter and valve wired ✓", "non relié — câblez l'émetteur ET la vanne": "not connected — wire BOTH the emitter and the valve", "Palier atteint": "Tier goal reached", "validez la recherche du palier pour relancer": "confirm the tier research to restart", "❌ Palier atteint — validez la recherche du palier avant de relancer": "❌ Tier goal reached — confirm the tier research before restarting", "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Collider not connected to a logic network (emitter and valve must be wired)", "Réseau logique requis": "Logic network required", "Palier atteint — recherche en cours": "Tier reached — research pending", "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Lay a logic cable touching BOTH the Collider's emitter (bottom-left) and valve (top-right)", "Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer": "The tier's confirmation goal is reached: confirm the tier research to restart", "Data Center en veille — séquence du Collisionneur non lancée": "Data Center idle — Collider sequence not launched", "Envoyer en priorité vers ": "Send first to ", "Descendre au souterrain (": "Go down to the underground (", "Remonter à la surface (": "Back up to the surface ("}, "es": {"Île 6 S": "Isla 6 S", "Ordre de service": "Orden de servicio", "Construction & travaux": "Construcción y obras", "Sortants (dépôts au port)": "Salientes (depósitos en el puerto)", "Intrants (machines du souterrain)": "Entradas (máquinas del subsuelo)", "Faire remonter cette catégorie d'un rang": "Subir esta categoría un puesto", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Orden estricto: la 1.ª categoría se sirve por completo antes que la siguiente (orden ajustable abajo)", "Réseau logique": "Red lógica", "émetteur et vanne câblés ✓": "emisor y válvula cableados ✓", "non relié — câblez l'émetteur ET la vanne": "sin conexión — cablea el emisor Y la válvula", "Palier atteint": "Nivel alcanzado", "validez la recherche du palier pour relancer": "confirma la investigación del nivel para relanzar", "❌ Palier atteint — validez la recherche du palier avant de relancer": "❌ Nivel alcanzado — confirma la investigación del nivel antes de relanzar", "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Colisionador sin conexión a una red lógica (emisor y válvula deben estar cableados)", "Réseau logique requis": "Red lógica requerida", "Palier atteint — recherche en cours": "Nivel alcanzado — investigación pendiente", "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Coloca un cable lógico que toque el emisor (abajo-izq.) Y la válvula (arriba-der.) del Colisionador", "Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer": "Se alcanzó el umbral de confirmaciones del nivel: confirma la investigación del nivel para relanzar", "Data Center en veille — séquence du Collisionneur non lancée": "Centro de datos en espera — secuencia del Colisionador no lanzada", "Envoyer en priorité vers ": "Enviar primero a ", "Descendre au souterrain (": "Bajar al subsuelo (", "Remonter à la surface (": "Volver a la superficie ("}, "de": {"Île 6 S": "Insel 6 U", "Ordre de service": "Bedienreihenfolge", "Construction & travaux": "Bau & Arbeiten", "Sortants (dépôts au port)": "Ausgänge (Einlagerung im Hafen)", "Intrants (machines du souterrain)": "Eingänge (Maschinen im Untergrund)", "Faire remonter cette catégorie d'un rang": "Diese Kategorie einen Rang nach oben", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Strenge Reihenfolge: Die 1. Kategorie wird vollständig bedient, bevor die nächste folgt (Reihenfolge unten einstellbar)", "Réseau logique": "Logiknetz", "émetteur et vanne câblés ✓": "Sender und Ventil verkabelt ✓", "non relié — câblez l'émetteur ET la vanne": "nicht verbunden — verkable Sender UND Ventil", "Palier atteint": "Stufenziel erreicht", "validez la recherche du palier pour relancer": "Stufenforschung bestätigen, um neu zu starten", "❌ Palier atteint — validez la recherche du palier avant de relancer": "❌ Stufenziel erreicht — bestätige die Stufenforschung vor dem Neustart", "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Kollider nicht mit einem Logiknetz verbunden (Sender und Ventil müssen verkabelt sein)", "Réseau logique requis": "Logiknetz erforderlich", "Palier atteint — recherche en cours": "Stufe erreicht — Forschung ausstehend", "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Verlege ein Logikkabel, das Sender (unten links) UND Ventil (oben rechts) des Kolliders berührt", "Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer": "Die Bestätigungsschwelle der Stufe ist erreicht: Bestätige die Stufenforschung zum Neustart", "Data Center en veille — séquence du Collisionneur non lancée": "Rechenzentrum im Leerlauf — Kollider-Sequenz nicht gestartet", "Envoyer en priorité vers ": "Zuerst senden an ", "Descendre au souterrain (": "Hinab in den Untergrund (", "Remonter à la surface (": "Zurück an die Oberfläche ("}}; for(var c in ADD){ var L=I18N.locales[c]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[c]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.31 */ var ADD={"en": {"Émission max": "Peak emission", "Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.": "Heat emission at the PEAK of the oscillation: this is what must be evacuated continuously. The overheat cap is 60 × this value.", "Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).": "Heat stored in the building. FIXED cap = 1 min of PEAK emission (independent of the current throughput) — once reached, the building breaks down (overheat).", "Charge crête": "Peak load", "Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.": "Sum of the PEAK emissions of the connected sources. Above the throughput, the duct will saturate at peak: upgrade its level, add tiles or make it unlimited.", "Réseaux": "Networks", "Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).": "At max level this building densifies into a higher model (it cannot be placed directly).", " au Nv.": " at Lv.", "Bâtiments des autres îles": "Buildings from other islands", "Affichés en gris — touchez-les pour voir leur fiche": "Shown greyed out — tap them to see their sheet", "Masqués": "Hidden", "Se construit sur ": "Built on ", "Câble": "Cable", "relié au réseau ✓": "connected to the grid ✓", "non relié — amenez un câble jusqu'au Collisionneur": "not connected — run a cable to the Collider"}, "es": {"Émission max": "Emisión máx.", "Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.": "Emisión de calor en el PICO de la oscilación: es lo que hay que poder evacuar de forma continua. El límite de sobrecalentamiento es 60 × este valor.", "Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).": "Calor almacenado en el edificio. Límite FIJO = 1 min de emisión MÁXIMA (no depende del régimen actual) — al alcanzarlo, el edificio se avería (sobrecalentamiento).", "Charge crête": "Carga pico", "Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.": "Suma de las emisiones MÁXIMAS de las fuentes conectadas. Por encima del caudal, el conducto se saturará en el pico: mejora su nivel, añade casillas o pásalo a ilimitado.", "Réseaux": "Redes", "Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).": "Al nivel máximo este edificio se densifica en un modelo superior (no se coloca directamente).", " au Nv.": " al Nv.", "Bâtiments des autres îles": "Edificios de otras islas", "Affichés en gris — touchez-les pour voir leur fiche": "Mostrados en gris — tócalos para ver su ficha", "Masqués": "Ocultos", "Se construit sur ": "Se construye en ", "Câble": "Cable", "relié au réseau ✓": "conectado a la red ✓", "non relié — amenez un câble jusqu'au Collisionneur": "sin conectar — lleva un cable hasta el Colisionador"}, "de": {"Émission max": "Max. Emission", "Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.": "Wärmeemission im SPITZENWERT der Schwingung: genau das muss dauerhaft abgeführt werden. Das Überhitzungslimit beträgt das 60-Fache dieses Werts.", "Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).": "Im Gebäude gespeicherte Wärme. FESTES Limit = 1 Min. MAXIMALE Emission (unabhängig vom aktuellen Betrieb) — bei Erreichen fällt das Gebäude aus (Überhitzung).", "Charge crête": "Spitzenlast", "Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.": "Summe der MAXIMALEN Emissionen der angeschlossenen Quellen. Oberhalb des Durchsatzes läuft die Leitung im Spitzenwert voll: Stufe erhöhen, Felder hinzufügen oder auf unbegrenzt setzen.", "Réseaux": "Netze", "Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).": "Auf der Maximalstufe verdichtet sich dieses Gebäude zu einem höheren Modell (es kann nicht direkt gebaut werden).", " au Nv.": " auf St.", "Bâtiments des autres îles": "Gebäude anderer Inseln", "Affichés en gris — touchez-les pour voir leur fiche": "Ausgegraut angezeigt — antippen, um ihr Datenblatt zu sehen", "Masqués": "Ausgeblendet", "Se construit sur ": "Wird gebaut auf ", "Câble": "Kabel", "relié au réseau ✓": "mit dem Netz verbunden ✓", "non relié — amenez un câble jusqu'au Collisionneur": "nicht verbunden — Kabel zum Kollider verlegen"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* 14.32 */ var ADD={"en": {"Mélange": "Blend", "Moins d'uranium, plus de plutonium": "Less uranium, more plutonium", "Plus d'uranium, moins de plutonium": "More uranium, less plutonium", "Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.": "Trade-off slider: more uranium = less plutonium, at CONSTANT fuel output. This is not a share of the blend.", "Réglage direct entre 10 et 90 (50 = neutre).": "Direct setting between 10 and 90 (50 = neutral).", "Débits réels": "Actual rates", "Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.": "More uranium = less plutonium, and vice versa — fuel output does not change.", "−1 % (rendu au plus gros des autres)": "−1% (given back to the largest of the others)", "+1 % (pris au plus gros des autres)": "+1% (taken from the largest of the others)"}, "es": {"Mélange": "Mezcla", "Moins d'uranium, plus de plutonium": "Menos uranio, más plutonio", "Plus d'uranium, moins de plutonium": "Más uranio, menos plutonio", "Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.": "Regulador de compromiso: más uranio = menos plutonio, con producción de combustible CONSTANTE. No es una proporción de la mezcla.", "Réglage direct entre 10 et 90 (50 = neutre).": "Ajuste directo entre 10 y 90 (50 = neutro).", "Débits réels": "Caudales reales", "Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.": "Más uranio = menos plutonio, y viceversa — la producción de combustible no cambia.", "−1 % (rendu au plus gros des autres)": "−1 % (devuelto al mayor de los demás)", "+1 % (pris au plus gros des autres)": "+1 % (tomado del mayor de los demás)"}, "de": {"Mélange": "Mischung", "Moins d'uranium, plus de plutonium": "Weniger Uran, mehr Plutonium", "Plus d'uranium, moins de plutonium": "Mehr Uran, weniger Plutonium", "Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.": "Kompromissregler: mehr Uran = weniger Plutonium, bei KONSTANTER Brennstoffproduktion. Das ist kein Mischungsanteil.", "Réglage direct entre 10 et 90 (50 = neutre).": "Direkte Einstellung zwischen 10 und 90 (50 = neutral).", "Débits réels": "Tatsächliche Raten", "Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.": "Mehr Uran = weniger Plutonium und umgekehrt — die Brennstoffproduktion ändert sich nicht.", "−1 % (rendu au plus gros des autres)": "−1 % (dem größten der anderen zurückgegeben)", "+1 % (pris au plus gros des autres)": "+1 % (dem größten der anderen entnommen)"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 </script>
 <script>
 const {
@@ -3745,12 +3746,15 @@ const BLD_SPRITE_OVERRIDE = {
   // Pas d'art dédié livré pour la pompe V3 : réutilise l'art V2 (sinon aucune icône
   // dans le menu Bâtiment ni sur la carte — les candidats bat_/id/id_v1 n'existent pas).
   pompe_eau_v3: 'pompe_eau_v2',
-  // 14.25 — La Centrifugeuse Uranium remplace le Broyeur Uranium V2 : aucun art dédié n'a été
-  // livré pour elle, elle reprend celui du V2 (statique ET animation, `ANIM_BY_SK` résolvant
-  // depuis la clé de sprite). À remplacer si un sprite de centrifugeuse arrive dans un pack.
-  // 14.29 — la Centrifugeuse EST l'ex-Centrale Enrichissement V2 : elle reprend l'art du
-  // Broyeur V2 supprimé (aucun art de centrifugeuse livré).
-  centrale_enrichissement_v2: 'bat_broyeur_uranium_v2',
+  // Centrale Enrichissement V2 : elle a repris en 14.29 l'art du Broyeur Uranium V2 supprimé,
+  // faute d'art dédié (statique ET animation, `ANIM_BY_SK` résolvant depuis la clé de sprite).
+  // 14.32 — LISTE de candidats : le PREMIER présent gagne. ⚠ DÉCOUVERTE : l'art dédié
+  // **`bat_centrale_enrichissement_v2`** (+ sa sheet d'animation 4 frames) est DÉJÀ dans le pack
+  // depuis 13.59 — il y avait été inliné comme sprite « V2 île 6 » inerte et n'a jamais été
+  // branché, le 14.29 ayant pointé le bâtiment sur l'art du Broyeur V2. Il est donc actif
+  // immédiatement. Le repli `bat_broyeur_uranium_v2` reste derrière par sûreté ; si un nouvel art
+  // est livré, il suffit de l'écrire sous la MÊME clé — aucune retouche de code.
+  centrale_enrichissement_v2: ['bat_centrale_enrichissement_v2', 'bat_broyeur_uranium_v2'],
   // Phase 4 : l'asset livré est `bat_extracteur` (le nom de fichier n'a pas le suffixe
   // `_souterrain` de l'id) → override pour que la carte/menu rende bien le sprite.
   extracteur_souterrain: 'bat_extracteur',
@@ -3789,7 +3793,16 @@ function buildingSpriteKey(id, upgrade, dir) {
   }
   if (BLD_SPRITE_OVERRIDE[id]) {
     // version files (carriere_vN etc.) already encode the version; bat_ files don't scale
-    return BLD_SPRITE_OVERRIDE[id];
+    const ov = BLD_SPRITE_OVERRIDE[id];
+    // 14.32 — Une entrée peut être une LISTE de candidats, dans l'ordre de priorité : le PREMIER
+    // présent dans SPRITE_DATA gagne. Ça permet de pré-brancher un art à venir (on cite sa clé
+    // définitive en tête, le repli actuel derrière) → le jour où le PNG est déposé dans le pack,
+    // il est pris automatiquement, SANS retoucher au code. Même logique que `cands` ci-dessous.
+    if (Array.isArray(ov)) {
+      for (const c of ov) if (SPRITE_DATA[c]) return c;
+      return ov[ov.length - 1] || null;
+    }
+    return ov;
   }
   // Direct candidates, in priority order.
   const cands = ['bat_' + id, id, id + '_v1'];
@@ -5925,19 +5938,20 @@ const BUILDINGS = {
     }
   },
   // ===== CHAÎNE NUCLÉAIRE V2 (nœud 41, puzzle P2) =====
-  // 14.25 — CENTRIFUGEUSE URANIUM : remplace le Broyeur Uranium V2 (supprimé). Palier du Broyeur
-  // Uranium, qui est désormais HARD CAP au Nv.10 ; entrée au Nv.11 (upgrade 10, ×1024).
-  // ⚠ Ce n'est PLUS un broyeur : elle court-circuite la chaîne yellowcake → enrichissement et
-  // fabrique DIRECTEMENT du combustible U235, en consommant du plutonium (2ᵉ débouché du plutonium
-  // après l'usine moteur nuc.) et de l'acier. Valeurs demandées AU NIVEAU 11, donc divisées par
-  // 1024 ici : uranium 2,62e5 · plutonium 25,6 · acier 256 → combustible U235 256.
-  // Enrichissement V2 : −25 % de yellowcake (2 → 1,5) MAIS incorpore 0,1 plutonium/s en plus.
-  // 14.29 — CENTRIFUGEUSE URANIUM : c'est le palier V2 de la Centrale Enrichissement. Elle
-  // REMPLACE le yellowcake par de l'URANIUM (en plus du plutonium qu'elle incorporait déjà) et
-  // ÉMET DE LA CHALEUR. Le Broyeur Uranium V1 et la Centrale Enrichissement V1 sont INCHANGÉS :
-  // la chaîne yellowcake reste la voie normale, la centrifugeuse est le raccourci de fin de partie.
+  // CENTRALE ENRICHISSEMENT V2 — palier V2 de la Centrale Enrichissement, entrée au Nv.11
+  // (upgrade 10, ×1024). Valeurs demandées AU NIVEAU 11, donc divisées par 1024 ici :
+  // uranium 2,62e5 · plutonium 25,6 · acier 256 → combustible U235 256.
+  // ⚠ Elle court-circuite la chaîne yellowcake : elle consomme directement de l'URANIUM (et du
+  // plutonium — 2ᵉ débouché du plutonium après l'usine moteur nuc.) pour fabriquer le combustible
+  // U235, et ÉMET DE LA CHALEUR. Le Broyeur Uranium V1 et la Centrale Enrichissement V1 sont
+  // INCHANGÉS : la chaîne yellowcake reste la voie normale, ce palier est le raccourci de fin de
+  // partie. ⚠ 14.32 — RENOMMÉE (elle s'est appelée « Centrifugeuse Uranium V2 » des builds 308 à
+  // 313) : c'est le palier de la Centrale Enrichissement, le nom doit le dire. Seul le NOM change,
+  // l'id `centrale_enrichissement_v2` et la recette sont intacts.
+  // ⚠ 14.32 — Son MÉLANGE uranium/plutonium est réglable par bâtiment (voir ENR_TUNABLE) : les
+  // `inputs` ci-dessous sont la recette au réglage NEUTRE (u = 50).
   centrale_enrichissement_v2: {
-    name: 'Centrifugeuse Uranium V2',
+    name: 'Centrale Enrichissement V2',
     // « génère de la chaleur » (demande) : règle habituelle, HEAT_PER_MW × MW consommés
     // (cf. tickIsland) ; le plafond de trip reste dynamique (60 s d'émission).
     heatCap: 10,
@@ -7026,8 +7040,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 313;
-const GAME_VERSION = 'Alpha 14.31';
+const GAME_BUILD = 314;
+const GAME_VERSION = 'Alpha 14.32';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7586,6 +7600,44 @@ function arcDefaultState(id) {
   const def = ARC_DEF[id];
   return { mode: 'single', sel: def.order[0], w: def.order.reduce((o, k) => (o[k] = 1, o), {}) };
 }
+// ── 14.32 — MÉLANGE URANIUM / PLUTONIUM (mécanique SŒUR du four à arc) ───────────────────────
+// Même problème résolu de la même façon : un réglage PAR BÂTIMENT qui modifie sa recette.
+// `u` = curseur de compromis, entier de 10 à 90 (défaut 50, neutre). Il n'exprime PAS une
+// fraction massique du mélange : c'est un arbitrage « plus d'uranium ⇄ moins de plutonium »,
+// à PRODUCTION DE COMBUSTIBLE CONSTANTE.
+//   s = (u − 50) / 40 ∈ [−1, +1] ; uranium ×4^s ; plutonium ×4^(−s) ; acier et sortie inchangés.
+// Invariant : le PRODUIT uranium × plutonium est constant (les deux facteurs sont inverses), et
+// le rapport U/Pu suit 16^s — d'où 640 (u=10) · 10 240 (u=50) · 163 840 (u=90) au Nv.13, 10 240
+// étant la moyenne géométrique exacte des deux extrêmes.
+const ENR_U_MIN = 10,
+  ENR_U_MAX = 90,
+  ENR_U_DEF = 50;
+const ENR_TUNABLE = {
+  centrale_enrichissement_v2: { a: 'uranium', b: 'plutonium' }
+};
+function enrDefaultState(id) {
+  return { u: ENR_U_DEF };
+}
+function enrClampU(v) {
+  // Absent / vide / illisible → neutre (50), pas 10 : `+null` vaut 0 et se ferait clamper en bas.
+  if (v == null || v === '') return ENR_U_DEF;
+  const n = Math.round(+v);
+  return isNaN(n) ? ENR_U_DEF : Math.max(ENR_U_MIN, Math.min(ENR_U_MAX, n));
+}
+// Recette EFFECTIVE d'un bâtiment réglable : seuls les deux intrants du couple sont mis à
+// l'échelle, tout le reste (acier, sorties, sigmoïde) est repris tel quel.
+function enrEffective(bld) {
+  const def = ENR_TUNABLE[bld && bld.id];
+  const base = def && BUILDINGS[bld.id] && BUILDINGS[bld.id].inputs;
+  if (!def || !base) return null;
+  const u = enrClampU(bld.enr && bld.enr.u != null ? bld.enr.u : ENR_U_DEF);
+  const s = (u - ENR_U_DEF) / ((ENR_U_MAX - ENR_U_MIN) / 2);
+  const k = Math.pow(4, s);
+  const inputs = { ...base };
+  if (base[def.a] != null) inputs[def.a] = base[def.a] * k;
+  if (base[def.b] != null) inputs[def.b] = base[def.b] / k;
+  return { u, inputs };
+}
 
 // ── Migration des sauvegardes < 16 vers le modèle « paliers » ────────────────
 // Correspondance ancien four à arc séparé → arc unifié + mode single équivalent.
@@ -7599,16 +7651,15 @@ const ARC_MODE_FROM_OLD = {
 // arc unifié (mode correspondant), bâtiments de palier → niveau d'ENTRÉE du palier, V1 au-delà
 // du nouveau cap → cap. Pas de remboursement, pas de double-paiement (approche validée).
 function migratePlacement(p, fromV) {
-  // 14.25 — TOUTES versions : le Broyeur Uranium V2 est SUPPRIMÉ, remplacé par la Centrifugeuse
-  // Uranium au même palier (entrée Nv.11) et pour le même forfait. Sans ce renommage, la boucle de
-  // chargement sauterait la tuile (`!BUILDINGS[p.b] → continue`) et le joueur PERDRAIT le bâtiment
-  // ET ce qu'il y avait investi. ⚠ La recette change (yellowcake → combustible U235) : c'est voulu,
-  // la save ne stocke que l'id et le niveau.
-  // 14.29 — le Broyeur Uranium n'a PLUS de palier V2 (ni l'ancien `broyeur_uranium_v2`, ni le
-  // `centrifugeuse_uranium` créé à tort en 14.25 et publié dans les builds 308/310). Les deux
-  // reviennent au Broyeur V1, qui garde exactement la même recette — le niveau est CONSERVÉ, le
-  // broyeur n'ayant plus de cap dur (le bridage est économique, cf. COST_SOFTCAP_X2). Sans ce
-  // renommage, `!BUILDINGS[p.b] → continue` sauterait la tuile et le joueur perdrait le bâtiment.
+  // 14.29 — TOUTES versions : le Broyeur Uranium n'a PLUS de palier V2. Ni l'ancien
+  // `broyeur_uranium_v2` (saves ≤ 14.24), ni le `centrifugeuse_uranium` créé à tort en 14.25 et
+  // **publié dans les builds 308/310** n'existent encore comme bâtiments. Les deux reviennent au
+  // Broyeur V1, qui garde exactement la même recette — le niveau est CONSERVÉ, le broyeur n'ayant
+  // plus de cap dur (le bridage est économique, cf. COST_SOFTCAP_X2). Sans ce renommage,
+  // `!BUILDINGS[p.b] → continue` sauterait la tuile et le joueur perdrait le bâtiment ET ce qu'il
+  // y avait investi. ⚠ 14.32 — Ces DEUX ids historiques doivent continuer d'être rabattus : le
+  // renommage « Centrifugeuse Uranium V2 » → « Centrale Enrichissement V2 » ne concerne QUE le nom
+  // affiché de `centrale_enrichissement_v2`, jamais cette migration d'ids.
   if (p.b === 'broyeur_uranium_v2' || p.b === 'centrifugeuse_uranium') p.b = 'broyeur_uranium';
   // TOUTES versions : un bâtiment de palier SOUS son niveau d'entrée est remonté à l'entrée.
   // (Builds 202-207 : la pose directe d'un V2/V3 depuis la barre d'outils créait le bâtiment
@@ -10009,7 +10060,11 @@ function tickIsland(game, isl) {
     // Four à arc unifié : I/O + fourchette de conso EFFECTIFS selon le mode du sélecteur
     // (single/mix/auto) — l'entrée reste fixe, le mode ne répartit que sortie et conso.
     const arcEff = ARC_DEF[bld.id] ? arcEffective(bld, workPort) : null;
-    const effInputs = arcEff ? arcEff.inputs : b.inputs;
+    // 14.32 — Mélange uranium/plutonium réglable : ne touche QUE les intrants (la sortie et la
+    // sigmoïde restent celles de la def). Exclusif du four à arc en pratique (aucun bâtiment
+    // n'est dans les deux tables), mais l'arc reste prioritaire par sûreté.
+    const enrEff = !arcEff && ENR_TUNABLE[bld.id] ? enrEffective(bld) : null;
+    const effInputs = arcEff ? arcEff.inputs : enrEff ? enrEff.inputs : b.inputs;
     // `let` : la FOREUSE se donne dynamiquement une sortie (pierre) pendant un creusement.
     let effOutputs = arcEff ? arcEff.outputs : b.outputs;
     const effSigmoid = arcEff ? arcEff.sigmoid : b.sigmoid;
@@ -10555,6 +10610,7 @@ function tickIsland(game, isl) {
           if (cst.to && BUILDINGS[cst.to]) bb.id = cst.to;
           bb.upgrade = cst.up;
           if (ARC_DEF[bb.id] && !bb.arc) bb.arc = arcDefaultState(bb.id);
+          if (ENR_TUNABLE[bb.id] && !bb.enr) bb.enr = enrDefaultState(bb.id); // 14.32
         }
         delete bb.construction;
         activeChanged = true;
@@ -15045,11 +15101,12 @@ function InfoPanel({
   onSetNuclear,
   onSetNucPower,
   onSetNucMode,
-  onSetNucMixWeight,
+  onSetNucMixDelta,
   onSetNucPlutoCap,
   onSetArcMode,
   onSetArcSel,
   onSetArcWeight,
+  onSetEnrRatio,
   onDrillDir,
   onSetFluxPri,
   onSetAntMode,
@@ -16004,24 +16061,35 @@ function InfoPanel({
       className: 'ip-nuc-mat' + (matKey === k ? ' on' : ''),
       onClick: () => onSetNuclear && onSetNuclear(currentIsland, k)
     }, label))),
-    // MODE « mix » : un slider de poids par matériau + le % normalisé et le débit produit.
+    // MODE « mix » : 14.32 — boutons ± 1 %, somme VERROUILLÉE à 100 (fini le slider au pas de 5,
+    // imprécis au doigt, et fini les poids libres dont la somme ne voulait rien dire). Monter un
+    // matériau prend 1 % au plus gros des autres ; le descendre le lui rend.
     mix.mode === 'mix' && React.createElement("div", {
       className: "ip-nuc-mix"
-    }, NUC_MATS.map(([k, label]) => React.createElement("div", {
-      className: "ip-nuc-mix-row",
-      key: k
-    }, React.createElement("span", {
-      className: "ip-nuc-mix-lbl"
-    }, label), React.createElement("input", {
-      type: "range",
-      min: 0,
-      max: 100,
-      step: 5,
-      value: mix.w[k],
-      onChange: e => onSetNucMixWeight && onSetNucMixWeight(currentIsland, k, parseFloat(e.target.value))
-    }), React.createElement("span", {
-      className: "ip-nuc-mix-val"
-    }, Math.round(mix.w[k] / mixSum * 100) + "% · " + fmtN(upMult * realFrac * mix.w[k] / mixSum) + "/s")))),
+    }, NUC_MATS.map(([k, label]) => {
+      // `+` impossible si aucun AUTRE matériau n'a de quoi céder ; `−` impossible à 0.
+      let othersMax = 0;
+      for (const o of NUC_MAT_KEYS) if (o !== k) othersMax = Math.max(othersMax, Math.round(mix.w[o] || 0));
+      const cur = Math.round(mix.w[k] || 0);
+      return React.createElement("div", {
+        className: "ip-nuc-mix-row",
+        key: k
+      }, React.createElement("span", {
+        className: "ip-nuc-mix-lbl"
+      }, label), React.createElement("button", {
+        className: "ip-nuc-pm",
+        disabled: cur <= 0,
+        title: I18N.t("−1 % (rendu au plus gros des autres)"),
+        onClick: () => onSetNucMixDelta && onSetNucMixDelta(currentIsland, k, -1)
+      }, "−"), React.createElement("button", {
+        className: "ip-nuc-pm",
+        disabled: othersMax <= 0,
+        title: I18N.t("+1 % (pris au plus gros des autres)"),
+        onClick: () => onSetNucMixDelta && onSetNucMixDelta(currentIsland, k, 1)
+      }, "+"), React.createElement("span", {
+        className: "ip-nuc-mix-val"
+      }, Math.round(mix.w[k] / mixSum * 100) + "% · " + fmtN(upMult * realFrac * mix.w[k] / mixSum) + "/s"));
+    })),
     // MODE « auto » : répartition calculée (lecture seule) pour équilibrer les stocks irradiés.
     mix.mode === 'auto' && React.createElement("div", {
       className: "ip-nuc-mix"
@@ -16058,6 +16126,61 @@ function InfoPanel({
     React.createElement("div", {
       className: "ip-nuc-irr-note"
     }, "Irradiés : produits seulement si le matériau de base (acier/béton/câble) est au port. Plutonium : produit sans matériau de base (combustible du moteur nucléaire).")));
+  })(), ENR_TUNABLE[bld.id] && (() => {
+    // ── 14.32 — Mélange uranium / plutonium (réglage PAR BÂTIMENT, mécanique sœur du four à arc).
+    // ⚠ `u` n'est PAS une fraction massique : c'est un curseur de COMPROMIS. Le tooltip le dit.
+    const eff = enrEffective(bld);
+    if (!eff) return null;
+    const u = eff.u,
+      mE = upgradeMult(upg);
+    const tun = ENR_TUNABLE[bld.id];
+    const aRate = (eff.inputs[tun.a] || 0) * mE,
+      bRate = (eff.inputs[tun.b] || 0) * mE;
+    const nm = k => RES_SHORT[k] || k;
+    return React.createElement("div", {
+      className: "ip-nuc-irr"
+    }, React.createElement("div", {
+      className: "ip-nuc-irr-head"
+    }, I18N.t("Mélange")), React.createElement("div", {
+      className: "ip-nuc-pow-row"
+    }, React.createElement("button", {
+      className: "ip-nuc-pm",
+      disabled: u <= ENR_U_MIN,
+      title: I18N.t("Moins d'uranium, plus de plutonium"),
+      onClick: () => onSetEnrRatio && onSetEnrRatio(info.r, info.c, u - 1)
+    }, "−"), React.createElement("div", {
+      className: "ip-nuc-gauge",
+      title: I18N.t("Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.")
+    }, React.createElement("div", {
+      className: "ip-nuc-gauge-fill",
+      style: { width: (u - ENR_U_MIN) / (ENR_U_MAX - ENR_U_MIN) * 100 + '%' }
+    }), React.createElement("span", {
+      className: "ip-nuc-gauge-lbl"
+    }, u + " / " + (100 - u))), React.createElement("button", {
+      className: "ip-nuc-pm",
+      disabled: u >= ENR_U_MAX,
+      title: I18N.t("Plus d'uranium, moins de plutonium"),
+      onClick: () => onSetEnrRatio && onSetEnrRatio(info.r, info.c, u + 1)
+    }, "+")), React.createElement("div", {
+      className: "ip-nuc-cap"
+    }, React.createElement("span", {
+      className: "ip-nuc-cap-lbl"
+    }, nm(tun.a) + " / " + nm(tun.b)), React.createElement(NumField, {
+      className: "ip-nuc-cap-input",
+      value: u,
+      title: I18N.t("Réglage direct entre 10 et 90 (50 = neutre)."),
+      onCommit: v => onSetEnrRatio && onSetEnrRatio(info.r, info.c, v)
+    }), React.createElement("span", {
+      className: "ip-nuc-cap-hint"
+    }, ENR_U_MIN + "–" + ENR_U_MAX)), React.createElement("div", {
+      className: "ip-row"
+    }, React.createElement("span", {
+      className: "lbl"
+    }, I18N.t("Débits réels")), React.createElement("span", {
+      className: "val io"
+    }, fmtRateSci(aRate) + " " + nm(tun.a) + " · " + fmtRateSci(bRate) + " " + nm(tun.b) + I18N.t(" /s"))), React.createElement("div", {
+      className: "ip-nuc-irr-note"
+    }, I18N.t("Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.")));
   })(), b.heatCap && (() => {
     // Jauge de chaleur (% du plafond de trip = 60 s d'émission, dynamique) + réparation (20 %).
     const cap = heatCapOf(bld);
@@ -19672,6 +19795,9 @@ function App() {
             sel: b.arc.sel,
             w: { ...(b.arc.w || {}) }
           };
+          // 14.32 — Réglage du mélange U/Pu : un simple ENTIER (le curseur), pas un objet.
+          // Champ additif → absent d'une save antérieure = repli sur le neutre (50).
+          if (b.enr && ENR_TUNABLE[b.id] && b.enr.u != null) pl.enr = enrClampU(b.enr.u);
           placements.push(pl);
         }
         if (t.networkId != null && repByNid[t.networkId] === undefined) repByNid[t.networkId] = {
@@ -20359,6 +20485,10 @@ function App() {
               w: { ...d.w, ...(pa.w || {}) }
             };
           }
+          // 14.32 — Mélange U/Pu : repli sur le neutre (50) si absent, et clamp à [10, 90].
+          // Une save d'avant 14.32 démarre donc au réglage NEUTRE, qui reproduit EXACTEMENT la
+          // recette d'origine (4^0 = 1) → aucun changement de comportement pour l'existant.
+          if (ENR_TUNABLE[p.b]) t.building.enr = { u: p.enr != null ? enrClampU(p.enr) : ENR_U_DEF };
           // Re-create occupancy refs for multi-tile buildings.
           const sz = BUILDINGS[p.b].size || [1, 1];
           const hh = sz[0] || 1,
@@ -20468,6 +20598,32 @@ function App() {
         plutonium: Math.max(0, m.plutonium != null ? +m.plutonium : 1),
         plutoCap: Math.max(0, m.plutoCap != null ? +m.plutoCap : 0)
       };
+      // 14.32 — Les poids étaient LIBRES (normalisés à l'usage) : on les convertit en vrais
+      // pourcentages de somme 100, en préservant les proportions. Méthode du PLUS GRAND RESTE :
+      // un simple arrondi donnerait 99 ou 101 et la somme ne serait plus verrouillée.
+      // Appliqué QUEL QUE SOIT le mode : les poids sont stockés même en single/auto, et un
+      // basculement ultérieur vers `mix` doit trouver un état cohérent.
+      {
+        const mm = g.nuclearMix[+id];
+        let tot = 0;
+        for (const k of NUC_MATS) tot += mm[k];
+        if (!(tot > 0)) {
+          for (const k of NUC_MATS) mm[k] = 25; // somme nulle → répartition égale
+        } else {
+          const exact = {}, base = {};
+          let used = 0;
+          for (const k of NUC_MATS) {
+            exact[k] = mm[k] / tot * 100;
+            base[k] = Math.floor(exact[k]);
+            used += base[k];
+          }
+          // Les `100 − used` unités restantes vont aux plus grands restes (ordre NUC_MATS pour
+          // départager les ex æquo → déterministe).
+          const rest = NUC_MATS.slice().sort((x, y) => (exact[y] - base[y]) - (exact[x] - base[x]));
+          for (let i = 0; i < 100 - used; i++) base[rest[i % rest.length]] += 1;
+          for (const k of NUC_MATS) mm[k] = base[k];
+        }
+      }
     }
     if (data.nuclearConfig) for (const id in data.nuclearConfig) {
       if (NUC_MATS.indexOf(data.nuclearConfig[id]) !== -1) g.nuclearConfig[+id] = data.nuclearConfig[id];
@@ -21581,6 +21737,8 @@ function App() {
     // Nv.11, et démoli il ne remboursait même pas le forfait.)
     if (TIER_STEP[id]) t.building.upgrade = tierEntry(id);
     if (ARC_DEF[id]) t.building.arc = arcDefaultState(id);
+    // 14.32 — Un bâtiment fraîchement POSÉ démarre au réglage neutre (u = 50).
+    if (ENR_TUNABLE[id]) t.building.enr = enrDefaultState(id);
     // Construction SOUTERRAINE étalée (île 7, bâtiments) : la matière (déjà payée au port de l'île 6)
     // doit DESCENDRE par l'élévateur avant que le bâtiment soit finalisé. On le marque « en
     // construction » (fantôme inactif) ; la passe élévateur de tickIsland fait descendre `rem`
@@ -21850,6 +22008,8 @@ function App() {
       t.building.id = nextId;
       t.building.upgrade = nextEntry;
       if (ARC_DEF[nextId] && !t.building.arc) t.building.arc = arcDefaultState(nextId);
+      // 14.32 — Idem après DENSIFICATION (c'est le chemin normal vers l'Enrichissement V2).
+      if (ENR_TUNABLE[nextId] && !t.building.enr) t.building.enr = enrDefaultState(nextId);
     }
     bumpHud();
     markDirty();
@@ -22572,20 +22732,44 @@ function App() {
     scheduleSave();
   }
   // Règle le poids (0→100) d'un matériau dans le mix manuel d'une île (force le mode 'mix').
-  function setNucMixWeight(islandId, mat, w) {
+  // 14.32 — Le mix irradié devient de VRAIS POURCENTAGES, somme verrouillée à 100. Avant c'étaient
+  // des poids libres normalisés par `wsum` à l'usage (la save du joueur portait {55, 50} = 105 et
+  // {100, 20} = 120) : un slider au pas de 5 changeait la répartition sans que la somme veuille
+  // dire quoi que ce soit. Désormais on transfère : +1 % PREND 1 % au plus gros des autres, −1 %
+  // lui REND 1 %. La somme reste donc exactement 100, sans normalisation implicite ni sortie qui
+  // baisse sans raison visible. Égalité entre plusieurs « plus gros » → le PREMIER dans l'ordre de
+  // NUC_MAT_KEYS cède (déterministe, aucun aléatoire).
+  function setNucMixDelta(islandId, mat, delta) {
     const g = gameRef.current;
     if (NUC_MAT_KEYS.indexOf(mat) === -1) return;
     if (!g.nuclearMix) g.nuclearMix = {};
     const cur = nucMix(g, islandId);
+    const w = {};
+    for (const k of NUC_MAT_KEYS) w[k] = Math.max(0, Math.round(cur.w[k] || 0));
+    const d = delta > 0 ? 1 : -1;
+    if (d > 0) {
+      // On ne peut monter que si un AUTRE a de quoi céder.
+      let donor = null;
+      for (const k of NUC_MAT_KEYS) if (k !== mat && w[k] > 0 && (donor === null || w[k] > w[donor])) donor = k;
+      if (donor === null) return;
+      w[donor] -= 1;
+      w[mat] += 1;
+    } else {
+      if (w[mat] <= 0) return;
+      let taker = null;
+      for (const k of NUC_MAT_KEYS) if (k !== mat && (taker === null || w[k] > w[taker])) taker = k;
+      if (taker === null) return;
+      w[mat] -= 1;
+      w[taker] += 1;
+    }
     const next = {
       mode: 'mix',
-      acier: cur.w.acier,
-      beton_arme: cur.w.beton_arme,
-      cable: cur.w.cable,
-      plutonium: cur.w.plutonium,
+      acier: w.acier,
+      beton_arme: w.beton_arme,
+      cable: w.cable,
+      plutonium: w.plutonium,
       plutoCap: cur.plutoCap
     };
-    next[mat] = Math.max(0, Math.min(100, +w || 0));
     g.nuclearMix[islandId] = next;
     bumpHud();
     markDirty();
@@ -22717,6 +22901,16 @@ function App() {
     const t = curTiles()[r] && curTiles()[r][c];
     if (!t || !t.building || !ARC_DEF[t.building.id]) return;
     (t.building.arc = t.building.arc || arcDefaultState(t.building.id)).sel = res;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  // 14.32 — Curseur de mélange uranium/plutonium, PAR BÂTIMENT (comme le sélecteur du four à arc).
+  function setEnrRatio(r, c, v) {
+    const t = curTiles()[r] && curTiles()[r][c];
+    if (!t || !t.building || !ENR_TUNABLE[t.building.id]) return;
+    const e = t.building.enr = t.building.enr || enrDefaultState(t.building.id);
+    e.u = enrClampU(v);
     bumpHud();
     markDirty();
     scheduleSave();
@@ -25288,11 +25482,12 @@ function App() {
     onSetNuclear: setNuclearConfig,
     onSetNucPower: setNuclearPower,
     onSetNucMode: setNucMode,
-    onSetNucMixWeight: setNucMixWeight,
+    onSetNucMixDelta: setNucMixDelta,
     onSetNucPlutoCap: setNucPlutoCap,
     onSetArcMode: setArcMode,
     onSetArcSel: setArcSel,
     onSetArcWeight: setArcWeight,
+    onSetEnrRatio: setEnrRatio,
     onSetFluxPri: setFluxPri,
     onLogicSet: setLogicConfig,
     onSetAntMode: setAntennaMode,
@@ -25584,6 +25779,8 @@ if (typeof window !== 'undefined') {
     processHeat, conduitDebit, buildingTotalCost,
     heatCapOf, heatEmitMaxOf, HEAT_CAP_SECONDS, NUC_POWER_BASE, // 14.30
     islandLabel, colliderWireNid, colliderBounds, TIER_NEXT, TIER_STEP, // 14.31
+    ENR_TUNABLE, enrEffective, enrDefaultState, enrClampU, ENR_U_MIN, ENR_U_MAX, ENR_U_DEF, // 14.32
+    nucMix, NUC_MAT_KEYS, BLD_SPRITE_OVERRIDE, upgradeMult, // 14.32
     applyGameMode: typeof applyGameMode === 'function' ? applyGameMode : null,
     adjacentNetworksFootprint,
     buildingSpriteKey, itemSpriteKey, unlockedResourceSet, isBuildingUnlocked, fmtHeat,
