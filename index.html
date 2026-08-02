@@ -3458,14 +3458,20 @@ const ANIM_REDRAW_MS = 100;
 const FRAME_CAP_MS = 1000 / 30 - 2;
 // Dessine la frame courante de l'anim associée à la clé statique `sk`. Renvoie false si pas
 // d'anim (ou sheet pas encore décodée) → l'appelant retombe sur le sprite statique.
-function drawAnimFrame(ctx, sk, x, y, w, h) {
+function drawAnimFrame(ctx, sk, x, y, w, h, sub) {
   const a = ANIM_BY_SK[sk];
   if (!a) return false;
   const img = animImg(a.cle);
   if (!img) return false;
   const i = Math.floor((typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000 * a.fps) % a.frames;
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(img, i * a.fw, 0, a.fw, a.fh, x, y, w, h);
+  // 14.35 — `sub` = { x, y, w, h } : prélève une SOUS-RÉGION de la frame courante (repère de la
+  // FRAME, pas de la sheet — le décalage de frame est ajouté ici). Sert au landmark du
+  // Collisionneur, dont les sheets font 96×64 alors que le rendu du terrain avance tuile par
+  // tuile : chaque tuile prélève sa tranche 32×32. Paramètre OPTIONNEL, tous les appels
+  // existants sont inchangés.
+  if (sub) ctx.drawImage(img, i * a.fw + sub.x, sub.y, sub.w, sub.h, x, y, w, h);
+  else ctx.drawImage(img, i * a.fw, 0, a.fw, a.fh, x, y, w, h);
   _animPlayed = true;
   return true;
 }
@@ -7066,11 +7072,11 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-// 14.34 — B2 : foreuse « 1 case ½ » (le foret déborde d'une demi-case dans le sens de forage,
-// emprise logique inchangée) + sélecteur d'émetteur par COMBINAISON de bits (chaque face
-// porteuse affiche son bit réel, variante `_dc` sur le Data Center). SAVE_VERSION inchangé.
-const GAME_BUILD = 316;
-const GAME_VERSION = 'Alpha 14.34';
+// 14.35 — B3 : landmark du Collisionneur ANIMÉ (découpe de source optionnelle dans
+// `drawAnimFrame`, chaque tuile prélève sa tranche 32×32 de la sheet 96×64) + anneaux de coût
+// de la foreuse sur l'île 7 (teinte alternée par cercle). Aucun asset. SAVE_VERSION inchangé.
+const GAME_BUILD = 317;
+const GAME_VERSION = 'Alpha 14.35';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -23613,7 +23619,17 @@ function App() {
         const cpal = colliderRepaired(gameRef.current) ? Math.max(1, Math.min(3, colliderPalier(gameRef.current))) : 0;
         const cidx = dr * 3 + dc;
         const csk = cpal ? 'tile_i6_collisionneur_p' + cpal + '_' + cidx : 'tile_i6_collisionneur_' + cidx;
-        if (!drawSprite(ctx, csk, x, y, tile, tile) && !drawSprite(ctx, 'tile_i6_collisionneur_' + cidx, x, y, tile, tile)) {
+        // 14.35 — Landmark ANIMÉ. Les sheets `bat_collisionneur_pN_boot|actif` couvrent le bloc
+        // ENTIER (96×64) : on prélève dans la frame courante la tranche 32×32 de CETTE tuile.
+        //   'starting'            → charge initiale : seul le petit anneau tourne
+        //   'ready' / 'running'   → fonctionnement : les deux anneaux
+        //   'off', ou non réparé  → AUCUNE animation, la tranche statique du palier (état pause)
+        // Repli en cascade : tant que la sheet n'est pas décodée, drawAnimFrame renvoie false et
+        // la tranche statique s'affiche — la bascule est invisible, les deux arts sont alignés.
+        const cst = cpal ? (gameRef.current.collider || {}).state : 'off';
+        const cmode = cst === 'starting' ? '_boot' : cst === 'ready' || cst === 'running' ? '_actif' : '';
+        const canim = cmode ? 'bat_collisionneur_p' + cpal + cmode : null;
+        if (!(canim && drawAnimFrame(ctx, canim, x, y, tile, tile, { x: dc * 32, y: dr * 32, w: 32, h: 32 })) && !drawSprite(ctx, csk, x, y, tile, tile) && !drawSprite(ctx, 'tile_i6_collisionneur_' + cidx, x, y, tile, tile)) {
           ctx.fillStyle = TERRAIN_COLORS.collider;
           ctx.fillRect(x + tile * 0.15, y + tile * 0.15, tile * 0.7, tile * 0.7);
         }
@@ -23677,7 +23693,14 @@ function App() {
         // (conçus pour terre↔mer) et paraissaient « mal agencés » sous terre (retour testeur). Les
         // murs de roche viennent uniquement de `tunnelBorderPieces` (côté roche). Îles 1-6 inchangées.
         const isTun = isl === 7;
-        const baseKey = isTun ? 'tile_i7_land' : 'tile_i' + isl + '_' + (coastIsCoast(tiles, def, r, c) ? 'coast' : 'land');
+        // 14.35 — ANNEAUX DE COÛT (île 7) : coût de pose et consommation d'une foreuse DOUBLENT à
+        // chaque cercle autour de l'élévateur (`drillLayer` = distance de Tchebychev, anneaux
+        // carrés). Le sol alterne donc d'un cercle à l'autre entre sa teinte normale et une
+        // variante ~18 % plus claire : le palier de coût se LIT sur la grille au lieu de se
+        // deviner. `elevatorTileOf` est mémoïsé (`_elevTileCache`), l'appel par tuile est gratuit.
+        // Repli : si `tile_i7_land_clair` manque, la chaîne retombe sur le sol normal.
+        const ring7 = isTun && drillLayer(gameRef.current, r, c) % 2 === 1;
+        const baseKey = isTun ? (ring7 ? 'tile_i7_land_clair' : 'tile_i7_land') : 'tile_i' + isl + '_' + (coastIsCoast(tiles, def, r, c) ? 'coast' : 'land');
         if (!drawTileAnim(ctx, baseKey, x, y, tile, r, c) && !drawSprite(ctx, baseKey, x, y, tile, tile)) {
           const tk = 'tile_i' + isl + '_' + t.terrain;
           if (!drawSprite(ctx, tk, x, y, tile, tile)) {
