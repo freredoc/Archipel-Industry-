@@ -1185,6 +1185,13 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   font-family:'Bebas Neue',sans-serif;font-size:.56rem;letter-spacing:.05em;line-height:1.25;
   padding:0 4px;border-radius:6px;z-index:2;text-transform:uppercase;pointer-events:none;}
 @keyframes notifpulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.35);opacity:.6;}}
+/* 14.31 — Bâtiment exclusif à une AUTRE île : montré en gris pour la découvrabilité.
+   PAS de pointer-events:none — le bouton doit rester cliquable pour ouvrir sa fiche. */
+.tool-btn.off-island{opacity:.42;filter:grayscale(1);}
+.tool-btn.off-island .tb-name{color:var(--ink-faint);}
+.bp-offisl{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:7px 10px 9px;margin-top:2px;border-top:1px solid var(--line);}
+.bp-offisl-lbl{font-size:.66rem;color:var(--ink-dim);line-height:1.2;}
 /* Tappable quit button in the status bar (mobile-friendly replacement for "Échap") */
 .status-quit{margin-left:10px;flex-shrink:0;background:rgba(255,59,48,.9);color:#fff;
   border:1px solid rgba(255,99,90,.95);border-radius:6px;padding:5px 12px;cursor:pointer;
@@ -2735,6 +2742,8 @@ for(var code in G){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; va
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.18 */ var ADD={"en": {"Puise dans": "Draws from", "le PORT": "the PORT", "la citerne du tuyau": "the pipe's cistern", "Un tuyau RELIÉ AU PORT puise dans le stock du port ; un tuyau ISOLÉ puise dans sa propre citerne. Une tour à sec sur le tuyau du port veut dire que c'est le PORT qui n'a plus d'eau — pas que le tuyau est bloqué.": "A pipe CONNECTED TO THE PORT draws from the port's stock; an ISOLATED pipe draws from its own cistern. A dry tower on the port's pipe means the PORT has run out of water — not that the pipe is blocked."}, "es": {"Puise dans": "Toma de", "le PORT": "el PUERTO", "la citerne du tuyau": "la cisterna de la tubería", "Un tuyau RELIÉ AU PORT puise dans le stock du port ; un tuyau ISOLÉ puise dans sa propre citerne. Une tour à sec sur le tuyau du port veut dire que c'est le PORT qui n'a plus d'eau — pas que le tuyau est bloqué.": "Una tubería CONECTADA AL PUERTO toma del stock del puerto; una tubería AISLADA toma de su propia cisterna. Una torre seca en la tubería del puerto significa que es el PUERTO el que se quedó sin agua, no que la tubería esté bloqueada."}, "de": {"Puise dans": "Bezieht aus", "le PORT": "dem HAFEN", "la citerne du tuyau": "der Zisterne des Rohrs", "Un tuyau RELIÉ AU PORT puise dans le stock du port ; un tuyau ISOLÉ puise dans sa propre citerne. Une tour à sec sur le tuyau du port veut dire que c'est le PORT qui n'a plus d'eau — pas que le tuyau est bloqué.": "Ein mit dem HAFEN VERBUNDENES Rohr bezieht aus dem Hafenbestand; ein ISOLIERTES Rohr aus seiner eigenen Zisterne. Ein trockener Turm am Hafenrohr bedeutet, dass dem HAFEN das Wasser ausgegangen ist — nicht dass das Rohr blockiert wäre."}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.20 */ var ADD={"en": {"Illimité — toute l'île": "Unlimited — whole island", " — TOUTE L'ÎLE passe en débit illimité (y compris les tracés posés plus tard), paliers remboursés": " — THE WHOLE ISLAND switches to unlimited throughput (including runs built later); tiers refunded"}, "es": {"Illimité — toute l'île": "Ilimitado — toda la isla", " — TOUTE L'ÎLE passe en débit illimité (y compris les tracés posés plus tard), paliers remboursés": " — TODA LA ISLA pasa a caudal ilimitado (incluidos los trazados construidos después); niveles reembolsados"}, "de": {"Illimité — toute l'île": "Unbegrenzt — ganze Insel", " — TOUTE L'ÎLE passe en débit illimité (y compris les tracés posés plus tard), paliers remboursés": " — DIE GANZE INSEL wechselt auf unbegrenzten Durchsatz (auch später gebaute Trassen); Stufen erstattet"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.24 */ var ADD={"en": {"Île 6 S": "Island 6 U", "Ordre de service": "Service order", "Construction & travaux": "Construction & works", "Sortants (dépôts au port)": "Outgoing (port deposits)", "Intrants (machines du souterrain)": "Inputs (underground machines)", "Faire remonter cette catégorie d'un rang": "Move this category up one rank", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Strict order: the 1st category is fully served before the next (order adjustable below)", "Réseau logique": "Logic network", "émetteur et vanne câblés ✓": "emitter and valve wired ✓", "non relié — câblez l'émetteur ET la vanne": "not connected — wire BOTH the emitter and the valve", "Palier atteint": "Tier goal reached", "validez la recherche du palier pour relancer": "confirm the tier research to restart", "❌ Palier atteint — validez la recherche du palier avant de relancer": "❌ Tier goal reached — confirm the tier research before restarting", "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Collider not connected to a logic network (emitter and valve must be wired)", "Réseau logique requis": "Logic network required", "Palier atteint — recherche en cours": "Tier reached — research pending", "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Lay a logic cable touching BOTH the Collider's emitter (bottom-left) and valve (top-right)", "Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer": "The tier's confirmation goal is reached: confirm the tier research to restart", "Data Center en veille — séquence du Collisionneur non lancée": "Data Center idle — Collider sequence not launched", "Envoyer en priorité vers ": "Send first to ", "Descendre au souterrain (": "Go down to the underground (", "Remonter à la surface (": "Back up to the surface ("}, "es": {"Île 6 S": "Isla 6 S", "Ordre de service": "Orden de servicio", "Construction & travaux": "Construcción y obras", "Sortants (dépôts au port)": "Salientes (depósitos en el puerto)", "Intrants (machines du souterrain)": "Entradas (máquinas del subsuelo)", "Faire remonter cette catégorie d'un rang": "Subir esta categoría un puesto", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Orden estricto: la 1.ª categoría se sirve por completo antes que la siguiente (orden ajustable abajo)", "Réseau logique": "Red lógica", "émetteur et vanne câblés ✓": "emisor y válvula cableados ✓", "non relié — câblez l'émetteur ET la vanne": "sin conexión — cablea el emisor Y la válvula", "Palier atteint": "Nivel alcanzado", "validez la recherche du palier pour relancer": "confirma la investigación del nivel para relanzar", "❌ Palier atteint — validez la recherche du palier avant de relancer": "❌ Nivel alcanzado — confirma la investigación del nivel antes de relanzar", "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Colisionador sin conexión a una red lógica (emisor y válvula deben estar cableados)", "Réseau logique requis": "Red lógica requerida", "Palier atteint — recherche en cours": "Nivel alcanzado — investigación pendiente", "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Coloca un cable lógico que toque el emisor (abajo-izq.) Y la válvula (arriba-der.) del Colisionador", "Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer": "Se alcanzó el umbral de confirmaciones del nivel: confirma la investigación del nivel para relanzar", "Data Center en veille — séquence du Collisionneur non lancée": "Centro de datos en espera — secuencia del Colisionador no lanzada", "Envoyer en priorité vers ": "Enviar primero a ", "Descendre au souterrain (": "Bajar al subsuelo (", "Remonter à la surface (": "Volver a la superficie ("}, "de": {"Île 6 S": "Insel 6 U", "Ordre de service": "Bedienreihenfolge", "Construction & travaux": "Bau & Arbeiten", "Sortants (dépôts au port)": "Ausgänge (Einlagerung im Hafen)", "Intrants (machines du souterrain)": "Eingänge (Maschinen im Untergrund)", "Faire remonter cette catégorie d'un rang": "Diese Kategorie einen Rang nach oben", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Strenge Reihenfolge: Die 1. Kategorie wird vollständig bedient, bevor die nächste folgt (Reihenfolge unten einstellbar)", "Réseau logique": "Logiknetz", "émetteur et vanne câblés ✓": "Sender und Ventil verkabelt ✓", "non relié — câblez l'émetteur ET la vanne": "nicht verbunden — verkable Sender UND Ventil", "Palier atteint": "Stufenziel erreicht", "validez la recherche du palier pour relancer": "Stufenforschung bestätigen, um neu zu starten", "❌ Palier atteint — validez la recherche du palier avant de relancer": "❌ Stufenziel erreicht — bestätige die Stufenforschung vor dem Neustart", "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Kollider nicht mit einem Logiknetz verbunden (Sender und Ventil müssen verkabelt sein)", "Réseau logique requis": "Logiknetz erforderlich", "Palier atteint — recherche en cours": "Stufe erreicht — Forschung ausstehend", "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Verlege ein Logikkabel, das Sender (unten links) UND Ventil (oben rechts) des Kolliders berührt", "Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer": "Die Bestätigungsschwelle der Stufe ist erreicht: Bestätige die Stufenforschung zum Neustart", "Data Center en veille — séquence du Collisionneur non lancée": "Rechenzentrum im Leerlauf — Kollider-Sequenz nicht gestartet", "Envoyer en priorité vers ": "Zuerst senden an ", "Descendre au souterrain (": "Hinab in den Untergrund (", "Remonter à la surface (": "Zurück an die Oberfläche ("}}; for(var c in ADD){ var L=I18N.locales[c]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[c]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* 14.31 */ var ADD={"en": {"Émission max": "Peak emission", "Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.": "Heat emission at the PEAK of the oscillation: this is what must be evacuated continuously. The overheat cap is 60 × this value.", "Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).": "Heat stored in the building. FIXED cap = 1 min of PEAK emission (independent of the current throughput) — once reached, the building breaks down (overheat).", "Charge crête": "Peak load", "Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.": "Sum of the PEAK emissions of the connected sources. Above the throughput, the duct will saturate at peak: upgrade its level, add tiles or make it unlimited.", "Réseaux": "Networks", "Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).": "At max level this building densifies into a higher model (it cannot be placed directly).", " au Nv.": " at Lv.", "Bâtiments des autres îles": "Buildings from other islands", "Affichés en gris — touchez-les pour voir leur fiche": "Shown greyed out — tap them to see their sheet", "Masqués": "Hidden", "Se construit sur ": "Built on ", "Câble": "Cable", "relié au réseau ✓": "connected to the grid ✓", "non relié — amenez un câble jusqu'au Collisionneur": "not connected — run a cable to the Collider"}, "es": {"Émission max": "Emisión máx.", "Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.": "Emisión de calor en el PICO de la oscilación: es lo que hay que poder evacuar de forma continua. El límite de sobrecalentamiento es 60 × este valor.", "Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).": "Calor almacenado en el edificio. Límite FIJO = 1 min de emisión MÁXIMA (no depende del régimen actual) — al alcanzarlo, el edificio se avería (sobrecalentamiento).", "Charge crête": "Carga pico", "Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.": "Suma de las emisiones MÁXIMAS de las fuentes conectadas. Por encima del caudal, el conducto se saturará en el pico: mejora su nivel, añade casillas o pásalo a ilimitado.", "Réseaux": "Redes", "Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).": "Al nivel máximo este edificio se densifica en un modelo superior (no se coloca directamente).", " au Nv.": " al Nv.", "Bâtiments des autres îles": "Edificios de otras islas", "Affichés en gris — touchez-les pour voir leur fiche": "Mostrados en gris — tócalos para ver su ficha", "Masqués": "Ocultos", "Se construit sur ": "Se construye en ", "Câble": "Cable", "relié au réseau ✓": "conectado a la red ✓", "non relié — amenez un câble jusqu'au Collisionneur": "sin conectar — lleva un cable hasta el Colisionador"}, "de": {"Émission max": "Max. Emission", "Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.": "Wärmeemission im SPITZENWERT der Schwingung: genau das muss dauerhaft abgeführt werden. Das Überhitzungslimit beträgt das 60-Fache dieses Werts.", "Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).": "Im Gebäude gespeicherte Wärme. FESTES Limit = 1 Min. MAXIMALE Emission (unabhängig vom aktuellen Betrieb) — bei Erreichen fällt das Gebäude aus (Überhitzung).", "Charge crête": "Spitzenlast", "Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.": "Summe der MAXIMALEN Emissionen der angeschlossenen Quellen. Oberhalb des Durchsatzes läuft die Leitung im Spitzenwert voll: Stufe erhöhen, Felder hinzufügen oder auf unbegrenzt setzen.", "Réseaux": "Netze", "Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).": "Auf der Maximalstufe verdichtet sich dieses Gebäude zu einem höheren Modell (es kann nicht direkt gebaut werden).", " au Nv.": " auf St.", "Bâtiments des autres îles": "Gebäude anderer Inseln", "Affichés en gris — touchez-les pour voir leur fiche": "Ausgegraut angezeigt — antippen, um ihr Datenblatt zu sehen", "Masqués": "Ausgeblendet", "Se construit sur ": "Wird gebaut auf ", "Câble": "Kabel", "relié au réseau ✓": "mit dem Netz verbunden ✓", "non relié — amenez un câble jusqu'au Collisionneur": "nicht verbunden — Kabel zum Kollider verlegen"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* 14.32 */ var ADD={"en": {"Mélange": "Blend", "Moins d'uranium, plus de plutonium": "Less uranium, more plutonium", "Plus d'uranium, moins de plutonium": "More uranium, less plutonium", "Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.": "Trade-off slider: more uranium = less plutonium, at CONSTANT fuel output. This is not a share of the blend.", "Réglage direct entre 10 et 90 (50 = neutre).": "Direct setting between 10 and 90 (50 = neutral).", "Débits réels": "Actual rates", "Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.": "More uranium = less plutonium, and vice versa — fuel output does not change.", "−1 % (rendu au plus gros des autres)": "−1% (given back to the largest of the others)", "+1 % (pris au plus gros des autres)": "+1% (taken from the largest of the others)"}, "es": {"Mélange": "Mezcla", "Moins d'uranium, plus de plutonium": "Menos uranio, más plutonio", "Plus d'uranium, moins de plutonium": "Más uranio, menos plutonio", "Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.": "Regulador de compromiso: más uranio = menos plutonio, con producción de combustible CONSTANTE. No es una proporción de la mezcla.", "Réglage direct entre 10 et 90 (50 = neutre).": "Ajuste directo entre 10 y 90 (50 = neutro).", "Débits réels": "Caudales reales", "Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.": "Más uranio = menos plutonio, y viceversa — la producción de combustible no cambia.", "−1 % (rendu au plus gros des autres)": "−1 % (devuelto al mayor de los demás)", "+1 % (pris au plus gros des autres)": "+1 % (tomado del mayor de los demás)"}, "de": {"Mélange": "Mischung", "Moins d'uranium, plus de plutonium": "Weniger Uran, mehr Plutonium", "Plus d'uranium, moins de plutonium": "Mehr Uran, weniger Plutonium", "Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.": "Kompromissregler: mehr Uran = weniger Plutonium, bei KONSTANTER Brennstoffproduktion. Das ist kein Mischungsanteil.", "Réglage direct entre 10 et 90 (50 = neutre).": "Direkte Einstellung zwischen 10 und 90 (50 = neutral).", "Débits réels": "Tatsächliche Raten", "Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.": "Mehr Uran = weniger Plutonium und umgekehrt — die Brennstoffproduktion ändert sich nicht.", "−1 % (rendu au plus gros des autres)": "−1 % (dem größten der anderen zurückgegeben)", "+1 % (pris au plus gros des autres)": "+1 % (dem größten der anderen entnommen)"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 </script>
 <script>
 const {
@@ -3737,12 +3746,15 @@ const BLD_SPRITE_OVERRIDE = {
   // Pas d'art dédié livré pour la pompe V3 : réutilise l'art V2 (sinon aucune icône
   // dans le menu Bâtiment ni sur la carte — les candidats bat_/id/id_v1 n'existent pas).
   pompe_eau_v3: 'pompe_eau_v2',
-  // 14.25 — La Centrifugeuse Uranium remplace le Broyeur Uranium V2 : aucun art dédié n'a été
-  // livré pour elle, elle reprend celui du V2 (statique ET animation, `ANIM_BY_SK` résolvant
-  // depuis la clé de sprite). À remplacer si un sprite de centrifugeuse arrive dans un pack.
-  // 14.29 — la Centrifugeuse EST l'ex-Centrale Enrichissement V2 : elle reprend l'art du
-  // Broyeur V2 supprimé (aucun art de centrifugeuse livré).
-  centrale_enrichissement_v2: 'bat_broyeur_uranium_v2',
+  // Centrale Enrichissement V2 : elle a repris en 14.29 l'art du Broyeur Uranium V2 supprimé,
+  // faute d'art dédié (statique ET animation, `ANIM_BY_SK` résolvant depuis la clé de sprite).
+  // 14.32 — LISTE de candidats : le PREMIER présent gagne. ⚠ DÉCOUVERTE : l'art dédié
+  // **`bat_centrale_enrichissement_v2`** (+ sa sheet d'animation 4 frames) est DÉJÀ dans le pack
+  // depuis 13.59 — il y avait été inliné comme sprite « V2 île 6 » inerte et n'a jamais été
+  // branché, le 14.29 ayant pointé le bâtiment sur l'art du Broyeur V2. Il est donc actif
+  // immédiatement. Le repli `bat_broyeur_uranium_v2` reste derrière par sûreté ; si un nouvel art
+  // est livré, il suffit de l'écrire sous la MÊME clé — aucune retouche de code.
+  centrale_enrichissement_v2: ['bat_centrale_enrichissement_v2', 'bat_broyeur_uranium_v2'],
   // Phase 4 : l'asset livré est `bat_extracteur` (le nom de fichier n'a pas le suffixe
   // `_souterrain` de l'id) → override pour que la carte/menu rende bien le sprite.
   extracteur_souterrain: 'bat_extracteur',
@@ -3781,7 +3793,16 @@ function buildingSpriteKey(id, upgrade, dir) {
   }
   if (BLD_SPRITE_OVERRIDE[id]) {
     // version files (carriere_vN etc.) already encode the version; bat_ files don't scale
-    return BLD_SPRITE_OVERRIDE[id];
+    const ov = BLD_SPRITE_OVERRIDE[id];
+    // 14.32 — Une entrée peut être une LISTE de candidats, dans l'ordre de priorité : le PREMIER
+    // présent dans SPRITE_DATA gagne. Ça permet de pré-brancher un art à venir (on cite sa clé
+    // définitive en tête, le repli actuel derrière) → le jour où le PNG est déposé dans le pack,
+    // il est pris automatiquement, SANS retoucher au code. Même logique que `cands` ci-dessous.
+    if (Array.isArray(ov)) {
+      for (const c of ov) if (SPRITE_DATA[c]) return c;
+      return ov[ov.length - 1] || null;
+    }
+    return ov;
   }
   // Direct candidates, in priority order.
   const cands = ['bat_' + id, id, id + '_v1'];
@@ -3914,6 +3935,11 @@ function buildingConnectsCarrier(buildingId, carrier) {
       // nuclear plant has no declared I/O but uses road (materials) ; le refroidissement
       // passe désormais par la chaleur (conduit), plus par le tuyau.
       if (!res && b.nuclear) res = carrier === 'road';
+      // 14.30 — CONDUIT : aucune ressource déclarée ne le porte (la chaleur n'est pas une
+      // ressource de pool) → il n'était branché nulle part et le conduit ne traversait AUCUN
+      // bâtiment, contrairement au câble et au tuyau. Se raccordent : les sources (heatCap,
+      // dont la centrale) et les tours aéroréfrigérantes.
+      if (!res && carrier === 'conduit') res = !!b.heatCap || !!b.tour;
     }
   }
   _connectsCache[ck] = res;
@@ -5912,19 +5938,20 @@ const BUILDINGS = {
     }
   },
   // ===== CHAÎNE NUCLÉAIRE V2 (nœud 41, puzzle P2) =====
-  // 14.25 — CENTRIFUGEUSE URANIUM : remplace le Broyeur Uranium V2 (supprimé). Palier du Broyeur
-  // Uranium, qui est désormais HARD CAP au Nv.10 ; entrée au Nv.11 (upgrade 10, ×1024).
-  // ⚠ Ce n'est PLUS un broyeur : elle court-circuite la chaîne yellowcake → enrichissement et
-  // fabrique DIRECTEMENT du combustible U235, en consommant du plutonium (2ᵉ débouché du plutonium
-  // après l'usine moteur nuc.) et de l'acier. Valeurs demandées AU NIVEAU 11, donc divisées par
-  // 1024 ici : uranium 2,62e5 · plutonium 25,6 · acier 256 → combustible U235 256.
-  // Enrichissement V2 : −25 % de yellowcake (2 → 1,5) MAIS incorpore 0,1 plutonium/s en plus.
-  // 14.29 — CENTRIFUGEUSE URANIUM : c'est le palier V2 de la Centrale Enrichissement. Elle
-  // REMPLACE le yellowcake par de l'URANIUM (en plus du plutonium qu'elle incorporait déjà) et
-  // ÉMET DE LA CHALEUR. Le Broyeur Uranium V1 et la Centrale Enrichissement V1 sont INCHANGÉS :
-  // la chaîne yellowcake reste la voie normale, la centrifugeuse est le raccourci de fin de partie.
+  // CENTRALE ENRICHISSEMENT V2 — palier V2 de la Centrale Enrichissement, entrée au Nv.11
+  // (upgrade 10, ×1024). Valeurs demandées AU NIVEAU 11, donc divisées par 1024 ici :
+  // uranium 2,62e5 · plutonium 25,6 · acier 256 → combustible U235 256.
+  // ⚠ Elle court-circuite la chaîne yellowcake : elle consomme directement de l'URANIUM (et du
+  // plutonium — 2ᵉ débouché du plutonium après l'usine moteur nuc.) pour fabriquer le combustible
+  // U235, et ÉMET DE LA CHALEUR. Le Broyeur Uranium V1 et la Centrale Enrichissement V1 sont
+  // INCHANGÉS : la chaîne yellowcake reste la voie normale, ce palier est le raccourci de fin de
+  // partie. ⚠ 14.32 — RENOMMÉE (elle s'est appelée « Centrifugeuse Uranium V2 » des builds 308 à
+  // 313) : c'est le palier de la Centrale Enrichissement, le nom doit le dire. Seul le NOM change,
+  // l'id `centrale_enrichissement_v2` et la recette sont intacts.
+  // ⚠ 14.32 — Son MÉLANGE uranium/plutonium est réglable par bâtiment (voir ENR_TUNABLE) : les
+  // `inputs` ci-dessous sont la recette au réglage NEUTRE (u = 50).
   centrale_enrichissement_v2: {
-    name: 'Centrifugeuse Uranium V2',
+    name: 'Centrale Enrichissement V2',
     // « génère de la chaleur » (demande) : règle habituelle, HEAT_PER_MW × MW consommés
     // (cf. tickIsland) ; le plafond de trip reste dynamique (60 s d'émission).
     heatCap: 10,
@@ -7013,8 +7040,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 311;
-const GAME_VERSION = 'Alpha 14.29';
+const GAME_BUILD = 314;
+const GAME_VERSION = 'Alpha 14.32';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7573,6 +7600,44 @@ function arcDefaultState(id) {
   const def = ARC_DEF[id];
   return { mode: 'single', sel: def.order[0], w: def.order.reduce((o, k) => (o[k] = 1, o), {}) };
 }
+// ── 14.32 — MÉLANGE URANIUM / PLUTONIUM (mécanique SŒUR du four à arc) ───────────────────────
+// Même problème résolu de la même façon : un réglage PAR BÂTIMENT qui modifie sa recette.
+// `u` = curseur de compromis, entier de 10 à 90 (défaut 50, neutre). Il n'exprime PAS une
+// fraction massique du mélange : c'est un arbitrage « plus d'uranium ⇄ moins de plutonium »,
+// à PRODUCTION DE COMBUSTIBLE CONSTANTE.
+//   s = (u − 50) / 40 ∈ [−1, +1] ; uranium ×4^s ; plutonium ×4^(−s) ; acier et sortie inchangés.
+// Invariant : le PRODUIT uranium × plutonium est constant (les deux facteurs sont inverses), et
+// le rapport U/Pu suit 16^s — d'où 640 (u=10) · 10 240 (u=50) · 163 840 (u=90) au Nv.13, 10 240
+// étant la moyenne géométrique exacte des deux extrêmes.
+const ENR_U_MIN = 10,
+  ENR_U_MAX = 90,
+  ENR_U_DEF = 50;
+const ENR_TUNABLE = {
+  centrale_enrichissement_v2: { a: 'uranium', b: 'plutonium' }
+};
+function enrDefaultState(id) {
+  return { u: ENR_U_DEF };
+}
+function enrClampU(v) {
+  // Absent / vide / illisible → neutre (50), pas 10 : `+null` vaut 0 et se ferait clamper en bas.
+  if (v == null || v === '') return ENR_U_DEF;
+  const n = Math.round(+v);
+  return isNaN(n) ? ENR_U_DEF : Math.max(ENR_U_MIN, Math.min(ENR_U_MAX, n));
+}
+// Recette EFFECTIVE d'un bâtiment réglable : seuls les deux intrants du couple sont mis à
+// l'échelle, tout le reste (acier, sorties, sigmoïde) est repris tel quel.
+function enrEffective(bld) {
+  const def = ENR_TUNABLE[bld && bld.id];
+  const base = def && BUILDINGS[bld.id] && BUILDINGS[bld.id].inputs;
+  if (!def || !base) return null;
+  const u = enrClampU(bld.enr && bld.enr.u != null ? bld.enr.u : ENR_U_DEF);
+  const s = (u - ENR_U_DEF) / ((ENR_U_MAX - ENR_U_MIN) / 2);
+  const k = Math.pow(4, s);
+  const inputs = { ...base };
+  if (base[def.a] != null) inputs[def.a] = base[def.a] * k;
+  if (base[def.b] != null) inputs[def.b] = base[def.b] / k;
+  return { u, inputs };
+}
 
 // ── Migration des sauvegardes < 16 vers le modèle « paliers » ────────────────
 // Correspondance ancien four à arc séparé → arc unifié + mode single équivalent.
@@ -7586,16 +7651,15 @@ const ARC_MODE_FROM_OLD = {
 // arc unifié (mode correspondant), bâtiments de palier → niveau d'ENTRÉE du palier, V1 au-delà
 // du nouveau cap → cap. Pas de remboursement, pas de double-paiement (approche validée).
 function migratePlacement(p, fromV) {
-  // 14.25 — TOUTES versions : le Broyeur Uranium V2 est SUPPRIMÉ, remplacé par la Centrifugeuse
-  // Uranium au même palier (entrée Nv.11) et pour le même forfait. Sans ce renommage, la boucle de
-  // chargement sauterait la tuile (`!BUILDINGS[p.b] → continue`) et le joueur PERDRAIT le bâtiment
-  // ET ce qu'il y avait investi. ⚠ La recette change (yellowcake → combustible U235) : c'est voulu,
-  // la save ne stocke que l'id et le niveau.
-  // 14.29 — le Broyeur Uranium n'a PLUS de palier V2 (ni l'ancien `broyeur_uranium_v2`, ni le
-  // `centrifugeuse_uranium` créé à tort en 14.25 et publié dans les builds 308/310). Les deux
-  // reviennent au Broyeur V1, qui garde exactement la même recette — le niveau est CONSERVÉ, le
-  // broyeur n'ayant plus de cap dur (le bridage est économique, cf. COST_SOFTCAP_X2). Sans ce
-  // renommage, `!BUILDINGS[p.b] → continue` sauterait la tuile et le joueur perdrait le bâtiment.
+  // 14.29 — TOUTES versions : le Broyeur Uranium n'a PLUS de palier V2. Ni l'ancien
+  // `broyeur_uranium_v2` (saves ≤ 14.24), ni le `centrifugeuse_uranium` créé à tort en 14.25 et
+  // **publié dans les builds 308/310** n'existent encore comme bâtiments. Les deux reviennent au
+  // Broyeur V1, qui garde exactement la même recette — le niveau est CONSERVÉ, le broyeur n'ayant
+  // plus de cap dur (le bridage est économique, cf. COST_SOFTCAP_X2). Sans ce renommage,
+  // `!BUILDINGS[p.b] → continue` sauterait la tuile et le joueur perdrait le bâtiment ET ce qu'il
+  // y avait investi. ⚠ 14.32 — Ces DEUX ids historiques doivent continuer d'être rabattus : le
+  // renommage « Centrifugeuse Uranium V2 » → « Centrale Enrichissement V2 » ne concerne QUE le nom
+  // affiché de `centrale_enrichissement_v2`, jamais cette migration d'ids.
   if (p.b === 'broyeur_uranium_v2' || p.b === 'centrifugeuse_uranium') p.b = 'broyeur_uranium';
   // TOUTES versions : un bâtiment de palier SOUS son niveau d'entrée est remonté à l'entrée.
   // (Builds 202-207 : la pose directe d'un V2/V3 depuis la barre d'outils créait le bâtiment
@@ -7965,11 +8029,13 @@ function rebuildNetworks(game, islandId) {
       if (oldLvl > newNets[target].level) newNets[target].level = oldLvl;
     }
   }
-  // ── Règle « traversée » : un bâtiment qui se raccorde au CÂBLE (élec.) ou au TUYAU
-  // laisse le réseau le TRAVERSER. Tous les réseaux d'un même porteur (wire/pipe) adjacents à
-  // l'emprise d'un tel bâtiment FUSIONNENT en un seul (le bâtiment fait pont). Interdit pour la
-  // route. Ex. éolienne–câble–four arc–câble–aciérie : les deux câbles deviennent UN réseau →
-  // l'éolienne alimente le four ET l'aciérie. Idem tuyaux (le pool de ressources est partagé).
+  // ── Règle « traversée » : un bâtiment qui se raccorde au CÂBLE (élec.), au TUYAU ou au
+  // CONDUIT de chaleur laisse le réseau le TRAVERSER. Tous les réseaux d'un même porteur
+  // (wire/pipe/conduit) adjacents à l'emprise d'un tel bâtiment FUSIONNENT en un seul (le
+  // bâtiment fait pont). Interdit pour la route. Ex. éolienne–câble–four arc–câble–aciérie :
+  // les deux câbles deviennent UN réseau → l'éolienne alimente le four ET l'aciérie. Idem
+  // tuyaux (le pool de ressources est partagé) et conduits (14.30 : poser une source au milieu
+  // d'une ligne de conduit la coupait en deux réseaux distincts).
   const mUF = {};
   const mFind = x => {
     if (mUF[x] == null) mUF[x] = x;
@@ -7989,7 +8055,7 @@ function rebuildNetworks(game, islandId) {
     const s = bdef.size || [1, 1];
     const bh = s[0] || 1,
       bw = s[1] || 1;
-    for (const carrier of ['wire', 'pipe']) {
+    for (const carrier of ['wire', 'pipe', 'conduit']) {
       if (!buildingConnectsCarrier(t.building.id, carrier)) continue;
       const ids = adjacentNetworksFootprint(game, islandId, r, c, bw, bh, carrier);
       for (let i = 1; i < ids.length; i++) {
@@ -8335,18 +8401,44 @@ function buildingTotalCost(bld) {
   for (const k in cum) out[k] = (out[k] || 0) + cum[k];
   return out;
 }
-// Plafond de chaleur DYNAMIQUE d'une source = HEAT_CAP_SECONDS secondes d'émission : un bâtiment
-// peut stocker jusqu'à 1 minute de chaleur produite avant la surchauffe (trip). On se base sur le
-// PIC d'émission récent (bld.heatEmitPk, décroissance lente posée par processHeat) pour que les
-// émissions oscillantes (antenne en productivité) ne fassent pas fluctuer le plafond à chaque tick.
-// b.heatCap (def) ne sert plus que de FLAG « bâtiment à chaleur ». Repli : émission nulle (arrêt,
-// endommagé, save rechargée) avec de la chaleur gelée → plafond = chaleur courante (jauge pleine).
+// 14.30 — Puissance de référence du réacteur (kW à V1 niveau 1 / 100 %). Doit rester ALIGNÉE
+// sur la constante locale NUC_POWER de tickIsland et de la fiche : elle sert ici à calculer le
+// plafond de chaleur fixe hors de la boucle nucléaire.
+const NUC_POWER_BASE = 16384;
+// Émission de chaleur MAXIMALE d'un bâtiment (MJ/s), calculée sur sa puissance NOMINALE (= pic de
+// l'oscillation sigmoïde), donc INDÉPENDANTE de son état courant (marche, pause, déficit, arrêt).
+// ⚠ 14.30 — Remplace l'ancien PIC D'ÉMISSION mémorisé, qui décroissait pendant les arrêts : le
+// plafond passait SOUS la chaleur déjà stockée et le bâtiment tripait au premier tick de reprise
+// (retour joueur « je reviens plus tard, ils sont cassés »). Un plafond structurel ne peut plus
+// descendre sous le stock accumulé.
+function heatEmitMaxOf(bld) {
+  const b = bld && BUILDINGS[bld.id];
+  if (!b) return 0;
+  const mult = Math.pow(2, bld.upgrade || 0);
+  // Centrale nucléaire : pic = puissance max du réacteur. La V2 (`noHeat`) n'émet rien.
+  if (b.nuclear) return b.noHeat ? 0 : NUC_POWER_BASE * mult * HEAT_PER_MW / 1000;
+  if (!b.heatCap) return 0;
+  // Antenne (mode productivité) : le pic dépend du VOISINAGE boosté, pas de sa propre conso →
+  // il est posé par le tick dans `bld.heatEmitMax` (cf. A2). Repli 0 = pas de trip possible.
+  if (b.antenna) return bld.heatEmitMax || 0;
+  // Usine moteur nucléaire : émission PLATE 1,024 MJ/s × niveau (pas indexée sur la conso).
+  if (bld.id === 'usine_moteur_nuc') return 1.024 * mult;
+  // Tous les autres : HEAT_PER_MW × conso élec. NOMINALE (base + amp, rabot qStab inclus).
+  let pmax = nominalPower(bld);
+  // Voisin d'une antenne : sa conso boostée dépasse le nominal (×(1 + antElecBoost)) → le
+  // plafond doit suivre, sinon un bâtiment boosté tripe alors qu'il fonctionne normalement.
+  const boost = Math.max(bld.antennaBuff || 1, bld.antennaProd || 1);
+  if (boost > 1) pmax *= 1 + antElecBoost(boost);
+  return HEAT_PER_MW * pmax / 1000;
+}
+// Plafond de chaleur FIXE d'une source = HEAT_CAP_SECONDS secondes d'émission MAXIMALE : un
+// bâtiment peut stocker jusqu'à 1 minute de sa chaleur de pointe avant la surchauffe (trip).
+// b.heatCap (def) ne sert plus que de FLAG « bâtiment à chaleur ».
 const HEAT_CAP_SECONDS = 60;
 const heatCapOf = bld => {
   const b = bld && BUILDINGS[bld.id];
   if (!b || !b.heatCap) return 0;
-  const cap = Math.max(bld.heatEmit || 0, bld.heatEmitPk || 0) * HEAT_CAP_SECONDS;
-  return cap > 0 ? cap : bld.heat || 0;
+  return heatEmitMaxOf(bld) * HEAT_CAP_SECONDS;
 };
 // Nombre de tuiles de conduit du réseau `nid` adjacentes à l'emprise WxH ancrée en (r,c).
 function condTilesForNet(game, islandId, r, c, w, h, nid) {
@@ -8456,9 +8548,6 @@ function processHeat(game, isl) {
       continue;
     }
     bld.heat += bld.heatEmit || 0;
-    // Pic d'émission récent (décroissance lente ~2 min) → plafond dynamique heatCapOf = 60 s
-    // d'émission, stable même quand l'émission oscille (antenne / rampe de calibrage).
-    bld.heatEmitPk = Math.max(bld.heatEmit || 0, (bld.heatEmitPk || 0) * 0.995);
   }
   // 2) Tours : conso d'eau (port si tuyau relié au port, sinon pool tuyau) → absorption dispo.
   for (const to of tours) {
@@ -8539,6 +8628,10 @@ function processHeat(game, isl) {
   if (!game.conduitFlow) game.conduitFlow = {};
   game.conduitFlow[isl] = {};
   const flow = game.conduitFlow[isl];
+  // 14.31 — Registre de la charge CRÊTE par réseau de conduit (cf. plus bas).
+  if (!game.conduitPeak) game.conduitPeak = {};
+  game.conduitPeak[isl] = {};
+  const peak = game.conduitPeak[isl];
   const condNets = {};
   for (const nid in nets) {
     if (!nets[nid] || nets[nid].type !== 'conduit') continue;
@@ -8598,11 +8691,19 @@ function processHeat(game, isl) {
       }
     }
     flow[nid] = moved; // MJ/s réellement évacués (affiché dans le panneau réseau)
+    // 14.31 — Charge CRÊTE du réseau : ce qu'il devra évacuer quand toutes ses sources seront
+    // au sommet de leur oscillation en même temps. `flow` ne montre que l'instantané, qui peut
+    // rester bas longtemps avant que les sigmoïdes se synchronisent et saturent le conduit d'un coup.
+    // ⚠ `cn.sources` ne contient que des `bld` réels — le pseudo-élément { elevator: true } est
+    // ajouté à `srcs` (la copie), jamais ici : pas de garde nécessaire.
+    let pk = 0;
+    for (const sb of cn.sources) pk += heatEmitMaxOf(sb);
+    peak[nid] = pk;
     load[nid] = Math.min(1, moved / Math.max(1e-9, cn.through)); // teinte = % du FLUX (débit utilisé)
   }
   // 4) Alerte + trip. Une source qui ACCUMULE de la chaleur (émission > évacuation) alerte le
-  //    joueur (transition, ré-armée quand la chaleur retombe) ; au plafond dynamique (= 60 s
-  //    d'émission, heatCapOf) elle s'arrête et passe en état endommagé (réparation 20 %).
+  //    joueur (transition, ré-armée quand la chaleur retombe) ; au plafond FIXE (= 60 s d'émission
+  //    MAXIMALE, heatCapOf) elle s'arrête et passe en état endommagé (réparation 20 %).
   //    Chaleur gelée ou en baisse (évacuation ≥ émission) → jamais de trip.
   for (const s of sources) {
     const bld = s.bld;
@@ -9595,6 +9696,22 @@ function colliderLaunchBlock(game) {
 // 14.24 — mémorise AUSSI le réseau tuyau sur lequel le plein a été fait (`co.he3Net`) : le
 // Collisionneur n'étant pas un bâtiment, sa consommation n'entre jamais dans addFlow ; tickIsland
 // l'y inscrit après coup pour que le panneau Production et le détail du réseau la voient.
+// 14.31 (LOT B — option 2, arbitrée) — Le Collisionneur EXIGE désormais un réseau CÂBLE adjacent,
+// comme tout gros consommateur du jeu. Avant, sa demande était prélevée sur le bilan de l'ÎLE 6
+// entière : n'importe quelle source de l'île l'alimentait, câblée ou non → dessiner un raccord de
+// câble aurait été un MENSONGE VISUEL (le câble n'aurait rien changé). Il tire maintenant sur la
+// COMPOSANTE électrique qu'il touche, et le raccord dessiné devient sincère.
+// ⚠ RUPTURE ASSUMÉE pour les parties en cours : un Collisionneur qu'aucun câble ne touche perd son
+// alimentation (son démarrage recule) tant que le joueur ne l'a pas raccordé. Aucune migration de
+// save n'est nécessaire (aucun champ persisté ne change) ; la cause est NOMMÉE dans sa fiche.
+function colliderWireNid(game, isl) {
+  const b = colliderBounds(game, isl);
+  if (!b) return null;
+  const nets = game.networks[isl] || {};
+  const ids = adjacentNetworksFootprint(game, isl, b.minR, b.minC, b.maxC - b.minC + 1, b.maxR - b.minR + 1, 'wire');
+  for (const nid of ids) if (nets[nid]) return nid;
+  return null;
+}
 function colliderDrawHe3(game, isl, need) {
   const co = game.collider;
   if (co) co.he3Net = null;
@@ -9839,6 +9956,10 @@ function tickIsland(game, isl) {
   game.antennaProdZone[isl] = debuffSet;
   // Accumulateur de « MW consommés en plus » par les voisins du fait du buff (mode productivité).
   let antExtraKw = 0;
+  // 14.30 — Accumulateur PARALLÈLE du pic : conso « en plus » que les voisins atteindraient au
+  // sommet de leur oscillation sigmoïde. Sert de plafond de chaleur FIXE à l'antenne (heatCapOf),
+  // qui ne peut pas se déduire de sa propre def puisqu'elle dépend du voisinage boosté.
+  let antExtraKwMax = 0;
   for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
     const bld = tiles[r][c].building;
     if (!bld) continue;
@@ -9847,6 +9968,10 @@ function tickIsland(game, isl) {
     // électricité, ni chaleur) tant qu'il n'est pas repris. Placé AVANT les branches accu /
     // nucléaire → vaut pour tous les bâtiments (le port fixe ne peut pas être en pause).
     if (bld.paused && !bld.fixed && !b.fixed) {
+      // 14.30 — ARRÊT FRANC de la centrale : elle entre quand même dans nucList (avec un motif
+      // d'arrêt) au lieu d'être sautée. Avant, `continue` GELAIT nucState/nucTimer/nucCur → la
+      // centrale gardait un état « en marche » figé et reprenait de façon incohérente.
+      if (b.nuclear) nucList.push({ bld, r, c, halt: 'paused' });
       const pA1 = bld.active;
       bld.active = false;
       bld.disc = false;
@@ -9860,6 +9985,8 @@ function tickIsland(game, isl) {
     // discReason 'logic' (distinct d'un manque d'intrant). bld.logicOff est posé par processLogic
     // AVANT cette boucle. On n'écrit JAMAIS dans bld.active depuis l'actionneur (§5.2).
     if (bld.logicOff && !bld.fixed && !b.fixed) {
+      // 14.30 — Idem A5.1 pour l'extinction par le réseau logique (motif distinct).
+      if (b.nuclear) nucList.push({ bld, r, c, halt: 'logic' });
       const pAL = bld.active;
       bld.active = false;
       bld.disc = false;
@@ -9933,7 +10060,11 @@ function tickIsland(game, isl) {
     // Four à arc unifié : I/O + fourchette de conso EFFECTIFS selon le mode du sélecteur
     // (single/mix/auto) — l'entrée reste fixe, le mode ne répartit que sortie et conso.
     const arcEff = ARC_DEF[bld.id] ? arcEffective(bld, workPort) : null;
-    const effInputs = arcEff ? arcEff.inputs : b.inputs;
+    // 14.32 — Mélange uranium/plutonium réglable : ne touche QUE les intrants (la sortie et la
+    // sigmoïde restent celles de la def). Exclusif du four à arc en pratique (aucun bâtiment
+    // n'est dans les deux tables), mais l'arc reste prioritaire par sûreté.
+    const enrEff = !arcEff && ENR_TUNABLE[bld.id] ? enrEffective(bld) : null;
+    const effInputs = arcEff ? arcEff.inputs : enrEff ? enrEff.inputs : b.inputs;
     // `let` : la FOREUSE se donne dynamiquement une sortie (pierre) pendant un creusement.
     let effOutputs = arcEff ? arcEff.outputs : b.outputs;
     const effSigmoid = arcEff ? arcEff.sigmoid : b.sigmoid;
@@ -9998,7 +10129,10 @@ function tickIsland(game, isl) {
       const nomP = nominalPower(bld);
       const fac = buffed ? speedFac : prodFac;
       power = nomP * (1 + (1 + Math.sin(2 * Math.PI * bld.antennaSigT / 60)) / 2 * antElecBoost(fac));
-      if (debuffed) antExtraKw += Math.max(0, power - nomP);
+      if (debuffed) {
+        antExtraKw += Math.max(0, power - nomP);
+        antExtraKwMax += nomP * antElecBoost(fac); // pic : sin_term = 1
+      }
     }
     // Intrants & sortants.
     //  • VITESSE : ×antSpeedMul(f) sur les DEUX (13.70 : +5 %×f, Nv.1 ×1,1 ; SANS plafond depuis 14.02).
@@ -10307,7 +10441,16 @@ function tickIsland(game, isl) {
     });
   }
   // Chaleur de l'antenne (mode PRODUCTIVITÉ) : HEAT_PER_MW (0,125) MJ/s par MW consommé EN PLUS par les voisins.
-  if (antBld) antBld.heatEmit = antMode === 'prod' && !antBld.damaged ? HEAT_PER_MW * antExtraKw / 1000 : 0;
+  // 14.30 — L'antenne en PAUSE ou éteinte par la LOGIQUE n'émet plus rien. Cette ligne tourne
+  // APRÈS la boucle bâtiment, qui avait déjà posé heatEmit = 0 : sans ces deux tests, elle
+  // l'écrasait et l'antenne continuait de chauffer à l'arrêt (retour joueur).
+  if (antBld) {
+    const antOn = antMode === 'prod' && !antBld.damaged && !antBld.paused && !antBld.logicOff;
+    antBld.heatEmit = antOn ? HEAT_PER_MW * antExtraKw / 1000 : 0;
+    // Plafond FIXE de l'antenne : conservé même à l'arrêt (sinon heatCapOf tomberait à 0 et la
+    // jauge de la fiche deviendrait illisible). Remis à jour à chaque tick où la zone existe.
+    antBld.heatEmitMax = antMode === 'prod' ? HEAT_PER_MW * antExtraKwMax / 1000 : 0;
+  }
   // Per-network throughput factor based on each network's level cap.
   const netFactor = {};
   const saturated = [];
@@ -10467,6 +10610,7 @@ function tickIsland(game, isl) {
           if (cst.to && BUILDINGS[cst.to]) bb.id = cst.to;
           bb.upgrade = cst.up;
           if (ARC_DEF[bb.id] && !bb.arc) bb.arc = arcDefaultState(bb.id);
+          if (ENR_TUNABLE[bb.id] && !bb.enr) bb.enr = enrDefaultState(bb.id); // 14.32
         }
         delete bb.construction;
         activeChanged = true;
@@ -10621,6 +10765,10 @@ function tickIsland(game, isl) {
       for (let i = 1; i < wireIds.length; i++) ufUnion(wireIds[0], wireIds[i]);
     }
     const fuelOK = roadNid != null && (port['combustible_u235'] || 0) > 1e-6;
+    // 14.30 — Motif d'arrêt imposé par le joueur (pause) ou par le réseau logique. Traité comme
+    // une condition d'arrêt de plus : la centrale suit sa rampe `stopping` de 30 s puis passe à
+    // `off`. Aucune reprise tant que `halt` est posé.
+    const halt = nu.halt || null;
     if (bld.nucState == null) {
       bld.nucState = 'off';
       bld.nucTimer = 0;
@@ -10640,7 +10788,7 @@ function tickIsland(game, isl) {
     }
     if (bld.nucState === 'off') {
       // Démarre si câble + route/combustible, et puissance réglée > 0.
-      if (wireOk && fuelOK && targetFrac > 0) {
+      if (!halt && wireOk && fuelOK && targetFrac > 0) {
         bld.nucState = 'starting';
         bld.nucFrom = 0;
         bld.nucTo = targetPower;
@@ -10651,14 +10799,14 @@ function tickIsland(game, isl) {
       // Compat saves : ancien état « sécurité » → redémarrage automatique après 5 min.
       bld.nucCur = 0;
       bld.nucTimer++;
-      if (bld.nucTimer >= NUC_SAFETY) {
+      if (!halt && bld.nucTimer >= NUC_SAFETY) {
         bld.nucState = 'starting';
         bld.nucFrom = 0;
         bld.nucTo = targetPower;
         bld.nucTimer = 0;
       }
     } else if (bld.nucState === 'starting' || bld.nucState === 'running') {
-      if (!wireOk || !fuelOK || targetFrac === 0) {
+      if (halt || !wireOk || !fuelOK || targetFrac === 0) {
         bld.nucState = 'stopping';
         bld.nucFrom = bld.nucCur || 0;
         bld.nucTimer = 0;
@@ -10723,7 +10871,7 @@ function tickIsland(game, isl) {
       // combustible d'un tick, hoquet au chargement d'une save/mise à jour, rattrapage
       // hors-ligne), on repart en calibrage DEPUIS la puissance courante au lieu de finir
       // l'arrêt et de recalibrer 5 min depuis 0 (« la centrale redémarre à 0 »).
-      if (wireOk && fuelOK && targetFrac > 0) {
+      if (!halt && wireOk && fuelOK && targetFrac > 0) {
         bld.nucState = 'starting';
         bld.nucFrom = bld.nucCur || 0;
         bld.nucTo = targetPower;
@@ -10738,6 +10886,17 @@ function tickIsland(game, isl) {
         }
       }
     }
+    // 14.30 — PUBLICATION DES CHAMPS DE RENDU. `nucList` posait `active` et `disc` mais jamais
+    // `regime` / `inFac` / `pwrAvg` : drawBuilding lisait donc des valeurs figées d'un tick
+    // antérieur. Une centrale ayant été mise en pause UNE FOIS gardait regime = 0 à vie → badge
+    // déficit permanent + « 0 % » sur une centrale qui tourne (retour joueur, save île 5).
+    // ⚠ `regime` vaut 1 dès que la centrale marche ou calibre, quel que soit le CURSEUR de
+    // puissance : une centrale volontairement réglée à 60 % n'est pas en déficit. La montée en
+    // puissance reste lisible via la barre de calibrage sur la tuile et via la fiche.
+    bld.regime = bld.nucState === 'running' || bld.nucState === 'starting' ? 1 : 0;
+    bld.inFac = fuelOK ? 1 : 0;
+    bld.pwrAvg = 1;
+    bld.discReason = halt ? halt : bld.nucState === 'off' ? !wireOk ? 'wire' : !fuelOK ? 'input' : null : null;
     let nucPower = bld.nucCur || 0;
     if (nucPower < 1) nucPower = 0;
     if (nucPower > 0 && wireOk) {
@@ -10752,7 +10911,10 @@ function tickIsland(game, isl) {
       if (!game.nucRun) game.nucRun = {};
       game.nucRun[isl] = (game.nucRun[isl] || 0) + 1;
     } else if (game.nucRun) game.nucRun[isl] = 0;
-    bld.active = bld.nucState === 'running' || bld.nucState === 'starting';
+    // En arrêt franc, la centrale reste INACTIVE pour l'affichage même pendant sa rampe de
+    // descente (le joueur a demandé l'arrêt) — mais la rampe continue de délivrer son courant
+    // décroissant sur 30 s, ce qui évite un blackout brutal du réseau.
+    bld.active = !halt && (bld.nucState === 'running' || bld.nucState === 'starting');
     bld.disc = !wireOk && bld.nucState === 'off';
     if (bld.active !== prevA || bld.disc !== prevD) activeChanged = true;
   }
@@ -11114,9 +11276,33 @@ function tickIsland(game, isl) {
     // en pause (0 kW) serait déclarée alimentée et redémarrerait en boucle à chaque tick.
     const need = co.want != null ? co.want : co.cur || 0;
     demand += need;
-    const avail = supply - consumed;
-    co.powered = avail + 1e-6 >= need;
-    consumed += Math.min(Math.max(0, avail), co.cur || 0);
+    // 14.31 (option 2) — Il faut un CÂBLE. Sans réseau adjacent, aucune alimentation possible :
+    // le Collisionneur n'est plus servi par le bilan global de l'île.
+    const cwn = colliderWireNid(game, isl);
+    co.wireNid = cwn;
+    co.wireOk = cwn != null;
+    if (cwn == null) {
+      co.powered = false;
+    } else {
+      // Il puise sur SA composante électrique, sur ce qu'elle n'a pas déjà distribué à ses
+      // bâtiments (même ordre de service qu'avant, mais à l'échelle de la composante et non
+      // plus de l'île). `deliver` borne déjà la puissance par le DÉBIT du câble.
+      const cwi = wireInfo[cwn];
+      const availC = cwi ? Math.max(0, cwi.deliver - cwi.served) : 0;
+      co.powered = availC + 1e-6 >= need;
+      const takenC = Math.min(availC, co.cur || 0);
+      consumed += takenC;
+      // La demande du Collisionneur devient visible dans le panneau du câble qui le dessert
+      // (sinon la composante paraîtrait sous-utilisée alors qu'elle porte la plus grosse charge
+      // de la partie). L'objet `info` est partagé par tous les nids de la composante.
+      if (cwi) {
+        cwi.demand += need;
+        cwi.served += takenC;
+        cwi.demandMin += need;
+        cwi.demandMax += need;
+      }
+      netDemand[cwn] = (netDemand[cwn] || 0) + need;
+    }
   }
   const balance = supply - consumed;
   game.accumulators[isl] = accList.map(a => ({
@@ -14383,7 +14569,8 @@ function ToolButton({
   onSelect,
   onDetail,
   port,
-  isNew
+  isNew,
+  offIsland
 }) {
   const b = BUILDINGS[id];
   // Coût affiché en pastilles : chaque ressource INDISPONIBLE (stock du port < coût) passe
@@ -14424,8 +14611,9 @@ function ToolButton({
     }
   };
   return React.createElement("button", {
-    className: 'tool-btn' + (active ? ' active' : ''),
+    className: 'tool-btn' + (active ? ' active' : '') + (offIsland ? ' off-island' : ''),
     'data-tut': id,
+    title: offIsland && BUILDINGS[id].exclusiveIsland != null ? I18N.t('Se construit sur ') + islandLabel(BUILDINGS[id].exclusiveIsland) : undefined,
     style: {
       '--accent': accent
     },
@@ -14434,6 +14622,10 @@ function ToolButton({
         lp.current.fired = false;
         return;
       }
+      // 14.31 — Bâtiment d'une autre île : un simple tap ouvre sa FICHE (sans attendre l'appui
+      // long), puisqu'il ne peut de toute façon pas être sélectionné ici. Le refus de sélection
+      // reste géré par selectTool, qui affiche le toast « ne se construit que sur … ».
+      if (offIsland) { onDetail && onDetail(id); return; }
       onSelect(id);
     },
     onPointerDown: startLP,
@@ -14539,7 +14731,31 @@ function BuildingDetailModal({
   if (b.power > 0) addRow(I18N.t('Conso. élec.'), fmtPower(b.power));
   if (energyOut > 0) addRow(I18N.t('Prod. élec.'), fmtPower(energyOut), true);
   if (b.accumulator) addRow(I18N.t('Stockage'), I18N.t('batterie (élec.)'));
-  if (b.exclusiveIsland != null) addRow(I18N.t('Exclusif'), I18N.t('île ') + b.exclusiveIsland);
+  // 14.31 — RÉSEAUX NÉCESSAIRES : rien n'indiquait quels réseaux amener au bâtiment ; le joueur
+  // posait puis découvrait le déficit. Source de vérité UNIQUE : buildingConnectsCarrier (complète
+  // depuis 14.30, le conduit y est branché) — on ne réimplémente rien. Libellés : les noms des
+  // bâtiments d'infra eux-mêmes (BUILDINGS.road/pipe/wire/conduit), déjà traduits par applyToData
+  // → pas de table de libellés à créer. Aucun réseau requis (mine V1, port…) → ligne omise.
+  const netNeed = ['road', 'pipe', 'wire', 'conduit']
+    .filter(cr => buildingConnectsCarrier(id, cr))
+    .map(cr => BUILDINGS[cr] && BUILDINGS[cr].name || cr);
+  if (netNeed.length) addRow(I18N.t('Réseaux'), netNeed.join(' · '));
+  // 14.31 — ANNONCE DE LA DENSIFICATION : le bouton « Densifier » n'apparaît qu'une fois le cap
+  // atteint, donc rien ne disait AVANT qu'un bâtiment allait devenir autre chose (c'est aussi la
+  // réponse au « où est l'Accumulateur V2 ? » : comme les 18 autres cibles de densification, il ne
+  // se pose pas, il s'obtient en améliorant). Niveau d'entrée lu dans TIER_STEP[next].entry, plus
+  // fiable que cap + 1 ; repli sur cap + 1 si la clé manque.
+  if (TIER_NEXT[id] && TIER_NEXT[id].next && BUILDINGS[TIER_NEXT[id].next]) {
+    const dnx = TIER_NEXT[id].next;
+    const dEntry = TIER_STEP[dnx] && TIER_STEP[dnx].entry != null ? TIER_STEP[dnx].entry : (TIER_NEXT[id].cap || 0) + 1;
+    addRow(I18N.t('Densification'), React.createElement("span", {
+      style: { color: '#b79cff' },
+      title: I18N.t("Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).")
+    }, BUILDINGS[dnx].name + I18N.t(' au Nv.') + (dEntry + 1)));
+  }
+  // 14.31 — `islandLabel` rend « Île 6 S » pour l'id 7 (le souterrain) : la composition manuelle
+  // 'île ' + id affichait « île 7 », un id qui n'existe pas côté joueur.
+  if (b.exclusiveIsland != null) addRow(I18N.t('Exclusif'), islandLabel(b.exclusiveIsland));
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "slot-backdrop",
     onClick: onClose
@@ -14597,6 +14813,8 @@ function Toolbar({
   onToggleBooster,
   seenBuildings,
   logicLayer,
+  showOffIsland,
+  onToggleOffIsland,
   dev
 }) {
   // Bâtiment dont la fiche détaillée est ouverte (appui long), ou null.
@@ -14637,6 +14855,21 @@ function Toolbar({
     if (tutorialRevealed && !tutorialRevealed.has(id)) return false;
     return BUILDING_NODE[id] == null || unlockedSet && unlockedSet.has(id);
   };
+  // 14.31 — Fonction SŒUR de visibleOn : vraie UNIQUEMENT pour un bâtiment débloqué mais
+  // exclusif à une AUTRE île. Avant, il était totalement absent du menu — le joueur ignorait
+  // jusqu'à son existence et sur quelle île le construire. Il est désormais affiché en gris.
+  // ⚠ Seule l'EXCLUSIVITÉ change de traitement : `forbiddenIslands` et le non-débloqué restent
+  // MASQUÉS (les conditions ci-dessous sont les mêmes que visibleOn, dans le même ordre).
+  // On garde visibleOn booléenne plutôt que d'en faire une fonction à trois valeurs : ça
+  // n'oblige à toucher aucun de ses appelants.
+  const offIslandOn = id => {
+    const ex = BUILDINGS[id].exclusiveIsland;
+    if (ex == null || ex === currentIsland) return false;
+    const fb = BUILDINGS[id].forbiddenIslands;
+    if (fb && fb.indexOf(currentIsland) !== -1) return false;
+    if (tutorialRevealed && !tutorialRevealed.has(id)) return false;
+    return BUILDING_NODE[id] == null || unlockedSet && unlockedSet.has(id);
+  };
   const isBuildingTool = tool && tool !== DEMOLISH && tool !== UPGRADE && tool !== COPY && BUILDINGS[tool] && !isNetworkId(tool);
   const isNetworkTool = !!(tool && BUILDINGS[tool] && isNetworkId(tool));
   // Couche logique : les menus Bâtiment/Réseau basculent vers les groupes logiques dédiés.
@@ -14645,7 +14878,11 @@ function Toolbar({
   const renderGroups = (groups, gate, opts) => {
     const q = opts && opts.query ? normSearch(opts.query) : '';
     const nodes = groups.map(g => {
-      let ids = g.ids.filter(id => visibleOn(id) && (!gate || gate(id)));
+      // 14.31 — `offIsland` (opt-in, menu Bâtiment seulement) élargit la liste aux bâtiments
+      // d'une autre île, rendus en gris. Ils participent aussi à la recherche textuelle : taper
+      // « tungstène » depuis l'île 2 doit trouver la mine ET dire où la poser.
+      const offOk = !!(opts && opts.offIsland);
+      let ids = g.ids.filter(id => (visibleOn(id) || offOk && offIslandOn(id)) && (!gate || gate(id)));
       // Recherche textuelle : filtre par nom localisé ; le rabattage est ignoré pendant
       // une recherche (on montre TOUT ce qui correspond, même dans une catégorie repliée).
       if (q) ids = ids.filter(id => normSearch(BUILDINGS[id].name).indexOf(q) !== -1);
@@ -14689,7 +14926,10 @@ function Toolbar({
         onDetail: setDetailId,
         port: port,
         // Badge « nouveau » : débloqué mais jamais sélectionné depuis.
-        isNew: !!(seenBuildings && !seenBuildings[id])
+        isNew: !!(seenBuildings && !seenBuildings[id]),
+        // Grisé : bâtiment d'une autre île. Reste CLIQUABLE (fiche détail au tap comme à
+        // l'appui long) — d'où l'absence de pointer-events:none dans la classe .off-island.
+        offIsland: offOk && offIslandOn(id)
       })))));
     });
     // Recherche sans résultat : petit message plutôt qu'un panneau vide muet.
@@ -14778,8 +15018,24 @@ function Toolbar({
     }
   }, "✕")), renderGroups(buildGroupsEff, null, {
     collapsible: true,
-    query: search
-  })), netOpen && React.createElement("div", {
+    query: search,
+    offIsland: !logicLayer && showOffIsland
+  }), !logicLayer && React.createElement("div", {
+    // 14.31 — Interrupteur « Bâtiments des autres îles » (défaut ACTIVÉ : le but est la
+    // découvrabilité). Masqué dans la couche logique et absent de l'onglet Réseau — aucun
+    // élément logique ni réseau n'a d'exclusiveIsland. Réutilise le style d'interrupteur
+    // existant du jeu (.opt-toggle des Options) plutôt qu'un nouveau composant.
+    className: "bp-offisl"
+  }, React.createElement("span", {
+    className: "bp-offisl-lbl"
+  }, I18N.t("Bâtiments des autres îles")), React.createElement("button", {
+    className: 'opt-toggle' + (showOffIsland ? ' on' : ''),
+    title: showOffIsland ? I18N.t("Affichés en gris — touchez-les pour voir leur fiche") : I18N.t("Masqués"),
+    onClick: () => {
+      SFX.play('click');
+      onToggleOffIsland && onToggleOffIsland();
+    }
+  }))), netOpen && React.createElement("div", {
     className: "build-panel",
     ...keepScroll(netScrollRef)
   }, renderGroups(netGroupsEff, id => networkUnlocked(id, unlockedSet, currentIsland), {
@@ -14845,11 +15101,12 @@ function InfoPanel({
   onSetNuclear,
   onSetNucPower,
   onSetNucMode,
-  onSetNucMixWeight,
+  onSetNucMixDelta,
   onSetNucPlutoCap,
   onSetArcMode,
   onSetArcSel,
   onSetArcWeight,
+  onSetEnrRatio,
   onDrillDir,
   onSetFluxPri,
   onSetAntMode,
@@ -15043,6 +15300,10 @@ function InfoPanel({
     // 14.17 — CARBURANT : l'hélium 3 alimente enfin quelque chose. Il arrive par TUYAU sur le
     // landmark (port si le réseau y est relié, citerne du réseau sinon), en tout ou rien.
     if (repaired && colOn) row('he3', I18N.t('Hélium 3'), fmtPort(colliderHe3Need(pal)) + ' /s' + (co.halt === 'fuel' ? ' · ' + I18N.t('MANQUANT (tuyau ?)') : ''), co.halt === 'fuel' ? 'var(--red)' : 'var(--green)');
+    // 14.31 (option 2) — Le raccordement au CÂBLE est désormais une vraie condition : sans réseau
+    // câble adjacent, la machine n'est plus alimentée du tout. On le dit AVANT que le joueur ne
+    // cherche pourquoi son démarrage recule.
+    if (repaired && colOn) row('wr', I18N.t('Câble'), co.wireOk ? I18N.t('relié au réseau ✓') : I18N.t('non relié — amenez un câble jusqu\'au Collisionneur'), co.wireOk ? 'var(--green)' : 'var(--red)');
     if (co.halt === 'power') row('nop', I18N.t('Électricité'), I18N.t('insuffisante — la machine est en pause (démarrage gelé)'), 'var(--red)');
     row('cf', I18N.t('Confirmations'), fmtPort(conf) + (goal ? ' / ' + fmtPort(goal) : ''), conf >= goal && goal ? 'var(--green)' : null);
     // 14.24 — Les deux conditions de lancement, visibles en permanence : le joueur sait AVANT
@@ -15800,24 +16061,35 @@ function InfoPanel({
       className: 'ip-nuc-mat' + (matKey === k ? ' on' : ''),
       onClick: () => onSetNuclear && onSetNuclear(currentIsland, k)
     }, label))),
-    // MODE « mix » : un slider de poids par matériau + le % normalisé et le débit produit.
+    // MODE « mix » : 14.32 — boutons ± 1 %, somme VERROUILLÉE à 100 (fini le slider au pas de 5,
+    // imprécis au doigt, et fini les poids libres dont la somme ne voulait rien dire). Monter un
+    // matériau prend 1 % au plus gros des autres ; le descendre le lui rend.
     mix.mode === 'mix' && React.createElement("div", {
       className: "ip-nuc-mix"
-    }, NUC_MATS.map(([k, label]) => React.createElement("div", {
-      className: "ip-nuc-mix-row",
-      key: k
-    }, React.createElement("span", {
-      className: "ip-nuc-mix-lbl"
-    }, label), React.createElement("input", {
-      type: "range",
-      min: 0,
-      max: 100,
-      step: 5,
-      value: mix.w[k],
-      onChange: e => onSetNucMixWeight && onSetNucMixWeight(currentIsland, k, parseFloat(e.target.value))
-    }), React.createElement("span", {
-      className: "ip-nuc-mix-val"
-    }, Math.round(mix.w[k] / mixSum * 100) + "% · " + fmtN(upMult * realFrac * mix.w[k] / mixSum) + "/s")))),
+    }, NUC_MATS.map(([k, label]) => {
+      // `+` impossible si aucun AUTRE matériau n'a de quoi céder ; `−` impossible à 0.
+      let othersMax = 0;
+      for (const o of NUC_MAT_KEYS) if (o !== k) othersMax = Math.max(othersMax, Math.round(mix.w[o] || 0));
+      const cur = Math.round(mix.w[k] || 0);
+      return React.createElement("div", {
+        className: "ip-nuc-mix-row",
+        key: k
+      }, React.createElement("span", {
+        className: "ip-nuc-mix-lbl"
+      }, label), React.createElement("button", {
+        className: "ip-nuc-pm",
+        disabled: cur <= 0,
+        title: I18N.t("−1 % (rendu au plus gros des autres)"),
+        onClick: () => onSetNucMixDelta && onSetNucMixDelta(currentIsland, k, -1)
+      }, "−"), React.createElement("button", {
+        className: "ip-nuc-pm",
+        disabled: othersMax <= 0,
+        title: I18N.t("+1 % (pris au plus gros des autres)"),
+        onClick: () => onSetNucMixDelta && onSetNucMixDelta(currentIsland, k, 1)
+      }, "+"), React.createElement("span", {
+        className: "ip-nuc-mix-val"
+      }, Math.round(mix.w[k] / mixSum * 100) + "% · " + fmtN(upMult * realFrac * mix.w[k] / mixSum) + "/s"));
+    })),
     // MODE « auto » : répartition calculée (lecture seule) pour équilibrer les stocks irradiés.
     mix.mode === 'auto' && React.createElement("div", {
       className: "ip-nuc-mix"
@@ -15854,6 +16126,61 @@ function InfoPanel({
     React.createElement("div", {
       className: "ip-nuc-irr-note"
     }, "Irradiés : produits seulement si le matériau de base (acier/béton/câble) est au port. Plutonium : produit sans matériau de base (combustible du moteur nucléaire).")));
+  })(), ENR_TUNABLE[bld.id] && (() => {
+    // ── 14.32 — Mélange uranium / plutonium (réglage PAR BÂTIMENT, mécanique sœur du four à arc).
+    // ⚠ `u` n'est PAS une fraction massique : c'est un curseur de COMPROMIS. Le tooltip le dit.
+    const eff = enrEffective(bld);
+    if (!eff) return null;
+    const u = eff.u,
+      mE = upgradeMult(upg);
+    const tun = ENR_TUNABLE[bld.id];
+    const aRate = (eff.inputs[tun.a] || 0) * mE,
+      bRate = (eff.inputs[tun.b] || 0) * mE;
+    const nm = k => RES_SHORT[k] || k;
+    return React.createElement("div", {
+      className: "ip-nuc-irr"
+    }, React.createElement("div", {
+      className: "ip-nuc-irr-head"
+    }, I18N.t("Mélange")), React.createElement("div", {
+      className: "ip-nuc-pow-row"
+    }, React.createElement("button", {
+      className: "ip-nuc-pm",
+      disabled: u <= ENR_U_MIN,
+      title: I18N.t("Moins d'uranium, plus de plutonium"),
+      onClick: () => onSetEnrRatio && onSetEnrRatio(info.r, info.c, u - 1)
+    }, "−"), React.createElement("div", {
+      className: "ip-nuc-gauge",
+      title: I18N.t("Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.")
+    }, React.createElement("div", {
+      className: "ip-nuc-gauge-fill",
+      style: { width: (u - ENR_U_MIN) / (ENR_U_MAX - ENR_U_MIN) * 100 + '%' }
+    }), React.createElement("span", {
+      className: "ip-nuc-gauge-lbl"
+    }, u + " / " + (100 - u))), React.createElement("button", {
+      className: "ip-nuc-pm",
+      disabled: u >= ENR_U_MAX,
+      title: I18N.t("Plus d'uranium, moins de plutonium"),
+      onClick: () => onSetEnrRatio && onSetEnrRatio(info.r, info.c, u + 1)
+    }, "+")), React.createElement("div", {
+      className: "ip-nuc-cap"
+    }, React.createElement("span", {
+      className: "ip-nuc-cap-lbl"
+    }, nm(tun.a) + " / " + nm(tun.b)), React.createElement(NumField, {
+      className: "ip-nuc-cap-input",
+      value: u,
+      title: I18N.t("Réglage direct entre 10 et 90 (50 = neutre)."),
+      onCommit: v => onSetEnrRatio && onSetEnrRatio(info.r, info.c, v)
+    }), React.createElement("span", {
+      className: "ip-nuc-cap-hint"
+    }, ENR_U_MIN + "–" + ENR_U_MAX)), React.createElement("div", {
+      className: "ip-row"
+    }, React.createElement("span", {
+      className: "lbl"
+    }, I18N.t("Débits réels")), React.createElement("span", {
+      className: "val io"
+    }, fmtRateSci(aRate) + " " + nm(tun.a) + " · " + fmtRateSci(bRate) + " " + nm(tun.b) + I18N.t(" /s"))), React.createElement("div", {
+      className: "ip-nuc-irr-note"
+    }, I18N.t("Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.")));
   })(), b.heatCap && (() => {
     // Jauge de chaleur (% du plafond de trip = 60 s d'émission, dynamique) + réparation (20 %).
     const cap = heatCapOf(bld);
@@ -15881,7 +16208,7 @@ function InfoPanel({
         color: col,
         fontWeight: 700
       },
-      title: I18N.t("Chaleur stockée dans le bâtiment. Plafond = 1 min d'émission — atteint, le bâtiment tombe en panne (surchauffe).")
+      title: I18N.t("Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).")
     }, fmtHeat(heat) + " / " + fmtHeat(cap) + " · " + pct + "%")), React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
@@ -15893,7 +16220,22 @@ function InfoPanel({
         fontWeight: 700
       },
       title: I18N.t("Chaleur émise vs évacuée par les conduits/tours ce tick. Si évacué < émis, la chaleur monte : ajoutez des tours (avec eau) reliées par conduit.")
-    }, "+" + fmtHeat(bld.heatEmit || 0) + I18N.t(" émis · −") + fmtHeat(bld.heatCool || 0) + I18N.t(" évacué /s"))), dmg && React.createElement("div", {
+    }, "+" + fmtHeat(bld.heatEmit || 0) + I18N.t(" émis · −") + fmtHeat(bld.heatCool || 0) + I18N.t(" évacué /s"))), (b.sigmoid || b.randomP || b.antenna || b.nuclear) && React.createElement("div", {
+      // 14.31 — ÉMISSION MAX : sur un bâtiment dont la conso élec. OSCILLE (sigmoïde, randomP,
+      // antenne, centrale), l'émission instantanée ne dit rien du dimensionnement des tours —
+      // elle peut rester basse longtemps puis monter d'un coup. On affiche donc le PIC, qui est
+      // aussi la base du plafond de surchauffe (= 60 × cette valeur). Conso PLATE → ligne omise
+      // (l'émission y est déjà constante, la ligne serait redondante).
+      className: "ip-row"
+    }, React.createElement("span", {
+      className: "lbl"
+    }, I18N.t("Émission max")), React.createElement("span", {
+      className: "val",
+      style: {
+        color: 'var(--ink-dim)'
+      },
+      title: I18N.t("Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.")
+    }, fmtHeat(heatEmitMaxOf(bld)) + "/s")), dmg && React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
@@ -17460,6 +17802,10 @@ function NetworkPanel({
   // Conduit illimité (14.17) : débit infini, comme les 3 autres réseaux.
   const condThrough = isConduit ? (unlimited ? Infinity : tiles * conduitDebit(lvl)) : 0;
   const condFlow = isConduit && game.conduitFlow && game.conduitFlow[currentIsland] ? game.conduitFlow[currentIsland][net.networkId] || 0 : 0;
+  // 14.31 — Charge CRÊTE : somme des émissions MAXIMALES des sources raccordées (posée par
+  // processHeat). Le flux instantané peut rester bas tant que les sigmoïdes ne sont pas en
+  // phase, puis saturer d'un coup — la crête, elle, dit tout de suite si le réseau tiendra.
+  const condPeak = isConduit && game.conduitPeak && game.conduitPeak[currentIsland] ? game.conduitPeak[currentIsland][net.networkId] || 0 : 0;
   const condSat = isConduit && condThrough > 0 && condFlow >= condThrough * 0.99;
   const cap = isConduit ? condThrough : isWire && wi ? wi.cap : unlimited ? Infinity : networkThroughput(lvl, netObj.type);
   const dev = game.ui && game.ui.dev;
@@ -17568,7 +17914,19 @@ function NetworkPanel({
       color: condSat ? '#ff8079' : condFlow > 0.001 ? 'var(--green)' : 'var(--ink-dim)'
     },
     title: I18N.t("Chaleur réellement évacuée vers les tours ce tick. Rouge : conduit saturé (améliorez le niveau ou ajoutez des tuiles).")
-  }, fmtHeat(condFlow) + " / " + (cap === Infinity ? I18N.t('illimité') : fmtHeat(cap) + "/s"))), isConduit && game.elevatorRepaired && (currentIsland === 6 || currentIsland === 7) && React.createElement("div", {
+  }, fmtHeat(condFlow) + " / " + (cap === Infinity ? I18N.t('illimité') : fmtHeat(cap) + "/s"))), isConduit && React.createElement("div", {
+    className: "ip-row"
+  }, React.createElement("span", {
+    className: "lbl"
+  }, I18N.t("Charge crête")), React.createElement("span", {
+    className: "val io",
+    style: {
+      // Rouge dès que la crête dépasse le débit : le réseau VA saturer, même si le flux
+      // instantané est encore bas. C'est le signal utile, et il arrive avant la panne.
+      color: cap !== Infinity && condPeak > cap + 1e-9 ? '#ff8079' : 'var(--ink-dim)'
+    },
+    title: I18N.t("Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.")
+  }, fmtHeat(condPeak) + " / " + (cap === Infinity ? I18N.t('illimité') : fmtHeat(cap) + "/s"))), isConduit && game.elevatorRepaired && (currentIsland === 6 || currentIsland === 7) && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -19097,6 +19455,7 @@ function App() {
       },
       conduitLoad: {},
       conduitFlow: {},
+      conduitPeak: {},
       nucRun: {
         1: 0,
         2: 0,
@@ -19137,6 +19496,7 @@ function App() {
         showLevels: true,
         showDeficitPct: true,
         showDeficitSprite: true,
+        showOffIsland: true,
         badgeScale: 1,
         simplifyOffline: false,
         offlineEnabled: true,
@@ -19282,6 +19642,8 @@ function App() {
   const [showLevels, setShowLevels] = useState(true);
   const [showDeficitPct, setShowDeficitPct] = useState(true);
   const [showDeficitSprite, setShowDeficitSprite] = useState(true);
+  // 14.31 — Bâtiments d'une autre île affichés en gris dans le menu (défaut ACTIVÉ).
+  const [showOffIsland, setShowOffIsland] = useState(true);
   const [badgeScale, setBadgeScale] = useState(1);
   const [logicLayer, setLogicLayer] = useState(false);
   const [fastUpgrade, setFastUpgrade] = useState(false);
@@ -19433,6 +19795,9 @@ function App() {
             sel: b.arc.sel,
             w: { ...(b.arc.w || {}) }
           };
+          // 14.32 — Réglage du mélange U/Pu : un simple ENTIER (le curseur), pas un objet.
+          // Champ additif → absent d'une save antérieure = repli sur le neutre (50).
+          if (b.enr && ENR_TUNABLE[b.id] && b.enr.u != null) pl.enr = enrClampU(b.enr.u);
           placements.push(pl);
         }
         if (t.networkId != null && repByNid[t.networkId] === undefined) repByNid[t.networkId] = {
@@ -19618,6 +19983,7 @@ function App() {
         badgeScale: g.ui && g.ui.badgeScale || 1,
         showDeficitPct: (g.ui && g.ui.showDeficitPct) !== false,
         showDeficitSprite: (g.ui && g.ui.showDeficitSprite) !== false,
+        showOffIsland: (g.ui && g.ui.showOffIsland) !== false,
         simplifyOffline: !!(g.ui && g.ui.simplifyOffline),
         offlineEnabled: (g.ui && g.ui.offlineEnabled) !== false,
         fastUpgrade: !!(g.ui && g.ui.fastUpgrade),
@@ -20071,7 +20437,11 @@ function App() {
           }
           // Chaleur (MJ) + état endommagé (surchauffe). Migration : bâtiments < v14 → heat 0.
           if (BUILDINGS[p.b].heatCap) {
-            t.building.heat = Math.max(0, +p.h || 0);
+            // 14.30 — CLAMP au plafond FIXE : une save d'avant 14.30 peut porter une chaleur
+            // supérieure au nouveau plafond (l'ancien plafond dynamique pouvait dériver). Sans
+            // ce clamp, le bâtiment trip au premier tick après chargement.
+            const hCap = heatCapOf(t.building);
+            t.building.heat = Math.min(Math.max(0, +p.h || 0), hCap > 0 ? hCap : Infinity);
             if (p.dmg) {
               t.building.damaged = true;
               t.building.dmgTimer = Math.max(0, +p.dt || 0);
@@ -20115,6 +20485,10 @@ function App() {
               w: { ...d.w, ...(pa.w || {}) }
             };
           }
+          // 14.32 — Mélange U/Pu : repli sur le neutre (50) si absent, et clamp à [10, 90].
+          // Une save d'avant 14.32 démarre donc au réglage NEUTRE, qui reproduit EXACTEMENT la
+          // recette d'origine (4^0 = 1) → aucun changement de comportement pour l'existant.
+          if (ENR_TUNABLE[p.b]) t.building.enr = { u: p.enr != null ? enrClampU(p.enr) : ENR_U_DEF };
           // Re-create occupancy refs for multi-tile buildings.
           const sz = BUILDINGS[p.b].size || [1, 1];
           const hh = sz[0] || 1,
@@ -20224,6 +20598,32 @@ function App() {
         plutonium: Math.max(0, m.plutonium != null ? +m.plutonium : 1),
         plutoCap: Math.max(0, m.plutoCap != null ? +m.plutoCap : 0)
       };
+      // 14.32 — Les poids étaient LIBRES (normalisés à l'usage) : on les convertit en vrais
+      // pourcentages de somme 100, en préservant les proportions. Méthode du PLUS GRAND RESTE :
+      // un simple arrondi donnerait 99 ou 101 et la somme ne serait plus verrouillée.
+      // Appliqué QUEL QUE SOIT le mode : les poids sont stockés même en single/auto, et un
+      // basculement ultérieur vers `mix` doit trouver un état cohérent.
+      {
+        const mm = g.nuclearMix[+id];
+        let tot = 0;
+        for (const k of NUC_MATS) tot += mm[k];
+        if (!(tot > 0)) {
+          for (const k of NUC_MATS) mm[k] = 25; // somme nulle → répartition égale
+        } else {
+          const exact = {}, base = {};
+          let used = 0;
+          for (const k of NUC_MATS) {
+            exact[k] = mm[k] / tot * 100;
+            base[k] = Math.floor(exact[k]);
+            used += base[k];
+          }
+          // Les `100 − used` unités restantes vont aux plus grands restes (ordre NUC_MATS pour
+          // départager les ex æquo → déterministe).
+          const rest = NUC_MATS.slice().sort((x, y) => (exact[y] - base[y]) - (exact[x] - base[x]));
+          for (let i = 0; i < 100 - used; i++) base[rest[i % rest.length]] += 1;
+          for (const k of NUC_MATS) mm[k] = base[k];
+        }
+      }
     }
     if (data.nuclearConfig) for (const id in data.nuclearConfig) {
       if (NUC_MATS.indexOf(data.nuclearConfig[id]) !== -1) g.nuclearConfig[+id] = data.nuclearConfig[id];
@@ -20251,6 +20651,7 @@ function App() {
     }
     g.conduitLoad = {};
     g.conduitFlow = {};
+    g.conduitPeak = {};
     g.nucRun = {
       1: 0,
       2: 0,
@@ -20400,6 +20801,7 @@ function App() {
       showLevels: true,
       showDeficitPct: true,
       showDeficitSprite: true,
+      showOffIsland: true,
       badgeScale: 1,
       simplifyOffline: false,
       offlineEnabled: true,
@@ -20411,6 +20813,8 @@ function App() {
     g.ui.showLevels = up.showLevels !== false;
     g.ui.showDeficitPct = up.showDeficitPct !== false;
     g.ui.showDeficitSprite = up.showDeficitSprite !== false;
+    // Champ ADDITIF : absent d'une save < 14.31 → défaut activé (pas de bump SAVE_VERSION).
+    g.ui.showOffIsland = up.showOffIsland !== false;
     g.ui.badgeScale = Math.max(0.5, Math.min(2, up.badgeScale || 1));
     g.ui.simplifyOffline = up.simplifyOffline === true;
     // Production hors-ligne (rétro-compat : champ absent = activée, comportement historique).
@@ -21333,6 +21737,8 @@ function App() {
     // Nv.11, et démoli il ne remboursait même pas le forfait.)
     if (TIER_STEP[id]) t.building.upgrade = tierEntry(id);
     if (ARC_DEF[id]) t.building.arc = arcDefaultState(id);
+    // 14.32 — Un bâtiment fraîchement POSÉ démarre au réglage neutre (u = 50).
+    if (ENR_TUNABLE[id]) t.building.enr = enrDefaultState(id);
     // Construction SOUTERRAINE étalée (île 7, bâtiments) : la matière (déjà payée au port de l'île 6)
     // doit DESCENDRE par l'élévateur avant que le bâtiment soit finalisé. On le marque « en
     // construction » (fantôme inactif) ; la passe élévateur de tickIsland fait descendre `rem`
@@ -21602,6 +22008,8 @@ function App() {
       t.building.id = nextId;
       t.building.upgrade = nextEntry;
       if (ARC_DEF[nextId] && !t.building.arc) t.building.arc = arcDefaultState(nextId);
+      // 14.32 — Idem après DENSIFICATION (c'est le chemin normal vers l'Enrichissement V2).
+      if (ENR_TUNABLE[nextId] && !t.building.enr) t.building.enr = enrDefaultState(nextId);
     }
     bumpHud();
     markDirty();
@@ -22088,6 +22496,15 @@ function App() {
   }
   function selectTool(id) {
     const cur = gameRef.current.ui.tool;
+    // 14.31 — Bâtiment d'une AUTRE île (affiché en gris depuis le menu) : la fiche détail reste
+    // consultable (c'est tout l'intérêt), mais on refuse de le prendre comme OUTIL. Même message
+    // que le mode Copier — on ne crée pas un second texte pour la même règle.
+    const cbEx = id && BUILDINGS[id] && BUILDINGS[id].exclusiveIsland;
+    if (cbEx != null && cbEx !== gameRef.current.currentIsland) {
+      showToast(`❌ ${BUILDINGS[id].name} ne se construit que sur ${islandLabel(cbEx)}`, 'var(--red)');
+      SFX.play('invalid');
+      return;
+    }
     // Re-toucher un bâtiment/réseau déjà sélectionné ne le désélectionne PAS
     // (évitait de « quitter » la construction par un second clic). Seuls les outils
     // d'action (copier/démolir/améliorer) se désactivent en les re-touchant.
@@ -22315,20 +22732,44 @@ function App() {
     scheduleSave();
   }
   // Règle le poids (0→100) d'un matériau dans le mix manuel d'une île (force le mode 'mix').
-  function setNucMixWeight(islandId, mat, w) {
+  // 14.32 — Le mix irradié devient de VRAIS POURCENTAGES, somme verrouillée à 100. Avant c'étaient
+  // des poids libres normalisés par `wsum` à l'usage (la save du joueur portait {55, 50} = 105 et
+  // {100, 20} = 120) : un slider au pas de 5 changeait la répartition sans que la somme veuille
+  // dire quoi que ce soit. Désormais on transfère : +1 % PREND 1 % au plus gros des autres, −1 %
+  // lui REND 1 %. La somme reste donc exactement 100, sans normalisation implicite ni sortie qui
+  // baisse sans raison visible. Égalité entre plusieurs « plus gros » → le PREMIER dans l'ordre de
+  // NUC_MAT_KEYS cède (déterministe, aucun aléatoire).
+  function setNucMixDelta(islandId, mat, delta) {
     const g = gameRef.current;
     if (NUC_MAT_KEYS.indexOf(mat) === -1) return;
     if (!g.nuclearMix) g.nuclearMix = {};
     const cur = nucMix(g, islandId);
+    const w = {};
+    for (const k of NUC_MAT_KEYS) w[k] = Math.max(0, Math.round(cur.w[k] || 0));
+    const d = delta > 0 ? 1 : -1;
+    if (d > 0) {
+      // On ne peut monter que si un AUTRE a de quoi céder.
+      let donor = null;
+      for (const k of NUC_MAT_KEYS) if (k !== mat && w[k] > 0 && (donor === null || w[k] > w[donor])) donor = k;
+      if (donor === null) return;
+      w[donor] -= 1;
+      w[mat] += 1;
+    } else {
+      if (w[mat] <= 0) return;
+      let taker = null;
+      for (const k of NUC_MAT_KEYS) if (k !== mat && (taker === null || w[k] > w[taker])) taker = k;
+      if (taker === null) return;
+      w[mat] -= 1;
+      w[taker] += 1;
+    }
     const next = {
       mode: 'mix',
-      acier: cur.w.acier,
-      beton_arme: cur.w.beton_arme,
-      cable: cur.w.cable,
-      plutonium: cur.w.plutonium,
+      acier: w.acier,
+      beton_arme: w.beton_arme,
+      cable: w.cable,
+      plutonium: w.plutonium,
       plutoCap: cur.plutoCap
     };
-    next[mat] = Math.max(0, Math.min(100, +w || 0));
     g.nuclearMix[islandId] = next;
     bumpHud();
     markDirty();
@@ -22407,7 +22848,6 @@ function App() {
     delete bld.dmgUp; // le niveau figé n'a plus de raison d'être une fois la facture payée
     bld.heat = 0;
     bld.heatWarned = false;
-    bld.heatEmitPk = 0; // le plafond dynamique (60 s d'émission) repart de l'émission réelle
     if (BUILDINGS[bld.id] && BUILDINGS[bld.id].nuclear) bld.nucState = 'off';
     bumpHud();
     markDirty();
@@ -22461,6 +22901,16 @@ function App() {
     const t = curTiles()[r] && curTiles()[r][c];
     if (!t || !t.building || !ARC_DEF[t.building.id]) return;
     (t.building.arc = t.building.arc || arcDefaultState(t.building.id)).sel = res;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  // 14.32 — Curseur de mélange uranium/plutonium, PAR BÂTIMENT (comme le sélecteur du four à arc).
+  function setEnrRatio(r, c, v) {
+    const t = curTiles()[r] && curTiles()[r][c];
+    if (!t || !t.building || !ENR_TUNABLE[t.building.id]) return;
+    const e = t.building.enr = t.building.enr || enrDefaultState(t.building.id);
+    e.u = enrClampU(v);
     bumpHud();
     markDirty();
     scheduleSave();
@@ -22587,6 +23037,12 @@ function App() {
     g.ui.showLevels = g.ui.showLevels === false;
     setShowLevels(g.ui.showLevels);
     markDirty();
+    scheduleSave();
+  }
+  function toggleOffIsland() {
+    const g = gameRef.current;
+    g.ui.showOffIsland = g.ui.showOffIsland === false;
+    setShowOffIsland(g.ui.showOffIsland);
     scheduleSave();
   }
   function toggleDeficitPct() {
@@ -23118,6 +23574,27 @@ function App() {
         if (!drawSprite(ctx, csk, x, y, tile, tile) && !drawSprite(ctx, 'tile_i6_collisionneur_' + cidx, x, y, tile, tile)) {
           ctx.fillStyle = TERRAIN_COLORS.collider;
           ctx.fillRect(x + tile * 0.15, y + tile * 0.15, tile * 0.7, tile * 0.7);
+        }
+        // 14.31 (option 2) — STUBS de raccordement du landmark, sur le modèle des stubs sous
+        // bâtiment : câble (il EXIGE désormais un réseau câble adjacent) et tuyau (l'hélium 3 y
+        // est réellement puisé depuis 14.17). Le raccord n'est dessiné que là où il existe
+        // vraiment → plus de promesse visuelle non tenue dans un sens ni dans l'autre.
+        for (const scar of ['wire', 'pipe']) {
+          let smask = 0,
+            slvl = 1,
+            sunl = false;
+          for (const [ddr, ddc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
+            let nt2 = tiles[r + ddr] && tiles[r + ddr][c + ddc];
+            if (nt2 && nt2.occupied) nt2 = tiles[nt2.occupied.r] && tiles[nt2.occupied.r][nt2.occupied.c];
+            if (!nt2 || !nt2.building || nt2.building.id !== scar) continue;
+            smask |= bit;
+            const sn = g.networks[isl] && g.networks[isl][nt2.networkId];
+            if (sn) {
+              if ((sn.level || 1) > slvl) slvl = sn.level;
+              if (sn.unlimited) sunl = true;
+            }
+          }
+          if (smask) drawSprite(ctx, NET_PREFIX[scar] + '_v' + (sunl ? 4 : Math.min(slvl, 3)) + '_' + NET_MASK_SUFFIX[smask], x, y, tile, tile);
         }
       } else if (SPRITES_ENABLED && t.terrain === 'elevator') {
         // Terrain « élévateur » (île 6/7) : tuile aménagée vue de dessus (comme tile_port_terre).
@@ -24363,6 +24840,7 @@ function App() {
     setShowLevels(gameRef.current.ui.showLevels !== false);
     setShowDeficitPct(gameRef.current.ui.showDeficitPct !== false);
     setShowDeficitSprite(gameRef.current.ui.showDeficitSprite !== false);
+    setShowOffIsland(gameRef.current.ui.showOffIsland !== false);
     setBadgeScale(gameRef.current.ui.badgeScale || 1);
     // Filet : le bouton de couche logique n'existe que si la recherche est débloquée. Une save
     // antérieure au gating (builds 273-279) peut avoir la couche ON sans le déblocage → on la
@@ -25004,11 +25482,12 @@ function App() {
     onSetNuclear: setNuclearConfig,
     onSetNucPower: setNuclearPower,
     onSetNucMode: setNucMode,
-    onSetNucMixWeight: setNucMixWeight,
+    onSetNucMixDelta: setNucMixDelta,
     onSetNucPlutoCap: setNucPlutoCap,
     onSetArcMode: setArcMode,
     onSetArcSel: setArcSel,
     onSetArcWeight: setArcWeight,
+    onSetEnrRatio: setEnrRatio,
     onSetFluxPri: setFluxPri,
     onLogicSet: setLogicConfig,
     onSetAntMode: setAntennaMode,
@@ -25093,6 +25572,8 @@ function App() {
     onToggleBooster: toggleBooster,
     seenBuildings: game.seenBuildings,
     logicLayer: logicLayer,
+    showOffIsland: showOffIsland,
+    onToggleOffIsland: toggleOffIsland,
     dev: game.ui && game.ui.dev
   }),
   // Bouton COUCHE LOGIQUE : visible seulement quand la recherche correspondante est débloquée
@@ -25296,6 +25777,10 @@ if (typeof window !== 'undefined') {
   window.__heat = {
     BUILDINGS, defById, ISLAND_TERRAINS, buildIslandTiles, rebuildNetworks,
     processHeat, conduitDebit, buildingTotalCost,
+    heatCapOf, heatEmitMaxOf, HEAT_CAP_SECONDS, NUC_POWER_BASE, // 14.30
+    islandLabel, colliderWireNid, colliderBounds, TIER_NEXT, TIER_STEP, // 14.31
+    ENR_TUNABLE, enrEffective, enrDefaultState, enrClampU, ENR_U_MIN, ENR_U_MAX, ENR_U_DEF, // 14.32
+    nucMix, NUC_MAT_KEYS, BLD_SPRITE_OVERRIDE, upgradeMult, // 14.32
     applyGameMode: typeof applyGameMode === 'function' ? applyGameMode : null,
     adjacentNetworksFootprint,
     buildingSpriteKey, itemSpriteKey, unlockedResourceSet, isBuildingUnlocked, fmtHeat,
