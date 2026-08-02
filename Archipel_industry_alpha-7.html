@@ -3740,7 +3740,9 @@ const BLD_SPRITE_OVERRIDE = {
   // 14.25 — La Centrifugeuse Uranium remplace le Broyeur Uranium V2 : aucun art dédié n'a été
   // livré pour elle, elle reprend celui du V2 (statique ET animation, `ANIM_BY_SK` résolvant
   // depuis la clé de sprite). À remplacer si un sprite de centrifugeuse arrive dans un pack.
-  centrifugeuse_uranium: 'bat_broyeur_uranium_v2',
+  // 14.29 — la Centrifugeuse EST l'ex-Centrale Enrichissement V2 : elle reprend l'art du
+  // Broyeur V2 supprimé (aucun art de centrifugeuse livré).
+  centrale_enrichissement_v2: 'bat_broyeur_uranium_v2',
   // Phase 4 : l'asset livré est `bat_extracteur` (le nom de fichier n'a pas le suffixe
   // `_souterrain` de l'id) → override pour que la carte/menu rende bien le sprite.
   extracteur_souterrain: 'bat_extracteur',
@@ -5916,41 +5918,16 @@ const BUILDINGS = {
   // fabrique DIRECTEMENT du combustible U235, en consommant du plutonium (2ᵉ débouché du plutonium
   // après l'usine moteur nuc.) et de l'acier. Valeurs demandées AU NIVEAU 11, donc divisées par
   // 1024 ici : uranium 2,62e5 · plutonium 25,6 · acier 256 → combustible U235 256.
-  centrifugeuse_uranium: {
-    name: 'Centrifugeuse Uranium',
-    color: '#7CB342',
-    label: 'CFGU',
-    kind: 'build',
-    tier: 't3',
-    terrains: ['land', 'resource'],
-    size: [1, 1],
-    cost: {},
-    power: 0,
-    // Conso ×4 par rapport au V2 remplacé : 73,7 MW → 516 MW au Nv.11 (chiffres confirmés).
-    // ⚠ `amp` est l'AMPLITUDE, pas le plafond : max = base + amp. Un ×4 littéral des DEUX champs
-    // du V2 (18 / 126) donnerait 72 / 504, soit un plafond de 576 × 1024 = 590 MW — pas 516. On
-    // cale donc sur les deux valeurs demandées (plancher 73,7 MW, plafond 516 MW), ce qui vaut
-    // bien ×4 sur le PLANCHER et amp = 504 − 72 = 432.
-    sigmoid: {
-      base: 72,
-      amp: 432,
-      period: 60
-    },
-    // Émet de la chaleur selon la règle habituelle (HEAT_PER_MW × MW consommés, cf. tickIsland) ;
-    // heatCap = flag « bâtiment à chaleur », le plafond réel est dynamique (60 s d'émission).
-    heatCap: 10,
-    inputs: {
-      uranium: 256,
-      plutonium: 0.025,
-      acier: 0.25
-    },
-    outputs: {
-      combustible_u235: 0.25
-    }
-  },
   // Enrichissement V2 : −25 % de yellowcake (2 → 1,5) MAIS incorpore 0,1 plutonium/s en plus.
+  // 14.29 — CENTRIFUGEUSE URANIUM : c'est le palier V2 de la Centrale Enrichissement. Elle
+  // REMPLACE le yellowcake par de l'URANIUM (en plus du plutonium qu'elle incorporait déjà) et
+  // ÉMET DE LA CHALEUR. Le Broyeur Uranium V1 et la Centrale Enrichissement V1 sont INCHANGÉS :
+  // la chaîne yellowcake reste la voie normale, la centrifugeuse est le raccourci de fin de partie.
   centrale_enrichissement_v2: {
-    name: 'Centrale Enrichissement V2',
+    name: 'Centrifugeuse Uranium V2',
+    // « génère de la chaleur » (demande) : règle habituelle, HEAT_PER_MW × MW consommés
+    // (cf. tickIsland) ; le plafond de trip reste dynamique (60 s d'émission).
+    heatCap: 10,
     color: '#9CCC65',
     label: 'ENR2',
     kind: 'build',
@@ -5967,9 +5944,9 @@ const BUILDINGS = {
       period: 60
     },
     inputs: {
-      yellow_cake: 1.5,
-      acier: 0.25,
-      plutonium: 0.1
+      uranium: 256,
+      plutonium: 0.025,
+      acier: 0.25
     },
     outputs: {
       combustible_u235: 0.25
@@ -6531,7 +6508,7 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'nuclear',
   label: 'Nucléaire',
-  ids: ['broyeur_uranium', 'centrifugeuse_uranium', 'centrale_enrichissement', 'centrale_enrichissement_v2', 'centrale_nucleaire', 'centrale_nucleaire_v2', 'tour_aerorefrigerante', 'usine_moteur_nuc', 'antenne', 'antenne_v2']
+  ids: ['broyeur_uranium', 'centrale_enrichissement', 'centrale_enrichissement_v2', 'centrale_nucleaire', 'centrale_nucleaire_v2', 'tour_aerorefrigerante', 'usine_moteur_nuc', 'antenne', 'antenne_v2']
 }, {
   key: 'tungstene',
   label: 'Tungstène',
@@ -7036,8 +7013,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 310;
-const GAME_VERSION = 'Alpha 14.27';
+const GAME_BUILD = 311;
+const GAME_VERSION = 'Alpha 14.29';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7466,7 +7443,6 @@ const TIER_NEXT = {
   fonderie_or:            { next: 'fonderie_or_v2',            cap: 9 },
   raffineur_silicium:     { next: 'raffineur_silicium_v2',     cap: 9 },
   fab_processeur:         { next: 'fab_processeur_v2',         cap: 9 },
-  broyeur_uranium:        { next: 'centrifugeuse_uranium',     cap: 9 },
   centrale_enrichissement:{ next: 'centrale_enrichissement_v2',cap: 9 },
   centrale_nucleaire:     { next: 'centrale_nucleaire_v2',     cap: 9 },
   antenne:                { next: 'antenne_v2',                cap: 9 }
@@ -7517,7 +7493,6 @@ const TIER_STEP = {
   fonderie_or_v2:             { entry: 10, forfait: { alliage_tungstene: 300, cable_supraconducteur: 300, element_moteur_nuc: 10 } },
   raffineur_silicium_v2:      { entry: 10, forfait: { alliage_tungstene: 200, cable_supraconducteur: 200, piece_precision: 100 } },
   fab_processeur_v2:          { entry: 10, forfait: { ordinateur_quantique: 10, piece_precision: 400 } },
-  centrifugeuse_uranium:      { entry: 10, forfait: { alliage_tungstene: 400, element_moteur_nuc: 50 } },
   centrale_enrichissement_v2: { entry: 10, forfait: { alliage_tungstene: 500, element_moteur_nuc: 100, piece_precision: 50 } },
   centrale_nucleaire_v2:      { entry: 10, forfait: { ordinateur_quantique: 10, alliage_tungstene: 3000, piece_precision: 1000, cable_supraconducteur: 1000 } },
   antenne_v2:                 { entry: 10, forfait: { ordinateur_quantique: 100, alliage_tungstene: 1000, moteur_quantique: 10 } }
@@ -7616,7 +7591,12 @@ function migratePlacement(p, fromV) {
   // chargement sauterait la tuile (`!BUILDINGS[p.b] → continue`) et le joueur PERDRAIT le bâtiment
   // ET ce qu'il y avait investi. ⚠ La recette change (yellowcake → combustible U235) : c'est voulu,
   // la save ne stocke que l'id et le niveau.
-  if (p.b === 'broyeur_uranium_v2') p.b = 'centrifugeuse_uranium';
+  // 14.29 — le Broyeur Uranium n'a PLUS de palier V2 (ni l'ancien `broyeur_uranium_v2`, ni le
+  // `centrifugeuse_uranium` créé à tort en 14.25 et publié dans les builds 308/310). Les deux
+  // reviennent au Broyeur V1, qui garde exactement la même recette — le niveau est CONSERVÉ, le
+  // broyeur n'ayant plus de cap dur (le bridage est économique, cf. COST_SOFTCAP_X2). Sans ce
+  // renommage, `!BUILDINGS[p.b] → continue` sauterait la tuile et le joueur perdrait le bâtiment.
+  if (p.b === 'broyeur_uranium_v2' || p.b === 'centrifugeuse_uranium') p.b = 'broyeur_uranium';
   // TOUTES versions : un bâtiment de palier SOUS son niveau d'entrée est remonté à l'entrée.
   // (Builds 202-207 : la pose directe d'un V2/V3 depuis la barre d'outils créait le bâtiment
   // à Nv.1 alors que le joueur payait le cumul jusqu'à l'entrée — on répare ces placements.)
@@ -7726,7 +7706,10 @@ const isUpgradable = id => {
 const accCapacity = bld => (BUILDINGS[bld.id] && BUILDINGS[bld.id].capacity || 512) * Math.pow(2, bld.upgrade || 0);
 // Bridage économique (PAS de cap dur, pas de densification) : au-delà du Nv. affiché 10,
 // le facteur de coût DOUBLE à chaque cran → ratios 5,4 / 10,8 / 21,6 / 43,2 …
-const COST_SOFTCAP_X2 = { atelier_meca: 1, cablerie: 1, acierie: 1 };
+// 14.29 — `broyeur_uranium` rejoint la liste : il n'a plus AUCUN palier V2 (demande joueur), et
+// c'est ce bridage — le même que l'aciérie/câblerie — qui joue le rôle du « hard cap au Nv.10 »
+// sans introduire de mécanisme neuf : au-delà du Nv.10 le coût d'amélioration DOUBLE à chaque cran.
+const COST_SOFTCAP_X2 = { atelier_meca: 1, cablerie: 1, acierie: 1, broyeur_uranium: 1 };
 function upgradeCostFactor(buildingId, level) {
   if (buildingId === 'puits_petrole' && level >= 5) {
     let p = Math.pow(UPGRADE_SCALE, 4);
@@ -10244,7 +10227,7 @@ function tickIsland(game, isl) {
     // consommés (power kW × regime ÷ 1000). Le plafond de trip (60 s) suit automatiquement (heatCapOf).
     if (b.heatCap) {
       bld.heatEmit = bld.id === 'usine_moteur_nuc' ? 1.024 * mult * regime
-        : bld.id === 'machine_outil' || bld.id === 'presse_uhp' || bld.id === 'usine_moteur_quantique' || bld.id === 'centrifugeuse_uranium' ? HEAT_PER_MW * (power * regime) / 1000
+        : bld.id === 'machine_outil' || bld.id === 'presse_uhp' || bld.id === 'usine_moteur_quantique' || bld.id === 'centrale_enrichissement_v2' ? HEAT_PER_MW * (power * regime) / 1000
         : 0;
     }
     // La FOREUSE avance dans une passe DÉDIÉE, après le bridage de l'élévateur (plus bas) : son
@@ -12354,7 +12337,7 @@ const TECH_NODES = [{
     // a le 42 pour prérequis → dépendance CIRCULAIRE, tout l'endgame (P3, stabilisateur, antenne
     // V2, mines V4) était INATTEIGNABLE. Au nœud 41, tous ses coûts et intrants sont déjà
     // disponibles (alliage/pièce précision/câble supra/ordi quantique/élém. moteur/azote).
-    buildings: ['centrifugeuse_uranium', 'centrale_enrichissement_v2', 'centrale_nucleaire_v2', 'usine_moteur_quantique']
+    buildings: ['centrale_enrichissement_v2', 'centrale_nucleaire_v2', 'usine_moteur_quantique']
   }
 }, {
   // Réparation III → TOUTES les portes (les 2 dernières : XOR / XNOR).
@@ -25342,7 +25325,7 @@ if (typeof window !== 'undefined') {
     emitterFaceCarries, emitterFaceFromStep, dataCenterState,
     COLLIDER_HE3, colliderHe3Need, colliderDrawHe3, colliderBounds, DC_STATE_LABEL,
     // 14.24 / 14.25
-    upgradeMult, SPRITE_DATA, TOOLBAR_GROUPS,
+    upgradeMult, SPRITE_DATA, TOOLBAR_GROUPS, REMOVED_RESOURCES, COST_SOFTCAP_X2, upgradeCostFactor,
     ProductionPanel: typeof ProductionPanel === 'function' ? ProductionPanel : null,
     islandLabel, islandFlowAgg, resourceRates, portSharingIslands,
     hasAdjacentLogicConductor, colliderLogicLinked, colliderGoalLocked, colliderLaunchBlock,
