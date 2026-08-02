@@ -17,7 +17,224 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 311`, `GAME_VERSION = 'Alpha 14.29'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 314`, `GAME_VERSION = 'Alpha 14.32'`, `SAVE_VERSION = 31`.**
+  Changement 14.32 (**LOT C** du brief `BRIEF_LOT_C_enrichissement`) : **renommage Centrale
+  Enrichissement V2 (+ son art enfin branché), mélange uranium/plutonium réglable, et mix irradié
+  en ± 1 % à somme verrouillée.** `SAVE_VERSION` INCHANGÉ (`pl.enr` = champ additif ; les poids du
+  mix sont renormalisés au chargement, sans changement de format).
+  (1) **C1 — « Centrifugeuse Uranium V2 » redevient « Centrale Enrichissement V2 »** (graphie
+  alignée sur le V1, `Centrale Enrichissement V1`). Seul le NOM change : l'id
+  `centrale_enrichissement_v2`, la recette, `TIER_NEXT`/`TIER_STEP` sont intacts, et la migration
+  d'ids **`broyeur_uranium_v2` / `centrifugeuse_uranium` → `broyeur_uranium` est CONSERVÉE** (ce
+  sont des builds PUBLIÉS 308/310 — vérifié par rechargement réel). Il ne reste du mot
+  « centrifugeuse » que 3 commentaires d'historique et **la chaîne de l'id dans la migration**.
+  ⚠ **DÉCOUVERTE — l'art dédié existait déjà.** `BLD_SPRITE_OVERRIDE` accepte désormais une **LISTE
+  de candidats** (1er présent gagne, même esprit que `cands` dans `buildingSpriteKey`) : on a mis
+  `['bat_centrale_enrichissement_v2', 'bat_broyeur_uranium_v2']` pour qu'Ethan n'ait qu'à déposer
+  son PNG… **et le sprite est DÉJÀ dans le pack depuis 13.59** (il y avait été inliné comme sprite
+  « V2 île 6 » inerte et jamais branché ; le 14.29 pointait le bâtiment sur l'art du Broyeur V2).
+  Il est donc actif immédiatement, **avec sa sheet d'animation 4 frames**, et il est bien DISTINCT
+  du repli. Un nouvel art se substituera sous la MÊME clé, sans retoucher au code.
+  (2) **C2 — MÉLANGE URANIUM / PLUTONIUM réglable PAR BÂTIMENT** (mécanique sœur du four à arc :
+  `ENR_TUNABLE` / `enrDefaultState` / `enrEffective` / `enrClampU`, posés à côté d'`arcDefaultState`).
+  Curseur `u` entier de 10 à 90, défaut 50 ; `s = (u−50)/40`, **uranium ×4^s**, **plutonium ×4^(−s)**,
+  acier et sortie INCHANGÉS. ⚠ **`u` n'est PAS une fraction massique** : c'est un curseur de
+  COMPROMIS (le tooltip le dit explicitement) — plus d'uranium = moins de plutonium, à production
+  de combustible CONSTANTE. Invariants vérifiés : **uranium × plutonium constant** (1,074e8 au
+  Nv.13, écart max 1,4e-16 sur tout le balayage) et rapport U/Pu = **10 240 × 16^s**. Seuls les
+  `inputs` passent par `enrEffective` ; `effOutputs` et la sigmoïde ne sont pas touchés.
+  Sérialisation : **`pl.enr` = un ENTIER** (pas un objet) ; absent → 50, clampé à [10, 90] — une
+  save antérieure reproduit donc EXACTEMENT la recette d'origine (4^0 = 1). UI : boutons ± 1 %
+  (`.ip-nuc-pm`), jauge `u / 100−u`, **`NumField`** pour la saisie directe (80 appuis seraient
+  intenables au doigt) et les débits réels au niveau courant.
+  ⚠ **Piège de mesure** : à un stock de port de 1e14 l'ULP du float64 vaut 0,015625 → les deltas de
+  plutonium (0,00625/s) sont purement absorbés par l'arrondi. Mesurer sur un stock modéré.
+  (3) **C3 — le mix irradié passe en VRAIS POURCENTAGES, somme verrouillée à 100.** C'étaient des
+  **poids libres** normalisés par `wsum` à l'usage (la save du joueur portait 105 et 120 de somme),
+  réglés par un slider au pas de 5 — imprécis au doigt et sans signification lisible.
+  `setNucMixWeight` → **`setNucMixDelta(islandId, mat, ±1)`** : **+1 % PREND 1 % au plus gros des
+  autres**, −1 % le lui REND ; `+` désactivé quand tous les autres sont à 0, `−` à 0 ; égalité
+  départagée par l'ordre de `NUC_MAT_KEYS` (déterministe). La prop est renommée partout
+  (`grep -c onSetNucMixWeight` → **0**). **Migration au chargement** : renormalisation des 4 poids à
+  une somme de 100 par la **méthode du plus grand reste** (un simple arrondi donnerait 99 ou 101),
+  somme nulle → 25/25/25/25, appliquée **quel que soit le mode** (les poids sont stockés même en
+  single/auto). Sur la save du joueur : île 3 `{55,0,50,0}` → **`{52,0,48,0}`**, île 5
+  `{0,100,0,20}` → **`{0,83,0,17}`**, île 4 `{25,25,25,0}` → `{34,33,33,0}` — toutes à 100.
+  ⚠ **Le FOUR À ARC partage la classe CSS `ip-nuc-mix`** et garde ses sliders : le seul site touché
+  est celui qui appelait `onSetNucMixWeight` (vérifié — les 2 `input[type=range]` restants sont
+  l'arc et le slider générique des Options).
+  ⚠ **`__heat` étendu** (`ENR_TUNABLE`, `enrEffective`, `enrDefaultState`, `enrClampU`, bornes,
+  `nucMix`, `NUC_MAT_KEYS`, `BLD_SPRITE_OVERRIDE`, `upgradeMult`).
+  i18n en/es/de des 9 nouveaux libellés (bloc d'augmentation `/* 14.32 */`).
+  Validé : `node --check` (7 blocs) + Chromium **3 suites, 40 assertions, 0 KO, 0 erreur JS** — les
+  6 valeurs du tableau de référence retrouvées aux 3 points (2,62e5/409,6 · 1,05e6/102,4 ·
+  4,19e6/25,6, rapports 640/10 240/163 840) ; **moteur RÉEL** : 2 Centrales d'Enrichissement V2 sur
+  la MÊME île réglées à 10 et 90 → uranium 1088/s et plutonium 0,10625/s = somme exacte des deux
+  recettes, **acier et combustible identiques** (0,5/s chacun) ; somme du mix exactement 100 après
+  50 appuis mélangés ; **rechargements RÉELS** : les 2 ids historiques toujours rabattus, réglages
+  relus `[50, 77, 90]` (absent → 50, 999 → 90) et bien sérialisés ; save du joueur : 7 îles, aucun
+  NaN, 0 endommagé après 70 s (lots A/B intacts).
+- **État précédent : `GAME_BUILD = 313`, `GAME_VERSION = 'Alpha 14.31'`, `SAVE_VERSION = 31`.**
+  Changement 14.31 (**LOT B** du brief `BRIEF_LOT_B_lisibilite_ui`, **B6 tranché sur l'OPTION 2**) :
+  **lisibilité — émission de chaleur max en fiche, charge crête du conduit, réseaux nécessaires,
+  bâtiments des autres îles en gris, annonce de densification, et le Collisionneur exige enfin un
+  vrai câble.** `SAVE_VERSION` INCHANGÉ (`uiPrefs.showOffIsland` = champ additif, absent = défaut).
+  (1) **B1 — ligne « Émission max » en fiche** (`fmtHeat(heatEmitMaxOf(bld))`, source de vérité du
+  lot A, RIEN n'est recalculé) : sur un bâtiment dont la conso OSCILLE, l'émission instantanée ne
+  dit rien du dimensionnement des tours. Affichée si `sigmoid || randomP || antenna || nuclear`.
+  ⚠ **L'exemple du brief est FAUX** : l'Usine Moteur Nucléaire n'est PAS « à conso plate » — elle a
+  une sigmoïde `{64, 448, 60}` depuis 13.43 (seule son ÉMISSION est plate, 1,024 × niveau) → la
+  ligne s'y affiche. Le SEUL bâtiment à chaleur réellement à conso plate est **`machine_outil`**,
+  et lui est bien exclu — c'est exactement l'intention. Tooltip du plafond corrigé (« plafond FIXE
+  = 1 min d'émission MAXIMALE », il ne dépend plus du régime courant depuis 14.30).
+  (2) **B2 — « Charge crête » du réseau conduit** : nouveau registre `game.conduitPeak[isl][nid]`
+  posé par `processHeat` (somme des `heatEmitMaxOf` des sources raccordées), affiché à côté du flux
+  et **ROUGE dès que la crête dépasse le débit** — le signal arrive AVANT la panne, alors que le
+  flux instantané peut rester bas tant que les sigmoïdes ne sont pas en phase. ⚠ Vérifié comme le
+  demandait le brief : `cn.sources` ne contient QUE des `bld` réels (le pseudo-élément
+  `{ elevator: true }` est ajouté à `srcs`, la copie) → aucune garde nécessaire.
+  (3) **B3 — ligne « Réseaux » en fiche** (`buildingConnectsCarrier` sur road/pipe/wire/conduit,
+  complète depuis 14.30). ⚠ **Aucune table de libellés créée** : les noms viennent des defs d'infra
+  elles-mêmes (`BUILDINGS.road/pipe/wire/conduit.name`), déjà traduites par `applyToData`.
+  **Libellés d'île** : `'île ' + b.exclusiveIsland` → **`islandLabel(...)`** (« Île 6 S » pour l'id 7).
+  Balayage exhaustif : **UNE SEULE** composition manuelle existait (la ligne `Exclusif`) ; les 2
+  autres occurrences sont `islandLabel` elle-même et la phrase « pic des sigmoïdes de l'île » (pas
+  une étiquette). Le toast de refus de pose utilisait déjà `islandLabel`.
+  (4) **B4 — bâtiments d'une AUTRE île affichés en GRIS** (défaut ACTIVÉ, découvrabilité) : fonction
+  SŒUR **`offIslandOn(id)`** — `visibleOn` reste booléenne, **aucun de ses appelants n'est touché**.
+  ⚠ Seule l'EXCLUSIVITÉ change de traitement : `forbiddenIslands` et le non-débloqué restent
+  MASQUÉS. Classe `.tool-btn.off-island` (opacité + grayscale, **PAS de `pointer-events:none`**) ;
+  un tap ouvre la **FICHE** et `selectTool` refuse la sélection avec le message EXISTANT du mode
+  Copier (aucun second texte). Les grisés participent à la RECHERCHE (« tungst » depuis l'île 2
+  remonte la Mine Tungstène). Interrupteur en bas du panneau Bâtiment réutilisant le style
+  d'interrupteur du jeu (**`.opt-toggle`** des Options — aucun composant neuf), masqué en couche
+  logique et absent de l'onglet Réseau. Persisté dans `uiPrefs.showOffIsland`.
+  (5) **B5 — ligne « Densification »** (`TIER_NEXT` + `TIER_STEP[next].entry`) : rien n'annonçait
+  qu'un bâtiment allait devenir autre chose avant d'atteindre le palier. C'est aussi la réponse au
+  « où est l'Accumulateur V2 ? » — comme **18 autres cibles**, il ne se pose pas, il s'obtient en
+  améliorant. ⚠ **Le brief annonce « au Nv.10 », c'est un décalage d'UN** : `entry` est l'index
+  d'amélioration 0-based et le jeu affiche partout `upgrade + 1` (cf. 13.27, « u=10 (Nv.11) ») →
+  on affiche **Nv.11**. `TIER_STEP.entry` est présent pour TOUTES les cibles : le repli `cap + 1`
+  n'est jamais utilisé (vérifié).
+  (6) **B6 — OPTION 2 RETENUE (arbitrage joueur) : le Collisionneur EXIGE un réseau CÂBLE adjacent.**
+  Avant, sa demande était prélevée sur le bilan de l'ÎLE 6 entière : n'importe quelle source de
+  l'île l'alimentait, câblée ou non → dessiner un raccord aurait été un **mensonge visuel**. Nouveau
+  **`colliderWireNid(game, isl)`** (adjacence à `colliderBounds`, comme `colliderDrawHe3` le fait
+  pour le tuyau) ; sans câble → `co.powered = false`, plus aucune alimentation. Avec câble, il puise
+  sur **SA composante** (`wireInfo[nid].deliver − served`, donc borné par le DÉBIT du câble) et sa
+  demande est publiée sur cette composante (`demand`/`served`/`netDemand`) → le panneau du câble
+  cesse de sous-estimer la plus grosse charge de la partie. **Stubs de raccord** dessinés sur le
+  landmark pour le **câble ET le tuyau** (l'He3 y était déjà réellement puisé depuis 14.17) → le
+  visuel devient sincère dans les deux sens. Nouvelle ligne « Câble : relié / non relié » dans sa
+  fiche. ⚠ **RUPTURE D'ÉQUILIBRAGE ASSUMÉE** : un Collisionneur qu'aucun câble ne touche perd son
+  alimentation (son démarrage recule) tant que le joueur ne l'a pas raccordé. **Aucune migration de
+  save n'est nécessaire** (aucun champ persisté ne change ; `wireNid`/`wireOk` sont transitoires) —
+  sur la save du joueur le Collisionneur est `off`, donc rien ne casse immédiatement.
+  ⚠ **`__heat` étendu** (`islandLabel`, `colliderWireNid`, `colliderBounds`, `TIER_NEXT`, `TIER_STEP`).
+  i18n en/es/de des 15 nouveaux libellés (bloc d'augmentation `/* 14.31 */`).
+  Validé : `node --check` (7 blocs) + Chromium **3 suites, 45 assertions, 0 KO, 0 erreur JS** —
+  émission max × 60 == plafond sur TOUS les bâtiments à chaleur ; charge crête = somme exacte des
+  2 sources, **rouge à flux instantané NUL** quand la crête dépasse le débit, 0 (pas de NaN) sans
+  source, jamais rouge en illimité ; Presse UHP = route · câble · conduit, éolienne = câble seul,
+  `islandLabel(7)` = « Île 6 S » ; **UI RÉELLE** depuis l'île 2 : 26 bâtiments grisés sur 89, clic →
+  fiche sans sélection d'outil, recherche « tungst » → 3 résultats grisés, switch éteint → ils
+  disparaissent ET le réglage est écrit dans `uiPrefs`, non-régression (non débloqué = masqué) ;
+  **save RÉELLE du joueur** (7 îles, 58 types de bâtiments) : aucun NaN/undefined dans les données
+  des fiches et des panneaux, 0 endommagé après 70 s, centrale île 5 toujours `regime = 1`, les
+  2 centrales en pause toujours en arrêt franc.
+  ⚠ **Pièges de harnais (nouveaux)** : la partie de démarrage est en mode **« difficile »** → le
+  terrain `collider` n'existe pas (appeler `applyGameMode('normal')` + reconstruire l'île 6) ; le
+  navigateur de test est en **locale EN** (forcer `localStorage['archipel_lang'] = 'fr'`) ; sur une
+  save ancienne l'**overlay de rattrapage hors-ligne PUIS le récap** interceptent les clics (les
+  fermer avant toute interaction) ; le **canvas plein écran fait échouer le hit-testing de
+  Playwright** → piloter l'UI en JS (`el.click()`, setter natif + événement `input`) ; l'onglet
+  Bâtiment est un **TOGGLE** (re-cliquer le ferme → helper idempotent).
+  ⚠ **HORS lot B, non traité** : tout le lot C (renommage Centrifugeuse → Centrale d'Enrichissement,
+  ratio uranium/plutonium, boutons ± du mix irradié).
+- **État précédent : `GAME_BUILD = 312`, `GAME_VERSION = 'Alpha 14.30'`, `SAVE_VERSION = 31`.**
+  Changement 14.30 (**LOT A** du brief `BRIEF_LOT_A_chaleur_nucleaire`) : **plafond de chaleur FIXE
+  (fin des trips fantômes) + antenne qui ne chauffe plus à l'arrêt + le conduit traverse les
+  bâtiments + la centrale publie ses champs de rendu et s'arrête franchement.** `SAVE_VERSION`
+  INCHANGÉ (aucun champ ni format ne change ; le clamp de chargement est purement défensif).
+  (1) **A1 — LE PLAFOND DE CHALEUR DEVIENT STRUCTUREL.** C'était la cause du retour joueur « je pose
+  des bâtiments, je reviens plus tard, ils sont cassés alors qu'il n'y avait aucun intrant ou qu'ils
+  étaient en pause ». `heatCapOf` valait `max(heatEmit, heatEmitPk) × 60` : à l'arrêt `heatEmit` tombe
+  à 0 et `heatEmitPk` **décroissait ×0,995/tick (~2 min)** → le plafond passait **SOUS la chaleur déjà
+  stockée**. Nouveau **`heatEmitMaxOf(bld)`** = émission MAXIMALE (donc indépendante de l'état
+  courant) : centrale → `NUC_POWER_BASE × mult × HEAT_PER_MW / 1000` (V2 `noHeat` → 0), antenne →
+  `bld.heatEmitMax` posé par le tick (cf. A2), usine moteur nuc → `1,024 × mult` (plat), tous les
+  autres → `HEAT_PER_MW × nominalPower(bld) / 1000` (qStab inclus, ×(1 + antElecBoost) si voisin
+  d'antenne). `heatCapOf` = `heatEmitMaxOf × HEAT_CAP_SECONDS`. **`heatEmitPk` SUPPRIMÉ** (3 sites).
+  ⚠ **Le vrai déclencheur du trip n'était PAS la reprise à plein régime** (le plafond y revient d'un
+  coup) mais la **reprise à régime PARTIEL** (intrants qui reviennent doucement, ou rechargement où
+  `heatEmitPk` n'est pas persisté → repli `cap = bld.heat` = jauge pleine d'office) : à 50 % de régime
+  le plafond ne valait plus que la moitié → `rising` + `heat ≥ cap` → **trip au premier tick**.
+  Contre-épreuve automatisée incluse (l'ancien modèle trippe, le nouveau non).
+  ⚠ **Nouvelle constante module `NUC_POWER_BASE = 16384`** : elle DOIT rester alignée sur les deux
+  constantes LOCALES `NUC_POWER = 16384` (tick + fiche), qui restent en place. **Clamp au chargement**
+  (`loadSave`) : `heat` est borné au nouveau plafond, sinon une save d'avant 14.30 tripe au 1ᵉʳ tick.
+  (2) **A2 — l'antenne en PAUSE / éteinte par la LOGIQUE n'émet plus de chaleur.** La ligne qui pose
+  `antBld.heatEmit` tourne **APRÈS** la boucle bâtiment (qui avait déjà mis 0) et ne testait que
+  `damaged` → elle **écrasait** le 0. Tests `!paused && !logicOff` ajoutés. Nouvel accumulateur
+  **`antExtraKwMax`** (parallèle à `antExtraKw`, `nomP × antElecBoost(fac)` = sin_term à 1) →
+  `antBld.heatEmitMax`, le plafond fixe de l'antenne (il dépend du VOISINAGE boosté, pas de sa propre
+  def). ⚠ `heatEmitMax` est **conservé même à l'arrêt** (sinon la jauge de la fiche deviendrait
+  illisible) ; tant qu'il est absent, `heatCapOf` rend 0 → **aucun trip possible**, repli voulu.
+  (3) **A3 — LE CONDUIT DE CHALEUR TRAVERSE LES BÂTIMENTS**, comme le câble et le tuyau. Poser une
+  source au milieu d'une ligne de conduit la coupait en DEUX réseaux. Trois maillons, dont un
+  **manquant** qui rendait les deux autres inopérants : **`buildingConnectsCarrier` n'avait AUCUNE
+  branche `conduit`** (aucune ressource ne porte la chaleur → elle répondait toujours `false`) →
+  ajout `res = !!b.heatCap || !!b.tour` ; puis la passe de pontage de `rebuildNetworks` passe de
+  `['wire','pipe']` à `['wire','pipe','conduit']`. ⚠ **La ROUTE reste exclue** (vérifié par
+  contre-épreuve).
+  ⚠ **A3.3 du brief (ajouter `'conduit'` à `carriers3`) NON APPLIQUÉ, volontairement** : un bloc de
+  stub conduit **DÉDIÉ existe déjà** depuis 13.2 (juste après `carriers3`), sur exactement le même
+  ensemble (`bdef.heatCap || bdef.tour`) et **en mieux** — il gère les variantes `_chauffe1/2/3` et la
+  teinte selon `conduitLoad`. L'ajouter à `carriers3` n'aurait fait que dessiner un second stub NON
+  teinté dessous. Aucun cas manquant : la passe générique n'apporterait que les JONCTIONS, or **il
+  n'existe aucune jonction conduit** (`junction` = road/wire, road/pipe, wire/pipe uniquement).
+  Les 208 sprites `conduit_*` sont tous présents (masques + variantes de chauffe).
+  (4) **A4 — `nucList` publie enfin `regime` / `inFac` / `pwrAvg` / `discReason`.** Elle ne posait que
+  `active` et `disc` → `drawBuilding` lisait des valeurs **figées d'un tick antérieur** : une centrale
+  mise en pause UNE FOIS gardait `regime = 0` **à vie** → badge déficit permanent **et « 0 % »** sur
+  une centrale qui tourne (retour joueur, save île 5), avec en prime `inFac`/`pwrAvg` `undefined` →
+  cause repliée sur `'input'`, donc fausse. ⚠ **`regime` vaut 1 dès que la centrale marche OU calibre,
+  quel que soit le CURSEUR** : une centrale volontairement réglée à 60 % n'est pas en déficit.
+  (5) **A5 — la PAUSE d'une centrale devient un ARRÊT FRANC.** Elle faisait `continue` **avant**
+  `nucList.push` → `nucState`/`nucTimer`/`nucCur` **GELÉS** (la save du joueur contenait bien deux
+  centrales `pz:1` figées à `running` 524 MW et `stopping`). Désormais les branches `paused` et
+  `logicOff` **poussent quand même** dans `nucList` avec un motif (`halt: 'paused' | 'logic'`), honoré
+  par 4 conditions de la machine à états → rampe `stopping` de 30 s puis `off`. ⚠ La **RÉCUPÉRATION**
+  déjà présente dans `stopping` fait repartir la rampe **depuis `nucCur`** : une pause brève n'est pas
+  punie de 5 min (vérifié : reprise depuis 15 445 kW, pas 0). `bld.active = !halt && (…)`, mais la
+  rampe **continue de délivrer son courant décroissant** → pas de blackout brutal ; `heatEmit` reste
+  indexé sur `nucCur` (un réacteur qui décélère est encore chaud), décision assumée.
+  ⚠ **Ordre A4 → A5** : A5.3 amende la ligne `discReason` posée par A4.
+  ⚠ **Pièges de harnais** : `processHeat` est appelé **DEPUIS `tickIsland`** → une centrale de labo
+  sans tour ni conduit **tripe en ~170 s** et masque toute la machine à états (neutraliser `bld.heat`
+  dans la boucle de test) ; **`logicOff` est RECALCULÉ par `processLogic` à chaque tick** → le poser à
+  la main est effacé, il faut un **vrai actionneur** dans `t.logic` (sans fil logique → signal 0 →
+  bâtiment éteint depuis 14.08) ; forger un `game` à la main casse (`accumulators`…), **cloner
+  `__gameRef.current`** ; injecter une save de test exige d'écrire **directement** les 3 clés de slot
+  (`archipel_slot_<id>` / `archipel_slots` / `archipel_active`), le chemin hérité `archipel_save_v1`
+  passant par `lsSet` que le gel de `setItem` bloque.
+  Validé : `node --check` (7 blocs) + Chromium **4 suites, 71 assertions, 0 KO, 0 erreur JS** —
+  plafond stable dans 4 états et invariant sur **tous** les bâtiments à chaleur ; coupure d'intrants
+  et pause de 180 s puis reprise (à 5/25/50/100 % de régime) → **aucun trip** ; **contre-épreuve** :
+  l'ancien modèle trippe sur le même scénario ; le trip reste fonctionnel sans refroidissement
+  (tick 59 ≈ `HEAT_CAP_SECONDS`) ; antenne prod en pause ET par actionneur réel → `heatEmit = 0` ;
+  conduit traversant une source = **UN SEUL** réseau de 4 tuiles, tour de l'autre côté qui refroidit
+  (flux 1,024 MJ/s), **route toujours coupée**, câble toujours traversant ; **save RÉELLE du joueur**
+  (801 bâtiments, 7 îles) : 0 endommagé au chargement et après 70 s, centrale île 5 r16/c19 Nv.13 →
+  `regime = 1`, `pwrAvg = 1`, `discReason = null` (fini le badge déficit et le « 0 % »), et les
+  **2 centrales en pause figées passent bien en arrêt franc** avec le motif `paused` ; motifs `wire` /
+  `input` / `logic` corrects ; centrale V2 `noHeat` toujours sans chaleur ni trip.
+  ⚠ **`__heat` étendu** (`heatCapOf`, `heatEmitMaxOf`, `HEAT_CAP_SECONDS`, `NUC_POWER_BASE`).
+  ⚠ **HORS lot A, non traités (lots B et C du brief)** : affichage du max de chaleur en fiche et du
+  max à évacuer sur le conduit, grisage des bâtiments exclusifs, sprites de raccord du Collisionneur,
+  renommage Centrifugeuse → Centrale d'Enrichissement, ratio uranium/plutonium, boutons ± du mix
+  irradié.
+- **État précédent : `GAME_BUILD = 311`, `GAME_VERSION = 'Alpha 14.29'`, `SAVE_VERSION = 31`.**
   Changement 14.29 : **le Broyeur Uranium n'a PLUS de V2 (bridage économique au Nv.10) et la
   Centrifugeuse — qui est le palier V2 de la Centrale Enrichissement — remplace le yellowcake par
   de l'URANIUM et génère de la chaleur.** `SAVE_VERSION` INCHANGÉ (`migratePlacement`).
