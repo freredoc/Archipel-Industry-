@@ -3914,6 +3914,11 @@ function buildingConnectsCarrier(buildingId, carrier) {
       // nuclear plant has no declared I/O but uses road (materials) ; le refroidissement
       // passe désormais par la chaleur (conduit), plus par le tuyau.
       if (!res && b.nuclear) res = carrier === 'road';
+      // 14.30 — CONDUIT : aucune ressource déclarée ne le porte (la chaleur n'est pas une
+      // ressource de pool) → il n'était branché nulle part et le conduit ne traversait AUCUN
+      // bâtiment, contrairement au câble et au tuyau. Se raccordent : les sources (heatCap,
+      // dont la centrale) et les tours aéroréfrigérantes.
+      if (!res && carrier === 'conduit') res = !!b.heatCap || !!b.tour;
     }
   }
   _connectsCache[ck] = res;
@@ -7013,8 +7018,8 @@ const SAVE_VERSION = 31;
 // Version du jeu. GAME_BUILD (entier) sert à comparer avec la version en ligne ;
 // GAME_VERSION est l'étiquette affichée. À bumper ensemble lors d'une mise à jour,
 // en même temps que version.json à la racine du dépôt.
-const GAME_BUILD = 311;
-const GAME_VERSION = 'Alpha 14.29';
+const GAME_BUILD = 312;
+const GAME_VERSION = 'Alpha 14.30';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7965,11 +7970,13 @@ function rebuildNetworks(game, islandId) {
       if (oldLvl > newNets[target].level) newNets[target].level = oldLvl;
     }
   }
-  // ── Règle « traversée » : un bâtiment qui se raccorde au CÂBLE (élec.) ou au TUYAU
-  // laisse le réseau le TRAVERSER. Tous les réseaux d'un même porteur (wire/pipe) adjacents à
-  // l'emprise d'un tel bâtiment FUSIONNENT en un seul (le bâtiment fait pont). Interdit pour la
-  // route. Ex. éolienne–câble–four arc–câble–aciérie : les deux câbles deviennent UN réseau →
-  // l'éolienne alimente le four ET l'aciérie. Idem tuyaux (le pool de ressources est partagé).
+  // ── Règle « traversée » : un bâtiment qui se raccorde au CÂBLE (élec.), au TUYAU ou au
+  // CONDUIT de chaleur laisse le réseau le TRAVERSER. Tous les réseaux d'un même porteur
+  // (wire/pipe/conduit) adjacents à l'emprise d'un tel bâtiment FUSIONNENT en un seul (le
+  // bâtiment fait pont). Interdit pour la route. Ex. éolienne–câble–four arc–câble–aciérie :
+  // les deux câbles deviennent UN réseau → l'éolienne alimente le four ET l'aciérie. Idem
+  // tuyaux (le pool de ressources est partagé) et conduits (14.30 : poser une source au milieu
+  // d'une ligne de conduit la coupait en deux réseaux distincts).
   const mUF = {};
   const mFind = x => {
     if (mUF[x] == null) mUF[x] = x;
@@ -7989,7 +7996,7 @@ function rebuildNetworks(game, islandId) {
     const s = bdef.size || [1, 1];
     const bh = s[0] || 1,
       bw = s[1] || 1;
-    for (const carrier of ['wire', 'pipe']) {
+    for (const carrier of ['wire', 'pipe', 'conduit']) {
       if (!buildingConnectsCarrier(t.building.id, carrier)) continue;
       const ids = adjacentNetworksFootprint(game, islandId, r, c, bw, bh, carrier);
       for (let i = 1; i < ids.length; i++) {
@@ -8335,18 +8342,44 @@ function buildingTotalCost(bld) {
   for (const k in cum) out[k] = (out[k] || 0) + cum[k];
   return out;
 }
-// Plafond de chaleur DYNAMIQUE d'une source = HEAT_CAP_SECONDS secondes d'émission : un bâtiment
-// peut stocker jusqu'à 1 minute de chaleur produite avant la surchauffe (trip). On se base sur le
-// PIC d'émission récent (bld.heatEmitPk, décroissance lente posée par processHeat) pour que les
-// émissions oscillantes (antenne en productivité) ne fassent pas fluctuer le plafond à chaque tick.
-// b.heatCap (def) ne sert plus que de FLAG « bâtiment à chaleur ». Repli : émission nulle (arrêt,
-// endommagé, save rechargée) avec de la chaleur gelée → plafond = chaleur courante (jauge pleine).
+// 14.30 — Puissance de référence du réacteur (kW à V1 niveau 1 / 100 %). Doit rester ALIGNÉE
+// sur la constante locale NUC_POWER de tickIsland et de la fiche : elle sert ici à calculer le
+// plafond de chaleur fixe hors de la boucle nucléaire.
+const NUC_POWER_BASE = 16384;
+// Émission de chaleur MAXIMALE d'un bâtiment (MJ/s), calculée sur sa puissance NOMINALE (= pic de
+// l'oscillation sigmoïde), donc INDÉPENDANTE de son état courant (marche, pause, déficit, arrêt).
+// ⚠ 14.30 — Remplace l'ancien PIC D'ÉMISSION mémorisé, qui décroissait pendant les arrêts : le
+// plafond passait SOUS la chaleur déjà stockée et le bâtiment tripait au premier tick de reprise
+// (retour joueur « je reviens plus tard, ils sont cassés »). Un plafond structurel ne peut plus
+// descendre sous le stock accumulé.
+function heatEmitMaxOf(bld) {
+  const b = bld && BUILDINGS[bld.id];
+  if (!b) return 0;
+  const mult = Math.pow(2, bld.upgrade || 0);
+  // Centrale nucléaire : pic = puissance max du réacteur. La V2 (`noHeat`) n'émet rien.
+  if (b.nuclear) return b.noHeat ? 0 : NUC_POWER_BASE * mult * HEAT_PER_MW / 1000;
+  if (!b.heatCap) return 0;
+  // Antenne (mode productivité) : le pic dépend du VOISINAGE boosté, pas de sa propre conso →
+  // il est posé par le tick dans `bld.heatEmitMax` (cf. A2). Repli 0 = pas de trip possible.
+  if (b.antenna) return bld.heatEmitMax || 0;
+  // Usine moteur nucléaire : émission PLATE 1,024 MJ/s × niveau (pas indexée sur la conso).
+  if (bld.id === 'usine_moteur_nuc') return 1.024 * mult;
+  // Tous les autres : HEAT_PER_MW × conso élec. NOMINALE (base + amp, rabot qStab inclus).
+  let pmax = nominalPower(bld);
+  // Voisin d'une antenne : sa conso boostée dépasse le nominal (×(1 + antElecBoost)) → le
+  // plafond doit suivre, sinon un bâtiment boosté tripe alors qu'il fonctionne normalement.
+  const boost = Math.max(bld.antennaBuff || 1, bld.antennaProd || 1);
+  if (boost > 1) pmax *= 1 + antElecBoost(boost);
+  return HEAT_PER_MW * pmax / 1000;
+}
+// Plafond de chaleur FIXE d'une source = HEAT_CAP_SECONDS secondes d'émission MAXIMALE : un
+// bâtiment peut stocker jusqu'à 1 minute de sa chaleur de pointe avant la surchauffe (trip).
+// b.heatCap (def) ne sert plus que de FLAG « bâtiment à chaleur ».
 const HEAT_CAP_SECONDS = 60;
 const heatCapOf = bld => {
   const b = bld && BUILDINGS[bld.id];
   if (!b || !b.heatCap) return 0;
-  const cap = Math.max(bld.heatEmit || 0, bld.heatEmitPk || 0) * HEAT_CAP_SECONDS;
-  return cap > 0 ? cap : bld.heat || 0;
+  return heatEmitMaxOf(bld) * HEAT_CAP_SECONDS;
 };
 // Nombre de tuiles de conduit du réseau `nid` adjacentes à l'emprise WxH ancrée en (r,c).
 function condTilesForNet(game, islandId, r, c, w, h, nid) {
@@ -8456,9 +8489,6 @@ function processHeat(game, isl) {
       continue;
     }
     bld.heat += bld.heatEmit || 0;
-    // Pic d'émission récent (décroissance lente ~2 min) → plafond dynamique heatCapOf = 60 s
-    // d'émission, stable même quand l'émission oscille (antenne / rampe de calibrage).
-    bld.heatEmitPk = Math.max(bld.heatEmit || 0, (bld.heatEmitPk || 0) * 0.995);
   }
   // 2) Tours : conso d'eau (port si tuyau relié au port, sinon pool tuyau) → absorption dispo.
   for (const to of tours) {
@@ -8601,8 +8631,8 @@ function processHeat(game, isl) {
     load[nid] = Math.min(1, moved / Math.max(1e-9, cn.through)); // teinte = % du FLUX (débit utilisé)
   }
   // 4) Alerte + trip. Une source qui ACCUMULE de la chaleur (émission > évacuation) alerte le
-  //    joueur (transition, ré-armée quand la chaleur retombe) ; au plafond dynamique (= 60 s
-  //    d'émission, heatCapOf) elle s'arrête et passe en état endommagé (réparation 20 %).
+  //    joueur (transition, ré-armée quand la chaleur retombe) ; au plafond FIXE (= 60 s d'émission
+  //    MAXIMALE, heatCapOf) elle s'arrête et passe en état endommagé (réparation 20 %).
   //    Chaleur gelée ou en baisse (évacuation ≥ émission) → jamais de trip.
   for (const s of sources) {
     const bld = s.bld;
@@ -9839,6 +9869,10 @@ function tickIsland(game, isl) {
   game.antennaProdZone[isl] = debuffSet;
   // Accumulateur de « MW consommés en plus » par les voisins du fait du buff (mode productivité).
   let antExtraKw = 0;
+  // 14.30 — Accumulateur PARALLÈLE du pic : conso « en plus » que les voisins atteindraient au
+  // sommet de leur oscillation sigmoïde. Sert de plafond de chaleur FIXE à l'antenne (heatCapOf),
+  // qui ne peut pas se déduire de sa propre def puisqu'elle dépend du voisinage boosté.
+  let antExtraKwMax = 0;
   for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
     const bld = tiles[r][c].building;
     if (!bld) continue;
@@ -9847,6 +9881,10 @@ function tickIsland(game, isl) {
     // électricité, ni chaleur) tant qu'il n'est pas repris. Placé AVANT les branches accu /
     // nucléaire → vaut pour tous les bâtiments (le port fixe ne peut pas être en pause).
     if (bld.paused && !bld.fixed && !b.fixed) {
+      // 14.30 — ARRÊT FRANC de la centrale : elle entre quand même dans nucList (avec un motif
+      // d'arrêt) au lieu d'être sautée. Avant, `continue` GELAIT nucState/nucTimer/nucCur → la
+      // centrale gardait un état « en marche » figé et reprenait de façon incohérente.
+      if (b.nuclear) nucList.push({ bld, r, c, halt: 'paused' });
       const pA1 = bld.active;
       bld.active = false;
       bld.disc = false;
@@ -9860,6 +9898,8 @@ function tickIsland(game, isl) {
     // discReason 'logic' (distinct d'un manque d'intrant). bld.logicOff est posé par processLogic
     // AVANT cette boucle. On n'écrit JAMAIS dans bld.active depuis l'actionneur (§5.2).
     if (bld.logicOff && !bld.fixed && !b.fixed) {
+      // 14.30 — Idem A5.1 pour l'extinction par le réseau logique (motif distinct).
+      if (b.nuclear) nucList.push({ bld, r, c, halt: 'logic' });
       const pAL = bld.active;
       bld.active = false;
       bld.disc = false;
@@ -9998,7 +10038,10 @@ function tickIsland(game, isl) {
       const nomP = nominalPower(bld);
       const fac = buffed ? speedFac : prodFac;
       power = nomP * (1 + (1 + Math.sin(2 * Math.PI * bld.antennaSigT / 60)) / 2 * antElecBoost(fac));
-      if (debuffed) antExtraKw += Math.max(0, power - nomP);
+      if (debuffed) {
+        antExtraKw += Math.max(0, power - nomP);
+        antExtraKwMax += nomP * antElecBoost(fac); // pic : sin_term = 1
+      }
     }
     // Intrants & sortants.
     //  • VITESSE : ×antSpeedMul(f) sur les DEUX (13.70 : +5 %×f, Nv.1 ×1,1 ; SANS plafond depuis 14.02).
@@ -10307,7 +10350,16 @@ function tickIsland(game, isl) {
     });
   }
   // Chaleur de l'antenne (mode PRODUCTIVITÉ) : HEAT_PER_MW (0,125) MJ/s par MW consommé EN PLUS par les voisins.
-  if (antBld) antBld.heatEmit = antMode === 'prod' && !antBld.damaged ? HEAT_PER_MW * antExtraKw / 1000 : 0;
+  // 14.30 — L'antenne en PAUSE ou éteinte par la LOGIQUE n'émet plus rien. Cette ligne tourne
+  // APRÈS la boucle bâtiment, qui avait déjà posé heatEmit = 0 : sans ces deux tests, elle
+  // l'écrasait et l'antenne continuait de chauffer à l'arrêt (retour joueur).
+  if (antBld) {
+    const antOn = antMode === 'prod' && !antBld.damaged && !antBld.paused && !antBld.logicOff;
+    antBld.heatEmit = antOn ? HEAT_PER_MW * antExtraKw / 1000 : 0;
+    // Plafond FIXE de l'antenne : conservé même à l'arrêt (sinon heatCapOf tomberait à 0 et la
+    // jauge de la fiche deviendrait illisible). Remis à jour à chaque tick où la zone existe.
+    antBld.heatEmitMax = antMode === 'prod' ? HEAT_PER_MW * antExtraKwMax / 1000 : 0;
+  }
   // Per-network throughput factor based on each network's level cap.
   const netFactor = {};
   const saturated = [];
@@ -10621,6 +10673,10 @@ function tickIsland(game, isl) {
       for (let i = 1; i < wireIds.length; i++) ufUnion(wireIds[0], wireIds[i]);
     }
     const fuelOK = roadNid != null && (port['combustible_u235'] || 0) > 1e-6;
+    // 14.30 — Motif d'arrêt imposé par le joueur (pause) ou par le réseau logique. Traité comme
+    // une condition d'arrêt de plus : la centrale suit sa rampe `stopping` de 30 s puis passe à
+    // `off`. Aucune reprise tant que `halt` est posé.
+    const halt = nu.halt || null;
     if (bld.nucState == null) {
       bld.nucState = 'off';
       bld.nucTimer = 0;
@@ -10640,7 +10696,7 @@ function tickIsland(game, isl) {
     }
     if (bld.nucState === 'off') {
       // Démarre si câble + route/combustible, et puissance réglée > 0.
-      if (wireOk && fuelOK && targetFrac > 0) {
+      if (!halt && wireOk && fuelOK && targetFrac > 0) {
         bld.nucState = 'starting';
         bld.nucFrom = 0;
         bld.nucTo = targetPower;
@@ -10651,14 +10707,14 @@ function tickIsland(game, isl) {
       // Compat saves : ancien état « sécurité » → redémarrage automatique après 5 min.
       bld.nucCur = 0;
       bld.nucTimer++;
-      if (bld.nucTimer >= NUC_SAFETY) {
+      if (!halt && bld.nucTimer >= NUC_SAFETY) {
         bld.nucState = 'starting';
         bld.nucFrom = 0;
         bld.nucTo = targetPower;
         bld.nucTimer = 0;
       }
     } else if (bld.nucState === 'starting' || bld.nucState === 'running') {
-      if (!wireOk || !fuelOK || targetFrac === 0) {
+      if (halt || !wireOk || !fuelOK || targetFrac === 0) {
         bld.nucState = 'stopping';
         bld.nucFrom = bld.nucCur || 0;
         bld.nucTimer = 0;
@@ -10723,7 +10779,7 @@ function tickIsland(game, isl) {
       // combustible d'un tick, hoquet au chargement d'une save/mise à jour, rattrapage
       // hors-ligne), on repart en calibrage DEPUIS la puissance courante au lieu de finir
       // l'arrêt et de recalibrer 5 min depuis 0 (« la centrale redémarre à 0 »).
-      if (wireOk && fuelOK && targetFrac > 0) {
+      if (!halt && wireOk && fuelOK && targetFrac > 0) {
         bld.nucState = 'starting';
         bld.nucFrom = bld.nucCur || 0;
         bld.nucTo = targetPower;
@@ -10738,6 +10794,17 @@ function tickIsland(game, isl) {
         }
       }
     }
+    // 14.30 — PUBLICATION DES CHAMPS DE RENDU. `nucList` posait `active` et `disc` mais jamais
+    // `regime` / `inFac` / `pwrAvg` : drawBuilding lisait donc des valeurs figées d'un tick
+    // antérieur. Une centrale ayant été mise en pause UNE FOIS gardait regime = 0 à vie → badge
+    // déficit permanent + « 0 % » sur une centrale qui tourne (retour joueur, save île 5).
+    // ⚠ `regime` vaut 1 dès que la centrale marche ou calibre, quel que soit le CURSEUR de
+    // puissance : une centrale volontairement réglée à 60 % n'est pas en déficit. La montée en
+    // puissance reste lisible via la barre de calibrage sur la tuile et via la fiche.
+    bld.regime = bld.nucState === 'running' || bld.nucState === 'starting' ? 1 : 0;
+    bld.inFac = fuelOK ? 1 : 0;
+    bld.pwrAvg = 1;
+    bld.discReason = halt ? halt : bld.nucState === 'off' ? !wireOk ? 'wire' : !fuelOK ? 'input' : null : null;
     let nucPower = bld.nucCur || 0;
     if (nucPower < 1) nucPower = 0;
     if (nucPower > 0 && wireOk) {
@@ -10752,7 +10819,10 @@ function tickIsland(game, isl) {
       if (!game.nucRun) game.nucRun = {};
       game.nucRun[isl] = (game.nucRun[isl] || 0) + 1;
     } else if (game.nucRun) game.nucRun[isl] = 0;
-    bld.active = bld.nucState === 'running' || bld.nucState === 'starting';
+    // En arrêt franc, la centrale reste INACTIVE pour l'affichage même pendant sa rampe de
+    // descente (le joueur a demandé l'arrêt) — mais la rampe continue de délivrer son courant
+    // décroissant sur 30 s, ce qui évite un blackout brutal du réseau.
+    bld.active = !halt && (bld.nucState === 'running' || bld.nucState === 'starting');
     bld.disc = !wireOk && bld.nucState === 'off';
     if (bld.active !== prevA || bld.disc !== prevD) activeChanged = true;
   }
@@ -20071,7 +20141,11 @@ function App() {
           }
           // Chaleur (MJ) + état endommagé (surchauffe). Migration : bâtiments < v14 → heat 0.
           if (BUILDINGS[p.b].heatCap) {
-            t.building.heat = Math.max(0, +p.h || 0);
+            // 14.30 — CLAMP au plafond FIXE : une save d'avant 14.30 peut porter une chaleur
+            // supérieure au nouveau plafond (l'ancien plafond dynamique pouvait dériver). Sans
+            // ce clamp, le bâtiment trip au premier tick après chargement.
+            const hCap = heatCapOf(t.building);
+            t.building.heat = Math.min(Math.max(0, +p.h || 0), hCap > 0 ? hCap : Infinity);
             if (p.dmg) {
               t.building.damaged = true;
               t.building.dmgTimer = Math.max(0, +p.dt || 0);
@@ -22407,7 +22481,6 @@ function App() {
     delete bld.dmgUp; // le niveau figé n'a plus de raison d'être une fois la facture payée
     bld.heat = 0;
     bld.heatWarned = false;
-    bld.heatEmitPk = 0; // le plafond dynamique (60 s d'émission) repart de l'émission réelle
     if (BUILDINGS[bld.id] && BUILDINGS[bld.id].nuclear) bld.nucState = 'off';
     bumpHud();
     markDirty();
@@ -25296,6 +25369,7 @@ if (typeof window !== 'undefined') {
   window.__heat = {
     BUILDINGS, defById, ISLAND_TERRAINS, buildIslandTiles, rebuildNetworks,
     processHeat, conduitDebit, buildingTotalCost,
+    heatCapOf, heatEmitMaxOf, HEAT_CAP_SECONDS, NUC_POWER_BASE, // 14.30
     applyGameMode: typeof applyGameMode === 'function' ? applyGameMode : null,
     adjacentNetworksFootprint,
     buildingSpriteKey, itemSpriteKey, unlockedResourceSet, isBuildingUnlocked, fmtHeat,

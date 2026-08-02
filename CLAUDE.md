@@ -17,7 +17,90 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 311`, `GAME_VERSION = 'Alpha 14.29'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 312`, `GAME_VERSION = 'Alpha 14.30'`, `SAVE_VERSION = 31`.**
+  Changement 14.30 (**LOT A** du brief `BRIEF_LOT_A_chaleur_nucleaire`) : **plafond de chaleur FIXE
+  (fin des trips fantômes) + antenne qui ne chauffe plus à l'arrêt + le conduit traverse les
+  bâtiments + la centrale publie ses champs de rendu et s'arrête franchement.** `SAVE_VERSION`
+  INCHANGÉ (aucun champ ni format ne change ; le clamp de chargement est purement défensif).
+  (1) **A1 — LE PLAFOND DE CHALEUR DEVIENT STRUCTUREL.** C'était la cause du retour joueur « je pose
+  des bâtiments, je reviens plus tard, ils sont cassés alors qu'il n'y avait aucun intrant ou qu'ils
+  étaient en pause ». `heatCapOf` valait `max(heatEmit, heatEmitPk) × 60` : à l'arrêt `heatEmit` tombe
+  à 0 et `heatEmitPk` **décroissait ×0,995/tick (~2 min)** → le plafond passait **SOUS la chaleur déjà
+  stockée**. Nouveau **`heatEmitMaxOf(bld)`** = émission MAXIMALE (donc indépendante de l'état
+  courant) : centrale → `NUC_POWER_BASE × mult × HEAT_PER_MW / 1000` (V2 `noHeat` → 0), antenne →
+  `bld.heatEmitMax` posé par le tick (cf. A2), usine moteur nuc → `1,024 × mult` (plat), tous les
+  autres → `HEAT_PER_MW × nominalPower(bld) / 1000` (qStab inclus, ×(1 + antElecBoost) si voisin
+  d'antenne). `heatCapOf` = `heatEmitMaxOf × HEAT_CAP_SECONDS`. **`heatEmitPk` SUPPRIMÉ** (3 sites).
+  ⚠ **Le vrai déclencheur du trip n'était PAS la reprise à plein régime** (le plafond y revient d'un
+  coup) mais la **reprise à régime PARTIEL** (intrants qui reviennent doucement, ou rechargement où
+  `heatEmitPk` n'est pas persisté → repli `cap = bld.heat` = jauge pleine d'office) : à 50 % de régime
+  le plafond ne valait plus que la moitié → `rising` + `heat ≥ cap` → **trip au premier tick**.
+  Contre-épreuve automatisée incluse (l'ancien modèle trippe, le nouveau non).
+  ⚠ **Nouvelle constante module `NUC_POWER_BASE = 16384`** : elle DOIT rester alignée sur les deux
+  constantes LOCALES `NUC_POWER = 16384` (tick + fiche), qui restent en place. **Clamp au chargement**
+  (`loadSave`) : `heat` est borné au nouveau plafond, sinon une save d'avant 14.30 tripe au 1ᵉʳ tick.
+  (2) **A2 — l'antenne en PAUSE / éteinte par la LOGIQUE n'émet plus de chaleur.** La ligne qui pose
+  `antBld.heatEmit` tourne **APRÈS** la boucle bâtiment (qui avait déjà mis 0) et ne testait que
+  `damaged` → elle **écrasait** le 0. Tests `!paused && !logicOff` ajoutés. Nouvel accumulateur
+  **`antExtraKwMax`** (parallèle à `antExtraKw`, `nomP × antElecBoost(fac)` = sin_term à 1) →
+  `antBld.heatEmitMax`, le plafond fixe de l'antenne (il dépend du VOISINAGE boosté, pas de sa propre
+  def). ⚠ `heatEmitMax` est **conservé même à l'arrêt** (sinon la jauge de la fiche deviendrait
+  illisible) ; tant qu'il est absent, `heatCapOf` rend 0 → **aucun trip possible**, repli voulu.
+  (3) **A3 — LE CONDUIT DE CHALEUR TRAVERSE LES BÂTIMENTS**, comme le câble et le tuyau. Poser une
+  source au milieu d'une ligne de conduit la coupait en DEUX réseaux. Trois maillons, dont un
+  **manquant** qui rendait les deux autres inopérants : **`buildingConnectsCarrier` n'avait AUCUNE
+  branche `conduit`** (aucune ressource ne porte la chaleur → elle répondait toujours `false`) →
+  ajout `res = !!b.heatCap || !!b.tour` ; puis la passe de pontage de `rebuildNetworks` passe de
+  `['wire','pipe']` à `['wire','pipe','conduit']`. ⚠ **La ROUTE reste exclue** (vérifié par
+  contre-épreuve).
+  ⚠ **A3.3 du brief (ajouter `'conduit'` à `carriers3`) NON APPLIQUÉ, volontairement** : un bloc de
+  stub conduit **DÉDIÉ existe déjà** depuis 13.2 (juste après `carriers3`), sur exactement le même
+  ensemble (`bdef.heatCap || bdef.tour`) et **en mieux** — il gère les variantes `_chauffe1/2/3` et la
+  teinte selon `conduitLoad`. L'ajouter à `carriers3` n'aurait fait que dessiner un second stub NON
+  teinté dessous. Aucun cas manquant : la passe générique n'apporterait que les JONCTIONS, or **il
+  n'existe aucune jonction conduit** (`junction` = road/wire, road/pipe, wire/pipe uniquement).
+  Les 208 sprites `conduit_*` sont tous présents (masques + variantes de chauffe).
+  (4) **A4 — `nucList` publie enfin `regime` / `inFac` / `pwrAvg` / `discReason`.** Elle ne posait que
+  `active` et `disc` → `drawBuilding` lisait des valeurs **figées d'un tick antérieur** : une centrale
+  mise en pause UNE FOIS gardait `regime = 0` **à vie** → badge déficit permanent **et « 0 % »** sur
+  une centrale qui tourne (retour joueur, save île 5), avec en prime `inFac`/`pwrAvg` `undefined` →
+  cause repliée sur `'input'`, donc fausse. ⚠ **`regime` vaut 1 dès que la centrale marche OU calibre,
+  quel que soit le CURSEUR** : une centrale volontairement réglée à 60 % n'est pas en déficit.
+  (5) **A5 — la PAUSE d'une centrale devient un ARRÊT FRANC.** Elle faisait `continue` **avant**
+  `nucList.push` → `nucState`/`nucTimer`/`nucCur` **GELÉS** (la save du joueur contenait bien deux
+  centrales `pz:1` figées à `running` 524 MW et `stopping`). Désormais les branches `paused` et
+  `logicOff` **poussent quand même** dans `nucList` avec un motif (`halt: 'paused' | 'logic'`), honoré
+  par 4 conditions de la machine à états → rampe `stopping` de 30 s puis `off`. ⚠ La **RÉCUPÉRATION**
+  déjà présente dans `stopping` fait repartir la rampe **depuis `nucCur`** : une pause brève n'est pas
+  punie de 5 min (vérifié : reprise depuis 15 445 kW, pas 0). `bld.active = !halt && (…)`, mais la
+  rampe **continue de délivrer son courant décroissant** → pas de blackout brutal ; `heatEmit` reste
+  indexé sur `nucCur` (un réacteur qui décélère est encore chaud), décision assumée.
+  ⚠ **Ordre A4 → A5** : A5.3 amende la ligne `discReason` posée par A4.
+  ⚠ **Pièges de harnais** : `processHeat` est appelé **DEPUIS `tickIsland`** → une centrale de labo
+  sans tour ni conduit **tripe en ~170 s** et masque toute la machine à états (neutraliser `bld.heat`
+  dans la boucle de test) ; **`logicOff` est RECALCULÉ par `processLogic` à chaque tick** → le poser à
+  la main est effacé, il faut un **vrai actionneur** dans `t.logic` (sans fil logique → signal 0 →
+  bâtiment éteint depuis 14.08) ; forger un `game` à la main casse (`accumulators`…), **cloner
+  `__gameRef.current`** ; injecter une save de test exige d'écrire **directement** les 3 clés de slot
+  (`archipel_slot_<id>` / `archipel_slots` / `archipel_active`), le chemin hérité `archipel_save_v1`
+  passant par `lsSet` que le gel de `setItem` bloque.
+  Validé : `node --check` (7 blocs) + Chromium **4 suites, 71 assertions, 0 KO, 0 erreur JS** —
+  plafond stable dans 4 états et invariant sur **tous** les bâtiments à chaleur ; coupure d'intrants
+  et pause de 180 s puis reprise (à 5/25/50/100 % de régime) → **aucun trip** ; **contre-épreuve** :
+  l'ancien modèle trippe sur le même scénario ; le trip reste fonctionnel sans refroidissement
+  (tick 59 ≈ `HEAT_CAP_SECONDS`) ; antenne prod en pause ET par actionneur réel → `heatEmit = 0` ;
+  conduit traversant une source = **UN SEUL** réseau de 4 tuiles, tour de l'autre côté qui refroidit
+  (flux 1,024 MJ/s), **route toujours coupée**, câble toujours traversant ; **save RÉELLE du joueur**
+  (801 bâtiments, 7 îles) : 0 endommagé au chargement et après 70 s, centrale île 5 r16/c19 Nv.13 →
+  `regime = 1`, `pwrAvg = 1`, `discReason = null` (fini le badge déficit et le « 0 % »), et les
+  **2 centrales en pause figées passent bien en arrêt franc** avec le motif `paused` ; motifs `wire` /
+  `input` / `logic` corrects ; centrale V2 `noHeat` toujours sans chaleur ni trip.
+  ⚠ **`__heat` étendu** (`heatCapOf`, `heatEmitMaxOf`, `HEAT_CAP_SECONDS`, `NUC_POWER_BASE`).
+  ⚠ **HORS lot A, non traités (lots B et C du brief)** : affichage du max de chaleur en fiche et du
+  max à évacuer sur le conduit, grisage des bâtiments exclusifs, sprites de raccord du Collisionneur,
+  renommage Centrifugeuse → Centrale d'Enrichissement, ratio uranium/plutonium, boutons ± du mix
+  irradié.
+- **État précédent : `GAME_BUILD = 311`, `GAME_VERSION = 'Alpha 14.29'`, `SAVE_VERSION = 31`.**
   Changement 14.29 : **le Broyeur Uranium n'a PLUS de V2 (bridage économique au Nv.10) et la
   Centrifugeuse — qui est le palier V2 de la Centrale Enrichissement — remplace le yellowcake par
   de l'URANIUM et génère de la chaleur.** `SAVE_VERSION` INCHANGÉ (`migratePlacement`).
