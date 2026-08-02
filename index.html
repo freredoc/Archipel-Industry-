@@ -2704,6 +2704,7 @@ for(var code in G){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; va
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.24 */ var ADD={"en": {"Île 6 S": "Island 6 U", "Ordre de service": "Service order", "Construction & travaux": "Construction & works", "Sortants (dépôts au port)": "Outgoing (port deposits)", "Intrants (machines du souterrain)": "Inputs (underground machines)", "Faire remonter cette catégorie d'un rang": "Move this category up one rank", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Strict order: the 1st category is fully served before the next (order adjustable below)", "Réseau logique": "Logic network", "émetteur et vanne câblés ✓": "emitter and valve wired ✓", "non relié — câblez l'émetteur ET la vanne": "not connected — wire BOTH the emitter and the valve", "Palier atteint": "Tier goal reached", "validez la recherche du palier pour relancer": "confirm the tier research to restart", "❌ Palier atteint — validez la recherche du palier avant de relancer": "❌ Tier goal reached — confirm the tier research before restarting", "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Collider not connected to a logic network (emitter and valve must be wired)", "Réseau logique requis": "Logic network required", "Palier atteint — recherche en cours": "Tier reached — research pending", "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Lay a logic cable touching BOTH the Collider's emitter (bottom-left) and valve (top-right)", "Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer": "The tier's confirmation goal is reached: confirm the tier research to restart", "Data Center en veille — séquence du Collisionneur non lancée": "Data Center idle — Collider sequence not launched", "Envoyer en priorité vers ": "Send first to ", "Descendre au souterrain (": "Go down to the underground (", "Remonter à la surface (": "Back up to the surface ("}, "es": {"Île 6 S": "Isla 6 S", "Ordre de service": "Orden de servicio", "Construction & travaux": "Construcción y obras", "Sortants (dépôts au port)": "Salientes (depósitos en el puerto)", "Intrants (machines du souterrain)": "Entradas (máquinas del subsuelo)", "Faire remonter cette catégorie d'un rang": "Subir esta categoría un puesto", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Orden estricto: la 1.ª categoría se sirve por completo antes que la siguiente (orden ajustable abajo)", "Réseau logique": "Red lógica", "émetteur et vanne câblés ✓": "emisor y válvula cableados ✓", "non relié — câblez l'émetteur ET la vanne": "sin conexión — cablea el emisor Y la válvula", "Palier atteint": "Nivel alcanzado", "validez la recherche du palier pour relancer": "confirma la investigación del nivel para relanzar", "❌ Palier atteint — validez la recherche du palier avant de relancer": "❌ Nivel alcanzado — confirma la investigación del nivel antes de relanzar", "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Colisionador sin conexión a una red lógica (emisor y válvula deben estar cableados)", "Réseau logique requis": "Red lógica requerida", "Palier atteint — recherche en cours": "Nivel alcanzado — investigación pendiente", "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Coloca un cable lógico que toque el emisor (abajo-izq.) Y la válvula (arriba-der.) del Colisionador", "Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer": "Se alcanzó el umbral de confirmaciones del nivel: confirma la investigación del nivel para relanzar", "Data Center en veille — séquence du Collisionneur non lancée": "Centro de datos en espera — secuencia del Colisionador no lanzada", "Envoyer en priorité vers ": "Enviar primero a ", "Descendre au souterrain (": "Bajar al subsuelo (", "Remonter à la surface (": "Volver a la superficie ("}, "de": {"Île 6 S": "Insel 6 U", "Ordre de service": "Bedienreihenfolge", "Construction & travaux": "Bau & Arbeiten", "Sortants (dépôts au port)": "Ausgänge (Einlagerung im Hafen)", "Intrants (machines du souterrain)": "Eingänge (Maschinen im Untergrund)", "Faire remonter cette catégorie d'un rang": "Diese Kategorie einen Rang nach oben", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Strenge Reihenfolge: Die 1. Kategorie wird vollständig bedient, bevor die nächste folgt (Reihenfolge unten einstellbar)", "Réseau logique": "Logiknetz", "émetteur et vanne câblés ✓": "Sender und Ventil verkabelt ✓", "non relié — câblez l'émetteur ET la vanne": "nicht verbunden — verkable Sender UND Ventil", "Palier atteint": "Stufenziel erreicht", "validez la recherche du palier pour relancer": "Stufenforschung bestätigen, um neu zu starten", "❌ Palier atteint — validez la recherche du palier avant de relancer": "❌ Stufenziel erreicht — bestätige die Stufenforschung vor dem Neustart", "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Kollider nicht mit einem Logiknetz verbunden (Sender und Ventil müssen verkabelt sein)", "Réseau logique requis": "Logiknetz erforderlich", "Palier atteint — recherche en cours": "Stufe erreicht — Forschung ausstehend", "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Verlege ein Logikkabel, das Sender (unten links) UND Ventil (oben rechts) des Kolliders berührt", "Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer": "Die Bestätigungsschwelle der Stufe ist erreicht: Bestätige die Stufenforschung zum Neustart", "Data Center en veille — séquence du Collisionneur non lancée": "Rechenzentrum im Leerlauf — Kollider-Sequenz nicht gestartet", "Envoyer en priorité vers ": "Zuerst senden an ", "Descendre au souterrain (": "Hinab in den Untergrund (", "Remonter à la surface (": "Zurück an die Oberfläche ("}}; for(var c in ADD){ var L=I18N.locales[c]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[c]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.31 */ var ADD={"en": {"Émission max": "Peak emission", "Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.": "Heat emission at the PEAK of the oscillation: this is what must be evacuated continuously. The overheat cap is 60 × this value.", "Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).": "Heat stored in the building. FIXED cap = 1 min of PEAK emission (independent of the current throughput) — once reached, the building breaks down (overheat).", "Charge crête": "Peak load", "Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.": "Sum of the PEAK emissions of the connected sources. Above the throughput, the duct will saturate at peak: upgrade its level, add tiles or make it unlimited.", "Réseaux": "Networks", "Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).": "At max level this building densifies into a higher model (it cannot be placed directly).", " au Nv.": " at Lv.", "Bâtiments des autres îles": "Buildings from other islands", "Affichés en gris — touchez-les pour voir leur fiche": "Shown greyed out — tap them to see their sheet", "Masqués": "Hidden", "Se construit sur ": "Built on ", "Câble": "Cable", "relié au réseau ✓": "connected to the grid ✓", "non relié — amenez un câble jusqu'au Collisionneur": "not connected — run a cable to the Collider"}, "es": {"Émission max": "Emisión máx.", "Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.": "Emisión de calor en el PICO de la oscilación: es lo que hay que poder evacuar de forma continua. El límite de sobrecalentamiento es 60 × este valor.", "Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).": "Calor almacenado en el edificio. Límite FIJO = 1 min de emisión MÁXIMA (no depende del régimen actual) — al alcanzarlo, el edificio se avería (sobrecalentamiento).", "Charge crête": "Carga pico", "Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.": "Suma de las emisiones MÁXIMAS de las fuentes conectadas. Por encima del caudal, el conducto se saturará en el pico: mejora su nivel, añade casillas o pásalo a ilimitado.", "Réseaux": "Redes", "Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).": "Al nivel máximo este edificio se densifica en un modelo superior (no se coloca directamente).", " au Nv.": " al Nv.", "Bâtiments des autres îles": "Edificios de otras islas", "Affichés en gris — touchez-les pour voir leur fiche": "Mostrados en gris — tócalos para ver su ficha", "Masqués": "Ocultos", "Se construit sur ": "Se construye en ", "Câble": "Cable", "relié au réseau ✓": "conectado a la red ✓", "non relié — amenez un câble jusqu'au Collisionneur": "sin conectar — lleva un cable hasta el Colisionador"}, "de": {"Émission max": "Max. Emission", "Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.": "Wärmeemission im SPITZENWERT der Schwingung: genau das muss dauerhaft abgeführt werden. Das Überhitzungslimit beträgt das 60-Fache dieses Werts.", "Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).": "Im Gebäude gespeicherte Wärme. FESTES Limit = 1 Min. MAXIMALE Emission (unabhängig vom aktuellen Betrieb) — bei Erreichen fällt das Gebäude aus (Überhitzung).", "Charge crête": "Spitzenlast", "Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.": "Summe der MAXIMALEN Emissionen der angeschlossenen Quellen. Oberhalb des Durchsatzes läuft die Leitung im Spitzenwert voll: Stufe erhöhen, Felder hinzufügen oder auf unbegrenzt setzen.", "Réseaux": "Netze", "Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).": "Auf der Maximalstufe verdichtet sich dieses Gebäude zu einem höheren Modell (es kann nicht direkt gebaut werden).", " au Nv.": " auf St.", "Bâtiments des autres îles": "Gebäude anderer Inseln", "Affichés en gris — touchez-les pour voir leur fiche": "Ausgegraut angezeigt — antippen, um ihr Datenblatt zu sehen", "Masqués": "Ausgeblendet", "Se construit sur ": "Wird gebaut auf ", "Câble": "Kabel", "relié au réseau ✓": "mit dem Netz verbunden ✓", "non relié — amenez un câble jusqu'au Collisionneur": "nicht verbunden — Kabel zum Kollider verlegen"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.32 */ var ADD={"en": {"Mélange": "Blend", "Moins d'uranium, plus de plutonium": "Less uranium, more plutonium", "Plus d'uranium, moins de plutonium": "More uranium, less plutonium", "Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.": "Trade-off slider: more uranium = less plutonium, at CONSTANT fuel output. This is not a share of the blend.", "Réglage direct entre 10 et 90 (50 = neutre).": "Direct setting between 10 and 90 (50 = neutral).", "Débits réels": "Actual rates", "Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.": "More uranium = less plutonium, and vice versa — fuel output does not change.", "−1 % (rendu au plus gros des autres)": "−1% (given back to the largest of the others)", "+1 % (pris au plus gros des autres)": "+1% (taken from the largest of the others)"}, "es": {"Mélange": "Mezcla", "Moins d'uranium, plus de plutonium": "Menos uranio, más plutonio", "Plus d'uranium, moins de plutonium": "Más uranio, menos plutonio", "Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.": "Regulador de compromiso: más uranio = menos plutonio, con producción de combustible CONSTANTE. No es una proporción de la mezcla.", "Réglage direct entre 10 et 90 (50 = neutre).": "Ajuste directo entre 10 y 90 (50 = neutro).", "Débits réels": "Caudales reales", "Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.": "Más uranio = menos plutonio, y viceversa — la producción de combustible no cambia.", "−1 % (rendu au plus gros des autres)": "−1 % (devuelto al mayor de los demás)", "+1 % (pris au plus gros des autres)": "+1 % (tomado del mayor de los demás)"}, "de": {"Mélange": "Mischung", "Moins d'uranium, plus de plutonium": "Weniger Uran, mehr Plutonium", "Plus d'uranium, moins de plutonium": "Mehr Uran, weniger Plutonium", "Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.": "Kompromissregler: mehr Uran = weniger Plutonium, bei KONSTANTER Brennstoffproduktion. Das ist kein Mischungsanteil.", "Réglage direct entre 10 et 90 (50 = neutre).": "Direkte Einstellung zwischen 10 und 90 (50 = neutral).", "Débits réels": "Tatsächliche Raten", "Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.": "Mehr Uran = weniger Plutonium und umgekehrt — die Brennstoffproduktion ändert sich nicht.", "−1 % (rendu au plus gros des autres)": "−1 % (dem größten der anderen zurückgegeben)", "+1 % (pris au plus gros des autres)": "+1 % (dem größten der anderen entnommen)"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* 14.36 */ var ADD={"en": {"Fluide de refroidissement": "Coolant", "aucun fluide": "no coolant", "/s absorbés": "/s absorbed", "Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.": "A nobler coolant absorbs more for a lower flow. With no coolant the cooler still runs — badly. Power draw is unchanged.", "Air (sec)": "Air (dry)", "Eau": "Water", "Azote": "Nitrogen", "Hélium": "Helium", "Hélium liquide": "Liquid helium"}, "es": {"Fluide de refroidissement": "Refrigerante", "aucun fluide": "sin refrigerante", "/s absorbés": "/s absorbidos", "Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.": "Un refrigerante más noble absorbe más con un caudal menor. Sin refrigerante el refrigerador funciona igualmente — mal. El consumo eléctrico no cambia.", "Air (sec)": "Aire (seco)", "Eau": "Agua", "Azote": "Nitrógeno", "Hélium": "Helio", "Hélium liquide": "Helio líquido"}, "de": {"Fluide de refroidissement": "Kühlmittel", "aucun fluide": "kein Kühlmittel", "/s absorbés": "/s aufgenommen", "Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.": "Ein edleres Kühlmittel nimmt bei geringerem Durchsatz mehr auf. Ohne Kühlmittel läuft der Kühler trotzdem — schlecht. Der Stromverbrauch bleibt gleich.", "Air (sec)": "Luft (trocken)", "Eau": "Wasser", "Azote": "Stickstoff", "Hélium": "Helium", "Hélium liquide": "Flüssiges Helium"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 </script>
 <script>
 const {
@@ -2891,6 +2892,7 @@ const RES_SHORT = {
   gaz_fossiles: 'gaz foss.',
   helium3: 'Hélium 3',
   helium4: 'Hélium',
+  helium_liquide: 'He liquide',
   moteur_quantique: 'mot.quantique',
   methane: 'méthane'
 };
@@ -2952,6 +2954,7 @@ const RES_TIER = {
   cable_supraconducteur: 't5',
   helium3: 't5',
   helium4: 't5',
+  helium_liquide: 't5',
   moteur_quantique: 't5',
   ordinateur_quantique: 't5',
   matiere_exotique: 't5'
@@ -3032,6 +3035,7 @@ const CARRIER_BY_RES = {
   gaz_fossiles: 'pipe',
   helium3: 'pipe',
   helium4: 'pipe',
+  helium_liquide: 'pipe',
   moteur_quantique: 'road',
   methane: 'pipe',
   energie_kw: 'wire'
@@ -3043,7 +3047,17 @@ const carrierOf = res => CARRIER_BY_RES[res] || 'road';
 // (visible dans l'inventaire, échangeable). On le route comme la route mais via le tuyau.
 const PORT_PIPE_RES = {
   diesel: true,
-  azote: true
+  azote: true,
+  // 14.36 — Hélium liquide TRANSPORTABLE : sans ça il resterait confiné au pool tuyau de l'île 6
+  // et le Refroidisseur en mode « hélium liquide » serait inutilisable sur les îles 1-5, où se
+  // trouvent pourtant les centrales nucléaires à refroidir.
+  helium_liquide: true,
+  // 14.36 — L'hélium gazeux passe AUSSI au port. Deux raisons : (a) il entre dans le COÛT DE
+  // CONSTRUCTION du Cryostat, et les coûts sont débités du port — sans ce passage le Cryostat
+  // serait littéralement impayable ; (b) il devient un mode du Refroidisseur, utilisable hors
+  // île 6. Aucun risque de régression : le Data Center étant délesté de son hélium, PLUS AUCUN
+  // bâtiment existant ne consomme d'He4. Le Collisionneur consomme de l'He3, ressource distincte.
+  helium4: true
 };
 const isPortPipe = res => CARRIER_BY_RES[res] === 'pipe' && !!PORT_PIPE_RES[res];
 // ============ SPRITES ============
@@ -3972,6 +3986,12 @@ function buildingConnectsCarrier(buildingId, carrier) {
       // bâtiment, contrairement au câble et au tuyau. Se raccordent : les sources (heatCap,
       // dont la centrale) et les tours aéroréfrigérantes.
       if (!res && carrier === 'conduit') res = !!b.heatCap || !!b.tour;
+      // 14.36 — REFROIDISSEUR : son fluide est choisi au runtime (COOLER_DEF), il n'a donc AUCUN
+      // `inputs` statique → sans ce cas il ne dessinerait aucun raccord tuyau et ne ferait pas
+      // PONT, alors que la tour qu'il remplace le fait (elle a `eau` en dur). Même esprit que la
+      // foreuse et sa route. Volontairement indépendant du mode COURANT : changer de fluide ne doit
+      // JAMAIS couper en deux un tuyau qui traversait le bâtiment.
+      if (!res && b.cooler && carrier === 'pipe') res = true;
     }
   }
   _connectsCache[ck] = res;
@@ -5372,6 +5392,31 @@ const BUILDINGS = {
       eau: 256
     }
   },
+  // Refroidisseur (14.36) : successeur de la Tour aéroréfrigérante. Consommateur pur (aucune
+  // sortie) avec `power > 0` → jamais sauté au tick, exactement comme le Data Center ; ses intrants
+  // passent donc par la boucle bâtiment normale (et sont visibles dans les panneaux réseau), à la
+  // différence de la tour qui puise son eau hors boucle dans processHeat.
+  // AUTORISÉ AU SOUTERRAIN (île 7) : c'est son intérêt principal face à la tour — la chaleur de la
+  // Presse UHP n'a plus besoin de remonter par l'élévateur.
+  refroidisseur: {
+    name: 'Refroidisseur V1',
+    color: '#4DD0E1',
+    label: 'FROID',
+    kind: 'build',
+    tier: 't5',
+    tour: true,
+    cooler: true,
+    terrains: ['land', 'resource', 'coast'],
+    size: [1, 1],
+    power: 1024,
+    cost: {
+      alliage_tungstene: 400,
+      piece_precision: 400,
+      cable_supraconducteur: 600,
+      element_moteur_nuc: 80
+    }
+    // `inputs` VOLONTAIREMENT ABSENT : fourni dynamiquement par coolerEffective() selon le mode.
+  },
   centrale_nucleaire: {
     name: 'Centrale Nucléaire V1',
     // Aucune centrale au souterrain (île 7) hors Géothermie + Accumulateur (demande testeur).
@@ -6096,7 +6141,9 @@ const BUILDINGS = {
       element_moteur_nuc: 1,
       piece_precision: 10,
       cable_supraconducteur: 15,
-      azote: 8192
+      // 14.36 — L'azote (8192/s = 8 Séparateurs d'Air V1) est REMPLACÉ par l'hélium liquide.
+      // Ratio issu de l'équivalence du Refroidisseur (1024 azote ↔ 0,0625 He liquide).
+      helium_liquide: 0.5
     },
     outputs: {
       moteur_quantique: 0.1
@@ -6161,6 +6208,38 @@ const BUILDINGS = {
       helium3: 0.01,
       helium4: 0.1,
       methane: 0.89
+    }
+  },
+  // Cryostat (14.36) : liquéfacteur d'hélium. Procédé réel — compression + détente avec
+  // PRÉ-REFROIDISSEMENT à l'azote (qui, sur une installation réelle, fait passer le rendement
+  // de ~90 à ~150 L/h) ; la conversion He gazeux → He liquide est 1:1 (changement d'état).
+  // Le coût inclut 1000 hélium : la charge initiale de la boucle fermée.
+  // PUISSANCE FIXE (pas de sigmoïde) : le compresseur tourne en continu.
+  // Chaleur PLATE 2,048 MJ/s au Nv.1 (×2 par niveau), pas proportionnelle à la conso.
+  cryostat: {
+    name: 'Cryostat V1',
+    color: '#80DEEA',
+    label: 'LIQ',
+    kind: 'build',
+    tier: 't5',
+    terrains: ['land', 'resource'],
+    exclusiveIsland: 6,
+    size: [1, 1],
+    heatCap: 10,
+    power: 8192,
+    cost: {
+      alliage_tungstene: 300,
+      cable_supraconducteur: 700,
+      polymere: 4000,
+      helium4: 1000,
+      ordinateur_quantique: 1
+    },
+    inputs: {
+      helium4: 0.25,
+      azote: 1024
+    },
+    outputs: {
+      helium_liquide: 0.25
     }
   },
   // Centrale à Gaz — EN SURFACE (île 6 ; arbitrage concepteur, l'Excel notait « SOUTERRAIN ·
@@ -6243,22 +6322,26 @@ const BUILDINGS = {
     maxPerIsland: 1,
     // 14.17 — TOUT OU RIEN : au moindre déficit (intrants ou courant) il se met en PAUSE au lieu de
     // tourner au ralenti. Il n'a AUCUNE sortie de ressource : tourner à 40 % ne produirait rien de
-    // plus qu'à l'arrêt, ça ne ferait que gaspiller azote et hélium (demande joueur).
+    // plus qu'à l'arrêt, ça ne ferait que gaspiller de l'azote (14.36 : son seul intrant restant).
+    // ⚠ CONSERVÉ tel quel en 14.36 — seule la justification change, pas la mécanique.
     allOrNothing: true,
     size: [1, 1],
     power: 1024,
+    // 14.36 — Simple FLAG « bâtiment à chaleur » : le vrai plafond vient de heatCapOf
+    // (= heatEmitMaxOf × HEAT_CAP_SECONDS), pas de cette valeur.
+    heatCap: 10,
     cost: {
       ordinateur_quantique: 1,
       cable_supraconducteur: 1000,
       piece_precision: 500
     },
     inputs: {
-      processeur: 1,
-      azote: 1024,
-      // 14.23 — hélium ÷4 (8 → 2, demande joueur). Le Séparateur Cryogénique n'en sort que
-      // 0,1 He4/s de base : à 8/s le Data Center exigeait un séparateur très amélioré rien
-      // que pour le faire tourner. Azote et processeur inchangés.
-      helium4: 2
+      // 14.36 — Processeur et hélium RETIRÉS : le Data Center ne consomme plus que de l'azote.
+      // En contrepartie il devient émetteur de chaleur (1,024 MJ/s au Nv.1) et doit désormais
+      // être raccordé à un conduit.
+      // ⚠ Conséquence : n'ayant plus d'intrant porté par la ROUTE, il ne s'y raccorde plus
+      // (buildingConnectsCarrier) — il lui faut désormais un TUYAU (azote), un CÂBLE et un CONDUIT.
+      azote: 1024
     }
   },
   // ===== RÉSEAU LOGIQUE — PHASE 5A (capteurs, actionneurs, portes) =====
@@ -6571,11 +6654,11 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'tungstene',
   label: 'Tungstène',
-  ids: ['mine_tungstene', 'mine_tungstene_v4', 'four_arc_tungstene', 'machine_outil', 'foreuse']
+  ids: ['mine_tungstene', 'mine_tungstene_v4', 'four_arc_tungstene', 'machine_outil', 'foreuse', 'refroidisseur']
 }, {
   key: 'quantique',
   label: 'Quantique',
-  ids: ['extracteur_souterrain', 'separateur_cryogenique', 'presse_uhp', 'fab_ordi_quantique', 'data_center', 'usine_moteur_quantique', 'stabilisateur_quantique']
+  ids: ['extracteur_souterrain', 'separateur_cryogenique', 'cryostat', 'presse_uhp', 'fab_ordi_quantique', 'data_center', 'usine_moteur_quantique', 'stabilisateur_quantique']
 }, {
   key: 'logicblock',
   label: 'Bloc logique',
@@ -7075,8 +7158,8 @@ const SAVE_VERSION = 31;
 // 14.35 — B3 : landmark du Collisionneur ANIMÉ (découpe de source optionnelle dans
 // `drawAnimFrame`, chaque tuile prélève sa tranche 32×32 de la sheet 96×64) + anneaux de coût
 // de la foreuse sur l'île 7 (teinte alternée par cercle). Aucun asset. SAVE_VERSION inchangé.
-const GAME_BUILD = 317;
-const GAME_VERSION = 'Alpha 14.35';
+const GAME_BUILD = 318;
+const GAME_VERSION = 'Alpha 14.36';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7635,6 +7718,35 @@ function arcDefaultState(id) {
   const def = ARC_DEF[id];
   return { mode: 'single', sel: def.order[0], w: def.order.reduce((o, k) => (o[k] = 1, o), {}) };
 }
+
+// ============ REFROIDISSEUR — SÉLECTEUR DE FLUIDE (14.36) ============
+// Même patron qu'ARC_DEF, en plus simple : un seul mode actif à la fois (pas de mix/auto),
+// état persisté dans `bld.cool = { sel }`.
+//  • `in`     = intrant /s à V1 — consommé par la BOUCLE BÂTIMENT (×2^upgrade via `mult`).
+//  • `absorb` = MJ/s absorbés à V1 — appliqué par processHeat (×2^upgrade, comme la tour).
+// Référence d'équilibrage : Tour aéroréfrigérante V1 = 1,024 MJ/s pour 256 eau/s et 0 kW.
+// Le Refroidisseur à l'eau fait donc ×2 mieux pour la même eau, mais coûte 1024 kW en permanence.
+// Échelle des fluides calquée sur la thermodynamique réelle : l'eau évapore en circuit OUVERT
+// (consommée en masse), l'azote a une chaleur latente ~11× plus faible (donc plus de débit),
+// l'hélium tourne en circuit FERMÉ avec récupération (le débit ne représente que les pertes).
+const COOLER_DEF = {
+  order: ['sec', 'eau', 'azote', 'helium', 'helium_liquide'],
+  modes: {
+    sec:            { label: 'Air (sec)',      in: null,                       absorb: 0.5 },
+    eau:            { label: 'Eau',            in: { eau: 256 },               absorb: 2 },
+    azote:          { label: 'Azote',          in: { azote: 1024 },            absorb: 4 },
+    helium:         { label: 'Hélium',         in: { helium4: 1 },             absorb: 8 },
+    helium_liquide: { label: 'Hélium liquide', in: { helium_liquide: 0.0625 }, absorb: 16 }
+  }
+};
+const coolerDefaultState = () => ({ sel: 'sec' });
+// I/O effectifs selon le mode. Repli sur 'sec' si l'état est absent ou corrompu (save ancienne).
+function coolerEffective(bld) {
+  const st = (bld && bld.cool) || {};
+  const sel = COOLER_DEF.modes[st.sel] ? st.sel : 'sec';
+  const m = COOLER_DEF.modes[sel];
+  return { sel, inputs: m.in ? { ...m.in } : null, absorb: m.absorb };
+}
 // ── 14.32 — MÉLANGE URANIUM / PLUTONIUM (mécanique SŒUR du four à arc) ───────────────────────
 // Même problème résolu de la même façon : un réglage PAR BÂTIMENT qui modifie sa recette.
 // `u` = curseur de compromis, entier de 10 à 90 (défaut 50, neutre). Il n'exprime PAS une
@@ -7808,7 +7920,7 @@ const accCapacity = bld => (BUILDINGS[bld.id] && BUILDINGS[bld.id].capacity || 5
 // 14.29 — `broyeur_uranium` rejoint la liste : il n'a plus AUCUN palier V2 (demande joueur), et
 // c'est ce bridage — le même que l'aciérie/câblerie — qui joue le rôle du « hard cap au Nv.10 »
 // sans introduire de mécanisme neuf : au-delà du Nv.10 le coût d'amélioration DOUBLE à chaque cran.
-const COST_SOFTCAP_X2 = { atelier_meca: 1, cablerie: 1, acierie: 1, broyeur_uranium: 1 };
+const COST_SOFTCAP_X2 = { atelier_meca: 1, cablerie: 1, acierie: 1, broyeur_uranium: 1, tour_aerorefrigerante: 1 };
 function upgradeCostFactor(buildingId, level) {
   if (buildingId === 'puits_petrole' && level >= 5) {
     let p = Math.pow(UPGRADE_SCALE, 4);
@@ -8458,6 +8570,11 @@ function heatEmitMaxOf(bld) {
   if (b.antenna) return bld.heatEmitMax || 0;
   // Usine moteur nucléaire : émission PLATE 1,024 MJ/s × niveau (pas indexée sur la conso).
   if (bld.id === 'usine_moteur_nuc') return 1.024 * mult;
+  // 14.36 — Cryostat et Data Center émettent eux aussi à PLAT (cf. la table d'émission du tick) :
+  // sans ces deux lignes, `heatCapOf` retomberait sur HEAT_PER_MW × conso nominale et donnerait un
+  // plafond DEUX FOIS TROP BAS pour le Cryostat (1,024 au lieu de 2,048) — il tripperait en 30 s.
+  if (bld.id === 'cryostat') return 2.048 * mult;
+  if (bld.id === 'data_center') return 1.024 * mult;
   // Tous les autres : HEAT_PER_MW × conso élec. NOMINALE (base + amp, rabot qStab inclus).
   let pmax = nominalPower(bld);
   // Voisin d'une antenne : sa conso boostée dépasse le nominal (×(1 + antElecBoost)) → le
@@ -8588,6 +8705,21 @@ function processHeat(game, isl) {
   for (const to of tours) {
     const bld = to.bld,
       up = Math.pow(2, bld.upgrade || 0);
+    // ── 14.36 — REFROIDISSEUR : la boucle bâtiment a DÉJÀ payé l'élec + le fluide et posé `regime`.
+    //    On ne prélève RIEN ici et on n'écrase AUCUN champ d'état (active / disc / inFac / pwrAvg /
+    //    regime / waterFrom…) : ils viennent de la boucle bâtiment et doivent rester intacts.
+    //    processHeat tourne APRÈS elle (et après le lissage de pwrAvg) → `regime` est à jour.
+    if (BUILDINGS[bld.id] && BUILDINGS[bld.id].cooler) {
+      to.absorb = coolerEffective(bld).absorb * up * Math.max(0, Math.min(1, bld.regime || 0));
+      // ⚠ `absorb` et `condIds` DOIVENT être posés avant le `continue` : l'inscription dans
+      // `condNets` se fait dans une boucle ULTÉRIEURE qui les relit.
+      to.condIds = adjacentNetworksFootprint(game, isl, to.r, to.c, 1, 1, 'conduit');
+      bld.onConduit = to.condIds.length > 0;
+      bld.heatAbsorb = 0;
+      bld.heat = 0;
+      continue;
+    }
+    // ── TOUR : chemin historique inchangé (puisage d'eau hors boucle).
     const need = 256 * up,
       absorbCap = 1.024 * up;
     const pipeIds = adjacentNetworksFootprint(game, isl, to.r, to.c, 1, 1, 'pipe');
@@ -10099,7 +10231,10 @@ function tickIsland(game, isl) {
     // sigmoïde restent celles de la def). Exclusif du four à arc en pratique (aucun bâtiment
     // n'est dans les deux tables), mais l'arc reste prioritaire par sûreté.
     const enrEff = !arcEff && ENR_TUNABLE[bld.id] ? enrEffective(bld) : null;
-    const effInputs = arcEff ? arcEff.inputs : enrEff ? enrEff.inputs : b.inputs;
+    // 14.36 — Refroidisseur : intrants dynamiques selon le fluide sélectionné (null en mode sec →
+    // il traverse la boucle sans exiger le moindre réseau tuyau, seulement le câble).
+    const coolEff = b.cooler ? coolerEffective(bld) : null;
+    const effInputs = arcEff ? arcEff.inputs : enrEff ? enrEff.inputs : coolEff ? coolEff.inputs : b.inputs;
     // `let` : la FOREUSE se donne dynamiquement une sortie (pierre) pendant un creusement.
     let effOutputs = arcEff ? arcEff.outputs : b.outputs;
     const effSigmoid = arcEff ? arcEff.sigmoid : b.sigmoid;
@@ -10396,6 +10531,12 @@ function tickIsland(game, isl) {
     // consommés (power kW × regime ÷ 1000). Le plafond de trip (60 s) suit automatiquement (heatCapOf).
     if (b.heatCap) {
       bld.heatEmit = bld.id === 'usine_moteur_nuc' ? 1.024 * mult * regime
+        // 14.36 — Cryostat : 2,048 MJ/s au Nv.1, PLAT (×2 par niveau). Volontairement PAS
+        // HEAT_PER_MW × conso, qui ne donnerait que 1,024 MJ/s à 8192 kW.
+        : bld.id === 'cryostat' ? 2.048 * mult * regime
+        // 14.36 — Data Center : 1,024 MJ/s au Nv.1, PLAT. Idem — sa conso de 1024 kW ne
+        // donnerait que 0,128 MJ/s par la voie proportionnelle.
+        : bld.id === 'data_center' ? 1.024 * mult * regime
         : bld.id === 'machine_outil' || bld.id === 'presse_uhp' || bld.id === 'usine_moteur_quantique' || bld.id === 'centrale_enrichissement_v2' ? HEAT_PER_MW * (power * regime) / 1000
         : 0;
     }
@@ -10645,6 +10786,7 @@ function tickIsland(game, isl) {
           if (cst.to && BUILDINGS[cst.to]) bb.id = cst.to;
           bb.upgrade = cst.up;
           if (ARC_DEF[bb.id] && !bb.arc) bb.arc = arcDefaultState(bb.id);
+          if (BUILDINGS[bb.id] && BUILDINGS[bb.id].cooler && !bb.cool) bb.cool = coolerDefaultState(); // 14.36
           if (ENR_TUNABLE[bb.id] && !bb.enr) bb.enr = enrDefaultState(bb.id); // 14.32
         }
         delete bb.construction;
@@ -12492,7 +12634,12 @@ const TECH_NODES = [{
     res: 'ordinateur_quantique',
     n: 1
   }],
-  unlocks: {}
+  // 14.36 — Le nœud 37 ne débloquait RIEN. Il accueille le Refroidisseur : juste après
+  // l'Ordinateur Quantique, donc après l'obtention de l'He4 → les modes gaz sont utilisables
+  // dès le déblocage.
+  unlocks: {
+    buildings: ['refroidisseur']
+  }
 }, {
   // ====== COLLISIONNEUR : 3 RÉPARATIONS (livraison) alternées avec 3 PUZZLES (confirmations) ======
   // La réparation part APRÈS le Data Center (demande utilisateur) : on répare, on résout, on répare…
@@ -12558,7 +12705,7 @@ const TECH_NODES = [{
     // a le 42 pour prérequis → dépendance CIRCULAIRE, tout l'endgame (P3, stabilisateur, antenne
     // V2, mines V4) était INATTEIGNABLE. Au nœud 41, tous ses coûts et intrants sont déjà
     // disponibles (alliage/pièce précision/câble supra/ordi quantique/élém. moteur/azote).
-    buildings: ['centrale_enrichissement_v2', 'centrale_nucleaire_v2', 'usine_moteur_quantique']
+    buildings: ['centrale_enrichissement_v2', 'centrale_nucleaire_v2', 'usine_moteur_quantique', 'cryostat']
   }
 }, {
   // Réparation III → TOUTES les portes (les 2 dernières : XOR / XNOR).
@@ -13409,7 +13556,11 @@ const portSpeedMult = level => Math.pow(2, level || 0);
 // ⚠ oxygene/azote RETIRÉS (retour testeur) : les gaz ne s'importent/exportent PAS entre îles
 // (production locale uniquement) — ils restent stockés au port via le tuyau relié, mais ne
 // transitent plus. Le nettoyage des listes de priorité existantes est fait par tradePriorityFor.
-const TRADE_LIQUIDS = ['petrole', 'acide', 'diesel'];
+// 14.36 — Hélium (gazeux ET liquide) ajoutés : `PORT_PIPE_RES` ne fait que les STOCKER au port,
+// il ne les rend PAS transitables par bateau (cf. l'azote depuis 13.82, volontairement non
+// transitable). Or la chaîne du froid EXIGE le transit : le Cryostat est exclusif à l'île 6 et
+// le Refroidisseur doit pouvoir tourner à l'hélium sur les îles 1-5 où sont les centrales.
+const TRADE_LIQUIDS = ['petrole', 'acide', 'diesel', 'helium4', 'helium_liquide'];
 const TRADE_RESOURCES = Object.keys(CARRIER_BY_RES).filter(r => CARRIER_BY_RES[r] === 'road' || TRADE_LIQUIDS.includes(r));
 const TRADE_RESOURCE_SET = new Set(TRADE_RESOURCES);
 function portPipePools(game, islandId) {
@@ -15140,6 +15291,7 @@ function InfoPanel({
   onSetNucPlutoCap,
   onSetArcMode,
   onSetArcSel,
+  onSetCoolSel,
   onSetArcWeight,
   onSetEnrRatio,
   onDrillDir,
@@ -15709,7 +15861,10 @@ function InfoPanel({
   // Four à arc unifié : recettes & conso affichées = valeurs EFFECTIVES du sélecteur (mode courant),
   // pas les champs statiques (qui reflètent le mode lingot par défaut).
   const arcIO = ARC_DEF[bld.id] ? arcEffective(bld, game.port[currentIsland]) : null;
-  const bIn = arcIO ? arcIO.inputs : b.inputs;
+  // 14.36 — Refroidisseur : même principe, ses intrants dépendent du FLUIDE choisi (COOLER_DEF) et
+  // n'existent pas dans la def → sans ça la fiche n'afficherait aucune ligne « Entrées ».
+  const coolIO = b.cooler ? coolerEffective(bld) : null;
+  const bIn = arcIO ? arcIO.inputs : coolIO ? coolIO.inputs : b.inputs;
   const bOut = arcIO ? arcIO.outputs : b.outputs;
   const bSigmoid = arcIO ? arcIO.sigmoid : b.sigmoid;
   const bRandomP = arcIO ? null : b.randomP;
@@ -16292,7 +16447,10 @@ function InfoPanel({
     const wf = bld.regime != null ? bld.regime : 0;
     const onC = !!bld.onConduit;
     const absorb = bld.heatAbsorb || 0;
-    const capA = 1.024 * up;
+    // 14.36 — Le bloc est sous `b.tour` : il s'affiche donc AUSSI pour le Refroidisseur, dont la
+    // capacité d'absorption dépend du fluide sélectionné et non du 1,024 MJ/s de la tour.
+    const isCool = !!(BUILDINGS[bld.id] && BUILDINGS[bld.id].cooler);
+    const capA = (isCool ? coolerEffective(bld).absorb : 1.024) * up;
     return React.createElement(React.Fragment, null, React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
@@ -16304,7 +16462,11 @@ function InfoPanel({
         fontWeight: 700
       },
       title: I18N.t("La tour doit toucher un CONDUIT (réseau cuivre, chaleur) ET un tuyau d'eau pour évacuer la chaleur d'une source. Sinon elle ne refroidit rien.")
-    }, onC ? fmtHeat(absorb) + " / " + fmtHeat(capA) + I18N.t("/s évacués") : I18N.t("⚠ pas relié à un conduit"))), React.createElement("div", {
+    }, onC ? fmtHeat(absorb) + " / " + fmtHeat(capA) + I18N.t("/s évacués") : I18N.t("⚠ pas relié à un conduit"))),
+    // 14.36 — Ligne « Eau » MASQUÉE pour le Refroidisseur : elle lit `bld.waterNeed`/`waterDrawn`,
+    // jamais renseignés pour lui (il ne puise pas hors boucle). Son fluide apparaît déjà dans la
+    // ligne « Entrées » du rendu standard.
+    !isCool && React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
       className: "lbl"
@@ -16622,6 +16784,30 @@ function InfoPanel({
     }, I18N.t("Équilibrage automatique : on produit davantage de la sortie dont le stock au port est le plus bas.")), React.createElement("div", {
       className: "ip-nuc-irr-note"
     }, I18N.t("Entrée minerai fixe quel que soit le mode ; la conso électrique suit la répartition choisie.")));
+  })(), coolIO && (() => {
+    // ── 14.36 — Sélecteur de FLUIDE du Refroidisseur (calqué sur le sélecteur du four à arc) ──
+    // Un seul mode actif à la fois. Sans fluide il fonctionne quand même, mal ; plus le fluide est
+    // noble, plus il absorbe pour un débit faible. La conso électrique ne dépend PAS du mode.
+    const up = Math.pow(2, upg);
+    const lbl = k => RES_SHORT[k] || k;
+    const inTxt = m => m.in ? Object.keys(m.in).map(k => "− " + fmtRateSci(m.in[k] * up) + " " + lbl(k)).join(" · ") + I18N.t(" /s") : I18N.t("aucun fluide");
+    const cur = COOLER_DEF.modes[coolIO.sel];
+    return React.createElement("div", {
+      className: "ip-nuc-irr"
+    }, React.createElement("div", {
+      className: "ip-nuc-irr-hd"
+    }, I18N.t("Fluide de refroidissement")), React.createElement("div", {
+      className: "ip-nuc-irr-io"
+    }, inTxt(cur) + " → " + fmtHeat(coolIO.absorb * up) + I18N.t("/s absorbés")), React.createElement("div", {
+      className: "ip-nuc-mats"
+    }, COOLER_DEF.order.map(k => React.createElement("button", {
+      key: k,
+      className: 'ip-nuc-mat' + (coolIO.sel === k ? ' on' : ''),
+      title: inTxt(COOLER_DEF.modes[k]) + " → " + fmtHeat(COOLER_DEF.modes[k].absorb * up) + I18N.t("/s absorbés"),
+      onClick: () => onSetCoolSel && onSetCoolSel(info.r, info.c, k)
+    }, I18N.t(COOLER_DEF.modes[k].label)))), React.createElement("div", {
+      className: "ip-nuc-irr-note"
+    }, I18N.t("Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.")));
   })(), b.driller && (() => {
     // ── FOREUSE : choix de la DIRECTION puis démarrage MANUEL du forage (14.03) ──
     // Avant, le forage ne s'amorçait qu'en touchant la tuile voisine : impossible de viser depuis
@@ -19830,6 +20016,8 @@ function App() {
             sel: b.arc.sel,
             w: { ...(b.arc.w || {}) }
           };
+          // 14.36 — Refroidisseur : fluide sélectionné — champ additionnel rétro-compatible.
+          if (b.cool && BUILDINGS[b.id] && BUILDINGS[b.id].cooler) pl.cool = b.cool.sel;
           // 14.32 — Réglage du mélange U/Pu : un simple ENTIER (le curseur), pas un objet.
           // Champ additif → absent d'une save antérieure = repli sur le neutre (50).
           if (b.enr && ENR_TUNABLE[b.id] && b.enr.u != null) pl.enr = enrClampU(b.enr.u);
@@ -20519,6 +20707,11 @@ function App() {
               sel: ARC_DEF[p.b].modes[pa.sel] ? pa.sel : d.sel,
               w: { ...d.w, ...(pa.w || {}) }
             };
+          }
+          // 14.36 — Refroidisseur : restaure le fluide (repli « sec » si save antérieure ou
+          // valeur inconnue).
+          if (BUILDINGS[p.b] && BUILDINGS[p.b].cooler) {
+            t.building.cool = { sel: COOLER_DEF.modes[p.cool] ? p.cool : 'sec' };
           }
           // 14.32 — Mélange U/Pu : repli sur le neutre (50) si absent, et clamp à [10, 90].
           // Une save d'avant 14.32 démarre donc au réglage NEUTRE, qui reproduit EXACTEMENT la
@@ -21772,6 +21965,8 @@ function App() {
     // Nv.11, et démoli il ne remboursait même pas le forfait.)
     if (TIER_STEP[id]) t.building.upgrade = tierEntry(id);
     if (ARC_DEF[id]) t.building.arc = arcDefaultState(id);
+    // 14.36 — Refroidisseur : fluide par défaut (« sec ») à la pose.
+    if (BUILDINGS[id] && BUILDINGS[id].cooler) t.building.cool = coolerDefaultState();
     // 14.32 — Un bâtiment fraîchement POSÉ démarre au réglage neutre (u = 50).
     if (ENR_TUNABLE[id]) t.building.enr = enrDefaultState(id);
     // Construction SOUTERRAINE étalée (île 7, bâtiments) : la matière (déjà payée au port de l'île 6)
@@ -22043,6 +22238,7 @@ function App() {
       t.building.id = nextId;
       t.building.upgrade = nextEntry;
       if (ARC_DEF[nextId] && !t.building.arc) t.building.arc = arcDefaultState(nextId);
+      if (BUILDINGS[nextId] && BUILDINGS[nextId].cooler && !t.building.cool) t.building.cool = coolerDefaultState(); // 14.36
       // 14.32 — Idem après DENSIFICATION (c'est le chemin normal vers l'Enrichissement V2).
       if (ENR_TUNABLE[nextId] && !t.building.enr) t.building.enr = enrDefaultState(nextId);
     }
@@ -22928,6 +23124,17 @@ function App() {
     const t = curTiles()[r] && curTiles()[r][c];
     if (!t || !t.building || !ARC_DEF[t.building.id]) return;
     (t.building.arc = t.building.arc || arcDefaultState(t.building.id)).mode = mode;
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  // 14.36 — Sélecteur de fluide du Refroidisseur (état PAR BÂTIMENT : t.building.cool).
+  function setCoolSel(r, c, sel) {
+    const t = curTiles()[r] && curTiles()[r][c];
+    if (!t || !t.building || !(BUILDINGS[t.building.id] || {}).cooler) return;
+    if (!COOLER_DEF.modes[sel]) return;
+    (t.building.cool = t.building.cool || coolerDefaultState()).sel = sel;
+    SFX.play('click');
     bumpHud();
     markDirty();
     scheduleSave();
@@ -25564,6 +25771,7 @@ function App() {
     onSetNucPlutoCap: setNucPlutoCap,
     onSetArcMode: setArcMode,
     onSetArcSel: setArcSel,
+    onSetCoolSel: setCoolSel,
     onSetArcWeight: setArcWeight,
     onSetEnrRatio: setEnrRatio,
     onSetFluxPri: setFluxPri,
@@ -25858,6 +26066,7 @@ if (typeof window !== 'undefined') {
     heatCapOf, heatEmitMaxOf, HEAT_CAP_SECONDS, NUC_POWER_BASE, // 14.30
     islandLabel, colliderWireNid, colliderBounds, TIER_NEXT, TIER_STEP, // 14.31
     ENR_TUNABLE, enrEffective, enrDefaultState, enrClampU, ENR_U_MIN, ENR_U_MAX, ENR_U_DEF, // 14.32
+    COOLER_DEF, coolerEffective, coolerDefaultState, TRADE_LIQUIDS, PORT_PIPE_RES, // 14.36
     nucMix, NUC_MAT_KEYS, BLD_SPRITE_OVERRIDE, upgradeMult, // 14.32
     applyGameMode: typeof applyGameMode === 'function' ? applyGameMode : null,
     adjacentNetworksFootprint,
