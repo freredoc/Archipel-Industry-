@@ -17,7 +17,51 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 310`, `GAME_VERSION = 'Alpha 14.27'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 311`, `GAME_VERSION = 'Alpha 14.29'`, `SAVE_VERSION = 31`.**
+  Changement 14.29 : **le Broyeur Uranium n'a PLUS de V2 (bridage économique au Nv.10) et la
+  Centrifugeuse — qui est le palier V2 de la Centrale Enrichissement — remplace le yellowcake par
+  de l'URANIUM et génère de la chaleur.** `SAVE_VERSION` INCHANGÉ (`migratePlacement`).
+  ⚠ **DEUX MALENTENDUS À NE PAS REFAIRE.** (a) En 14.25 j'ai lu « Centrifugeuse uranium (niveau 11) »
+  comme un bâtiment NEUF, palier du broyeur → j'ai créé `centrifugeuse_uranium` en gardant le broyeur
+  hard-cappé, d'où « j'ai toujours des vieux broyeurs ». (b) En 14.28 j'ai sur-corrigé en FUSIONNANT
+  tout (broyeur supprimé, enrichissement V1 à l'uranium, yellowcake purgé, nœuds 22/23/24 restructurés)
+  — **entièrement annulé par `git revert`**. La demande réelle, tenir les TROIS phrases ensemble :
+  « centrifugeuse v1 et broyeur uranium v1 comme avant », « broyeur v2 ne doit pas exister »,
+  « centrifugeuse v2 remplace le yellowcake par de l'uranium en plus du plutonium ».
+  (1) **INCHANGÉS** : `broyeur_uranium` (uranium 128 + acide 4 → yellowcake 1), `centrale_enrichissement`
+  V1 (yellowcake 2 + acier → comb. U235), la ressource `yellow_cake`, et les nœuds **22/23/24**. La
+  chaîne yellowcake reste la voie NORMALE.
+  (2) **`broyeur_uranium` n'a plus AUCUN palier** : entrée retirée de `TIER_NEXT`, et le bâtiment
+  `centrifugeuse_uranium` du 14.25 est SUPPRIMÉ (def, `TIER_STEP`, barre d'outils, nœud 41).
+  (3) **« Hard cap au Nv.10 » = bridage ÉCONOMIQUE `COST_SOFTCAP_X2`** (choix du joueur : « fais comme
+  l'aciérie/câblerie »), et non un cap dur. ⚠ **Piège évité** : mettre `TIER_NEXT = { next: null }`
+  aurait cassé l'UI (bouton « 🔒 Densifier » vers un id nul, `tierEntry(null)`), et un flag `hardCap`
+  neuf aurait dupliqué un mécanisme existant. Ratios au-delà du Nv.10 : **5,4 → 10,8 → 21,6**.
+  (4) **`centrale_enrichissement_v2` → « Centrifugeuse Uranium V2 »** : `yellow_cake 1.5` remplacé par
+  **`uranium 256`**, plutonium CONSERVÉ mais aux chiffres du joueur (**0,025**, soit 25,6 au Nv.11 —
+  c'était 0,1), acier 0,25 inchangé → comb. U235 0,25. **`heatCap: 10` AJOUTÉ** (« génère de la
+  chaleur ») + `centrale_enrichissement_v2` inscrit dans la liste `HEAT_PER_MW × MW consommés` de
+  `tickIsland`. **Élec. ×4 du 14.26 conservée** (288/2016 → 294,9 MW → 2,36 GW au Nv.11).
+  ⚠ Son art devient celui du Broyeur V2 supprimé (`BLD_SPRITE_OVERRIDE`).
+  ⚠ Le nom est INLINE seulement : `centrale_enrichissement_v2` n'a pas d'entrée `bld` dans les LOCALES
+  (comme tous les V2), contrairement à `centrale_enrichissement` qui en a une — **`applyToData`
+  réécrit les noms depuis les LOCALES `bld` ET `tech`**, ces sections EXISTENT (j'avais conclu
+  l'inverse en 14.25 : faux, la recherche était mal faite).
+  (5) **MIGRATION — aucun bâtiment perdu** : `broyeur_uranium_v2` (saves ≤ 14.24) **ET**
+  `centrifugeuse_uranium` (builds **308 et 310, tous deux PUBLIÉS**) → **`broyeur_uranium`**, niveau
+  CONSERVÉ (le broyeur n'a plus de cap dur, seulement un coût qui explose). Sans ce renommage,
+  `!BUILDINGS[p.b] → continue` sauterait la tuile et le joueur perdrait bâtiment + investissement.
+  Validé : `node --check` (7 blocs) + Chromium **4 suites, 62 assertions, 0 KO, 0 erreur JS** —
+  broyeur/enrichissement V1/yellowcake/nœuds 22-24 vérifiés INCHANGÉS ; broyeur sans palier + courbe
+  de coût IDENTIQUE à l'aciérie (ratios 5,4/10,8/21,6) ; **moteur réel** : centrifugeuse V2 Nv.11 →
+  2,62e5 uranium + 25,6 plutonium + 256 acier consommés, 256 comb. U235 produits, **0 yellowcake**,
+  2,36 GW, chaleur émise ; broyeur V1 → 128 uranium/s → 1 yellowcake/s ; **migration par rechargement
+  RÉEL** des 2 ids historiques (niveaux conservés) ; détecteur de blocage 14.27 rejoué ;
+  non-régression 14.24→14.27 + boot réel.
+  ⚠ **Pièges de harnais** : le broyeur consomme de l'ACIDE → il lui faut un **TUYAU** relié au port,
+  une route ne suffit pas (sinon `discReason: 'pipe'` et il ne consomme rien) ; les assertions de NOM
+  doivent viser la valeur APRÈS `applyToData` (« Broyeur Uranium », pas l'inline « Broyeur Uranium V1 »).
+- **État précédent : `GAME_BUILD = 310`, `GAME_VERSION = 'Alpha 14.27'`, `SAVE_VERSION = 31`.**
   Changement 14.27 : **DÉBLOCAGE DE L'ENDGAME — l'Usine de Moteur Quantique passe du nœud 43 au
   nœud 41.** `SAVE_VERSION` INCHANGÉ (les nœuds sont reconstruits depuis `TECH_NODES` au chargement ;
   un joueur ayant déjà confirmé le 41 gagne simplement le déblocage au prochain `evaluateTechTree`).
