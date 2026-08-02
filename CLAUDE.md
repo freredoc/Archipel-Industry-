@@ -17,7 +17,66 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 316`, `GAME_VERSION = 'Alpha 14.34'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 317`, `GAME_VERSION = 'Alpha 14.35'`, `SAVE_VERSION = 31`.**
+  Changement 14.35 (**LOT B3** du brief `B3_brief`) : **landmark du Collisionneur ANIMÉ + anneaux de
+  coût de la foreuse.** **AUCUN asset ajouté** — tout l'art dormait depuis B1, ce lot le réveille.
+  `SAVE_VERSION` INCHANGÉ.
+  (1) **`drawAnimFrame` gagne un 7ᵉ paramètre OPTIONNEL `sub` = `{x, y, w, h}`** : prélève une
+  SOUS-RÉGION de la frame courante (repère de la FRAME, le décalage `i * a.fw` est ajouté par la
+  fonction). C'est **le seul point du lot qui touche une primitive partagée** (~40 appels) — la
+  branche `else` est identique à l'existant, donc les appels sans `sub` sont strictement inchangés.
+  ⚠ **À annuler EN PREMIER si quoi que ce soit régresse ailleurs dans le rendu.**
+  ⚠ **NE PAS CONFONDRE avec `drawTileAnim`** (juste en dessous) : son `ctx.drawImage` est presque
+  identique mais finit par **`x, y, w, w`** (et non `w, h`) — il ne doit pas être touché (vérifié
+  intact après coup).
+  (2) **LANDMARK ANIMÉ** : les sheets `bat_collisionneur_pN_boot|_actif` couvrent le bloc ENTIER
+  (96×64) alors que le rendu du terrain avance **tuile par tuile** → chaque tuile prélève sa tranche
+  32×32 via `{x: dc * 32, y: dr * 32, w: 32, h: 32}` (`dr`/`dc` = nb de tuiles collider contiguës au
+  N/O, déjà bornés à 1 et 2 juste au-dessus → la sous-région reste toujours dans les 96×64).
+  États : `starting` → `_boot` (seul le petit anneau tourne), `ready`/`running` → `_actif` (les deux
+  anneaux), `off` ou non réparé → **aucune animation**, tranche statique du palier.
+  ⚠ **Le repli en cascade est VOULU, ne pas le « corriger »** : tant que la sheet (384×64, plus lourde
+  que les tranches 32×32) n'est pas décodée, `drawAnimFrame` rend `false` et la tranche statique du
+  bon palier s'affiche ; la frame 0 de chaque sheet étant identique au statique correspondant, la
+  bascule vers l'animé ne produit **aucun saut visible**.
+  (3) **ANNEAUX DE COÛT (île 7)** : le coût de pose et la conso d'une foreuse **doublent à chaque
+  cercle** autour de l'élévateur (`drillLayer` = distance de Tchebychev → anneaux CARRÉS). Le sol
+  alterne désormais `tile_i7_land` (cercle PAIR) / `tile_i7_land_clair` (cercle IMPAIR) → le palier
+  de coût se **lit sur la grille**. Le cercle 0 (tuile élévateur) est normal, le 1 clair, le 2 — la
+  référence de coût ×1 — normal. `elevatorTileOf` est mémoïsé (`_elevTileCache`) → appel gratuit par
+  tuile. Repli : sprite absent → sol normal.
+  Validé : `node --check` (7 blocs) + Chromium **4 suites, 21 assertions, 0 KO, 0 erreur JS**, suite
+  rejouée **3 fois sans flottement**. Méthode : espion sur `drawImage` enregistrant **la SOURCE en
+  plus de la destination** (c'est la source qui prouve la découpe). **Non-régression (le point
+  sensible du lot)** : sur **27 sheets et 1 758 appels** capturés (écume côtière, falaises, brise,
+  bâtiments animés), **100 % des appels SANS `sub` découpent toujours la frame ENTIÈRE**
+  (`sy=0, sw=fw, sh=fh`, `sx` multiple de `fw`) — 0 anomalie. Collisionneur : les 5 états parcourus
+  (non réparé → ruine statique ; `starting` → `_boot` ; `ready` ET `running` → `_actif` ; `off` →
+  retour aux tranches **du palier**, pas la ruine) ; les **6 tranches sont distinctes et exactement
+  (0,0) (0,32) (32,0) (32,32) (64,0) (64,32)** = 3 colonnes × 2 lignes dans 96×64, toutes en 32×32,
+  et les 6 tuiles utilisent **la MÊME frame** (pas de déphasage, contrairement aux tuiles de brise).
+  Île 7 : les deux teintes sont dessinées (8 claires / 5 normales), élévateur au cercle 0.
+  Contrôle visuel : landmark rendu comme **un bloc cohérent sans couture** entre tuiles ; anneaux
+  carrés bien visibles et alternés autour de l'élévateur.
+  ⚠ **PIÈGE DE HARNAIS MAJEUR (m'a coûté un faux « bug »)** : la partie de démarrage est en mode
+  **« difficile »** et le modal de choix est ENCORE ouvert → le terrain `collider` n'existe pas
+  (0 tuile). **Ne PAS appeler `applyGameMode('normal')` à la main** : ça repeuple les defs de TOUTES
+  les îles sans reconstruire les grilles déjà créées → `tutCount` lit une ligne inexistante et **la
+  boucle de rendu lève à chaque frame** (`Archipel frame error: Cannot read properties of undefined
+  (reading 'building')`, canvas à 0 %). Passer par le VRAI chemin : **cliquer la carte « Normal » du
+  `.mode-modal`** (`chooseMode`), qui reconstruit tout de façon cohérente (vérifié : mode normal,
+  6 tuiles collider, 0 erreur).
+  ⚠ Autre piège : après des dizaines de redraws forcés, un échantillon `getImageData` peut tomber
+  entre le `clearRect` et le repaint → **laisser reposer le rendu et réessayer** avant de conclure
+  qu'un canvas est vide (le contrôle visuel donnait 100 % au même instant).
+  ⚠ **Taille : 2 883 349 → 2 885 563 o (+2 214 o).** Le brief annonçait +2 217 : l'écart de 3 octets
+  vient uniquement du libellé du commentaire de version, rédigé différemment. **Les tailles du brief
+  B3 sont enfin en OCTETS** (`os.path.getsize`) et concordent avec le dépôt — celles des briefs
+  précédents étaient comptées en caractères, d'où l'écart relevé en B2.
+  ⚠ **HORS PÉRIMÈTRE, non traité** : `refroidisseur`/`cryostat` dans `BUILDINGS` (specs attendues),
+  `logic_emetteur` qui résout `null` (préexistant, inerte), et la pointe du foret masquée par un
+  bâtiment au sud/est (limite documentée en B2).
+- **État précédent : `GAME_BUILD = 316`, `GAME_VERSION = 'Alpha 14.34'`, `SAVE_VERSION = 31`.**
   Changement 14.34 (**LOT B2** du brief `B2_brief` — pack `archipel_textures_v3.2`, complément) :
   **foreuse « 1 case ½ » + sélecteur d'émetteur par COMBINAISON de bits.** `SAVE_VERSION` INCHANGÉ
   (aucun champ persisté ne bouge ; `drillDir` = `pl.dd` existe depuis 14.03).
