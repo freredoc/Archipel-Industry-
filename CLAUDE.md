@@ -17,58 +17,7 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 311`, `GAME_VERSION = 'Alpha 14.28'`, `SAVE_VERSION = 31`.**
-  Changement 14.28 : **FUSION broyeur + enrichissement — le Broyeur Uranium est SUPPRIMÉ, la
-  Centrale Enrichissement devient la CENTRIFUGEUSE URANIUM et consomme l'uranium directement.**
-  `SAVE_VERSION` INCHANGÉ (tout passe par `migratePlacement` + la purge `REMOVED_RESOURCES`).
-  ⚠ **J'AVAIS MAL COMPRIS EN 14.25** : le joueur parlait de la **Centrale Enrichissement** (celle de
-  sa capture), pas d'un bâtiment neuf à côté du broyeur. J'avais créé un `centrifugeuse_uranium`
-  SÉPARÉ comme palier du broyeur, en gardant le broyeur hard-cappé — d'où « j'ai toujours des vieux
-  broyeurs ». La vraie demande : **une fusion**, l'étape yellowcake disparaît.
-  (1) **SUPPRIMÉS** : `broyeur_uranium`, `broyeur_uranium_v2` (déjà parti en 14.25) et le
-  `centrifugeuse_uranium` du 14.25. Retirés de `TIER_NEXT`/`TIER_STEP`, de la barre d'outils et des
-  déblocages. La chaîne nucléaire est donc : **uranium → combustible U235**, en UN bâtiment.
-  (2) **`centrale_enrichissement` → « Centrifugeuse Uranium V1 »** : intrants `yellow_cake 2` →
-  **`uranium 256`** (conversion fidèle : le broyeur faisait 1 yellowcake avec 128 uranium, donc
-  2 × 128) + acier 0,25 inchangé → comb. U235 0,25. ⚠ **L'ACIDE du broyeur est abandonné** (la spec
-  du joueur pour la V2 n'en a pas). Il lui reste 7 consommateurs, il ne devient pas une ressource morte.
-  (3) **`centrale_enrichissement_v2` → « Centrifugeuse Uranium V2 »** (entrée Nv.11, palier
-  inchangé) : intrants **uranium 2,62e5 + plutonium 25,6 + acier 256 → comb. U235 256 au Nv.11**
-  (÷1024 dans la def), **élec. ×4 conservée du 14.26** (288/2016 → 294,9 MW → 2,36 GW), et
-  **`heatCap: 10` AJOUTÉ** — le flag « génère de la chaleur » vivait sur le `centrifugeuse_uranium`
-  supprimé, il aurait été perdu dans la fusion (attrapé par le test).
-  (4) **`yellow_cake` n'a PLUS ni producteur ni consommateur** → ajouté à `REMOVED_RESOURCES` et ses
-  3 déclarations retirées (`RES_SHORT`, `RES_TIER`, `CARRIER_BY_RES`). ⚠ **La purge au chargement est
-  OBLIGATOIRE** : sans elle le stock hérité reste au port et l'inventaire l'affiche CASSÉ (plus de
-  sprite, de nom court ni de tier) — exactement le piège d'`information_quantique` en 14.16.
-  (5) **ARBRE : le nœud 23 exigeait « produire 100 yellowcake » → IMPOSSIBLE** après la fusion, il
-  aurait bloqué toute la fin de la branche nucléaire. Restructuration à ids CONSTANTS (ne jamais
-  renuméroter, cf. 14.01) : **22** « Centrifugeuse Uranium » (produire 100 uranium → débloque la V1,
-  reprise du nœud 23) ; **23** « Tour Aéroréfrigérante » (produire 32 comb. U235 → débloque la tour,
-  reprise du nœud 24) ; **24** « Centrale Nucléaire » (garde la centrale seule). On obtient donc le
-  refroidissement AVANT le réacteur, ce qui est l'ordre de pose logique.
-  (6) **MIGRATION — aucun bâtiment perdu** (`migratePlacement`, toutes versions) :
-  `broyeur_uranium` → `centrale_enrichissement` (même palier V1), `broyeur_uranium_v2` **ET**
-  `centrifugeuse_uranium` → `centrale_enrichissement_v2`. Les DEUX renommages du 14.25 et du 14.28
-  doivent coexister : une save ≤ 14.24 porte `broyeur_uranium_v2`, une save 14.25→14.27 porte
-  `centrifugeuse_uranium`. Sans ça, `!BUILDINGS[p.b] → continue` sauterait la tuile.
-  (7) **i18n** : les noms de nœuds ET de bâtiments sont réécrits par `applyToData` depuis les
-  LOCALES (`tech` et **`bld`**, qui existe bien — contrairement à ce que j'ai cru en 14.25). Les
-  entrées `tech` 22/23/24 et `bld.centrale_enrichissement` sont mises à jour dans les **4 langues** ;
-  sans ça l'ancien nom revenait à l'écran (attrapé par le test). `centrale_enrichissement_v2` n'a pas
-  d'entrée `bld` → son nom reste en français partout, comme tous les V2.
-  (8) **Art** : `BLD_SPRITE_OVERRIDE.centrale_enrichissement_v2 = 'bat_broyeur_uranium_v2'` (l'art de
-  la centrifugeuse ; celui de l'ex-Centrale Enrichissement V2 devient inutilisé).
-  Validé : `node --check` (7 blocs) + Chromium **6 suites, 67 assertions, 0 KO, 0 erreur JS** —
-  ids supprimés, recettes/paliers/chaleur exacts, 0 id orphelin, **détecteur de blocage du 14.27
-  rejoué (0 nœud inatteignable)** ; **moteur réel** : V2 Nv.11 → 2,62e5 uranium + 25,6 plutonium +
-  256 acier consommés et 256 comb. U235 produits, 2,36 GW, chaleur émise ; V1 Nv.1 → 256 uranium →
-  0,25 comb. U235 ; **migration par rechargement RÉEL** des 3 ids historiques (niveaux conservés) +
-  stock de yellowcake purgé ; i18n fr/en/de ; boot réel.
-  ⚠ **Piège** : l'assertion « aucun nœud ne parle de broyeur » doit viser le broyeur d'**URANIUM** —
-  le **Broyeur de silicium** (`broyeur`/`broyeur_v2`, nœud « Broyeur + Distillerie ») existe toujours
-  et est parfaitement légitime.
-- **État précédent : `GAME_BUILD = 310`, `GAME_VERSION = 'Alpha 14.27'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 310`, `GAME_VERSION = 'Alpha 14.27'`, `SAVE_VERSION = 31`.**
   Changement 14.27 : **DÉBLOCAGE DE L'ENDGAME — l'Usine de Moteur Quantique passe du nœud 43 au
   nœud 41.** `SAVE_VERSION` INCHANGÉ (les nœuds sont reconstruits depuis `TECH_NODES` au chargement ;
   un joueur ayant déjà confirmé le 41 gagne simplement le déblocage au prochain `evaluateTechTree`).
