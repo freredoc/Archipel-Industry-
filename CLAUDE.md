@@ -17,7 +17,113 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 317`, `GAME_VERSION = 'Alpha 14.35'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 318`, `GAME_VERSION = 'Alpha 14.36'`, `SAVE_VERSION = 31`.**
+  Changement 14.36 (brief `brief1430refroidissement`) : **CHAÎNE DE REFROIDISSEMENT — nouvelle ressource
+  hélium liquide, bâtiments Refroidisseur et Cryostat, Data Center allégé mais chauffant, Usine Moteur
+  Quantique à l'hélium liquide, soft cap de la Tour.** `SAVE_VERSION` INCHANGÉ (`pl.cool` = champ
+  additif ; tout le reste est de la data relue depuis `BUILDINGS`).
+  ⚠ **LE BRIEF ANNONÇAIT « 14.30 / build 312 » SUR UNE BASE 311 — cette version EXISTE DÉJÀ** (lot A
+  chaleur nucléaire). Le contenu est donc livré en **14.36 / build 318** ; toutes les ancres du brief ont
+  été re-vérifiées sur le build 317 (24 ancres, **23 uniques, 1 introuvable** — cf. écart (5)).
+  (1) **Nouvelle ressource `helium_liquide`** (t5, carrier `pipe`, `PORT_PIPE_RES`), déclarée juste
+  après `helium4` aux 3 tables pour garder sa place dans l'inventaire (l'ordre de déclaration fait
+  RANG). **`helium4` passe aussi au port** (il entre dans le COÛT du Cryostat, débité du port).
+  ⚠ **ÉCART NÉCESSAIRE — `PORT_PIPE_RES` NE SUFFIT PAS AU TRANSIT MARITIME** : c'est exactement le cas
+  de l'azote depuis 13.82 (stocké au port, volontairement NON transitable). Le brief supposait le
+  contraire et son test 10 exige pourtant l'expédition 6→5. Les deux hélium sont donc aussi ajoutés à
+  **`TRADE_LIQUIDS`** (sans quoi le Refroidisseur à l'hélium serait inutilisable hors île 6 et le
+  Cryostat, exclusif à l'île 6, ne servirait à rien). **L'azote reste non transitable** (contre-épreuve
+  au test).
+  (2) **Soft cap de la Tour aéroréfrigérante** : `tour_aerorefrigerante` rejoint `COST_SOFTCAP_X2` →
+  au-delà du Nv. affiché 10, le facteur de coût DOUBLE à chaque cran (crans 5,4 / 10,8 / 21,6, courbe
+  **identique à l'aciérie**, vérifié). Bridage ÉCONOMIQUE seul : absorption et eau doublent toujours.
+  Nv. 1→9 **strictement inchangés**.
+  (3) **REFROIDISSEUR** (nœud 37, groupe **Tungstène**, 1024 kW, `tour: true` + nouveau flag `cooler`).
+  Successeur de la Tour, **posable île 7 comprise** (la tour a `forbiddenIslands: [7]`) — c'est son
+  intérêt principal : le souterrain traite enfin sa chaleur sur place au lieu de la faire remonter par
+  l'élévateur. **`COOLER_DEF`** (patron d'`ARC_DEF`, posé juste après `arcDefaultState`) : sélecteur de
+  fluide à 5 modes, **sec 0,5 · eau 2 · azote 4 · hélium 8 · hélium liquide 16 MJ/s** absorbés à V1
+  (×2 par niveau), intrants respectifs **aucun · 256 eau · 1024 azote · 1 He4 · 0,0625 He liquide**.
+  ⚠ **ARCHITECTURE — il reste dans la BOUCLE BÂTIMENT**, il n'emprunte PAS le chemin hors-boucle de la
+  tour : consommateur pur avec `power > 0`, donc jamais sauté par la garde `!effOutputs && power <= 0`
+  (précédent exact : le Data Center). Conséquence voulue : sa conso de fluide apparaît **nativement**
+  dans les panneaux Réseau et Production (le défaut de lisibilité 14.17 de la tour ne se reproduit pas),
+  et déficit/`inFac`/`pwrAvg`/motifs sont gérés par le moteur existant. Dans `processHeat` étape 2, la
+  branche `cooler` **ne prélève RIEN et n'écrase AUCUN champ d'état** (`active`, `disc`, `inFac`,
+  `pwrAvg`, `regime`, `waterFrom/Avail/Need/Drawn` restent ceux de la boucle bâtiment) : elle ne fait que
+  lire `bld.regime` (à jour — `processHeat` tourne APRÈS la boucle et après le lissage de `pwrAvg`).
+  ⚠ `to.absorb` et `to.condIds` sont posés **AVANT le `continue`** : l'inscription dans `condNets` se
+  fait dans une boucle ULTÉRIEURE qui les relit. Régime PROPORTIONNEL (pas d'`allOrNothing`) : 50 %
+  d'eau → 50 % d'absorption.
+  ⚠ **ÉCART (a) — `buildingConnectsCarrier(refroidisseur, 'pipe')` forcé à vrai** : son fluide étant
+  choisi au runtime, il n'a AUCUN `inputs` statique → sans ce cas il ne dessinerait aucun raccord tuyau
+  et ne ferait pas **PONT**, alors que la tour qu'il remplace le fait (elle a `eau` en dur). Même esprit
+  que la foreuse et sa route (14.07). Volontairement **indépendant du mode COURANT** : changer de fluide
+  ne doit jamais couper en deux un tuyau qui traversait le bâtiment.
+  ⚠ **ÉCART (b) — fiche** : le brief affirmait « ses intrants sont déjà affichés par le rendu standard ».
+  **FAUX** — l'`InfoPanel` lit `b.inputs`, absent. Ajout de `coolIO` à côté d'`arcIO`
+  (`bIn = arcIO ? … : coolIO ? coolIO.inputs : b.inputs`), sinon la ligne « Entrées » resterait vide.
+  Le bloc diagnostic `b.tour` est partagé : `capA` lit désormais l'absorption du FLUIDE et la ligne
+  « Eau X % · N eau/s » est **masquée** pour un refroidisseur (elle lit `waterNeed`/`waterDrawn`, jamais
+  renseignés pour lui).
+  État `bld.cool = { sel }` : posé à la pose / densification / réparation, sérialisé en **`pl.cool`**
+  (la chaîne seule), restauré avec repli **`sec`** (save antérieure ou valeur inconnue).
+  (4) **CRYOSTAT** (nœud 41, groupe **Quantique** juste après le Séparateur, île 6, 8192 kW **FIXES**
+  sans sigmoïde) : liquéfacteur d'hélium, cycle de Claude réel — compression + **pré-refroidissement à
+  l'azote** — donc **1024 azote/s** en plus des 0,25 He4/s, et conversion **1:1** (changement d'état,
+  pas une transmutation) → 0,25 He liquide/s. Coût = 1000 hélium (la charge initiale de la boucle
+  fermée) + alliage/supra/polymère/ordi quantique. **Émetteur de chaleur PLAT 2,048 MJ/s** au Nv.1.
+  ⚠ `label: 'LIQ'` (le brief proposait `CRYO2` avec repli `LIQ` ; `CRYO` est pris par le Séparateur).
+  (5) **DATA CENTER** : recette réduite à **1024 azote/s** (processeur et hélium RETIRÉS) et il devient
+  **émetteur de chaleur PLAT 1,024 MJ/s**. `allOrNothing` et `maxPerIsland: 1` CONSERVÉS (seule la
+  justification du commentaire change). ⚠ **Effet de bord ASSUMÉ, sans garde-fou ni migration (demande
+  explicite du brief)** : sur une save existante, un Data Center sans conduit accumule et passe en
+  **endommagé au bout de 60 s** (réparation 20 %) — le joueur devra le raccorder. ⚠ **Second effet de
+  bord, non listé par le brief** : n'ayant plus d'intrant porté par la ROUTE, il **ne s'y raccorde
+  plus** (`buildingConnectsCarrier`) — il lui faut désormais tuyau + câble + conduit.
+  ⚠ **ANCRE INTROUVABLE (la seule)** : le brief §4.5 donnait
+  `const effInputs = arcEff ? arcEff.inputs : b.inputs;` — le 14.32 a intercalé `enrEff`. La chaîne
+  réelle devient `arcEff → enrEff → coolEff → b.inputs`.
+  (6) **USINE MOTEUR QUANTIQUE** : `azote: 8192` → **`helium_liquide: 0.5`** (équivalence du
+  Refroidisseur, 1024 azote ↔ 0,0625 He liquide). Aucune migration (la save ne stocke qu'id + niveau).
+  ⚠ **À SIGNALER, non corrigé (arbitrage d'équilibrage)** : 1 Usine V1 = 0,5 He liq/s → **2 Cryostats**
+  → 0,5 He4/s → **5 Séparateurs Cryogéniques** → 5 Extracteurs, plus 2048 azote/s. Chaîne amont lourde,
+  assumée pour de l'endgame, à rééquilibrer après playtest.
+  (7) ⚠ **ÉCART (c) — `heatEmitMaxOf` ÉTENDU** (le brief est antérieur au 14.30 lot A, qui a rendu le
+  plafond de chaleur FIXE) : sans y déclarer l'émission PLATE du Cryostat et du Data Center, `heatCapOf`
+  serait retombé sur `HEAT_PER_MW × conso nominale` → plafond **deux fois trop bas** pour le Cryostat
+  (1,024 au lieu de 2,048) et il tripperait en 30 s au lieu de 60.
+  Validé : `node --check` (7 blocs) + Chromium **5 suites, 120 assertions, 0 KO, 0 erreur JS**.
+  Moteur RÉEL : les 4 fluides mesurés un par un (conso EXACTE sur le réseau **et** MJ/s réellement
+  retirés d'une source saturée), mode **sec sans aucun tuyau** (régime 1, absorption 0,5, aucun motif
+  « pipe »), fluide à moitié → **régime 0,5 et absorption 2** sans écraser `pwrAvg`, Nv.2 exactement
+  doublé, chaleur réellement évacuée d'une source du conduit, **tour aéroréfrigérante non régressée**
+  (256 eau/s hors boucle, `waterFrom = 'port'`, 1,024 MJ/s) ; Cryostat 1024 azote + 0,25 He4 → 0,25 He
+  liquide, **8192 kW constants dès le 1ᵉʳ tick** (`min = max`, pas de sigmoïde), 2,048 MJ/s, plafond
+  2,048 × 60, **surchauffe au tick 60 sans conduit** ; Data Center 1024 azote, **0 hélium 0 processeur**,
+  1,024 MJ/s ; Usine MQ sans He liquide → régime 0, puis 0,5 He liq/s → 0,1 moteur/s ; transit **6→5
+  des deux hélium**, azote toujours refusé. UI RÉELLE (tap canvas) : 5 boutons de fluide, mode courant
+  surligné, **clic réel « Azote » → `cool.sel` + absorption qui passe de 2 à 4 MJ/s**, ligne « Eau … »
+  bien masquée, « Entrées eau 256/s » affichée. **Rechargement RÉEL** : fluide conservé, fluide inconnu
+  → « sec ». **Save du build 317 rechargée en 318** : 0 perte (niveaux, stocks, conduit), 0 `tickErrors`,
+  0 endommagé, horloge qui avance. **Détecteur d'atteignabilité de l'arbre** (14.27) rejoué : 0 nœud
+  inatteignable.
+  ⚠ **PIÈGES DE HARNAIS (coûteux)** : (a) `bld.heatAbsorb` est ce qui a été **réellement** absorbé, pas
+  la capacité — sans source chaude sur le conduit il vaut 0 ; mesurer la capacité par la **baisse de
+  `heat` d'une source saturée**, conduit passé en `unlimited` ; (b) l'électricité circule PAR COMPOSANTE
+  câble : deux tuiles de câble non contiguës = deux réseaux, et un bâtiment qui se raccorde au câble les
+  **ponte** — un refroidisseur retiré coupe donc l'alimentation de son voisin ; (c) sur l'**île 6**,
+  `processCollider` réécrit `collider.state` en tête de `tickIsland` → un Data Center y reste
+  **`dcIdle`** (régime 0) quoi qu'on force : le tester sur l'île 1 ; (d) sans `unlimited`, le tuyau V1
+  (64/s) bride les 1024 azote/s et on mesure le plafond du réseau ; (e) le tap canvas est **avalé tant
+  qu'une astuce est ouverte** (`.tip-popup` + `.research-backdrop`) → les fermer en boucle avant ;
+  (f) `innerText` des fiches est en MAJUSCULES (CSS) → tester les libellés sans casse.
+  ⚠ **HORS PÉRIMÈTRE, non traité (demandé par le brief §8)** : aucun sprite touché — `bat_refroidisseur`
+  et `bat_cryostat` **dormaient déjà depuis B1** et sont donc actifs immédiatement ; l'icône
+  `item_helium_liquide` **n'existe pas** (repli null-safe, à livrer). `SAVE_VERSION` non incrémenté,
+  Refroidisseur volontairement hors de `COST_SOFTCAP_X2` et hors du groupe `nuclear`.
+  ⚠ **Taille : 2 885 563 → 2 900 283 o (+14 720 o).**
+- **État précédent : `GAME_BUILD = 317`, `GAME_VERSION = 'Alpha 14.35'`, `SAVE_VERSION = 31`.**
   Changement 14.35 (**LOT B3** du brief `B3_brief`) : **landmark du Collisionneur ANIMÉ + anneaux de
   coût de la foreuse.** **AUCUN asset ajouté** — tout l'art dormait depuis B1, ce lot le réveille.
   `SAVE_VERSION` INCHANGÉ.
