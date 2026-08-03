@@ -143,7 +143,14 @@ jobs:
         run: |
           BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" Archipel_industry_alpha-7.html | head -1)
           VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" Archipel_industry_alpha-7.html | head -1)
-          NOTES=$(git log -1 --pretty=%s)
+          # 14.44 — Les notes viennent de GAME_NOTES, DANS le fichier de jeu, à côté de
+          # l'étiquette qu'elles décrivent. Avant, c'était le sujet du dernier commit : après
+          # une fusion de PR le joueur lisait « Merge pull request #NNN from … » sous
+          # « Mise à jour disponible ». Repli sur le sujet de commit si la constante manque
+          # (ancien fichier de jeu) ou est vide, pour ne jamais casser la publication.
+          NOTES=$(grep -oP "const GAME_NOTES = \"\K[^\"]*" Archipel_industry_alpha-7.html | head -1)
+          NOTES="${NOTES:-$(git log -1 --pretty=%s)}"
+          echo "Notes: $NOTES"
           echo "Game build=$BUILD version=$VERSION"
           # `apk` = édition DEV (appId d'origine : les apps déjà installées, qui lisent
           # ce champ, se mettent à jour vers l'édition dev) ; `apkTester` = édition

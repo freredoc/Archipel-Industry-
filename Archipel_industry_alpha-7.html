@@ -7309,8 +7309,17 @@ const SAVE_VERSION = 31;
 // déblocage : un banc de brume se lève, l'île émerge, la liaison 5-6 se trace (~1,6 s, une
 // seule fois). Drapeau `archiVu6` persisté (champ OPTIONNEL → SAVE_VERSION inchangé) ; une
 // save antérieure possédant déjà l'île 6 est considérée comme l'ayant vue (pas de rejeu).
-const GAME_BUILD = 325;
-const GAME_VERSION = 'Alpha 14.43';
+const GAME_BUILD = 326;
+const GAME_VERSION = 'Alpha 14.44';
+// 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
+// DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
+// « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
+// disponible » — l'annonce existait, mais ne disait RIEN de ce qui avait changé.
+// La note vit désormais ICI, collée à l'étiquette qu'elle décrit : on ne peut plus bumper la
+// version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
+// Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
+// La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
+const GAME_NOTES = "Bouton « Demander au port » sur la fiche bâtiment et l'outil Améliorer · Entrées, sorties et conso élec. sur chaque vignette de l'onglet Bâtiment · Accumulateur V2 disponible dans le groupe Énergie · Conduit illimité : traversée par les bâtiments, et teinte pilotée par la surchauffe des sources";
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -19829,7 +19838,9 @@ function OptionsModal({
         className: "opt-upd-status new"
       }, React.createElement("div", null, I18N.t("⬆ Mise à jour disponible : "), React.createElement("b", null, upd.label)), upd.notes && React.createElement("div", {
         className: "opt-upd-notes"
-      }, upd.notes), action, NATIVE_UPDATER && dlPct === -1 && React.createElement("div", {
+      }, String(upd.notes).split(' · ').map((n, i) => React.createElement("div", {
+        key: i
+      }, n))), action, NATIVE_UPDATER && dlPct === -1 && React.createElement("div", {
         className: "opt-upd-notes"
       }, I18N.t("❌ Échec du téléchargement. Réessayez, ou "), link, "."));
     }
