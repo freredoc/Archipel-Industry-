@@ -1,8 +1,8 @@
 {
-  "build": 324,
-  "version": "Alpha 14.42",
+  "build": 326,
+  "version": "Alpha 14.44",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #310 from freredoc/claude/new-session-nzvw49"
+  "notes": "Bouton « Demander au port » sur la fiche bâtiment et l'outil Améliorer · Entrées, sorties et conso élec. sur chaque vignette de l'onglet Bâtiment · Accumulateur V2 disponible dans le groupe Énergie · Conduit illimité : traversée par les bâtiments, et teinte pilotée par la surchauffe des sources"
 }
