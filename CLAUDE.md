@@ -17,7 +17,92 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 324`, `GAME_VERSION = 'Alpha 14.42'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 328`, `GAME_VERSION = 'Alpha 14.46'`, `SAVE_VERSION = 31`.**
+  Changement 14.46 (brief `BRIEFMOT2VERROUSILE` + pack `pack_usine_moteur_nuc_v2`) : **USINE MOTEUR
+  NUCLÉAIRE V2 (nœud 41) + VERROUS D'ÎLE CONDITIONNELS.** `SAVE_VERSION` INCHANGÉ — c'est le cœur du
+  lot B : l'état des verrous est **entièrement dérivé** de `techTree.nodes[].status`, déjà persisté.
+  Les **25 ancres du brief sont sorties UNIQUES sur la base 14.45/327**, sans exception (la base du
+  brief était exacte, cas rare).
+  (1) **LOT A — MOT2** : palier V2 de `usine_moteur_nuc` (`TIER_NEXT` cap 9, `TIER_STEP` entrée u10,
+  forfait alliage 1600 + p.précision 800 + câble supra 800 + ordi quantique 10). **Sortie, sigmoïde
+  élec (64/448/60) et exclusivité île 5 IDENTIQUES à la V1** : c'est un **allègement de recette**, pas
+  un gain de débit. Les 3 intrants « tonnage » montent d'un cran, calibrés pour que leur débit **au
+  Nv.11 égale celui de la V1 au Nv.1** (mesuré : 5,12 · 5,12 · 1,024 contre 5 120 · 5 120 · 1 024) ;
+  le **plutonium reste à 0,1** (identité nucléaire).
+  ⚠ **LE PIÈGE DU LOT, confirmé en moteur réel** : la V1 est un cas de chaleur **PLAT** codé en dur sur
+  son id, à DEUX endroits. La V2 passe en **PROPORTIONNEL** → sans l'ajout à la branche `HEAT_PER_MW ×
+  conso` du tick, la chaîne de ternaires retombe sur `: 0` et **la V2 n'émettrait AUCUNE chaleur**,
+  héritant par accident de l'identité `noHeat` de la Centrale Nucléaire V2. Mesuré après correctif :
+  émission **variable 0,027 → 0,064 MJ/s** (19 valeurs distinctes sur 30 ticks, elle suit bien la
+  sigmoïde) et **trip au tick 58** sur un plafond `heatCapOf` de 3,84 MJ. `heatCapOf` n'a bien reçu
+  **aucune modification** : sans cas particulier sur son id, elle retombe d'elle-même sur
+  `HEAT_PER_MW × conso nominale`.
+  ⚠ **CONSÉQUENCE D'ÉQUILIBRAGE À SIGNALER** (non demandée, mesurée) : au Nv.11 la V1 émet **1 048,6
+  MJ/s** (plat, 1,024 × 1024) contre **65,5 MJ/s** pour la V2 → densifier **divise la chaleur par 16**.
+  C'est la conséquence directe de la décision « proportionnel » du brief, à arbitrer au playtest.
+  (2) **`fab_ordi_quantique` : sortie 0,01 → 0,0625/s**, **intrants INCHANGÉS** (gain d'efficacité
+  ×6,25 assumé — à 0,01 la livraison du nœud 40, 1 000 ordinateurs, demandait ~28 h au Nv.1).
+  (3) **LOT B — `exclusiveUntilNode: N`** : un bâtiment cesse d'être exclusif dès que le nœud N est
+  **confirmé**. `four_arc_tungstene` → 39, `machine_outil` → 41, `centrale_gaz` → 37. Deux helpers
+  calqués sur `coolerModesAvailable`/`coolerModesFor` : **`exclusiveIslandWith(id, freedSet)`** (pour la
+  `Toolbar`, qui n'a qu'un ensemble dérivé) et **`exclusiveIslandFor(game, id)`** (pour les 3 sites à
+  état de partie : `selectTool`, changement d'île, mode Copier) ; tous deux rendent **`null`** quand le
+  bâtiment est libéré — exactement la valeur que les appelants comparaient déjà.
+  ⚠ **`ToolButton` n'a demandé AUCUNE modification** (vérifié) : sa ligne `title:` est gardée par
+  `offIsland &&`, calculé par le parent → une fois libéré, `offIsland` devient faux et le `title`
+  retombe sur `undefined` tout seul.
+  ⚠ **LOGISTIQUE ASSUMÉE** : l'`oxygene` de la centrale à gaz est porté par le TUYAU et **absent de
+  `TRADE_LIQUIDS`** → non expédiable. Toute île d'accueil devra produire le sien sur place (Séparateur
+  d'Air local), comme le Cryostat en 14.37. **Ce n'est pas un bug**, `TRADE_LIQUIDS` n'est pas touché.
+  (4) **SPRITE** ⚠ **ÉCART NÉCESSAIRE au §A7 du brief** : le brief pré-câblait le candidat
+  `bat_usine_moteur_nucleaire_v2`, or le pack livré nomme sa clé **`bat_usine_moteur_nuc_v2`** (elle
+  COLLE à l'id, contrairement à la V1). Appliqué verbatim, le candidat n'aurait jamais existé, la V2
+  aurait emprunté l'art de la V1 **et son animation aurait été morte** (`ANIM_BY_SK` indexe, lui, la
+  vraie clé). Liste corrigée en `['bat_usine_moteur_nuc_v2', 'bat_usine_moteur_nucleaire']` (repli V1
+  conservé). Mesuré à l'espion `drawImage` : c'est bien **le sprite dédié qui est dessiné, jamais le
+  repli**. Frame 0 == statique **au pixel près** (0 px d'écart) → aucun saut au démarrage de l'anim.
+  ⚠ **HORS PÉRIMÈTRE, À TRANCHER (le point le plus important du rapport)** : la MOT2 est le **SEUL**
+  des 16 bâtiments de `TIER_STEP` **absent de `TOOLBAR_GROUPS`** → elle ne s'obtient QUE par
+  densification, jamais par pose directe. Le brief ne demandait pas d'entrée de menu ; une ligne dans le
+  groupe `nuclear` suffirait (le coût de pose serait `cumulativeInvested`, mécanisme en place depuis
+  13.27). Conséquence annexe : sa fiche `BuildingDetailModal` (appui long au MENU) est **inatteignable**,
+  donc la ligne « Exclusif » du §B6 n'est pas observable sur elle.
+  Validé : `node --check` (7 blocs) + Chromium **4 suites, 48 assertions, 0 KO, 0 erreur JS**, suites
+  rejouées **2 fois intégralement sans flottement**, en viewport 420 px / DPR 3. **UI RÉELLE** :
+  densification par tap canvas sur l'outil Améliorer → `usine_moteur_nuc_v2` Nv.11 et **forfait débité
+  au près** (1600/800/800/10) ; fiche « 65,5 MW→524 MW », intrants du palier, sortie 102,4/s ; les 3
+  verrous vus **dans le menu Bâtiment depuis l'île 1** (grisés avant, non grisés après), fiche annonçant
+  « Exclusif · Île 6 — libéré par « Data Center » » **puis plus de ligne du tout** après le nœud 37 ;
+  bascule d'île outil en main (désélectionné avant 41, **conservé** après) ; mode Copier ; et
+  **non-régression** : `mine_tungstene`/`fab_ordi_quantique`/`data_center`/`usine_moteur_quantique`
+  restent île 6 même après le nœud 43, tout le bloc île 7 reste île 7. **Round-trip de save** : SAVE 31,
+  et une save créée sur le **build 327 (avant patch)** rechargée en 328 → 4 bâtiments intacts,
+  0 `tickErrors`, horloge qui avance, **verrous recalculés seuls** depuis `techTree`.
+  ⚠ **CONTRÔLE SHA-256 (§6.1 du brief)** : les **26 blocs livrés sont VERBATIM** dans le HTML
+  (hash brief == hash ré-extrait, **0 divergence**) et **0 anomalie d'échappement**. ⚠ Corollaire
+  assumé : les commentaires du brief portent le littéral **« 14.4x »** (non substitué, sinon les hashes
+  divergeaient) — à remplacer par 14.46 d'un coup si on le souhaite.
+  ⚠ **BUG PRÉEXISTANT TROUVÉ EN PASSANT, NON CORRIGÉ** (hors périmètre) : outil **Copier** en main +
+  survol d'une tuile → `drawHover` appelle `canPlace(r, c, '__copy')`, or `BUILDINGS['__copy']` est
+  `undefined` → **`Archipel frame error` à CHAQUE frame** (le `try/catch` de 14.13 l'avale, la frame est
+  perdue). **Contre-épreuve faite sur le build 327 d'origine : 35 erreurs, contre 36 sur le build patché
+  → ce n'est PAS une régression.** Correctif d'une ligne : une branche `tool === COPY` dans `drawHover`.
+  ⚠ **PIÈGES DE HARNAIS** : (a) le tuto est bloquant et son gate passe par un **state REACT** → écrire
+  `game.tutorial` ne suffit PAS, il faut cliquer le VRAI bouton « Passer » ; (b) `BuildingDetailModal`
+  se rend dans **`.slot-panel`** (mêmes classes que le panneau de sauvegarde) et son backdrop
+  **intercepte tous les clics** — le purger avant chaque interaction ; (c) une vignette **GRISÉE**
+  ouvre la FICHE et **n'appelle PAS `selectTool`** (14.31) → y attendre un toast de refus est un faux
+  KO ; (d) l'onglet **Améliorer est un TOGGLE** : le re-cliquer désélectionne l'outil et le tap ouvre
+  alors l'InfoPanel (2 clics armés) au lieu de l'UpgradePanel (1 clic) ; (e) `useGhostGuard` avale
+  toujours le 1ᵉʳ clic d'un panneau.
+  ⚠ **Taille : 2 969 462 → 2 979 389 o (+9 927 o).** Les 26 blocs du brief seuls pèsent **+6 941 o** ;
+  le reste = les 2 PNG en data-URL (~1 148 o), leur commentaire, la note de version, `GAME_NOTES` et
+  4 clés ajoutées à `__heat` (`exclusiveIslandFor`/`With`, `islandFreeSet`, `TIER_PREV`).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : la V1, `heatCapOf`, `TRADE_LIQUIDS`, `canPlace`/`tryPlace` (qui ne
+  lisent pas `exclusiveIsland`), les autres bâtiments exclusifs, `SAVE_VERSION`, et **aucune traduction**
+  des 2 nouveaux libellés (« — libéré par « … » » → repli fr hors-fr, comme les astuces depuis 13.32).
+- **État précédent : `GAME_BUILD = 324`, `GAME_VERSION = 'Alpha 14.42'`, `SAVE_VERSION = 31`.**
+  ⚠ Le mémo n'a pas été tenu pour les versions 14.43 → 14.45 (builds 325-327) : ce bloc décrit la 14.42.
   Changement 14.42 (**LOT B6** du brief `B6_brief`) : **RÉVÉLATION ANIMÉE DE L'ÎLE 6** sur la carte
   de l'archipel. À la **PREMIÈRE** ouverture de la carte après le déblocage : un banc de brume se
   lève (0 → 1,4 s), l'île émerge (0,5 → 1,5 s), la liaison 5-6 se trace (0,9 → 1,6 s). Une seule
