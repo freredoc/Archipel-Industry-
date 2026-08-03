@@ -17,7 +17,91 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 321`, `GAME_VERSION = 'Alpha 14.39'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 322`, `GAME_VERSION = 'Alpha 14.40'`, `SAVE_VERSION = 31`.**
+  Changement 14.40 (brief `BRIEFSFX14.38`) : **EXTENSION DU MODULE AUDIO — 17 sons, file de sons
+  simulation → UI, rebranchement de la dette, et BOUCLE audio du Collisionneur.** `SAVE_VERSION`
+  INCHANGÉ (aucun champ persisté ; `sfxQueue` et `co._haltPrev` sont transitoires).
+  ⚠ **LE BRIEF VISAIT « 14.38 / build 320 » SUR UNE BASE 319 — CES VERSIONS EXISTENT DÉJÀ** (14.38 =
+  lot B4 arts dédiés, 14.39 = palier Collisionneur). Contenu livré en **14.40 / build 322** ; les
+  **26 ancres ont été re-vérifiées sur le build 321 — toutes UNIQUES**, y compris les 6 multi-lignes.
+  Les 3 avertissements du brief sont CONFIRMÉS : `SFX.play('click')` existe **12 fois** (4.11 exige
+  donc son ancre multi-lignes) et `SFX.playThrottled('powerAlert', 4000|8000)` **3 fois chacune**
+  (4.6/4.13/4.14 passent obligatoirement par la ligne `showToast` unique qui les précède).
+  (1) **LOT 1 — 17 sons** (catalogue **48 → 65**) en 4 sections avant `/* --- Système & slots --- */` :
+  Collisionneur (boot/ready/launch/round/match/stop/halt), Souterrain (elevator/drillStart/drillDone/
+  pocketFound), Logique (logicGate/logicRotate/logicToggle), Chaleur (heatWarn/heatTrip/nucSafety).
+  Uniquement les helpers existants `tone`/`noise`/`woosh`. Les 5 nouveaux sons d'alerte sont ajoutés
+  à `ALERTS` (métadonnée exportée, **non lue par `play()`** — vérifié, purement documentaire).
+  (2) **LOT 2 — RÈGLE D'OR : aucun `SFX.play()` depuis le tick.** `onTick` est appelé DIRECTEMENT
+  par `runCatchUp` → un son dans `processCollider`/`processLogic` produirait une avalanche au retour
+  du joueur. Nouveau **`qSfx(game, name)`** (plafond DUR 32, pas de `shift()` → aucun coût O(n) au
+  tick) + **`drainSfxQueue(game)`** appelé **UNE fois par frame** entre `g.animClock++` et
+  `checkTutorial()` — **hors** de la boucle `while (g.tickAcc >= 1 …)`, qui peut tourner **200 fois**
+  par frame en mode rapide × booster. File > 8 ⇒ **purge sans jouer** ; sinon dédoublonnage et
+  **2 sons maximum**. ⚠ **Vérifié par GREP, pas à l'œil** (point 4 du brief) : **0 appel réel** à
+  `SFX.play`/`playThrottled` dans `processCollider`, `tickIsland`, `onTick`, `processLogic`,
+  `processHeat`, `colliderPenalty`, `tickShips`, `runCatchUp` (les commentaires citant « SFX.play »
+  sont exclus du contrôle).
+  (3) **LOT 3 — dette** : 5 sons muets rebranchés (`tabSwitch` sur les 2 onglets du Port,
+  `boatUnlock` à l'amélioration du transit, `load` à la fermeture du récap hors-ligne — **seul moment
+  où il est audible**, le contexte audio n'existant pas avant le 1er geste).
+  ⚠ **ÉCART SIGNALÉ — `placeC` reste INERTE.** Le brief fixe le critère de landmark à `w*h >= 6`,
+  mais **aucun bâtiment posable n'atteint 6 tuiles** : le plus gros est **2×2** (les centrales, 4
+  tuiles), et le Collisionneur 3×2 est un **landmark de TERRAIN**, jamais posé par `tryPlace` (il n'y
+  a par ailleurs **aucun champ `landmark`** dans `BUILDINGS` — les 17 occurrences du mot sont des
+  commentaires). La branche est écrite avec une constante `LANDMARK_TILES = 6` : **la passer à 4**
+  la viserait aux centrales. Valeur du brief conservée, décision laissée au joueur.
+  (4) **LOT 4 — accroches** : `colliderBoot` (off→starting), `colliderReady` (**seulement** si l'état
+  devient `ready` : s'il enchaîne sur `running`, `colliderLaunch` a déjà sonné), `colliderRound`,
+  `colliderMatch`, `colliderStop` (remplace `powerAlert` sur la pénalité), `colliderLaunch` (remplace
+  `unlock`) ; `elevator` pour tout trajet impliquant l'île 7 ; `drillStart` **remplace** le `place`
+  générique de `tryDrill` (les deux ensemble se chevaucheraient) ; `drillDone`/`pocketFound` dans un
+  drain **jusque-là totalement muet** ; `logicRotate`/`logicToggle` selon `patch.__cycle` ;
+  `logicGate`/`junction`/`cable` à la pose ; `heatTrip`/`heatWarn`/`nucSafety` ; `click` ajouté à
+  `setArcMode` (il était le seul à ne pas sonner, contrairement à `setArcSel`/`setCoolSel`).
+  ⚠ **`colliderHalt` sur TRANSITION uniquement** (`co._haltPrev`) : sans cette garde il partirait à
+  **chaque tick** de panne. `_haltPrev` n'est pas persisté — la sérialisation du collisionneur est
+  une **liste blanche** (`state/timer/cur/penalties/enabled/launched`), vérifiée.
+  (5) **LOT 5 — BOUCLE** (`loopStart`/`loopSet`/`loopStop`, voix = 2 osc + filtre + gain) :
+  **triangle 55 Hz + sine 110,7 Hz** (désaccord → battement de « machine »), lowpass Q 0,8. Toutes
+  les transitions en `setTargetAtTime(…, 0.15)` (une affectation directe produit un zipper noise).
+  ⚠ **NE PAS piloter par `co.cur`** : c'est une sinusoïde PERMANENTE de période `COLLIDER_START`
+  (600 ticks) → la boucle respirerait toutes les 10 min À VIE. Elle suit l'**avancement du démarrage**
+  (monotone) : gain 0,020 → 0,100 et coupure 90 → 520 Hz, **maximum atteint pile quand `colliderReady`
+  sonne**, puis TENU. ⚠ **`setEnabled(false)` coupe toutes les voix** ; démuter ne relance rien (c'est
+  la frame qui redemandera `loopStart`).
+  ⚠ **CORRECTIF NON DEMANDÉ MAIS INDISPENSABLE** : la boucle rAF **ne tourne plus en arrière-plan**,
+  donc `colliderLoopFrame` n'aurait **jamais** été rappelée pour couper le bourdon → la voix aurait
+  tourné écran éteint. Un `SFX.loopStop('collider')` est ajouté au handler **`onHide`** existant (le
+  `flushSave` et sa garde `saveTimer` sont intacts).
+  Validé : `node --check` (7 blocs) + Chromium **5 suites, 49 assertions, 0 KO, 0 erreur JS**, suites
+  rejouées **2 fois intégralement sans flottement**. Web Audio RÉEL : les 17 sons joués sans
+  exception. Moteur RÉEL (Collisionneur alimenté par un tuyau contre le landmark + citerne d'He3 —
+  **sans carburant il reste `halt='fuel'` à vie et rien n'avance**) : boot, `colliderHalt` **une seule
+  fois** sur 5 ticks de coupure puis **resonne** après rétablissement, `colliderReady` seulement si
+  non lancé. **5000 ticks hors-ligne → file plafonnée à 32, drain joue 0 son.** Boucle : **20 cycles
+  start/stop = 40 oscillateurs** (aucune fuite), `loopStart` idempotent (10 appels → 2 osc), `co.cur`
+  ×8192 ne change ni gain ni coupure. **UI RÉELLE** : clics réels sur les 7 onglets d'île (1→2 =
+  `islandTransition`, 6⇄7 = `elevator`), les 2 onglets du Port (`tabSwitch` ×2), l'amélioration du
+  transit (`boatUnlock`), et **tap canvas réel** posant un `porte_and` → `logicGate`. Drains de frame
+  réels : `heatTrip`/`heatWarn`/`nucSafety`/`colliderStop`/`drillDone`/`pocketFound`. **Round-trip de
+  save** : SAVE 31, `sfxQueue` et `_haltPrev` **absents du fichier**, données intactes, 0 erreur.
+  ⚠ **PIÈGES DE HARNAIS (coûteux)** : (a) `clearOverlays` clique `.research-backdrop`, qui est **aussi
+  le fond du panneau Port** → l'appeler avant un clic d'onglet FERME le panneau (prévoir une variante
+  sans nettoyage) ; (b) **`useGhostGuard` (13.50)** avale le 1ᵉʳ click d'un panneau tant qu'aucun
+  `pointerdown` INTERNE n'a eu lieu → dispatcher un `pointerdown` dans le panneau avant de cliquer ;
+  (c) le **TUTORIEL est bloquant** (13.60) : il verrouille les onglets et filtre le menu Bâtiment aux
+  seuls bâtiments révélés → **le menu logique reste VIDE** tant qu'on n'a pas cliqué « Passer » ;
+  (d) l'onglet Bâtiment est un **TOGGLE** → n'ouvrir que si `.build-panel` est absent.
+  ⚠ **HORS PÉRIMÈTRE (§7), non touché** : ambiances par bâtiment, boucles data center/géothermie/four
+  à arc, bips α/β/γ (exigeraient `play(name, arg)`), `gasHiss`, variation de pitch, et les 9 sons
+  laissés en réserve (`titleSting`, `mapOpen`, `clickAlt`, `errorGeneric`, `importBlocked`, `noInput`,
+  `networkSplit`, `notify`, `prodMilestone`).
+  ⚠ **Taille : 2 921 480 → 2 934 736 o (+13 256 o).** Le brief plafonnait à 12 Ko : **dépassement
+  assumé de 968 o** — le CODE seul pèse ~7,7 Ko (17 sons + API de boucle + file), le reste est la
+  documentation des 5 pièges ci-dessus. Trois passes de condensation ont déjà retiré ~2,5 Ko ; couper
+  davantage supprimerait des ⚠ (règle d'or, piège `co.cur`, timbre triangle, `placeC` inerte, `onHide`).
+- **État précédent : `GAME_BUILD = 321`, `GAME_VERSION = 'Alpha 14.39'`, `SAVE_VERSION = 31`.**
   Changement 14.39 (brief `brief14.38` + 1 bug joueur) : **palier du Collisionneur indexé sur les
   RÉPARATIONS, raccords du landmark refaits, Refroidisseur ×128, hélium liquide gaté par le Cryostat,
   et la Centrale Nucléaire V2 n'affiche plus de chaleur.** `SAVE_VERSION` INCHANGÉ.
