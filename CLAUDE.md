@@ -17,7 +17,88 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 320`, `GAME_VERSION = 'Alpha 14.38'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 321`, `GAME_VERSION = 'Alpha 14.39'`, `SAVE_VERSION = 31`.**
+  Changement 14.39 (brief `brief14.38` + 1 bug joueur) : **palier du Collisionneur indexé sur les
+  RÉPARATIONS, raccords du landmark refaits, Refroidisseur ×128, hélium liquide gaté par le Cryostat,
+  et la Centrale Nucléaire V2 n'affiche plus de chaleur.** `SAVE_VERSION` INCHANGÉ.
+  ⚠ **LE BRIEF VISAIT « 14.38 / build 320 » — CETTE VERSION EXISTE DÉJÀ** (lot B4, arts dédiés, mergé
+  entre-temps). Le contenu est donc livré en **14.39 / build 321** ; les 26 ancres du brief ont été
+  re-vérifiées sur le build 320 — **25 uniques, 1 tronquée** (E4 : le brief écrivait
+  `I18N.t("Posez un câble logique…")`, la vraie chaîne va jusqu'à « …du Collisionneur »).
+  (1) **LOT A — `colliderPalier` lisait `COLLIDER_PUZZLE_NODES` (39/41) au lieu de
+  `COLLIDER_REPAIR_NODES` (38/40/42).** Effet joueur mesuré : valider le nœud 41 (1 000 confirmations)
+  faisait basculer en **P3 — 6 saveurs, 3 bits, leptons 000/111** alors que la Réparation III (nœud 42,
+  qui livre XOR/XNOR) n'était pas faite → comparateur 3 bits + détecteur de motif à construire **sans
+  les deux portes prévues pour ça**. Le commentaire d'en-tête disait déjà « 40 → P2, 41 → P3 »,
+  incohérent avec lui-même. `colliderGoalLocked` exige désormais le puzzle **ET** la réparation
+  suivante (sinon le garde-fou anti-sur-farming de 14.24 se désamorçait : palier constant, on accumule
+  vers le seuil de N+1 avec les portes de N) ; au palier 3 il n'y a pas de réparation suivante → seul
+  le nœud 43 libère. **ARRÊT COMPLET au seuil** (et plus seulement blocage de relance) : `processCollider`
+  sort en `state='off'`, 0 kW, 0 He3, séquence annulée — une machine DÉJÀ EN MARCHE continuait sinon
+  d'empiler. ⚠ **`co.enabled` n'est PAS touché** → la machine repart SEULE dès la réparation confirmée
+  (vérifié), en repayant les 10 min. ⚠ **Dépassement résiduel d'UNE manche assumé** : `processCollider`
+  tourne avant `processLogic`, la manche du tick où le seuil tombe est déjà jugée.
+  ⚠ **ÉCART — le brief affirmait que `goalLocked` est déclaré AVANT `stLabel` dans le panneau. FAUX** :
+  il l'était **après** `launchBlock` → le lire depuis `stLabel` aurait levé une `ReferenceError` (zone
+  morte temporelle d'un `const`) et **tué le panneau au premier rendu**. La déclaration a été REMONTÉE.
+  `co.palier`/`co.goal` sont posés AVANT tout early-return (le miroir restait figé machine éteinte) et
+  le panneau lit désormais `colliderPalier(game)` directement.
+  (2) **LOT B — raccords du landmark refaits** : l'ancien bloc cumulait le masque des 4 côtés et
+  dessinait **un seul sprite APRÈS l'art** → deux réseaux opposés donnaient `tuyau_vX_10_EO`, soit un
+  **tuyau peint EN TRAVERS de la machine**. Désormais **1 sprite par DIRECTION**, dessiné **SOUS l'art**
+  (convention des stubs de bâtiment), et les **JONCTIONS sont reconnues** (`junctionDirOk`, règle d'axe
+  13.18 ; le niveau vient de `netIds[carrier]`, `networkId` étant null sur une jonction — sinon repli V1
+  systématique). Mesuré à l'espion `drawImage` : `tuyau_v3_08_O`, `cable_v1_04_S`, `tuyau_v1_02_E` —
+  **0 masque combiné**, 69 raccords tous dessinés avant l'art de leur tuile.
+  ⚠ **B.3 — CONTRÔLE VISUEL FAIT, aucun raccord avalé** : diff au pixel entre rendu avec et sans réseau,
+  tuile par tuile → 43 px (bas-gauche), 21 px (haut-droite), 17 px (bas-droite) modifiés, **0 px sur les
+  3 tuiles non raccordées**. L'art laisse bien passer le raccord (36 % de transparence).
+  (3) **LOT C — Refroidisseur ×128** : élec. **1024 → 131 072 kW**, absorptions et eau/azote ×128,
+  hélium gazeux ×8, hélium liquide ×4 → `sec 65,536 · eau 262,144 (32 768 eau/s) · azote 524,288
+  (131 072 azote/s) · hélium 1 048,576 (8 He4/s) · hélium liquide 2 097,152 MJ/s (0,25/s)`.
+  **Coût de construction INCHANGÉ** (arbitrage : le coût par MJ est déjà divisé par 128). Rapports
+  eau/MJ (125) et azote/MJ (250) **inchangés** — c'est l'ÉCHELLE qui bouge. Calages : 131 072 azote/s =
+  1 Séparateur d'Air au Nv.8 pile ; 0,25 He liquide/s = 1 Cryostat V1 pile (vérifiés).
+  ⚠ **`coolerEffective` rend les valeurs de BASE (V1)** : le ×2^niveau est appliqué par les APPELANTS
+  (boucle bâtiment pour les intrants, `processHeat` pour l'absorption) — piège de test, mesurer en
+  moteur réel.
+  (4) **LOT D — hélium liquide INVISIBLE sans Cryostat** (il n'est produit que par lui) : helpers
+  `coolerModesAvailable(bool)` / `coolerModesFor(game)`, branchés au sélecteur de l'InfoPanel, à la
+  ligne « Fluides » de la fiche (`BuildingDetailModal` reçoit `cryoOk`), + **garde dans `setCoolSel`**
+  et **repli « sec » au chargement** d'une save 14.36→14.38 qui l'aurait sélectionné sans Cryostat.
+  (5) **BUG JOUEUR — « on voit encore la chaleur émise de la nuke v2 »** : la V2 a `noHeat` et son bloc
+  de chaleur est bien gaté par `b.heatCap` (absent) — MAIS les lignes **« Sortie »** et **« Prod.
+  théorique »** de la fiche calculaient `NUC_POWER × upMult × frac × HEAT_PER_MW` **en dur, sans tester
+  `noHeat`** → « ⚡ 16,4 MW · 🔥 2,05 MJ/s » sur une centrale qui n'émet rien. Le 🔥 est retiré pour une
+  V2 (⚡ conservé), la V1 est intacte (vérifié par tap canvas réel sur les deux fiches).
+  ⚠ **2ᵉ correctif, PAS demandé explicitement mais du même défaut** : `islandNuclearCoolingOk` comptait
+  la V2 comme « centrale à refroidir » → monter sa puissance déclenchait le toast rouge « aucune tour
+  aéroréfrigérante reliée par conduit — la centrale va surchauffer », **alarme fausse et impossible à
+  satisfaire** (aucun `heatCap` → aucun trip possible). Une V1 sur la même île déclenche toujours
+  l'alerte (contre-épreuve). ⚠ **Le joueur avait écrit « toast pas de conduit pour nuke v2, normal »** :
+  si l'intention était de GARDER ce toast, c'est la seule ligne à annuler (`b.nuclear && !b.noHeat`).
+  Validé : `node --check` (7 blocs) + Chromium **8 suites, 119 assertions, 0 KO, 0 erreur JS**, suite
+  rejouée **3 fois sans flottement**. Moteur RÉEL : les 5 fluides mesurés un par un (fluide prélevé ET
+  MJ réellement retirés d'une source saturée), Nv.2 exactement ×2, **tour non régressée** (256 eau/s,
+  1,024 MJ/s) ; arrêt au seuil vérifié tick par tick (200 ticks → 0 confirmation de plus) puis reprise
+  seule ; **UI RÉELLE par tap canvas** (fiche refroidisseur « ENTRÉES eau 32768/s · ÉLEC. 131 MW ·
+  − 32768 eau/s → 262 MJ/s », 4 boutons de fluide → 5 dès le nœud 41 confirmé SANS rechargement ;
+  panneau Collisionneur « ARRÊTÉ — palier atteint, réparation à livrer » en orange, P1 · 2 saveurs ·
+  1 bit) ; **round-trip de sauvegarde** (SAVE 31, hélium liquide → « sec » sans Cryostat, CONSERVÉ avec) ;
+  détecteur d'atteignabilité de l'arbre (14.27) rejoué → 0 nœud inatteignable ; **pas d'interblocage**
+  (les 3 réparations n'exigent aucune sortie du Collisionneur : 38 alliage/supra/élém.moteur, 40 ordi
+  quantique/pièce précision, 42 moteur quantique).
+  ⚠ **PIÈGES DE HARNAIS** : (a) **l'eau n'est PAS dans `PORT_PIPE_RES`** → elle vit dans la CITERNE du
+  réseau tuyau, pas au port (l'azote, lui, est au port) — mesurer la somme des deux ; (b) le **niveau
+  d'un réseau** est porté par `g.networks[isl][nid].level`, PAS par `upgrade` du bâtiment d'infra ;
+  (c) les **onglets d'île sont des SPRITES sans texte** → cibler par INDEX (0..6 = îles 1..7) ;
+  (d) un espion `drawImage` capte TOUT l'écran → filtrer sur les positions où l'art du landmark est
+  dessiné, sinon les tuiles d'infra ordinaires polluent la mesure ; (e) une fiche déjà ouverte fait
+  croire au succès d'un tap → attendre la DISPARITION de `.info-panel` avant de retaper.
+  ⚠ **HORS PÉRIMÈTRE, non touché** (conforme au §2 du brief) : `COLLIDER_HE3`, `COLLIDER_POWER`,
+  `COLLIDER_GOALS`, l'art du landmark, le coût du Refroidisseur, `SAVE_VERSION`.
+  ⚠ **Taille : 2 912 076 → 2 921 480 o (+9 404 o).**
+- **État précédent : `GAME_BUILD = 320`, `GAME_VERSION = 'Alpha 14.38'`, `SAVE_VERSION = 31`.**
   Changement 14.38 (**LOT B4** du brief `B4_brief` — pack `ile6 v3.3`, `patch_lot7.js`) : **trois arts
   DÉDIÉS remplacent des emprunts.** ASSETS + 2 overrides — **aucune modification de rendu**.
   `SAVE_VERSION` INCHANGÉ.
