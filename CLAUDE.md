@@ -17,7 +17,50 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 323`, `GAME_VERSION = 'Alpha 14.41'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 324`, `GAME_VERSION = 'Alpha 14.42'`, `SAVE_VERSION = 31`.**
+  Changement 14.42 (**LOT B6** du brief `B6_brief`) : **RÉVÉLATION ANIMÉE DE L'ÎLE 6** sur la carte
+  de l'archipel. À la **PREMIÈRE** ouverture de la carte après le déblocage : un banc de brume se
+  lève (0 → 1,4 s), l'île émerge (0,5 → 1,5 s), la liaison 5-6 se trace (0,9 → 1,6 s). Une seule
+  fois dans la partie. `SAVE_VERSION` INCHANGÉ (le drapeau est un champ OPTIONNEL).
+  (1) **9 modifications** : `carte_brume` (sheet 768×128 = 6 frames de 128, dithering Bayer donc
+  alpha strictement 0/255 — langage pixel du jeu, PNG en palette) ; `reveal_css.txt` ; la prop
+  `reveal` ajoutée à `ArchipelMap` ; la classe `reveal` sur le trait menant à l'île révélée ; le
+  bloc `const iles` remplacé (classe `reveal` + calque de brume) ; l'état `archReveal` dans
+  `PortPanel` ; la prop passée à la carte ; et **2 lignes de persistance** (sérialisation +
+  chargement).
+  ⚠ **`clip-path` et NON une largeur ou une transform animée** pour le tracé du trait : le bouton
+  porte déjà `translateY(-50%) rotate(Xdeg)`, animer sa `transform` le **décrocherait de son île**
+  (le défaut que B5 mesurait à 2 px près). Mesuré : le **rectangle du trait est IDENTIQUE pendant
+  et après** l'animation (écart 0,00 px) et sa `transform` inline est inchangée.
+  (2) **PERSISTANCE — `SAVE_VERSION` ne bouge pas** : `archiVu6` est un champ additif. ⚠ **Le repli
+  du chargement est le point critique** : `g.archiVu6 = data.archiVu6 != null ? … : !!(data.
+  islandUnlocked && data.islandUnlocked[6])` — sans lui, **TOUTES les parties en cours rejoueraient
+  la révélation d'une île qu'elles possèdent depuis longtemps** à la mise à jour.
+  (3) **`prefers-reduced-motion: reduce`** coupe les 3 animations et masque la brume (`display:none`)
+  → l'île et le trait sont directement en place.
+  Validé : `node --check` (7 blocs) + Chromium **7 suites, 28 assertions, 0 KO, 0 erreur JS**, suite
+  rejouée 3 fois sans flottement. Cycle COMPLET vérifié : partie sans île 6 → rien ; île 6 débloquée
+  → brume + `arch-node.reveal` + `arch-link.reveal` + drapeau posé au montage ; fermer/rouvrir → plus
+  d'animation ; **sauvegarde forcée puis RECHARGEMENT** → `archiVu6` bien sérialisé, toujours pas
+  d'animation ; et **le cas le plus facile à casser** : save dont on a RETIRÉ `archiVu6` (simule une
+  save pré-B6) avec l'île 6 débloquée → le repli déduit `true`, **aucune animation**. Contexte
+  `reducedMotion: 'reduce'` : 0 animation, brume masquée, île à `opacity 1`, trait non clippé.
+  ⚠ **PIÈGE DE MESURE (m'a donné un faux KO)** : mesurer la distance trait ↔ centre de l'île
+  **PENDANT** la séquence ne teste PAS le `clip-path` — l'île 6 est elle-même en train d'émerger
+  (`scale(.84)→1`, `translateY(-44%)→(-50%)`), donc **SON centre bouge de 6,66 px** (mesuré :
+  87,4 px de large et centre y=493,15 pendant, 104 px et y=486,49 après). Le bon test est la
+  **stabilité du rectangle du trait** entre l'état animé et l'état final, plus l'alignement APRÈS
+  la séquence (mesuré 1,99 / 1,63 px, dans la tolérance B5 de 2 px).
+  ⚠ **CONTRÔLE ANTI-ÉCHAPPEMENT (nouveau, suite au `\xEE` de B5)** : après application, vérifier que
+  **chaque fichier livré se retrouve VERBATIM** dans le HTML (`html.count(contenu) == 1`) et qu'aucun
+  `I18N.t("…\\…")` ne contient de double antislash. Fait : les 4 fichiers verbatim, 0 anomalie.
+  `node --check` ne voit PAS ce défaut — seul ce contrôle (ou le rendu) l'attrape.
+  ⚠ **Taille : 2 947 552 → 2 955 424 o (+7 872 o).** Le brief annonçait +7 489 pour les 9
+  modifications seules ; mesuré **+7 481** avant le bump (8 octets d'écart, un détail de saut de
+  ligne dans un bloc remplacé), le reste étant le commentaire de version.
+  ⚠ **HORS PÉRIMÈTRE** : aucune traduction des nouveaux libellés (repli fr), aucune autre île n'a de
+  révélation (`ARCHI_CACHEE` ne contient que la 6), pas de son.
+- **État précédent : `GAME_BUILD = 323`, `GAME_VERSION = 'Alpha 14.41'`, `SAVE_VERSION = 31`.**
   Changement 14.41 (**LOT B5** du brief `B5_brief`) : **CARTE DE L'ARCHIPEL** — l'onglet « Transit
   archipel » du Port ne liste plus les flux par direction, il **dessine l'archipel**. Une liaison =
   un TRAIT qu'on touche pour ouvrir son détail (les 2 sens réunis). `SAVE_VERSION` INCHANGÉ.

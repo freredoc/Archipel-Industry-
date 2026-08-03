@@ -384,6 +384,24 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
 .arch-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--ink);
   background:rgba(16,24,44,.85);border-radius:3px;padding:0 5px;margin-top:-6px;}
 .arch-lbl.locked{color:var(--ink-faint);}
+/* Révélation de l'île 6 (14.4x) — jouée UNE FOIS, à la première ouverture de la carte
+   après le déblocage. Séquence : la brume se lève (0 → 1,4 s), l'île émerge (0,5 → 1,5 s),
+   la liaison 5–6 se trace (0,9 → 1,6 s). `clip-path` plutôt qu'une largeur animée : le
+   bouton porte déjà un rotate, animer sa transform le décrocherait de son île. */
+.arch-brume{position:absolute;left:50%;top:50%;width:128px;height:128px;
+  margin:-64px 0 0 -64px;background-image:var(--brume);background-size:768px 128px;
+  background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;z-index:3;
+  animation:arch-brume 1.4s steps(6) forwards;}
+@keyframes arch-brume{from{background-position:0 0;}to{background-position:-768px 0;}}
+.arch-node.reveal{animation:arch-emerge 1s ease-out .5s both;}
+@keyframes arch-emerge{
+  from{opacity:0;transform:translate(-50%,-44%) scale(.84);}
+  to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+.arch-link.reveal{animation:arch-trace .7s ease-out .9s both;}
+@keyframes arch-trace{from{clip-path:inset(0 100% 0 0);}to{clip-path:inset(0 0 0 0);}}
+@media (prefers-reduced-motion:reduce){
+  .arch-brume,.arch-node.reveal,.arch-link.reveal{animation:none;}
+  .arch-brume{display:none;}}
 .arch-hint{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;
   color:var(--ink-faint);padding:2px 0 6px;}
 /* Vue « Transit archipel » : flux groupés par direction src→dest. */
@@ -3463,6 +3481,11 @@ window.__SPRITE_DATA__["carte_ile_4"]="data:image/png;base64,iVBORw0KGgoAAAANSUh
 window.__SPRITE_DATA__["carte_ile_5"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACABAMAAAAxEHz4AAAAJFBMVEUAAAD7///O5+yUpqk+bpZDdWREbD01XlA6XDQwVEgwTSspSD2Xo9gOAAAAAXRSTlMAQObYZgAAAhVJREFUeNrtmc1t4zAQhXPYBjbuQClBDeyBLbgFtjAtsIXXgluY5tZ5IGPqBYgwgDSHQA8GPJf5oPkVTb9dunTpt6qI4v6qZMCf8ldU/gUB78tGH6kAZkABoUQUAgwGczgMNgAlB8ASLAudO2VZIrVgBhVAfYQAsNrao9VHs3TAyGB9urfnZwSTCqBP6zGMVKYCYPTtMdC0bMDsS9M8FeCoGgMsFWCoGkMyAN40BkcuwJrGYLkAR9MY4IcAxnbeL6OMUm+kL50P8KoxsIxFXtZxwPtYz/tl1BjsWEApuwCNwXwhANazeS7A0TQG2LJ8vrWdBgsRBlAEMI87jaQxDIABxwA0C7pQqsbgeB16HASUMwGG3s3dpw2DXwYpRBygeVSAw3s302c73fVhfjrgKdirethOdyXzdMB0ytxON6kO/wFwW9cw4Pth+z7KxqeZG5sW7gcC9n9w2Ga6aTl2BvJggM/TTct2ALf1pSCAKpM4W1VjMD8PQClgXi20AmeuIwCOeb/SSgYY2kSg5cgF+LzSaFkugLtFVponAxw+rTRumhSAbvmx0rjnsgF8ai50ZjAAGK8JBazrSkDoTqa1OwxwjJNeBoCEkYb5OmT4h/Io9ylRgLGfFBAoxACsVAdE8qjXYgkAKQQM4atB3Qrh9OnZ7wCA5D8EMOngdICOQBwgGUwH3GQEoipDb9kAJVz/3Vy69Ov1H2Q2SY6V1hLEAAAAAElFTkSuQmCC";
 window.__SPRITE_DATA__["carte_ile_6"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACABAMAAAAxEHz4AAAAJFBMVEUAAAD7///O5+yUpqleeoZuanI+bpZcWWJKWmNAUFlKSFE1Q0vpwBf/AAAAAXRSTlMAQObYZgAAAipJREFUeNrtmMFxwjAQRXPiTtQBKoEW0gL3nGhhW6AFt6AWaC7eGaIlljdPa2fQJf/Omzfjhy377X9/vKuzwO+dvQhwvR6dGQEA76fVZQOAwMmZKaAAKJDAhzNTAAEPYAogcL+tzxRAwAeoAgvcJmdVAQRcACuogAIuq1OAKoAAAFSBGvAB0IIKIMAUvEswzwNQCyrAAF/hUBu4OIMWDrUBAOTfAKYPLewC5O0AsRZ2AfJWgIi1sA+QtwFkXm3hcx8gbwHIY8MAMhogowEyGiCjATIaIKMBMhogowHyasA87/d4U039gLMB4IDR6LsPFgWkXsDZAHDIksXch6spMMAE+KApy8FhUxUYoAJ82PYvoQk4CgR4FoAWsAFogRuAFrABaIEbgBawAWiBG+AWoAFoAQHYwv02NZewF5D6ANzC8hLOO3YqOICIwqkF6LoVXEC+1kVamJ6/IdRxCy0gpjCvEh5The+BggdoPupwC7aigDpSAIApUAu2ogAbKiAgx1qQooCnsQICcqiFopue1qFAgFALZTkFoAIAIi2UFUBPCwDob6G0m/paAEB/C6WdfUsABQBkBXALZXU9gNQDoBb2AVIMwC3EASkG4BbigBQDcAtxQIoBuIU4IDEg2gL/mbiF5h0y0gLfULgFeH+AFvimyi3A+wO0wA8WbsF5f6AW4OEKCg2gEWAF290RoBYM4AiAAhyyWMHmCJCCzREgBZsjQAogwArnuh8CX+jfK8i33n7dAAAAAElFTkSuQmCC";
 window.__SPRITE_DATA__["carte_mer"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABAAgMAAADXB5lNAAAACVBMVEUQGCwcKEQWIDi8Hvh2AAAAk0lEQVR42q2SsQ3DMAwEH6wE1RnANafxSD9CRlAp/JSpEoAUbNFArhYOR1Ig0BAwLDQsHFggEhK/TmkA6PypvKLKVZXQVzHUJEWVczNzNbRhS3MRARvX9vPRcUyaCDjB4voObBjhiZTW0Pm3X+TSDCqb96HElvfFGlwjhtp4fPr6zJKYToZM3X7ehnaJCMxqaGHGDxdUIjPxibbmAAAAAElFTkSuQmCC";
+// ===== Révélation de l'île 6 — banc de brume ==================================
+// Sheet 6 frames de 128x128. La transparence est faite au DITHERING (alpha strictement
+// 0 ou 255) : c'est le langage pixel du jeu et le PNG reste en palette. Couverture
+// strictement décroissante 29,5 % -> 0 : le banc se lève et se disperse.
+window.__SPRITE_DATA__["carte_brume"]="data:image/png;base64,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";
 // Indexé par CLÉ DE SPRITE STATIQUE du jeu (le draw connaît cette clé) → infos d'anim.
 const ANIM_BY_SK = (() => {
   const out = {};
@@ -7230,8 +7253,12 @@ const SAVE_VERSION = 31;
 // n'est PAS dessinée tant qu'elle n'est pas débloquée (c'est la surprise) ; l'île 7 est absente
 // (elle transite par l'élévateur, pas par bateau). SAVE_VERSION inchangé.
 // ⚠ Le brief B5 proposait « 14.39 » — DÉJÀ PRIS par le build 321. Livré en 14.41.
-const GAME_BUILD = 323;
-const GAME_VERSION = 'Alpha 14.41';
+// 14.42 — B6 : RÉVÉLATION ANIMÉE DE L'ÎLE 6. À la PREMIÈRE ouverture de la carte après son
+// déblocage : un banc de brume se lève, l'île émerge, la liaison 5-6 se trace (~1,6 s, une
+// seule fois). Drapeau `archiVu6` persisté (champ OPTIONNEL → SAVE_VERSION inchangé) ; une
+// save antérieure possédant déjà l'île 6 est considérée comme l'ayant vue (pas de rejeu).
+const GAME_BUILD = 324;
+const GAME_VERSION = 'Alpha 14.42';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -17688,7 +17715,7 @@ const ARCHI_POS = { 1: [20, 24], 2: [54.5, 24], 3: [35, 50], 4: [20, 75], 5: [53
 // grisées justement pour que le joueur voie où il va.
 const ARCHI_CACHEE = { 6: true };
 
-function ArchipelMap({ game, flows, sel, onPick }) {
+function ArchipelMap({ game, flows, sel, onPick, reveal }) {
   const unlocked = game.islandUnlocked || {};
   const ouverte = id => id === 1 || !!unlocked[id];
   const visible = id => ouverte(id) || !ARCHI_CACHEE[id];
@@ -17713,7 +17740,8 @@ function ArchipelMap({ game, flows, sel, onPick }) {
     const actif = ouverte(a) && ouverte(b) && (rec.ab || rec.ba);
     return React.createElement("button", {
       key: k,
-      className: 'arch-link' + (actif ? ' on' : '') + (sel === k ? ' sel' : ''),
+      className: 'arch-link' + (actif ? ' on' : '') + (sel === k ? ' sel' : '')
+        + (reveal && (a === reveal || b === reveal) ? ' reveal' : ''),
       style: {
         left: pa[0] + '%', top: pa[1] + '%', width: len + '%',
         transform: 'translateY(-50%) rotate(' + ang + 'deg)'
@@ -17728,13 +17756,19 @@ function ArchipelMap({ game, flows, sel, onPick }) {
     const data = SPRITES_ENABLED && SPRITE_DATA['carte_ile_' + id];
     const p = ARCHI_POS[id];
     const off = !ouverte(id);
+    // `reveal` n'est vrai que pour l'île dont c'est la toute première apparition.
+    const rev = reveal === id;
+    const brume = rev && SPRITES_ENABLED && SPRITE_DATA['carte_brume'];
     return React.createElement("div", {
-      key: id, className: "arch-node", style: { left: p[0] + '%', top: p[1] + '%' }
+      key: id, className: 'arch-node' + (rev ? ' reveal' : ''),
+      style: { left: p[0] + '%', top: p[1] + '%' }
     }, data ? React.createElement("img", {
       className: 'arch-ile' + (off ? ' locked' : ''), src: data, alt: ''
     }) : null, React.createElement("div", {
       className: 'arch-lbl' + (off ? ' locked' : '')
-    }, islandLabel(id)));
+    }, islandLabel(id)), brume ? React.createElement("div", {
+      className: "arch-brume", style: { '--brume': 'url(' + brume + ')' }
+    }) : null);
   });
   return React.createElement("div", {
     className: "arch-map",
@@ -17764,6 +17798,18 @@ function PortPanel({
   const [tab, setTab] = React.useState('island');
   // Liaison choisie sur la carte de l'archipel ('4-5'…), null = aucune.
   const [archSel, setArchSel] = React.useState(null);
+  // Révélation de l'île 6 : jouée UNE FOIS. `game.archiVu6` est persisté dans la sauvegarde ;
+  // on le pose au montage, l'animation ne se rejouera donc pas au prochain passage.
+  // `game` est gameRef.current lui-même (cf. `const game = gameRef.current` dans App) :
+  // poser le drapeau ici modifie bien la source de vérité, qui sera sérialisée.
+  const [archReveal, setArchReveal] = React.useState(() =>
+    game && game.islandUnlocked && game.islandUnlocked[6] && !game.archiVu6 ? 6 : null);
+  React.useEffect(() => {
+    if (!archReveal) return;
+    if (game) game.archiVu6 = true;
+    const h = setTimeout(() => setArchReveal(null), 1800);
+    return () => clearTimeout(h);
+  }, [archReveal, game]);
   const links = SHIP_LINKS.filter(key => {
     const [a, b] = key.split('-').map(Number);
     return (a === currentIsland || b === currentIsland) && linkActive(game, key);
@@ -18156,7 +18202,8 @@ function PortPanel({
     const detail = lien ? flows.filter(f => Math.min(f.src, f.dest) === lien[0] && Math.max(f.src, f.dest) === lien[1])
       .sort((x, y) => x.src - y.src) : [];
     return [React.createElement(ArchipelMap, {
-      key: "map", game: game, flows: flows, sel: archSel, onPick: setArchSel
+      key: "map", game: game, flows: flows, sel: archSel, onPick: setArchSel,
+      reveal: archReveal
     }), !key ? React.createElement("div", {
       key: "hint", className: "arch-hint"
     }, I18N.t("Touchez une liaison pour voir son transit.")) : null,
@@ -20595,6 +20642,9 @@ function App() {
       islandUnlocked: {
         ...g.islandUnlocked
       },
+      // Révélation de l'île 6 déjà vue : sans ce drapeau l'animation rejouerait à
+      // chaque session. Champ optionnel — aucune migration, aucun bump de SAVE_VERSION.
+      archiVu6: !!g.archiVu6,
       boosterCharge: g.boosterCharge || 0,
       boats: g.boats || 0,
       ships: g.ships,
@@ -20960,6 +21010,10 @@ function App() {
     };
     if (data.islandUnlocked) for (const id in data.islandUnlocked) g.islandUnlocked[id] = !!data.islandUnlocked[id];
     g.islandUnlocked[1] = true;
+    // Saves antérieures au drapeau : une partie qui a DÉJÀ l'île 6 ne doit pas se voir jouer
+    // sa révélation à la mise à jour — on considère qu'elle l'a vue.
+    g.archiVu6 = data.archiVu6 != null ? !!data.archiVu6
+      : !!(data.islandUnlocked && data.islandUnlocked[6]);
     g.boosterCharge = Math.min(BOOSTER_MAX, data.boosterCharge || 0); // secondes stockées, plafond 30 min
     g.boosterOn = false; // jamais restauré actif au chargement (évite une décharge non suivie)
     g.boats = data.boats || 0;
