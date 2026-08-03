@@ -17,7 +17,98 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 318`, `GAME_VERSION = 'Alpha 14.36'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 319`, `GAME_VERSION = 'Alpha 14.37'`, `SAVE_VERSION = 31`.**
+  Changement 14.37 (brief `brief1437correctifstransit`) : **correctifs I/O dynamiques du Refroidisseur,
+  refonte de la liste des liquides expédiables, Cryostat posable partout, absorptions en échelle
+  binaire, hélium en t4, mix réparti en barres (nucléaire ET fours à arc), sprite hélium liquide.**
+  `SAVE_VERSION` INCHANGÉ (aucun champ persisté ne bouge ; tout le reste est de la data relue).
+  Les **12 ancres du brief ont été trouvées UNIQUES** sur le build 318, sans exception.
+  (1) **LOT A — les 4 lecteurs de `b.inputs` restants.** Le Refroidisseur n'a **aucun `inputs`
+  statique** (son fluide est choisi au runtime via `coolerEffective`), or 4 sites lisaient encore la
+  def. **A.1 `resourceRates`** est le seul défaut réellement fonctionnel : sa conso de fluide y valait
+  **0** (contre-épreuve exécutée sur le build 318 : 0 pour les 4 fluides ; après patch : 256 / 1024 /
+  1 / 0,0625 exacts). ⚠ **LE BRIEF SURESTIME LA PORTÉE** : il annonce « la conso reste à zéro dans le
+  panneau Réseau **et** dans les stats par ressource ». **FAUX pour le panneau Réseau** — `netFlow` et
+  `islandFlowAgg` étaient DÉJÀ corrects en 318 (mesuré : 256/s), le 14.36 ayant volontairement laissé
+  le refroidisseur dans la boucle bâtiment. `resourceRates` n'est que le **repli** (lu quand prod ET
+  conso valent 0, cf. 14.24) — le correctif est juste, son périmètre est plus étroit qu'annoncé.
+  **A.2** (`usedRoad`/`usedPipe`) n'est **pas** l'arbitrage de saturation que le brief décrit : c'est
+  l'**InfoPanel**. Variable d'instance = **`bld`**, mais on réutilise **`coolIO`** (déjà calculé
+  ligne ~14618 par le 14.36) au lieu de rappeler `coolerEffective` — strictement équivalent.
+  Effet réel : le refroidisseur est enfin vu comme usager du TUYAU → sélecteur de priorité de flux et
+  vitesse % reflétant la saturation. ⚠ **Le MOTEUR n'est pas touché** : mesuré à l'identique au bit
+  près sur 318 et 319 (netDemand 512, netFactor 0,125, 64 eau/s prélevés). **A.3** = `BuildingDetailModal`
+  (appui long), qui travaille sur la DÉF sans instance → on liste les fluides possibles.
+  **A.4** = `UpgradePanel`, variable d'instance **`bld`** (déclarée ligne ~15774), le brief est exact.
+  (2) **LOT B — `TRADE_LIQUIDS`** devient `[petrole, acide, diesel, gaz_fossiles, helium4, methane]`.
+  ⚠ **Vérifié avant d'écrire, la thèse du brief est JUSTE** : `PORT_PIPE_RES` n'est qu'un
+  **pré-classement** (bucket initial de `isPortPipe`) ; la bascule pool → port se fait au tick dès
+  qu'un réseau tuyau adjacent est `connected` et n'exclut que **`NON_STORABLE`** (lu ligne ~9199).
+  `gaz_fossiles` et `methane` n'y figurent donc PAS et s'expédient quand même (mesuré par
+  `transferLink` réel). `PORT_PIPE_RES` **non touché**.
+  (3) **LOT C — Cryostat posable partout** (`exclusiveIsland: 6` retiré). Vérifié en moteur réel sur
+  l'**île 1** : 0,25 He4 + 1024 azote → 0,25 He liquide, chaleur plate 2,048 MJ/s.
+  ⚠ `terrains` vaut `['land','resource','coast']` au RUNTIME (le `coast` est ajouté par la passe
+  13.79) — c'est le cas AUSSI sur le build 318, ce n'est pas un effet de bord du lot.
+  (4) **LOT D — absorptions binaires** 0,512 / 2,048 / 4,096 / 8,192 / 16,384 MJ/s (× la Tour V1 =
+  1,024). Débits de fluide INCHANGÉS. Mesuré sur une source SATURÉE (piège 14.36 (a) : `heatAbsorb`
+  est ce qui a été absorbé, pas la capacité), et doublé exactement au Nv.2.
+  (5) **LOT E — `helium4` t5 → t4** ; `helium3` et `helium_liquide` restent t5.
+  (6) **LOT F — mix réparti en BARRES**, nucléaire ET fours à arc, structure
+  `[label] [−] [barre + % en surimpression] [+] [débit /s]`. ⚠ **ARBITRAGE** : le brief dit à la fois
+  « donner au mix le rendu du mode auto » (barre FINE `ip-nuc-mix-auto-bar`, 7 px) et « barre avec %
+  en surimpression / patron de la jauge de la Centrale d'Enrichissement V2 ». Les deux sont
+  incompatibles — une barre de 7 px ne porte pas de texte et paraît cassée entre deux boutons de
+  26 px. On a retenu **la jauge `ip-nuc-gauge`** (24 px), conforme à la structure cible explicite et
+  à la référence esthétique nommée. Le mode **auto reste INCHANGÉ** (barre fine, aucun bouton), comme
+  l'exige le test 11. ⚠ **Les deux mécaniques NE sont PAS harmonisées** (demande explicite) : le
+  nucléaire garde sa **somme verrouillée à 100** (`onSetNucMixDelta ±1`), le four à arc ses **poids
+  libres normalisés** (`onSetArcWeight`, `clamp(cur ± 5, 0, 100)`, défaut 1) — vérifié par round-trip
+  de save (poids 35/20/5 conservés). `ARC_DEF` ne contient que `four_arc_fer` et `four_arc_cuivre`,
+  et le bloc de rendu est générique (`def.order.map`) → **un seul patch couvre les deux fours** ;
+  le four à arc tungstène n'a pas de mix et n'est pas concerné.
+  ⚠ **UNE SEULE règle CSS ajoutée** (`.ip-nuc-mix-row.pm`) : la jauge réutilise `ip-nuc-gauge` /
+  `-fill` / `-lbl` telles quelles. **Colonnes de largeur FIXE `104px 28px 1fr 28px 60px`** et non
+  `auto` : `display:grid` porte sur la LIGNE, donc chaque ligne est sa propre grille et des colonnes
+  `auto` se dimensionnent ligne par ligne → les boutons ± se décalaient visiblement d'une ligne à
+  l'autre selon la longueur du libellé (constaté à la capture, corrigé). 104 px parce que
+  « Béton armé » mesure **93 px** (mesuré au navigateur, pas estimé) ; ellipse pour les autres langues.
+  (7) **LOT G — sprite `item_helium_liquide`** inliné en tête de `__SPRITE_DATA__` (16×16 décodé).
+  ⚠ `item_helium3` et `item_helium4` **n'existent toujours pas** (le brief suppose le contraire en
+  parlant d'une « forme reprise de `item_helium3` ») : hélium liquide est le seul hélium à avoir une
+  icône. Aucun code à modifier, `itemSpriteKey` résout automatiquement.
+  Validé : `node --check` (7 blocs) + Chromium **6 suites, 120 assertions, 0 KO**, suite rejouée
+  **2 fois sans flottement**. Moteur RÉEL : les 4 fluides du refroidisseur mesurés un par un par les
+  3 chemins d'affichage (port, `netFlow`, `resourceRates`), ×2 au Nv.2, **0 conso en mode sec** ;
+  absorptions mesurées sur source saturée ; **tour non régressée** (1,024 MJ/s, 256 eau/s, `port`) ;
+  transit **6 liquides expédiés / 5 refusés** par `rawShippable` ET `transferLink` réels ; Cryostat
+  produisant sur l'île 1 ; **UI RÉELLE par tap canvas** (les 2 fiches, 5 colonnes, jauges 24 px,
+  somme 100 après 7 clics « + », auto intact, +5 de poids sur l'arc) ; **save build 318 rechargée en
+  319** : refroidisseur (fluide `azote`, Nv.3), four à arc (mode + poids), cryostat île 6, stocks et
+  mix nucléaire tous conservés, 0 `tickErrors`, horloge qui avance.
+  ⚠ **Test 6 (élévateur) = CONSTAT, rien corrigé** : `elevatorSurfaceLinkedFor(game, carrier)` filtre
+  par **PORTEUR**, jamais par ressource → azote et hélium liquide traversent toujours l'élévateur
+  6 ↔ 7, `TRADE_LIQUIDS` ne l'affecte pas.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, nouveaux)** : (a) le playwright du dépôt attend la révision **1228**
+  et l'image n'a que la **1194** → lancer avec `executablePath:
+  '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'`, ne JAMAIS tenter `playwright install` ;
+  (b) **`unlimited` SURVIT à un `rebuildNetworks`** (héritage 13.33) → un test de saturation exige une
+  **page neuve**, sinon on mesure un réseau resté illimité par un bloc précédent ; (c) ne brider QUE le
+  tuyau : brider aussi le câble coupe le refroidisseur (1024 kW) et on ne mesure plus rien ;
+  (d) **`flushSave`/`scheduleSave` sont des CLOSURES**, pas des globales — pour forcer une sauvegarde
+  il faut armer `g.saveTimer` **ET** redéfinir `document.visibilityState` sur `'hidden'` (le handler
+  `onHide` teste la propriété, dispatcher l'événement ne suffit pas) ; (e) `page.mouse.click()` rate
+  souvent le tap canvas → `move` + `down` + pause + `up`, **avec réessai jusqu'à voir la fiche
+  attendue** ; (f) `islandFlowAgg` renvoie `{prod:{}, cons:{}}` et **`nucMix()` une COPIE dérivée**
+  (structure persistée = à plat dans `game.nuclearMix[isl]`) — deux faux « bugs » qui m'ont coûté du
+  temps ; (g) le **404 console unique** est PRÉEXISTANT (identique sur 318, ressource PWA absente du
+  serveur de test), ce n'est pas une régression.
+  ⚠ **HORS PÉRIMÈTRE, non traité (conforme au §9 du brief)** : `PORT_PIPE_RES` intact, élévateur non
+  modifié, arbre des besoins (`for (const k in b.inputs …)` du planificateur) laissé tel quel, les
+  deux mécaniques de mix non unifiées, four à arc tungstène non touché, `SAVE_VERSION` non incrémenté,
+  aucun rééquilibrage spontané.
+  ⚠ **Taille : 2 900 283 → 2 906 078 o (+5 795 o).**
+- **État précédent : `GAME_BUILD = 318`, `GAME_VERSION = 'Alpha 14.36'`, `SAVE_VERSION = 31`.**
   Changement 14.36 (brief `brief1430refroidissement`) : **CHAÎNE DE REFROIDISSEMENT — nouvelle ressource
   hélium liquide, bâtiments Refroidisseur et Cryostat, Data Center allégé mais chauffant, Usine Moteur
   Quantique à l'hélium liquide, soft cap de la Tour.** `SAVE_VERSION` INCHANGÉ (`pl.cool` = champ
