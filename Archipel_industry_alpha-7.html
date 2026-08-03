@@ -7188,8 +7188,8 @@ const SAVE_VERSION = 31;
 // pierre, `pompe_eau_v3` était l'art de la V2 — améliorer ne changeait rien à l'écran), et
 // `item_helium_liquide` rejoint la famille hélium. Les 2 overrides passent en LISTES de
 // candidats (repli conservé). Aucune modification de rendu. SAVE_VERSION inchangé.
-const GAME_BUILD = 321;
-const GAME_VERSION = 'Alpha 14.39';
+const GAME_BUILD = 322;
+const GAME_VERSION = 'Alpha 14.40';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7205,7 +7205,8 @@ const SFX = (() => {
   let enabled = true;            // mute global (persisté dans la save)
   const _last = {};             // horodatage du dernier déclenchement par son (cooldown)
   // Sons d'alerte : à jouer via SFX.playThrottled(...) pour éviter la répétition au tick.
-  const ALERTS = ['powerAlert','fuelLow','stockFull','noInput','importBlocked'];
+  const ALERTS = ['powerAlert','fuelLow','stockFull','noInput','importBlocked',
+                  'heatTrip','heatWarn','nucSafety','colliderStop','colliderHalt'];
 
   function ensure(){
     if(!ctx){
@@ -7424,6 +7425,73 @@ const SFX = (() => {
     normalRestored(){ const t=ctx.currentTime;
       tone({type:'sine', freq:523, freqEnd:659, t0:t, attack:0.01, decay:0.22, peak:0.16}); },
 
+    /* --- Collisionneur --- */
+    colliderBoot(){ const t=ctx.currentTime;
+      woosh({t0:t, dur:1.1, f1:40, f2:180, peak:0.20, type:'lowpass', q:0.7});
+      tone({type:'sine', freq:55, freqEnd:75, t0:t, attack:0.25, decay:0.9, peak:0.30}); },
+    colliderReady(){ const t=ctx.currentTime;   // distinct de nodeReady
+      [784,1046,1568].forEach((f,i)=>
+        tone({type:'sine', freq:f, t0:t+i*0.055, attack:0.004, decay:0.35, peak:0.22})); },
+    colliderLaunch(){ const t=ctx.currentTime;
+      tone({type:'sine', freq:140, freqEnd:50, t0:t, attack:0.004, decay:0.35, peak:0.7});
+      woosh({t0:t, dur:0.7, f1:200, f2:1400, peak:0.22});
+      tone({type:'triangle', freq:392, t0:t+0.25, attack:0.006, decay:0.3, peak:0.2}); },
+    colliderRound(){ // ⚠ jusqu'à 1×/s → peak 0,05 const t=ctx.currentTime;
+      tone({type:'sine', freq:2400, t0:t, attack:0.001, decay:0.015, peak:0.05}); },
+    colliderMatch(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:1046, t0:t,       attack:0.002, decay:0.12, peak:0.20});
+      tone({type:'triangle', freq:1568, t0:t+0.045, attack:0.002, decay:0.12, peak:0.20}); },
+    colliderStop(){ const t=ctx.currentTime;   // pénalité (remplace powerAlert)
+      tone({type:'sine', freq:420, freqEnd:45, t0:t, attack:0.006, decay:0.6, peak:0.45});
+      noise({t0:t, dur:0.5, peak:0.30, type:'lowpass', freq:600});
+      tone({type:'square', freq:110, t0:t+0.05, attack:0.004, decay:0.25, peak:0.18}); },
+    colliderHalt(){ const t=ctx.currentTime;   // pause : mat, pas alarmant
+      tone({type:'square', freq:330, freqEnd:260, t0:t,      attack:0.003, decay:0.18, peak:0.16});
+      tone({type:'square', freq:247, freqEnd:190, t0:t+0.12, attack:0.003, decay:0.18, peak:0.16}); },
+
+    /* --- Souterrain --- */
+    elevator(){ const t=ctx.currentTime;       // treuil : distinct d'islandTransition
+      tone({type:'sine', freq:110, freqEnd:70, t0:t, attack:0.02, decay:0.8, peak:0.35});
+      noise({t0:t, dur:0.7, peak:0.14, type:'bandpass', freq:400, q:2});
+      tone({type:'triangle', freq:1800, t0:t+0.72, attack:0.001, decay:0.05, peak:0.16}); },
+    drillStart(){ const t=ctx.currentTime;
+      tone({type:'triangle', freq:90, freqEnd:260, t0:t, attack:0.02, decay:0.5, peak:0.28});
+      woosh({t0:t, dur:0.6, f1:700, f2:1500, peak:0.25, type:'bandpass', q:1.5}); },
+    drillDone(){ const t=ctx.currentTime;      // impact + éboulis
+      tone({type:'sine', freq:130, freqEnd:48, t0:t, attack:0.004, decay:0.32, peak:0.6});
+      noise({t0:t, dur:0.40, peak:0.38, type:'lowpass', freq:900});
+      noise({t0:t+0.18, dur:0.35, peak:0.26, type:'lowpass', freq:500}); },
+    pocketFound(){ const t=ctx.currentTime;    // découverte rare : doit faire lever la tête
+      [659,880,1175,1568].forEach((f,i)=>
+        tone({type:'sine', freq:f, t0:t+i*0.07, attack:0.003, decay:0.30, peak:0.20}));
+      tone({type:'sine', freq:2637, t0:t+0.30, attack:0.01, decay:0.5, peak:0.10}); },
+
+    /* --- Réseau logique --- */
+    logicGate(){ const t=ctx.currentTime;
+      tone({type:'square', freq:880,  t0:t,      attack:0.001, decay:0.04, peak:0.20});
+      tone({type:'square', freq:1320, t0:t+0.03, attack:0.001, decay:0.04, peak:0.12});
+      noise({t0:t, dur:0.015, peak:0.16, type:'highpass', freq:4000}); },
+    logicRotate(){ const t=ctx.currentTime;    // cran mécanique
+      tone({type:'triangle', freq:620, t0:t,       attack:0.001, decay:0.03, peak:0.16});
+      tone({type:'triangle', freq:700, t0:t+0.035, attack:0.001, decay:0.03, peak:0.16}); },
+    logicToggle(){ const t=ctx.currentTime;    // relais
+      tone({type:'square', freq:300, t0:t, attack:0.001, decay:0.025, peak:0.22});
+      noise({t0:t, dur:0.012, peak:0.18, type:'highpass', freq:5000}); },
+
+    /* --- Chaleur & nucléaire --- */
+    heatWarn(){ const t=ctx.currentTime;       // inquiétant, pas urgent
+      woosh({t0:t, dur:0.7, f1:1200, f2:2400, peak:0.18, type:'bandpass', q:3});
+      tone({type:'sine', freq:330, t0:t, attack:0.02, decay:0.5, peak:0.10}); },
+    heatTrip(){ const t=ctx.currentTime;       // purge de vapeur
+      noise({t0:t, dur:0.45, peak:0.40, type:'highpass', freq:3000});
+      tone({type:'sine', freq:300, freqEnd:90, t0:t, attack:0.006, decay:0.4, peak:0.30});
+      tone({type:'triangle', freq:180, t0:t+0.30, attack:0.003, decay:0.18, peak:0.22}); },
+    nucSafety(){ const t=ctx.currentTime;      // sirène froide
+      const pair=(t0)=>{
+        tone({type:'square', freq:660, t0:t0,      attack:0.01, decay:0.25, peak:0.22});
+        tone({type:'square', freq:495, t0:t0+0.25, attack:0.01, decay:0.25, peak:0.22}); };
+      pair(t); pair(t+0.55); },
+
     /* --- Système & slots --- */
     save(){ const t=ctx.currentTime;
       tone({type:'sine', freq:660, t0:t,      attack:0.004, decay:0.07, peak:0.24});
@@ -7457,14 +7525,116 @@ const SFX = (() => {
     _last[name] = now;
     play(name);
   }
-  function setEnabled(v){ enabled = !!v; }
+  // Mute ⇒ coupe TOUTES les voix. Démute ⇒ ne relance RIEN : c'est la frame qui redemandera
+  // loopStart au tour suivant (elle seule connaît l'état du jeu).
+  function setEnabled(v){ enabled = !!v; if(!enabled) loopStopAll(); }
   function isEnabled(){ return enabled; }
   function getVolume(){ return volume; }
+  /* ------- BOUCLES (bourdon de landmark) ------- */
+  // Une voix = 2 oscillateurs + 1 filtre + 1 gain. Réservé aux LANDMARKS ; ici le Collisionneur
+  // SEUL. Le désaccord (110,7 au lieu de 110 Hz) produit le battement lent d'une « machine ».
+  // ⚠ Timbre validé à l'écoute : TRIANGLE, pas sawtooth (trop riche à 55 Hz, s'entend comme une
+  // agression même à faible gain). NE PAS « améliorer ».
+  const _loops = {};
+  function loopStart(id){
+    if(!enabled) return;
+    try {
+      ensure();
+      if(_loops[id]) return;              // idempotent
+      const t = ctx.currentTime;
+      const o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
+      const f = ctx.createBiquadFilter(), g = ctx.createGain();
+      o1.type = 'triangle'; o1.frequency.setValueAtTime(55, t);
+      o2.type = 'sine';     o2.frequency.setValueAtTime(110.7, t);
+      f.type = 'lowpass'; f.Q.value = 0.8; f.frequency.setValueAtTime(90, t);
+      g.gain.setValueAtTime(0.0001, t);
+      o1.connect(f); o2.connect(f); f.connect(g); g.connect(master);
+      o1.start(t); o2.start(t);
+      _loops[id] = { o1, o2, f, g };
+    } catch(e){ /* audio indispo : on n'interrompt jamais le jeu */ }
+  }
+  // ⚠ setTargetAtTime UNIQUEMENT : une affectation directe produit un zipper noise audible.
+  function loopSet(id, opt){
+    const v = _loops[id];
+    if(!v || !opt) return;
+    try {
+      const t = ctx.currentTime;
+      if(typeof opt.gain === 'number') v.g.gain.setTargetAtTime(opt.gain, t, 0.15);
+      if(typeof opt.freq === 'number') v.f.frequency.setTargetAtTime(opt.freq, t, 0.15);
+    } catch(e){ /* audio indispo */ }
+  }
+  function loopStop(id){
+    const v = _loops[id];
+    if(!v) return;
+    delete _loops[id];      // retiré D'ABORD : la frame suivante peut relancer sans doublon
+    try {
+      const t = ctx.currentTime;
+      v.g.gain.cancelScheduledValues(t);
+      v.g.gain.setValueAtTime(v.g.gain.value, t);  // fige avant le fade
+      v.g.gain.setTargetAtTime(0.0001, t, 0.08);   // ≈ 0 en 0,25 s
+      v.o1.stop(t + 0.25); v.o2.stop(t + 0.25);
+      // Déconnexion à la fin : sinon les nœuds restent accrochés au graphe (fuite).
+      v.o1.onended = () => { try { v.o1.disconnect(); v.o2.disconnect(); v.f.disconnect(); v.g.disconnect(); } catch(e){} };
+    } catch(e){ try { v.o1.stop(); v.o2.stop(); } catch(e2){} }
+  }
+  function loopStopAll(){ for(const k in _loops) loopStop(k); }
   function unlock(){ try { ensure(); } catch(e){} }   // à appeler au 1er geste utilisateur (mobile)
 
   return { play, playThrottled, unlock, setEnabled, isEnabled, setVolume, getVolume,
+           loopStart, loopSet, loopStop,
            ALERTS, names:Object.keys(S) };
 })();
+// ── 14.40 — FILE DE SONS SIMULATION → UI ──
+// RÈGLE D'OR : AUCUN SFX.play() DEPUIS LE TICK. `onTick` est appelé DIRECTEMENT par le rattrapage
+// hors-ligne (`runCatchUp`), des dizaines de milliers de fois d'affilée : un son posé dans
+// processCollider/processLogic/tickIsland produirait une avalanche au retour du joueur. La
+// simulation EMPILE ici, la frame DRAINE une fois par frame. Les sites REACT (launchCollider,
+// switchIsland, drains de notification…) gardent leur appel direct : geste utilisateur, jamais
+// le catch-up. ⚠ `sfxQueue` est TRANSITOIRE : `serialize` écrit une liste blanche, elle n'y est pas.
+function qSfx(game, name) {
+  if (!game) return;
+  const q = game.sfxQueue || (game.sfxQueue = []);
+  if (q.length >= 32) return;  // plafond DUR ; pas de shift() → aucun coût O(n) dans le tick
+  q.push(name);
+}
+// UNE passe par frame (la boucle de tick, elle, peut tourner 200 fois). > 8 entrées = signature
+// d'un retour de hors-ligne ou d'un mode rapide extrême → on vide SANS rien jouer.
+function drainSfxQueue(game) {
+  const q = game && game.sfxQueue;
+  if (!q || !q.length) return;
+  if (q.length > 8) { q.length = 0; return; }
+  const seen = {};
+  let played = 0;
+  for (let i = 0; i < q.length && played < 2; i++) {   // 2 sons max, dédoublonnés
+    const n = q[i];
+    if (seen[n]) continue;
+    seen[n] = 1;
+    SFX.play(n);
+    played++;
+  }
+  q.length = 0;
+}
+// ── 14.40 — BOUCLE AUDIO DU COLLISIONNEUR (§6), une passe par frame ──
+// ⚠ NE PAS piloter par `co.cur` : c'est une sinusoïde PERMANENTE de période COLLIDER_START
+// (600 ticks) — une boucle indexée dessus respirerait de haut en bas toutes les 10 min, À VIE.
+// On suit l'AVANCEMENT DU DÉMARRAGE, monotone : le bourdon monte sur les 10 min, atteint son
+// maximum PILE quand `colliderReady` sonne, puis TIENT.
+// Valeurs validées à l'écoute : gain max 0,10 · coupure max 520 Hz.
+// `document.hidden` n'est qu'une sécurité : c'est `onHide` qui coupe réellement la voix.
+function colliderLoopFrame(game) {
+  try {
+    const co = game && game.collider;
+    const off = !game || game.currentIsland !== 6 || !co || co.state === 'off' || !!co.halt ||
+      game.audioEnabled === false || !SFX.isEnabled() ||
+      (typeof document !== 'undefined' && document.hidden);
+    if (off) { SFX.loopStop('collider'); return; }
+    const f = co.state === 'starting'
+      ? 1 / (1 + Math.exp(-8 * (Math.min(1, (co.timer || 0) / COLLIDER_START) - 0.5)))
+      : 1;                                   // 'ready' et 'running' → palier TENU
+    SFX.loopStart('collider');
+    SFX.loopSet('collider', { gain: 0.10 * (0.2 + 0.8 * f), freq: 90 + 430 * f });
+  } catch (e) { /* audio indispo : on n'interrompt jamais le jeu */ }
+}
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
 const NATIVE_UPDATER = typeof window !== 'undefined' && window.ArchipelNative && typeof window.ArchipelNative.update === 'function';
@@ -9388,6 +9558,7 @@ function processLogic(game, isl) {
       game.techTree.colliderConfirms = (game.techTree.colliderConfirms || 0) + gain;
       co.confirms = game.techTree.colliderConfirms;
       co.lastVerdict = 'ok';
+      qSfx(game, 'colliderMatch'); // ⚠ FILE : processLogic est appelée depuis tickIsland
     } else {
       co.lastVerdict = 'penalty';
       colliderPenalty(game);
@@ -9674,6 +9845,7 @@ function processCollider(game, isl) {
     co.state = 'starting';
     co.timer = 0;
     co.from = co.cur || 0;
+    qSfx(game, 'colliderBoot'); // ⚠ FILE, pas SFX.play : on est dans du code de TICK (cf. qSfx)
   }
   // Conso OSCILLANTE sur 10 min (14.08) : le Collisionneur ne tire plus une puissance FIXE mais
   // une sinusoïde de période COLLIDER_START entre son plancher (1 MW) et le plafond de son palier
@@ -9700,6 +9872,11 @@ function processCollider(game, isl) {
   // en déficit… soit un battement marche/arrêt à chaque tick. En pause elle ne CONSOMME rien
   // (`co.cur = 0`, cf. boucle énergie) mais reste inscrite au bilan : le joueur voit le déficit.
   co.halt = powerOut ? 'power' : !fueled ? 'fuel' : null;
+  // 14.40 — Pause sonore sur TRANSITION uniquement : sans cette garde le son partirait à CHAQUE
+  // tick de panne (1×/s). `_haltPrev` est transitoire (la save du collisionneur est une liste
+  // blanche : state/timer/cur/penalties/enabled/launched).
+  if (co.halt && !co._haltPrev) qSfx(game, 'colliderHalt');
+  co._haltPrev = co.halt;
   // Hélium 3 RÉELLEMENT prélevé ce tick (0 en pause) → conso affichée = conso réelle (14.24).
   co.he3Used = co.halt ? 0 : co.he3Need;
   if (co.halt) {
@@ -9726,6 +9903,9 @@ function processCollider(game, isl) {
       // la séquence (bouton du panneau). Un simple manque de courant ne l'annule pas (`launched`).
       co.timer = COLLIDER_START;
       co.state = co.launched ? 'running' : 'ready';
+      // Cloche « prêt » seulement si la machine ATTEND le joueur : si elle enchaîne sur
+      // 'running', la séquence était déjà lancée et `colliderLaunch` a sonné.
+      if (co.state === 'ready') qSfx(game, 'colliderReady');
     }
   } else {
     co.cur = osc; // prêt OU en service : la conso oscille dans les deux cas
@@ -9770,6 +9950,7 @@ function processCollider(game, isl) {
         co.code = pickFlavorCode(palier, true); // exceptions autorisées : leptons 000/111
         co.dcCode = pickFlavorCode(dcBits, false); // jamais 000/111 → aucun cas ambigu
         co.round = (co.round || 0) + 1; // une manche = UN verdict (cf. vanne)
+        qSfx(game, 'colliderRound'); // tic très discret : jusqu'à 1×/s au débit max du Data Center
       }
     } else {
       // Data Center absent, en pause, coupé par la logique, endommagé ou privé d'intrants/courant :
@@ -17614,10 +17795,10 @@ function PortPanel({
     className: "pp-tabs"
   }, React.createElement("button", {
     className: 'pp-tab' + (tab === 'island' ? ' on' : ''),
-    onClick: () => setTab('island')
+    onClick: () => { SFX.play('tabSwitch'); setTab('island'); }
   }, I18N.t("Transit île")), React.createElement("button", {
     className: 'pp-tab' + (tab === 'archipel' ? ' on' : ''),
-    onClick: () => setTab('archipel')
+    onClick: () => { SFX.play('tabSwitch'); setTab('archipel'); }
   }, I18N.t("Transit archipel"))), tab === 'island' ? React.createElement("div", {
     className: "rp-list"
   }, PORT_BASE_COST[currentIsland] && React.createElement("div", {
@@ -22018,7 +22199,9 @@ function App() {
     bumpHud();
     markDirty();
     scheduleSave();
-    SFX.play(id === 'logic_wire' ? 'cable' : 'place');
+    // 14.40 — Fil = `cable` (inchangé), jonction = `junction`, le reste (portes/capteurs/
+    // actionneurs) = `logicGate`.
+    SFX.play(id === 'logic_wire' ? 'cable' : id === 'logic_jonction' ? 'junction' : 'logicGate');
     if (verbose && id !== 'logic_wire') showToast(`✓ ${b.name}`, 'var(--green)');
     return true;
   }
@@ -22176,7 +22359,12 @@ function App() {
     if (b.kind === 'infra') {
       SFX.play(id === 'road' ? 'road' : id === 'wire' ? 'cable' : 'pipe');
     } else {
-      SFX.play(multi ? 'placeHeavy' : 'place');
+      // 14.40 — Landmark ⇒ placeC, sinon multi ⇒ placeHeavy, sinon place. Critère = EMPRISE
+      // (aucun champ `landmark` dans BUILDINGS, on n'en invente pas).
+      // ⚠ AUCUN bâtiment posable n'atteint 6 tuiles (max 2×2 = centrales ; le Collisionneur 3×2
+      // est un TERRAIN, jamais posé ici) → branche INERTE. Passer à 4 la vise aux centrales.
+      const LANDMARK_TILES = 6;
+      SFX.play(h * w >= LANDMARK_TILES ? 'placeC' : multi ? 'placeHeavy' : 'place');
     }
     if (verbose && b.kind !== 'infra') showToast(`✓ ${b.name}`, 'var(--green)');
     else if (verbose && extCost) showToast(`✓ ${b.name} V${joinLvl} — ${formatCost(extCost)}`, 'var(--green)');
@@ -22656,7 +22844,7 @@ function App() {
     }
     co.launched = true;
     co.state = 'running';
-    SFX.play('unlock');
+    SFX.play('colliderLaunch');
     showToast(I18N.t('▶ Séquence de collision lancée'), 'var(--green)');
     bumpHud();
     markDirty();
@@ -22763,7 +22951,8 @@ function App() {
     }
     foreuse.drilling = { r, c, rem: DRILL_TIME, tot: DRILL_TIME, rate: 0 };
     delete foreuse.drillStall;
-    SFX.play('place');
+    // 14.40 — Au SUCCÈS seulement. Remplace le `place` générique (sinon les deux se chevauchent).
+    SFX.play('drillStart');
     showToast(I18N.t('⛏️ Creusement du mur en cours (5 min)'), 'var(--yellow)');
     bumpHud();
     markDirty();
@@ -22972,7 +23161,8 @@ function App() {
       SFX.play('invalid');
       return;
     }
-    SFX.play('islandTransition');
+    // 14.40 — L'île 7 se rejoint par la CAGE, pas en bateau → treuil des deux côtés du trajet.
+    SFX.play(id === 7 || g.currentIsland === 7 ? 'elevator' : 'islandTransition');
     onIslandChange(g, id);
     setResPop(null);
     setNetwork(null);
@@ -23076,6 +23266,7 @@ function App() {
       for (const k in cost) pool[k] = (pool[k] || 0) - cost[k];
     }
     g.portSpeed[islandId] = lvl + 1;
+    SFX.play('boatUnlock');
     showToast(`📦 Transit → lots ×${portSpeedMult(lvl + 1)}`, 'var(--green)');
     bumpHud();
     markDirty();
@@ -23271,7 +23462,8 @@ function App() {
     } else if (patch) {
       Object.assign(bld, patch);
     }
-    SFX.play('click');
+    // 14.40 — Rotation = cran mécanique ; tout autre réglage (mode, polarité) = relais.
+    SFX.play(patch && patch.__cycle ? 'logicRotate' : 'logicToggle');
     bumpHud();
     markDirty();
     scheduleSave();
@@ -23281,6 +23473,7 @@ function App() {
     const t = curTiles()[r] && curTiles()[r][c];
     if (!t || !t.building || !ARC_DEF[t.building.id]) return;
     (t.building.arc = t.building.arc || arcDefaultState(t.building.id)).mode = mode;
+    SFX.play('click'); // 14.40 — incohérence : setArcSel et setCoolSel sonnaient, setArcMode non
     bumpHud();
     markDirty();
     scheduleSave();
@@ -25476,7 +25669,7 @@ function App() {
           const isl = g.nucNotify.shift();
           showToast(`☢️ Centrale ${islandLabel(isl)} en SÉCURITÉ — manque de refroidissement (redémarrage auto dans 5 min)`, 'var(--red)');
           g.nucNotify.length = 0;
-          SFX.playThrottled('fuelLow', 8000);
+          SFX.playThrottled('nucSafety', 8000);
         }
         // §8 — PÉNALITÉ du Collisionneur : le joueur a envoyé 1 sur des codes différents. Sans
         // explication il croira à un bug (c'est le tuto le plus important du brief) → toast rouge
@@ -25484,7 +25677,7 @@ function App() {
         if (g.colliderPenaltyNotify) {
           g.colliderPenaltyNotify = false;
           showToast(I18N.t('⚠️ Collisionneur ÉTEINT : codes différents — les 10 min de démarrage repartent de zéro'), 'var(--red)');
-          SFX.playThrottled('powerAlert', 4000);
+          SFX.play('colliderStop');
           // Popup explicative la PREMIÈRE fois seulement (ensuite le toast suffit).
           if (g.tipsSeen && !g.tipsSeen['collider_penalite'] && g.tipsEnabled !== false && !activeTipRef.current) {
             g.tipsSeen['collider_penalite'] = true;
@@ -25495,6 +25688,8 @@ function App() {
         // pas se faire au milieu d'un tick (reconstruction des réseaux) + le toast de résultat.
         if (g.drillNotify && g.drillNotify.length) {
           const ev = g.drillNotify.shift();
+          // 14.40 — Les deux toasts étaient MUETS. Poche (10 % des murs) = arpège ; mur = éboulis.
+          SFX.play(ev.found ? 'pocketFound' : 'drillDone');
           rebuildNetworks(g, ev.isl);
           markDirty();
           scheduleSave();
@@ -25514,7 +25709,7 @@ function App() {
           const ev = g.heatTrip.shift();
           const nm = BUILDINGS[ev.id] && BUILDINGS[ev.id].name || ev.id;
           showToast(`🔥 ${nm} (${islandLabel(ev.isl)}) en SURCHAUFFE — arrêt 5 min`, 'var(--red)');
-          SFX.playThrottled('powerAlert', 4000);
+          SFX.playThrottled('heatTrip', 4000);
         }
         // Accumulation de chaleur : refroidissement insuffisant → alerte AVANT la panne
         // (le bâtiment peut stocker ~1 min de chaleur produite avant de surchauffer).
@@ -25522,7 +25717,7 @@ function App() {
           const ev = g.heatWarn.shift();
           const nm = BUILDINGS[ev.id] && BUILDINGS[ev.id].name || ev.id;
           showToast(`🔥 ${nm} (${islandLabel(ev.isl)}) accumule de la chaleur — surchauffe dans ~${ev.secs} s si rien ne change`, 'var(--orange)');
-          SFX.playThrottled('powerAlert', 8000);
+          SFX.playThrottled('heatWarn', 8000);
         }
         // Réparation possible : 20 % du coût total cumulé.
         if (g.heatRepairReady && g.heatRepairReady.length) {
@@ -25535,6 +25730,10 @@ function App() {
         guard++;
       }
       g.animClock = (g.animClock || 0) + 1;
+      // 14.40 — Sons empilés par la SIMULATION ci-dessus : UNE passe par frame (le tick peut en
+      // faire 200), rien au retour d'un hors-ligne (file débordée → purge).
+      drainSfxQueue(g);
+      colliderLoopFrame(g);
       checkTutorial();
       checkGuide();
       checkTips();
@@ -25614,7 +25813,11 @@ function App() {
     // Garde `saveTimer` : on ne flushe QUE s'il y a une écriture en attente (une partie
     // neuve jamais touchée ne crée pas de sauvegarde parasite).
     const onHide = () => {
-      if (document.visibilityState === 'hidden' && gameRef.current.saveTimer) flushSave();
+      if (document.visibilityState !== 'hidden') return;
+      // 14.40 — La rAF ne tourne plus en arrière-plan → `colliderLoopFrame` ne coupera jamais le
+      // bourdon. Sans cet arrêt EXPLICITE la voix tournerait écran éteint.
+      try { SFX.loopStop('collider'); } catch (e) { /* audio indispo */ }
+      if (gameRef.current.saveTimer) flushSave();
     };
     document.addEventListener('visibilitychange', onHide);
     window.addEventListener('pagehide', onHide);
@@ -26149,7 +26352,9 @@ function App() {
     title: I18N.t("Entrer dans le jeu maintenant (le reste du calcul hors-ligne est abandonné)")
   }, I18N.t("Passer")))), offlineReport && React.createElement(OfflineModal, {
     report: offlineReport,
-    onClose: () => setOfflineReport(null)
+    // 14.40 — `load` n'était JAMAIS joué : au chargement le contexte audio n'existe pas encore
+    // (autoplay mobile). La fermeture du récap EST le 1er geste → seul moment où il est audible.
+    onClose: () => { SFX.play('load'); setOfflineReport(null); }
   }), portOpen && React.createElement(PortPanel, {
     game: game,
     // 14.17 — Au SOUTERRAIN (île 7), le bouton PORT ouvrait un panneau VIDE : l'île 7 n'a pas de
@@ -26258,6 +26463,8 @@ if (typeof window !== 'undefined') {
     quantumStabFactor, elevatorAllocate, ELEVATOR_MODES, elevatorModeOf, isFilledTile, tierForfait, cumulativeInvested, isUpgradable,
     resetSpriteCaches, spriteImg, spriteUsable, drawSprite, spriteImgCache, animImgCache, processCollider, colliderPenalty, processLogic, nominalPower, minPower, TIER_STEP, TIER_NEXT, CARRIER_BY_RES, GAME_BUILD, GAME_VERSION, SAVE_VERSION, RES_SHORT, itemSpriteKey,
     colliderPalier, COLLIDER_FLAVORS, COLLIDER_EXCEPTIONS, COLLIDER_POWER, COLLIDER_GOALS,
+    // 14.40 — file de sons simulation → UI et boucle audio du Collisionneur.
+    qSfx, drainSfxQueue, colliderLoopFrame, SFX, COLLIDER_START,
     // 14.39 — palier/garde-fou du Collisionneur, fluides du Refroidisseur, refroidissement nucléaire.
     COLLIDER_REPAIR_NODES, COLLIDER_PUZZLE_NODES, isNodeConfirmed, colliderGoalLocked, colliderLaunchBlock,
     coolerModesAvailable, coolerModesFor, islandNuclearCoolingOk, junctionDirOk, NET_PREFIX, NET_MASK_SUFFIX,
