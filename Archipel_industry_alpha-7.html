@@ -1166,7 +1166,22 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .tool-btn .tb-sub{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--ink-dim);
   white-space:nowrap;}
 /* Coût en pastilles : seules les ressources indisponibles passent en rouge. */
+/* 14.42 — « Demander au port » : relève les cibles d'import quand une montée de niveau est
+   bloquée par un déficit. Visible uniquement quand ça change quelque chose. */
+.ip-port-ask,.up-port-ask{width:100%;background:rgba(38,198,218,.12);border:1px solid rgba(38,198,218,.5);
+  color:#6fd8e6;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;
+  letter-spacing:.04em;text-transform:uppercase;border-radius:5px;padding:8px;cursor:pointer;
+  margin-bottom:8px;transition:background .1s;display:flex;justify-content:center;gap:8px;align-items:baseline;}
+.ip-port-ask:hover,.up-port-ask:hover{background:rgba(38,198,218,.22);}
+.ip-port-ask:active,.up-port-ask:active{transform:translateY(1px);}
+.ip-port-ask .ip-sub,.up-port-ask .ip-sub{font-family:'DM Mono',monospace;font-size:.62rem;font-weight:400;opacity:.85;text-transform:none;}
 .tool-btn .tb-cost{display:flex;flex-wrap:wrap;gap:2px 5px;white-space:normal;}
+/* 14.42 — Ligne intrants / sortants / élec. sur la vignette de l'onglet Bâtiment. */
+.tool-btn .tb-io{display:flex;flex-wrap:wrap;gap:1px 6px;white-space:normal;line-height:1.15;
+  font-family:'DM Mono',monospace;font-size:.58rem;color:var(--ink-dim);margin-top:1px;}
+.tool-btn .tb-io .io-in{color:#9fd3ff;}
+.tool-btn .tb-io .io-out{color:#b8e6a0;}
+.tool-btn .tb-io .io-pw{color:#ffd479;}
 .tool-btn .tb-cost .tb-ci{color:var(--ink-dim);}
 .tool-btn .tb-cost .tb-ci.miss{color:#ff6a60;font-weight:600;}
 .tool-btn.active{border-color:var(--accent,var(--yellow));background:#26264e;
@@ -3992,6 +4007,43 @@ function cargoSprite() {
     draggable: false
   }) : "🚢";
 }
+// 14.42 — Sprite TEINTÉ, avec cache. Le conduit V4 (illimité) n'a pas d'art « chauffe » dédié
+// (48 masques × 3 paliers = hors de question) : on teinte le sprite de base en 'source-atop'
+// dans un canvas hors écran, ce qui ne colore QUE les pixels du sprite (jamais la tuile en
+// dessous, contrairement à un fillRect direct sur le contexte principal).
+// Cache borné : une entrée par (clé de sprite, couleur, alpha) — l'appelant n'utilise que
+// 3 paliers, donc au pire 3 canvas par masque réellement affiché.
+const _tintCache = {};
+function drawSpriteTinted(ctx, fileKey, x, y, w, h, rgb, alpha) {
+  if (!SPRITES_ENABLED || !fileKey) return false;
+  const img = spriteImg(fileKey);            // spriteImg garantit déjà une image dessinable
+  if (!img || !img.width) return false;
+  const ck = fileKey + '|' + rgb + '|' + alpha;
+  let cv = _tintCache[ck];
+  if (!cv) {
+    cv = document.createElement('canvas');
+    cv.width = img.width;
+    cv.height = img.height;
+    const c2 = cv.getContext('2d');
+    if (!c2) return false;
+    c2.imageSmoothingEnabled = false;
+    c2.drawImage(img, 0, 0);
+    c2.globalCompositeOperation = 'source-atop';
+    c2.globalAlpha = alpha;
+    c2.fillStyle = rgb;
+    c2.fillRect(0, 0, cv.width, cv.height);
+    _tintCache[ck] = cv;
+  }
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(cv, x, y, w, h);
+  return true;
+}
+// 14.42 — Rampe de teinte du conduit ILLIMITÉ : ambre → orange → rouge. Volontairement
+// DIFFÉRENTE de l'art « chauffe » des V1-V3 (cuivre → rouge vif) : le signal ne dit pas
+// « conduit saturé » mais « sources en surchauffe ». Mêmes seuils (0,25 / 0,5 / 0,8).
+const conduitUnlTint = f => f >= 0.8 ? ['rgb(255,60,30)', 0.62]
+                          : f >= 0.5 ? ['rgb(255,140,30)', 0.50]
+                          :            ['rgb(255,200,60)', 0.34];
 // Draw a sprite into a tile rect; returns true if drawn, false if unavailable.
 function drawSprite(ctx, fileKey, x, y, w, h) {
   if (!SPRITES_ENABLED || !fileKey) return false;
@@ -6711,7 +6763,7 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'energy',
   label: 'Énergie',
-  ids: ['eolienne', 'centrale_charbon', 'centrale_charbon_v2', 'centrale_diesel', 'centrale_diesel_v2', 'eolienne_offshore', 'centrale_gaz', 'geothermie', 'accumulateur']
+  ids: ['eolienne', 'centrale_charbon', 'centrale_charbon_v2', 'centrale_diesel', 'centrale_diesel_v2', 'eolienne_offshore', 'centrale_gaz', 'geothermie', 'accumulateur', 'accumulateur_v2']
 }, {
   key: 'cement',
   label: 'Ciment & béton',
@@ -7257,8 +7309,17 @@ const SAVE_VERSION = 31;
 // déblocage : un banc de brume se lève, l'île émerge, la liaison 5-6 se trace (~1,6 s, une
 // seule fois). Drapeau `archiVu6` persisté (champ OPTIONNEL → SAVE_VERSION inchangé) ; une
 // save antérieure possédant déjà l'île 6 est considérée comme l'ayant vue (pas de rejeu).
-const GAME_BUILD = 324;
-const GAME_VERSION = 'Alpha 14.42';
+const GAME_BUILD = 326;
+const GAME_VERSION = 'Alpha 14.44';
+// 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
+// DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
+// « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
+// disponible » — l'annonce existait, mais ne disait RIEN de ce qui avait changé.
+// La note vit désormais ICI, collée à l'étiquette qu'elle décrit : on ne peut plus bumper la
+// version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
+// Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
+// La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
+const GAME_NOTES = "Bouton « Demander au port » sur la fiche bâtiment et l'outil Améliorer · Entrées, sorties et conso élec. sur chaque vignette de l'onglet Bâtiment · Accumulateur V2 disponible dans le groupe Énergie · Conduit illimité : traversée par les bâtiments, et teinte pilotée par la surchauffe des sources";
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -8484,6 +8545,13 @@ function rebuildNetworks(game, islandId) {
       if (!buildingConnectsCarrier(t.building.id, carrier)) continue;
       const ids = adjacentNetworksFootprint(game, islandId, r, c, bw, bh, carrier);
       for (let i = 1; i < ids.length; i++) {
+        // 14.42 — CONDUIT : le pontage par un bâtiment devient une RÉCOMPENSE de l'illimité.
+        // En dessous, retour à la règle d'origine (le bâtiment COUPE la ligne de conduit en
+        // deux réseaux, chacun avec son propre débit). Test par PAIRE plutôt qu'à l'échelle de
+        // l'île : l'illimité est certes acquis par île depuis 14.20, mais une vieille save peut
+        // porter un état mixte hérité — on ne veut pas de fusion asymétrique.
+        if (carrier === 'conduit' && !(newNets[ids[0]] && newNets[ids[0]].unlimited
+                                    && newNets[ids[i]] && newNets[ids[i]].unlimited)) continue;
         const ra = mFind(ids[0]),
           rb = mFind(ids[i]);
         if (ra !== rb) {
@@ -9149,7 +9217,21 @@ function processHeat(game, isl) {
     let pk = 0;
     for (const sb of cn.sources) pk += heatEmitMaxOf(sb);
     peak[nid] = pk;
-    load[nid] = Math.min(1, moved / Math.max(1e-9, cn.through)); // teinte = % du FLUX (débit utilisé)
+    // 14.42 — TEINTE : deux règles distinctes, parce que le signal n'a pas le même sens.
+    //  • Conduit LIMITÉ : % du débit consommé (moved / through) — « le tuyau sature ».
+    //  • Conduit ILLIMITÉ : il ne sature JAMAIS (through = Infinity → le ratio vaudrait 0 et le
+    //    V4 n'était jamais teinté). On mesure à la place la pire jauge de chaleur de ses SOURCES
+    //    (heat / heatCapOf, la même que la barre affichée sur le bâtiment) — « les tours ne
+    //    suivent pas ». Même échelle 0→1, donc mêmes seuils côté rendu, mais rampe de couleur
+    //    différente (cf. renderer) pour que le joueur ne confonde pas les deux diagnostics.
+    if (cn.net.unlimited) {
+      let worst = 0;
+      for (const sb of cn.sources) {
+        const hc = heatCapOf(sb);
+        if (hc > 0) worst = Math.max(worst, (sb.heat || 0) / hc);
+      }
+      load[nid] = Math.min(1, worst);
+    } else load[nid] = Math.min(1, moved / Math.max(1e-9, cn.through)); // teinte = % du FLUX (débit utilisé)
   }
   // 4) Alerte + trip. Une source qui ACCUMULE de la chaleur (émission > évacuation) alerte le
   //    joueur (transition, ré-armée quand la chaleur retombe) ; au plafond FIXE (= 60 s d'émission
@@ -13957,6 +14039,26 @@ const tradeCfgFor = (game, islandId, res) => {
     interdit: false
   });
 };
+// 14.42 — Y a-t-il quelque chose à DEMANDER au port pour couvrir `cost` sur `islandId` ?
+// Vrai si au moins une ressource est À LA FOIS : en déficit au port, transitable, et dont la
+// CIBLE d'import est encore inférieure au coût. Faux si tout est déjà commandé (« il n'y a plus
+// qu'à attendre le transit ») ou si rien n'est transitable → le bouton reste masqué.
+// L'île porteuse du port vient de portIslandOf (l'île 7, souterraine, se paie sur celui de l'île 6).
+// ⚠ LECTURE SEULE : ne JAMAIS passer par tradeCfgFor ici (il CRÉE l'entrée) — cette fonction est
+// appelée pendant le rendu React.
+function portAskNeeded(game, cost, islandId) {
+  if (!cost) return false;
+  const isl = portIslandOf(game, islandId);
+  const port = portPool(game, islandId) || {};
+  const per = game.tradeConfig && game.tradeConfig[isl];
+  for (const k in cost) {
+    if ((port[k] || 0) >= cost[k]) continue;
+    if (!TRADE_RESOURCE_SET.has(k)) continue;
+    const cur = per && per[k] ? (per[k].stockCible || 0) : 0;
+    if (cur < cost[k]) return true;
+  }
+  return false;
+}
 const tradePriorityFor = (game, islandId) => {
   let arr = game.tradePriority[islandId];
   if (!arr) return game.tradePriority[islandId] = [...TRADE_RESOURCES];
@@ -15123,6 +15225,35 @@ function ToolButton({
   const sub = id === 'conduit' ? formatCost(b.cost) + I18N.t(' /tuile') : b.kind === 'infra' ? I18N.t('tracé continu') : b.kind === 'junction' && CURRENT_MODE === 'normal' ? I18N.t('coût croissant') : formatCost(cost) || 'gratuit';
   const skey = SPRITES_ENABLED ? buildingSpriteKey(id) : null;
   const sdata = skey && SPRITE_DATA[skey];
+  // 14.42 — Ligne intrants / sortants / élec. SUR la vignette : ces informations n'étaient
+  // lisibles que dans la fiche (appui long 450 ms), donc très peu découvrables. Valeurs de BASE
+  // (niveau 1), identiques à celles de BuildingDetailModal — aucun multiplicateur d'amélioration.
+  // Séparation energie_kw / sorties matérielles reprise telle quelle de la fiche.
+  // Pas de sprites de ressources ici (≈100 vignettes) : code court + valeur, comme les pastilles
+  // de coût. Le refroidisseur n'a pas d'`inputs` statique et `cryoOk` n'est pas une prop de
+  // ToolButton → son segment « Fluides » est simplement OMIS (pas de prop ajoutée, cf. brief).
+  // Aucun segment produit → la ligne entière disparaît (infra, jonctions, dispositifs logiques,
+  // centrales nucléaires à I/O dynamiques, port).
+  const ioSegs = [];
+  {
+    const outMat = {};
+    let energyOut = 0;
+    for (const k in b.outputs || {}) {
+      if (k === 'energie_kw') energyOut = b.outputs[k];else outMat[k] = b.outputs[k];
+    }
+    const chips = obj => Object.keys(obj).map(k => (RES_SHORT[k] || k) + ' ' + fmtRateSci(obj[k])).join(' · ');
+    if (!b.cooler && b.inputs && Object.keys(b.inputs).length) ioSegs.push(['io-in', '⇤ ' + chips(b.inputs)]);
+    if (Object.keys(outMat).length) ioSegs.push(['io-out', '⇥ ' + chips(outMat)]);
+    if (b.power > 0) ioSegs.push(['io-pw', '⚡ ' + fmtPower(b.power)]);
+    if (energyOut > 0) ioSegs.push(['io-pw', '⚡+ ' + fmtPower(energyOut)]);
+    if (b.accumulator) ioSegs.push(['io-pw', '🔋 ' + fmtPort(b.capacity || 0)]);
+  }
+  const ioLine = ioSegs.length ? React.createElement("span", {
+    className: "tb-io"
+  }, ioSegs.map((sg, i) => React.createElement("span", {
+    key: i,
+    className: sg[0]
+  }, sg[1]))) : null;
   // Appui long (~450 ms) → fiche détaillée du bâtiment ; un appui court le sélectionne.
   // On annule si le doigt glisse (>10 px, pour ne pas gêner le défilement de la barre).
   const lp = useRef({});
@@ -15199,7 +15330,7 @@ function ToolButton({
     title: RES_SHORT[k] || k
   }, (RES_SHORT[k] || k) + ' ' + fmtPort(cost[k])))) : React.createElement("span", {
     className: "tb-sub"
-  }, sub));
+  }, sub), ioLine);
 }
 // Fiche détaillée d'un bâtiment (appui long sur sa tuile dans l'onglet Bâtiment / Réseau).
 function BuildingDetailModal({
@@ -15667,7 +15798,8 @@ function InfoPanel({
   onToggleCollider,
   onLaunchCollider,
   onSetElevatorMode,
-  onPromoteElevatorCategory
+  onPromoteElevatorCategory,
+  onAskPort
 }) {
   const ref = useRef(null);
   // Le tap qui ouvre/déplace la fiche ne doit pas cliquer un bouton sous le doigt.
@@ -16249,6 +16381,11 @@ function InfoPanel({
   const densCost = atCap ? upgradeCost(null, tierEntry(densId), densId) : null;
   const canDens = atCap && densUnlocked && (dev || Object.keys(densCost).every(k => (port[k] || 0) >= densCost[k]));
   const densNode = atCap && !densUnlocked && BUILDING_NODE[densId] ? TECH_BY_ID[BUILDING_NODE[densId]] : null;
+  // 14.42 — « Demander au port » : SEULEMENT s'il y a de quoi demander (déficit + cible d'import
+  // encore trop basse). Si les cibles sont déjà au-dessus, la commande est passée et le bouton
+  // serait un leurre → masqué.
+  const askCost = upgradable ? (atCap ? densCost : upCost) : null;
+  const askNeeded = !!askCost && portAskNeeded(game, askCost, currentIsland);
   // « Aligner tous » : monte tous les bâtiments du même type (sur cette île) qui sont
   // en-dessous du niveau de CE bâtiment, jusqu'à ce niveau. On calcule le nombre
   // concerné + le coût total cumulé pour l'afficher et tester si on peut payer.
@@ -17360,7 +17497,13 @@ function InfoPanel({
     title: downRefund ? I18N.t('Remb. : ') + (formatCost(downRefund) || '—') : I18N.t('Déjà au niveau de base')
   }, uiIcon('baisser', "\u2B07"), armedDown ? I18N.t(" Confirmer ?") : I18N.t(" Baisser "), React.createElement("span", {
     className: "ip-sub"
-  }, upg > 0 ? 'Nv.' + upg : '—'))), upgradable && upg > 0 && alignCount > 0 && React.createElement("button", {
+  }, upg > 0 ? 'Nv.' + upg : '—'))), askNeeded && React.createElement("button", {
+    className: "ip-port-ask",
+    onClick: () => onAskPort && onAskPort(askCost),
+    title: I18N.t("Relève les cibles d'import du port pour les ressources manquantes (l'ordre de priorité du transit n'est pas modifié)")
+  }, "🚢 ", I18N.t(" Demander au port"), React.createElement("span", {
+    className: "ip-sub"
+  }, I18N.t("cibles d'import"))), upgradable && upg > 0 && alignCount > 0 && React.createElement("button", {
     className: "ip-align",
     disabled: !canAlign,
     onClick: () => onUpgradeAll(info.r, info.c),
@@ -17399,7 +17542,8 @@ function UpgradePanel({
   onClose,
   onUpgrade,
   onDensify,
-  onDensifyLocked
+  onDensifyLocked,
+  onAskPort
 }) {
   const ref = useRef(null);
   // Anti tap-through : le tap (outil Améliorer) qui ouvre le panneau ne doit pas cliquer dedans.
@@ -17456,6 +17600,10 @@ function UpgradePanel({
   const densCost = atCap ? upgradeCost(null, tierEntry(link.next), link.next) : null;
   let canDensify = atCap && densUnlocked;
   if (atCap) for (const k in densCost) if ((port[k] || 0) < densCost[k]) canDensify = false;
+  // 14.42 — « Demander au port » (même règle que l'InfoPanel : visible seulement si ça change
+  // quelque chose). Au cap, c'est le coût de DENSIFICATION qui est couvert.
+  const askCost = atCap ? densCost : cost;
+  const askNeeded = portAskNeeded(game, askCost, currentIsland);
   const statLine = (label, rec) => {
     if (!rec || Object.keys(rec).length === 0) return null;
     return React.createElement("div", {
@@ -17537,7 +17685,13 @@ function UpgradePanel({
     'data-tut': "upgrade",
     disabled: !canAfford,
     onClick: () => onUpgrade(up.r, up.c)
-  }, "\u2B06 Am\xE9liorer (\xD7", nextMult, ")"));
+  }, "\u2B06 Am\xE9liorer (\xD7", nextMult, ")"), askNeeded && React.createElement("button", {
+    className: "up-port-ask",
+    onClick: () => onAskPort && onAskPort(askCost),
+    title: I18N.t("Relève les cibles d'import du port pour les ressources manquantes (l'ordre de priorité du transit n'est pas modifié)")
+  }, "🚢 ", I18N.t(" Demander au port"), React.createElement("span", {
+    className: "ip-sub"
+  }, I18N.t("cibles d'import"))));
 }
 // Ordre d'affichage de la recherche : les nœuds déjà débloqués (« confirmed ») passent à la FIN
 // (et sont affichés en compact), pour mettre en avant les recherches en cours / disponibles.
@@ -19684,7 +19838,9 @@ function OptionsModal({
         className: "opt-upd-status new"
       }, React.createElement("div", null, I18N.t("⬆ Mise à jour disponible : "), React.createElement("b", null, upd.label)), upd.notes && React.createElement("div", {
         className: "opt-upd-notes"
-      }, upd.notes), action, NATIVE_UPDATER && dlPct === -1 && React.createElement("div", {
+      }, String(upd.notes).split(' · ').map((n, i) => React.createElement("div", {
+        key: i
+      }, n))), action, NATIVE_UPDATER && dlPct === -1 && React.createElement("div", {
         className: "opt-upd-notes"
       }, I18N.t("❌ Échec du téléchargement. Réessayez, ou "), link, "."));
     }
@@ -23690,6 +23846,40 @@ function App() {
     markDirty();
     scheduleSave();
   }
+  // 14.42 — « Demander au port » : relève les CIBLES d'import de l'île pour couvrir `cost`.
+  // Règles :
+  //  • ne relève QUE les ressources réellement en déficit (les autres n'ont rien à faire au port) ;
+  //  • ne BAISSE jamais rien (on ignore une cible déjà suffisante) ;
+  //  • n'écrit QUE stockCible — l'ordre de priorité du transit (game.tradePriority) et les
+  //    interdits (cfg.interdit, tradeBlockDest) ne sont PAS touchés ;
+  //  • ⚠ écriture DIRECTE sur cfg, PAS via setTradeCfg : ce dernier applique le lien
+  //    « Cible ⇒ Réserve » (game.tradeLinkReserve) qui remonterait AUSSI la réserve d'export —
+  //    l'île cesserait alors de réexporter en aval. Le joueur n'a pas demandé ça.
+  function askPortFor(cost, islandId) {
+    const g = gameRef.current;
+    if (!cost) return;
+    const isl = portIslandOf(g, islandId);
+    const port = portPool(g, islandId) || {};
+    const raised = [], blocked = [];
+    for (const k in cost) {
+      if ((port[k] || 0) >= cost[k]) continue;
+      if (!TRADE_RESOURCE_SET.has(k)) { blocked.push(RES_SHORT[k] || k); continue; }
+      const cfg = tradeCfgFor(g, isl, k);
+      const want = Math.ceil(cost[k]);
+      if ((cfg.stockCible || 0) >= want) continue;
+      cfg.stockCible = want;
+      raised.push((RES_SHORT[k] || k) + ' ' + fmtPort(want));
+    }
+    if (raised.length) {
+      SFX.play('click');
+      showToast('🚢 ' + I18N.t("Cible d'import relevée : ") + raised.join(', '));
+    }
+    if (blocked.length) {
+      showToast('⚠ ' + I18N.t('Non transitable par bateau : ') + blocked.join(', '), 'var(--yellow)');
+    }
+    bumpHud();
+    scheduleSave();
+  }
   function setTradeCfg(islandId, res, field, value) {
     const g = gameRef.current;
     const cfg = tradeCfgFor(g, islandId, res);
@@ -24560,6 +24750,11 @@ function App() {
             const ch = f >= 0.8 ? 3 : f >= 0.5 ? 2 : 1;
             drew = drawSprite(ctx, baseKey + '_chauffe' + ch, x, y, tile, tile);
             _animPlayed = true; // flux chaud → on garde le conduit redessiné en continu
+          } else if (slvl === 4 && f >= 0.25) {
+            // 14.42 — V4 illimité : teinte canvas sur le sprite de base (pas d'art dédié).
+            const tn = conduitUnlTint(f);
+            drew = drawSpriteTinted(ctx, baseKey, x, y, tile, tile, tn[0], tn[1]);
+            if (drew) _animPlayed = true;
           }
           if (!drew) drew = drawSprite(ctx, baseKey, x, y, tile, tile);
         }
@@ -24572,11 +24767,13 @@ function App() {
           if (mask & 4) ctx.fillRect(cx - th / 2, cy, th, tile / 2);
           if (mask & 8) ctx.fillRect(x, cy - th / 2, tile / 2, th);
           if (mask & 2) ctx.fillRect(cx, cy - th / 2, tile / 2, th);
-          // Pas de teinte rouge canvas sur le V4 (réservé à l'art « chauffe » des niveaux ≤ 3).
-          if (f > 0.02 && slvl <= 3) {
+          // 14.42 — Le V4 a désormais SA teinte (rampe ambre → rouge, sources en surchauffe) :
+          // le repli vectoriel la reproduit au lieu de rester gris.
+          if (f > 0.02) {
+            const tn = slvl === 4 ? conduitUnlTint(f) : ['rgb(255,55,25)', Math.min(0.72, f * 0.72)];
             ctx.save();
-            ctx.globalAlpha = Math.min(0.72, f * 0.72);
-            ctx.fillStyle = 'rgb(255,55,25)';
+            ctx.globalAlpha = tn[1];
+            ctx.fillStyle = tn[0];
             roundRectPath(ctx, cx - th / 2, cy - th / 2, th, th, th * 0.2);
             ctx.fill();
             if (mask & 1) ctx.fillRect(cx - th / 2, y, th, tile / 2);
@@ -24743,6 +24940,11 @@ function App() {
             const ch = cf >= 0.8 ? 3 : cf >= 0.5 ? 2 : 1;
             cdrew = drawSprite(ctx, cbase + '_chauffe' + ch, x, y, tile, tile);
             _animPlayed = true;
+          } else if (cslvl === 4 && cf >= 0.25) {
+            // 14.42 — V4 illimité : même teinte que la ligne de conduit adjacente.
+            const tn = conduitUnlTint(cf);
+            cdrew = drawSpriteTinted(ctx, cbase, x, y, tile, tile, tn[0], tn[1]);
+            if (cdrew) _animPlayed = true;
           }
           if (!cdrew) drawSprite(ctx, cbase, x, y, tile, tile);
         }
@@ -26327,12 +26529,14 @@ function App() {
     onToggleCollider: () => toggleCollider(),
     onLaunchCollider: () => launchCollider(),
     onSetElevatorMode: m => setElevatorMode(m),
-    onPromoteElevatorCategory: cat => promoteElevatorCategory(cat)
+    onPromoteElevatorCategory: cat => promoteElevatorCategory(cat),
+    onAskPort: cost => askPortFor(cost, game.currentIsland)
   }), upgrade && React.createElement(UpgradePanel, {
     up: upgrade,
     game: game,
     currentIsland: game.currentIsland,
     stageRef: stageRef,
+    onAskPort: cost => askPortFor(cost, game.currentIsland),
     onClose: () => { SFX.play('panelClose'); setUpgrade(null); },
     onUpgrade: (r, c) => tryUpgrade(r, c),
     onDensify: (r, c) => tryDensify(r, c),
