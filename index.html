@@ -2715,6 +2715,7 @@ for(var code in G){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; va
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.31 */ var ADD={"en": {"Émission max": "Peak emission", "Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.": "Heat emission at the PEAK of the oscillation: this is what must be evacuated continuously. The overheat cap is 60 × this value.", "Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).": "Heat stored in the building. FIXED cap = 1 min of PEAK emission (independent of the current throughput) — once reached, the building breaks down (overheat).", "Charge crête": "Peak load", "Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.": "Sum of the PEAK emissions of the connected sources. Above the throughput, the duct will saturate at peak: upgrade its level, add tiles or make it unlimited.", "Réseaux": "Networks", "Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).": "At max level this building densifies into a higher model (it cannot be placed directly).", " au Nv.": " at Lv.", "Bâtiments des autres îles": "Buildings from other islands", "Affichés en gris — touchez-les pour voir leur fiche": "Shown greyed out — tap them to see their sheet", "Masqués": "Hidden", "Se construit sur ": "Built on ", "Câble": "Cable", "relié au réseau ✓": "connected to the grid ✓", "non relié — amenez un câble jusqu'au Collisionneur": "not connected — run a cable to the Collider"}, "es": {"Émission max": "Emisión máx.", "Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.": "Emisión de calor en el PICO de la oscilación: es lo que hay que poder evacuar de forma continua. El límite de sobrecalentamiento es 60 × este valor.", "Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).": "Calor almacenado en el edificio. Límite FIJO = 1 min de emisión MÁXIMA (no depende del régimen actual) — al alcanzarlo, el edificio se avería (sobrecalentamiento).", "Charge crête": "Carga pico", "Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.": "Suma de las emisiones MÁXIMAS de las fuentes conectadas. Por encima del caudal, el conducto se saturará en el pico: mejora su nivel, añade casillas o pásalo a ilimitado.", "Réseaux": "Redes", "Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).": "Al nivel máximo este edificio se densifica en un modelo superior (no se coloca directamente).", " au Nv.": " al Nv.", "Bâtiments des autres îles": "Edificios de otras islas", "Affichés en gris — touchez-les pour voir leur fiche": "Mostrados en gris — tócalos para ver su ficha", "Masqués": "Ocultos", "Se construit sur ": "Se construye en ", "Câble": "Cable", "relié au réseau ✓": "conectado a la red ✓", "non relié — amenez un câble jusqu'au Collisionneur": "sin conectar — lleva un cable hasta el Colisionador"}, "de": {"Émission max": "Max. Emission", "Émission de chaleur au SOMMET de l'oscillation : c'est ce qu'il faut pouvoir évacuer en continu. Le plafond de surchauffe vaut 60 × cette valeur.": "Wärmeemission im SPITZENWERT der Schwingung: genau das muss dauerhaft abgeführt werden. Das Überhitzungslimit beträgt das 60-Fache dieses Werts.", "Chaleur stockée dans le bâtiment. Plafond FIXE = 1 min d'émission MAXIMALE (il ne dépend pas du régime courant) — atteint, le bâtiment tombe en panne (surchauffe).": "Im Gebäude gespeicherte Wärme. FESTES Limit = 1 Min. MAXIMALE Emission (unabhängig vom aktuellen Betrieb) — bei Erreichen fällt das Gebäude aus (Überhitzung).", "Charge crête": "Spitzenlast", "Somme des émissions MAXIMALES des sources raccordées. Au-delà du débit, le conduit saturera au pic : améliorez son niveau, ajoutez des tuiles ou passez-le en illimité.": "Summe der MAXIMALEN Emissionen der angeschlossenen Quellen. Oberhalb des Durchsatzes läuft die Leitung im Spitzenwert voll: Stufe erhöhen, Felder hinzufügen oder auf unbegrenzt setzen.", "Réseaux": "Netze", "Au niveau maximum, ce bâtiment se densifie en un modèle supérieur (il ne se pose pas directement).": "Auf der Maximalstufe verdichtet sich dieses Gebäude zu einem höheren Modell (es kann nicht direkt gebaut werden).", " au Nv.": " auf St.", "Bâtiments des autres îles": "Gebäude anderer Inseln", "Affichés en gris — touchez-les pour voir leur fiche": "Ausgegraut angezeigt — antippen, um ihr Datenblatt zu sehen", "Masqués": "Ausgeblendet", "Se construit sur ": "Wird gebaut auf ", "Câble": "Kabel", "relié au réseau ✓": "mit dem Netz verbunden ✓", "non relié — amenez un câble jusqu'au Collisionneur": "nicht verbunden — Kabel zum Kollider verlegen"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.32 */ var ADD={"en": {"Mélange": "Blend", "Moins d'uranium, plus de plutonium": "Less uranium, more plutonium", "Plus d'uranium, moins de plutonium": "More uranium, less plutonium", "Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.": "Trade-off slider: more uranium = less plutonium, at CONSTANT fuel output. This is not a share of the blend.", "Réglage direct entre 10 et 90 (50 = neutre).": "Direct setting between 10 and 90 (50 = neutral).", "Débits réels": "Actual rates", "Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.": "More uranium = less plutonium, and vice versa — fuel output does not change.", "−1 % (rendu au plus gros des autres)": "−1% (given back to the largest of the others)", "+1 % (pris au plus gros des autres)": "+1% (taken from the largest of the others)"}, "es": {"Mélange": "Mezcla", "Moins d'uranium, plus de plutonium": "Menos uranio, más plutonio", "Plus d'uranium, moins de plutonium": "Más uranio, menos plutonio", "Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.": "Regulador de compromiso: más uranio = menos plutonio, con producción de combustible CONSTANTE. No es una proporción de la mezcla.", "Réglage direct entre 10 et 90 (50 = neutre).": "Ajuste directo entre 10 y 90 (50 = neutro).", "Débits réels": "Caudales reales", "Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.": "Más uranio = menos plutonio, y viceversa — la producción de combustible no cambia.", "−1 % (rendu au plus gros des autres)": "−1 % (devuelto al mayor de los demás)", "+1 % (pris au plus gros des autres)": "+1 % (tomado del mayor de los demás)"}, "de": {"Mélange": "Mischung", "Moins d'uranium, plus de plutonium": "Weniger Uran, mehr Plutonium", "Plus d'uranium, moins de plutonium": "Mehr Uran, weniger Plutonium", "Curseur de compromis : plus d'uranium = moins de plutonium, à production de combustible CONSTANTE. Ce n'est pas une proportion du mélange.": "Kompromissregler: mehr Uran = weniger Plutonium, bei KONSTANTER Brennstoffproduktion. Das ist kein Mischungsanteil.", "Réglage direct entre 10 et 90 (50 = neutre).": "Direkte Einstellung zwischen 10 und 90 (50 = neutral).", "Débits réels": "Tatsächliche Raten", "Plus d'uranium = moins de plutonium, et inversement — la production de combustible ne change pas.": "Mehr Uran = weniger Plutonium und umgekehrt — die Brennstoffproduktion ändert sich nicht.", "−1 % (rendu au plus gros des autres)": "−1 % (dem größten der anderen zurückgegeben)", "+1 % (pris au plus gros des autres)": "+1 % (dem größten der anderen entnommen)"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.36 */ var ADD={"en": {"Fluide de refroidissement": "Coolant", "aucun fluide": "no coolant", "/s absorbés": "/s absorbed", "Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.": "A nobler coolant absorbs more for a lower flow. With no coolant the cooler still runs — badly. Power draw is unchanged.", "Air (sec)": "Air (dry)", "Eau": "Water", "Azote": "Nitrogen", "Hélium": "Helium", "Hélium liquide": "Liquid helium"}, "es": {"Fluide de refroidissement": "Refrigerante", "aucun fluide": "sin refrigerante", "/s absorbés": "/s absorbidos", "Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.": "Un refrigerante más noble absorbe más con un caudal menor. Sin refrigerante el refrigerador funciona igualmente — mal. El consumo eléctrico no cambia.", "Air (sec)": "Aire (seco)", "Eau": "Agua", "Azote": "Nitrógeno", "Hélium": "Helio", "Hélium liquide": "Helio líquido"}, "de": {"Fluide de refroidissement": "Kühlmittel", "aucun fluide": "kein Kühlmittel", "/s absorbés": "/s aufgenommen", "Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.": "Ein edleres Kühlmittel nimmt bei geringerem Durchsatz mehr auf. Ohne Kühlmittel läuft der Kühler trotzdem — schlecht. Der Stromverbrauch bleibt gleich.", "Air (sec)": "Luft (trocken)", "Eau": "Wasser", "Azote": "Stickstoff", "Hélium": "Helium", "Hélium liquide": "Flüssiges Helium"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* 14.39 */ var ADD={"en": {"ARRÊTÉ — palier atteint, réparation à livrer": "STOPPED — tier goal reached, repair to deliver", "machine coupée — validez la recherche du palier ET livrez la réparation suivante": "machine shut down — confirm the tier research AND deliver the next repair", "Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante": "The tier's confirmation goal is reached: the machine stays shut down until the research is confirmed AND the next repair is delivered", "Palier atteint — réparation requise": "Tier reached — repair required", "❌ Palier atteint — validez la recherche et livrez la réparation suivante": "❌ Tier goal reached — confirm the research and deliver the next repair"}, "es": {"ARRÊTÉ — palier atteint, réparation à livrer": "DETENIDO — nivel alcanzado, reparación por entregar", "machine coupée — validez la recherche du palier ET livrez la réparation suivante": "máquina detenida — confirma la investigación del nivel Y entrega la siguiente reparación", "Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante": "Se alcanzó el umbral de confirmaciones del nivel: la máquina queda detenida hasta confirmar la investigación Y entregar la siguiente reparación", "Palier atteint — réparation requise": "Nivel alcanzado — reparación requerida", "❌ Palier atteint — validez la recherche et livrez la réparation suivante": "❌ Nivel alcanzado — confirma la investigación y entrega la siguiente reparación"}, "de": {"ARRÊTÉ — palier atteint, réparation à livrer": "GESTOPPT — Stufenziel erreicht, Reparatur ausstehend", "machine coupée — validez la recherche du palier ET livrez la réparation suivante": "Maschine abgeschaltet — bestätige die Stufenforschung UND liefere die nächste Reparatur", "Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante": "Die Bestätigungsschwelle der Stufe ist erreicht: Die Maschine bleibt abgeschaltet, bis die Forschung bestätigt UND die nächste Reparatur geliefert ist", "Palier atteint — réparation requise": "Stufe erreicht — Reparatur erforderlich", "❌ Palier atteint — validez la recherche et livrez la réparation suivante": "❌ Stufenziel erreicht — bestätige die Forschung und liefere die nächste Reparatur"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 </script>
 <script>
 const {
@@ -5430,7 +5431,7 @@ const BUILDINGS = {
     cooler: true,
     terrains: ['land', 'resource', 'coast'],
     size: [1, 1],
-    power: 1024,
+    power: 131072,
     cost: {
       alliage_tungstene: 400,
       piece_precision: 400,
@@ -7187,8 +7188,8 @@ const SAVE_VERSION = 31;
 // pierre, `pompe_eau_v3` était l'art de la V2 — améliorer ne changeait rien à l'écran), et
 // `item_helium_liquide` rejoint la famille hélium. Les 2 overrides passent en LISTES de
 // candidats (repli conservé). Aucune modification de rendu. SAVE_VERSION inchangé.
-const GAME_BUILD = 320;
-const GAME_VERSION = 'Alpha 14.38';
+const GAME_BUILD = 321;
+const GAME_VERSION = 'Alpha 14.39';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7754,21 +7755,27 @@ function arcDefaultState(id) {
 //  • `in`     = intrant /s à V1 — consommé par la BOUCLE BÂTIMENT (×2^upgrade via `mult`).
 //  • `absorb` = MJ/s absorbés à V1 — appliqué par processHeat (×2^upgrade, comme la tour).
 // Référence d'équilibrage : Tour aéroréfrigérante V1 = 1,024 MJ/s pour 256 eau/s et 0 kW.
-// Le Refroidisseur à l'eau fait donc ×2 mieux pour la même eau, mais coûte 1024 kW en permanence.
+// 14.39 — Le Refroidisseur V1 à l'eau vaut 256 TOURS (262,144 MJ/s) pour 32 768 eau/s et 131 MW.
+// Le rapport eau/MJ est inchangé (il reste ×2 meilleur que la tour) : c'est l'ÉCHELLE qui change.
+// Avant, couvrir un Cryostat Nv.13 (8 388 MJ/s) demandait ~512 Refroidisseurs V1 — le piège
+// pré-densification que la V2 est censée supprimer.
 // Échelle des fluides calquée sur la thermodynamique réelle : l'eau évapore en circuit OUVERT
 // (consommée en masse), l'azote a une chaleur latente ~11× plus faible (donc plus de débit),
 // l'hélium tourne en circuit FERMÉ avec récupération (le débit ne représente que les pertes).
 const COOLER_DEF = {
   order: ['sec', 'eau', 'azote', 'helium', 'helium_liquide'],
-  // 14.37 — Absorptions en ECHELLE BINAIRE (x1,024), alignees sur le conduit et la tour. Ne pas
-  // arrondir a 0,5 / 2 / 4 / 8 / 16 : la reference est la Tour V1 = 1,024 MJ/s. Les debits de
-  // fluide (`in`) sont INCHANGES.
+  // 14.39 — Barème ×128 sur `absorb` ET sur eau/azote (rapport fluide/MJ INCHANGÉ pour ces deux-là),
+  // ×8 sur l'hélium gazeux et ×4 sur l'hélium liquide : les fluides nobles deviennent nettement plus
+  // efficaces par unité (×16 et ×32), ce qui creuse volontairement la gradation. Repères de calage :
+  //   • azote 131 072/s = EXACTEMENT 1 Séparateur d'Air au Nv.8 (1 024 × 2⁷) ;
+  //   • hélium liquide 0,25/s = EXACTEMENT la sortie d'1 Cryostat V1 → appariement 1 pour 1.
+  // Tout reste en ECHELLE BINAIRE (×1,024) : ne pas arrondir à 64 / 256 / 512 / 1 024 / 2 048.
   modes: {
-    sec:            { label: 'Air (sec)',      in: null,                       absorb: 0.512 },
-    eau:            { label: 'Eau',            in: { eau: 256 },               absorb: 2.048 },
-    azote:          { label: 'Azote',          in: { azote: 1024 },            absorb: 4.096 },
-    helium:         { label: 'Hélium',         in: { helium4: 1 },             absorb: 8.192 },
-    helium_liquide: { label: 'Hélium liquide', in: { helium_liquide: 0.0625 }, absorb: 16.384 }
+    sec:            { label: 'Air (sec)',      in: null,                       absorb: 65.536 },
+    eau:            { label: 'Eau',            in: { eau: 32768 },             absorb: 262.144 },
+    azote:          { label: 'Azote',          in: { azote: 131072 },          absorb: 524.288 },
+    helium:         { label: 'Hélium',         in: { helium4: 8 },             absorb: 1048.576 },
+    helium_liquide: { label: 'Hélium liquide', in: { helium_liquide: 0.25 },   absorb: 2097.152 }
   }
 };
 const coolerDefaultState = () => ({ sel: 'sec' });
@@ -8664,7 +8671,12 @@ function islandNuclearCoolingOk(game, isl) {
     if (!bld) continue;
     const b = BUILDINGS[bld.id];
     if (!b) continue;
-    if (b.nuclear) {
+    // 14.39 — La Centrale V2 (`noHeat`) n'émet AUCUNE chaleur : elle n'a besoin ni de tour ni de
+    // conduit. Elle ne doit donc pas compter comme une centrale « à refroidir », sinon monter sa
+    // puissance déclenchait l'alerte rouge « aucune tour aéroréfrigérante reliée par conduit — la
+    // centrale va surchauffer », alarme impossible à satisfaire ET matériellement fausse (aucun
+    // `heatCap` → aucun trip possible). Une V1 sur la même île continue, elle, de déclencher l'alerte.
+    if (b.nuclear && !b.noHeat) {
       hasCentrale = true;
       const sz = b.size || [1, 1];
       for (const nid of adjacentNetworksFootprint(game, isl, r, c, sz[1] || 1, sz[0] || 1, 'conduit')) centraleNets.add(nid);
@@ -9002,7 +9014,7 @@ function dcEffective(bld) {
   if (raw <= DC_RATE_CAP) return { rate: raw, reward: 1 };
   return { rate: DC_RATE_CAP, reward: raw / DC_RATE_CAP };
 }
-// Palier courant du Collisionneur : 1 au départ, +1 par nœud de palier CONFIRMÉ (40 → P2, 41 → P3).
+// Palier courant du Collisionneur : 1 au départ, +1 par RÉPARATION confirmée (40 → P2, 42 → P3).
 // Ids des nœuds du Collisionneur — 3 RÉPARATIONS (livraison) alternées avec 3 PUZZLES
 // (confirmations). Constantes nommées : ces ids ont déjà été renumérotés une fois, les coder en
 // dur dans le moteur les faisait dériver en silence.
@@ -9011,9 +9023,13 @@ const COLLIDER_PUZZLE_NODES = [39, 41, 43];
 const isNodeConfirmed = (game, id) => !!(game && game.techTree && game.techTree.nodes && game.techTree.nodes[id - 1] && game.techTree.nodes[id - 1].status === 'confirmed');
 // Le Collisionneur tourne dès la 1ʳᵉ réparation confirmée.
 const colliderRepaired = game => isNodeConfirmed(game, COLLIDER_REPAIR_NODES[0]);
-// Palier = 1 + nb de PUZZLES résolus (P1 résolu → palier 2, P2 résolu → palier 3).
+// 14.39 — Palier indexé sur les RÉPARATIONS, plus sur les puzzles. C'est la RÉPARATION qui livre
+// les portes exigées par le palier (I → AND/OR/NOT, II → NAND/NOR, III → XOR/XNOR) : en lisant
+// COLLIDER_PUZZLE_NODES, la validation du nœud 41 (1 000 confirmations, palier 2) faisait basculer
+// la machine en P3 — 3ᵉ bit ET codes d'exception 000/111 — alors que le joueur n'avait ni XOR ni
+// XNOR pour construire le comparateur + détecteur de motif que P3 impose.
 function colliderPalier(game) {
-  return isNodeConfirmed(game, COLLIDER_PUZZLE_NODES[1]) ? 3 : isNodeConfirmed(game, COLLIDER_PUZZLE_NODES[0]) ? 2 : 1;
+  return isNodeConfirmed(game, COLLIDER_REPAIR_NODES[2]) ? 3 : isNodeConfirmed(game, COLLIDER_REPAIR_NODES[1]) ? 2 : 1;
 }
 const colliderBits = palier => palier; // P1 → 1 bit (α), P2 → 2 (αβ), P3 → 3 (αβγ)
 // Tire une saveur au hasard dans le jeu du palier ; le Collisionneur peut AUSSI sortir un code
@@ -9599,6 +9615,12 @@ function processCollider(game, isl) {
   const co = game.collider;
   const palier = colliderPalier(game);
   const cap = COLLIDER_POWER[palier] || COLLIDER_POWER[1];
+  // 14.39 — Miroir d'affichage posé AVANT tout early-return. La fonction sortait sans toucher
+  // `co.palier` quand la machine est éteinte ou non réparée : la valeur restait figée à ce qu'elle
+  // valait au dernier tick actif, et une save faite sous l'ancienne règle de palier affichait
+  // encore P3 après correctif. Recalculé à chaque tick → aucune migration de save nécessaire.
+  co.palier = palier;
+  co.goal = COLLIDER_GOALS[palier] || 0;
   // Le Collisionneur ne tourne que s'il a été RÉPARÉ (nœud de recherche 35 confirmé).
   // Réparé = 1ʳᵉ « Réparation du Collisionneur » confirmée (COLLIDER_REPAIR_NODES[0]).
   const repaired = colliderRepaired(game);
@@ -9616,6 +9638,26 @@ function processCollider(game, isl) {
   // ⚠ 14.08 : une mise en PAUSE remet le démarrage À ZÉRO (et annule la séquence lancée) — c'est
   // désormais une vraie coupure, plus un gel (demande explicite du joueur).
   if (co.enabled === false) {
+    co.state = 'off';
+    co.cur = 0;
+    co.want = 0;
+    co.halt = null;
+    co.he3Used = 0;
+    co.timer = 0;
+    co.launched = false;
+    co.code = null;
+    co.dcCode = null;
+    return;
+  }
+  // 14.39 — SEUIL DU PALIER ATTEINT → ARRÊT COMPLET, plus seulement blocage de relance. Tant que la
+  // recherche du palier n'est pas validée ET que la RÉPARATION suivante n'est pas livrée, la machine
+  // est coupée : plus aucune manche tirée, donc plus une seule confirmation accumulée avec les
+  // portes du palier précédent. Le blocage de 14.24 ne couvrait que le RELANCEMENT — une machine
+  // déjà en marche continuait d'empiler vers le seuil suivant.
+  // Le redémarrage repaie les 10 min complètes (règle 14.08 : une coupure n'est pas un gel).
+  // `co.enabled` n'est PAS touché : dès la réparation confirmée, la machine repart d'elle-même sans
+  // que le joueur ait à re-basculer son interrupteur.
+  if (colliderGoalLocked(game)) {
     co.state = 'off';
     co.cur = 0;
     co.want = 0;
@@ -9873,7 +9915,15 @@ function colliderGoalLocked(game) {
   const palier = colliderPalier(game);
   const goal = COLLIDER_GOALS[palier] || Infinity;
   const conf = game && game.techTree && game.techTree.colliderConfirms || 0;
-  return conf >= goal && !isNodeConfirmed(game, COLLIDER_PUZZLE_NODES[palier - 1]);
+  if (conf < goal) return false;
+  // Seuil atteint : il faut le nœud PUZZLE du palier…
+  if (!isNodeConfirmed(game, COLLIDER_PUZZLE_NODES[palier - 1])) return true;
+  // …ET la RÉPARATION qui ouvre le palier suivant (14.39). Depuis que le palier est indexé sur les
+  // réparations, valider le puzzle ne le fait plus monter : sans cette seconde condition le joueur
+  // relancerait à palier constant et accumulerait vers le seuil de N+1 avec les portes de N.
+  // Au palier 3 il n'y a pas de réparation suivante → seul le nœud 43 libère.
+  const nextRepair = COLLIDER_REPAIR_NODES[palier];
+  return nextRepair != null && !isNodeConfirmed(game, nextRepair);
 }
 // Raison pour laquelle le lancement est refusé (null = lançable). Source de vérité UNIQUE :
 // launchCollider ET l'état grisé du bouton du panneau s'y réfèrent, pour que le joueur voie le
@@ -12896,6 +12946,13 @@ function unlockedBuildingSet(game) {
 // Collisionneur). Liste persistée, additive.
 const isBuildingGranted = (game, id) => !!(game.techTree && game.techTree.grantedBuildings && game.techTree.grantedBuildings.indexOf(id) >= 0);
 const isBuildingUnlocked = (game, id) => BUILDING_NODE[id] == null || game.techTree.nodes[BUILDING_NODE[id] - 1].status === 'confirmed' || isBuildingGranted(game, id);
+// 14.39 — Fluides RÉELLEMENT proposables par le Refroidisseur. L'hélium liquide n'est produit que
+// par le Cryostat : tant qu'il n'est pas débloqué, le mode ne doit apparaître NULLE PART (ni fiche
+// bâtiment, ni panneau d'instance), sinon le joueur voit un fluide qu'il n'a aucun moyen de fournir.
+// Deux formes : `coolerModesAvailable` pour les composants qui n'ont qu'un booléen de déblocage
+// (Toolbar → unlockedSet), `coolerModesFor` pour ceux qui ont l'état de partie.
+const coolerModesAvailable = has => COOLER_DEF.order.filter(k => k !== 'helium_liquide' || has);
+const coolerModesFor = game => coolerModesAvailable(isBuildingUnlocked(game, 'cryostat'));
 // Ressources « débloquées » = produites par au moins un bâtiment débloqué par la recherche.
 // Sert à n'afficher dans le port (commerce + liaisons) que les ressources accessibles.
 function unlockedResourceSet(game) {
@@ -14897,6 +14954,7 @@ function ToolButton({
 // Fiche détaillée d'un bâtiment (appui long sur sa tuile dans l'onglet Bâtiment / Réseau).
 function BuildingDetailModal({
   id,
+  cryoOk,
   onClose
 }) {
   const b = BUILDINGS[id];
@@ -14961,7 +15019,7 @@ function BuildingDetailModal({
   if (b.terrains && b.terrains.length) addRow(I18N.t('Terrain'), b.terrains.map(t => TERR_LABEL[t] || t).join(', '));
   // 14.37 — Refroidisseur : pas d'`inputs` statique et pas d'instance ici, donc pas de mode
   // selectionne. On liste les fluides disponibles au lieu d'afficher une ligne « Entrees » vide.
-  if (b.cooler) addRow(I18N.t('Fluides'), COOLER_DEF.order.map(k => I18N.t(COOLER_DEF.modes[k].label)).join(' · '), true);
+  if (b.cooler) addRow(I18N.t('Fluides'), coolerModesAvailable(cryoOk).map(k => I18N.t(COOLER_DEF.modes[k].label)).join(' · '), true);
   else if (b.inputs && Object.keys(b.inputs).length) addRow(I18N.t('Entrées'), resChips(b.inputs, true).concat(I18N.t(' /s')), true);
   if (Object.keys(outMat).length) addRow(I18N.t('Sorties'), resChips(outMat, true).concat(I18N.t(' /s')), true);
   if (b.power > 0) addRow(I18N.t('Conso. élec.'), fmtPower(b.power));
@@ -15219,6 +15277,7 @@ function Toolbar({
     className: "playclock-mult"
   }, (timeScale || 1) + "\xD7")), detailId && React.createElement(BuildingDetailModal, {
     id: detailId,
+    cryoOk: !!(unlockedSet && unlockedSet.has('cryostat')),
     onClose: () => { SFX.play('panelClose'); setDetailId(null); }
   }), buildOpen && React.createElement("div", {
     className: "build-panel",
@@ -15507,7 +15566,7 @@ function InfoPanel({
   // Le Collisionneur est un landmark de TERRAIN (pas un bâtiment) : son état vit sur game.collider.
   if (info.mode === 'collider') {
     const co = game.collider || {};
-    const pal = co.palier || colliderPalier(game);
+    const pal = colliderPalier(game);
     const goal = COLLIDER_GOALS[pal] || 0;
     const conf = game.techTree && game.techTree.colliderConfirms || 0;
     const repaired = colliderRepaired(game);
@@ -15516,13 +15575,16 @@ function InfoPanel({
     // gelé, aucun code n'est émis, aucune manche n'est tirée (donc aucune pénalité possible).
     // La cause passe DEVANT l'état : c'est elle que le joueur doit corriger.
     const halted = repaired && colOn && co.halt;
-    const stLabel = !repaired ? I18N.t('en ruine — réparation à rechercher') : !colOn ? I18N.t('éteint (par le joueur)') : halted ? (co.halt === 'fuel' ? I18N.t('EN PAUSE — hélium 3 manquant') : I18N.t('EN PAUSE — électricité insuffisante')) : co.state === 'running' ? I18N.t('en service') : co.state === 'ready' ? I18N.t('prêt — séquence à lancer') : co.state === 'starting' ? I18N.t('démarrage…') : I18N.t('à l\'arrêt');
-    const stColor = !repaired ? 'var(--ink-dim)' : !colOn ? 'var(--orange)' : halted ? 'var(--red)' : co.state === 'running' ? 'var(--green)' : co.state === 'ready' ? 'var(--yellow)' : co.state === 'starting' ? 'var(--orange)' : 'var(--red)';
+    // 14.39 — `goalLocked` REMONTÉ ici : il était déclaré plus bas (après launchBlock) alors que
+    // stLabel/stColor doivent désormais le lire — un `const` lu avant sa déclaration lève une
+    // ReferenceError (zone morte temporelle), le panneau serait mort au premier rendu.
+    const goalLocked = repaired && colliderGoalLocked(game);
+    const stLabel = !repaired ? I18N.t('en ruine — réparation à rechercher') : !colOn ? I18N.t('éteint (par le joueur)') : halted ? (co.halt === 'fuel' ? I18N.t('EN PAUSE — hélium 3 manquant') : I18N.t('EN PAUSE — électricité insuffisante')) : goalLocked ? I18N.t('ARRÊTÉ — palier atteint, réparation à livrer') : co.state === 'running' ? I18N.t('en service') : co.state === 'ready' ? I18N.t('prêt — séquence à lancer') : co.state === 'starting' ? I18N.t('démarrage…') : I18N.t('à l\'arrêt');
+    const stColor = !repaired ? 'var(--ink-dim)' : !colOn ? 'var(--orange)' : halted ? 'var(--red)' : goalLocked ? 'var(--orange)' : co.state === 'running' ? 'var(--green)' : co.state === 'ready' ? 'var(--yellow)' : co.state === 'starting' ? 'var(--orange)' : 'var(--red)';
     // 14.24 — Conditions de LANCEMENT évaluées AVANT le clic (même helper que launchCollider) :
     // le bouton est grisé et la cause nommée, au lieu de laisser le joueur cliquer dans le vide.
     const launchBlock = colliderLaunchBlock(game);
     const logicLinked = repaired && colliderLogicLinked(game);
-    const goalLocked = repaired && colliderGoalLocked(game);
     const rows = [];
     const row = (k, lbl, val, color) => rows.push(React.createElement("div", { className: "ip-row", key: k }, React.createElement("span", { className: "lbl" }, lbl), React.createElement("span", { className: "val", style: color ? { color, fontWeight: 700 } : null }, val)));
     row('st', I18N.t('État'), stLabel, stColor);
@@ -15546,7 +15608,7 @@ function InfoPanel({
     // 14.24 — Les deux conditions de lancement, visibles en permanence : le joueur sait AVANT
     // d'atteindre l'état « prêt » ce qui lui manque (réseau logique câblé, recherche du palier).
     if (repaired && colOn) row('lk', I18N.t('Réseau logique'), logicLinked ? I18N.t('émetteur et vanne câblés ✓') : I18N.t('non relié — câblez l\'émetteur ET la vanne'), logicLinked ? 'var(--green)' : 'var(--orange)');
-    if (goalLocked) row('gl', I18N.t('Palier atteint'), I18N.t('validez la recherche du palier pour relancer'), 'var(--orange)');
+    if (goalLocked) row('gl', I18N.t('Palier atteint'), I18N.t('machine coupée — validez la recherche du palier ET livrez la réparation suivante'), 'var(--orange)');
     if (co.penalties) row('pe', I18N.t('Pénalités'), fmtPort(co.penalties), 'var(--red)');
     if (repaired && co.state === 'running' && !halted) {
       // 14.15 — On montre le code ET les 4 faces réellement publiées par l'émetteur
@@ -15600,10 +15662,10 @@ function InfoPanel({
         disabled: !!launchBlock,
         onClick: () => onLaunchCollider && onLaunchCollider(),
         title: launchBlock === 'logic' ? I18N.t("Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur")
-          : launchBlock === 'goal' ? I18N.t("Le seuil de confirmations du palier est atteint : validez la recherche du palier pour relancer")
+          : launchBlock === 'goal' ? I18N.t("Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante")
           : I18N.t("Lancer la séquence de collision (le Collisionneur commence à émettre des codes)")
       }, launchBlock === 'logic' ? '🔒 ' + I18N.t('Réseau logique requis')
-        : launchBlock === 'goal' ? '🔒 ' + I18N.t('Palier atteint — recherche en cours')
+        : launchBlock === 'goal' ? '🔒 ' + I18N.t('Palier atteint — réparation requise')
         : '▶ ' + I18N.t('Lancer la séquence')),
       repaired && colOn && co.state === 'running' && React.createElement("div", { className: "ip-row ip-theo" },
         React.createElement("span", { className: "lbl" }, I18N.t('Séquence')),
@@ -16269,7 +16331,7 @@ function InfoPanel({
       className: "lbl"
     }, I18N.t("Sortie")), React.createElement("span", {
       className: "val io"
-    }, "⚡ " + fmtPower(NUC_POWER * upMult * realFrac) + " · 🔥 " + fmtHeat(NUC_POWER * upMult * realFrac * HEAT_PER_MW / 1000) + "/s")), React.createElement("div", {
+    }, "⚡ " + fmtPower(NUC_POWER * upMult * realFrac) + (b.noHeat ? "" : " · 🔥 " + fmtHeat(NUC_POWER * upMult * realFrac * HEAT_PER_MW / 1000) + "/s"))), React.createElement("div", {
       className: "ip-row ip-theo"
     }, React.createElement("span", {
       className: "lbl"
@@ -16281,7 +16343,7 @@ function InfoPanel({
       className: "lbl"
     }, I18N.t("Prod. théorique")), React.createElement("span", {
       className: "val io"
-    }, "⚡ " + fmtPower(NUC_POWER * upMult * frac) + " · 🔥 " + fmtHeat(NUC_POWER * upMult * frac * HEAT_PER_MW / 1000) + "/s")), React.createElement("div", {
+    }, "⚡ " + fmtPower(NUC_POWER * upMult * frac) + (b.noHeat ? "" : " · 🔥 " + fmtHeat(NUC_POWER * upMult * frac * HEAT_PER_MW / 1000) + "/s"))), React.createElement("div", {
       className: "ip-nuc-irr"
     }, React.createElement("div", {
       className: "ip-nuc-irr-hd"
@@ -16892,7 +16954,7 @@ function InfoPanel({
       className: "ip-nuc-irr-io"
     }, inTxt(cur) + " → " + fmtHeat(coolIO.absorb * up) + I18N.t("/s absorbés")), React.createElement("div", {
       className: "ip-nuc-mats"
-    }, COOLER_DEF.order.map(k => React.createElement("button", {
+    }, coolerModesFor(game).map(k => React.createElement("button", {
       key: k,
       className: 'ip-nuc-mat' + (coolIO.sel === k ? ' on' : ''),
       title: inTxt(COOLER_DEF.modes[k]) + " → " + fmtHeat(COOLER_DEF.modes[k].absorb * up) + I18N.t("/s absorbés"),
@@ -20803,7 +20865,10 @@ function App() {
           // 14.36 — Refroidisseur : restaure le fluide (repli « sec » si save antérieure ou
           // valeur inconnue).
           if (BUILDINGS[p.b] && BUILDINGS[p.b].cooler) {
-            t.building.cool = { sel: COOLER_DEF.modes[p.cool] ? p.cool : 'sec' };
+            // 14.39 — Repli « sec » aussi quand l'hélium liquide est sélectionné SANS Cryostat :
+            // une save 14.36→14.38 a pu le choisir, le bouton y étant visible sans condition.
+            const cSel = COOLER_DEF.modes[p.cool] ? p.cool : 'sec';
+            t.building.cool = { sel: cSel === 'helium_liquide' && !isBuildingUnlocked(g, 'cryostat') ? 'sec' : cSel };
           }
           // 14.32 — Mélange U/Pu : repli sur le neutre (50) si absent, et clamp à [10, 90].
           // Une save d'avant 14.32 démarre donc au réglage NEUTRE, qui reproduit EXACTEMENT la
@@ -22583,7 +22648,7 @@ function App() {
     const block = colliderLaunchBlock(g);
     if (block === 'off') return false;
     if (block) {
-      showToast(block === 'goal' ? I18N.t('❌ Palier atteint — validez la recherche du palier avant de relancer')
+      showToast(block === 'goal' ? I18N.t('❌ Palier atteint — validez la recherche et livrez la réparation suivante')
         : block === 'logic' ? I18N.t('❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)')
         : I18N.t('❌ Le démarrage n\'est pas terminé'), 'var(--red)');
       SFX.play('invalid');
@@ -23225,6 +23290,9 @@ function App() {
     const t = curTiles()[r] && curTiles()[r][c];
     if (!t || !t.building || !(BUILDINGS[t.building.id] || {}).cooler) return;
     if (!COOLER_DEF.modes[sel]) return;
+    // 14.39 — Filet : le mode hélium liquide n'existe qu'avec le Cryostat (son bouton est masqué,
+    // mais l'action reste atteignable par une save forgée ou un rappel d'état).
+    if (sel === 'helium_liquide' && !isBuildingUnlocked(gameRef.current, 'cryostat')) return;
     (t.building.cool = t.building.cool || coolerDefaultState()).sel = sel;
     SFX.play('click');
     bumpHud();
@@ -23903,6 +23971,32 @@ function App() {
           ctx.fillStyle = TERRAIN_COLORS.land || '#4A7A3A';
           ctx.fillRect(x, y, tile, tile);
         }
+        // 14.39 — RACCORDS du landmark, réalignés sur les stubs de bâtiment. Trois correctifs :
+        //  (a) dessinés SOUS l'art de la machine (comme tout stub de bâtiment) → le raccord n'est
+        //      visible qu'au BORD de la tuile, le réseau « rentre » dans le Collisionneur au lieu
+        //      d'être peint par-dessus ;
+        //  (b) UN SPRITE PAR DIRECTION. L'ancien code cumulait le masque des 4 côtés et dessinait
+        //      un seul sprite : deux réseaux opposés donnaient `tuyau_vX_10_EO`, un tuyau
+        //      TRAVERSANT étalé sur la machine ;
+        //  (c) les JONCTIONS sont reconnues (règle d'axe 13.18, cf. junctionDirOk) — sans ça, un
+        //      joueur raccordant via une jonction ne voyait aucun raccord alors que le lien
+        //      mécanique existait.
+        // Ordre tuyau → câble : le câble passe au-dessus, même convention que les stubs de bâtiment.
+        for (const scar of ['pipe', 'wire']) {
+          for (const [ddr, ddc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
+            let nt2 = tiles[r + ddr] && tiles[r + ddr][c + ddc];
+            if (nt2 && nt2.occupied) nt2 = tiles[nt2.occupied.r] && tiles[nt2.occupied.r][nt2.occupied.c];
+            if (!nt2 || !nt2.building) continue;
+            const nd2 = BUILDINGS[nt2.building.id];
+            const isJ2 = !!(nd2 && nd2.kind === 'junction' && nd2.junction && nd2.junction.indexOf(scar) !== -1 && junctionDirOk(tiles, r + ddr, c + ddc, nd2, scar, -ddr, -ddc));
+            if (nt2.building.id !== scar && !isJ2) continue;
+            // Pour une JONCTION le networkId du porteur vit dans netIds[carrier] (networkId est null)
+            // — sinon le raccord se dessinerait toujours en V1.
+            const snid = isJ2 ? nt2.netIds && nt2.netIds[scar] : nt2.networkId;
+            const sn = g.networks[isl] && g.networks[isl][snid];
+            drawSprite(ctx, NET_PREFIX[scar] + '_v' + (sn && sn.unlimited ? 4 : Math.min(sn && sn.level || 1, 3)) + '_' + NET_MASK_SUFFIX[bit], x, y, tile, tile);
+          }
+        }
         const isCol = (rr, cc) => tiles[rr] && tiles[rr][cc] && tiles[rr][cc].terrain === 'collider';
         // Bloc collisionneur = 3 tuiles de large × 2 de haut (sprite officiel bat_collisionneur_ruine
         // tourné en paysage, découpé en 3×2). Sous-index = nord*3 + ouest (nb de tuiles collider
@@ -23931,27 +24025,6 @@ function App() {
         if (!(canim && drawAnimFrame(ctx, canim, x, y, tile, tile, { x: dc * 32, y: dr * 32, w: 32, h: 32 })) && !drawSprite(ctx, csk, x, y, tile, tile) && !drawSprite(ctx, 'tile_i6_collisionneur_' + cidx, x, y, tile, tile)) {
           ctx.fillStyle = TERRAIN_COLORS.collider;
           ctx.fillRect(x + tile * 0.15, y + tile * 0.15, tile * 0.7, tile * 0.7);
-        }
-        // 14.31 (option 2) — STUBS de raccordement du landmark, sur le modèle des stubs sous
-        // bâtiment : câble (il EXIGE désormais un réseau câble adjacent) et tuyau (l'hélium 3 y
-        // est réellement puisé depuis 14.17). Le raccord n'est dessiné que là où il existe
-        // vraiment → plus de promesse visuelle non tenue dans un sens ni dans l'autre.
-        for (const scar of ['wire', 'pipe']) {
-          let smask = 0,
-            slvl = 1,
-            sunl = false;
-          for (const [ddr, ddc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
-            let nt2 = tiles[r + ddr] && tiles[r + ddr][c + ddc];
-            if (nt2 && nt2.occupied) nt2 = tiles[nt2.occupied.r] && tiles[nt2.occupied.r][nt2.occupied.c];
-            if (!nt2 || !nt2.building || nt2.building.id !== scar) continue;
-            smask |= bit;
-            const sn = g.networks[isl] && g.networks[isl][nt2.networkId];
-            if (sn) {
-              if ((sn.level || 1) > slvl) slvl = sn.level;
-              if (sn.unlimited) sunl = true;
-            }
-          }
-          if (smask) drawSprite(ctx, NET_PREFIX[scar] + '_v' + (sunl ? 4 : Math.min(slvl, 3)) + '_' + NET_MASK_SUFFIX[smask], x, y, tile, tile);
         }
       } else if (SPRITES_ENABLED && t.terrain === 'elevator') {
         // Terrain « élévateur » (île 6/7) : tuile aménagée vue de dessus (comme tile_port_terre).
@@ -26185,6 +26258,9 @@ if (typeof window !== 'undefined') {
     quantumStabFactor, elevatorAllocate, ELEVATOR_MODES, elevatorModeOf, isFilledTile, tierForfait, cumulativeInvested, isUpgradable,
     resetSpriteCaches, spriteImg, spriteUsable, drawSprite, spriteImgCache, animImgCache, processCollider, colliderPenalty, processLogic, nominalPower, minPower, TIER_STEP, TIER_NEXT, CARRIER_BY_RES, GAME_BUILD, GAME_VERSION, SAVE_VERSION, RES_SHORT, itemSpriteKey,
     colliderPalier, COLLIDER_FLAVORS, COLLIDER_EXCEPTIONS, COLLIDER_POWER, COLLIDER_GOALS,
+    // 14.39 — palier/garde-fou du Collisionneur, fluides du Refroidisseur, refroidissement nucléaire.
+    COLLIDER_REPAIR_NODES, COLLIDER_PUZZLE_NODES, isNodeConfirmed, colliderGoalLocked, colliderLaunchBlock,
+    coolerModesAvailable, coolerModesFor, islandNuclearCoolingOk, junctionDirOk, NET_PREFIX, NET_MASK_SUFFIX,
     colliderCompare, codeToBits, findDataCenter, dcEffective, colliderBits,
     emitterFaceCarries, emitterFaceFromStep, dataCenterState,
     COLLIDER_HE3, colliderHe3Need, colliderDrawHe3, colliderBounds, DC_STATE_LABEL,
