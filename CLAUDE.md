@@ -17,7 +17,56 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 322`, `GAME_VERSION = 'Alpha 14.40'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 323`, `GAME_VERSION = 'Alpha 14.41'`, `SAVE_VERSION = 31`.**
+  Changement 14.41 (**LOT B5** du brief `B5_brief`) : **CARTE DE L'ARCHIPEL** — l'onglet « Transit
+  archipel » du Port ne liste plus les flux par direction, il **dessine l'archipel**. Une liaison =
+  un TRAIT qu'on touche pour ouvrir son détail (les 2 sens réunis). `SAVE_VERSION` INCHANGÉ.
+  ⚠ **LE BRIEF PROPOSAIT « 14.39 » — DÉJÀ PRIS** par le build 321 (palier Collisionneur, raccords du
+  landmark, Refroidisseur ×128). Livré en **14.41 / build 323**. Le brief visait la 319 ; les
+  **5 ancres ont été re-vérifiées sur la 322 et sont TOUTES restées uniques** (le panneau Port n'a
+  été touché ni par 14.39 ni par 14.40) — c'est pourquoi le delta annoncé tombe juste.
+  (1) **5 modifications** : `patch_carte.js` (7 sprites `carte_*`) avant l'ancre `ANIM_BY_SK` ;
+  `carte_css.txt` avant le commentaire CSS « Vue Transit archipel » ; le composant `ArchipelMap`
+  avant `function PortPanel({` ; l'ancre A4 (1 043 car., l'ancien bloc de rendu de l'onglet)
+  REMPLACÉE par `carte_onglet.js` ; et l'état `archSel` ajouté après `const [tab, setTab]`.
+  **Aucune purge** (les 7 clés `carte_*` sont neuves) et **aucun CSS existant touché** (le détail
+  d'une liaison réutilise `pp-arch-link` / `-head` / `-row` / `-rate`).
+  (2) ⚠ **BUG DANS LE FICHIER LIVRÉ, corrigé** : `carte_onglet.js` contenait
+  `I18N.t("Flux entre \\xEEles")` — **double antislash**, là où l'ancre d'origine a `\xEE`. Livré
+  tel quel, le titre s'affichait littéralement **« Flux entre \xEEles »** ET la clé i18n ne
+  correspondait plus à aucune traduction (double casse : affichage + i18n). Restauré à `\xEE`
+  (vérifié après coup : le titre rend « Flows between islands » en locale EN).
+  (3) **Règles d'affichage actées** : îles **2-5 verrouillées → GRISÉES** en CSS
+  (`filter: grayscale(1) brightness(.6)`, aucun sprite `_gris` supplémentaire) ; **l'île 6 n'est PAS
+  dessinée du tout** tant qu'elle est verrouillée (`ARCHI_CACHEE = {6:true}` — c'est la surprise du
+  jeu, une silhouette grisée la vendrait) ; **l'île 7 est absente** de la carte (elle transite par
+  l'élévateur, pas par bateau) — elle n'est ni dans `ARCHI_POS` ni dans `SHIP_LINKS`, et le
+  composant est null-safe si un lien pointait vers une île sans position.
+  ⚠ **`.arch-map` fixe `aspect-ratio: 100/132` et c'est STRUCTUREL** : c'est ce ratio qui permet de
+  calculer les angles des liaisons **sans mesurer le DOM** (`ARCHI_RATIO = 1.32` convertit un écart
+  vertical en % de HAUTEUR vers des % de LARGEUR). Changer l'un sans l'autre fait diverger les
+  traits de leurs îles. Pour ajouter une île : une entrée `ARCHI_POS`, un sprite `carte_ile_N`, une
+  entrée `SHIP_LINKS` — rien d'autre.
+  Validé : `node --check` (7 blocs) + Chromium **6 suites, 22 assertions, 0 KO, 0 erreur JS**, suite
+  rejouée 3 fois sans flottement, en viewport **420 px / DPR 3** (mobile réel). **Le test du ratio,
+  qui est le point sensible** : mesuré au DOM, chaque trait **part du centre de son île A et arrive
+  au centre de son île B**, écart max **2,09 px** — et le cadre mesure bien 1,320. Cible tactile
+  **26 px CSS = 78 px physiques** en DPR 3 (au-dessus des ~70 px des onglets du jeu). Partie NEUVE :
+  5 îles dessinées, 4 grisées, **0 trace de l'île 6 et 0 trait 5-6** ; après déblocage : 6 îles,
+  0 grisée, les 5 liaisons de `SHIP_LINKS`. Sélection : clic → contour cyan + détail, reclic →
+  refermé et l'invite revient. Non-régression : les 2 onglets, la carte **seulement** dans l'onglet
+  archipel, « Transit île » intact.
+  ⚠ **PIÈGE DE HARNAIS** : `useGhostGuard` (13.50) **avale le 1ᵉʳ clic** du panneau tant qu'aucun
+  `pointerdown` INTERNE n'a eu lieu depuis son ouverture → un test qui clique `.pp-tab` juste après
+  avoir ouvert le Port ne déclenche RIEN (symptôme : « la carte n'est pas rendue »). Amorcer le
+  garde par un `pointerdown` sur `.port-panel` avant chaque clic.
+  ⚠ **Taille : 2 934 736 → 2 947 552 o (+12 816 o).** Le brief annonçait **+12 252** et c'est
+  EXACTEMENT le delta des 5 modifications (mesuré avant le bump) ; les 564 octets restants sont le
+  commentaire de version. **Les tailles du brief B5 sont en octets et concordent.**
+  ⚠ **HORS PÉRIMÈTRE** : aucune animation d'apparition de l'île 6 (à trancher), l'onglet « Transit
+  île » et le panneau Production inchangés. ⚠ Les 2 nouveaux libellés (« Touchez une liaison pour
+  voir son transit. ») **ne sont pas traduits** → repli fr hors-fr, comme les astuces depuis 13.32.
+- **État précédent : `GAME_BUILD = 322`, `GAME_VERSION = 'Alpha 14.40'`, `SAVE_VERSION = 31`.**
   Changement 14.40 (brief `BRIEFSFX14.38`) : **EXTENSION DU MODULE AUDIO — 17 sons, file de sons
   simulation → UI, rebranchement de la dette, et BOUCLE audio du Collisionneur.** `SAVE_VERSION`
   INCHANGÉ (aucun champ persisté ; `sfxQueue` et `co._haltPrev` sont transitoires).
