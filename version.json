@@ -1,8 +1,8 @@
 {
-  "build": 318,
-  "version": "Alpha 14.36",
+  "build": 319,
+  "version": "Alpha 14.37",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #304 from freredoc/claude/recent-update-u338zx"
+  "notes": "Merge pull request #305 from freredoc/claude/new-session-novi8g"
 }
