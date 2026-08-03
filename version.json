@@ -1,8 +1,8 @@
 {
-  "build": 322,
-  "version": "Alpha 14.40",
+  "build": 323,
+  "version": "Alpha 14.41",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Merge pull request #308 from freredoc/claude/new-session-3x4hdg"
+  "notes": "Merge pull request #309 from freredoc/claude/new-session-nzvw49"
 }

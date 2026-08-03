@@ -362,6 +362,30 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .pp-tab{flex:1;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.84rem;color:var(--ink-dim);background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px 8px;cursor:pointer;}
 .pp-tab.on{background:#1b3a4e;color:#7fd0ff;border-color:#5bc0ff;}
 body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--yellow);}
+/* Carte de l'archipel (14.39) — remplace la liste de l'onglet « Transit archipel ».
+   Le ratio du cadre est FIXÉ ici : c'est lui qui permet de calculer les angles des
+   liaisons en JS sans mesurer le DOM. Ne pas y toucher sans corriger ARCHI_RATIO. */
+.arch-map{position:relative;width:100%;aspect-ratio:100/132;background-repeat:repeat;
+  background-size:64px 64px;image-rendering:pixelated;border:1px solid var(--line);
+  border-radius:8px;overflow:hidden;margin-bottom:8px;}
+/* La LIAISON est la cible tactile : 26px de haut ≈ 78px physiques en DPR 3, au-dessus
+   des 70px des onglets du jeu. Pas de pastille séparée — c'est le trait qu'on touche. */
+.arch-link{position:absolute;height:26px;transform-origin:0 50%;border:0;padding:0;
+  background:#2a3a5c;border-radius:4px;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;opacity:.85;}
+.arch-link.on{background:#2e5a7e;opacity:1;}
+.arch-link.sel{box-shadow:0 0 0 2px #6fb8e0;}
+.arch-link span{font-family:'DM Mono',monospace;font-size:.66rem;color:#a8e0ff;
+  white-space:nowrap;pointer-events:none;}
+.arch-node{position:absolute;transform:translate(-50%,-50%);display:flex;
+  flex-direction:column;align-items:center;pointer-events:none;}
+.arch-ile{width:104px;height:104px;image-rendering:pixelated;}
+.arch-ile.locked{filter:grayscale(1) brightness(.6);}
+.arch-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--ink);
+  background:rgba(16,24,44,.85);border-radius:3px;padding:0 5px;margin-top:-6px;}
+.arch-lbl.locked{color:var(--ink-faint);}
+.arch-hint{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;
+  color:var(--ink-faint);padding:2px 0 6px;}
 /* Vue « Transit archipel » : flux groupés par direction src→dest. */
 .pp-arch-link{border:1px solid var(--line);border-radius:7px;padding:7px 9px;margin-bottom:6px;background:var(--panel-2);}
 .pp-arch-head{font-family:'Bebas Neue',sans-serif;font-size:.92rem;letter-spacing:.04em;color:var(--ink);margin-bottom:4px;}
@@ -3427,6 +3451,18 @@ window.__SPRITE_DATA__["item_helium_liquide"]="data:image/png;base64,iVBORw0KGgo
 window.__ANIM_DATA__["carriere_v4"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAMAAADt/IAXAAAARVBMVEUAAAAWGiJQTERsaF6WkYS4sqSKlaReaXjCy9ZGOCpGTFj/lii4wc5gTjq0fP/g0P/88LT//9Kyqn/SyJaWnKhudIBOWGZddgNdAAAAAXRSTlMAQObYZgAAAZ5JREFUeNrtkdFqwzAMRWcrTpQs2xK7yf9/6uzCRZhYU/pg6MMOpRTOkRDux3vgmnT3oh/H0fgg6e7neZkz6/c6l58g/3LiM4iaHiyIbs6X4MtxYV1XrsgCHiBSPaLb8yUIk4J3nT0OGJclZDhklgAeo3fiARsem+7Pl2A4hgwPmTSAIwfiARs+Iro3j6AUcAAXwmOB6gW+P4+AFiImEjwuFP+EDY/o9jyCdDngUS3YsUDxsTrg6jdtHgF5z96DzwIWwD9h3Qv8wrwE4zh6MBa0BboH/MK8BNM0yQFTprEAVyoesO652q8f4JxrLUCkeVype67314EwMvOfB5zn2fKIMK+9oMzXgfECtscBxgvaL4ALrRcy5vUDMK8tmL6nHwS9PYJUJeQHXy/YDR8Nv2keASlBd49AZCIJWn43fDT8Ro0DUqAKBPC74aPhN80jCKF6oRQIQdPvho+G38TLfzQkGkCQQPxu+Gj4re1L4J8QeUCUPIK23w0fDb/Bl8CFM52Z+iu4HMBfg9pfg9qnSwCfA6/i+vuC0+jv/3kDfgE7xjye7R8CKQAAAABJRU5ErkJggg==";
 window.__ANIM_DATA__["pompe_eau_v3"]="data:image/png;base64,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";
 Object.assign(ANIM_META,{"carriere_v4":{"fh":32,"fps":6,"frames":4,"fw":32},"pompe_eau_v3":{"fh":32,"fps":6,"frames":4,"fw":32}});
+// ===== CARTE DE L'ARCHIPEL — sprites ==========================================
+// carte_mer : tuile 64x64 bouclee modulo 64 (verifie : 0 saut de luminance sur les
+// coutures d'un pavage 2x2). carte_ile_N : silhouettes ile_N en x2 + ecume au trait
+// d'eau + relief. Les etats VERROUILLES ne sont pas livres en double : grisage CSS
+// `filter: grayscale(1) brightness(.6)`, cale sur les ile_N_gris du jeu (sat 0, lum x0,60).
+window.__SPRITE_DATA__["carte_ile_1"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACABAMAAAAxEHz4AAAAJFBMVEUAAAD7///O5+yUpqlRlH1Xj0RKejo+bpZAdmQ6alo+ZjAxW00f3RgmAAAAAXRSTlMAQObYZgAAAhJJREFUeNrtmdFNAzEQRPnjG+jAlEALtHAt+Dt/18K0MC3QwjYHAevWxudj4TJBiTKKotVK+5RVJqPYd3fTFWvutWO+6JyA+/mh13z4DeAxfdfz5QEIoxHEV/EPgGoYhMUA86I1wKKteQeAOb/l6eOV80TUgFkA6PyXEu1r9hNDplR7MvDtdwDXcxCAyXew8wFq90y+Q90WA2r3ZN8B3nZA74Ew4Kh+vgCqD16VS+WmPiHATZiSsZr10isiJbdjZ4EYwM3QA8C8usNSKQHli8rbOxQ/SQDFrfWsl0tV/CQBgN2sl20TIoB1s162TZoEQOTxDm2TUAGiOxglAGMe79A2oQGA3ayXbRMmAdCm8Q5tk9AAMI13aJsigDGPd2ibRgkAzNEdIAJYHu/QNmkSABEOVUIECIeqUQIwhkMVGgAYDlWYBEALhyqhASAcqipAPNKM+wD7Iw17AfsjzSQAxiON0ABeI5FmBCECGCO/5vJnWwJAKNJo6SgNwCKRRpwA8HJUDyAikWZcjr4CgNGIHyLNj/97AIfx5Vng+K8CxI//GkD8+D8EPB3d9WeAX8IEjv8SQCH4LcRqqNIIYusqbDfAbyFWQ7XAxQB3U58nRg8jMQBcDVVsA9yOY0Abh2M3wVZDtboJFABG96KlKG8FEHi0MAYcws8mWgpBnBEw1AUA3I4jOWCoeVt3GkCccHuUe6V6B5btRJmWDfHOAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["carte_ile_2"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACABAMAAAAxEHz4AAAAJFBMVEUAAAD7///O5+yUpqlZpYBlpUJWjDhHhGc+bpZAdlxIdS83ZU/0GJarAAAAAXRSTlMAQObYZgAAAWxJREFUeNrtl8GNg0AMRffIdTcdTEqghW2BFmjB1xynhd/CtuDmdvFgySAzrEScS/wSJdZX/IQnBCYfSZIkSZIkb0Htc6lfiBYM9bNPfZwJvkqPe6igCmcCwe9XARi0PNgW7UUFNUKg61/Kvrm9Eb5Bpeh30Vm+vkC49wWMn3mal+ffeytbxQgX6BHb3lZKpRMFCnThJn8GkVOogGAP3JYmZLiCWq8J9CS2vbY0IYUIhrr+CmyvLU0IFoF3Gl4XMCZ/BhuCogRgEOaDGUzICBMQiOfzGShMwHB6tTQhcZSA4PRqaUJQmICn4xmk0gtKlAA0H88gld5oAgUnMzCKECXQa7o07O+vLXyGYBRcgfbIge83GRISmw1GgKAB0uuWAayhbrIuCGT6jkAPHRsBSdwV3MaFjWBc6QqUKpilxDKuhow1DhL4+1wj+Pdme/A+O7xWcBsN9eGHHeoWPwwR+AY3zP/FSZIkSZIk8fwC/h3ss7e2BRIAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["carte_ile_3"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACABAMAAAAxEHz4AAAAJFBMVEUAAAD7///O5+yUpqmGqG2XpUSAjDprhldgeE5rdTA+bpZSZ0Ne5N8TAAAAAXRSTlMAQObYZgAAAi9JREFUeNrtmcFtrEAQRDlz+38z4IdACj8FUiCFSqFS8M1nUqjkzHowpZ1lwEJDW5a2tIe+9JOaahUzS/PSS9U17ehsvxUAaKc/O5revwH42xX179cACEIUkRUG7FmwCzgyYkoA9zwWCTBdBPAOdB04jm/jMP/GcVhLqOu8CzsOlAF24ggg9xpDxAAginCvMYQI1gDMOthCwr3GiBBlK68DPPW6HAnvwimAnSgCxKdel2/i9QBwKM8wgCBUAzCrAKDG8gxDWjNbWRvgPCzOMFfehdOAohPtGmeFGT4r8TqAA6Vg5GeVMrYGYFYBQGwbmSqKsJUZ4Nb3/WmAXyx+o2SYtRK9C2cAZScSwO+zbIa1wo6VNQBfIrJnuVZpxusBYmbkWhFEEXDrk04AbGVyw2eLBfOwWmJdgGWAjzjOEz/Vozd1DcCX1oh72GsqDgCOGzNkNpb34QQgt5NyqHoG8RqAZQDhUPUMMGBPbQ2A6DzxDFAcAHSoegYiEKBhY4ZIAOFQ9QxiJMCh6hkQCBA3I01xAGxHGgIBKkRaGIAoRFog4OczEQTzSKPiACDE/4VICwHcReSRJsYCxDzScAzwOeE0wFcA8CnSFARoFoCyg6ZtPFZbA0DkoRoPyENVjAWIIHTv9aUwFgBCxH0GXwpjAXeRS5guigeI6fp/ApAywYB+kQH78i3Ofz4kNSEAZ8LinwHN99UaUNrAY8Cq3wq49ZYBZ7+gNdGAnPD6pPnSJfoAAUE33t3ER+kAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["carte_ile_4"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACABAMAAAAxEHz4AAAAJFBMVEUAAAD7///O5+yUpqlOkZFUiGU+bpY+dHRIdFY4aGg8YUgwWVmyU4swAAAAAXRSTlMAQObYZgAAAmJJREFUeNrtmcFRw0AMRfeUO9ABlEALtOA7J7egFtyCWqAFNYedv0TO/mWTsa0dmMkfJiiJ9caypJXXSQ89FKTxDu3xhwIBp/HpDo2fDcDz6029/XmAqOhynC6GmNr5xd91AJgaANlveflwSjxgOWoBmH5NwzT/zf+yNZtqPQCmC0B0mM7O8M0YlXiAZ2yoxIA0NlpxD2AEQC4Zy2c+rWOQQADWgrmA7MpjmrWKQSiN1In7AQKPC+ZrDVSJBSB/8Lhg3KJCohrYCPAUIn/DdQzDGmgaAfAaEMVhHAMtKPUM7AcYfK8wZ8tbLA6Acxw4BpSwvmbFAXCOA8UAS+0AwHvWr4DSdz3YziX8oxQDMC0vYE5dzp8D0kbA7bFeXECkztWcBxsA1MpqUxGD2kEAz397HkjZxxjznL56J+4HmJZ9bHoNSFsBFDsDUK1lH6OC+gBwaNnHaKM+ABzqvo7pBcDNLHzLlo4EcCFxDNIRIApfaunbgJe51zcAeEGBL7V0PCABUB1rnsa2TkcATKdKDHIIoKI6oELIAFYAoFzSYC7Dpf0M4TagpjcCoJA4BpV+gPqSVm7/YUQAUEgcQ7n9ByUGgC85kbUWDwJguHA1V1o8AEC3Oa0YJA5Qb2kCigFAs2EjgB8+FB50VVUCAAkAVGvhQVeVANDpCMCi1vYfpmksoLX9hykO4FrYDPBU0gJmKl7i+DgE4LXgzhd3L3F83HoUtB9Qk4+9PGj6A8xvfQlAtUAqAb6HZI0kyky+4UgRACcwwNMKQLpfJwJQ/KRmZv4hgGuDAW2NpNQXwITHT5oPHaxvqr92YArWOqsAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["carte_ile_5"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACABAMAAAAxEHz4AAAAJFBMVEUAAAD7///O5+yUpqk+bpZDdWREbD01XlA6XDQwVEgwTSspSD2Xo9gOAAAAAXRSTlMAQObYZgAAAhVJREFUeNrtmc1t4zAQhXPYBjbuQClBDeyBLbgFtjAtsIXXgluY5tZ5IGPqBYgwgDSHQA8GPJf5oPkVTb9dunTpt6qI4v6qZMCf8ldU/gUB78tGH6kAZkABoUQUAgwGczgMNgAlB8ASLAudO2VZIrVgBhVAfYQAsNrao9VHs3TAyGB9urfnZwSTCqBP6zGMVKYCYPTtMdC0bMDsS9M8FeCoGgMsFWCoGkMyAN40BkcuwJrGYLkAR9MY4IcAxnbeL6OMUm+kL50P8KoxsIxFXtZxwPtYz/tl1BjsWEApuwCNwXwhANazeS7A0TQG2LJ8vrWdBgsRBlAEMI87jaQxDIABxwA0C7pQqsbgeB16HASUMwGG3s3dpw2DXwYpRBygeVSAw3s302c73fVhfjrgKdirethOdyXzdMB0ytxON6kO/wFwW9cw4Pth+z7KxqeZG5sW7gcC9n9w2Ga6aTl2BvJggM/TTct2ALf1pSCAKpM4W1VjMD8PQClgXi20AmeuIwCOeb/SSgYY2kSg5cgF+LzSaFkugLtFVponAxw+rTRumhSAbvmx0rjnsgF8ai50ZjAAGK8JBazrSkDoTqa1OwxwjJNeBoCEkYb5OmT4h/Io9ylRgLGfFBAoxACsVAdE8qjXYgkAKQQM4atB3Qrh9OnZ7wCA5D8EMOngdICOQBwgGUwH3GQEoipDb9kAJVz/3Vy69Ov1H2Q2SY6V1hLEAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["carte_ile_6"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACABAMAAAAxEHz4AAAAJFBMVEUAAAD7///O5+yUpqleeoZuanI+bpZcWWJKWmNAUFlKSFE1Q0vpwBf/AAAAAXRSTlMAQObYZgAAAipJREFUeNrtmMFxwjAQRXPiTtQBKoEW0gL3nGhhW6AFt6AWaC7eGaIlljdPa2fQJf/Omzfjhy377X9/vKuzwO+dvQhwvR6dGQEA76fVZQOAwMmZKaAAKJDAhzNTAAEPYAogcL+tzxRAwAeoAgvcJmdVAQRcACuogAIuq1OAKoAAAFSBGvAB0IIKIMAUvEswzwNQCyrAAF/hUBu4OIMWDrUBAOTfAKYPLewC5O0AsRZ2AfJWgIi1sA+QtwFkXm3hcx8gbwHIY8MAMhogowEyGiCjATIaIKMBMhogowHyasA87/d4U039gLMB4IDR6LsPFgWkXsDZAHDIksXch6spMMAE+KApy8FhUxUYoAJ82PYvoQk4CgR4FoAWsAFogRuAFrABaIEbgBawAWiBG+AWoAFoAQHYwv02NZewF5D6ANzC8hLOO3YqOICIwqkF6LoVXEC+1kVamJ6/IdRxCy0gpjCvEh5The+BggdoPupwC7aigDpSAIApUAu2ogAbKiAgx1qQooCnsQICcqiFopue1qFAgFALZTkFoAIAIi2UFUBPCwDob6G0m/paAEB/C6WdfUsABQBkBXALZXU9gNQDoBb2AVIMwC3EASkG4BbigBQDcAtxQIoBuIU4IDEg2gL/mbiF5h0y0gLfULgFeH+AFvimyi3A+wO0wA8WbsF5f6AW4OEKCg2gEWAF290RoBYM4AiAAhyyWMHmCJCCzREgBZsjQAogwArnuh8CX+jfK8i33n7dAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["carte_mer"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABAAgMAAADXB5lNAAAACVBMVEUQGCwcKEQWIDi8Hvh2AAAAk0lEQVR42q2SsQ3DMAwEH6wE1RnANafxSD9CRlAp/JSpEoAUbNFArhYOR1Ig0BAwLDQsHFggEhK/TmkA6PypvKLKVZXQVzHUJEWVczNzNbRhS3MRARvX9vPRcUyaCDjB4voObBjhiZTW0Pm3X+TSDCqb96HElvfFGlwjhtp4fPr6zJKYToZM3X7ehnaJCMxqaGHGDxdUIjPxibbmAAAAAElFTkSuQmCC";
 // Indexé par CLÉ DE SPRITE STATIQUE du jeu (le draw connaît cette clé) → infos d'anim.
 const ANIM_BY_SK = (() => {
   const out = {};
@@ -7188,8 +7224,14 @@ const SAVE_VERSION = 31;
 // pierre, `pompe_eau_v3` était l'art de la V2 — améliorer ne changeait rien à l'écran), et
 // `item_helium_liquide` rejoint la famille hélium. Les 2 overrides passent en LISTES de
 // candidats (repli conservé). Aucune modification de rendu. SAVE_VERSION inchangé.
-const GAME_BUILD = 322;
-const GAME_VERSION = 'Alpha 14.40';
+// 14.41 — B5 : CARTE DE L'ARCHIPEL. L'onglet « Transit archipel » du Port ne liste plus les
+// flux par direction, il dessine l'archipel : une liaison = un trait qu'on TOUCHE pour ouvrir
+// son détail (les 2 sens réunis). Îles 2-5 verrouillées = grisées (voir où l'on va) ; l'île 6
+// n'est PAS dessinée tant qu'elle n'est pas débloquée (c'est la surprise) ; l'île 7 est absente
+// (elle transite par l'élévateur, pas par bateau). SAVE_VERSION inchangé.
+// ⚠ Le brief B5 proposait « 14.39 » — DÉJÀ PRIS par le build 321. Livré en 14.41.
+const GAME_BUILD = 323;
+const GAME_VERSION = 'Alpha 14.41';
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -17633,6 +17675,73 @@ function NumField({
     }
   });
 }
+// ═══ 14.39 — CARTE DE L'ARCHIPEL ═══════════════════════════════════════════════════
+// Positions relevées sur le croquis : archipel DISPERSÉ (1 et 2 en haut, 3 au centre,
+// 4 et 5 en bas, 6 sur le flanc droit) plutôt qu'un alignement — c'est ce qui laisse une
+// place naturelle à l'île 6 et rend son apparition lisible.
+// Coordonnées en % du cadre ; le ratio hauteur/largeur est fixé par `.arch-map`
+// (aspect-ratio 100/132), donc les angles se calculent ici sans mesurer le DOM.
+const ARCHI_RATIO = 1.32;
+const ARCHI_POS = { 1: [20, 24], 2: [54.5, 24], 3: [35, 50], 4: [20, 75], 5: [53, 74], 6: [81, 50] };
+// L'île 6 est la SURPRISE du jeu : tant qu'elle n'est pas débloquée elle n'est pas dessinée
+// du tout. Une silhouette grisée annoncerait son existence — alors que les îles 2..5 sont
+// grisées justement pour que le joueur voie où il va.
+const ARCHI_CACHEE = { 6: true };
+
+function ArchipelMap({ game, flows, sel, onPick }) {
+  const unlocked = game.islandUnlocked || {};
+  const ouverte = id => id === 1 || !!unlocked[id];
+  const visible = id => ouverte(id) || !ARCHI_CACHEE[id];
+  // Nombre de ressources par SENS, agrégé par liaison : `allTransitFlows` renvoie une
+  // entrée par direction (3→4 et 4→3 sont deux entrées), la carte les réunit sur un trait.
+  const parLien = {};
+  for (const f of flows) {
+    const k = Math.min(f.src, f.dest) + '-' + Math.max(f.src, f.dest);
+    const rec = parLien[k] || (parLien[k] = { ab: 0, ba: 0 });
+    if (f.src < f.dest) rec.ab = f.res.length; else rec.ba = f.res.length;
+  }
+  const mer = SPRITES_ENABLED && SPRITE_DATA['carte_mer'];
+  const liens = SHIP_LINKS.map(k => {
+    const ab = k.split('-').map(Number), a = ab[0], b = ab[1];
+    if (!visible(a) || !visible(b)) return null;
+    const pa = ARCHI_POS[a], pb = ARCHI_POS[b];
+    if (!pa || !pb) return null;
+    const dx = pb[0] - pa[0], dy = (pb[1] - pa[1]) * ARCHI_RATIO;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ang = Math.atan2(dy, dx) * 180 / Math.PI;
+    const rec = parLien[k] || { ab: 0, ba: 0 };
+    const actif = ouverte(a) && ouverte(b) && (rec.ab || rec.ba);
+    return React.createElement("button", {
+      key: k,
+      className: 'arch-link' + (actif ? ' on' : '') + (sel === k ? ' sel' : ''),
+      style: {
+        left: pa[0] + '%', top: pa[1] + '%', width: len + '%',
+        transform: 'translateY(-50%) rotate(' + ang + 'deg)'
+      },
+      onClick: () => onPick(sel === k ? null : k),
+      title: islandLabel(a) + ' \u21C4 ' + islandLabel(b)
+    }, React.createElement("span", {
+      style: { transform: 'rotate(' + (-ang) + 'deg)' }
+    }, actif ? rec.ab + '\u2192 \u00B7 ' + rec.ba + '\u2190' : ''));
+  });
+  const iles = Object.keys(ARCHI_POS).map(Number).filter(visible).map(id => {
+    const data = SPRITES_ENABLED && SPRITE_DATA['carte_ile_' + id];
+    const p = ARCHI_POS[id];
+    const off = !ouverte(id);
+    return React.createElement("div", {
+      key: id, className: "arch-node", style: { left: p[0] + '%', top: p[1] + '%' }
+    }, data ? React.createElement("img", {
+      className: 'arch-ile' + (off ? ' locked' : ''), src: data, alt: ''
+    }) : null, React.createElement("div", {
+      className: 'arch-lbl' + (off ? ' locked' : '')
+    }, islandLabel(id)));
+  });
+  return React.createElement("div", {
+    className: "arch-map",
+    style: mer ? { backgroundImage: 'url(' + mer + ')' } : null
+  }, liens, iles);
+}
+
 function PortPanel({
   game,
   currentIsland,
@@ -17653,6 +17762,8 @@ function PortPanel({
   const [openLink, setOpenLink] = React.useState(null);
   // Onglet du panneau Port : 'island' (transit de l'île courante, défaut) | 'archipel' (tous les flux).
   const [tab, setTab] = React.useState('island');
+  // Liaison choisie sur la carte de l'archipel ('4-5'…), null = aucune.
+  const [archSel, setArchSel] = React.useState(null);
   const links = SHIP_LINKS.filter(key => {
     const [a, b] = key.split('-').map(Number);
     return (a === currentIsland || b === currentIsland) && linkActive(game, key);
@@ -18039,28 +18150,34 @@ function PortPanel({
     className: "pp-section-label"
   }, I18N.t("Flux entre \xEEles")), (() => {
     const flows = allTransitFlows(game);
-    if (!flows.length) return React.createElement("div", {
-      className: "pp-empty"
-    }, I18N.t("Aucun flux de transit en cours."));
-    return flows.map(f => React.createElement("div", {
-      className: "pp-arch-link",
-      key: f.src + '_' + f.dest
+    const key = archSel;
+    const lien = key ? key.split('-').map(Number) : null;
+    // Les deux sens de la liaison choisie, dans l'ordre A→B puis B→A.
+    const detail = lien ? flows.filter(f => Math.min(f.src, f.dest) === lien[0] && Math.max(f.src, f.dest) === lien[1])
+      .sort((x, y) => x.src - y.src) : [];
+    return [React.createElement(ArchipelMap, {
+      key: "map", game: game, flows: flows, sel: archSel, onPick: setArchSel
+    }), !key ? React.createElement("div", {
+      key: "hint", className: "arch-hint"
+    }, I18N.t("Touchez une liaison pour voir son transit.")) : null,
+    key && !detail.length ? React.createElement("div", {
+      key: "vide", className: "pp-empty"
+    }, I18N.t("Aucun flux de transit en cours.")) : null,
+    ...detail.map(f => React.createElement("div", {
+      className: "pp-arch-link", key: f.src + '_' + f.dest
     }, React.createElement("div", {
       className: "pp-arch-head"
-    }, islandIcon(f.src), islandLabel(f.src) + " ", " → ", islandIcon(f.dest), " " + islandLabel(f.dest)), f.res.map(rr => {
+    }, islandIcon(f.src), islandLabel(f.src) + " ", " \u2192 ", islandIcon(f.dest), " " + islandLabel(f.dest)), f.res.map(rr => {
       const ik = SPRITES_ENABLED ? itemSpriteKey(rr.res) : null;
       const idata = ik && SPRITE_DATA[ik];
       return React.createElement("div", {
-        className: "pp-arch-row",
-        key: rr.res
+        className: "pp-arch-row", key: rr.res
       }, idata ? React.createElement("img", {
-        className: "pp-cargo-ico",
-        src: idata,
-        alt: ""
+        className: "pp-cargo-ico", src: idata, alt: ""
       }) : cargoSprite(), " ", RES_SHORT[rr.res] || rr.res, " ", React.createElement("span", {
         className: "pp-arch-rate"
       }, fmtPort(rr.rate) + "/s"));
-    })));
+    })))];
   })())));
 }
 function EnergyPanel({
