@@ -1,8 +1,8 @@
 {
-  "build": 327,
-  "version": "Alpha 14.45",
+  "build": 328,
+  "version": "Alpha 14.46",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Correctif : poser un bâtiment sur une ligne de tuyau, de câble ou de conduit raccorde de nouveau les deux tronçons immédiatement, sans attendre un rechargement"
+  "notes": "Nouveau bâtiment : Usine Moteur Nucléaire V2 (palier de l'usine, débloqué au nœud 41) — recette allégée, art dédié · Verrous d'île levés par la recherche : le four à arc tungstène, la machine-outil et la centrale à gaz se construisent partout une fois leur nœud confirmé · La fabrique d'ordinateurs quantiques produit 0,0625/s au lieu de 0,01/s, intrants inchangés"
 }
