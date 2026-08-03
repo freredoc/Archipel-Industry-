@@ -17,7 +17,43 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 319`, `GAME_VERSION = 'Alpha 14.37'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 320`, `GAME_VERSION = 'Alpha 14.38'`, `SAVE_VERSION = 31`.**
+  Changement 14.38 (**LOT B4** du brief `B4_brief` — pack `ile6 v3.3`, `patch_lot7.js`) : **trois arts
+  DÉDIÉS remplacent des emprunts.** ASSETS + 2 overrides — **aucune modification de rendu**.
+  `SAVE_VERSION` INCHANGÉ.
+  (1) **AUCUNE PURGE** (contrairement à B1/B2) : `carriere_v4` et `pompe_eau_v3` sont des clés
+  **NEUVES** (elles n'existaient ni en sprite ni en sheet — seulement comme entrées
+  `BLD_SPRITE_OVERRIDE`/`BUILDINGS`/`TIER_STEP`, vérifié) ; `item_helium_liquide` ne vit que dans le
+  **grand littéral** (~ligne 1674) et n'est donc pas supprimable ligne à ligne — c'est la
+  **réaffectation tardive** du patch qui le couvre (la dernière affectation gagne au runtime).
+  ⚠ **Vérification faite avant d'insérer** : aucune des 3 clés n'est (ré)assignée APRÈS le point
+  d'insertion — sinon le nouvel art aurait été écrasé silencieusement.
+  (2) **INSERTION** de `patch_lot7.js` avant l'ancre `// Indexé par CLÉ DE SPRITE STATIQUE` :
+  3 sprites + 2 sheets + 2 `ANIM_META`.
+  (3) **LES 2 OVERRIDES PASSENT EN LISTES DE CANDIDATS** (mécanisme 14.32, premier présent gagne) :
+  `carriere_v4: ['carriere_v4', 'mine_pierre_v4']` et `pompe_eau_v3: ['pompe_eau_v3', 'pompe_eau_v2']`
+  → l'art dédié est pris, le repli reste derrière par sûreté. Les commentaires devenus FAUX
+  (« Pas d'art dédié livré pour la pompe V3… ») sont remplacés.
+  ⚠ **Ce que ça corrige côté joueur** : `pompe_eau_v3` affichait l'art de la V2 → **améliorer sa
+  pompe ne changeait rien à l'écran** ; `carriere_v4` affichait `mine_pierre_v4` → **une carrière
+  ressemblait à une mine**.
+  Validé : `node --check` (7 blocs) + Chromium **5 suites, 27 assertions, 0 KO, 0 erreur JS**, suite
+  rejouée 3 fois sans flottement. Résolution EN JEU : `buildingSpriteKey` rend bien `carriere_v4` et
+  `pompe_eau_v3` (replis conservés en 2ᵉ position) ; **rendu RÉEL** (bâtiment posé + espion sur
+  `drawImage`) → c'est bien le nouvel art qui est dessiné, **jamais l'emprunt**, et les 2 animations
+  tournent. Les arts sont mesurés RÉELLEMENT différents de leur emprunt (**753 px** sur 1024 pour la
+  carrière, **116 px** pour la pompe — la V2 est volontairement conservée au pixel près sous les
+  ajouts, le joueur reconnaît sa machine). **`frame 0` == statique au pixel près (0 px d'écart)** sur
+  les 2 sheets → aucun saut quand l'animation démarre. Famille hélium : `item_helium_liquide` a la
+  **silhouette identique au pixel près** à `item_helium3` (**89 px opaques**, comme He3 ET He4) mais
+  **61 px de coloris différents** (ménisque + liquide bleu) → homogène de forme, distinct d'un coup
+  d'œil. Non-régression : les **113 bâtiments** résolvent vers un sprite présent.
+  ⚠ **Taille : 2 906 078 → 2 912 076 o (+5 998 o).** Le brief annonçait +5 913 : l'écart de 85 octets
+  vient uniquement du commentaire de version (4 lignes ici).
+  ⚠ **HORS PÉRIMÈTRE** : `refroidisseur_v2`/`cryostat_v2` (les bâtiments s'appellent « V1 »),
+  `item_helium4` à qui il manque les 2 px de reflet de `helium3`/`helium_liquide` (à faire seulement
+  si l'écart se voit en jeu), et `logic_emetteur` qui résout `null` (préexistant, inerte).
+- **État précédent : `GAME_BUILD = 319`, `GAME_VERSION = 'Alpha 14.37'`, `SAVE_VERSION = 31`.**
   Changement 14.37 (brief `brief1437correctifstransit`) : **correctifs I/O dynamiques du Refroidisseur,
   refonte de la liste des liquides expédiables, Cryostat posable partout, absorptions en échelle
   binaire, hélium en t4, mix réparti en barres (nucléaire ET fours à arc), sprite hélium liquide.**
