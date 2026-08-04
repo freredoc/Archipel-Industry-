@@ -1176,12 +1176,6 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-port-ask:active,.up-port-ask:active{transform:translateY(1px);}
 .ip-port-ask .ip-sub,.up-port-ask .ip-sub{font-family:'DM Mono',monospace;font-size:.62rem;font-weight:400;opacity:.85;text-transform:none;}
 .tool-btn .tb-cost{display:flex;flex-wrap:wrap;gap:2px 5px;white-space:normal;}
-/* 14.42 — Ligne intrants / sortants / élec. sur la vignette de l'onglet Bâtiment. */
-.tool-btn .tb-io{display:flex;flex-wrap:wrap;gap:1px 6px;white-space:normal;line-height:1.15;
-  font-family:'DM Mono',monospace;font-size:.58rem;color:var(--ink-dim);margin-top:1px;}
-.tool-btn .tb-io .io-in{color:#9fd3ff;}
-.tool-btn .tb-io .io-out{color:#b8e6a0;}
-.tool-btn .tb-io .io-pw{color:#ffd479;}
 .tool-btn .tb-cost .tb-ci{color:var(--ink-dim);}
 .tool-btn .tb-cost .tb-ci.miss{color:#ff6a60;font-weight:600;}
 .tool-btn.active{border-color:var(--accent,var(--yellow));background:#26264e;
@@ -6244,7 +6238,12 @@ const BUILDINGS = {
   // AU NV.11 égale celui de la V1 AU NV.1 (×1,024, échelle binaire) :
   //   pièce méca 5      → pièce de précision      0,005 (5,12/s au Nv.11, contre 5 120)
   //   polymère 5        → câble supraconducteur   0,005 (5,12/s au Nv.11, contre 5 120)
-  //   processeur 1      → ordinateur quantique    0,001 (1,024/s au Nv.11, contre 1 024)
+  //   processeur 1      → processeur              1     (INCHANGÉ — cf. ci-dessous)
+  // 14.47 — Le PROCESSEUR est REMIS tel quel (demande joueur) : il n'y a plus de substitution vers
+  // l'ordinateur quantique sur ce poste. Conséquence assumée : au Nv.11 la V2 consomme 1 024
+  // processeurs/s, exactement comme la V1 au même niveau — l'allègement de recette ne porte plus
+  // que sur les DEUX postes « tonnage » (pièce méca et polymère). L'ordinateur quantique reste
+  // exigé au FORFAIT de densification (TIER_STEP), qui n'est pas modifié.
   // Le PLUTONIUM reste à 0,1 : c'est l'identité nucléaire du bâtiment, il ne monte pas de cran.
   // ⚠ CHALEUR — PIÈGE. La V1 est un cas PLAT codé en dur sur `bld.id === 'usine_moteur_nuc'`,
   // à DEUX endroits. La V2 passe en PROPORTIONNEL (HEAT_PER_MW × conso), comme la Machine-Outil
@@ -6274,7 +6273,7 @@ const BUILDINGS = {
       plutonium: 0.1,
       piece_precision: 0.005,
       cable_supraconducteur: 0.005,
-      ordinateur_quantique: 0.001
+      processeur: 1
     },
     outputs: {
       element_moteur_nuc: 0.1
@@ -7399,8 +7398,23 @@ const SAVE_VERSION = 31;
 // Nouveau champ de def `exclusiveUntilNode: N` : un bâtiment cesse d'être exclusif dès que le
 // nœud N est confirmé (four à arc tungstène 39, machine-outil 41, centrale à gaz 37). Rien
 // n'est persisté — l'état dérive de techTree, donc SAVE_VERSION INCHANGÉ.
-const GAME_BUILD = 328;
-const GAME_VERSION = 'Alpha 14.46';
+// 14.47 — ALLÈGEMENT DES VIGNETTES + DIMENSIONNEMENT ÉLECTRIQUE IDÉAL + recette MOT2.
+// (1) La ligne intrants / sortants / élec. posée sur chaque vignette du menu Bâtiment en 14.42
+// est RETIRÉE (elle surchargeait la grille) : l'info reste dans la FICHE (appui long 450 ms).
+// (2) « Demander au port » de la FICHE BÂTIMENT n'apparaît plus qu'une fois « Monter » /
+// « Densifier » ARMÉ — le UpgradePanel (outil ⬆), qui n'a pas d'armement, est inchangé.
+// (3) Nouveau helper `idealGridSizing` : production / stockage / ratio IDÉAUX d'une grille,
+// affichés dans ⚡ Énergie (par ÎLE) et dans le panneau câble (par COMPOSANTE — le stockage
+// d'une grille ne sert pas l'autre). Modèle : toutes les sigmoïdes ont une période de 60 s,
+// l'accumulateur absorbe la BOSSE au-dessus de la moyenne (S·60/2π ≈ 9,55·S), ce qui permet de
+// dimensionner la production sur la MOYENNE et non sur le PIC (+ perte de charge V1 de 0,8).
+// (4) `usine_moteur_nuc_v2` : `ordinateur_quantique 0,001` → `processeur 1`. ⚠ Le paragraphe
+// 14.46 ci-dessus est donc PÉRIMÉ sur ce point : l'allègement de recette de la MOT2 ne porte
+// plus que sur DEUX postes (pièce méca, polymère), le processeur revient à l'identique de la
+// V1. L'ordinateur quantique reste exigé au FORFAIT de densification (TIER_STEP, inchangé).
+// SAVE_VERSION INCHANGÉ (31) — aucun champ de sauvegarde touché.
+const GAME_BUILD = 329;
+const GAME_VERSION = 'Alpha 14.47';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -7409,7 +7423,7 @@ const GAME_VERSION = 'Alpha 14.46';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Nouveau bâtiment : Usine Moteur Nucléaire V2 (palier de l'usine, débloqué au nœud 41) — recette allégée, art dédié · Verrous d'île levés par la recherche : le four à arc tungstène, la machine-outil et la centrale à gaz se construisent partout une fois leur nœud confirmé · La fabrique d'ordinateurs quantiques produit 0,0625/s au lieu de 0,01/s, intrants inchangés";
+const GAME_NOTES = "Menu Bâtiment allégé : la ligne intrants / sortants / élec. quitte les vignettes — elle reste dans la fiche détaillée (appui long sur une vignette) · « Demander au port » n'apparaît dans la fiche d'un bâtiment qu'après avoir cliqué « Monter » ou « Densifier » · Nouveau dans ⚡ Énergie et dans la fiche d'un réseau câble : production idéale, stockage idéal et ratio idéal — de quoi dimensionner ses accumulateurs pour couvrir la bosse des sigmoïdes · L'Usine Moteur Nucléaire V2 consomme de nouveau du processeur (1/s) au lieu de l'ordinateur quantique";
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -7949,6 +7963,27 @@ function fmtEnergy(kwh) {
 }
 // Paire « charge / capacité » (kWh) partageant une SEULE unité (celle de la capacité) pour
 // rester lisible : ex. « 0,5 / 20 MWh ».
+// 14.47 — Dimensionnement IDÉAL d'une grille électrique (production plate ↔ consommation sigmoïde).
+// Toutes les sigmoïdes du jeu ont une période de 60 s et 1 tick = 1 s : une unité de stockage
+// vaut 1 kW pendant 1 tick. L'accumulateur sert à absorber la BOSSE de consommation au-dessus de
+// la moyenne, ce qui permet de dimensionner la production sur la MOYENNE et non sur le PIC :
+//   demande(t) = moy + (S/2)·sin(2πt/60)   avec S = demMax − demMin
+//   énergie de la bosse = ∫ (S/2)·sin(2πt/60) dt sur la demi-période = S·60/(2π) ≈ 9,55·S
+// La production idéale = moyenne, MAJORÉE de la perte de charge des accumulateurs V1 (rendement
+// 0,8 → prélever 1,25·E pour en restituer E, soit 0,25·E perdus par cycle de 60 s). Cas V1 retenu
+// volontairement (conservateur) : un joueur équipé d'Accumulateurs V2 (`chargeLossless`) a
+// simplement un peu de marge en plus. Sans oscillation (S = 0) tout vaut 0 → l'appelant masque.
+function idealGridSizing(demMin, demMax) {
+  const spread = Math.max(0, (demMax || 0) - (demMin || 0));
+  const store = spread * 60 / (2 * Math.PI);
+  const prod = ((demMin || 0) + (demMax || 0)) / 2 + 0.25 * store / 60;
+  return {
+    spread,
+    store,
+    prod,
+    ratio: prod > 1e-9 ? store / prod : 0
+  };
+}
 function fmtEnergyPair(stored, cap) {
   const a = Math.abs(cap);
   let div = 1,
@@ -15350,35 +15385,9 @@ function ToolButton({
   const sub = id === 'conduit' ? formatCost(b.cost) + I18N.t(' /tuile') : b.kind === 'infra' ? I18N.t('tracé continu') : b.kind === 'junction' && CURRENT_MODE === 'normal' ? I18N.t('coût croissant') : formatCost(cost) || 'gratuit';
   const skey = SPRITES_ENABLED ? buildingSpriteKey(id) : null;
   const sdata = skey && SPRITE_DATA[skey];
-  // 14.42 — Ligne intrants / sortants / élec. SUR la vignette : ces informations n'étaient
-  // lisibles que dans la fiche (appui long 450 ms), donc très peu découvrables. Valeurs de BASE
-  // (niveau 1), identiques à celles de BuildingDetailModal — aucun multiplicateur d'amélioration.
-  // Séparation energie_kw / sorties matérielles reprise telle quelle de la fiche.
-  // Pas de sprites de ressources ici (≈100 vignettes) : code court + valeur, comme les pastilles
-  // de coût. Le refroidisseur n'a pas d'`inputs` statique et `cryoOk` n'est pas une prop de
-  // ToolButton → son segment « Fluides » est simplement OMIS (pas de prop ajoutée, cf. brief).
-  // Aucun segment produit → la ligne entière disparaît (infra, jonctions, dispositifs logiques,
-  // centrales nucléaires à I/O dynamiques, port).
-  const ioSegs = [];
-  {
-    const outMat = {};
-    let energyOut = 0;
-    for (const k in b.outputs || {}) {
-      if (k === 'energie_kw') energyOut = b.outputs[k];else outMat[k] = b.outputs[k];
-    }
-    const chips = obj => Object.keys(obj).map(k => (RES_SHORT[k] || k) + ' ' + fmtRateSci(obj[k])).join(' · ');
-    if (!b.cooler && b.inputs && Object.keys(b.inputs).length) ioSegs.push(['io-in', '⇤ ' + chips(b.inputs)]);
-    if (Object.keys(outMat).length) ioSegs.push(['io-out', '⇥ ' + chips(outMat)]);
-    if (b.power > 0) ioSegs.push(['io-pw', '⚡ ' + fmtPower(b.power)]);
-    if (energyOut > 0) ioSegs.push(['io-pw', '⚡+ ' + fmtPower(energyOut)]);
-    if (b.accumulator) ioSegs.push(['io-pw', '🔋 ' + fmtPort(b.capacity || 0)]);
-  }
-  const ioLine = ioSegs.length ? React.createElement("span", {
-    className: "tb-io"
-  }, ioSegs.map((sg, i) => React.createElement("span", {
-    key: i,
-    className: sg[0]
-  }, sg[1]))) : null;
+  // 14.47 — La ligne intrants / sortants / élec. sous les pastilles de coût (ajoutée en 14.42) est
+  // RETIRÉE : elle surchargeait chaque vignette du menu Bâtiment. L'information reste dans la
+  // FICHE détaillée (appui long 450 ms sur la vignette), qui est sa place.
   // Appui long (~450 ms) → fiche détaillée du bâtiment ; un appui court le sélectionne.
   // On annule si le doigt glisse (>10 px, pour ne pas gêner le défilement de la barre).
   const lp = useRef({});
@@ -15455,7 +15464,7 @@ function ToolButton({
     title: RES_SHORT[k] || k
   }, (RES_SHORT[k] || k) + ' ' + fmtPort(cost[k])))) : React.createElement("span", {
     className: "tb-sub"
-  }, sub), ioLine);
+  }, sub));
 }
 // Fiche détaillée d'un bâtiment (appui long sur sa tuile dans l'onglet Bâtiment / Réseau).
 function BuildingDetailModal({
@@ -16518,8 +16527,11 @@ function InfoPanel({
   // 14.42 — « Demander au port » : SEULEMENT s'il y a de quoi demander (déficit + cible d'import
   // encore trop basse). Si les cibles sont déjà au-dessus, la commande est passée et le bouton
   // serait un leurre → masqué.
+  // 14.47 — Il faut EN PLUS avoir armé « Monter » / « Densifier » (1er clic) : le bouton n'apparaît
+  // donc qu'après une tentative d'amélioration bloquée par un manque de ressources, au lieu de
+  // s'afficher en permanence dans la fiche. `armed` est l'état partagé Monter/Densifier.
   const askCost = upgradable ? (atCap ? densCost : upCost) : null;
-  const askNeeded = !!askCost && portAskNeeded(game, askCost, currentIsland);
+  const askNeeded = armed && !!askCost && portAskNeeded(game, askCost, currentIsland);
   // « Aligner tous » : monte tous les bâtiments du même type (sur cette île) qui sont
   // en-dessous du niveau de CE bâtiment, jusqu'à ce niveau. On calcule le nombre
   // concerné + le coût total cumulé pour l'afficher et tester si on peut payer.
@@ -18547,9 +18559,13 @@ function EnergyPanel({
   const accCap = e.accCap || 0;
   const accStored = e.accStored || 0;
   const accPct = accCap > 0 ? Math.round(100 * accStored / accCap) : null;
-  const statRow = (label, val, color) => React.createElement("div", {
+  // 14.47 — Dimensionnement idéal (cf. idealGridSizing) : affiché seulement quand la demande OSCILLE
+  // (`showSpread`) — sans oscillation, un accumulateur ne sert à rien et les cibles vaudraient 0.
+  const ideal = idealGridSizing(demMin, demMax);
+  const statRow = (label, val, color, title) => React.createElement("div", {
     className: "ep-stat",
-    key: label
+    key: label,
+    title: title
   }, React.createElement("span", {
     className: "lbl"
   }, label), React.createElement("span", {
@@ -18582,7 +18598,7 @@ function EnergyPanel({
     className: "pp-note"
   }, "⚡ L'\xE9lectricit\xE9 circule par r\xE9seau de c\xE2bles : chaque r\xE9seau c\xE2ble est un sous-r\xE9seau \xE9lectrique distinct (les g\xE9n\xE9rateurs, consommateurs et accumulateurs qu'il relie se partagent l'\xE9nergie). Le d\xE9bit du c\xE2ble (V1, V2…) borne la puissance transmissible : montez-le si un r\xE9seau sature. Les totaux ci-dessous additionnent tous les r\xE9seaux de l'\xEEle."), React.createElement("div", {
     className: "ep-stats"
-  }, statRow(I18N.t("Production (g\xE9n\xE9rateurs)"), fmtPower(gross)), battery > 0.5 && statRow(I18N.t("Batterie (d\xE9charge)"), "+" + fmtPower(battery), "var(--green)"), statRow(I18N.t("Demande totale"), fmtPower(dem)), showRange && statRow(I18N.t("Consommation min → max"), fmtPower(demMin) + " → " + fmtPower(demMax), '#8fd0ff'), showSpread && statRow(I18N.t("Amplitude (sigmo\xEFdes)"), fmtPower(demSpread), '#8fd0ff'), cut > 0.5 && statRow(I18N.t("Demande non servie"), "-" + fmtPower(cut), '#ff8079'), statRow(I18N.t("Bilan r\xE9el"), (netE >= 0 ? '+' : '') + fmtPower(netE), netE < -1e-6 ? '#ff8079' : 'var(--green)'), accPct != null && statRow(I18N.t("Accumulateurs"), fmtEnergyPair(accStored, accCap) + " \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
+  }, statRow(I18N.t("Production (g\xE9n\xE9rateurs)"), fmtPower(gross)), battery > 0.5 && statRow(I18N.t("Batterie (d\xE9charge)"), "+" + fmtPower(battery), "var(--green)"), statRow(I18N.t("Demande totale"), fmtPower(dem)), showRange && statRow(I18N.t("Consommation min → max"), fmtPower(demMin) + " → " + fmtPower(demMax), '#8fd0ff'), showSpread && statRow(I18N.t("Amplitude (sigmo\xEFdes)"), fmtPower(demSpread), '#8fd0ff'), cut > 0.5 && statRow(I18N.t("Demande non servie"), "-" + fmtPower(cut), '#ff8079'), statRow(I18N.t("Bilan r\xE9el"), (netE >= 0 ? '+' : '') + fmtPower(netE), netE < -1e-6 ? '#ff8079' : 'var(--green)'), showSpread && statRow(I18N.t("Production id\xE9ale"), fmtPower(ideal.prod), gross + 1e-6 >= ideal.prod ? 'var(--green)' : '#ff8079', I18N.t("Production \xE0 installer si les accumulateurs absorbent la bosse des sigmo\xEFdes : la demande MOYENNE (et non le pic), major\xE9e de la perte de charge des accumulateurs V1 (rendement 0,8).")), showSpread && statRow(I18N.t("Stockage id\xE9al"), fmtEnergy(ideal.store), accCap + 1e-6 >= ideal.store ? 'var(--green)' : '#ffcf6b', I18N.t("Capacit\xE9 d'accumulateurs n\xE9cessaire pour absorber la bosse au-dessus de la moyenne sur une p\xE9riode de 60 s, soit \u2248 9,55 \xD7 amplitude.")), showSpread && statRow(I18N.t("Ratio id\xE9al"), fmtSig(ideal.ratio) + I18N.t(" kWh / kW") + (gross > 0.5 ? I18N.t(" \xB7 actuel ") + fmtSig(accCap / gross) : ''), null, I18N.t("Stockage id\xE9al \xF7 production id\xE9ale. Sur une \xEEle 100 % sigmo\xEFde (rapport 1\u21928), il vaut \u2248 14 kWh de stockage par kW de production.")), accPct != null && statRow(I18N.t("Accumulateurs"), fmtEnergyPair(accStored, accCap) + " \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
     className: "ep-bar",
     key: "bar"
   }, React.createElement("i", {
@@ -18856,6 +18872,21 @@ function NetworkPanel({
   const fmtPool = entries => entries.map(([k, v]) => fmtPort(v) + ' ' + matLabel(k)).join(' · ');
   // Plage de demande élec. d'un réseau câble avec consommateurs variables (sigmoïde/aléatoire).
   const showWireRange = isWire && wi && wi.variable && wi.demandMax - wi.demandMin > 0.5;
+  // 14.47 — Dimensionnement idéal de CETTE composante câble (cf. idealGridSizing). Calculé par
+  // composante et non par île : le stockage d'une grille ne sert pas l'autre.
+  const wireIdeal = isWire && wi ? idealGridSizing(wi.demandMin, wi.demandMax) : null;
+  const idealRow = (label, val, color, title) => React.createElement("div", {
+    className: "ip-row",
+    key: label
+  }, React.createElement("span", {
+    className: "lbl"
+  }, label), React.createElement("span", {
+    className: "val io",
+    style: color ? {
+      color: color
+    } : undefined,
+    title: title
+  }, val));
   // Réserve d'énergie : kWh stockés dans les accumulateurs branchés sur cette composante câble.
   const showWireAcc = isWire && wi && wi.accCount > 0 && wi.accCap > 0;
   // Bouton ∞ : à partir du niveau 3 normalement, mais DÈS LE NIVEAU 1 quand le forfait a déjà été
@@ -18970,7 +19001,7 @@ function NetworkPanel({
   }, I18N.t("Demande min→max")), React.createElement("span", {
     className: "val io",
     title: I18N.t("Plage de consommation : les b\xE2timents \xE0 conso sigmo\xEFde/al\xE9atoire font varier la demande \xE9lec. Dimensionnez la production pour le max.")
-  }, fmtPower(wi.demandMin) + ' → ' + fmtPower(wi.demandMax))), saturatedNet && React.createElement("div", {
+  }, fmtPower(wi.demandMin) + ' → ' + fmtPower(wi.demandMax))), showWireRange && idealRow(I18N.t("Production id\xE9ale"), fmtPower(wireIdeal.prod), elProd + 1e-6 >= wireIdeal.prod ? 'var(--green)' : '#ff8079', I18N.t("Production \xE0 installer sur cette composante si les accumulateurs absorbent la bosse des sigmo\xEFdes : la demande MOYENNE (et non le pic), major\xE9e de la perte de charge des accumulateurs V1.")), showWireRange && idealRow(I18N.t("Stockage id\xE9al"), fmtEnergy(wireIdeal.store), (wi.accCap || 0) + 1e-6 >= wireIdeal.store ? 'var(--green)' : '#ffcf6b', I18N.t("Capacit\xE9 d'accumulateurs \xE0 brancher sur CETTE composante c\xE2ble : \u2248 9,55 \xD7 amplitude.")), showWireRange && idealRow(I18N.t("Ratio id\xE9al"), fmtSig(wireIdeal.ratio) + I18N.t(" kWh / kW"), null, I18N.t("Stockage id\xE9al \xF7 production id\xE9ale de cette composante c\xE2ble.")), saturatedNet && React.createElement("div", {
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"

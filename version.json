@@ -1,8 +1,8 @@
 {
-  "build": 328,
-  "version": "Alpha 14.46",
+  "build": 329,
+  "version": "Alpha 14.47",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Nouveau bâtiment : Usine Moteur Nucléaire V2 (palier de l'usine, débloqué au nœud 41) — recette allégée, art dédié · Verrous d'île levés par la recherche : le four à arc tungstène, la machine-outil et la centrale à gaz se construisent partout une fois leur nœud confirmé · La fabrique d'ordinateurs quantiques produit 0,0625/s au lieu de 0,01/s, intrants inchangés"
+  "notes": "Menu Bâtiment allégé : la ligne intrants / sortants / élec. quitte les vignettes — elle reste dans la fiche détaillée (appui long sur une vignette) · « Demander au port » n'apparaît dans la fiche d'un bâtiment qu'après avoir cliqué « Monter » ou « Densifier » · Nouveau dans ⚡ Énergie et dans la fiche d'un réseau câble : production idéale, stockage idéal et ratio idéal — de quoi dimensionner ses accumulateurs pour couvrir la bosse des sigmoïdes · L'Usine Moteur Nucléaire V2 consomme de nouveau du processeur (1/s) au lieu de l'ordinateur quantique"
 }
