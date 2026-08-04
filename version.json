@@ -1,8 +1,8 @@
 {
-  "build": 331,
-  "version": "Alpha 14.49",
+  "build": 332,
+  "version": "Alpha 14.50",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Correctif : une centrale nucléaire à court de combustible ne creuse plus le stock du port sous zéro — elle s'arrête net à 0 au lieu de laisser une dette qu'il fallait recombler AVANT tout redémarrage (et qui gonflait au passage la commande d'import de l'île) · Les stocks de port négatifs hérités des parties existantes sont remis à 0 au chargement, sans rien faire racheter au joueur · Le panneau Production affiche enfin la consommation RÉELLE d'U235 au dernier tick avant la panne sèche, et non la consommation voulue"
+  "notes": "Les portes logiques n'ont plus que 2 ENTRÉES : la face opposée à la sortie est inhibée (réglable dans la fiche de la porte), et la porte NON n'a qu'une entrée, en traversée. ⚠ Un montage qui câblait 3 faces sur une même porte change de résultat — un comparateur 3 bits doit maintenant chaîner deux portes ; un avertissement vous signale les portes concernées · Un câble logique que PERSONNE ne pilote s'affiche désormais comme mort, distinct d'un câble simplement éteint · Le transit expédie enfin le dernier fragment d'unité (il restait bloqué par un arrondi) et « Demander au port » vise un peu au-dessus du coût, pour ne plus rester coincé à un cheveu du but · Élévateur : une jonction ne relie plus le souterrain si c'est son axe perpendiculaire qui rejoint le port, et les SOLIDES exigent désormais une ROUTE entre le port et l'élévateur, comme le TUYAU l'exige déjà pour les liquides ⚠ un souterrain relié par un tuyau seul s'arrêtera côté solides jusqu'à la pose d'une route · L'acide revient dans la Fonderie d'Or (4/s) et le Raffineur Si (8/s) — leurs V2, sans acide, redeviennent de vraies améliorations de recette · Nouveau capteur de SURCHAUFFE, sur un bâtiment à chaleur comme sur un conduit (seuil 80 % réglable)"
 }
