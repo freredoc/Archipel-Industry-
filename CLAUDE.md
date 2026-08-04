@@ -17,7 +17,77 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 335`, `GAME_VERSION = 'Alpha 14.53'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 336`, `GAME_VERSION = 'Alpha 14.54'`, `SAVE_VERSION = 31`.**
+  Changement 14.54 (brief `BRIEFBOOSTERDEVSOUTIEN`, lots A/B/C) : **LE BOOSTER DE VITESSE EST
+  SUPPRIMÉ, le MODE RAPIDE ×10 devient exclusif au build dev (`DEV_BUILD`), et les Options gagnent
+  une section « Soutenir le projet » (`SUPPORT_URL`).** `SAVE_VERSION` INCHANGÉ — les champs
+  `boosterCharge`/`boosterOn` des anciennes saves sont **tolérés et ignorés**, plus jamais écrits.
+  Base du brief EXACTE (3 137 904 o, build 335) : les **26 ancres sont sorties UNIQUES**.
+  (1) **LOT A — SUPPRESSION RÉELLE, pas une mise à `false` de `BOOSTER_UI_ENABLED`.** C'est la
+  décision clé : ce flag ne masquait que le BOUTON — la mécanique continuait d'accumuler une réserve
+  invisible (recharge en jeu ET pendant le rattrapage hors-ligne). Tout est parti : `BOOSTER_MUL_BY_ISLAND`,
+  `BOOSTER_MAX`, `BOOSTER_RECHARGE_PER_SEC`, `BOOSTER_UI_ENABLED`, `boosterMulAvailable`,
+  `fmtBoosterTime`, `highestUnlockedIsland`, le 6e bouton de la barre du bas, son CSS, `toggleBooster`,
+  les 4 props de la `Toolbar`, l'init de partie neuve, le payload de sauvegarde, le bloc de rattrapage
+  hors-ligne, le bloc de la boucle de frame, l'astuce `boost`, sa scène `TIP_SCENES` et le sprite
+  `ui_booster`. **La barre du bas passe de 6 à 5 boutons.**
+  ⚠ **`highestUnlockedIsland` n'avait qu'UN appelant** (`boosterMulAvailable`) — vérifié avant retrait ;
+  si un futur lot en a besoin, il faut la réécrire.
+  ⚠ **`_realDt` disparaît avec le bloc** (aucun autre usage) ; **`prev` et `elapsedSec` restent utilisés**
+  (respectivement par `g.tickAcc += …` et par 4 autres sites de `runCatchUp`) — ne pas les retirer.
+  ⚠ **Le multiplicateur maximal du jeu tombe de ×100 (rapide × booster) à ×10, et à ×1 dans le build
+  PUBLIC.** C'est VOULU. Le garde-fou `_maxTicks = min(200, _ts*5)` ne mord donc plus jamais (pire cas
+  50 ticks/frame) ; il est conservé comme filet.
+  (2) **LOT B — nouvelle constante de build `DEV_BUILD` (défaut `false`)**, posée juste après
+  `TESTER_BUILD`. Le mode rapide ×10 (bouton chronomètre + case « Mode rapide » de l'écran de création
+  + `toggleFastMode`) est gaté dessus. ⚠ **Ce n'est NI `g.ui.dev`** (toggle Options accessible à
+  n'importe quel joueur) **NI `TESTER_BUILD`** (qui garde son rôle INTACT : sélection d'APK + retrait du
+  Mode développeur — hors périmètre, non touché, vérifié). Étiquette de version corrigée :
+  `TESTER_BUILD ? ' · test' : DEV_BUILD ? ' · dev' : ''` — l'ancienne affichait « · dev » dans le build
+  PUBLIC, ce qui devenait trompeur.
+  ⚠ **AUCUN forçage à ajouter au chargement** : `loadSave` fait déjà `g.timeScale = 1` (« jamais restauré
+  depuis la save ») → une save faite en ×10 dans le build dev rouvre en ×1 en public (vérifié V7).
+  ⚠ **La ligne `^const TESTER_BUILD = false;$` reste intacte et sur sa propre ligne** — la CI la
+  substitue par `sed` avec un `grep` de garde. Le motif `^const DEV_BUILD = false;$` est écrit pour être
+  substituable de la même façon (vérifié au `sed` sur les 4 variantes de test).
+  ⚠ **HORS PÉRIMÈTRE, à faire séparément** : la variante d'APK dev dans le workflow CI (ce lot
+  n'introduit que la constante qui la rendra possible).
+  (3) **LOT C — section « Soutenir le projet »** en bas des Options, gatée sur `SUPPORT_URL`
+  (**PLACEHOLDER vide = section entièrement masquée** — à renseigner par Ethan avant publication).
+  `<a>` `target="_blank"` `rel="noopener"`, gabarit `slot-new opt-fullbtn` dans un `.slot-row`, avec la
+  phrase « Archipel Industry est gratuit et le restera. » VISIBLE (pas seulement en `title` — un tooltip
+  est inatteignable au doigt). **AUCUNE règle CSS ajoutée** : seul un `style` inline remet
+  `display:block/textAlign/textDecoration` sur le `<a>`. Aucune contrepartie en jeu.
+  i18n en/es/de des 2 nouveaux libellés (nouveau bloc d'augmentation `/* 14.54 */`).
+  ⚠ **LE NETTOYAGE i18n DU BRIEF EST UN NO-OP, vérifié** : ni « Booster » ni l'astuce booster
+  n'existaient dans les 4 catalogues LOCALES (ils étaient en repli fr, comme les astuces depuis 13.32)
+  → rien à retirer.
+  ⚠ **`fx_boost` / `fx_boost_productivite` CONSERVÉS** (overlays d'influence d'antenne, aucun rapport
+  avec le booster) : le bloc d'overlay et les 2 sheets sont **BYTE-IDENTIQUES à la base** (SHA-256
+  `46a03f72…`, 1 659 o). Seules les **3 ops `"s": "fx_boost"` de la scène d'astuce supprimée** partent —
+  le §V4 du brief (« count inchangé ») est donc littéralement infaisable, et c'est normal.
+  Validé : `node --check` (**7 blocs, 7 OK**) + Chromium **2 suites, 77 assertions, 0 KO**,
+  **2 passes identiques**, viewport 420 px / DPR 3, sur **4 variantes** (public / dev / testeur /
+  SUPPORT_URL renseignée). **Save legacy RÉELLE** (créée par le vrai chemin puis réinjectée avec
+  `boosterCharge: 1234.5` + `boosterOn: true`) → charge sans erreur, champs `undefined`, stock intact,
+  horloge qui avance, 5 boutons. **Cadences MESURÉES sur 5 min** : public **300 ticks/300 s (×1)**, dev
+  **3004 ticks/300 s (×10)**, 0 `tickErrors`, 0 `pageerror`, canvas vivant. **UI RÉELLE** (vrais clics
+  souris) : chronomètre absent en public/testeur, présent en dev → clic → ×10 + `playclock-fast` + audio
+  coupé + `_sfxPrev` mémorisé, re-clic → ×1 + audio restauré ; les 3 étiquettes de version ; les
+  2 cartes de mode restent ALIGNÉES sans la ligne « Mode rapide » ; section soutien absente à
+  `SUPPORT_URL = ''`, présente sinon (href/target/rel/pleine largeur/placée avant la ligne de version),
+  traduite dans les 4 langues (**umlaut allemand correct, aucun `\xNN` visible**). Captures contrôlées.
+  **Round-trip SHA-256 des 9 blocs réécrits : 9/9 à `count == 1`, 0 échappement parasite.**
+  ⚠ **BRUIT DE CONSOLE — contre-épreuve BASE 335 vs PATCHÉ 336 faite** : les 2 seules « erreurs » sont
+  un **404 `/favicon.ico`** (absent du serveur de test) et un **`ERR_CONNECTION_RESET` sur `VERSION_URL`**
+  (fetch sortant vers `raw.githubusercontent.com`, bloqué en sandbox). **La base 335 les produit à
+  l'identique** → ce ne sont PAS des régressions. **0 `pageerror` des deux côtés.**
+  ⚠ **Taille : 3 137 904 → 3 134 927 o (−2 977 o).** Le CODE seul pèse **−3 653 o** (mesuré avant le
+  bump) ; le retour à −2 977 vient du commentaire de version et de `GAME_NOTES`. Un delta POSITIF avant
+  bump signifierait que la suppression a échoué.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `TESTER_BUILD` et ses usages existants, le mode développeur
+  `g.ui.dev`, le workflow CI, la vraie URL de don, `fx_boost`/overlays d'antenne, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 335`, `GAME_VERSION = 'Alpha 14.53'`, `SAVE_VERSION = 31`.**
   Changement 14.53 (demande joueur : « à droite des alertes, lister tous les endroits où il y a une
   surchauffe ») : **bouton 🔥 SURCHAUFFES + panneau listant TOUS les points chauds, toutes îles
   confondues.** `SAVE_VERSION` INCHANGÉ — **affichage seul**, aucun champ persisté, aucune règle de
