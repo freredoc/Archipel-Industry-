@@ -1,8 +1,8 @@
 {
-  "build": 332,
-  "version": "Alpha 14.50",
+  "build": 333,
+  "version": "Alpha 14.51",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Les portes logiques n'ont plus que 2 ENTRÉES : la face opposée à la sortie est inhibée (réglable dans la fiche de la porte), et la porte NON n'a qu'une entrée, en traversée. ⚠ Un montage qui câblait 3 faces sur une même porte change de résultat — un comparateur 3 bits doit maintenant chaîner deux portes ; un avertissement vous signale les portes concernées · Un câble logique que PERSONNE ne pilote s'affiche désormais comme mort, distinct d'un câble simplement éteint · Le transit expédie enfin le dernier fragment d'unité (il restait bloqué par un arrondi) et « Demander au port » vise un peu au-dessus du coût, pour ne plus rester coincé à un cheveu du but · Élévateur : une jonction ne relie plus le souterrain si c'est son axe perpendiculaire qui rejoint le port, et les SOLIDES exigent désormais une ROUTE entre le port et l'élévateur, comme le TUYAU l'exige déjà pour les liquides ⚠ un souterrain relié par un tuyau seul s'arrêtera côté solides jusqu'à la pose d'une route · L'acide revient dans la Fonderie d'Or (4/s) et le Raffineur Si (8/s) — leurs V2, sans acide, redeviennent de vraies améliorations de recette · Nouveau capteur de SURCHAUFFE, sur un bâtiment à chaleur comme sur un conduit (seuil 80 % réglable)"
+  "notes": "Correctif de robustesse : la position de la tuile élévateur est désormais mémorisée PAR PARTIE et non globalement — charger successivement deux parties de modes différents (Normal / Difficile), qui n'ont pas les mêmes grilles, ne peut plus resservir la tuile de l'une à l'autre · Diagnostic : le blocage du souterrain signalé a été mesuré sur 600 ticks — la garde fonctionne, les Presses UHP sont bien coupées avec le motif « élévateur » tant qu'aucune ROUTE ne relie le port à la cage. Le stock de câble supraconducteur déjà au port est un acquis historique, il ne monte plus. Pour relancer le souterrain : poser une route entre le port de l'île 6 et la tuile élévateur (et un tuyau pour les liquides)"
 }
