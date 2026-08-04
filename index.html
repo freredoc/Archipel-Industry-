@@ -2956,7 +2956,12 @@ const RES_SHORT = {
   helium4: 'Hélium',
   helium_liquide: 'He liquide',
   moteur_quantique: 'mot.quantique',
-  methane: 'méthane'
+  methane: 'méthane',
+  // RESSOURCE FANTÔME : jamais déclarée dans un `outputs` statique (injectée au tick), jamais
+  // stockée au port (purgée en fin de tick, cf. VENTED_RES), ABSENTE de RES_TIER — donc absente
+  // de l'inventaire, du calculateur et de l'arbre techno. Le libellé n'existe que pour les
+  // panneaux de RÉSEAU TUYAU et le transit élévateur, seuls endroits où elle est visible.
+  gaz_echappement: 'gaz échap.'
 };
 // Tier of each resource (derived from the lowest-tier building that produces it).
 // Used to sort the HUD inventory by progression tier.
@@ -3100,6 +3105,7 @@ const CARRIER_BY_RES = {
   helium_liquide: 'pipe',
   moteur_quantique: 'road',
   methane: 'pipe',
+  gaz_echappement: 'pipe',
   energie_kw: 'wire'
 };
 const carrierOf = res => CARRIER_BY_RES[res] || 'road';
@@ -4191,6 +4197,21 @@ function netConnectMask(tiles, r, c, carriers, junctionAxis, infraOnly) {
 // (matières) ET conduit (chaleur) s'y raccordent VISUELLEMENT — la cage relie surface ↔ souterrain.
 // L'électricité (câble) ne transite PAS par l'élévateur → non concernée (retour testeur : « pas de
 // connexions entre l'élévateur et les réseaux »).
+// Directions (bitmask N=1/E=2/S=4/O=8) vers une tuile COLLISIONNEUR adjacente. Le landmark est un
+// TERRAIN, pas un bâtiment : netConnectMask ne lit que `nt.building` et ne posait donc JAMAIS le
+// bit vers lui — la tuile réseau dessinait un cul-de-sac ET s'amincissait de ce côté, d'où le trou
+// visible entre le réseau et la machine. Le patch 14.39 n'avait corrigé que l'AUTRE sens (la tuile
+// collider dessine son stub vers le réseau) : le raccord restait asymétrique.
+// Porteurs concernés : TUYAU (hélium 3) et CÂBLE (élec.), cf. colliderDrawHe3 / colliderWireNid.
+// Ni route ni conduit : le Collisionneur n'en consomme aucun.
+function colliderEdgeMask(tiles, r, c) {
+  let m = 0;
+  for (const [dr, dc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
+    const nt = tiles[r + dr] && tiles[r + dr][c + dc];
+    if (nt && nt.terrain === 'collider') m |= bit;
+  }
+  return m;
+}
 function elevatorEdgeMask(tiles, r, c) {
   let m = 0;
   for (const [dr, dc, bit] of [[-1, 0, 1], [0, 1, 2], [1, 0, 4], [0, -1, 8]]) {
@@ -4203,6 +4224,14 @@ function elevatorEdgeMask(tiles, r, c) {
 // within the same tick; any leftover is purged from all pools at end of tick.
 const NON_STORABLE = {
   eau_froide: true
+};
+// Ressources ÉVENTÉES : elles TRANSITENT (pool tuyau → port via l'élévateur, elles consomment donc
+// le débit de la cage dans la catégorie « sortants ») puis sont PURGÉES du port en fin de tick.
+// À ne PAS confondre avec NON_STORABLE, qui reste confiné au pool et ne touche JAMAIS l'élévateur —
+// or c'est précisément le transit qu'on veut facturer ici. Rien à stocker : l'atmosphère de la
+// surface est le puits.
+const VENTED_RES = {
+  gaz_echappement: true
 };
 const TERRAIN_COLORS = {
   water: '#1A3A5C',
@@ -5231,6 +5260,12 @@ const BUILDINGS = {
   // (gaz transportés par TUYAU). `noTierMult` : coûts du brief = coûts payés (pas de ×8 t3).
   separateur_air: {
     name: 'Séparateur Air V1',
+    // Pas d'air à séparer sous terre (île 7). CONSÉQUENCE ASSUMÉE : l'oxygène d'une centrale à gaz
+    // souterraine DESCEND par l'élévateur depuis le port de l'île 6 — la bascule pool → port
+    // s'applique à tout fluide stockable sur un réseau relié (cf. pipeToPort), l'élévateur n'est
+    // pas un bateau et ne dépend donc pas de TRADE_LIQUIDS. Il consomme la catégorie « intrants »
+    // de la cage, en plus des « sortants » pris par l'échappement.
+    forbiddenIslands: [7],
     color: '#81D4FA',
     label: 'AIR',
     kind: 'build',
@@ -5253,6 +5288,8 @@ const BUILDINGS = {
   // conso SIGMOÏDE (base 1024 ×1,125 = 1152 → plancher 288, plafond 2304 — l'exemple du brief).
   separateur_air_v2: {
     name: 'Séparateur Air V2',
+    // Même interdiction que la V1 : pas d'air à séparer sous terre.
+    forbiddenIslands: [7],
     color: '#4FC3F7',
     label: 'AIR2',
     kind: 'build',
@@ -6450,10 +6487,10 @@ const BUILDINGS = {
       helium_liquide: 0.25
     }
   },
-  // Centrale à Gaz — EN SURFACE (île 6 ; arbitrage concepteur, l'Excel notait « SOUTERRAIN ·
-  // surface » contradictoire). Producteur d'électricité (power:0 + outputs.energie_kw). Le méthane
-  // remonte du souterrain par l'élévateur ; l'oxygène reste local (pool tuyau île 6). Pas de logique
-  // de peaker (report phase 5).
+  // Centrale à Gaz — SURFACE **ET** SOUTERRAIN. Producteur d'électricité (power:0 +
+  // outputs.energie_kw). Le méthane vient du Séparateur Cryogénique (île 7). Au SOUTERRAIN elle
+  // émet du gaz d'échappement (champ `vent`) qu'il faut évacuer par l'élévateur ; en surface,
+  // l'atmosphère est le puits et rien n'est émis. Pas de logique de peaker (report phase 5).
   centrale_gaz: {
     name: 'Centrale à Gaz V1',
     color: '#FF8A50',
@@ -6464,9 +6501,11 @@ const BUILDINGS = {
     exclusiveIsland: 6,
     // 14.4x — Libérée à la confirmation du nœud 37 (Data Center), un cran après son propre
     // déblocage : le courant est la première chose dont on a besoin ailleurs.
-    // ⚠ LOGISTIQUE ASSUMÉE : son `oxygene` est porté par le TUYAU et ABSENT de TRADE_LIQUIDS,
-    // donc non expédiable. Toute île d'accueil devra produire le sien sur place (Séparateur
-    // d'Air local), exactement comme le Cryostat en 14.37. Le méthane, lui, s'expédie.
+    // ⚠ LOGISTIQUE : son `oxygene` est porté par le TUYAU et ABSENT de TRADE_LIQUIDS, donc non
+    // expédiable PAR BATEAU — toute île 1-5 d'accueil devra produire le sien sur place (Séparateur
+    // d'Air local), comme le Cryostat en 14.37. L'ÉLÉVATEUR, lui, n'est pas un bateau : l'île 7
+    // puise directement dans port[6] (bascule pipeToPort), donc une centrale SOUTERRAINE fait
+    // descendre son oxygène — le Séparateur d'Air étant interdit île 7. Le méthane, lui, s'expédie.
     exclusiveUntilNode: 37,
     size: [1, 1],
     power: 0,
@@ -6480,8 +6519,13 @@ const BUILDINGS = {
       oxygene: 64
     },
     outputs: {
-      energie_kw: 512
-    }
+      energie_kw: 2048
+    },
+    // GAZ D'ÉCHAPPEMENT — émis UNIQUEMENT au souterrain (île 7), injecté au tick dans effOutputs
+    // (cf. tickIsland). Volontairement ABSENT de `outputs` : la sortie reste hors de PRODUCER_OF,
+    // du calculateur, de la fiche bâtiment et de l'arbre techno. Quantité = l'oxygène consommé ;
+    // le multiplicateur de niveau (outMul) s'y applique comme au reste, donc ×2 par cran.
+    vent: 64
   },
   // Fabrique d'Ordinateur Quantique (surface, île 6) : conso SIGMOÏDE 1024 → 8096 kW. Sortie très
   // lente (0,0625/s = 1 ordinateur / 16 s), volontaire (bien capital). 14.4x — relevée de 0,01
@@ -7413,8 +7457,56 @@ const SAVE_VERSION = 31;
 // plus que sur DEUX postes (pièce méca, polymère), le processeur revient à l'identique de la
 // V1. L'ordinateur quantique reste exigé au FORFAIT de densification (TIER_STEP, inchangé).
 // SAVE_VERSION INCHANGÉ (31) — aucun champ de sauvegarde touché.
-const GAME_BUILD = 329;
-const GAME_VERSION = 'Alpha 14.47';
+// 14.48 — B7 : ÉCHAPPEMENT SOUTERRAIN + raccord visuel du COLLISIONNEUR + menu îles.
+// (1) Le Collisionneur est un TERRAIN, pas un bâtiment : `netConnectMask` ne lit que
+// `nt.building`, donc la tuile tuyau/câble voisine ne posait JAMAIS son bit vers le landmark —
+// elle dessinait un cul-de-sac ET s'amincissait de ce côté (d'où le trou visible). Le patch
+// 14.39 n'avait traité que l'AUTRE sens (le stub dessiné PAR la tuile collider, inchangé ici).
+// Nouveau `colliderEdgeMask`, calqué sur `elevatorEdgeMask` (la cage est aussi un terrain).
+// TUYAU et CÂBLE seulement — le Collisionneur ne consomme ni route ni conduit. Purement VISUEL :
+// `colliderDrawHe3` / `colliderWireNid` passaient déjà par `adjacentNetworksFootprint`.
+// (2) Centrale à Gaz : sortie 512 → 2048 kW. À 512 elle était strictement dominée (même sortie
+// qu'une Centrale Diesel V1 t2 et qu'une Géothermie t5 SANS intrant) pour une chaîne méthane +
+// oxygène et un coût de 500 pièces de précision. ⚠ Ce n'est PAS un V2 : aucune entrée
+// TIER_NEXT / TIER_STEP n'est créée (un V2, ici, allège la recette — cf. `centrale_diesel_v2`).
+// (3) GAZ D'ÉCHAPPEMENT — nouvelle ressource FANTÔME `gaz_echappement` : déclarée dans
+// `RES_SHORT` et `CARRIER_BY_RES` (pipe) mais dans AUCUN `outputs` statique — elle est injectée
+// dans `effOutputs` AU TICK, et seulement si `isl === 7` (en surface l'atmosphère est le puits).
+// Conséquence voulue : `PRODUCER_OF` dérivant de `b.outputs`, le calculateur, l'arbre techno et
+// la ligne « Sortie » de la fiche ne la voient jamais ; ABSENTE de `RES_TIER`, elle reste hors
+// de l'inventaire HUD. Nouveau champ de def `vent` (= l'oxygène consommé, 64/s au Nv.1, ×2 par
+// cran via `outMul`). ⚠ Copie DÉFENSIVE (`Object.assign({}, …)`) : `b.outputs` est l'objet de
+// définition PARTAGÉ par toutes les instances — le muter contaminerait les centrales de surface.
+// ⚠ Elle passe par `pipePort`, PAS par `NON_STORABLE` : `NON_STORABLE` reste confiné au pool
+// tuyau (`pipeToPort` le saute) et ne touche JAMAIS l'élévateur — or c'est précisément le
+// transit qu'on veut facturer. Elle entre donc dans `outDem` (catégorie « sortants » de la cage),
+// `elevOutFac` bride le régime de la centrale, puis nouveau `VENTED_RES` la PURGE du port en fin
+// de tick (après le vidage des citernes, sinon le pool la réinjecterait au tick suivant).
+// Le régime 0 était DÉJÀ câblé, aucun code ajouté : pas de tuyau → motif `elevator` ; tuyau
+// local sans lien port ↔ élévateur → `elevator` (underLiquidBlocked) ; cage saturée → `elevbusy`.
+// ⚠ CHARGE DOUBLE ASSUMÉE : une centrale souterraine Nv.N charge la cage 2 × 64 × 2^(N−1)
+// (O₂ qui descend + échappement qui remonte) → au Nv.1 elle sature un élévateur en dessous du
+// Nv.3. ⚠ EFFET DE BORD CONNU ET ACCEPTÉ : en mode `priority` (construction → sortants →
+// intrants), poser un bâtiment au souterrain préempte la cage, l'échappement tombe, la centrale
+// passe à 0 et le souterrain perd son courant le temps du chantier. NE PAS « corriger ».
+// (4) `separateur_air` / `_v2` : `forbiddenIslands: [7]` (pas d'air à séparer sous terre).
+// ⚠ GRANDFATHERING ASSUMÉ : `forbiddenIslands` n'est lu que par `canPlace`/`tryPlace` → un
+// séparateur DÉJÀ posé île 7 continue de tourner et reste améliorable ; aucune migration.
+// CONSÉQUENCE : l'oxygène d'une centrale à gaz souterraine DESCEND par l'élévateur depuis
+// port[6] (l'élévateur n'est pas un bateau, il ne dépend pas de `TRADE_LIQUIDS`) — il consomme
+// donc la catégorie « intrants » de la cage, en plus des « sortants » pris par l'échappement.
+// (5) `offIslandOn` : les `forbiddenIslands` passent de MASQUÉS à GRISÉS. Avant, 6 bâtiments
+// disparaissaient sans explication sur l'île 6 (éolienne, éolienne offshore, charbon V1/V2,
+// diesel V1/V2) et 11 sur l'île 7. `visibleOn` est INCHANGÉE (ils restent non posables) et le
+// NON DÉBLOQUÉ reste masqué (ne pas divulguer l'arbre techno). ⚠ Le grisé ne DISTINGUE PAS
+// « exclusif ailleurs » de « interdit ici » (arbitrage) : le tooltip est déjà gardé par
+// `exclusiveIsland != null` côté vignette, un bâtiment seulement interdit n'affiche AUCUN motif.
+// ⚠ Le libellé de l'interrupteur « Bâtiments des autres îles » devient donc légèrement inexact
+// (il couvre maintenant aussi « interdit ici ») — signalé, volontairement NON renommé.
+// SAVE_VERSION INCHANGÉ (31) — aucun champ de sauvegarde créé, modifié ou supprimé ;
+// `gaz_echappement` ne persiste jamais (purgée du port à chaque tick).
+const GAME_BUILD = 330;
+const GAME_VERSION = 'Alpha 14.48';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -7423,7 +7515,7 @@ const GAME_VERSION = 'Alpha 14.47';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Menu Bâtiment allégé : la ligne intrants / sortants / élec. quitte les vignettes — elle reste dans la fiche détaillée (appui long sur une vignette) · « Demander au port » n'apparaît dans la fiche d'un bâtiment qu'après avoir cliqué « Monter » ou « Densifier » · Nouveau dans ⚡ Énergie et dans la fiche d'un réseau câble : production idéale, stockage idéal et ratio idéal — de quoi dimensionner ses accumulateurs pour couvrir la bosse des sigmoïdes · L'Usine Moteur Nucléaire V2 consomme de nouveau du processeur (1/s) au lieu de l'ordinateur quantique";
+const GAME_NOTES = "Les tuyaux et les câbles se raccordent enfin VISUELLEMENT au Collisionneur — plus de trou entre le réseau et la machine · La Centrale à Gaz passe de 512 kW à 2 MW · Posée au SOUTERRAIN, elle émet désormais un gaz d'échappement qu'il faut évacuer par l'élévateur : sans tuyau relié, elle ne tourne pas, et la cage est chargée dans les deux sens (oxygène qui descend, fumées qui remontent) · Le Séparateur d'Air n'est plus constructible sous terre — ceux déjà posés continuent de tourner · Les bâtiments interdits sur l'île courante sont GRISÉS dans le menu Bâtiment au lieu de disparaître sans explication";
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -10779,6 +10871,11 @@ function tickIsland(game, isl) {
     const effInputs = arcEff ? arcEff.inputs : enrEff ? enrEff.inputs : coolEff ? coolEff.inputs : b.inputs;
     // `let` : la FOREUSE se donne dynamiquement une sortie (pierre) pendant un creusement.
     let effOutputs = arcEff ? arcEff.outputs : b.outputs;
+    // GAZ D'ÉCHAPPEMENT (souterrain uniquement). Une centrale à gaz posée à l'île 7 doit évacuer
+    // ses fumées : on lui ajoute AU TICK une sortie tuyau `gaz_echappement` (= l'oxygène consommé).
+    // En surface, l'atmosphère est le puits → aucune émission, aucune contrainte.
+    // Copie défensive : ne JAMAIS muter b.outputs, partagé par toutes les instances.
+    if (b.vent && isl === 7) effOutputs = Object.assign({}, effOutputs, { gaz_echappement: b.vent });
     const effSigmoid = arcEff ? arcEff.sigmoid : b.sigmoid;
     const effRandomP = arcEff ? null : b.randomP;
     let basePower = b.power || 0;
@@ -11656,6 +11753,11 @@ function tickIsland(game, isl) {
     }
     for (const k in NON_STORABLE) if (pool[k]) pool[k] = 0;
   }
+  // ÉVENT : le gaz d'échappement a déjà payé son transit (il a consommé le débit de l'élévateur
+  // dans la catégorie « sortants » avant d'arriver ici) — il part maintenant dans l'atmosphère.
+  // Purge APRÈS le vidage des citernes ci-dessus, sinon le pool le réinjecterait au tick suivant.
+  // Aucun stock, aucune ligne d'inventaire, aucun échange.
+  for (const k in VENTED_RES) if (port[k] != null) delete port[k];
   // === Électricité par réseau câble ===
   // Chaque réseau câble est un sous-réseau électrique distinct : producteurs,
   // consommateurs et accumulateurs rattachés à CE réseau se partagent l'énergie, et
@@ -15681,9 +15783,16 @@ function Toolbar({
   // n'oblige à toucher aucun de ses appelants.
   const offIslandOn = id => {
     const ex = exclusiveIslandWith(id, freedSet);
-    if (ex == null || ex === currentIsland) return false;
     const fb = BUILDINGS[id].forbiddenIslands;
-    if (fb && fb.indexOf(currentIsland) !== -1) return false;
+    const banned = !!(fb && fb.indexOf(currentIsland) !== -1);
+    // Le grisé couvre désormais DEUX motifs, SANS les distinguer visuellement (arbitrage) :
+    // exclusif à une AUTRE île, OU interdit sur celle-ci. Avant, `forbiddenIslands` restait
+    // MASQUÉ : sur l'île 6 six bâtiments (éolienne, éolienne offshore, charbon V1/V2, diesel
+    // V1/V2) disparaissaient sans explication, onze sur l'île 7. Le tooltip « Se construit sur X »
+    // est DÉJÀ gardé par `exclusiveIsland != null` côté vignette : un bâtiment seulement interdit
+    // n'affiche AUCUN motif — c'est voulu, ne pas y toucher.
+    // Le NON DÉBLOQUÉ, lui, reste masqué (dernière ligne) : ne pas divulguer l'arbre techno.
+    if (!banned && (ex == null || ex === currentIsland)) return false;
     if (tutorialRevealed && !tutorialRevealed.has(id)) return false;
     return BUILDING_NODE[id] == null || unlockedSet && unlockedSet.has(id);
   };
@@ -24968,6 +25077,8 @@ function App() {
         let mask = netConnectMask(tiles, r, c, [carrier], true);
         // Route/tuyau : branche vers une tuile élévateur adjacente (raccord surface ↔ souterrain).
         if (carrier === 'road' || carrier === 'pipe') mask |= elevatorEdgeMask(tiles, r, c);
+        // Tuyau/câble : branche vers une tuile COLLISIONNEUR adjacente (landmark = terrain).
+        if (carrier === 'pipe' || carrier === 'wire') mask |= colliderEdgeMask(tiles, r, c);
         const net = g.networks[isl] && g.networks[isl][t.networkId];
         const lvl = net && net.level || 1;
         // Visuel bloqué à V3 pour les niveaux >= 3 ; le sprite V4 est réservé à
