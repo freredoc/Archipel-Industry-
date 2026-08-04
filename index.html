@@ -7505,8 +7505,33 @@ const SAVE_VERSION = 31;
 // (il couvre maintenant aussi « interdit ici ») — signalé, volontairement NON renommé.
 // SAVE_VERSION INCHANGÉ (31) — aucun champ de sauvegarde créé, modifié ou supprimé ;
 // `gaz_echappement` ne persiste jamais (purgée du port à chaque tick).
-const GAME_BUILD = 330;
-const GAME_VERSION = 'Alpha 14.48';
+// 14.49 — CORRECTIF : plus aucun STOCK DE PORT NÉGATIF (combustible U235).
+// (1) Dans la boucle de la centrale nucléaire, la garde `fuelOK` ne teste que la PRÉSENCE de
+// combustible (`> 1e-6`), jamais la SUFFISANCE, et le prélèvement était fait SANS BORNE :
+// avec un reliquat de 0,001 au port, la centrale tournait un tick de plus à pleine puissance
+// et retirait `upMult * frac` (≈ 8 sur une V2), laissant le port À DÉCOUVERT. Constaté sur une
+// save joueur : `combustible_u235 = -13,85` au port de l'île 2. Le trou PERSISTE (au tick
+// suivant `fuelOK` bascule et la centrale part en `stopping`, mais la dette reste), s'affiche
+// tel quel dans l'inventaire du HUD, et gonfle la demande d'import (`rawShippable` calcule
+// `need = stockCible - tradeAvail`). Nouveau `fuelTake` = `Math.min(voulu, max(0, stock))`.
+// ⚠ ASYMÉTRIE CORRIGÉE, rien d'autre : les matériaux irradiés du MÊME bloc étaient DÉJÀ gardés
+// (`(port[baseK] || 0) >= want`) — seul le combustible faisait exception. Les cinq autres
+// soustractions directes au port sont soit gardées (`colliderDrawHe3`, `techDeliver`), soit
+// bridées en amont (`netFactor`/`tierFactor`), soit clampées par construction (`tradeDraw`).
+// ⚠ `fuelOK` N'EST PAS MODIFIÉ et `nucCur` N'EST PAS BRIDÉ au prorata du carburant : durcir le
+// seuil d'arrêt ou rationner la puissance serait du DESIGN (rampes `starting`/`stopping`,
+// rendement), pas une correction de bug. La production électrique du tick est INCHANGÉE — on
+// supprime la dette, pas la production, et l'écart porte sur ≤ 1 tick avant panne sèche.
+// (2) `addFlow` déclare désormais `fuelTake` (RÉELLEMENT prélevé) et non `upMult * frac`
+// (voulu), sinon le panneau Production surdéclarerait la conso du dernier tick.
+// (3) ASSAINISSEMENT AU CHARGEMENT des stocks de port hérités : `if (!(p[k] > 0)) p[k] = 0`
+// (le `!(… > 0)` attrape aussi `NaN`/`undefined`, tout aussi toxiques ; `0,001` reste `0,001`).
+// La dette existante est EFFACÉE, pas remboursée — le joueur n'a rien fait de mal. Purge
+// idempotente et inconditionnelle, sur le modèle de `REMOVED_RESOURCES` (14.16) juste au-dessus.
+// SAVE_VERSION INCHANGÉ (31) — aucun champ de sauvegarde créé, modifié ou supprimé ; un stock
+// de port négatif n'est jamais légitime, aucun besoin de discriminer par version.
+const GAME_BUILD = 331;
+const GAME_VERSION = 'Alpha 14.49';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -7515,7 +7540,7 @@ const GAME_VERSION = 'Alpha 14.48';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les tuyaux et les câbles se raccordent enfin VISUELLEMENT au Collisionneur — plus de trou entre le réseau et la machine · La Centrale à Gaz passe de 512 kW à 2 MW · Posée au SOUTERRAIN, elle émet désormais un gaz d'échappement qu'il faut évacuer par l'élévateur : sans tuyau relié, elle ne tourne pas, et la cage est chargée dans les deux sens (oxygène qui descend, fumées qui remontent) · Le Séparateur d'Air n'est plus constructible sous terre — ceux déjà posés continuent de tourner · Les bâtiments interdits sur l'île courante sont GRISÉS dans le menu Bâtiment au lieu de disparaître sans explication";
+const GAME_NOTES = "Correctif : une centrale nucléaire à court de combustible ne creuse plus le stock du port sous zéro — elle s'arrête net à 0 au lieu de laisser une dette qu'il fallait recombler AVANT tout redémarrage (et qui gonflait au passage la commande d'import de l'île) · Les stocks de port négatifs hérités des parties existantes sont remis à 0 au chargement, sans rien faire racheter au joueur · Le panneau Production affiche enfin la consommation RÉELLE d'U235 au dernier tick avant la panne sèche, et non la consommation voulue";
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -11641,11 +11666,23 @@ function tickIsland(game, isl) {
         // Intrants ET sorties au prorata de la puissance courante × multiplicateur d'amélioration.
         const frac = maxPower > 0 ? (bld.nucCur || 0) / maxPower : 0;
         if (frac > 0) {
-          port['combustible_u235'] = (port['combustible_u235'] || 0) - upMult * frac;
+          // PRÉLÈVEMENT BORNÉ. `fuelOK` ne teste que la PRÉSENCE de combustible (> 1e-6) : un
+          // reliquat de 0,001 autorisait un tick à pleine puissance qui retirait `upMult * frac`
+          // (≈ 8 sur une V2) et laissait le port À DÉCOUVERT — constaté sur une save joueur :
+          // combustible_u235 = −13,85 au port de l'île 2. Le stock négatif PERSISTE (il faut le
+          // recombler avant tout redémarrage), s'affiche tel quel dans l'inventaire, et gonfle la
+          // demande d'import (`need = stockCible − stock` dans rawShippable). On borne au stock
+          // réel : la centrale passe en `stopping` au tick suivant via `fuelOK`, comportement
+          // inchangé. Les matériaux irradiés, eux, étaient DÉJÀ gardés (`port[baseK] >= want`,
+          // quelques lignes plus bas) : c'est cette asymétrie qui est corrigée ici.
+          const fuelTake = Math.min(upMult * frac, Math.max(0, port['combustible_u235'] || 0));
+          port['combustible_u235'] = (port['combustible_u235'] || 0) - fuelTake;
           // Comptabilise les flux nucléaires dans netFlow (la centrale lit/écrit le port en
           // direct, hors inByType/outByType) → sinon le panneau Production ne voit ni la
-          // conso d'U235 ni les matériaux irradiés produits.
-          addFlow(roadNid, 'cons', 'combustible_u235', upMult * frac);
+          // conso d'U235 ni les matériaux irradiés produits. On déclare la quantité RÉELLEMENT
+          // prélevée (fuelTake), sinon le panneau Production surdéclarerait la conso du dernier
+          // tick avant panne sèche.
+          addFlow(roadNid, 'cons', 'combustible_u235', fuelTake);
           // Irradiation OPTIONNELLE : si le matériau est dispo au port, on le consomme pour produire
           // sa version irradiée. Sinon la centrale tourne quand même (élec seule). 3 modes unifiés
           // par un jeu de POIDS (normalisés) : 'single' (1 sur matKey), 'mix' (poids manuels),
@@ -21311,6 +21348,16 @@ function App() {
     // du HUD ajoute toute ressource dont le stock dépasse 0,5, or la clé n'a plus ni sprite,
     // ni nom court, ni tier → entrée cassée. Purge idempotente, aucun bump de SAVE_VERSION.
     for (const id in g.port) for (const k of REMOVED_RESOURCES) delete g.port[id][k];
+    // ASSAINISSEMENT des stocks de port NÉGATIFS hérités. Le prélèvement non borné du
+    // combustible U235 par la centrale a pu laisser un stock à découvert dans les saves
+    // existantes (−13,85 constaté). Le correctif moteur empêche d'en créer de nouveaux mais ne
+    // rembourse pas la dette : sans ce clamp, l'île concernée resterait bloquée jusqu'à ce que
+    // le transit ait recomblé le trou. Purge idempotente, sur le modèle de REMOVED_RESOURCES
+    // ci-dessus, AUCUN bump de SAVE_VERSION (un stock de port négatif n'est jamais légitime).
+    for (const id in g.port) {
+      const p = g.port[id];
+      for (const k in p) if (!(p[k] > 0)) p[k] = 0;
+    }
     if (!g.port[1]) g.port[1] = {
       pierre: 20,
       minerai_fer: 20

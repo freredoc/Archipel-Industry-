@@ -1,8 +1,8 @@
 {
-  "build": 330,
-  "version": "Alpha 14.48",
+  "build": 331,
+  "version": "Alpha 14.49",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Les tuyaux et les câbles se raccordent enfin VISUELLEMENT au Collisionneur — plus de trou entre le réseau et la machine · La Centrale à Gaz passe de 512 kW à 2 MW · Posée au SOUTERRAIN, elle émet désormais un gaz d'échappement qu'il faut évacuer par l'élévateur : sans tuyau relié, elle ne tourne pas, et la cage est chargée dans les deux sens (oxygène qui descend, fumées qui remontent) · Le Séparateur d'Air n'est plus constructible sous terre — ceux déjà posés continuent de tourner · Les bâtiments interdits sur l'île courante sont GRISÉS dans le menu Bâtiment au lieu de disparaître sans explication"
+  "notes": "Correctif : une centrale nucléaire à court de combustible ne creuse plus le stock du port sous zéro — elle s'arrête net à 0 au lieu de laisser une dette qu'il fallait recombler AVANT tout redémarrage (et qui gonflait au passage la commande d'import de l'île) · Les stocks de port négatifs hérités des parties existantes sont remis à 0 au chargement, sans rien faire racheter au joueur · Le panneau Production affiche enfin la consommation RÉELLE d'U235 au dernier tick avant la panne sèche, et non la consommation voulue"
 }
