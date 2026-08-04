@@ -17,7 +17,58 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 334`, `GAME_VERSION = 'Alpha 14.52'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 335`, `GAME_VERSION = 'Alpha 14.53'`, `SAVE_VERSION = 31`.**
+  Changement 14.53 (demande joueur : « à droite des alertes, lister tous les endroits où il y a une
+  surchauffe ») : **bouton 🔥 SURCHAUFFES + panneau listant TOUS les points chauds, toutes îles
+  confondues.** `SAVE_VERSION` INCHANGÉ — **affichage seul**, aucun champ persisté, aucune règle de
+  simulation touchée.
+  (1) **`activeHeatAlerts(game)`** (module, à côté d'`activeStockAlerts`/`activeEnergyAlerts`) réunit
+  **4 cas** : **(a)** bâtiment **ENDOMMAGÉ** par surchauffe (+ délai avant réparation, via `dmgTimer`
+  vs 300) ; **(b)** source qui **ACCUMULE** — jauge `heat / heatCapOf` **≥ `HEAT_ALERT_FRAC` (0,1)`
+  ET en HAUSSE** (`heatEmit > heatCool`), avec le % et le délai estimé avant panne ; **(c)** réseau
+  **CONDUIT dont la CRÊTE dépasse le débit** (`conduitPeak` vs `tuiles × conduitDebit`, indicateur
+  14.31 : la panne est annoncée AVANT d'arriver) ; **(d)** **TAMPON DE LA CAGE** saturé
+  (`elevatorHeat ≥ elevatorRateAt`). Tri : le pire d'abord (endommagé → cage → conduit → jauge
+  décroissante) ; **rouge** dès `HEAT_HOT_FRAC` (0,8) ou endommagé, orange sinon.
+  ⚠ **Une chaleur GELÉE ou qui RETOMBE n'est JAMAIS listée** (`rate > 1e-9` exigé) : elle ne mènera
+  pas au trip, et l'y faire figurer aurait rempli la liste de faux positifs permanents. Même seuil
+  (10 % + en hausse) que le toast d'alerte existant → aucune incohérence entre les deux signaux.
+  ⚠ **Un conduit ILLIMITÉ n'est jamais en crête** (il ne sature pas) ; ses sources, si elles
+  chauffent, sont déjà listées au cas (b) → pas de doublon.
+  ⚠ **Emprise multi-tuile comptée UNE fois** : seule l'ancre porte `.building` (les autres ont
+  `.occupied`) → le balayage de tuiles visite chaque bâtiment une seule fois (vérifié sur la centrale
+  2×2). Les **îles verrouillées** sont ignorées.
+  (2) **Bouton `.inv-heat-btn`** dans la barre d'inventaire, **À DROITE de `.inv-alert-btn`** (états
+  replié ET ouvert), rouge pulsant, sprite **`ui_chaleur`** déjà présent, badge = nombre de points
+  chauds. Visible **seulement s'il y en a ≥ 1**, comme le bouton d'alerte.
+  (3) **`HeatPanel`** réutilise le CSS du panneau d'alertes (`alerts-*`, `alert-row`). ⚠ **Le clic sur
+  une ligne (ou « Y aller ») bascule sur l'île ET CENTRE la caméra sur la tuile** — nouveau
+  **`centerOnTile(r, c)`** (`centerCam` ne centre que la grille entière ; inverse de `pointerToTile` :
+  `camX = baseX + (c + 0,5) × tile − cssW/2`). Sur une grande île, « il y a une surchauffe » sans le
+  « où » ne sert à rien : c'est la raison d'être des coordonnées affichées.
+  ⚠ **3 itérations de MISE EN PAGE, mesurées à la capture** (à ne pas refaire) : (a) une seule chaîne
+  « nom (r,c) — état » débordait sur **4 lignes** en 420 px → scindée en 2 lignes (nom / sous-ligne) ;
+  (b) `.alert-res` hérite de **`text-transform:capitalize`** → rendait « Panne Dans ~12 S » : il faut
+  `text-transform:none` (comme `.alert-energy`) ; (c) la 4ᵉ colonne de MJ ne laissait que **~80 px** au
+  nom (tronqué à « Ma… ») → grille ramenée à **3 colonnes** `[île][nom+état][Y aller]`, les MJ ne
+  restant que pour le conduit et la cage (où le rapport crête/débit EST le diagnostic) ; les
+  **coordonnées ouvrent la sous-ligne** (collées au nom, elles étaient les premières rognées) et la
+  sous-ligne **passe à la ligne au lieu d'ellipser** (tronquer perdait « panne ~9 s », l'info la plus
+  utile). Lignes finales : **46 px**.
+  Validé : `node --check` (**7 blocs, 7 OK**) + Chromium **14 suites, 188 assertions, 0 KO, 0 erreur
+  JS**, **2 passes identiques**. Helper : 15 assertions (les 4 cas, chaleur gelée/en baisse/sous le
+  seuil NON listées, tri, emprise 2×2, île verrouillée, cage). **UI RÉELLE** : bouton absent sans
+  surchauffe, présent avec badge « 2 », **position vérifiée à droite des alertes** (index 3 → 4), clic
+  réel → panneau, les 2 bâtiments NOMMÉS avec leurs coordonnées, la ligne à 92 % **en rouge et en
+  premier**, et **« Y aller » centre la caméra à 0,12 tuile près**. Captures d'écran contrôlées.
+  ⚠ **PIÈGE DE HARNAIS** : `processHeat` **RECALCULE `heatEmit`/`heatCool` à chaque tick** → un
+  bâtiment forgé non alimenté retombe à `heatEmit = 0`, donc « plus en hausse », donc absent de la
+  liste (et sa chaleur finirait par TRIPPER). Pour un test d'UI il faut **ré-affirmer l'état forgé en
+  continu** (`setInterval` ~40 ms), exactement comme pour `conduitLoad` (piège 14.52).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `processHeat`, `heatCapOf`, `heatEmitMaxOf`, les seuils de trip,
+  les toasts existants (`heatWarn`/`heatTrip`), `AlertsPanel`, `SAVE_VERSION`, et **aucune traduction**
+  des ~10 nouveaux libellés (repli fr hors-fr, comme les astuces depuis 13.32).
+- **État précédent : `GAME_BUILD = 334`, `GAME_VERSION = 'Alpha 14.52'`, `SAVE_VERSION = 31`.**
   Changement 14.52 (brief `BRIEFMOTEUR2DIAGNOSTICELEVATEUR`, **lot J** + **lot H confirmé sur la SAVE
   RÉELLE**) : **livraison du pack de 241 sprites** (l'inhibition des portes et les réseaux morts
   deviennent VISIBLES) et **clôture du diagnostic de l'élévateur**. `SAVE_VERSION` INCHANGÉ — ce lot
