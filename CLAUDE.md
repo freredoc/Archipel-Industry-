@@ -17,7 +17,105 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 328`, `GAME_VERSION = 'Alpha 14.46'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 329`, `GAME_VERSION = 'Alpha 14.47'`, `SAVE_VERSION = 31`.**
+  Changement 14.47 (brief `BRIEFUIELECRECETTE`, éditions D1→D7) : **vignettes allégées, « Demander au
+  port » gaté par l'armement, DIMENSIONNEMENT ÉLECTRIQUE IDÉAL, et retour du processeur dans la MOT2.**
+  `SAVE_VERSION` INCHANGÉ — aucun champ de sauvegarde touché, aucune prop de composant ni état React
+  nouveau, **aucune règle CSS ajoutée** (les 3 nouvelles lignes réutilisent `.ep-stat` et `.ip-row`).
+  Les **11 ancres du brief sont sorties UNIQUES sur la base 14.46/328**, sans exception.
+  (1) **D1+D2 — la ligne `tb-io` des vignettes est SUPPRIMÉE** (pas masquée par option) : elle avait
+  été posée en 14.42 sur chaque vignette du menu Bâtiment/Réseau et la surchargeait. Le CSS
+  (`.tb-io`/`.io-in`/`.io-out`/`.io-pw`) part avec le code, sinon il resterait du CSS mort. La
+  pastille de coût et le libellé de repli sont **conservés**. ⚠ **Rien n'est perdu, seulement
+  déplacé** : l'information reste dans la **fiche détaillée** (appui long 450 ms), vérifiée
+  byte-identique — `BuildingDetailModal` n'est pas touché.
+  (2) **D3 — « Demander au port » de la FICHE bâtiment exige désormais l'ARMEMENT** (`armed &&
+  askNeeded`) : il n'apparaît qu'après un 1ᵉʳ clic sur « Monter »/« Densifier », au lieu d'être
+  affiché en permanence. `armed` est l'état DÉJÀ partagé par Monter et Densifier, et il est remis à
+  `false` par le `useEffect([info])` → fermer puis re-toucher le bâtiment remasque le bouton (voulu).
+  ⚠ **Le `UpgradePanel` (outil ⬆) est laissé TEL QUEL** (décision du brief, vérifiée par test) : il
+  n'a **aucun armement** — son bouton agit au 1ᵉʳ clic et est déjà grisé quand on ne peut pas payer.
+  Y ajouter un armement imposerait 2 clics pour améliorer, ce qui n'est pas demandé.
+  (3) **D4/D5/D6 — nouveau helper `idealGridSizing(demMin, demMax)`** + 3 lignes **« Production
+  idéale / Stockage idéal / Ratio idéal »** dans le panneau **⚡ Énergie** (par ÎLE) ET dans la fiche
+  d'un réseau **CÂBLE** (par COMPOSANTE). Modèle : toutes les sigmoïdes ont `period: 60` et 1 tick =
+  1 s, donc 1 unité de stockage = 1 kW pendant 1 tick ; l'accumulateur absorbe la **BOSSE** au-dessus
+  de la moyenne (`S·60/2π ≈ 9,55·S`), ce qui permet de dimensionner la production sur la **MOYENNE et
+  non sur le PIC**, majorée de la perte de charge des accumulateurs **V1** (rendement 0,8 → +0,25·E).
+  ⚠ **Cas V1 retenu VOLONTAIREMENT** (conservateur) : détecter des Accumulateurs V2 (`chargeLossless`)
+  imposerait de propager leur type jusqu'au panneau — hors périmètre ; un joueur en V2 a ~6 % de marge
+  en plus, ce qui est le bon sens de l'erreur. ⚠ **Le doublon île/composante est ASSUMÉ** : les
+  accumulateurs servent une *composante câble*, pas une île — un ratio île-global mentirait dès qu'il
+  y a deux grilles séparées (**vérifié en jeu** : 306 kW/4,28 MWh sur une grille, 612 kW/8,56 MWh sur
+  l'autre, chacune cohérente avec SA plage). Affichage gaté par `showSpread`/`showWireRange` : sans
+  oscillation un accumulateur ne sert à rien et les 3 lignes vaudraient 0.
+  ⚠ **`statRow` gagne un 4ᵉ paramètre `title`** : ses **8 autres sites d'appel passent 2 ou 3
+  arguments**, `title` y vaut `undefined` et React n'émet pas l'attribut → aucun site à modifier.
+  (4) **D7 — `usine_moteur_nuc_v2` : `ordinateur_quantique 0,001` → `processeur 1`.** ⚠ **CONSÉQUENCE
+  ASSUMÉE ET VOULUE** : au Nv.11 la V2 consomme **1 024 processeurs/s, exactement comme la V1** au même
+  niveau → l'allègement de recette de la MOT2 ne porte plus que sur les **DEUX** postes « tonnage »
+  (pièce méca → pièce de précision, polymère → câble supra). L'ordinateur quantique **sort entièrement
+  de la recette** mais reste exigé au **FORFAIT de densification** (`TIER_STEP`, non modifié).
+  ⚠ Le paragraphe 14.46 ci-dessous est donc **périmé sur ce point** (il cite « ordi quantique » comme
+  3ᵉ substitution) — le commentaire de recette a été corrigé sur place.
+  Validé : `node --check` (**7 blocs, 7 OK**) + Chromium **4 suites, 94 assertions, 0 KO, 0 erreur JS**,
+  suites rejouées **2 fois intégralement sans flottement**, en viewport 420 px / DPR 3.
+  **Contrôles du brief** : 5.1 **7/7 orphelins à count 0** (`tb-io`, `ioSegs`, `ioLine`, `io-in`,
+  `io-out`, `io-pw`, `ordinateur_quantique: 0.001`) ; 5.2 **9/9 blocs conformes au SHA-256** ;
+  5.3 **delta mesuré +2 816 o EXACTEMENT** (avant bump, `os.path.getsize` — la valeur du brief tombe
+  juste) ; 5.4 **7/7 `node --check`**.
+  ⚠ **DEUX ERREURS DU BRIEF au §5.2, à ne pas rechercher comme des défauts** : (a) il affirme que les
+  blocs hashés « ne contiennent pas le marqueur `<VER>` » — **FAUX pour le bloc D2**, dont le hash a
+  été calculé **avec le `<VER>` littéral** (qui fait 5 caractères, comme `14.47`, d'où la longueur
+  exacte de 280 o) : hasher le bloc après substitution donne forcément un autre hash ; (b) le bloc D5a
+  (189 o) s'arrête à `  },` **sans espace final** — le couper une virgule plus loin donne 190 o et un
+  hash différent. Les deux « écarts » constatés au premier passage venaient de là, pas du code.
+  **UI RÉELLE** (vrai navigateur, vrais clics souris) : menu Bâtiment et menu Réseau **sans aucune
+  `.tb-io`**, pastilles de coût toujours là (dont 3 en rouge faute de stock), hauteurs de vignettes
+  cohérentes ; **appui long réel** → la fiche détaillée liste toujours ENTRÉES/SORTIES/RÉSEAUX ;
+  **fiche bâtiment ouverte par tap canvas réel** → bouton absent à l'ouverture, **apparaît** après le
+  1ᵉʳ clic « Monter » (qui passe à « Confirmer »), **disparaît** après « Demander au port », **remasqué**
+  après fermeture/réouverture, et **absent même armé** quand le stock suffit.
+  **Cas de référence du brief (T11) retrouvé AU CARACTÈRE PRÈS** sur une Usine Moteur Nucléaire V1
+  Nv.1 seule (sigmoïde 64 → 512 kW) : « Consommation min → max **64 kW → 512 kW** », « Production
+  idéale **306 kW** », « Stockage idéal **4,28 MWh** », « Ratio idéal **14 kWh / kW** » — production
+  idéale en **rouge** (8 kW produits < 306), stockage idéal en **orange**, puis **au vert** dès qu'un
+  Accumulateur V1 (8 192 kWh) est branché, avec « · actuel N » qui apparaît. Les 3 infobulles
+  s'affichent avec **accents et symboles corrects** (`≈`, `×`, `÷`, `→`, `·`), **aucun `\xNN` visible**.
+  **Moteur RÉEL pour la MOT2** : 1 processeur/s, **0 ordinateur quantique**, 0,1 plutonium/s →
+  0,1 `element_moteur_nuc`/s (ratio processeur/sortie = **10**), `heatEmit > 0` (la branche
+  proportionnelle 14.46 fonctionne toujours), 0 `tickErrors`. **Round-trip de sauvegarde** : SAVE **31**,
+  MOT2 sérialisée, rechargement réel → bâtiment intact, 0 `tickErrors`, horloge qui avance.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **la `ModeModal` (« Choisis ton mode »)
+  est ENCORE ouverte au boot** et recouvre tout → `elementFromPoint` renvoie `.opt-toggle`/
+  `.mode-fast-desc` et **tout hit-testing échoue** ; cliquer la VRAIE carte « Normal » (13.35), un
+  `.click()` DOM sur le tuto ne suffit pas ; (b) **`BuildingDetailModal` se rend dans `.slot-panel`**,
+  PAS `.research-panel` — chercher la mauvaise classe fait conclure à tort que l'appui long ne marche
+  pas ; (c) **ne JAMAIS purger un overlay avec `.remove()`** : ça casse l'arbre React et le `<canvas>`
+  disparaît ; fermer par un **vrai clic souris** (un `.click()` DOM est avalé par `useGhostGuard`, le
+  panneau reste ouvert et son backdrop bloque ensuite le canvas) ; (d) **`PORTS` et `BUILDINGS` sont
+  des `const` de MODULE, pas des propriétés de `window`** → dans `page.evaluate` il faut les nommer
+  nus (`PORTS[isl]`), `window.PORTS` rend `undefined` ; (e) **`g.islands[isl]` EST le tableau 2D**
+  (pas `.tiles`), et **`cam.x`/`cam.baseX` sont en PIXELS** : l'inverse exact de `pointerToTile` est
+  `px = (baseX − camX) + (c + 0,5) × tile` ; (f) **un bâtiment forgé sans desserte route→port n'a pas
+  ses intrants** → il sort d'`energyConsumers` et `demandMin/Max` restent à **0** : pour mesurer une
+  demande il faut une nappe de route TOUCHANT le port ; (g) **débloquer tout l'arbre de recherche
+  déclenche une FILE d'astuces** dont le `.research-backdrop` intercepte les clics du HUD — couper
+  `g.ui.tipsEnabled` AVANT, ou ne pas débloquer (poser les bâtiments dans la grille suffit, le tick ne
+  vérifie pas les déblocages) ; (h) `page.addInitScript` **rejoue à chaque navigation, reload compris**
+  → vider `localStorage` là-dedans fait repartir un test de rechargement sur une partie NEUVE.
+  ⚠ **NON-KO à ne pas rechercher** : les **5 bâtiments du début de partie ont tous `power: 0`** → leur
+  fiche n'affiche **aucune ligne Élec.**, c'est correct ; la **`machine_outil` est à conso PLATE** →
+  son panneau câble n'a ni « Demande min→max » ni lignes idéales, c'est le gate voulu ; et une MOT2
+  forgée en dessous de son niveau d'entrée **ressort au Nv.11 après rechargement** (migration 13.27
+  des bâtiments de palier, préexistante).
+  ⚠ **Taille : 2 979 389 → 2 983 827 o (+4 438 o).** Les 9 éditions du brief seules pèsent **+2 816 o**
+  (exactement l'attendu) ; le reste est le commentaire de version et `GAME_NOTES`.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `BuildingDetailModal` et `UpgradePanel` (**vérifiés byte-identiques
+  à la base**), `portAskNeeded`/`askPortFor`, le moteur électrique (`processHeat`, charge/décharge des
+  accumulateurs), `fmtPower`/`fmtEnergy`/`fmtEnergyPair`/`fmtSig`, `TIER_STEP`, `SAVE_VERSION`, et
+  **aucune traduction** des 6 nouveaux libellés (repli fr hors-fr, comme les astuces depuis 13.32).
+- **État précédent : `GAME_BUILD = 328`, `GAME_VERSION = 'Alpha 14.46'`, `SAVE_VERSION = 31`.**
   Changement 14.46 (brief `BRIEFMOT2VERROUSILE` + pack `pack_usine_moteur_nuc_v2`) : **USINE MOTEUR
   NUCLÉAIRE V2 (nœud 41) + VERROUS D'ÎLE CONDITIONNELS.** `SAVE_VERSION` INCHANGÉ — c'est le cœur du
   lot B : l'état des verrous est **entièrement dérivé** de `techTree.nodes[].status`, déjà persisté.
