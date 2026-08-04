@@ -17,7 +17,66 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 332`, `GAME_VERSION = 'Alpha 14.50'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 333`, `GAME_VERSION = 'Alpha 14.51'`, `SAVE_VERSION = 31`.**
+  Changement 14.51 (brief `BRIEFMOTEUR2DIAGNOSTICELEVATEUR`, lots H/I/J) : **DIAGNOSTIC de la
+  « fuite » de l'élévateur (aucun bug — branche B-D) + cache de tuile élévateur porté sur `game`.**
+  `SAVE_VERSION` INCHANGÉ — aucun champ persisté touché (`game._elevTile` est transitoire, vérifié
+  ABSENT de la sauvegarde). Base du brief EXACTE (3 025 253 o, MD5 `f1639846…` = la 14.50 livrée juste
+  avant) : les **12 ancres sont sorties UNIQUES**.
+  (1) **LOT H — CONCLUSION : branche B-D, IL N'Y A PAS DE BUG. Rien n'a été « corrigé ».** ⚠ **La save
+  du joueur n'a PAS été fournie** avec ce brief : le protocole a été joué sur une **reproduction
+  SYNTHÉTIQUE** de la géométrie du §1 (élévateur î6 (13,14), port (21,13), conduits en (12,14)/(14,14),
+  tuyaux en (13,13)/(13,15) dont un réseau de 3 tuiles qui n'atteint jamais le port, **aucune route**
+  près de l'élévateur, **aucune jonction**, 3 Presses UHP î7, `elevatorRepaired`, `elevatorLevel 10`,
+  `port[6].cable_supraconducteur = 550 291,9`).
+  **Mesuré sur 600 ticks, instrumentation temporaire aux ancres H1 et H2** (600 entrées H1,
+  1800 entrées H2 = 3 presses × 600) : `elevatorTileOf(game,6)` = **{r:13,c:14}** (donc PAS B-A),
+  `elevatorSurfaceLinkedFor('road')` = **false** (donc PAS B-B), `('pipe')` = false,
+  `undergroundBlocked` = **true**, `hasPoolIO` = **true**, `inByType` =
+  `{road:{cable_irradie:16}}`, `outByType` = `{road:{cable_supraconducteur:1}}`, les 3 presses
+  `disc: true` / `discReason: 'elevator'` / `regime: undefined` / `active: false` à **chaque** tick
+  (donc PAS B-C), `cable_supraconducteur` **550 291,9 → 550 291,9, delta = 0**, `elevatorFlow`
+  `demand 0 / used 0`. **Le stock du joueur est HISTORIQUE** → le §5-11 du brief précédent est CLOS.
+  ⚠ **CONTRE-ÉPREUVE INDISPENSABLE** (sans elle « delta 0 » ne prouve rien) : la MÊME mesure après
+  pose d'une route port ↔ élévateur donne `linkRoad = true`, les presses passent de `elevator` à
+  `power` et le delta devient **> 0** → le montage détecte bien une production quand elle existe.
+  ⚠ **Le chemin est verrouillé PAR CONSTRUCTION** (lecture de code, en plus de la mesure) : la branche
+  `if (!ok)` fait `continue` **AVANT** la boucle de production, et plus **aucune** ligne ne remet `ok`
+  à `true` après l'ancre H3 — seuls des `ok = false` suivent.
+  ⚠ **`regime` vaut `undefined`, pas 0**, sur un bâtiment déconnecté : il sort de la boucle avant
+  l'écriture du régime (piège déjà documenté en 14.48 (f) — ne pas asserter sur `regime === 0`).
+  (2) **LOT I — `_elevTileCache` n'est plus un objet de MODULE.** Il était écrit une fois par île et
+  **JAMAIS invalidé** (ni au chargement d'une save, ni au changement de partie, ni au changement de
+  mode), alors qu'`applyGameMode` reconstruit `ISLAND_TERRAINS` avec des grilles **différentes** selon
+  `normal`/`difficile` → la tuile mémoïsée pour l'une pouvait être resservie à l'autre. Porté sur
+  **`game._elevTile`** (initialisé paresseusement) → un nouvel objet de partie repart avec un cache
+  vide, **aucun site d'invalidation à maintenir**. Mémoïsation **CONSERVÉE** (mesuré au Proxy :
+  **862** lectures de grille au 1ᵉʳ appel, **0** sur les 50 suivants) — `elevatorTileOf` est appelée
+  par tuile au rendu, la recalculer serait quadratique par image. Bug fermé **prouvé** : deux objets
+  `game` de grilles différentes → tuiles **{r:13,c:14}** et **{r:5,c:5}**, sans contamination croisée.
+  (3) ⚠ **LOT J NON LIVRABLE — le pack de 241 sprites n'a PAS été fourni** (ni dans le brief, ni en
+  pièce jointe, ni dans les 6 zips du dépôt). Ce qui A été fait à la place : **contrôle de CARDINALITÉ
+  des clés que le moteur DEMANDE**, qui doit correspondre au §7-7 → **porte 144/144 ✓**, **fil mort
+  16/16 ✓**, **jonction 9/9 ✓**, **conduit V4 chaud 48/48 ✓**. Formats confirmés :
+  `logic_porte_and_n_xs_0`, `fil_logique_v1_00_iso_mort`, `logic_jonction_NS_EO_mm`,
+  `conduit_v4_00_iso_chauffe1`. ⚠ **ÉCART** : le brief annonce **24** clés `logic_porte_not_*_i*_*`,
+  or seules **8** sont atteignables (`4 sorties × 2 états`) — l'inhibition du NON étant **DÉRIVÉE**
+  (décision §1-3 du brief précédent), son entrée est toujours la face opposée. Les 16 autres seront
+  livrées mais jamais demandées, sauf à rendre l'inhibition du NON réglable.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **`processHeat` remet `conduitLoad[isl]`
+  à ZÉRO à chaque tick** → une valeur de charge forcée ne survit pas d'une frame à l'autre, il faut la
+  ré-affirmer avant chaque redessin ; (b) le décodage des sprites est **PARESSEUX** → tant que l'art de
+  test n'est pas décodé, `drawSprite` rend false et le draw tombe sur la clé de BASE : une boucle qui
+  s'arrête au 1ᵉʳ sprite vu enregistre le REPLI et conclut à tort (flottement 4/6 → 8/8 après
+  correction : attendre `spriteUsable`, puis ne sortir que sur la clé attendue) ; (c)
+  `NET_MASK_SUFFIX[m]` contient **déjà** le numéro de masque (`'00_iso'`) — le préfixer une seconde
+  fois fabrique une clé fantôme `conduit_v4_00_00_iso_*`.
+  Validé : `node --check` (**7 blocs, 7 OK**) + Chromium **11 suites, 149 assertions, 0 KO, 0 erreur
+  JS**, **2 passes identiques**. **Instrumentation retirée : 0 trace `__ELEVDIAG__`** (grep), fichier
+  ramené au MD5 de base avant application du lot I. **Taille : 3 025 253 → 3 027 478 o (+2 225 o).**
+  ⚠ **HORS PÉRIMÈTRE, non touché** (conforme au §2) : `rebuildNetworks`, la classification des
+  porteurs, `hasPoolIO`, `undergroundBlocked`, `roadReachesPort`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 332`, `GAME_VERSION = 'Alpha 14.50'`, `SAVE_VERSION = 31`.**
   ⚠ Le mémo n'a pas été tenu pour la 14.49 (build 331, « plus aucun stock de port négatif ») : le bloc
   14.48 ci-dessous décrit l'état d'AVANT la 14.49.
   Changement 14.50 (brief `BRIEFMOTEURLOTGROUPE`, lots A→G) : **INHIBITION DES PORTES LOGIQUES
