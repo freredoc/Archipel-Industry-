@@ -7630,8 +7630,28 @@ const SAVE_VERSION = 31;
 // PAS dans le dépôt. Les chaînes de clés placent la clé NOUVELLE en tête et gardent les clés
 // HÉRITÉES en queue → aucune casse, mais l'inhibition, les réseaux morts et l'art `_chauffe` du V4
 // restent INVISIBLES jusqu'à la livraison du pack (vérifié par injection d'art de test).
-const GAME_BUILD = 332;
-const GAME_VERSION = 'Alpha 14.50';
+// 14.51 (brief `BRIEFMOTEUR2DIAGNOSTICELEVATEUR`) : DIAGNOSTIC de la « fuite » de l'élévateur
+// (lot H) + cache de tuile élévateur porté sur `game` (lot I). `SAVE_VERSION` INCHANGÉ (31) : aucun
+// champ persisté touché — `game._elevTile` est transitoire (vérifié ABSENT de la sauvegarde).
+// ⚠ LOT H — CONCLUSION : **branche B-D, il n'y a PAS de bug.** La garde tient. Reproduit la
+// géométrie du §1 (élévateur î6 (13,14), port (21,13), conduits N/S, tuyaux E/O dont un réseau de
+// 3 tuiles qui n'atteint pas le port, AUCUNE route près de l'élévateur, aucune jonction) : sur
+// 600 ticks, `elevatorTileOf` = {r:13,c:14}, `elevatorSurfaceLinkedFor('road')` = false,
+// `undergroundBlocked` = true, et les 3 Presses UHP restent `disc: true` / `discReason: 'elevator'`
+// à CHAQUE tick → `cable_supraconducteur` delta = **0**. Le stock de 550 291,9 est HISTORIQUE.
+// Contre-épreuve : la même mesure après pose d'une route port ↔ élévateur donne un delta > 0 — le
+// protocole détecte donc bien une production quand elle existe. AUCUN correctif de fuite appliqué.
+// ⚠ Le chemin est verrouillé par construction : la branche `if (!ok)` fait `continue` AVANT la
+// boucle de production, et plus AUCUNE ligne ne remet `ok` à `true` après l'ancre H3.
+// (I) `_elevTileCache` était un objet de MODULE écrit une fois par île et JAMAIS invalidé — ni au
+// chargement d'une save, ni au changement de partie, ni au changement de mode, alors
+// qu'`applyGameMode` reconstruit `ISLAND_TERRAINS` avec des grilles DIFFÉRENTES selon
+// `normal`/`difficile`. Porté sur `game._elevTile` (paresseux) → un nouvel objet de partie repart
+// avec un cache vide, AUCUN site d'invalidation à maintenir. Mémoïsation CONSERVÉE (mesuré :
+// 862 lectures de grille au 1ᵉʳ appel, **0** sur les 50 suivants) — `elevatorTileOf` est appelée par
+// tuile au rendu, la recalculer serait quadratique par image.
+const GAME_BUILD = 333;
+const GAME_VERSION = 'Alpha 14.51';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -7640,7 +7660,7 @@ const GAME_VERSION = 'Alpha 14.50';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les portes logiques n'ont plus que 2 ENTRÉES : la face opposée à la sortie est inhibée (réglable dans la fiche de la porte), et la porte NON n'a qu'une entrée, en traversée. ⚠ Un montage qui câblait 3 faces sur une même porte change de résultat — un comparateur 3 bits doit maintenant chaîner deux portes ; un avertissement vous signale les portes concernées · Un câble logique que PERSONNE ne pilote s'affiche désormais comme mort, distinct d'un câble simplement éteint · Le transit expédie enfin le dernier fragment d'unité (il restait bloqué par un arrondi) et « Demander au port » vise un peu au-dessus du coût, pour ne plus rester coincé à un cheveu du but · Élévateur : une jonction ne relie plus le souterrain si c'est son axe perpendiculaire qui rejoint le port, et les SOLIDES exigent désormais une ROUTE entre le port et l'élévateur, comme le TUYAU l'exige déjà pour les liquides ⚠ un souterrain relié par un tuyau seul s'arrêtera côté solides jusqu'à la pose d'une route · L'acide revient dans la Fonderie d'Or (4/s) et le Raffineur Si (8/s) — leurs V2, sans acide, redeviennent de vraies améliorations de recette · Nouveau capteur de SURCHAUFFE, sur un bâtiment à chaleur comme sur un conduit (seuil 80 % réglable)";
+const GAME_NOTES = "Correctif de robustesse : la position de la tuile élévateur est désormais mémorisée PAR PARTIE et non globalement — charger successivement deux parties de modes différents (Normal / Difficile), qui n'ont pas les mêmes grilles, ne peut plus resservir la tuile de l'une à l'autre · Diagnostic : le blocage du souterrain signalé a été mesuré sur 600 ticks — la garde fonctionne, les Presses UHP sont bien coupées avec le motif « élévateur » tant qu'aucune ROUTE ne relie le port à la cage. Le stock de câble supraconducteur déjà au port est un acquis historique, il ne monte plus. Pour relancer le souterrain : poser une route entre le port de l'île 6 et la tuile élévateur (et un tuyau pour les liquides)";
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -9038,14 +9058,23 @@ const elevatorUpgradeCost = lvl => {
   for (const k in ELEVATOR_BASE_COST) out[k] = ELEVATOR_BASE_COST[k] * m;
   return out;
 };
-// Position de la tuile élévateur d'une île (fixe par grille) — mémoïsée.
-const _elevTileCache = {};
+// Position de la tuile élévateur d'une île (fixe POUR UNE GRILLE DONNÉE) — mémoïsée.
+// 14.51 — LOT I : le cache vit sur l'objet `game`, plus au niveau MODULE. Un cache de module est
+// écrit une fois par île et n'était JAMAIS invalidé — ni au chargement d'une save, ni au changement
+// de partie, ni au changement de mode. Or `applyGameMode` reconstruit `ISLAND_TERRAINS` avec des
+// grilles DIFFÉRENTES selon `normal` / `difficile` : la tuile élévateur mémoïsée pour l'une pouvait
+// donc être resservie à l'autre. Porté sur `game`, un nouvel objet de partie repart avec un cache
+// vide → AUCUN site d'invalidation à maintenir (c'est tout l'intérêt).
+// ⚠ La mémoïsation est CONSERVÉE : `elevatorTileOf` est appelée par tuile au rendu (masque de bord
+// de l'élévateur), la recalculer à chaque appel serait quadratique par image.
 function elevatorTileOf(game, islandId) {
-  if (_elevTileCache[islandId] !== undefined) return _elevTileCache[islandId];
+  if (!game) return null;
+  const cache = game._elevTile || (game._elevTile = {});
+  if (cache[islandId] !== undefined) return cache[islandId];
   const def = defById(islandId), tiles = game.islands && game.islands[islandId];
   let pos = null;
   if (def && tiles) for (let r = 0; r < def.rows && !pos; r++) for (let c = 0; c < def.cols; c++) if (tiles[r][c] && tiles[r][c].terrain === 'elevator') { pos = { r, c }; break; }
-  _elevTileCache[islandId] = pos;
+  cache[islandId] = pos;
   return pos;
 }
 // §4.2 (a) : le souterrain n'est alimenté que si la tuile élévateur de l'ÎLE 6 est reliée par
@@ -25253,7 +25282,7 @@ function App() {
         // chaque cercle autour de l'élévateur (`drillLayer` = distance de Tchebychev, anneaux
         // carrés). Le sol alterne donc d'un cercle à l'autre entre sa teinte normale et une
         // variante ~18 % plus claire : le palier de coût se LIT sur la grille au lieu de se
-        // deviner. `elevatorTileOf` est mémoïsé (`_elevTileCache`), l'appel par tuile est gratuit.
+        // deviner. `elevatorTileOf` est mémoïsé (cache `game._elevTile`), l'appel par tuile est gratuit.
         // Repli : si `tile_i7_land_clair` manque, la chaîne retombe sur le sol normal.
         const ring7 = isTun && drillLayer(gameRef.current, r, c) % 2 === 1;
         const baseKey = isTun ? (ring7 ? 'tile_i7_land_clair' : 'tile_i7_land') : 'tile_i' + isl + '_' + (coastIsCoast(tiles, def, r, c) ? 'coast' : 'land');
