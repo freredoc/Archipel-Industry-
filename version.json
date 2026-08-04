@@ -1,8 +1,8 @@
 {
-  "build": 333,
-  "version": "Alpha 14.51",
+  "build": 334,
+  "version": "Alpha 14.52",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Correctif de robustesse : la position de la tuile élévateur est désormais mémorisée PAR PARTIE et non globalement — charger successivement deux parties de modes différents (Normal / Difficile), qui n'ont pas les mêmes grilles, ne peut plus resservir la tuile de l'une à l'autre · Diagnostic : le blocage du souterrain signalé a été mesuré sur 600 ticks — la garde fonctionne, les Presses UHP sont bien coupées avec le motif « élévateur » tant qu'aucune ROUTE ne relie le port à la cage. Le stock de câble supraconducteur déjà au port est un acquis historique, il ne monte plus. Pour relancer le souterrain : poser une route entre le port de l'île 6 et la tuile élévateur (et un tuyau pour les liquides)"
+  "notes": "Les sprites de l'inhibition des portes logiques et des réseaux morts sont enfin là (241 nouveaux visuels) : une porte montre désormais quelle face est bouchée, un câble logique que personne ne pilote s'affiche tramé, et un conduit V4 en surchauffe prend le même art rouge que les V1-V3 · Diagnostic du souterrain, mesuré sur la partie envoyée : rien n'est cassé — aucune ROUTE ne relie le port de l'île 6 à la cage, donc les 3 Presses UHP sont coupées avec le motif « élévateur » (le câble supraconducteur déjà au port est un acquis, il ne monte plus). Les LIQUIDES, eux, descendent bien : le tuyau rejoint le port en passant à travers le Séparateur d'Air. ⚠ Les 4 faces de la cage sont occupées par des conduits et des tuyaux : pour la relier, il faudra libérer un passage — la colonne de câbles à l'est coûte le courant de 5 bâtiments, et la tuile du Data Center coûte toute la production de l'île"
 }
