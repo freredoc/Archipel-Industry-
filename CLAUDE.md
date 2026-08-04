@@ -17,7 +17,71 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 333`, `GAME_VERSION = 'Alpha 14.51'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 334`, `GAME_VERSION = 'Alpha 14.52'`, `SAVE_VERSION = 31`.**
+  Changement 14.52 (brief `BRIEFMOTEUR2DIAGNOSTICELEVATEUR`, **lot J** + **lot H confirmé sur la SAVE
+  RÉELLE**) : **livraison du pack de 241 sprites** (l'inhibition des portes et les réseaux morts
+  deviennent VISIBLES) et **clôture du diagnostic de l'élévateur**. `SAVE_VERSION` INCHANGÉ — ce lot
+  n'ajoute que des sprites.
+  (1) **LOT H — CONFIRMÉ sur la partie du joueur : branche B-D, IL N'Y A PAS DE BUG.** La save a été
+  fournie après coup (`archipelPartie_1_3.txt`, export `ARCHv1:`) et chargée par le **VRAI chemin**
+  (3 clés de slot). playTicks **408 875**, mode normal, `elevatorRepaired`, `elevatorLevel 10`.
+  Mesuré sur **600 ticks** (instrumentation temporaire aux ancres H1/H2, **retirée**, 0 trace) :
+  `elevatorTileOf(game,6)` = **{r:13,c:14}**, `elevatorSurfaceLinkedFor('road')` = **false**,
+  `undergroundBlocked` = **true**, `hasPoolIO` = **true**, `inByType` =
+  `{road:{cable_irradie:332,8 | 665,6}}`, `outByType` = `{road:{cable_supraconducteur:20,8 | 41,6}}`,
+  les **3 Presses UHP — (9,8) (9,10) (11,10)** — `disc: true` / `discReason: 'elevator'` /
+  `regime: undefined` / `active: false` à **CHAQUE** tick → `cable_supraconducteur` **delta = 0**
+  (il DÉCROÎT même un peu : la surface en consomme). `elevatorFlow` `demand 0 / used 0`, 0 `tickError`.
+  **Le stock de 550 291,9 est HISTORIQUE.** Contre-épreuve : avec une route posée, delta > 0.
+  ⚠ **UNE AFFIRMATION DU BRIEF EST FAUSSE, mesurée sur sa save** : le §1 pose « il n'y a pas non plus
+  de tuyau relié au port » et « (13,15) est un tuyau **isolé** d'une seule tuile ». En réalité
+  **`elevatorSurfaceLinkedFor('pipe')` = TRUE** : le tuyau (13,13)…(15,13) est **PONTÉ** par le
+  `separateur_air_v2` de **(16,13)** (un bâtiment à I/O tuyau fait pont — règle 10.59) et rejoint
+  (17,13)…(20,13) puis le port (21,13) ; et (13,15) est lui-même ponté par le **Data Center** (14,15)
+  et le **Refroidisseur** (12,15). Côté joueur : **ses LIQUIDES descendent déjà**, seuls les SOLIDES
+  sont coupés. Le lot D/cas miroir du 14.50 n'est donc PAS neutre sur sa partie.
+  ⚠ **L'ÉLÉVATEUR EST MURÉ** — le vrai problème du joueur, mesuré, **non corrigé** (hors périmètre §2) :
+  ses 4 faces sont occupées ((12,14) et (14,14) **conduit**, (13,13) et (13,15) **tuyau**) ; la tuile
+  élévateur (13,14) est LIBRE (une infra peut y être posée, terrain `elevator`). Son seul réseau route
+  relié au port (nid 9 : (21,14) (20,14) (20,15) + 4 `jonction_route_cable` + (17,15) (15,15)…) culmine
+  à **(15,15)**, et les 2 corridors qui l'en rapprochent coûtent cher — **les deux VÉRIFIÉS en moteur
+  réel** (presses à `regime 1`, **+104 câble supra/s**, `elevatorFlow 1768/16384`) :
+  (a) **colonne 16** (3 tuiles de câble sacrifiées) → **5 bâtiments de l'île 6 privés de courant**
+  (refroidisseur, separateur_air_v2, mine_tungstene, antenne, four_arc_tungstene ; consommation
+  **11,69 GW → 164 MW**) ; (b) **(14,15)** → c'est le **DATA CENTER** : production de l'île 6 à **ZÉRO**
+  (il pontait le câble) **et** 2ᵉ émetteur du puzzle du Collisionneur perdu. ⚠ **Aucune jonction ne
+  sauve la colonne 16** : la route et le câble y voudraient le **MÊME axe** (N-S), or une jonction
+  n'unit que deux porteurs **perpendiculaires** (règle 13.18). À arbitrer par le joueur.
+  (2) **LOT J — 241 sprites injectés** (bloc `__SPRITE_DATA__`, après l'ancre J2) : **144**
+  `logic_porte_<op>_<sortie>_x<inhibée>_<état>` · **24** `logic_porte_not_<sortie>_i<entrée>_<état>` ·
+  **16** `fil_logique_v1_<masque>_<lettres>_mort` · **9** `logic_jonction_NS_EO_<ns><eo>` · **48**
+  `conduit_v4_<masque>_<lettres>_chauffe<1|2|3>`. **Aller-retour SHA-256 : 241/241 concordants**,
+  0 doublon de clé, **tous 32×32**, et **241/241 DÉCODENT réellement en `Image`** (aucun PNG corrompu).
+  **Validations enfin DYNAMIQUES** (espion `drawImage` + reverse-map sur TOUTES les clés) : porte à face
+  inhibée → **`logic_porte_and_n_xs_0`** (le bouchon est bien sur la face S, opposée à la sortie N) ;
+  réseaux morts → **`fil_logique_v1_01_N_mort`** et **`_02_E_mort`** ; jonction aux 2 axes morts →
+  **`logic_jonction_NS_EO_mm`** ; conduit V4 chaud → **`conduit_v4_00_iso_chauffe3`** ; 0 exception
+  console, aucune tuile logique sans dessin.
+  ⚠ **ÉCART CONFIRMÉ CONTRE LE PACK RÉEL** : il livre **24** clés `logic_porte_not_*_i*_*` mais le
+  moteur n'en adresse que **8** (`4 sorties × 2 états`), l'inhibition du NON étant **DÉRIVÉE**
+  (décision §1-3 du brief 14.50) : son entrée est toujours la face opposée. Les 16 autres sont livrées
+  et ne seront jamais demandées, sauf à rendre l'inhibition du NON réglable.
+  ⚠ **PIÈGES DE HARNAIS** : (a) pour rejouer une save joueur, écrire **directement** les 3 clés de slot
+  (`archipel_slot_<id>` / `archipel_slots` / `archipel_active`) — et **fermer en boucle** l'overlay de
+  rattrapage (`.catchup-skip`), le récap hors-ligne et les astuces avant toute mesure ; (b) le décodeur
+  d'export `ARCHv1:` (LZW 16 bits + base64) est désormais **COMMITÉ** à la racine
+  (`decode_save.js`, `node decode_save.js <export.txt> <sortie.json>`) — le conteneur étant éphémère,
+  la version « scratchpad » citée en 14.18 avait disparu ; indispensable pour lire une save hors
+  navigateur ; (c) après un `git checkout -B` sur un `main` qui contient déjà
+  ses propres commits, **re-jouer l'injection par script** plutôt que restaurer une copie : c'est
+  déterministe et le SHA-256 le prouve.
+  Validé : `node --check` (**7 blocs, 7 OK**) + Chromium **12 suites, 156 assertions, 0 KO, 0 erreur
+  JS**, **2 passes identiques**. **Taille : 3 027 478 → 3 124 981 o (+97 503 o)**, quasi intégralement les
+  241 PNG en data-URI.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `rebuildNetworks`, la classification des porteurs,
+  `undergroundBlocked`, `hasPoolIO`, `roadReachesPort`, `SAVE_VERSION`, et **la partie du joueur** (aucun
+  correctif de terrain appliqué — le diagnostic est livré, l'arbitrage lui revient).
+- **État précédent : `GAME_BUILD = 333`, `GAME_VERSION = 'Alpha 14.51'`, `SAVE_VERSION = 31`.**
   Changement 14.51 (brief `BRIEFMOTEUR2DIAGNOSTICELEVATEUR`, lots H/I/J) : **DIAGNOSTIC de la
   « fuite » de l'élévateur (aucun bug — branche B-D) + cache de tuile élévateur porté sur `game`.**
   `SAVE_VERSION` INCHANGÉ — aucun champ persisté touché (`game._elevTile` est transitoire, vérifié
