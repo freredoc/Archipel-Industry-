@@ -1,8 +1,8 @@
 {
-  "build": 334,
-  "version": "Alpha 14.52",
+  "build": 335,
+  "version": "Alpha 14.53",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
   "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Les sprites de l'inhibition des portes logiques et des réseaux morts sont enfin là (241 nouveaux visuels) : une porte montre désormais quelle face est bouchée, un câble logique que personne ne pilote s'affiche tramé, et un conduit V4 en surchauffe prend le même art rouge que les V1-V3 · Diagnostic du souterrain, mesuré sur la partie envoyée : rien n'est cassé — aucune ROUTE ne relie le port de l'île 6 à la cage, donc les 3 Presses UHP sont coupées avec le motif « élévateur » (le câble supraconducteur déjà au port est un acquis, il ne monte plus). Les LIQUIDES, eux, descendent bien : le tuyau rejoint le port en passant à travers le Séparateur d'Air. ⚠ Les 4 faces de la cage sont occupées par des conduits et des tuyaux : pour la relier, il faudra libérer un passage — la colonne de câbles à l'est coûte le courant de 5 bâtiments, et la tuile du Data Center coûte toute la production de l'île"
+  "notes": "Nouveau bouton 🔥 SURCHAUFFES, à droite des alertes : il liste d'un coup TOUS les endroits où de la chaleur s'accumule, sur toutes les îles — bâtiment déjà endommagé (avec le délai avant réparation), source qui monte (avec son % de jauge et le temps qu'il reste avant la panne), conduit dont la crête dépasse le débit, et tampon de la cage saturé. Le pire est listé en premier, en rouge au-delà de 80 %. Toucher une ligne t'emmène sur place : bonne île, caméra centrée sur la tuile fautive · Une chaleur stable ou qui redescend n'est jamais listée — elle ne mènera pas à la panne"
 }

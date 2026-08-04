@@ -145,6 +145,29 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .inv-alert-btn .ui-ico{width:10px;height:10px;}
 .inv-alert-btn .inv-count{background:var(--red);color:#fff;font-size:.55rem;padding:0 4px;}
 @keyframes alertpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,149,0,0);}50%{box-shadow:0 0 0 3px rgba(255,149,0,.35);}}
+/* 14.53 — Bouton SURCHAUFFE (à droite des alertes) : récap de toutes les chaleurs qui montent. */
+.inv-heat-btn{font-family:'Bebas Neue',sans-serif;font-size:.58rem;letter-spacing:.03em;color:#ff8a65;
+  background:rgba(255,60,30,.16);border:1px solid #ff5722;border-radius:4px;padding:1px 4px;cursor:pointer;
+  display:flex;align-items:center;gap:3px;flex-shrink:0;animation:heatpulse 1.4s ease-in-out infinite;}
+.inv-heat-btn:hover{background:rgba(255,60,30,.32);}
+.inv-heat-btn .ui-ico{width:10px;height:10px;}
+.inv-heat-btn .inv-count{background:var(--red);color:#fff;font-size:.55rem;padding:0 4px;}
+@keyframes heatpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,60,30,0);}50%{box-shadow:0 0 0 3px rgba(255,60,30,.40);}}
+/* Ligne de surchauffe : 3 colonnes [île][nom + état][Y aller] — pas de colonne de MJ, elle ne
+   laissait plus que ~80 px au nom du bâtiment en 420 px (noms tronqués à « Ma… »).
+   Orange (elle monte) / rouge (endommagée ou jauge > 80 %).
+   Le libellé tient sur DEUX lignes compactes (nom + coordonnées, puis état) : en une seule chaîne
+   il débordait sur 4 lignes en 420 px. `text-transform:none` — `capitalize` (hérité de .alert-res)
+   rendait « Panne Dans ~12 S ». */
+.alert-row.alert-heat{grid-template-columns:auto 1fr auto;border-left:3px solid var(--orange);}
+.alert-row.alert-heat.alert-hot{border-left-color:var(--red);}
+.alert-row.alert-heat .alert-res{color:#ffab91;text-transform:none;display:flex;flex-direction:column;
+  line-height:1.18;min-width:0;gap:1px;}
+.alert-row.alert-heat.alert-hot .alert-res{color:#ff8a80;}
+.alert-heat-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.alert-heat-sub{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--ink-dim);}
+/* La sous-ligne peut PASSER À LA LIGNE (pas d'ellipse) : tronquer y perdait « panne ~9 s », c'est-à-dire
+   le délai avant la panne — l'information la plus utile de la liste. Une ligne de plus coûte ~11 px. */
 /* Panneau récapitulatif des alertes. */
 .alerts-panel{position:fixed;z-index:130;left:50%;top:54px;transform:translateX(-50%);
   width:min(420px,calc(100vw - 24px));max-height:70vh;display:flex;flex-direction:column;}
@@ -7923,8 +7946,27 @@ const SAVE_VERSION = 31;
 // sacrifiées → 5 bâtiments de l'île 6 privés de courant (consommation 11,69 GW → 164 MW) ;
 // (b) passer par (14,15) → c'est le DATA CENTER → production de l'île 6 à ZÉRO (il pontait le câble)
 // et 2ᵉ émetteur du puzzle du Collisionneur perdu. À arbitrer par le joueur, pas par le moteur.
-const GAME_BUILD = 334;
-const GAME_VERSION = 'Alpha 14.52';
+// 14.53 (demande joueur : « à droite des alertes, lister tous les endroits où il y a une
+// surchauffe ») : nouveau bouton 🔥 SURCHAUFFES dans la barre d'inventaire, À DROITE du bouton
+// d'alerte, ouvrant la liste de TOUS les endroits où de la chaleur s'accumule, toutes îles
+// confondues. `SAVE_VERSION` INCHANGÉ (31) — affichage seul, aucun champ persisté, aucune règle
+// de simulation touchée.
+// Jusqu'ici la surchauffe ne se signalait qu'au coup par coup (toast à 10 % de la jauge, toast au
+// trip) et ne se lisait qu'en inspectant les tuiles une par une : sur 7 îles et 11 types de sources
+// de chaleur, un bâtiment qui monte passait inaperçu jusqu'à la panne.
+// `activeHeatAlerts(game)` réunit 4 cas : (1) bâtiment ENDOMMAGÉ par surchauffe (avec le délai avant
+// réparation), (2) source qui ACCUMULE (jauge ≥ 10 % ET en HAUSSE — même seuil que le toast existant
+// — avec le % et le délai estimé avant panne), (3) réseau CONDUIT dont la CRÊTE dépasse le débit
+// (14.31 : la panne est annoncée avant qu'elle arrive), (4) TAMPON DE LA CAGE saturé (le souterrain
+// ne peut plus rien évacuer). Tri : le pire d'abord ; rouge dès `HEAT_HOT_FRAC` (0,8) ou endommagé.
+// ⚠ Une chaleur GELÉE ou en train de RETOMBER n'est JAMAIS listée : elle ne mènera pas au trip, et
+// l'y faire figurer aurait rempli la liste de faux positifs permanents.
+// ⚠ Le clic sur une ligne (ou « Y aller ») bascule sur l'île ET CENTRE la caméra sur la tuile
+// fautive (nouveau `centerOnTile`, `centerCam` ne centrant que la grille entière) : sur une grande
+// île, « il y a une surchauffe » sans le « où » ne sert à rien. C'est la seule raison d'être des
+// coordonnées affichées dans chaque ligne.
+const GAME_BUILD = 335;
+const GAME_VERSION = 'Alpha 14.53';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -7933,7 +7975,7 @@ const GAME_VERSION = 'Alpha 14.52';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les sprites de l'inhibition des portes logiques et des réseaux morts sont enfin là (241 nouveaux visuels) : une porte montre désormais quelle face est bouchée, un câble logique que personne ne pilote s'affiche tramé, et un conduit V4 en surchauffe prend le même art rouge que les V1-V3 · Diagnostic du souterrain, mesuré sur la partie envoyée : rien n'est cassé — aucune ROUTE ne relie le port de l'île 6 à la cage, donc les 3 Presses UHP sont coupées avec le motif « élévateur » (le câble supraconducteur déjà au port est un acquis, il ne monte plus). Les LIQUIDES, eux, descendent bien : le tuyau rejoint le port en passant à travers le Séparateur d'Air. ⚠ Les 4 faces de la cage sont occupées par des conduits et des tuyaux : pour la relier, il faudra libérer un passage — la colonne de câbles à l'est coûte le courant de 5 bâtiments, et la tuile du Data Center coûte toute la production de l'île";
+const GAME_NOTES = "Nouveau bouton 🔥 SURCHAUFFES, à droite des alertes : il liste d'un coup TOUS les endroits où de la chaleur s'accumule, sur toutes les îles — bâtiment déjà endommagé (avec le délai avant réparation), source qui monte (avec son % de jauge et le temps qu'il reste avant la panne), conduit dont la crête dépasse le débit, et tampon de la cage saturé. Le pire est listé en premier, en rouge au-delà de 80 %. Toucher une ligne t'emmène sur place : bonne île, caméra centrée sur la tuile fautive · Une chaleur stable ou qui redescend n'est jamais listée — elle ne mènera pas à la panne";
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -15686,6 +15728,75 @@ function activeEnergyAlerts(game) {
   out.sort((a, b) => a.isl - b.isl);
   return out;
 }
+// 14.53 — Alertes de SURCHAUFFE : la liste de TOUS les endroits où de la chaleur s'accumule.
+// Jusqu'ici la surchauffe ne se signalait qu'au coup par coup (toast à 10 % de la jauge, toast au
+// trip) et se lisait tuile par tuile ; sur 7 îles et une dizaine de sources de chaleur, un bâtiment
+// qui monte en température passait inaperçu jusqu'à la panne. Cette fonction les RÉUNIT.
+// Seuil d'entrée dans la liste = celui du toast existant (10 % de la jauge, ET en HAUSSE) : on ne
+// signale jamais une chaleur gelée ou en train de retomber, qui ne mènera pas au trip.
+const HEAT_ALERT_FRAC = 0.1;
+// Palier « rouge » : même valeur que le 3ᵉ cran de l'art `_chauffe3` et que le défaut du capteur
+// `surchauffe` (14.50) — le seuil auquel le conduit vire au rouge.
+const HEAT_HOT_FRAC = 0.8;
+function activeHeatAlerts(game) {
+  const out = [];
+  if (!game || !game.islands) return out;
+  for (const def of ISLAND_TERRAINS) {
+    const isl = def.id,
+      tiles = game.islands[isl];
+    if (!tiles) continue;
+    if (game.islandUnlocked && !game.islandUnlocked[isl]) continue;
+    // Tuiles de chaque réseau conduit, pour pouvoir « aller » sur un conduit en crête.
+    const condTile = {};
+    for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
+      const t = tiles[r] && tiles[r][c];
+      if (!t) continue;
+      if (t.building && t.building.id === 'conduit' && t.networkId != null && condTile[t.networkId] === undefined) condTile[t.networkId] = { r, c };
+      // Sources de chaleur : seul l'ANCRE d'une emprise porte `.building` (les autres ont
+      // `.occupied`) → chaque bâtiment n'est compté qu'une fois.
+      const bld = t.building;
+      if (!bld) continue;
+      const b = BUILDINGS[bld.id];
+      if (!b || !b.heatCap) continue;
+      const cap = heatCapOf(bld);
+      if (!(cap > 0)) continue;
+      const frac = (bld.heat || 0) / cap;
+      if (bld.damaged) {
+        // Surchauffe DÉJÀ consommée : le bâtiment est à l'arrêt et attend sa réparation (20 %).
+        out.push({ kind: 'damaged', isl, r, c, id: bld.id, frac: 1, heat: bld.heat || 0, cap,
+          repairIn: Math.max(0, 300 - (bld.dmgTimer || 0)) });
+        continue;
+      }
+      const rate = (bld.heatEmit || 0) - (bld.heatCool || 0);
+      if (rate > 1e-9 && frac >= HEAT_ALERT_FRAC) out.push({ kind: 'rising', isl, r, c, id: bld.id,
+        frac, heat: bld.heat || 0, cap, secs: Math.max(1, Math.round((cap - (bld.heat || 0)) / rate)) });
+    }
+    // Conduit dont la CRÊTE dépasse le débit (14.31) : la panne est annoncée AVANT qu'elle arrive
+    // (le flux instantané peut rester bas tant que les sigmoïdes ne sont pas en phase).
+    // ⚠ Un conduit ILLIMITÉ ne sature jamais → jamais en crête ; ses sources, elles, sont déjà
+    // listées ci-dessus si elles chauffent.
+    const nets = game.networks && game.networks[isl] || {};
+    const peaks = game.conduitPeak && game.conduitPeak[isl] || {};
+    for (const nid in nets) {
+      const n = nets[nid];
+      if (!n || n.type !== 'conduit' || n.unlimited) continue;
+      const through = networkTileCount(game, isl, +nid) * conduitDebit(n.level || 1);
+      const pk = peaks[nid] || 0;
+      if (through > 0 && pk > through + 1e-9) out.push({ kind: 'conduit', isl, nid: +nid,
+        peak: pk, through, at: condTile[nid] || null });
+    }
+  }
+  // Tampon de chaleur de la CAGE (île 6 ↔ 7) saturé : le souterrain ne peut plus rien évacuer.
+  if (game.elevatorRepaired) {
+    const cap = elevatorRateAt(game.elevatorLevel || 0);
+    const h = game.elevatorHeat || 0;
+    if (cap > 0 && h >= cap - 1e-9) out.push({ kind: 'elevator', isl: 7, heat: h, cap });
+  }
+  // Le PIRE d'abord : endommagé, puis la jauge la plus haute, puis les conduits.
+  const sev = a => a.kind === 'damaged' ? 3 : a.kind === 'elevator' ? 2 : a.kind === 'conduit' ? 1 : 0;
+  out.sort((a, b) => sev(b) - sev(a) || (b.frac || 0) - (a.frac || 0) || a.isl - b.isl);
+  return out;
+}
 // Direction de transit par ressource pour une île : 'export' (flux net sortant) ou 'import'
 // (flux net entrant), d'après game.transitFlow. Sert à colorer l'inventaire ET le Port
 // (orange = on exporte, bleu = on importe).
@@ -15762,6 +15873,72 @@ function AlertsPanel({
     className: "alerts-empty"
   }, "Aucune alerte en cours.") : rows));
 }
+// 14.53 — Panneau SURCHAUFFE : liste TOUS les endroits où de la chaleur s'accumule, toutes îles
+// confondues, le pire d'abord. Clic sur une ligne (ou « Y aller ») → bascule sur l'île ET centre la
+// caméra sur la tuile fautive : sur une grande île, savoir « il y a une surchauffe » sans savoir OÙ
+// ne sert à rien. Réutilise le CSS du panneau d'alertes (classes `alerts-*` / `alert-row`).
+function HeatPanel({
+  game,
+  onGoTile,
+  onClose
+}) {
+  const list = activeHeatAlerts(game);
+  const goBtn = a => React.createElement("button", {
+    className: "alert-go",
+    title: I18N.t("Aller à cette surchauffe"),
+    onClick: e => {
+      e.stopPropagation();
+      onGoTile && onGoTile(a);
+    }
+  }, I18N.t("Y aller"));
+  const nameOf = a => a.kind === 'conduit' ? I18N.t("Conduit de chaleur") : a.kind === 'elevator' ? I18N.t("Tampon de la cage") : BUILDINGS[a.id] && BUILDINGS[a.id].name || a.id;
+  const stateOf = a => {
+    // Libellés COURTS : la sous-ligne fait ~230 px en 420 px de large ; « panne dans ~9 s » y était
+    // rogné. Le détail complet reste dans la fiche du bâtiment (jauge + bilan chaleur).
+    if (a.kind === 'damaged') return I18N.t("endommagé") + (a.repairIn > 0 ? ' · ' + I18N.t("répar.") + ' ' + a.repairIn + ' s' : ' · ' + I18N.t("réparable"));
+    if (a.kind === 'conduit') return I18N.t("crête > débit");
+    if (a.kind === 'elevator') return I18N.t("tampon saturé");
+    return Math.round(a.frac * 100) + ' % · ' + I18N.t("panne") + ' ~' + a.secs + ' s';
+  };
+  // Sous-ligne : le % et le délai portent l'info utile. Les MJ absolus ne sont donnés QUE pour le
+  // conduit et la cage, où le rapport crête/débit EST le diagnostic (la fiche du bâtiment donne le
+  // détail pour le reste) — sur 420 px, une 4ᵉ colonne de MJ ne laissait plus que 80 px au NOM.
+  const subOf = a => {
+    // Les COORDONNÉES ouvrent la sous-ligne : collées au nom, elles étaient les premières rognées
+    // sur un nom long (« Machine-Outil (11… ») — or c'est précisément le « où » qu'on cherche.
+    const at = a.r != null ? '(' + a.r + ',' + a.c + ') · ' : a.at ? '(' + a.at.r + ',' + a.at.c + ') · ' : '';
+    if (a.kind === 'conduit') return at + stateOf(a) + ' · ' + fmtHeat(a.peak) + ' / ' + fmtHeat(a.through);
+    if (a.kind === 'elevator') return stateOf(a) + ' · ' + fmtHeat(a.heat) + ' / ' + fmtHeat(a.cap);
+    return at + stateOf(a);
+  };
+  const rows = list.map((a, i) => React.createElement("div", {
+    key: i + '-' + a.kind + '-' + a.isl + '-' + (a.nid != null ? a.nid : a.r + ',' + a.c),
+    className: "alert-row alert-heat" + (a.kind === 'damaged' || a.frac >= HEAT_HOT_FRAC ? " alert-hot" : ""),
+    onClick: () => onGoTile && onGoTile(a)
+  }, React.createElement("span", {
+    className: "alert-isl"
+  }, islandLabel(a.isl)), React.createElement("span", {
+    className: "alert-res"
+  }, React.createElement("span", {
+    className: "alert-heat-name"
+  }, nameOf(a)), React.createElement("span", {
+    className: "alert-heat-sub"
+  }, subOf(a))), goBtn(a)));
+  return React.createElement("div", {
+    className: "research-panel alerts-panel"
+  }, React.createElement("div", {
+    className: "slot-head"
+  }, React.createElement("span", {
+    className: "slot-title"
+  }, "🔥 " + I18N.t("Surchauffes")), React.createElement("button", {
+    className: "rp-close",
+    onClick: onClose
+  }, "×")), React.createElement("div", {
+    className: "alerts-list"
+  }, list.length === 0 ? React.createElement("div", {
+    className: "alerts-empty"
+  }, I18N.t("Aucune surchauffe en cours.")) : rows));
+}
 function Hud({
   resources,
   unlockedRes,
@@ -15773,6 +15950,8 @@ function Hud({
   onRepair,
   onShowRepair,
   alertCount,
+  heatCount,
+  onOpenHeat,
   onOpenAlerts,
   onOpenPort,
   onEnergy,
@@ -15915,6 +16094,15 @@ function Hud({
     }, uiIcon('alerte', "⚠"), React.createElement("span", {
       className: "inv-count"
     }, alertCount));
+    // 14.53 — Bouton SURCHAUFFE, À DROITE des alertes (demande joueur) : liste TOUS les endroits où
+    // de la chaleur s'accumule. Visible seulement s'il y en a au moins un, comme le bouton d'alerte.
+    const heatBtn = heatCount > 0 && React.createElement("button", {
+      className: "inv-heat-btn",
+      onClick: onOpenHeat,
+      title: heatCount + (heatCount > 1 ? I18N.t(" surchauffes en cours") : I18N.t(" surchauffe en cours"))
+    }, uiIcon('chaleur', "🔥"), React.createElement("span", {
+      className: "inv-count"
+    }, heatCount));
     if (!invOpen) {
       return React.createElement("div", {
         className: "inventory collapsed"
@@ -15922,7 +16110,7 @@ function Hud({
         className: "inv-label-btn",
         onClick: onToggleInv,
         title: I18N.t("Afficher l'inventaire")
-      }, I18N.t("INVENTAIRE")), prodBtn, repairBtn, alertBtn);
+      }, I18N.t("INVENTAIRE")), prodBtn, repairBtn, alertBtn, heatBtn);
     }
     let lastTier = null;
     const items = [];
@@ -15966,7 +16154,7 @@ function Hud({
       className: "inv-label-btn open",
       onClick: onToggleInv,
       title: I18N.t("Replier l'inventaire")
-    }, I18N.t("INVENTAIRE")), prodBtn, repairBtn, alertBtn, inv.length === 0 ? React.createElement("span", {
+    }, I18N.t("INVENTAIRE")), prodBtn, repairBtn, alertBtn, heatBtn, inv.length === 0 ? React.createElement("span", {
       className: "inv-empty"
     }, "\u2014 vide \u2014") : items, React.createElement("span", {
       className: "inv-break",
@@ -21383,6 +21571,7 @@ function App() {
   const [prodOpen, setProdOpen] = useState(false);
   const [calcOpen, setCalcOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
+  const [heatOpen, setHeatOpen] = useState(false);
   const [needMode, setNeedMode] = useState(false);
   const [resPop, setResPop] = useState(null);
   const [network, setNetwork] = useState(null);
@@ -25017,6 +25206,15 @@ function App() {
     clampPan();
     markDirty();
   }
+  // 14.53 — Centre la vue sur UNE tuile (centerCam, lui, ne centre que la grille entière).
+  // Inverse exact de pointerToTile : px = (baseX − camX) + (c + 0,5) × tile → on veut px = cssW/2.
+  function centerOnTile(r, c) {
+    const cam = gameRef.current.cam;
+    cam.x = cam.baseX + (c + 0.5) * cam.tile - cam.cssW / 2;
+    cam.y = cam.baseY + (r + 0.5) * cam.tile - cam.cssH / 2;
+    clampPan();
+    markDirty();
+  }
   function applyZoom(newZoom, cx, cy) {
     const g = gameRef.current,
       cam = g.cam;
@@ -27365,6 +27563,8 @@ function App() {
     onOpenProduction: () => { SFX.play('panelOpen'); setProdOpen(true); },
     onOpenCalc: () => { SFX.play('panelOpen'); setCalcOpen(true); },
     alertCount: activeStockAlerts(game).length + activeEnergyAlerts(game).length,
+    heatCount: activeHeatAlerts(game).length,
+    onOpenHeat: () => { SFX.play('panelOpen'); setHeatOpen(true); },
     onOpenAlerts: () => { SFX.play('panelOpen'); setAlertsOpen(true); },
     updateInfo: updateInfo
   }), prodOpen && React.createElement(ProductionPanel, {
@@ -27373,6 +27573,19 @@ function App() {
   }), calcOpen && React.createElement(CalculatorPanel, {
     game: game,
     onClose: () => { SFX.play('panelClose'); setCalcOpen(false); }
+  }), heatOpen && React.createElement(HeatPanel, {
+    game: game,
+    // Clic sur une ligne : on va SUR la surchauffe (île + caméra centrée sur la tuile), pas
+    // seulement sur l'île — c'est tout l'intérêt de la liste.
+    onGoTile: a => {
+      setHeatOpen(false);
+      const isl = a.kind === 'elevator' ? 6 : a.isl;
+      if (isl !== gameRef.current.currentIsland) switchIsland(isl);
+      const at = a.at || (a.r != null ? { r: a.r, c: a.c } : null);
+      const pos = a.kind === 'elevator' ? elevatorTileOf(gameRef.current, isl) : at;
+      if (pos) centerOnTile(pos.r, pos.c);
+    },
+    onClose: () => { SFX.play('panelClose'); setHeatOpen(false); }
   }), alertsOpen && React.createElement(AlertsPanel, {
     game: game,
     onGo: isl => {
@@ -27845,6 +28058,7 @@ if (typeof window !== 'undefined') {
     COLLIDER_PUZZLE_NODES, COLLIDER_REPAIR_NODES, isNodeConfirmed, isLogicConductor,
     networksOfType, islandHasUnlimitableNet, portIslandOf, NETWORK_HI_MATS, NETWORK_UNLIMITED_COST,
     pickFlavorCode, codeToBits, dcEffective, dcRateOf, countBuildings,
+    activeHeatAlerts, HEAT_ALERT_FRAC, HEAT_HOT_FRAC, activeStockAlerts, activeEnergyAlerts, // 14.53
     // 14.50 — inhibition des portes, réseaux logiques morts, capteur de surchauffe.
     gateInhibitDefault, gateInhibitedDirs, gateLiveDirs, LOGIC_DIR_LETTER,
     conduitSourceHeatFrac, sensorHeatSeuil, SENSOR_HEAT_SEUIL_DEF, shippableQty,
