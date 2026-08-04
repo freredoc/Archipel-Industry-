@@ -17,7 +17,108 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 329`, `GAME_VERSION = 'Alpha 14.47'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 330`, `GAME_VERSION = 'Alpha 14.48'`, `SAVE_VERSION = 31`.**
+  Changement 14.48 (brief `BRIEFB7echappementcollisionneur`, chantiers P1→P5) : **ÉCHAPPEMENT
+  SOUTERRAIN, raccord visuel du COLLISIONNEUR, Centrale à Gaz 2 MW, Séparateur d'Air interdit île 7,
+  et les `forbiddenIslands` passent de MASQUÉS à GRISÉS.** `SAVE_VERSION` INCHANGÉ — aucun champ de
+  sauvegarde créé/modifié/supprimé ; `gaz_echappement` ne persiste JAMAIS (purgée du port à chaque tick).
+  Base du brief EXACTE (2 983 827 o, SHA-256 `03e63676…`) : les **13 ancres sont sorties UNIQUES**, sans
+  exception, et le **delta des 13 blocs vaut +4 921 o AU BYTE PRÈS** (mesuré avant le bump, la valeur du
+  brief tombe juste). Les **13 blocs ont été extraits PAR SCRIPT du brief** (pas retapés) → les 13 SHA-256
+  et longueurs du §7 sont retrouvés à l'identique, 0 anomalie.
+  (1) **P1 — le Collisionneur est un TERRAIN, pas un bâtiment** : `netConnectMask` ne lit que
+  `nt.building`, donc la tuile tuyau/câble voisine ne posait JAMAIS son bit vers le landmark — elle
+  dessinait un cul-de-sac ET s'amincissait de ce côté (le « trou » signalé). Nouveau `colliderEdgeMask`,
+  calqué sur `elevatorEdgeMask` (la cage est aussi un terrain). **TUYAU et CÂBLE seulement.** ⚠ **PUREMENT
+  VISUEL** : `colliderDrawHe3`/`colliderWireNid` passaient déjà par `adjacentNetworksFootprint`.
+  Mesuré à l'espion `drawImage` : tuyau au sud du bloc → `tuyau_v1_01_N`, câble au nord → `cable_v1_04_S`
+  (branche bien VERS la machine), tandis que **route → `route_v1_00_iso` et conduit → `conduit_v1_00_iso`**
+  (aucune branche — la non-régression exigée). Bande de tuyau sur les 3 tuiles de largeur → `06_ES`,
+  `14_ESO`, `12_SO` : chacune porte sa branche S ET le tracé reste continu. Les 4 paliers suivent
+  (`tuyau_v1/v2/v3/v4`). ⚠ **Le stub dessiné PAR la tuile collider (14.39) est BYTE-IDENTIQUE** entre la
+  base 329 et le build patché (contre-épreuve exécutée sur les deux fichiers).
+  (2) **P2 — Centrale à Gaz 512 → 2048 kW** (à 512 elle était strictement dominée : même sortie qu'une
+  Diesel V1 t2 et qu'une Géothermie t5 SANS intrant). ⚠ **Ce n'est PAS un V2** : aucune entrée
+  `TIER_NEXT`/`TIER_STEP` (dans ce jeu un V2 allège la RECETTE, cf. `centrale_diesel_v2`). Nouveau champ
+  de def **`vent`**. Mesuré : 2048 kW au Nv.1, 4096 au Nv.2, intrants 8 méthane + 64 oxygène puis ×2.
+  (3) **P3 — `gaz_echappement`, ressource FANTÔME** : dans `RES_SHORT` + `CARRIER_BY_RES` (pipe) mais dans
+  **AUCUN `outputs` statique** — injectée dans `effOutputs` AU TICK et seulement si `isl === 7`. Vérifié en
+  jeu : `PRODUCER_OF.gaz_echappement === null`, absente de `RES_TIER`, de `unlockedResourceSet` (inventaire
+  HUD), de `TRADE_RESOURCES` (onglet Port + carte archipel). ⚠ **Copie DÉFENSIVE obligatoire**
+  (`Object.assign({}, …)`) : `b.outputs` est l'objet de def PARTAGÉ — le muter contaminerait les centrales
+  de surface. ⚠ **Elle passe par `pipePort`, PAS par `NON_STORABLE`** : `NON_STORABLE` reste confiné au pool
+  (`pipeToPort` le saute) et ne touche JAMAIS l'élévateur, or c'est le transit qu'on veut facturer. Elle
+  entre donc dans `outDem` (catégorie « sortants »), `elevOutFac` bride le régime, puis le nouveau
+  `VENTED_RES` la PURGE du port en fin de tick (**après** le vidage des citernes, sinon le pool la
+  réinjecterait). Mesuré en moteur réel : `netFlow` = `prod {gaz_echappement: 64}` / `cons {oxygene: 64,
+  methane: 8}`, `elevatorFlow.out = 64`, et **0 clé `gaz_echappement` au port après 300 ticks**.
+  ⚠ **DEUX ÉCARTS MESURÉS au modèle §5 du brief, même cause racine — LE MÉTHANE TRANSITE AUSSI.** Le brief
+  pose « le méthane ne transite pas (Séparateur Cryogénique déjà `exclusiveIsland: 7`) ». **FAUX en
+  pratique** : dès que le réseau tuyau souterrain est `connected` (il touche la tuile élévateur), `pipeToPort`
+  bascule vers le port **TOUT** l'I/O tuyau stockable — méthane compris. Mesuré `elevatorFlow` : `in = 72`
+  (64 O₂ + 8 méthane), pas 64. Corollaire non listé par le brief : un Séparateur Cryogénique local
+  **DÉPOSERAIT lui aussi son méthane AU PORT** (donc en haut) avant que la centrale ne le redescende — un
+  aller-retour dans la cage. Conséquences : (a) la charge totale est **136/s** et non 128/s ; (b) surtout,
+  **le régime au Nv.0 n'est PAS ≈12,5 %** — voir ci-dessous.
+  ⚠ **LE POINT LE PLUS IMPORTANT À REMONTER — en mode `priority` (LE DÉFAUT), la centrale souterraine est
+  en TOUT-OU-RIEN, pas en rampe.** L'ordre strict `construction → sortants → intrants` fait que la première
+  catégorie prend tout le débit et affame la seconde ; or `regime = min(elevInFac, elevOutFac)` → **0**.
+  Mesuré, cage Nv.0 (16/s) : `out=16, in=0` → **régime 0, motif `elevbusy`** (le brief annonçait ≈12,5 %).
+  Balayage complet : **Nv.0/1/2 → régime 0** ; **Nv.3 → 88,9 %** ; **Nv.4 → 100 %**. En `fair` → 11,1 %,
+  en `proportional` → 11,8 % (là, la rampe progressive existe). Inverser l'ordre (`intrants` avant
+  `sortants`) donne aussi 0 : c'est la STRICTE priorité qui est en cause, pas le sens. **Rien n'a été
+  « corrigé »** (le brief l'interdit explicitement) — mais le joueur qui reste en mode par défaut verra sa
+  centrale à 0 % jusqu'au Nv.3 de cage, sans palier intermédiaire. À arbitrer au playtest.
+  (4) **P4 — `separateur_air` / `_v2` : `forbiddenIslands: [7]`.** ⚠ **GRANDFATHERING VÉRIFIÉ** : un
+  séparateur DÉJÀ posé île 7 tourne toujours (mesuré régime 1, 512 O₂/s + 1024 N₂/s) et survit à un
+  rechargement ; `forbiddenIslands` n'est lu que par `canPlace`/`tryPlace`. L'outil **Copier** le refuse
+  bien (toast RÉEL « ❌ Séparateur Air V1 : non constructible sur cette île »). ⚠ **Piège de test** : viser
+  une tuile OCCUPÉE fait sortir `tryPlace` sur `t.building || t.occupied` **AVANT** le garde d'île → aucun
+  toast, faux négatif. Viser une tuile réellement libre.
+  (5) **P5 — `offIslandOn` : les `forbiddenIslands` passent de MASQUÉS à GRISÉS.** `visibleOn` INCHANGÉE
+  (ils restent non posables) ; le NON DÉBLOQUÉ reste MASQUÉ (vérifié : centrale nucléaire + séparateur
+  interdits île 7 ET non débloqués → invisibles). ⚠ **Lire les compteurs du brief comme « grisés SANS
+  tooltip »** : l'île 6 affiche **26 grisés au total = 20 préexistants (exclusivité, avec tooltip « Se
+  construit sur Île N ») + exactement 6 nouveaux à `title: null`** (éolienne, éolienne offshore, charbon
+  V1/V2, diesel V1/V2) ; l'île 7 en donne **11** (les 6 + tour aéroréfrigérante, nucléaire V1/V2,
+  séparateur V1/V2). Le tap sur un grisé ouvre la FICHE sans armer l'outil ; l'interrupteur OFF les fait
+  tous disparaître et persiste `showOffIsland`. ⚠ **Le libellé « Bâtiments des autres îles » devient
+  partiellement inexact** (il couvre maintenant « interdit ici ») — SIGNALÉ, volontairement non renommé.
+  Validé : `node --check` (**7 blocs, 7 OK**) + contrôle syntaxique ciblé de `colliderEdgeMask` + Chromium
+  **11 suites, ~75 assertions**, suites **rejouées 2 fois sans flottement**, en viewport 420 px / DPR 3.
+  **Contrôle d'intégrité §7 : 13/13 blocs `occ=1`, SHA-256 et longueurs conformes, 0 anomalie.**
+  **Non-régressions par contre-épreuve BASE 329 vs PATCHÉ 330** : stub collider (14.39) byte-identique ;
+  **menu du tutoriel + verrouillage des onglets IDENTIQUES sur les 8 étapes** (test 26 rejoué sur les deux
+  fichiers). **Rechargement RÉEL d'une save créée sur le build 329** → SAVE 31, centrale gaz Nv.3 et
+  séparateur île 7 intacts, stocks intacts, 0 `tickErrors`, horloge qui avance, 0 erreur JS.
+  ⚠ **Test 15 TRANCHÉ — aucun sprite `item_gaz_echappement` n'est nécessaire** : `fmtFlow` du `NetworkPanel`
+  rend du **TEXTE seul** (`fmtRateSci(v) + ' ' + matLabel(k)`), il n'y a aucun `<img>` de ressource dans ces
+  lignes → un carré de repli est structurellement impossible. Panneau réel mesuré : « PRODUCTION /S 64 gaz
+  échap. » et « CONSOMMATION /S 64 oxygène · 8 méthane », 0 image cassée.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **une `.tip-popup` (astuce de bienvenue)
+  RECOUVRE le bouton « Passer » du tuto au boot** → `elementFromPoint` renvoie `tip-popup` et le tuto n'est
+  JAMAIS passé (le menu reste filtré à 5 bâtiments, les onglets restent `tab-locked`) : fermer les astuces
+  par `.tip-ok` AVANT, et en boucle, avec de VRAIS clics souris ; (b) la **bannière du GUIDE partage la
+  classe `.tuto-banner`** → tester le CONTENU (`/Tuto \d+\/\d+/`), pas la présence ; (c) `page.reload()`
+  **RECHARGE LA SAUVEGARDE AUTO** → un 2ᵉ scénario repart sur l'état du 1ᵉʳ : prendre un `boot()` NEUF par
+  scénario ; (d) `switchIsland`, `pointerToTile` et `centerCam` **ne sont PAS globaux** (portée React) →
+  piloter par de vrais clics sur `.island-tab` et recalculer la tuile via `px = rect.left + (baseX − camX)
+  + (c + 0,5) × tile` ; (e) sans passer les réseaux en `unlimited`, le **plafond V1 du tuyau (64/s)** bride
+  8 méthane + 64 oxygène = 72 → on mesure 7,11 et 56,89 (×8/9) au lieu de 8 et 64 ; (f) un bâtiment
+  **déconnecté ne voit jamais son `regime` écrit** (il sort de la boucle avant) → il reste `undefined`, pas
+  `0` : asserter sur `active`/`discReason` ; (g) forcer une sauvegarde exige d'armer `g.saveTimer` **ET** de
+  redéfinir `document.visibilityState` sur `'hidden'` (`flushSave` est une closure).
+  ⚠ **BUG PRÉEXISTANT RECONFIRMÉ, non corrigé (hors périmètre)** : outil **Copier** en main + survol →
+  `drawHover` appelle `canPlace(r, c, '__copy')`, `BUILDINGS['__copy']` est `undefined` → `Archipel frame
+  error: Cannot read properties of undefined (reading 'kind')` à chaque frame (avalé par le `try/catch` de
+  14.13). Déjà documenté en 14.46, **ce n'est PAS une régression de ce lot**.
+  ⚠ **Taille : 2 983 827 → 2 993 472 o (+9 645 o).** Les 13 blocs du brief seuls pèsent **+4 921 o**
+  (exactement l'attendu) ; le reste est le commentaire de version et `GAME_NOTES`.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : le stub 14.39 de la tuile collider, le `title:` de la vignette (déjà
+  gardé par `exclusiveIsland != null` → un bâtiment seulement interdit n'affiche AUCUN motif, c'est voulu),
+  le libellé de l'interrupteur, `centrale_gaz_v2`, `TRADE_LIQUIDS`, `PORT_PIPE_RES`, `elevatorAllocate`,
+  `SAVE_VERSION`, et **aucune traduction** du libellé « gaz échap. » (repli fr hors-fr).
+- **État précédent : `GAME_BUILD = 329`, `GAME_VERSION = 'Alpha 14.47'`, `SAVE_VERSION = 31`.**
   Changement 14.47 (brief `BRIEFUIELECRECETTE`, éditions D1→D7) : **vignettes allégées, « Demander au
   port » gaté par l'armement, DIMENSIONNEMENT ÉLECTRIQUE IDÉAL, et retour du processeur dans la MOT2.**
   `SAVE_VERSION` INCHANGÉ — aucun champ de sauvegarde touché, aucune prop de composant ni état React
