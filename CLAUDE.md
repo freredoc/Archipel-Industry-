@@ -17,7 +17,129 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 330`, `GAME_VERSION = 'Alpha 14.48'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 332`, `GAME_VERSION = 'Alpha 14.50'`, `SAVE_VERSION = 31`.**
+  ⚠ Le mémo n'a pas été tenu pour la 14.49 (build 331, « plus aucun stock de port négatif ») : le bloc
+  14.48 ci-dessous décrit l'état d'AVANT la 14.49.
+  Changement 14.50 (brief `BRIEFMOTEURLOTGROUPE`, lots A→G) : **INHIBITION DES PORTES LOGIQUES
+  (2 entrées max), RÉSEAUX LOGIQUES MORTS, transit du dernier fragment d'unité, élévateur (axe des
+  jonctions + cas miroir), retour de l'acide sur les V1, capteur de SURCHAUFFE, retrait de la teinte
+  canvas du conduit V4.** `SAVE_VERSION` INCHANGÉ — le seul champ ajouté (`gx` = `gateInhibit`) est
+  **OPTIONNEL avec repli** sur un défaut DÉRIVÉ. Base du brief EXACTE (2 997 577 o, MD5
+  `b27155df…`) : les **18 ancres sont sorties UNIQUES**, B6/B7 partageant leur première ligne
+  (2 occurrences, comme annoncé).
+  ⚠ **PRÉ-REQUIS NON LIVRÉ, à ne pas rechercher comme un défaut** : le pack de **241 sprites** du lot
+  `BRIEF-SPRITES-LOGIQUE-INHIBITION` **n'est PAS dans le dépôt** (vérifié : 0 clé `_mort`, 0 clé
+  `logic_porte_*_x*`, 0 `conduit_v4_*_chauffe*`, et aucun des 6 zips ne les contient). Le §0 du brief
+  couvre ce cas : les chaînes de candidats placent la clé NOUVELLE en tête et gardent les clés
+  HÉRITÉES en queue → **aucune casse**, mais l'inhibition, les réseaux morts et l'art `_chauffe` du V4
+  restent **INVISIBLES** jusqu'à la livraison du pack. Vérifié par **injection d'art de test** +
+  espion `drawImage` : les bonnes clés sont bien DEMANDÉES.
+  (1) **LOT A — les portes passent à 2 ENTRÉES MAX.** Une face non-sortie est INHIBÉE (défaut :
+  l'OPPOSÉE à la sortie, `gateDir ^ 1` — `DIRS4 = [N, S, O, E]` donc 0↔1 et 2↔3 sont bien les paires
+  opposées) → une porte à 2 entrées garde ses deux LATÉRALES. ⚠ **La porte NON est la CONVENTION
+  INVERSE, assumée** : UNE entrée sur la face opposée (traversée), ses deux latérales inhibées ; son
+  inhibition est **DÉRIVÉE, non réglable** (un réglage y est ignoré, vérifié). L'exclusion se fait à la
+  **construction de `gateIO`**, JAMAIS à l'évaluation : `inNets` est lu par l'UI, il ne doit pas
+  compter une face morte. Nouveaux helpers `gateInhibitDefault` / `gateInhibitedDirs` / `gateLiveDirs`
+  + miroirs transitoires `gateInhCur` / `gateLive` / `gateWiredInh` (jamais persistés).
+  ⚠ **ROTATION** : `gateInhibitedDirs` filtre une inhibition égale à la face de sortie → elle
+  **re-défaute** toute seule ; `setLogicConfig` **efface** en plus le réglage mort pour que la save ne
+  le conserve pas. Balayage 7 ops × 4 dir × 4 inh = **112 cas, 0 état où sortie == inhibée**.
+  ⚠ **LE POINT LE PLUS IMPORTANT À REMONTER — un ET/OU à 3 faces câblées N'EXISTE PLUS.** Un
+  comparateur 3 bits doit **CHAÎNER deux portes** (mesuré en moteur réel : `AND(AND(x,y),z)` = **8/8
+  conforme**, chaque porte à 2 entrées vives). Les montages existants qui s'appuyaient sur une 3ᵉ
+  entrée **changent de résultat** → toast de migration au chargement (`gateInhibitWarn`, consommé UNE
+  fois par chargement dans la boucle `frame`, après qu'un tick a rempli `gateWiredInh`) + ligne
+  d'avertissement dans la fiche. **JAMAIS dans l'art de la tuile** (décision du brief).
+  ⚠ **CHOIX NON PRÉVU PAR LE BRIEF, assumé** : la face inhibée est **choisissable** dans la fiche
+  (3 boutons, l'opposée par défaut). Le brief pose `gateInhibit` comme un champ persisté optionnel
+  sans dire qui l'écrit ; sans réglage, un joueur dont les 2 fils arrivent sur la face opposée + une
+  latérale serait coincé. Le NON reste dérivé.
+  (2) **LOT B — « MORT » est STRUCTUREL, pas dynamique** : un réseau logique est mort si **aucun
+  pilote ne le vise** (aucune face de capteur `sensorDir`, aucune face d'émetteur, aucune sortie de
+  porte). ⚠ **Une porte qui sort 0 rend son réseau VIVANT** — sans cette définition tout réseau à 0
+  s'afficherait mort et l'indication **clignoterait** entre deux ticks. Calculé dans `processLogic`
+  **AVANT** la propagation itérative (la vivacité ne dépend que du câblage) → `game.logicDead[isl]`.
+  Suffixe de sprite `_mort` / `_on` / `''` aux **2** sites de dessin du fil (B6 = legacy `t.building`,
+  B7 = surcouche `t.logic`, le vrai chemin depuis 13.96) ; jonction → `logic_jonction_NS_EO_<ns><eo>`
+  avec chaque caractère ∈ `m 0 1`, replis sur les 4 clés héritées. **Stabilité mesurée : 3 ticks
+  identiques, 0 clignotement.**
+  (3) **LOT C — le `Math.floor` d'`exportable` est SUPPRIMÉ** : il rendait le dernier fragment d'unité
+  **définitivement inexpédiable** (0,4 → 0 → rien ne partait JAMAIS). Mesuré : `rawShippable` = **0,4**
+  là où l'ancien calcul rendait **0** (contre-épreuve incluse). Le transit déplace des flottants depuis
+  10.48, aucun appelant aval ne suppose un entier. `askPortFor` prend une **marge** :
+  `ceil(coût × 1,05) + 1` → **1051 pour un coût de 1000** (avant : 1000 pile, donc bloqué « à très peu
+  près »).
+  (4) **LOT D — élévateur, 2 trous fermés.** (a) `elevatorSurfaceLinkedFor` respecte enfin l'**AXE des
+  jonctions** (`junctionDirOk`, comme `adjacentNetworks`) : il lisait `Object.values(nt.netIds)`, donc
+  une jonction dont seul l'axe **PERPENDICULAIRE** rejoint le port validait le lien. Le paramètre
+  `dr/dc` = pas de l'élévateur vers le voisin ; **seul l'axe compte** (`junctionDirOk` teste `!== 0`),
+  pas le sens. Le cas « infra POSÉE sur la tuile élévateur » n'a pas d'axe d'approche → **inchangé**
+  (vérifié). (b) **CAS MIROIR FERMÉ** : les SOLIDES exigent une **ROUTE** port ↔ élévateur, en miroir
+  du TUYAU exigé depuis 14.26. ⚠ **Ceci RENVERSE une décision explicite de 14.26** — le commentaire
+  est **réécrit sur place, pas supprimé**, pour dater le revirement. ⚠ **Rupture assumée** : un
+  souterrain relié par un **TUYAU SEUL** s'arrête côté solides (motif `elevator`) jusqu'à la pose d'une
+  route ; mesuré en moteur réel sur une Presse UHP (`elevator` → puis `wire` une fois la route posée).
+  ⚠ **§5-11 NON EXÉCUTABLE : aucune save joueur n'a été fournie avec ce brief.** Les DEUX conditions
+  sont reproduites **synthétiquement** et corrigées (axe de jonction ET cas miroir) ; laquelle
+  débloquait réellement le souterrain du joueur reste **indéterminée** faute de sa partie.
+  (5) **LOT E — l'acide REVIENT sur les V1 seulement** : `fonderie_or` **4** (calé sur
+  `broyeur_uranium`), `raffineur_silicium` **8** (calé sur `extracteur_souterrain`). Les V2 restent
+  SANS acide → elles redeviennent de vraies améliorations de **RECETTE**. Les **4 commentaires 14.19**
+  sont réécrits (ils disaient « V1 comme V2 », devenu faux). ⚠ **EFFET DE BORD, l'inverse de 14.19** :
+  la fonderie d'or retrouve un liquide → elle **refait PONT** entre deux tronçons de tuyau (règle
+  10.59, `buildingConnectsCarrier` vérifié à `true`) ; sa V2, elle, ne fait toujours pas pont.
+  (6) **LOT F — nouveau mode de capteur `surchauffe`** : bâtiment `heatCap` → `heat / heatCapOf(bld)` ;
+  réseau **conduit** → **chaleur des SOURCES**. ⚠ **Il ne lit PAS `conduitLoad`** : celui-ci vaut le %
+  de flux utilisé sur V1-V3 et la **pire source** sur V4 illimité — un mode qui change de SENS selon
+  le niveau du réseau serait inutilisable (la saturation de flux a déjà son mode, `sature`). Mesuré :
+  `conduitLoad` forcé à 0,99 avec des sources à 0,1 → **signal 0**. Le calcul `worst` est **EXTRAIT**
+  en `conduitSourceHeatFrac(sources)` (2 consommateurs : teinte du V4 + capteur) et publié pour TOUS
+  les niveaux dans `game.conduitSrcHeat[isl][nid]`. Seuil **0,8** par défaut (= palier `_chauffe3`),
+  réglable via `sensorSeuil` (champ déjà persisté, **clampé à 1** — un reste de mode `seuil` à 1e7
+  devient « 100 % », jamais un faux positif). Le mode **`seuil` est RETIRÉ du conduit** (aucun stock à
+  y lire) et **conservé sur route/tuyau**. ⚠ `surchauffe` reste **NON-DÉFAUT** (conduit → `sature`,
+  bâtiment → `elec`) → **aucun capteur existant ne change de comportement**.
+  (7) **LOT G — la teinte canvas du conduit V4 est RETIRÉE** (2 sites : tuile de conduit + stub sous
+  un bâtiment à chaleur) : le V4 rejoint les V1-V3 sur l'art `_chauffe1/2/3`. **0 appel
+  `drawSpriteTinted` restant** (la fonction reste définie, primitive générique) ; `conduitUnlTint`
+  reste utilisé par le repli VECTORIEL, il n'est donc pas orphelin.
+  Validé : `node --check` (**7 blocs, 7 OK**) + Chromium **9 suites, 132 assertions, 0 KO, 0 erreur
+  JS**, suites **rejouées 2 fois intégralement sans flottement**, en viewport 420 px / DPR 3.
+  **§5-6 puzzle P3 : 48/48 verdicts conformes** (8 codes Collisionneur × 6 codes Data Center — il
+  n'émet jamais de lepton ; leptons `000`/`111`), **0 pénalité imméritée** ; + XNOR natif à 2 entrées
+  **4/4** et ET chaîné **8/8** en moteur réel → un comparateur correct reste constructible.
+  **§5-16 aller-retour SHA-256 : 28/28 blocs retrouvés VERBATIM** (`count == 1`, sauf la ligne
+  partagée B6/B7 à 2 par construction) + **0 anomalie d'échappement**.
+  **UI RÉELLE** (vrais clics souris, tap canvas réel) : bouton de couche logique → fiche de porte
+  affichant « Entrées 2 », la face inhibée, l'**avertissement ⚠** sur la face câblée-mais-inhibée et
+  la ligne « Signal reçu » ; **clic réel** sur le bouton « O » → `gateInhibit` passe à `[2]`.
+  **Round-trip de sauvegarde RÉEL** : SAVE **31**, `gx: [2]` sérialisé, rechargement → réglage
+  conservé, **toast de migration affiché UNE seule fois** ; puis save **privée de `gx`** (simule
+  l'avant-lot) → la porte prend le **DÉFAUT**, 0 perte, horloge qui avance.
+  ⚠ **ÉCART AU BRIEF (anchor B5)** : le brief place la nouvelle clé de sprite de porte au seul site
+  B5, qui est le chemin **LEGACY** (`t.building`). Depuis 13.96 la logique vit dans `t.logic` et c'est
+  la **passe de surcouche** qui dessine réellement les portes → la clé y a été ajoutée AUSSI, sinon
+  l'inhibition n'aurait été visible nulle part. Les deux sites portent la même chaîne de candidats.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) pour mesurer QUELLE clé de sprite est
+  demandée quand le pack manque, **injecter un art de test unique** (`canvas.toDataURL` 1×1 par clé)
+  + espion `drawImage` avec reverse-map `dataURL → clé` — et **reverse-mapper AUSSI les clés DÉJÀ
+  présentes**, sinon les `_on` du pack v2.2 ne sont jamais vus (m'a donné un faux KO) ; (b) le draw ne
+  parcourt que les tuiles **VISIBLES** → forger dans un carré libre autour du **centre de l'écran**
+  (`cCen = (largeur/2 − (baseX − camX)) / tile − 0,5`), pas n'importe où sur l'île ; (c) les ids de
+  jonction sont **`jonction_route_cable` / `_route_tuyau` / `_cable_tuyau`** (pas `junction_*`) et
+  `junctionDirOk` prend la **def du BÂTIMENT** jonction, pas la def d'île ; (d) pour piloter un bit
+  logique à 0/1 sans émetteur, poser un capteur `elec` sur un **support forgé** et jouer sur
+  `pwrAvg` (0,5 → 1 ; 1 → 0) ; (e) `askPortFor` et `setLogicConfig` vivent dans le scope d'**App**
+  (hors de `window.__heat`, posé au niveau module) → exposés via `window.__ui()`.
+  ⚠ **Taille : 2 997 577 → 3 024 511 o (+26 934 o).** Le CODE seul pesait **+22 656 o** (mesuré avant
+  le bump) ; le reste est le commentaire de version et `GAME_NOTES`. Volume dominé par les
+  commentaires (⚠ conventions du projet), le code effectif étant d'environ 200 lignes.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : les 241 sprites (non livrés), `colliderCompare`, `heatCapOf`,
+  `conduitDebit`, `roadReachesPort`, `TRADE_LIQUIDS`, `PORT_PIPE_RES`, `SAVE_VERSION`, la définition de
+  `drawSpriteTinted` (0 appelant), et **aucune traduction** des ~10 nouveaux libellés (repli fr
+  hors-fr, comme les astuces depuis 13.32).
+- **État précédent : `GAME_BUILD = 330`, `GAME_VERSION = 'Alpha 14.48'`, `SAVE_VERSION = 31`.**
   Changement 14.48 (brief `BRIEFB7echappementcollisionneur`, chantiers P1→P5) : **ÉCHAPPEMENT
   SOUTERRAIN, raccord visuel du COLLISIONNEUR, Centrale à Gaz 2 MW, Séparateur d'Air interdit île 7,
   et les `forbiddenIslands` passent de MASQUÉS à GRISÉS.** `SAVE_VERSION` INCHANGÉ — aucun champ de

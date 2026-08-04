@@ -5224,7 +5224,14 @@ const BUILDINGS = {
       cable: 100
     },
     inputs: {
-      // 14.19 — l'acide est RETIRÉ de la fonderie d'or (demande joueur), V1 comme V2.
+      // 14.19 puis 14.50 — l'acide avait été retiré de la fonderie d'or (V1 ET V2) ; il REVIENT sur
+      // le V1 SEUL. Quantité calée sur `broyeur_uranium` (4), de tier comparable. Conséquence
+      // voulue : la V2 (sans acide) redevient une vraie amélioration de RECETTE et pas seulement de
+      // débit — elle rejoint les 13 autres familles du jeu.
+      // ⚠ La fonderie d'or retrouve donc un intrant LIQUIDE : elle fait de nouveau PONT entre deux
+      // tronçons de tuyau (`buildingConnectsCarrier`, règle 10.59) — l'inverse de l'effet de bord
+      // signalé en 14.19.
+      acide: 4,
       minerai_or: 16
     },
     outputs: {
@@ -5248,7 +5255,10 @@ const BUILDINGS = {
       circuit: 30
     },
     inputs: {
-      // 14.19 — l'acide est RETIRÉ du raffineur de silicium (demande joueur), V1 comme V2.
+      // 14.19 puis 14.50 — l'acide avait été retiré du raffineur de silicium (V1 ET V2) ; il REVIENT
+      // sur le V1 SEUL. Quantité calée sur `extracteur_souterrain` (8), de tier comparable. La V2
+      // (sans acide) devient une vraie amélioration de RECETTE, pas seulement de débit.
+      acide: 8,
       silicium: 8,
       oxygene: 32
     },
@@ -6150,7 +6160,9 @@ const BUILDINGS = {
       period: 60
     },
     inputs: {
-      // 14.19 — l'acide est RETIRÉ de la fonderie d'or (demande joueur), V1 comme V2.
+      // 14.19 puis 14.50 — la V2 reste SANS ACIDE, mais ce n'est plus « comme le V1 » : l'acide est
+      // revenu sur la fonderie d'or V1 (4/s). C'est précisément l'allègement de recette qui fait de
+      // cette V2 une vraie amélioration, et non un simple gain de débit.
       minerai_or: 16
     },
     outputs: {
@@ -6174,7 +6186,8 @@ const BUILDINGS = {
       period: 60
     },
     inputs: {
-      // 14.19 — l'acide est RETIRÉ du raffineur de silicium (demande joueur), V1 comme V2.
+      // 14.19 puis 14.50 — la V2 reste SANS ACIDE, mais ce n'est plus « comme le V1 » : l'acide est
+      // revenu sur le raffineur de silicium V1 (8/s). L'allègement de recette EST l'amélioration.
       silicium: 8,
       oxygene: 32
     },
@@ -6953,6 +6966,46 @@ const isLogicId = id => {
 const isLogicConductor = id => !!(BUILDINGS[id] && (BUILDINGS[id].logic || BUILDINGS[id].logicJunction));
 // Axe d'une jonction pour une direction de parcours : DIRS4 = [N, S, O, E] → 0/1 = axe NS, 2/3 = EO.
 const logicAxisOf = dir => dir === 0 || dir === 1 ? 'ns' : 'eo';
+// 14.50 — LOT A : les PORTES LOGIQUES passent à 2 ENTRÉES MAXIMUM. Une face non-sortie peut être
+// INHIBÉE : elle ne conduit plus rien et n'entre JAMAIS dans `inNets` (l'exclusion se fait à la
+// construction de gateIO, pas à l'évaluation, sinon les compteurs de l'UI mentiraient).
+// DIRS4 = [N, S, O, E] → `d ^ 1` est bien la face OPPOSÉE (0↔1 = N↔S, 2↔3 = O↔E).
+//  • 6 opérateurs (and/or/nand/nor/xor/xnor) : UNE face inhibée, par défaut l'OPPOSÉE à la sortie
+//    → une porte à 2 entrées garde ses deux faces LATÉRALES, le cas de câblage le plus courant.
+//  • porte NON : UNE SEULE entrée, sur la face OPPOSÉE (traversée) → ses deux LATÉRALES sont
+//    inhibées. ⚠ Convention INVERSE des autres portes, assumée : un NON n'a jamais eu qu'une
+//    entrée utile, et le lire « en travers » est la lecture naturelle d'un inverseur.
+// L'inhibition du NON est donc DÉRIVÉE (aucun réglage possible) ; celle des 6 autres est un
+// réglage persisté OPTIONNEL (`gateInhibit`), avec repli sur le défaut.
+const LOGIC_DIR_LETTER = ['n', 's', 'o', 'e'];
+function gateInhibitDefault(dir, op) {
+  const d = (dir || 0) & 3;
+  if (op === 'not') return [0, 1, 2, 3].filter(x => x !== d && x !== (d ^ 1));
+  return [d ^ 1];
+}
+// Faces INHIBÉES d'une porte, dans l'état courant. Une face inhibée qui se retrouve être la face de
+// SORTIE (le joueur a fait pivoter la porte) est ignorée → l'inhibition RE-DÉFAUTE sur la nouvelle
+// opposée. Il n'existe donc jamais d'état où sortie == inhibée.
+function gateInhibitedDirs(lg, op) {
+  const dir = (lg && lg.gateDir || 0) & 3;
+  if (op === 'not') return gateInhibitDefault(dir, op);
+  const raw = lg && lg.gateInhibit;
+  if (Array.isArray(raw)) {
+    for (const v of raw) {
+      const d = +v & 3;
+      if (d !== dir) return [d]; // une seule face inhibée → 2 entrées vives
+    }
+  }
+  return gateInhibitDefault(dir, op);
+}
+// Faces d'ENTRÉE vives d'une porte (ni sortie, ni inhibées) — source de vérité de l'UI.
+function gateLiveDirs(lg, op) {
+  const dir = (lg && lg.gateDir || 0) & 3;
+  const inh = gateInhibitedDirs(lg, op);
+  const out = [];
+  for (let d = 0; d < 4; d++) if (d !== dir && inh.indexOf(d) === -1) out.push(d);
+  return out;
+}
 // §6 — Modes de capteur DISPONIBLES selon le SUPPORT (le bâtiment/réseau sous l'élément logique).
 // Source de vérité UNIQUE : le panneau de config ET l'évaluation (processLogic) s'y réfèrent.
 // Renvoie [{k, label}], le PREMIER étant le défaut sensé pour ce support.
@@ -6965,8 +7018,15 @@ function sensorModesFor(support) {
     // 14.02 — route/tuyau : en plus de la saturation, un capteur peut lire UN INTRANT et un SEUIL
     // (ex. « 1e7 acier = 1 »). La ressource et le seuil sont réglés dans le panneau (sensorRes /
     // sensorSeuil) ; le stock lu est celui que ce réseau dessert (port s'il est relié, citerne sinon).
+    // 14.50 — LOT F : le CONDUIT n'a AUCUN stock de ressource à lire — le mode `seuil` ne lui était
+    // offert que parce qu'il tombe dans cette branche route/tuyau. Il est RETIRÉ du conduit (route et
+    // tuyau le CONSERVENT) et remplacé par `surchauffe` = fraction de chaleur de ses SOURCES.
+    if (support.id === 'conduit') return [{ k: 'sature', label: 'Réseau saturé' }, { k: 'surchauffe', label: 'Surchauffe' }];
     return [{ k: 'sature', label: 'Réseau saturé' }, { k: 'seuil', label: 'Stock ≥ seuil' }];
   }
+  // 14.50 — LOT F : un bâtiment À CHALEUR peut être surveillé sur sa jauge (heat / heatCapOf).
+  // Mode NON-DÉFAUT : `elec` reste en TÊTE, donc aucun capteur existant ne change de comportement.
+  if (sb.heatCap) return [{ k: 'elec', label: 'Déficit électrique' }, { k: 'intrant', label: "Déficit d'intrant" }, { k: 'surchauffe', label: 'Surchauffe' }];
   return [{ k: 'elec', label: 'Déficit électrique' }, { k: 'intrant', label: "Déficit d'intrant" }];
 }
 const sensorDefaultMode = support => sensorModesFor(support)[0].k;
@@ -7530,8 +7590,48 @@ const SAVE_VERSION = 31;
 // idempotente et inconditionnelle, sur le modèle de `REMOVED_RESOURCES` (14.16) juste au-dessus.
 // SAVE_VERSION INCHANGÉ (31) — aucun champ de sauvegarde créé, modifié ou supprimé ; un stock
 // de port négatif n'est jamais légitime, aucun besoin de discriminer par version.
-const GAME_BUILD = 331;
-const GAME_VERSION = 'Alpha 14.49';
+// 14.50 (brief `BRIEFMOTEURLOTGROUPE`, lots A→G) : INHIBITION DES PORTES LOGIQUES (2 entrées max),
+// RÉSEAUX LOGIQUES MORTS, transit du dernier fragment d'unité, élévateur (axe des jonctions + cas
+// miroir), retour de l'acide sur les V1, capteur de SURCHAUFFE, et retrait de la teinte canvas du
+// conduit V4. SAVE_VERSION INCHANGÉ (31) : le seul champ ajouté (`gx` = `gateInhibit`) est OPTIONNEL
+// avec repli sur un défaut dérivé.
+// (A) Une porte n'a plus que 2 ENTRÉES : une face non-sortie est INHIBÉE (par défaut l'OPPOSÉE à la
+// sortie, `gateDir ^ 1` — DIRS4 = [N, S, O, E] donc 0↔1 et 2↔3). L'exclusion se fait à la
+// construction de `gateIO`, JAMAIS à l'évaluation : `inNets` est lu par l'UI, il ne doit pas
+// compter une face morte. ⚠ La porte NON est la CONVENTION INVERSE, assumée : UNE entrée, sur la
+// face opposée (traversée), ses deux latérales inhibées — son inhibition est DÉRIVÉE, non réglable.
+// ⚠ CONSÉQUENCE DE JEU À SIGNALER : un ET/OU à 3 faces câblées n'existe plus. Un comparateur 3 bits
+// doit CHAÎNER deux portes (mesuré : `AND(AND(x,y),z)` = 8/8 conforme). Les montages existants qui
+// s'appuyaient sur une 3ᵉ entrée changent de résultat → toast de migration au chargement + ligne
+// d'avertissement dans la fiche, JAMAIS dans l'art de la tuile.
+// (B) « MORT » est STRUCTUREL, pas dynamique : un réseau logique est mort si AUCUN pilote ne le
+// vise (aucune face de capteur, d'émetteur, aucune sortie de porte). ⚠ Une porte qui sort 0 rend son
+// réseau VIVANT — sans ça tout réseau à 0 s'afficherait mort et l'indication CLIGNOTERAIT.
+// (C) Le `Math.floor` d'`exportable` est SUPPRIMÉ : il rendait le dernier fragment d'unité
+// définitivement inexpédiable (0,4 → 0, donc rien ne partait JAMAIS). `askPortFor` prend une marge
+// de 5 % + 1 (le floor était le bug, la marge est la ceinture).
+// (D) `elevatorSurfaceLinkedFor` respecte enfin l'AXE des jonctions (`junctionDirOk`) : une jonction
+// dont seul l'axe PERPENDICULAIRE rejoint le port ne relie plus le souterrain. Et le CAS MIROIR est
+// FERMÉ : les SOLIDES exigent une ROUTE port ↔ élévateur, en miroir du TUYAU exigé depuis 14.26.
+// ⚠ Ceci RENVERSE la décision explicite de 14.26 (commentaire réécrit sur place, pas supprimé).
+// ⚠ Rupture assumée : un souterrain relié par un TUYAU SEUL s'arrête côté solides (motif
+// `elevator`) jusqu'à la pose d'une route.
+// (E) L'acide REVIENT sur `fonderie_or` (4) et `raffineur_silicium` (8) — V1 SEULEMENT. Leurs V2
+// redeviennent de vraies améliorations de RECETTE. ⚠ La fonderie d'or refait donc PONT tuyau
+// (l'inverse de l'effet de bord signalé en 14.19).
+// (F) Nouveau mode de capteur `surchauffe` (bâtiment `heatCap` → `heat / heatCapOf` ; conduit →
+// chaleur des SOURCES), seuil 0,8 réglable. ⚠ Il ne lit PAS `conduitLoad`, qui vaut le % de flux sur
+// V1-V3 et la pire source sur V4 : un mode qui change de SENS selon le niveau du réseau serait
+// inutilisable. Le mode `seuil` est RETIRÉ du conduit (il n'y a aucun stock à y lire) et conservé
+// sur route/tuyau. `surchauffe` reste NON-DÉFAUT → aucun capteur existant ne change de comportement.
+// (G) Le conduit V4 rejoint les V1-V3 sur l'art `_chauffe1/2/3` : les 2 appels `drawSpriteTinted`
+// sont retirés (0 site restant ; la fonction reste définie, primitive générique).
+// ⚠ PRÉ-REQUIS NON LIVRÉ : le pack de 241 sprites du lot `BRIEF-SPRITES-LOGIQUE-INHIBITION` n'est
+// PAS dans le dépôt. Les chaînes de clés placent la clé NOUVELLE en tête et gardent les clés
+// HÉRITÉES en queue → aucune casse, mais l'inhibition, les réseaux morts et l'art `_chauffe` du V4
+// restent INVISIBLES jusqu'à la livraison du pack (vérifié par injection d'art de test).
+const GAME_BUILD = 332;
+const GAME_VERSION = 'Alpha 14.50';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -7540,7 +7640,7 @@ const GAME_VERSION = 'Alpha 14.49';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Correctif : une centrale nucléaire à court de combustible ne creuse plus le stock du port sous zéro — elle s'arrête net à 0 au lieu de laisser une dette qu'il fallait recombler AVANT tout redémarrage (et qui gonflait au passage la commande d'import de l'île) · Les stocks de port négatifs hérités des parties existantes sont remis à 0 au chargement, sans rien faire racheter au joueur · Le panneau Production affiche enfin la consommation RÉELLE d'U235 au dernier tick avant la panne sèche, et non la consommation voulue";
+const GAME_NOTES = "Les portes logiques n'ont plus que 2 ENTRÉES : la face opposée à la sortie est inhibée (réglable dans la fiche de la porte), et la porte NON n'a qu'une entrée, en traversée. ⚠ Un montage qui câblait 3 faces sur une même porte change de résultat — un comparateur 3 bits doit maintenant chaîner deux portes ; un avertissement vous signale les portes concernées · Un câble logique que PERSONNE ne pilote s'affiche désormais comme mort, distinct d'un câble simplement éteint · Le transit expédie enfin le dernier fragment d'unité (il restait bloqué par un arrondi) et « Demander au port » vise un peu au-dessus du coût, pour ne plus rester coincé à un cheveu du but · Élévateur : une jonction ne relie plus le souterrain si c'est son axe perpendiculaire qui rejoint le port, et les SOLIDES exigent désormais une ROUTE entre le port et l'élévateur, comme le TUYAU l'exige déjà pour les liquides ⚠ un souterrain relié par un tuyau seul s'arrêtera côté solides jusqu'à la pose d'une route · L'acide revient dans la Fonderie d'Or (4/s) et le Raffineur Si (8/s) — leurs V2, sans acide, redeviennent de vraies améliorations de recette · Nouveau capteur de SURCHAUFFE, sur un bâtiment à chaleur comme sur un conduit (seuil 80 % réglable)";
 // Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
 // (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
 // Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
@@ -8957,19 +9057,31 @@ function elevatorSurfaceLinkedFor(game, carrier) {
   const e = elevatorTileOf(game, 6);
   if (!tiles || !e) return false;
   const nets = game.networks[6] || {};
-  const hit = (r, c) => {
+  const netOk = n => !!n && !!n.connected && (carrier ? n.type === carrier : n.type === 'road' || n.type === 'pipe');
+  // 14.50 — LOT D : l'AXE d'une jonction est désormais RESPECTÉ (`junctionDirOk`), comme le fait
+  // déjà `adjacentNetworks`. Avant, on lisait `Object.values(nt.netIds)` sans regarder l'axe : une
+  // jonction collée à la tuile élévateur dont seul l'axe PERPENDICULAIRE rejoint le port validait le
+  // lien, alors que l'axe qui touche réellement l'élévateur ne mène nulle part → le souterrain était
+  // « alimenté » par un réseau qui ne le desservait pas.
+  // `dr/dc` = pas de l'élévateur VERS le voisin ; seul l'AXE compte (junctionDirOk teste `!== 0`),
+  // pas le sens. Le cas « infra POSÉE sur la tuile élévateur » n'a pas d'axe d'approche → inchangé.
+  const hit = (r, c, dr, dc) => {
     const nt = tiles[r] && tiles[r][c];
     if (!nt) return false;
-    const ids = nt.netIds ? Object.values(nt.netIds) : (nt.networkId != null ? [nt.networkId] : []);
-    for (const nid of ids) {
-      const n = nets[nid];
-      if (!n || !n.connected) continue;
-      if (carrier ? n.type === carrier : (n.type === 'road' || n.type === 'pipe')) return true;
+    const jb = nt.building && BUILDINGS[nt.building.id];
+    if (nt.netIds && jb && jb.kind === 'junction' && jb.junction && (dr !== 0 || dc !== 0)) {
+      for (const car in nt.netIds) {
+        if (!junctionDirOk(tiles, r, c, jb, car, dr, dc)) continue;
+        if (netOk(nets[nt.netIds[car]])) return true;
+      }
+      return false;
     }
+    const ids = nt.netIds ? Object.values(nt.netIds) : (nt.networkId != null ? [nt.networkId] : []);
+    for (const nid of ids) if (netOk(nets[nid])) return true;
     return false;
   };
-  if (hit(e.r, e.c)) return true; // infra posée SUR la tuile élévateur (réseau reliant le port)
-  for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) if (hit(e.r + dr, e.c + dc)) return true;
+  if (hit(e.r, e.c, 0, 0)) return true; // infra posée SUR la tuile élévateur (réseau reliant le port)
+  for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) if (hit(e.r + dr, e.c + dc, dr, dc)) return true;
   return false;
 }
 function elevatorSurfaceLinked(game) {
@@ -9244,6 +9356,26 @@ function islandNuclearCoolingOk(game, isl) {
   }
   return false;
 }
+// 14.50 — LOT F : fraction de chaleur des SOURCES d'un réseau conduit = la PIRE jauge
+// (heat / heatCapOf) de ses sources, exactement la barre affichée sur le bâtiment. EXTRAIT (au lieu
+// d'être dupliqué) parce qu'il a désormais deux consommateurs : la teinte du conduit ILLIMITÉ (qui
+// ne sature jamais, cf. 14.42) et le capteur logique en mode `surchauffe`.
+function conduitSourceHeatFrac(sources) {
+  let worst = 0;
+  for (const sb of sources || []) {
+    const hc = heatCapOf(sb);
+    if (hc > 0) worst = Math.max(worst, (sb.heat || 0) / hc);
+  }
+  return Math.min(1, worst);
+}
+// Seuil du mode `surchauffe` : une FRACTION de jauge (0→1), réglée dans `sensorSeuil` (champ déjà
+// persisté, partagé avec le mode `seuil` qui lui y met un stock). Défaut 0,8 = le 3ᵉ palier de l'art
+// `_chauffe3` → le capteur bascule quand le conduit vire au rouge. Valeur > 1 clampée.
+const SENSOR_HEAT_SEUIL_DEF = 0.8;
+const sensorHeatSeuil = bld => {
+  const v = bld && +bld.sensorSeuil;
+  return v > 0 ? Math.min(1, v) : SENSOR_HEAT_SEUIL_DEF;
+};
 function processHeat(game, isl) {
   const def = defById(isl),
     tiles = game.islands[isl];
@@ -9395,6 +9527,13 @@ function processHeat(game, isl) {
   if (!game.conduitPeak) game.conduitPeak = {};
   game.conduitPeak[isl] = {};
   const peak = game.conduitPeak[isl];
+  // 14.50 — LOT F : fraction de chaleur des SOURCES, par réseau conduit. Publiée pour le capteur
+  // logique en mode `surchauffe` — qui NE lit PAS `conduitLoad` : celui-ci vaut le % de flux utilisé
+  // sur V1-V3 et la pire source sur V4 illimité, donc un mode indexé dessus changerait de SENS selon
+  // le niveau du réseau. La saturation de flux a déjà son mode (`sature`).
+  if (!game.conduitSrcHeat) game.conduitSrcHeat = {};
+  game.conduitSrcHeat[isl] = {};
+  const srcHeat = game.conduitSrcHeat[isl];
   const condNets = {};
   for (const nid in nets) {
     if (!nets[nid] || nets[nid].type !== 'conduit') continue;
@@ -9469,13 +9608,13 @@ function processHeat(game, isl) {
     //    (heat / heatCapOf, la même que la barre affichée sur le bâtiment) — « les tours ne
     //    suivent pas ». Même échelle 0→1, donc mêmes seuils côté rendu, mais rampe de couleur
     //    différente (cf. renderer) pour que le joueur ne confonde pas les deux diagnostics.
+    // 14.50 — Le calcul de la pire jauge de source est EXTRAIT (conduitSourceHeatFrac) : il sert
+    // maintenant à DEUX consommateurs — la teinte du V4 illimité (ci-dessous) et le capteur logique
+    // en mode `surchauffe`. Publié pour TOUS les niveaux de réseau, pas seulement l'illimité.
+    const srcFrac = conduitSourceHeatFrac(cn.sources);
+    srcHeat[nid] = srcFrac;
     if (cn.net.unlimited) {
-      let worst = 0;
-      for (const sb of cn.sources) {
-        const hc = heatCapOf(sb);
-        if (hc > 0) worst = Math.max(worst, (sb.heat || 0) / hc);
-      }
-      load[nid] = Math.min(1, worst);
+      load[nid] = srcFrac;
     } else load[nid] = Math.min(1, moved / Math.max(1e-9, cn.through)); // teinte = % du FLUX (débit utilisé)
   }
   // 4) Alerte + trip. Une source qui ACCUMULE de la chaleur (émission > évacuation) alerte le
@@ -9779,6 +9918,32 @@ function processLogic(game, isl) {
   if (!game.logicState) game.logicState = {};
   const state = game.logicState[isl] = {};
   for (const nid in lnets) state[nid] = 0;
+  // 14.50 — LOT B : réseaux logiques MORTS. « Mort » est STRUCTUREL, jamais dynamique : un réseau
+  // est mort si AUCUN PILOTE ne le vise — aucune face de capteur (sensorDir), aucune face
+  // d'émetteur, aucune sortie de porte (outNet). Une porte qui sort 0 rend son réseau VIVANT : il
+  // est piloté, il vaut simplement 0.
+  // ⚠ Sans cette définition, TOUT réseau à 0 s'afficherait mort et l'indication clignoterait entre
+  // deux ticks — inutilisable. Calculé ICI, AVANT la propagation itérative : la vivacité ne dépend
+  // que du CÂBLAGE, pas des valeurs. (Les `outNet` des portes sont recalculés par `dirNet` sur leur
+  // face de sortie — même source que gateIO, qui n'est construit que plus bas.)
+  if (!game.logicDead) game.logicDead = {};
+  const dead = game.logicDead[isl] = {};
+  {
+    const driven = {};
+    for (const s of sensors) {
+      const n = dirNet(s.r, s.c, s.bld.sensorDir || 0);
+      if (n != null) driven[n] = 1;
+    }
+    for (const e of emitters) for (let d = 0; d < 4; d++) {
+      const n = dirNet(e.r, e.c, d);
+      if (n != null) driven[n] = 1;
+    }
+    for (const gt of gates) {
+      const n = dirNet(gt.r, gt.c, gt.bld.gateDir || 0);
+      if (n != null) driven[n] = 1;
+    }
+    for (const nid in lnets) if (!driven[nid]) dead[nid] = 1;
+  }
   if (!anyLogic) return;
   // §6 — Condition d'un capteur, lue sur son SUPPORT (bâtiment/réseau de la même tuile). Le type de
   // support détermine les modes : bâtiment → déficit élec./intrant ; câble → déficit élec. ;
@@ -9799,6 +9964,13 @@ function processLogic(game, isl) {
     }
     // Bâtiment producteur/consommateur : déficit électrique / déficit d'intrant.
     if (sb.kind === 'build') {
+      // 14.50 — LOT F : SURCHAUFFE d'un bâtiment à chaleur = sa jauge (heat / heatCapOf) au-delà du
+      // seuil (défaut 0,8). `heatCapOf` est la source de vérité du plafond depuis 14.30 : rien n'est
+      // recalculé ici. Sans plafond (bâtiment sans chaleur, ou `noHeat`) → jamais déclenché.
+      if (mode === 'surchauffe') {
+        const hc = heatCapOf(sup);
+        return hc > 0 && (sup.heat || 0) / hc >= sensorHeatSeuil(s.bld);
+      }
       if (mode === 'intrant') return sup.inFac != null && sup.inFac < 0.999;
       // elec : le bâtiment ne tourne pas à pleine puissance faute d'électricité.
       return sup.pwrAvg != null && sup.pwrAvg < 0.999 || sup.active === false && sup.discReason === 'power';
@@ -9811,6 +9983,13 @@ function processLogic(game, isl) {
       if (sup.id === 'wire') {
         const wi = game.wireInfo && game.wireInfo[isl] && nid != null && game.wireInfo[isl][nid];
         return !!(wi && wi.served + 0.5 < wi.demand);
+      }
+      // 14.50 — LOT F : CONDUIT en mode SURCHAUFFE — fraction de chaleur des SOURCES du réseau
+      // (`game.conduitSrcHeat`, posée par processHeat), PAS `conduitLoad` (qui change de sens entre
+      // un conduit limité et un V4 illimité). Lu avec un tick de retard, comme les autres capteurs.
+      if (mode === 'surchauffe') {
+        const hf = nid != null && game.conduitSrcHeat && game.conduitSrcHeat[isl] ? game.conduitSrcHeat[isl][nid] || 0 : 0;
+        return hf >= sensorHeatSeuil(s.bld);
       }
       // Route/tuyau, mode SEUIL (14.02) : 1 dès que le stock de la ressource choisie atteint le
       // seuil réglé (ex. « 1e7 acier = 1 »). Sans ressource choisie → 0 (le capteur reste muet).
@@ -9855,13 +10034,30 @@ function processLogic(game, isl) {
   const gateIO = gates.map(gt => {
     const dir = gt.bld.gateDir || 0;
     const outNet = dirNet(gt.r, gt.c, dir);
-    const inNets = [];
+    const op = BUILDINGS[gt.bld.id].logicGate;
+    // 14.50 — 2 ENTRÉES MAX : les faces INHIBÉES sont écartées ICI, à la construction de gateIO,
+    // et non à l'évaluation — `inNets` est lu par l'UI, il ne doit jamais compter une face morte.
+    const inh = gateInhibitedDirs(gt.bld, op);
+    const inNets = [],
+      liveDirs = [],
+      wiredInh = [];
     for (let d = 0; d < 4; d++) {
       if (d === dir) continue;
+      if (inh.indexOf(d) >= 0) {
+        // Face inhibée MAIS câblée : le montage du joueur croit y lire quelque chose. Signalé dans
+        // le panneau (et par un toast au chargement) — JAMAIS dans l'art de la tuile.
+        if (dirNet(gt.r, gt.c, d) != null) wiredInh.push(d);
+        continue;
+      }
+      liveDirs.push(d);
       const nn = dirNet(gt.r, gt.c, d);
       if (nn != null && inNets.indexOf(nn) === -1) inNets.push(nn);
     }
-    return { gt, outNet, inNets, op: BUILDINGS[gt.bld.id].logicGate };
+    // Miroirs TRANSITOIRES pour l'UI (jamais persistés, recalculés à chaque tick).
+    gt.bld.gateInhCur = inh;
+    gt.bld.gateLive = liveDirs;
+    gt.bld.gateWiredInh = wiredInh;
+    return { gt, outNet, inNets, op };
   });
   // Propagation itérative jusqu'à stabilisation (plafond LOGIC_MAX_ITER : coupe les oscillations,
   // on garde la dernière valeur au-delà).
@@ -9880,7 +10076,10 @@ function processLogic(game, isl) {
       // OUVERTE en permanence et pénalisait à chaque tirage différent, alors que le joueur
       // croyait avoir posé un comparateur correct (cas réel remonté sur le build 296).
       // Une porte CÂBLÉE dont l'entrée vaut 0 est inchangée (ins = [0] → NOT sort bien 1).
-      if (!ins.length) out = 0;else if (g.op === 'and') out = ins.every(x => x) ? 1 : 0;else if (g.op === 'or') out = ins.some(x => x) ? 1 : 0;else if (g.op === 'nand') out = ins.every(x => x) ? 0 : 1;else if (g.op === 'nor') out = ins.some(x => x) ? 0 : 1;else if (g.op === 'xor') out = ones % 2 === 1 ? 1 : 0;else if (g.op === 'xnor') out = ones % 2 === 0 ? 1 : 0;else out = ins.some(x => x) ? 0 : 1; // not = NON(OU des entrées)
+      // 14.50 — Les faces inhibées sont déjà exclues d'`inNets` : `ins` compte AU PLUS 2 entrées
+      // (1 pour la porte NON) → `not` se réduit à NON(entrée), la parité XOR/XNOR à 2 entrées.
+      if (!ins.length) out = 0;else if (g.op === 'and') out = ins.every(x => x) ? 1 : 0;else if (g.op === 'or') out = ins.some(x => x) ? 1 : 0;else if (g.op === 'nand') out = ins.every(x => x) ? 0 : 1;else if (g.op === 'nor') out = ins.some(x => x) ? 0 : 1;else if (g.op === 'xor') out = ones % 2 === 1 ? 1 : 0;else if (g.op === 'xnor') out = ones % 2 === 0 ? 1 : 0;else out = ins.some(x => x) ? 0 : 1; // not = NON(entrée unique)
+      g.gt.bld.logicIn = ins.some(x => x) ? 1 : 0; // miroir UI : au moins une entrée vive à 1
       g.gt.bld.logicOut = out;
       if (out && g.outNet != null) next[g.outNet] = 1;
     }
@@ -10665,15 +10864,24 @@ function tickIsland(game, isl) {
   // (§4.2 option a). Un bâtiment souterrain à I/O port dans cet état est déconnecté (discReason
   // 'elevator', dédié — plus l'approximation 'road' de la phase 2). L'électricité (wire) et les
   // fluides non stockables ne passent JAMAIS par l'élévateur (jamais dans road/pipePort).
-  const undergroundBlocked = isl === 7 && !(game.elevatorRepaired && elevatorSurfaceLinked(game));
+  // 14.50 — LOT D, cas MIROIR FERMÉ : les SOLIDES exigent désormais un réseau ROUTE reliant le port
+  // à la tuile élévateur en surface, symétriquement au TUYAU exigé pour les liquides depuis 14.26
+  // (`elevatorSurfaceLinkedFor(game, 'road')` au lieu de `elevatorSurfaceLinked(game)`, qui
+  // acceptait route OU tuyau).
+  const undergroundBlocked = isl === 7 && !(game.elevatorRepaired && elevatorSurfaceLinkedFor(game, 'road'));
   // 14.26 — EXPLOIT FERMÉ : une simple ROUTE entre le port et la tuile élévateur suffisait à faire
   // descendre AUSSI les liquides (acide, eau…). Les bâtiments souterrains puisaient donc dans le
   // port sans qu'aucun tuyau ne relie le port à l'élévateur en surface. Désormais le passage des
   // LIQUIDES au port (chemin `pipePort`) exige un réseau TUYAU reliant le port à l'élévateur.
   // ⚠ Rupture ASSUMÉE pour les parties en cours : une partie qui n'a qu'une route verra ses
   // machines souterraines à liquides s'arrêter (motif « élévateur ») jusqu'à la pose d'un tuyau.
-  // ⚠ Le cas MIROIR n'est volontairement PAS traité (décision joueur) : un tuyau seul continue de
-  // débloquer le souterrain côté solides, la route restant exigée par `roadReachesPort`.
+  // ⚠ REVIREMENT ACTÉ EN 14.50 (le commentaire ci-dessous est conservé pour dater la décision qu'il
+  // annule) : de 14.26 à 14.49, « le cas MIROIR n'était volontairement PAS traité (décision
+  // joueur) : un tuyau seul continuait de débloquer le souterrain côté solides, la route restant
+  // exigée par `roadReachesPort` ». Le lot 14.50 le FERME : les solides exigent maintenant un réseau
+  // ROUTE port ↔ élévateur (cf. `undergroundBlocked` ci-dessus), en miroir exact du tuyau.
+  // ⚠ Rupture ASSUMÉE pour les parties en cours : un souterrain relié par un TUYAU SEUL s'arrêtera
+  // côté solides (motif « élévateur ») jusqu'à la pose d'une route.
   const underLiquidBlocked = isl === 7 && !elevatorSurfaceLinkedFor(game, 'pipe');
   const elevCap = isl === 7 ? elevatorRateAt(game.elevatorLevel || 0) : Infinity;
   let activeChanged = false,
@@ -14424,7 +14632,12 @@ function rawShippable(game, srcIsland, destIsland, res) {
   const cfg = tradeCfgFor(game, srcIsland, res);
   if (cfg.interdit) return 0;
   if (tradeResBlocked(game, srcIsland, destIsland, res)) return 0;
-  const exportable = Math.max(0, Math.floor(tradeAvail(game, srcIsland, res) - cfg.seuilExport));
+  // 14.50 — LOT C : le `Math.floor` est SUPPRIMÉ. C'est lui qui rendait le dernier fragment d'unité
+  // définitivement inexpédiable : une source à 0,4 unité au-dessus de sa réserve arrondissait à 0,
+  // donc rien ne partait JAMAIS et la destination restait bloquée « à très peu près » de son besoin.
+  // Le transit déplace des quantités FLOTTANTES depuis 10.48 (transferLink) — aucun appelant en aval
+  // ne suppose un entier ; la borne `Math.max(0, …)` reste.
+  const exportable = Math.max(0, tradeAvail(game, srcIsland, res) - cfg.seuilExport);
   if (exportable <= 0) return 0;
   // Cible d'import EFFECTIVE = cible propre de dest + budget de transit aval (réacheminement).
   const target = tradeCfgFor(game, destIsland, res).stockCible + transitForwardBudget(game, srcIsland, destIsland, res);
@@ -16381,6 +16594,38 @@ function InfoPanel({
       rows.push(React.createElement("div", { key: 'rot' },
         dirPad(curDir, d => onLogicSet && onLogicSet(info.r, info.c, { [dirField]: d }))));
     }
+    // 14.50 — LOT A : une porte a 2 ENTRÉES MAXIMUM. On montre la ou les faces INHIBÉES, les faces
+    // VIVES, et — pour les 6 opérateurs — on laisse CHOISIR laquelle des 3 faces non-sortie est
+    // inhibée (défaut : l'opposée à la sortie). La porte NON est un cas DÉRIVÉ : une seule entrée,
+    // sur la face opposée, ses deux latérales inhibées → aucun réglage proposé.
+    if (lb.logicGate) {
+      const gop = lb.logicGate;
+      const ginh = gateInhibitedDirs(lg, gop);
+      const glive = gateLiveDirs(lg, gop);
+      const gwired = lg.gateWiredInh || [];
+      rows.push(React.createElement("div", { className: "ip-row", key: 'gin' },
+        React.createElement("span", { className: "lbl" }, I18N.t("Entrées")),
+        React.createElement("span", { className: "val" }, glive.length + ' — ' + glive.map(d => DIRN[d]).join(' · '))));
+      if (gop === 'not') {
+        rows.push(React.createElement("div", { className: "ip-row", key: 'gnot' },
+          React.createElement("span", { className: "lbl" }, I18N.t("Faces inhibées")),
+          React.createElement("span", { className: "val" }, ginh.map(d => DIRN[d]).join(' · ') + ' — ' + I18N.t("latérales (porte NON : entrée en traversée)"))));
+      } else {
+        rows.push(React.createElement("div", { className: "ip-fluxpri-lbl", key: 'gxl' }, I18N.t("Face inhibée (2 entrées max)")));
+        rows.push(React.createElement("div", { className: "ip-nuc-mats", key: 'gx', style: { gridTemplateColumns: '1fr 1fr 1fr' } },
+          [0, 1, 2, 3].filter(d => d !== (curDir & 3)).map(d => React.createElement("button", {
+            key: DIRN[d],
+            className: 'ip-nuc-mat' + (ginh.indexOf(d) >= 0 ? ' on' : ''),
+            title: gwired.indexOf(d) >= 0 ? I18N.t("Face CÂBLÉE mais inhibée : son signal est ignoré") : I18N.t("Inhiber cette face (elle ne comptera plus comme entrée)"),
+            onClick: () => onLogicSet && onLogicSet(info.r, info.c, { gateInhibit: [d] })
+          }, DIRN[d] + (gwired.indexOf(d) >= 0 ? ' ⚠' : '')))));
+      }
+      if (gwired.length) rows.push(React.createElement("div", { className: "ip-note", key: 'gwarn', style: { color: '#ffcf6b', fontSize: '11px', padding: '2px 0' } },
+        I18N.t("⚠ Face(s) ") + gwired.map(d => DIRN[d]).join(' · ') + I18N.t(" câblée(s) mais INHIBÉE(S) : leur signal n'entre pas dans la porte. Déplacez le fil sur une face vive, ou inhibez une autre face.")));
+      rows.push(React.createElement("div", { className: "ip-row", key: 'gsig' },
+        React.createElement("span", { className: "lbl" }, I18N.t("Signal reçu")),
+        React.createElement("span", { className: "val", style: { color: lg.logicIn ? '#00E5A0' : 'var(--ink-dim)', fontWeight: 700 } }, lg.logicIn ? '1' : '0')));
+    }
     // 14.15 — VANNE : ce qu'elle a reçu et ce qu'elle en a fait. Sans ça le joueur voyait le
     // Collisionneur s'éteindre sans jamais savoir quel signal l'avait déclenché.
     if (lb.logicValve) {
@@ -16420,11 +16665,35 @@ function InfoPanel({
       const modes = sensorModesFor(sup);
       const cur = lg.sensorMode || modes[0].k;
       rows.push(React.createElement("div", { className: "ip-fluxpri-lbl", key: 'sl' }, I18N.t("Condition mesurée")));
-      rows.push(React.createElement("div", { className: "ip-nuc-mats", key: 'sm', style: { gridTemplateColumns: modes.length > 1 ? '1fr 1fr' : '1fr' } }, modes.map(m => React.createElement("button", {
+      // 14.50 — jusqu'à 3 modes désormais (ajout de `surchauffe`) → la grille suit le nombre réel.
+      rows.push(React.createElement("div", { className: "ip-nuc-mats", key: 'sm', style: { gridTemplateColumns: modes.length >= 3 ? '1fr 1fr 1fr' : modes.length > 1 ? '1fr 1fr' : '1fr' } }, modes.map(m => React.createElement("button", {
         key: m.k,
         className: 'ip-nuc-mat' + (cur === m.k ? ' on' : ''),
         onClick: () => onLogicSet && onLogicSet(info.r, info.c, { sensorMode: m.k })
       }, I18N.t(m.label)))));
+      // 14.50 — LOT F, mode SURCHAUFFE : le seuil est une FRACTION de jauge (0→1, défaut 0,8 = le
+      // palier « rouge » de l'art de conduit). Réutilise `sensorSeuil` (déjà persisté) + affiche la
+      // jauge LUE en direct — bâtiment à chaleur (heat / heatCapOf) ou pire source du conduit.
+      if (cur === 'surchauffe') {
+        const _hFrac = (() => {
+          const sbd = sup && BUILDINGS[sup.id];
+          if (!sbd) return 0;
+          if (sbd.kind === 'infra') {
+            const _n = st && st.networkId != null ? st.networkId : null;
+            return _n != null && game.conduitSrcHeat && game.conduitSrcHeat[currentIsland] ? game.conduitSrcHeat[currentIsland][_n] || 0 : 0;
+          }
+          const hc = heatCapOf(sup);
+          return hc > 0 ? Math.min(1, (sup.heat || 0) / hc) : 0;
+        })();
+        const _hSeuil = sensorHeatSeuil(lg);
+        rows.push(React.createElement("div", { className: "ip-row", key: 'hs' }, React.createElement("span", { className: "lbl" }, I18N.t("Seuil de surchauffe")), React.createElement(NumField, {
+          className: "pp-num",
+          value: _hSeuil,
+          title: I18N.t("Fraction de la jauge de chaleur (0 → 1) au-delà de laquelle le signal passe à 1. Défaut 0,8."),
+          onCommit: v => onLogicSet && onLogicSet(info.r, info.c, { sensorSeuil: Math.max(0, Math.min(1, v)) })
+        })));
+        rows.push(React.createElement("div", { className: "ip-row", key: 'hl' }, React.createElement("span", { className: "lbl" }, I18N.t("Chaleur lue")), React.createElement("span", { className: "val", style: { color: _hFrac >= _hSeuil ? 'var(--red)' : 'var(--ink-dim)', fontWeight: 700 } }, Math.round(_hFrac * 100) + ' %')));
+      }
       // Mode SEUIL (route/tuyau, 14.02) : choix de la ressource lue + seuil (ex. « 1e7 acier = 1 »).
       if (cur === 'seuil') {
         const carrier = sup && sup.id === 'pipe' ? 'pipe' : 'road';
@@ -20480,7 +20749,9 @@ function App() {
   // Hook de test (inoffensif, comme window.__heat) : accès à l'état de la partie en cours
   // pour les E2E Chromium (forger un bâtiment, lire un réseau…).
   if (typeof window !== 'undefined') window.__gameRef = gameRef;
-  if (typeof window !== 'undefined') window.__ui = () => ({ tryPlace, canPlace, switchIsland });
+  // 14.50 — `askPortFor` et `setLogicConfig` vivent dans le scope d'App (hors de portée de
+  // window.__heat, posé au niveau module) → exposés ici pour les E2E (marge d'import, inhibition).
+  if (typeof window !== 'undefined') window.__ui = () => ({ tryPlace, canPlace, switchIsland, askPortFor, setLogicConfig });
   if (gameRef.current === null) {
     const islands = {};
     for (const def of ISLAND_TERRAINS) islands[def.id] = buildIslandTiles(def);
@@ -20914,6 +21185,10 @@ function App() {
           if (lg.sensorSeuil > 0) lp.sq = lg.sensorSeuil;
           if (lg.sensorDir != null) lp.sd = lg.sensorDir;
           if (lg.gateDir != null) lp.gd = lg.gateDir;
+          // 14.50 — Face(s) INHIBÉE(s) d'une porte : champ OPTIONNEL (aucun bump de SAVE_VERSION).
+          // Absent → défaut dérivé de la face de sortie. Écrit seulement si le joueur a choisi une
+          // autre face que l'opposée.
+          if (Array.isArray(lg.gateInhibit) && lg.gateInhibit.length) lp.gx = lg.gateInhibit.slice(0, 2);
           if (lg.actDir != null) lp.ad = lg.actDir;
           if (lg.actInvert) lp.ai = 1;
           logicPlacements.push(lp);
@@ -21732,6 +22007,9 @@ function App() {
           if (lp.sq > 0) lt.logic.sensorSeuil = +lp.sq;
           if (lp.sd != null) lt.logic.sensorDir = +lp.sd;
           if (lp.gd != null) lt.logic.gateDir = +lp.gd;
+          // 14.50 — Face inhibée persistée (champ additif `gx`). Absent = défaut dérivé → une save
+          // d'avant le lot charge sans rien perdre et toutes ses portes prennent le défaut.
+          if (Array.isArray(lp.gx) && lp.gx.length) lt.logic.gateInhibit = lp.gx.map(v => +v & 3);
           if (lp.ad != null) lt.logic.actDir = +lp.ad;
           if (lp.ai) lt.logic.actInvert = true;
           // Migration < v31 : polarité par défaut inversée → on retourne les actionneurs existants
@@ -22043,6 +22321,11 @@ function App() {
       g.seenBuildings = {};
       for (const id in data.seenBuildings) if (data.seenBuildings[id] && BUILDINGS[id]) g.seenBuildings[id] = true;
     }
+    // 14.50 — LOT A : les portes passent à 2 entrées MAX. Un montage d'avant le lot pouvait câbler
+    // les 3 faces non-sortie ; la 3ᵉ ne compte plus. On ARME un contrôle (consommé à la 1ʳᵉ frame
+    // ayant tické, quand processLogic a rempli `gateWiredInh`) qui prévient le joueur par un toast.
+    // ⚠ Jamais signalé dans l'art de la tuile (décision du brief) — panneau + toast seulement.
+    g.gateInhibitWarn = true;
     return true;
   }
   // Rejoue la production manquée pendant une absence (production hors-ligne / idle).
@@ -22840,6 +23123,9 @@ function App() {
       pay(cost);
     }
     t.logic = { id };
+    // 14.50 — `gateInhibit` n'est PAS écrit à la pose : la face inhibée par défaut est DÉRIVÉE de
+    // la face de sortie (opposée ; les 2 latérales pour un NON, cf. gateInhibitDefault). Le champ
+    // n'apparaît en sauvegarde que si le joueur choisit une AUTRE face dans le panneau.
     if (b.logicGate) t.logic.gateDir = 0;
     if (b.logicSource) t.logic.sensorDir = 0;
     if (b.logicSink) t.logic.actDir = 0;
@@ -24118,6 +24404,17 @@ function App() {
     } else if (patch) {
       Object.assign(bld, patch);
     }
+    // 14.50 — Une porte dont la SORTIE vient se poser sur la face INHIBÉE : l'inhibition n'a plus
+    // de sens (sortie == inhibée) → on efface le réglage pour RE-DÉFAUTER sur la nouvelle opposée.
+    // La lecture (gateInhibitedDirs) applique déjà ce filtre ; on nettoie ici pour que la
+    // SAUVEGARDE ne conserve pas un réglage mort.
+    {
+      const _lb = BUILDINGS[bld.id];
+      if (_lb && _lb.logicGate && Array.isArray(bld.gateInhibit)) {
+        const _gd = (bld.gateDir || 0) & 3;
+        if (bld.gateInhibit.some(d => (+d & 3) === _gd)) delete bld.gateInhibit;
+      }
+    }
     // 14.40 — Rotation = cran mécanique ; tout autre réglage (mode, polarité) = relais.
     SFX.play(patch && patch.__cycle ? 'logicRotate' : 'logicToggle');
     bumpHud();
@@ -24194,7 +24491,11 @@ function App() {
       if ((port[k] || 0) >= cost[k]) continue;
       if (!TRADE_RESOURCE_SET.has(k)) { blocked.push(RES_SHORT[k] || k); continue; }
       const cfg = tradeCfgFor(g, isl, k);
-      const want = Math.ceil(cost[k]);
+      // 14.50 — LOT C : MARGE d'import. Viser exactement le coût laissait l'amélioration bloquée à
+      // un cheveu du but (le stock d'arrivée s'arrête PILE à la cible, et la moindre consommation
+      // locale ou perte d'arrondi repasse dessous). Le `Math.floor` de `rawShippable` était le bug ;
+      // cette marge de 5 % (+1 unité de plancher) est la ceinture.
+      const want = Math.ceil(cost[k] * 1.05) + 1;
       if ((cfg.stockCible || 0) >= want) continue;
       cfg.stockCible = want;
       raised.push((RES_SHORT[k] || k) + ' ' + fmtPort(want));
@@ -25024,8 +25325,12 @@ function App() {
         // Sprite officiel (pack île 6 v2.2) : `fil_logique_v1_<NN>_<LETTRES>` (+ `_on` si signal à 1).
         // Le n° de masque = N(1)+E(2)+S(4)+O(8), les lettres dans l'ordre N,E,S,O (0 → « iso »).
         const letters = mask === 0 ? 'iso' : (mask & 1 ? 'N' : '') + (mask & 2 ? 'E' : '') + (mask & 4 ? 'S' : '') + (mask & 8 ? 'O' : '');
-        const wireKey = 'fil_logique_v1_' + String(mask).padStart(2, '0') + '_' + letters + (st ? '_on' : '');
-        if (SPRITES_ENABLED && drawSprite(ctx, wireKey, x, y, tile, tile)) {
+        // 14.50 — LOT B : un réseau que PERSONNE ne pilote est MORT (`_mort`, art tramé) — distinct
+        // d'un réseau piloté à 0 (`''`) et d'un réseau à 1 (`_on`). Repli sur la clé sans suffixe.
+        const _mrt = g.logicDead && g.logicDead[isl] && g.logicDead[isl][t.networkId] ? '_mort' : '';
+        const _wbase = 'fil_logique_v1_' + String(mask).padStart(2, '0') + '_' + letters;
+        const wireKey = _wbase + (_mrt || (st ? '_on' : ''));
+        if (SPRITES_ENABLED && (drawSprite(ctx, wireKey, x, y, tile, tile) || _mrt && drawSprite(ctx, _wbase, x, y, tile, tile))) {
           if (st) _animPlayed = true;
           continue;
         }
@@ -25075,15 +25380,14 @@ function App() {
         const baseKey = 'conduit_v' + slvl + '_' + suffix;
         let drew = false;
         if (SPRITES_ENABLED) {
-          if (slvl <= 3 && f >= 0.25) {
+          // 14.50 — LOT G : le V4 illimité rejoint les V1-V3 sur l'ART `_chauffe1/2/3` (le pack
+          // « inhibition » le livre) — la TEINTE CANVAS du 14.42 (`drawSpriteTinted`) est RETIRÉE,
+          // elle n'était qu'un pis-aller en l'absence d'art dédié. Le repli vectoriel plus bas garde
+          // sa rampe de teinte propre au V4 (sources en surchauffe ≠ conduit saturé).
+          if (f >= 0.25) {
             const ch = f >= 0.8 ? 3 : f >= 0.5 ? 2 : 1;
             drew = drawSprite(ctx, baseKey + '_chauffe' + ch, x, y, tile, tile);
             _animPlayed = true; // flux chaud → on garde le conduit redessiné en continu
-          } else if (slvl === 4 && f >= 0.25) {
-            // 14.42 — V4 illimité : teinte canvas sur le sprite de base (pas d'art dédié).
-            const tn = conduitUnlTint(f);
-            drew = drawSpriteTinted(ctx, baseKey, x, y, tile, tile, tn[0], tn[1]);
-            if (drew) _animPlayed = true;
           }
           if (!drew) drew = drawSprite(ctx, baseKey, x, y, tile, tile);
         }
@@ -25267,15 +25571,12 @@ function App() {
           const cbase = 'conduit_v' + cslvl + '_' + NET_MASK_SUFFIX[cmask];
           const cf = Math.max(0, Math.min(1, cload));
           let cdrew = false;
-          if (cslvl <= 3 && cf >= 0.25) {
+          // 14.50 — LOT G : idem pour le STUB sous un bâtiment à chaleur — art `_chauffe1/2/3` à
+          // tous les niveaux, plus aucune teinte canvas (le V4 avait sa propre rampe en 14.42).
+          if (cf >= 0.25) {
             const ch = cf >= 0.8 ? 3 : cf >= 0.5 ? 2 : 1;
             cdrew = drawSprite(ctx, cbase + '_chauffe' + ch, x, y, tile, tile);
             _animPlayed = true;
-          } else if (cslvl === 4 && cf >= 0.25) {
-            // 14.42 — V4 illimité : même teinte que la ligne de conduit adjacente.
-            const tn = conduitUnlTint(cf);
-            cdrew = drawSpriteTinted(ctx, cbase, x, y, tile, tile, tn[0], tn[1]);
-            if (cdrew) _animPlayed = true;
           }
           if (!cdrew) drawSprite(ctx, cbase, x, y, tile, tile);
         }
@@ -25298,6 +25599,16 @@ function App() {
         const st = t.building.logicOut ? '1' : '0';
         const base = bdef.logicGate ? 'logic_porte_' + bdef.logicGate : bdef.logicSource ? 'logic_senseur' : 'logic_actionneur';
         const cands = [base + '_' + suf + '_' + st, base + '_' + suf, base];
+        // 14.50 — LOT A : porte → l'art encode la face INHIBÉE (2 entrées max). Même chaîne que la
+        // passe de surcouche `t.logic` (le vrai chemin depuis 13.96) ; ce site historique dessine
+        // les éléments logiques restés dans `t.building`. Clé nouvelle EN TÊTE, replis inchangés.
+        if (bdef.logicGate) {
+          const _op = bdef.logicGate;
+          const _inh = gateInhibitedDirs(t.building, _op);
+          cands.unshift(_op === 'not'
+            ? base + '_' + suf + '_i' + (LOGIC_DIR_LETTER[((logicDir || 0) & 3) ^ 1] || 'n') + '_' + st
+            : base + '_' + suf + '_x' + (LOGIC_DIR_LETTER[_inh[0] & 3] || 'n') + '_' + st);
+        }
         // Replis historiques (packs antérieurs) : senseur par mode, actionneur = sortie collisionneur.
         if (bdef.logicSource) cands.push('logic_senseur_' + ({ full: 'plein', empty: 'vide', active: 'contient', inactive: 'contient' }[t.building.sensorMode || 'active'] || 'contient') + '_' + suf);
         if (bdef.logicSink) cands.push('logic_sortie_collisionneur_' + suf, 'logic_sortie_collisionneur');
@@ -25547,8 +25858,12 @@ function App() {
           }
           const st = lstate[lg.netId] || 0;
           const letters = mask === 0 ? 'iso' : (mask & 1 ? 'N' : '') + (mask & 2 ? 'E' : '') + (mask & 4 ? 'S' : '') + (mask & 8 ? 'O' : '');
-          const wireKey = 'fil_logique_v1_' + String(mask).padStart(2, '0') + '_' + letters + (st ? '_on' : '');
-          if (!(SPRITES_ENABLED && drawSprite(ctx, wireKey, x, y, tile, tile))) {
+          // 14.50 — LOT B : réseau MORT (aucun pilote ne le vise) → art tramé `_mort`, à ne pas
+          // confondre avec un réseau piloté à 0. Repli sur la clé sans suffixe si le pack manque.
+          const _mrt = g.logicDead && g.logicDead[isl] && g.logicDead[isl][lg.netId] ? '_mort' : '';
+          const _wbase = 'fil_logique_v1_' + String(mask).padStart(2, '0') + '_' + letters;
+          const wireKey = _wbase + (_mrt || (st ? '_on' : ''));
+          if (!(SPRITES_ENABLED && (drawSprite(ctx, wireKey, x, y, tile, tile) || _mrt && drawSprite(ctx, _wbase, x, y, tile, tile)))) {
             const cx = x + tile / 2,
               cy = y + tile / 2,
               th = Math.max(2, tile * 0.16);
@@ -25577,7 +25892,12 @@ function App() {
           const sNS = lstate[lg.netNS] ? 1 : 0,
             sEO = lstate[lg.netEO] ? 1 : 0;
           const jsuf = sNS && sEO ? '_both' : sNS ? '_ns' : sEO ? '_eo' : '';
-          cands = [dbase + jsuf, dbase];
+          // 14.50 — LOT B : la jonction porte DEUX réseaux indépendants → son art dit l'état de
+          // CHAQUE axe, y compris « mort » : `logic_jonction_NS_EO_<ns><eo>` avec chaque caractère
+          // ∈ m (mort) / 0 (piloté à 0) / 1. Les 4 clés HÉRITÉES restent en repli.
+          const _dd = g.logicDead && g.logicDead[isl] || {};
+          const _jc = nid => _dd[nid] ? 'm' : lstate[nid] ? '1' : '0';
+          cands = [dbase + '_' + _jc(lg.netNS) + _jc(lg.netEO), dbase + jsuf, dbase];
           if (sNS || sEO) _animPlayed = true;
         } else if (lbd.logicMultiSource) {
           // 14.16 — ÉMETTEUR : l'art du pack a un écran par SIGNAL (α / β / γ, + `_on` allumé) et un
@@ -25607,6 +25927,19 @@ function App() {
             if (codeE.indexOf('1') >= 0) _animPlayed = true;
             if (lit) _animPlayed = true;
           }
+        } else if (lbd.logicGate) {
+          // 14.50 — LOT A : l'art d'une porte encode désormais la face INHIBÉE, pour qu'on lise sur
+          // la tuile où le signal N'ENTRE PAS (2 entrées max). Clés du pack « inhibition » :
+          //  • 6 opérateurs : `logic_porte_<op>_<sortie>_x<inhibée>_<état>`
+          //  • porte NON    : `logic_porte_not_<sortie>_i<entrée>_<état>` (son unique entrée)
+          // Les 3 clés HÉRITÉES restent en queue : sans le pack, le rendu est celui d'avant le lot
+          // (l'inhibition devient invisible, rien ne casse).
+          const _op = lbd.logicGate;
+          const _inh = gateInhibitedDirs(lg, _op);
+          const _key = _op === 'not'
+            ? dbase + '_' + suf + '_i' + (LOGIC_DIR_LETTER[(dir & 3) ^ 1] || 'n') + '_' + sst
+            : dbase + '_' + suf + '_x' + (LOGIC_DIR_LETTER[_inh[0] & 3] || 'n') + '_' + sst;
+          cands = [_key, dbase + '_' + suf + '_' + sst, dbase + '_' + suf, dbase];
         } else {
           // La VANNE du Collisionneur : art dédié `logic_vanne_collisionneur_<dir>_<0|1>` (v2.8),
           // repli sur l'ancien `logic_vanne`(_on).
@@ -26368,6 +26701,25 @@ function App() {
           if (def) {
             showToast(`🔬 Recherche prête : ${def.name} — à valider`, 'var(--yellow)');
             setResearchPending(true);
+          }
+        }
+        // 14.50 — LOT A : avertissement de MIGRATION des portes (2 entrées max). Consommé UNE SEULE
+        // FOIS par chargement, après qu'un tick a rempli `gateWiredInh` (faces inhibées pourtant
+        // câblées). Compte les portes concernées sur TOUTES les îles.
+        if (g.gateInhibitWarn) {
+          g.gateInhibitWarn = false;
+          let nInh = 0;
+          for (const isl in g.islands) {
+            const tl = g.islands[isl];
+            if (!tl) continue;
+            for (let r = 0; r < tl.length; r++) for (let c = 0; c < tl[r].length; c++) {
+              const lg = tl[r][c] && tl[r][c].logic;
+              if (lg && lg.gateWiredInh && lg.gateWiredInh.length) nInh++;
+            }
+          }
+          if (nInh > 0) {
+            showToast(I18N.t('⚠️ Portes logiques : 2 entrées maximum — ') + nInh + I18N.t(' porte(s) ont une face CÂBLÉE mais inhibée (voir leur fiche)'), 'var(--yellow)');
+            SFX.playThrottled('powerAlert', 8000);
           }
         }
         if (g.nucNotify && g.nucNotify.length) {
@@ -27191,6 +27543,9 @@ if (typeof window !== 'undefined') {
     COLLIDER_PUZZLE_NODES, COLLIDER_REPAIR_NODES, isNodeConfirmed, isLogicConductor,
     networksOfType, islandHasUnlimitableNet, portIslandOf, NETWORK_HI_MATS, NETWORK_UNLIMITED_COST,
     pickFlavorCode, codeToBits, dcEffective, dcRateOf, countBuildings,
+    // 14.50 — inhibition des portes, réseaux logiques morts, capteur de surchauffe.
+    gateInhibitDefault, gateInhibitedDirs, gateLiveDirs, LOGIC_DIR_LETTER,
+    conduitSourceHeatFrac, sensorHeatSeuil, SENSOR_HEAT_SEUIL_DEF, shippableQty,
     InfoPanel: typeof InfoPanel === 'function' ? InfoPanel : null,
     OfflineModal: typeof OfflineModal === 'function' ? OfflineModal : null,
     NetworkPanel: typeof NetworkPanel === 'function' ? NetworkPanel : null,
