@@ -1,30 +1,36 @@
 # ════════════════════════════════════════════════════════════════
 #  GitHub Pages — configuration
 #
-#  BUT UNIQUE : empêcher Pages de publier le fichier SOURCE du jeu.
+#  BUT UNIQUE : ne servir sur Pages qu'UNE seule URL de jeu, `index.html`.
 #
-#  `Archipel_industry_alpha-7.html` est l'édition DEV (TESTER_BUILD = false) :
-#  elle expose le mode développeur et le mode rapide. Elle ne doit pas être
-#  accessible publiquement.
+#  ⚠ Depuis 14.55 il n'y a plus que DEUX éditions, et le fichier SOURCE
+#  `Archipel_industry_alpha-7.html` EST l'édition PUBLIQUE (`DEV_BUILD = false`) :
+#  il n'expose ni le mode développeur ni le mode rapide. On continue de l'exclure
+#  de Pages — non plus par danger, mais pour ne pas servir une SECONDE copie du
+#  jeu qui divergerait de `index.html` au fil des builds.
 #
 #  ⚠ Le fichier RESTE dans le dépôt Git — la CI en a besoin :
-#     Archipel_industry_alpha-7.html  (source, édition dev)
-#        ├─→ game-dev.html      → ArchipelIndustryDev.apk
-#        ├─→ game-tester.html   → ArchipelIndustryTester.apk
-#        └─→ index.html         → PWA publique (édition TESTEUR)
+#     Archipel_industry_alpha-7.html  (source = édition PUBLIQUE)
+#        ├─→ game-public.html  → ArchipelIndustry.apk    (édition publique)
+#        │                     → index.html (PWA publique — assertion CI BLOQUANTE)
+#        └─→ game-dev.html     → ArchipelIndustryDev.apk (édition dev, DEV_BUILD = true)
 #
 #  `exclude` n'agit QUE sur la publication Pages, jamais sur Git.
 #
 #  Résultat :
-#    https://freredoc.github.io/Archipel-Industry-/                        → ✅ jeu (testeur)
+#    https://freredoc.github.io/Archipel-Industry-/                        → ✅ jeu (édition publique)
 #    https://freredoc.github.io/Archipel-Industry-/Archipel_industry_alpha-7.html → ❌ 404
 # ════════════════════════════════════════════════════════════════
 
 exclude:
-  # Source du jeu = édition DEV. Ne jamais publier.
+  # Source du jeu : une seule URL de jeu servie, et c'est `index.html`.
   - Archipel_industry_alpha-7.html
 
   # Variantes intermédiaires produites par la CI (au cas où un run les laisse traîner).
+  # ⚠ `game-dev.html` est la SEULE réellement dangereuse (DEV_BUILD = true → construction
+  # gratuite pour qui trouve l'URL) : ne JAMAIS la retirer de cette liste.
+  # `game-tester.html` n'est plus produit depuis 14.55 ; gardé par sûreté (vieux run).
+  - game-public.html
   - game-dev.html
   - game-tester.html
 

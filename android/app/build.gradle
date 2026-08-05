@@ -13,9 +13,13 @@ android {
 
     defaultConfig {
         // applicationId / libellé surchargeables (-PappId / -PappLabel) : la CI produit
-        // deux APK — DEV (appId d'origine, libellé « Archipel Ind. Dev ») et TESTEUR
-        // (appId .tester, libellé « Archipel Industry »), installables côte à côte.
-        // Défauts = valeurs d'origine → un build local reste l'app principale.
+        // deux APK — PUBLIQUE (appId `fr.archipel.industry.pub`, libellé « Archipel
+        // Industry ») et DEV (appId d'ORIGINE `fr.archipel.industry`, libellé « Archipel
+        // Ind. Dev »), installables côte à côte.
+        // ⚠ L'appId d'ORIGINE reste sur la DEV, et c'est le DÉFAUT ci-dessous : c'est le seul
+        // APK déjà installé, le garder préserve son dossier de données WebView donc sa
+        // sauvegarde. La publique passe donc explicitement -PappId ; la dev l'omet.
+        // Un build local sans -PappId produit donc l'édition dev-appId.
         applicationId (project.findProperty('appId') ?: 'fr.archipel.industry')
         minSdk 26
         targetSdk 34

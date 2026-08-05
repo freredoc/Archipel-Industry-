@@ -7966,8 +7966,17 @@ const SAVE_VERSION = 31;
 // ⚠ Le multiplicateur maximal du jeu passe de ×100 (rapide × booster) à ×10, et à ×1 dans le
 // build PUBLIC — c'est voulu. ⚠ `fx_boost`/`fx_boost_productivite` (overlays d'antenne) sont
 // CONSERVÉS : aucun rapport avec le booster ; seul `ui_booster` est retiré.
-const GAME_BUILD = 336;
-const GAME_VERSION = 'Alpha 14.54';
+// 14.55 — DEUX ÉDITIONS AU LIEU DE TROIS. `TESTER_BUILD` est SUPPRIMÉ (il ne gatait plus aucune
+// différence de jeu) et le **Mode développeur** passe sous `DEV_BUILD`, avec le mode rapide ×10 :
+// l'édition PUBLIQUE perd la construction gratuite, l'édition DEV garde tout.
+// ⚠ `index.html` (PWA / navigateur, SEUL canal des utilisateurs Apple) est désormais construit
+// depuis l'édition PUBLIQUE, et la CI le vérifie par une assertion BLOQUANTE.
+// ⚠ L'appId d'ORIGINE `fr.archipel.industry` reste sur l'édition DEV (c'est le seul APK installé :
+// le garder préserve la sauvegarde) ; la publique prend `fr.archipel.industry.pub`.
+// ⚠ `SAVE_VERSION` INCHANGÉ (31) : `g.ui.dev` n'est pas persisté et `toggleDev` en est l'unique
+// écriture → dans l'édition publique il ne peut jamais passer à vrai.
+const GAME_BUILD = 337;
+const GAME_VERSION = 'Alpha 14.55';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -7976,17 +7985,22 @@ const GAME_VERSION = 'Alpha 14.54';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Le booster de vitesse 🚀 est RETIRÉ du jeu : le bouton disparaît de la barre du bas (5 boutons au lieu de 6) et sa mécanique part avec lui — plus de réserve de 30 min qui se rechargeait toute seule, en jeu comme hors-ligne. Rien à faire de ton côté : une partie en cours se charge normalement, sa réserve est simplement ignorée · Le mode rapide ×10 (chronomètre) devient réservé à la version de développement — dans cette version le temps défile toujours à sa vitesse normale · Nouvelle section « Soutenir le projet » en bas des Options : Archipel Industry est gratuit et le restera";
-// Édition TESTEUR : `false` ici (édition dev, complète). La CI bascule ce flag à `true`
-// (remplacement texte) pour produire l'APK testeur — sans Mode développeur ni Mode rapide.
-// Les deux APK sont construits depuis CE fichier : toute mise à jour sort sur les deux.
-const TESTER_BUILD = false;
-// Build DÉVELOPPEUR : seule variante où le mode rapide ×10 est disponible (bouton chronomètre de
-// la barre du bas + case « Mode rapide » de l'écran de création de partie). Le build PUBLIC et le
-// build TESTEUR sont tous deux à `false` → multiplicateur figé à ×1. Ce n'est NI `g.ui.dev` (toggle
-// Options accessible à n'importe quel joueur), NI `TESTER_BUILD` (qui garde son rôle : sélection
-// d'APK + retrait du Mode développeur). La CI substituera ce flag à `true` au moment d'empaqueter
-// l'APK dev — le fichier source versionné reste la variante PUBLIQUE.
+const GAME_NOTES = "Deux éditions au lieu de trois. L'édition PUBLIQUE (celle à installer, et celle de la version web) n'a plus le mode développeur : la construction et les améliorations se paient normalement. L'édition DEV garde tout · ⚠ SI TU AVAIS DÉJÀ L'APPLICATION : c'est « ArchipelIndustryDev.apk » qui la met à jour en gardant ta sauvegarde. L'édition publique s'installe À CÔTÉ, avec une partie vierge · Rien ne change dans le jeu lui-même : aucune règle, aucune recette, aucune sauvegarde touchée";
+// ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
+// il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
+// d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
+// DEUX éditions (publique / dev) au lieu de trois.
+// Build DÉVELOPPEUR : seule variante à embarquer le **mode rapide ×10** (bouton chronomètre +
+// case « Mode rapide » de l'écran de création) ET le **Mode développeur** (construction et
+// améliorations gratuites). L'édition PUBLIQUE n'a ni l'un ni l'autre.
+// ⚠ Ce n'est PAS `g.ui.dev` : `g.ui.dev` est l'INTERRUPTEUR (dans les Options), `DEV_BUILD` est
+// le BUILD qui a le droit de l'afficher. `toggleDev` sort tôt quand `DEV_BUILD` est faux, et
+// c'est l'UNIQUE écriture de `g.ui.dev` dans tout le fichier → dans l'édition publique il ne peut
+// JAMAIS passer à vrai. `g.ui.dev` n'est par ailleurs pas persisté (absent de `uiPrefs`, forcé à
+// `false` aux deux chemins d'init) → aucune migration, aucun bump de `SAVE_VERSION`.
+// La CI substitue ce flag à `true` (`sed` sur la ligne EXACTE ci-dessous, avec grep de garde) pour
+// empaqueter l'APK dev — le fichier source versionné reste la variante PUBLIQUE, et c'est LUI qui
+// alimente `index.html` (PWA / navigateur, seul canal des utilisateurs Apple).
 const DEV_BUILD = false;
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
 // Lien de soutien (Options → « Soutenir le projet »). PLACEHOLDER : à renseigner avant publication.
@@ -20849,8 +20863,10 @@ function OptionsModal({
       if (build > GAME_BUILD) setUpd({
         state: 'available',
         label: d.version || ('build ' + build),
-        // Édition testeur : APK testeur (repli sur l'APK dev si le champ manque).
-        apk: (TESTER_BUILD ? d.apkTester || d.apk : d.apk) || d.url || '',
+        // Édition DEV → `apkDev`. Le repli `|| d.apk` couvre un version.json ANTÉRIEUR à
+        // 14.55 (pas de champ `apkDev`). Édition PUBLIQUE → `apk`. ⚠ `apk` désigne désormais
+        // l'APK PUBLIQUE, d'appId différent de la dev : voir la note de migration du build 337.
+        apk: (DEV_BUILD ? d.apkDev || d.apk : d.apk) || d.url || '',
         notes: d.notes || ''
       });else setUpd({
         state: 'uptodate'
@@ -20948,7 +20964,7 @@ function OptionsModal({
   }, I18N.names[code])))), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Production hors-ligne"), I18N.t("Rattrape la production pendant une absence. D\xE9sactiv\xE9 : le jeu ne progresse que lorsqu'il est ouvert."), offlineEnabled !== false, onToggleOffline), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Guide"), I18N.t("Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)"), guideEnabled !== false, onToggleGuide), toggleRow(I18N.t("Sons"), I18N.t("Effets sonores du jeu (pose, am\xE9lioration, alertes…)"), audioEnabled !== false, onToggleAudio), sliderRow(I18N.t("Volume"), I18N.t("Volume des effets sonores"), audioVolume == null ? 0.55 : audioVolume, 0, 1, 0.05, v => onSetAudioVolume && onSetAudioVolume(v), v => Math.round(v * 100) + '%'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onResetTips
-  }, uiIcon('astuce', "💡"), I18N.t(" Revoir les astuces")), !TESTER_BUILD && toggleRow(I18N.t("Mode d\xE9veloppeur"), I18N.t("Construction et am\xE9liorations gratuites"), dev, onToggleDev, 'dev'), React.createElement("button", {
+  }, uiIcon('astuce', "💡"), I18N.t(" Revoir les astuces")), DEV_BUILD && toggleRow(I18N.t("Mode d\xE9veloppeur"), I18N.t("Construction et am\xE9liorations gratuites"), dev, onToggleDev, 'dev'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onOpenSaves
   }, uiIcon('sauvegarde', "💾"), I18N.t(" Emplacements de sauvegarde")), SUPPORT_URL ? React.createElement("div", {
@@ -20973,7 +20989,7 @@ function OptionsModal({
     className: "opt-name"
   }, I18N.t("Version")), React.createElement("span", {
     className: "opt-desc"
-  }, GAME_VERSION, I18N.t(" · build "), GAME_BUILD, TESTER_BUILD ? " · test" : DEV_BUILD ? " · dev" : "")), React.createElement("button", {
+  }, GAME_VERSION, I18N.t(" · build "), GAME_BUILD, DEV_BUILD ? " · dev" : "")), React.createElement("button", {
     className: "opt-upd-btn",
     onClick: checkUpdate,
     disabled: upd.state === 'checking'
@@ -21627,8 +21643,10 @@ function App() {
         setUpdateInfo({
           build,
           label: d.version || ('build ' + build),
-          // Édition testeur : APK testeur (repli sur l'APK dev si le champ manque).
-          apk: (TESTER_BUILD ? d.apkTester || d.apk : d.apk) || d.url || '',
+          // Édition DEV → `apkDev`. Le repli `|| d.apk` couvre un version.json ANTÉRIEUR à
+          // 14.55 (pas de champ `apkDev`). Édition PUBLIQUE → `apk`. ⚠ `apk` désigne désormais
+          // l'APK PUBLIQUE, d'appId différent de la dev : voir la note de migration du build 337.
+          apk: (DEV_BUILD ? d.apkDev || d.apk : d.apk) || d.url || '',
           notes: d.notes || ''
         });
         showToast(I18N.t('⬆ Mise à jour disponible : ') + (d.version || ('build ' + build)), 'var(--yellow)');
@@ -23303,7 +23321,7 @@ function App() {
   // On accélère le TEMPS (plus de ticks/s), jamais les débits. En 10×, l'audio est coupé
   // automatiquement ; au retour en 1×, il est restauré en respectant le choix du joueur.
   function toggleFastMode() {
-    if (!DEV_BUILD) return; // mode rapide ×10 réservé au build dev (public et testeur : ×1)
+    if (!DEV_BUILD) return; // mode rapide ×10 réservé au build dev (édition publique : ×1)
     const g = gameRef.current;
     const goingFast = (g.timeScale || 1) === 1;
     if (goingFast) {
@@ -25071,7 +25089,7 @@ function App() {
     scheduleSave();
   }
   function toggleDev() {
-    if (TESTER_BUILD) return; // édition testeur : pas de mode dev
+    if (!DEV_BUILD) return; // mode développeur réservé au build dev
     const g = gameRef.current;
     g.ui.dev = !g.ui.dev;
     setDev(g.ui.dev);
