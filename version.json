@@ -1,8 +1,8 @@
 {
-  "build": 341,
-  "version": "Alpha 14.59",
+  "build": 342,
+  "version": "Alpha 14.60",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Au SOUTERRAIN, les chantiers se font désormais UN PAR UN, dans l'ordre où tu les as lancés : fini les dix bâtiments qui descendent tous au dixième de la vitesse sans qu'aucun n'aboutisse · Un chantier qui attend son tour le DIT dans sa fiche (« en attente · N chantier(s) devant ») et le panneau Élévateur affiche la longueur de la file · Le débit que le chantier de tête n'utilise pas part aux sortants et aux intrants au lieu d'être immobilisé · CORRECTIF : le Collisionneur ne pouvait pas être jugé au tout premier tick d'une partie rechargée — il pouvait subir un arrêt total « plus d'hélium 3 » imméritée, et brûler de l'hélium sans même être relié au câble · Aucune sauvegarde touchée"
+  "notes": "Sous le capot : les fondations des RECHERCHES INFINIES du Collisionneur sont posées — les points se gagneront aux confirmations (3 au premier palier de 10 000, puis 1 de plus à chaque doublement) et s'échangeront contre cinq recherches plafonnées : coût d'amélioration, coût de transit et d'élévateur, coût de remblai, rendement du Séparateur Cryogénique, temps de démarrage du Collisionneur · L'ACHAT et l'écran arrivent dans la prochaine mise à jour : pour l'instant RIEN ne change en jeu, tous les coûts et rendements sont identiques à la version précédente · Aucune sauvegarde touchée"
 }
