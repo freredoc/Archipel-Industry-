@@ -1,8 +1,8 @@
 {
-  "build": 339,
-  "version": "Alpha 14.57",
+  "build": 340,
+  "version": "Alpha 14.58",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Les machines s'ENTENDENT depuis la carte : le bourdon du Collisionneur monte quand tu t'en approches et quand tu zoomes, et il se déplace à gauche ou à droite du casque selon l'endroit où il se trouve à l'écran · La CENTRALE NUCLÉAIRE a désormais sa propre voix : elle monte pendant les 5 minutes de calibrage, tient à pleine puissance, redescend à l'arrêt — et une centrale éteinte est TOTALEMENT silencieuse · Au casque, la scène sonore suit ce que tu regardes · Rien ne change dans le jeu lui-même : aucune règle, aucune recette, aucune sauvegarde touchée"
+  "notes": "Le Collisionneur ne pardonne plus rien : une seule seconde sans assez d'électricité et il S'ARRÊTE — les 10 minutes de démarrage repartent de zéro et la séquence est à relancer à la main · Plus d'hélium 3 et c'est un ARRÊT TOTAL : son interrupteur retombe, il ne redémarrera JAMAIS tout seul, il faut aller le rallumer · Sa consommation oscille sur 10 minutes : dimensionne ton réseau sur le PIC, sinon il redémarrera et retombera en panne indéfiniment · Sa fiche compte désormais les « Arrêts (déficit) » à part des « Pénalités », un toast nomme la cause et une astuce explique quoi faire · Aucune sauvegarde touchée"
 }
