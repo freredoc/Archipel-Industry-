@@ -1,8 +1,8 @@
 {
-  "build": 343,
+  "build": 344,
   "version": "Alpha 14.61",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Les RECHERCHES INFINIES sont là : touche le Collisionneur (nœud P3 validé) pour dépenser tes points — 3 points au palier de 10 000 confirmations, puis 1 de plus à chaque doublement · Cinq recherches à 10 niveaux : coût d'amélioration, coût de transit et d'élévateur, coût de remblai, rendement du Séparateur Cryogénique, temps de démarrage du Collisionneur · Chaque point dépensé est DÉFINITIF · Les recherches de COÛT te REMBOURSENT la différence sur tout ce que tu as déjà payé (bâtiments, ports, élévateur, remblais) — versée directement aux ports concernés · Aucune sauvegarde touchée"
+  "notes": "Densifier une mine en V4 demande désormais AUSSI 1 ordinateur quantique et 1 moteur quantique (en plus de l'alliage de tungstène et des pièces de précision) — la chaîne quantique de l'île 6 devient le passage obligé des mines V4 · Correctif : rallumer le Collisionneur après un arrêt hélium 3 ne prélève plus un tick d'hélium à vide quand le réseau électrique s'est effondré entre-temps · Aucune sauvegarde touchée"
 }
