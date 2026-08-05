@@ -7994,8 +7994,17 @@ const SAVE_VERSION = 31;
 // fois, dans l'ordre de création (`cst.seq`), construction et amélioration confondues.
 // ⚠ Aucun débordement : les chantiers en attente reçoivent ZÉRO, même s'il reste du débit — et la
 // catégorie ne réclame que la demande de la TÊTE, pour que le reliquat serve aux sortants/intrants.
-const GAME_BUILD = 341;
-const GAME_VERSION = 'Alpha 14.59';
+// 14.60 — LOT 3A : FONDATIONS DES RECHERCHES INFINIES (nœud 43). Cinq barèmes pilotables (coût
+// d'amélioration, transit + élévateur, remblai, rendement du Séparateur Cryogénique, démarrage du
+// Collisionneur), calcul des points (3 à 10 000 confirmations, +1 à chaque doublement),
+// persistance de `techTree.research` et rafraîchissement PAR TICK (filet H4).
+// ⚠ NI achat, NI remboursement, NI interface : lot 3B. À recherche 0, le jeu est STRICTEMENT
+// identique à 14.59 (série X de non-régression, coûts à l'octet près).
+// ⚠ H1 : les SOFT CAPS (puits, éolienne, COST_SOFTCAP_X2) restent sur UPGRADE_SCALE_BASE = 2,7 à
+// TOUS les niveaux. ⚠ H2 : COLLIDER_START reste la PÉRIODE de la sinusoïde (600, jamais réduite) ;
+// seule la DURÉE de démarrage passe par colliderStartOf().
+const GAME_BUILD = 342;
+const GAME_VERSION = 'Alpha 14.60';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8004,7 +8013,7 @@ const GAME_VERSION = 'Alpha 14.59';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Au SOUTERRAIN, les chantiers se font désormais UN PAR UN, dans l'ordre où tu les as lancés : fini les dix bâtiments qui descendent tous au dixième de la vitesse sans qu'aucun n'aboutisse · Un chantier qui attend son tour le DIT dans sa fiche (« en attente · N chantier(s) devant ») et le panneau Élévateur affiche la longueur de la file · Le débit que le chantier de tête n'utilise pas part aux sortants et aux intrants au lieu d'être immobilisé · CORRECTIF : le Collisionneur ne pouvait pas être jugé au tout premier tick d'une partie rechargée — il pouvait subir un arrêt total « plus d'hélium 3 » imméritée, et brûler de l'hélium sans même être relié au câble · Aucune sauvegarde touchée";
+const GAME_NOTES = "Sous le capot : les fondations des RECHERCHES INFINIES du Collisionneur sont posées — les points se gagneront aux confirmations (3 au premier palier de 10 000, puis 1 de plus à chaque doublement) et s'échangeront contre cinq recherches plafonnées : coût d'amélioration, coût de transit et d'élévateur, coût de remblai, rendement du Séparateur Cryogénique, temps de démarrage du Collisionneur · L'ACHAT et l'écran arrivent dans la prochaine mise à jour : pour l'instant RIEN ne change en jeu, tous les coûts et rendements sont identiques à la version précédente · Aucune sauvegarde touchée";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -8599,7 +8608,7 @@ function colliderLoopFrame(game) {
       (typeof document !== 'undefined' && document.hidden);
     if (off) { SFX.loopStop('collider'); return; }
     const f = co.state === 'starting'
-      ? 1 / (1 + Math.exp(-8 * (Math.min(1, (co.timer || 0) / COLLIDER_START) - 0.5)))
+      ? 1 / (1 + Math.exp(-8 * (Math.min(1, (co.timer || 0) / colliderStartOf()) - 0.5)))
       : 1;                                   // 'ready' et 'running' → palier TENU
     // 14.57 — Emprise du Collisionneur : c'est un TERRAIN (`terrain === 'collider'`), pas un
     // bâtiment posé. `colliderBounds` fait déjà ce balayage — on le RÉUTILISE (une seule
@@ -8797,7 +8806,89 @@ function fmtEnergyPair(stored, cap) {
   }
   return fmtSig(stored / div) + ' / ' + fmtSig(cap / div) + ' ' + u;
 }
-const UPGRADE_SCALE = 2.7;
+// ── RECHERCHES INFINIES (nœud 43) ────────────────────────────────────────────────────────────
+// Points gagnés aux confirmations du Collisionneur : 3 au premier palier, +1 à chaque DOUBLEMENT.
+// Ils achètent des niveaux dans RESEARCH_DEFS, tous plafonnés. Chaque point dépensé est DÉFINITIF.
+// ⚠ 14.60 = LOT 3A, les FONDATIONS seulement : ni achat, ni remboursement, ni interface (lot 3B).
+const RESEARCH_FIRST = 10000;  // 1er palier : 3 points d'un coup
+const RESEARCH_FIRST_POINTS = 3;
+const RESEARCH_CAP = 10;       // plafond COMMUN à toutes les recherches
+const RESEARCH_DEFS = {
+  upg:     { base: 2.7, step: 0.01 },  // coût d'amélioration       → 2,60 au cap
+  transit: { base: 2,   step: 0.03 },  // coût transit ET élévateur → 1,70 au cap
+  remblai: { base: 10,  step: 0.3  },  // coût de remblai           → 7,00 au cap
+  sep:     { mult: 1.1             },  // rendement Séparateur (multiplicatif, He3 ET He4)
+  boot:    { base: 600, step: 30   }   // démarrage Collisionneur   → 300 s au cap
+};
+const RESEARCH_KEYS = Object.keys(RESEARCH_DEFS);
+// Niveau acheté d'une recherche, TOUJOURS borné [0, RESEARCH_CAP] — une save trafiquée ne doit
+// pas pouvoir pousser la base transit sous 1,7 ni le remblai sous 7 (barèmes jamais validés).
+function researchLvl(game, key) {
+  const r = game && game.techTree && game.techTree.research;
+  return Math.max(0, Math.min(RESEARCH_CAP, (r && +r[key]) || 0));
+}
+// Points GAGNÉS — fonction PURE, jamais persistée (un compteur stocké peut désynchroniser).
+// ⚠ Boucle entière et NON Math.log2 : à 20 000 pile, log2(2) peut rendre 0,9999999 → 1 point perdu.
+function researchPointsEarned(game) {
+  if (!isNodeConfirmed(game, COLLIDER_PUZZLE_NODES[2])) return 0; // nœud 43
+  const conf = game && game.techTree && game.techTree.colliderConfirms || 0;
+  if (conf < RESEARCH_FIRST) return 0;
+  let n = 0, t = RESEARCH_FIRST;
+  while (conf >= t * 2) { t *= 2; n++; }
+  return RESEARCH_FIRST_POINTS + n;
+}
+function researchPointsSpent(game) {
+  let s = 0;
+  for (const k of RESEARCH_KEYS) s += researchLvl(game, k);
+  return s;
+}
+function researchPointsAvailable(game) {
+  return Math.max(0, researchPointsEarned(game) - researchPointsSpent(game));
+}
+// Sorties de base du Séparateur Cryogénique — RÉFÉRENCE FIGÉE. Le rafraîchissement recalcule
+// TOUJOURS depuis elle, jamais depuis la valeur courante (sinon l'effet se composerait à chaque
+// tick et l'hélium partirait à l'infini en quelques minutes).
+const CRYO_BASE_OUT = { helium3: 0.01, helium4: 0.1, methane: 0.89 };
+// Barèmes COURANTS. Variables de module rafraîchies par refreshResearchEffects (cf. H4) : les
+// enfiler dans les 25 sites d'appel de upgradeCost/cumulativeInvested serait un chantier à risque
+// pour aucun gain. L'appel PAR TICK est le filet de sécurité : un site d'invalidation oublié
+// coûte au pire un tick de décalage, jamais une dérive permanente (leçon 14.51 : un cache de
+// module JAMAIS invalidé est le vrai défaut, pas le cache lui-même).
+let UPGRADE_SCALE_CUR = 2.7;
+let PORT_SCALE_CUR = 2;
+let EXT_SCALE_CUR = 10;
+let COLLIDER_START_CUR = 600;
+// Recalcule TOUS les effets de recherche depuis l'état de la partie. Idempotente : l'appeler dix
+// fois de suite donne le même résultat qu'une fois (toutes les valeurs dérivent de bases figées).
+function refreshResearchEffects(game) {
+  const L = k => researchLvl(game, k);
+  UPGRADE_SCALE_CUR    = RESEARCH_DEFS.upg.base     - RESEARCH_DEFS.upg.step     * L('upg');
+  PORT_SCALE_CUR       = RESEARCH_DEFS.transit.base - RESEARCH_DEFS.transit.step * L('transit');
+  EXT_SCALE_CUR        = RESEARCH_DEFS.remblai.base - RESEARCH_DEFS.remblai.step * L('remblai');
+  COLLIDER_START_CUR   = RESEARCH_DEFS.boot.base    - RESEARCH_DEFS.boot.step    * L('boot');
+  // Séparateur : He3 et He4 montent en ×1,1^niveau ; le MÉTHANE est le RELIQUAT (H6) — la recette
+  // convertit 1 gaz fossile, la somme des sorties doit rester exactement 1.
+  // ⚠ Mutation GLOBALE de la def, depuis la base figée CRYO_BASE_OUT : l'avertissement « ne JAMAIS
+  // muter b.outputs » vise la mutation PAR INSTANCE ; ici toutes les instances partagent le même
+  // niveau de recherche, et muter la def rend justes d'un coup la production, le calculateur,
+  // l'arbre techno et les fiches — qu'un helper local laisserait faux (décision H5).
+  const m = Math.pow(RESEARCH_DEFS.sep.mult, L('sep'));
+  const b = BUILDINGS.separateur_cryogenique;
+  if (b && b.outputs) {
+    const h3 = CRYO_BASE_OUT.helium3 * m, h4 = CRYO_BASE_OUT.helium4 * m;
+    b.outputs.helium3 = h3;
+    b.outputs.helium4 = h4;
+    b.outputs.methane = Math.max(0, 1 - h3 - h4);
+  }
+}
+// Durée de démarrage COURANTE du Collisionneur. ⚠ NE PAS confondre avec COLLIDER_START, qui reste
+// la PÉRIODE de la sinusoïde de consommation (cf. H2) et ne bouge JAMAIS.
+const colliderStartOf = () => COLLIDER_START_CUR;
+// 14.60 — SÉPARATION : `UPGRADE_SCALE_BASE` est la valeur de RÉFÉRENCE, utilisée telle quelle par
+// les courbes SOFT CAP (puits de pétrole, éolienne, COST_SOFTCAP_X2), que la recherche
+// « amélioration » n'atteint PAS (décision H1). Le barème NORMAL passe par `UPGRADE_SCALE_CUR`.
+// ⚠ Ne jamais réintroduire un `UPGRADE_SCALE` unique : les deux usages ont divergé.
+const UPGRADE_SCALE_BASE = 2.7;
 // ── Paliers de densification ────────────────────────────────────────────────
 // TIER_NEXT : id courant → { next: id du palier suivant, cap: dernier `upgrade` avant densif }.
 // Au niveau `cap`, le bouton « Améliorer » est remplacé par « Densifier → <next> ».
@@ -9100,11 +9191,12 @@ function repairCost(n) {
   };
 }
 function extensionCost(n) {
-  const f = Math.pow(10, n);
+  // 14.60 — La recherche « remblai » abaisse la base (10 → 7 au cap) + Math.round (H9).
+  const f = Math.pow(EXT_SCALE_CUR, n);
   return {
-    pierre: 10000 * f,
-    ciment: 1000 * f,
-    beton_arme_irradie: 100 * f
+    pierre: Math.round(10000 * f),
+    ciment: Math.round(1000 * f),
+    beton_arme_irradie: Math.round(100 * f)
   };
 }
 // ===== FOREUSE (île 7) — spec d'origine, 14.06 ==============================================
@@ -9190,29 +9282,36 @@ const accCapacity = bld => (BUILDINGS[bld.id] && BUILDINGS[bld.id].capacity || 5
 const COST_SOFTCAP_X2 = { atelier_meca: 1, cablerie: 1, acierie: 1, broyeur_uranium: 1, tour_aerorefrigerante: 1 };
 function upgradeCostFactor(buildingId, level) {
   if (buildingId === 'puits_petrole' && level >= 5) {
-    let p = Math.pow(UPGRADE_SCALE, 4);
+    let p = Math.pow(UPGRADE_SCALE_BASE, 4);
     for (let k = 5; k <= level; k++) p *= 3.0 * Math.pow(1.2, k - 5);
     return p;
   }
   // Éolienne : pas de densification → au-delà du niveau affiché 10, même courbe
   // accélérée que le puits de pétrole, décalée au seuil 10.
   if (buildingId === 'eolienne' && level >= 10) {
-    let p = Math.pow(UPGRADE_SCALE, 9);
+    let p = Math.pow(UPGRADE_SCALE_BASE, 9);
     for (let k = 10; k <= level; k++) p *= 3.0 * Math.pow(1.1, k - 10);
     return p;
   }
   if (COST_SOFTCAP_X2[buildingId] && level >= 10) {
-    let p = Math.pow(UPGRADE_SCALE, 9);
-    for (let k = 10; k <= level; k++) p *= UPGRADE_SCALE * Math.pow(2, k - 9);
+    let p = Math.pow(UPGRADE_SCALE_BASE, 9);
+    for (let k = 10; k <= level; k++) p *= UPGRADE_SCALE_BASE * Math.pow(2, k - 9);
     return p;
   }
-  return Math.pow(UPGRADE_SCALE, level);
+  // 14.60 — Barème NORMAL : la recherche « amélioration » abaisse la base (2,7 → 2,60 au cap).
+  // ⚠ ADAPTATION DU BRIEF (P5), exigée par la décision H1 : les bâtiments à SOFT CAP restent sur
+  // la BASE même SOUS leur seuil — le P5 verbatim les aurait fait payer 2,6^k sous le seuil alors
+  // que les branches ci-dessus repartent d'un préfixe 2,7^4 / 2,7^9 : discontinuité au seuil et
+  // remboursements (cumulativeInvested) incohérents avec ce qui a été réellement payé. H1 le dit
+  // en toutes lettres (« y compris sous leur seuil ») : règle unique, lisible dans l'infobulle.
+  const soft = buildingId === 'puits_petrole' || buildingId === 'eolienne' || COST_SOFTCAP_X2[buildingId];
+  return Math.pow(soft ? UPGRADE_SCALE_BASE : UPGRADE_SCALE_CUR, level);
 }
 function upgradeCost(baseCost, level, buildingId) {
   // Bâtiment de palier (V2/V3/arc) : coût = forfait × 2,7^(level − entry).
   const step = TIER_STEP[buildingId];
   if (step) {
-    const f = Math.pow(UPGRADE_SCALE, level - step.entry);
+    const f = Math.pow(UPGRADE_SCALE_CUR, level - step.entry);
     const out = {};
     for (const k in step.forfait) out[k] = Math.round(step.forfait[k] * f);
     return out;
@@ -9626,8 +9725,9 @@ const ELEVATOR_BASE_COST = {
   cable_irradie: 2500
 };
 const elevatorUpgradeCost = lvl => {
-  const m = Math.pow(2, lvl || 0), out = {};
-  for (const k in ELEVATOR_BASE_COST) out[k] = ELEVATOR_BASE_COST[k] * m;
+  // 14.60 — Même base que le transit (recherche « transit », 2 → 1,70 au cap) + Math.round (H9).
+  const m = Math.pow(PORT_SCALE_CUR, lvl || 0), out = {};
+  for (const k in ELEVATOR_BASE_COST) out[k] = Math.round(ELEVATOR_BASE_COST[k] * m);
   return out;
 };
 // Position de la tuile élévateur d'une île (fixe POUR UNE GRILLE DONNÉE) — mémoïsée.
@@ -10280,7 +10380,11 @@ const COLLIDER_FLAVORS = {
 // Codes d'EXCEPTION (leptons) émis par le COLLISIONNEUR SEUL, jamais par le Data Center : le joueur
 // doit envoyer 1 quelle que soit la comparaison → impose un détecteur de motif en plus du comparateur.
 const COLLIDER_EXCEPTIONS = { '000': 'electron', '111': 'positron' };
-const COLLIDER_START = 600;   // §4 : 10 min de démarrage avant la moindre émission
+// §4 : durée de démarrage AVANT la moindre émission, ET période de la sinusoïde de consommation.
+// ⚠ 14.60 — CES DEUX RÔLES ONT DIVERGÉ. La recherche « démarrage » raccourcit la DURÉE
+// (`colliderStartOf()`), jamais la PÉRIODE : diviser la période par deux changerait tout le profil
+// de charge électrique de la machine, ce qui n'a JAMAIS été demandé. Cette constante = la PÉRIODE.
+const COLLIDER_START = 600;
 const COLLIDER_RAMP = 300;    // §4 : sigmoïde de puissance sur 5 min, MONTANTE ET DESCENDANTE
 // §4 Plafond de puissance par palier (kW) : P1 32 MW, ×16 → P2 512 MW, ×16 → P3 8192 MW.
 const COLLIDER_POWER = { 1: 32768, 2: 524288, 3: 8388608 };
@@ -11125,10 +11229,12 @@ function processCollider(game, isl) {
     const f = Math.min(1, (co.timer || 0) / COLLIDER_RAMP);
     const sig = 1 / (1 + Math.exp(-12 * (f - 0.5)));
     co.cur = COLLIDER_POWER_MIN + (osc - COLLIDER_POWER_MIN) * sig;
-    if (co.timer >= COLLIDER_START) {
+    if (co.timer >= colliderStartOf()) {
       // Démarrage terminé : la machine est PRÊTE mais n'émet rien tant que le joueur n'a pas lancé
       // la séquence (bouton du panneau). Un simple manque de courant ne l'annule pas (`launched`).
-      co.timer = COLLIDER_START;
+      // 14.60 — la DURÉE vient de colliderStartOf() (recherche « démarrage ») ; la PÉRIODE de la
+      // sinusoïde de conso, elle, reste COLLIDER_START (600) — cf. H2, ne jamais les confondre.
+      co.timer = colliderStartOf();
       co.state = co.launched ? 'running' : 'ready';
       // Cloche « prêt » seulement si la machine ATTEND le joueur : si elle enchaîne sur
       // 'running', la séquence était déjà lancée et `colliderLaunch` a sonné.
@@ -13048,6 +13154,10 @@ function onTick(game) {
   // Garde le mode courant à jour au niveau module (flux ÷8 / transit ÷10 en Difficile),
   // quel que soit le chemin de chargement de la partie.
   CURRENT_MODE = game.mode === 'normal' ? 'normal' : 'difficile';
+  // 14.60 — FILET des recherches infinies (décision H4) : les barèmes de module sont réalignés
+  // sur la partie courante AVANT toute lecture de coût. Un site d'invalidation oublié ailleurs
+  // coûte au pire un tick de décalage, jamais une dérive permanente.
+  refreshResearchEffects(game);
   let cur = {
     resChanged: false,
     activeChanged: false,
@@ -15129,9 +15239,12 @@ const PORT_BASE_COST = {
 // Cost to go from current portSpeed level to level+1 = base × 2^(currentLevel).
 function portUpgradeCost(islandId, currentLevel) {
   const base = PORT_BASE_COST[islandId] || {};
-  const mult = Math.pow(2, currentLevel);
+  // 14.60 — La recherche « transit » abaisse la base (2 → 1,70 au cap). Le coût devient alors
+  // fractionnaire → Math.round sur le coût FINAL ; à recherche 0, round(base × 2^n) est
+  // l'identité : aucune régression (H9).
+  const mult = Math.pow(PORT_SCALE_CUR, currentLevel);
   const out = {};
-  for (const k in base) out[k] = base[k] * mult;
+  for (const k in base) out[k] = Math.round(base[k] * mult);
   return out;
 }
 const portSpeedMult = level => Math.pow(2, level || 0);
@@ -17276,7 +17389,7 @@ function InfoPanel({
     row('st', I18N.t('État'), stLabel, stColor);
     row('pal', I18N.t('Palier'), 'P' + pal + ' · ' + Object.keys(COLLIDER_FLAVORS[pal] || {}).length + ' ' + I18N.t('saveurs') + ' · ' + colliderBits(pal) + ' ' + I18N.t('bits'));
     if (repaired && co.state === 'starting') {
-      const left = Math.max(0, COLLIDER_START - (co.timer || 0));
+      const left = Math.max(0, colliderStartOf() - (co.timer || 0));
       row('rem', I18N.t('Démarrage restant'), fmtPlaytime(left).replace(/^00:/, ''), 'var(--orange)');
     }
     // La conso OSCILLE sur 10 min (14.08) : on montre la valeur courante ET la plage.
@@ -21650,6 +21763,8 @@ function App() {
         imported: {},
         logicTriggered: 0,
         colliderConfirms: 0,
+        // 14.60 — Niveaux de recherche infinie achetés (lot 3A : barèmes seulement, achat au 3B).
+        research: { upg: 0, transit: 0, remblai: 0, sep: 0, boot: 0 },
         grantedBuildings: []
       },
       islandUnlocked: {
@@ -21828,6 +21943,10 @@ function App() {
       saveTimer: null
     };
     ensureIslandDefaults(gameRef.current);
+    // 14.60 — Partie NEUVE : barèmes de recherche remis à la base (tout à 0). Sans cet appel, une
+    // nouvelle partie créée après une session sur une save avancée hériterait des barèmes réduits
+    // de l'ancienne partie jusqu'au premier tick.
+    refreshResearchEffects(gameRef.current);
   }
   const game = gameRef.current;
   const [tool, setToolState] = useState(null);
@@ -22174,6 +22293,10 @@ function App() {
       },
       logicTriggered: g.techTree.logicTriggered || 0,
       colliderConfirms: g.techTree.colliderConfirms || 0,
+      // 14.60 — Niveaux de recherche achetés. Champ ADDITIF : absent = tout à 0 → aucune
+      // migration, SAVE_VERSION inchangé. Seul le DÉPENSÉ est persisté (H7 : les points gagnés
+      // sont DÉRIVÉS des confirmations, jamais stockés). Clamp [0, 10] à l'écriture (H10).
+      research: (() => { const r = g.techTree.research || {}, o = {}; for (const k of RESEARCH_KEYS) o[k] = Math.max(0, Math.min(RESEARCH_CAP, +r[k] || 0)); return o; })(),
       grantedBuildings: (g.techTree.grantedBuildings || []).slice()
     };
     return {
@@ -22587,6 +22710,9 @@ function App() {
       } : {},
       logicTriggered: data.techTree && data.techTree.logicTriggered || 0,
       colliderConfirms: data.techTree && data.techTree.colliderConfirms || 0,
+      // 14.60 — Clamp [0, 10] à la LECTURE aussi (H10) : une save trafiquée (upg: 47) ne doit pas
+      // pouvoir pousser la base transit sous 1,7 ni le remblai sous 7. Absent → tout à 0 = 14.59.
+      research: (() => { const r = data.techTree && data.techTree.research || {}, o = {}; for (const k of RESEARCH_KEYS) o[k] = Math.max(0, Math.min(RESEARCH_CAP, +r[k] || 0)); return o; })(),
       grantedBuildings: granted.filter((b, i) => granted.indexOf(b) === i)
     };
     g.islandUnlocked = {
@@ -23183,6 +23309,10 @@ function App() {
     // ayant tické, quand processLogic a rempli `gateWiredInh`) qui prévient le joueur par un toast.
     // ⚠ Jamais signalé dans l'art de la tuile (décision du brief) — panneau + toast seulement.
     g.gateInhibitWarn = true;
+    // 14.60 — Réaligne les barèmes de recherche sur la partie CHARGÉE avant le premier tick :
+    // sans cet appel, la première frame lirait encore les barèmes de la partie précédente
+    // (le filet du tick corrigerait au tick suivant, mais autant charger juste d'emblée).
+    refreshResearchEffects(g);
     return true;
   }
   // Rejoue la production manquée pendant une absence (production hors-ligne / idle).
@@ -28403,7 +28533,13 @@ if (typeof window !== 'undefined') {
     resetSpriteCaches, spriteImg, spriteUsable, drawSprite, spriteImgCache, animImgCache, processCollider, colliderPenalty, processLogic, nominalPower, minPower, TIER_STEP, TIER_NEXT, CARRIER_BY_RES, GAME_BUILD, GAME_VERSION, SAVE_VERSION, RES_SHORT, itemSpriteKey,
     colliderPalier, COLLIDER_FLAVORS, COLLIDER_EXCEPTIONS, COLLIDER_POWER, COLLIDER_GOALS,
     // 14.40 — file de sons simulation → UI et boucle audio du Collisionneur.
-    qSfx, drainSfxQueue, colliderLoopFrame, SFX, COLLIDER_START,
+    qSfx, drainSfxQueue, colliderLoopFrame, SFX, COLLIDER_START, colliderStartOf,
+    // 14.60 — Recherches infinies (lot 3A). `researchScales` est un GETTER : les barèmes courants
+    // sont des `let` de module, les figer dans l'objet __heat rendrait les tests mensongers.
+    RESEARCH_DEFS, RESEARCH_KEYS, RESEARCH_CAP, RESEARCH_FIRST, RESEARCH_FIRST_POINTS, CRYO_BASE_OUT,
+    researchLvl, researchPointsEarned, researchPointsSpent, researchPointsAvailable, refreshResearchEffects,
+    researchScales: () => ({ upg: UPGRADE_SCALE_CUR, transit: PORT_SCALE_CUR, remblai: EXT_SCALE_CUR, boot: COLLIDER_START_CUR }),
+    upgradeCost,
     // 14.39 — palier/garde-fou du Collisionneur, fluides du Refroidisseur, refroidissement nucléaire.
     COLLIDER_REPAIR_NODES, COLLIDER_PUZZLE_NODES, isNodeConfirmed, colliderGoalLocked, colliderLaunchBlock,
     coolerModesAvailable, coolerModesFor, islandNuclearCoolingOk, junctionDirOk, NET_PREFIX, NET_MASK_SUFFIX,
