@@ -17,7 +17,77 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 340`, `GAME_VERSION = 'Alpha 14.58'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 341`, `GAME_VERSION = 'Alpha 14.59'`, `SAVE_VERSION = 31`.**
+  Changement 14.59 (brief `BRIEFHOTFIXP13ETSOUTERRAINFIFOL2`, **LOT 2, deux sous-lots indépendants**) :
+  **(§A) le Collisionneur ne peut plus être jugé au premier tick d'une session ; (§B) la construction
+  SOUTERRAINE passe du proportionnel à une FILE STRICTE.** `SAVE_VERSION` INCHANGÉ ; seul champ ajouté
+  `cb.seq`, **optionnel** avec réattribution au chargement. Base du brief EXACTE (340 / 14.58 /
+  3 158 046 o) : les **10 ancres sont sorties UNIQUES**.
+  (1) **§A — TICK BLANC** : `processCollider` tourne **AVANT** la boucle énergie, donc au tout premier
+  tick `co.powered` vaut `undefined` (champ transitoire, jamais persisté) — et `undefined === false`
+  étant FAUX, la machine était réputée **alimentée** et descendait droit au carburant. Deux dégâts,
+  tous deux mesurés : (a) une partie rechargée sans He3 prenait un **ARRÊT TOTAL** (interrupteur qui
+  tombe) là où le tick suivant aurait donné un arrêt `power` **récupérable seul** ; (b) `colliderDrawHe3`
+  était appelé et **prélevait réellement l'hélium** sur une partie **sans câble relié** — exactement ce
+  que le tout-ou-rien de 14.24 existe pour empêcher. Désormais, tant que `typeof co.powered !== 'boolean'`,
+  on ne juge RIEN : `want`/`cur`/`he3Used`/`palier`/`goal` seulement, puis `return`.
+  ⚠ **Ce n'est PAS une tolérance au sens de D1 (14.58)** : D1 porte sur un déficit **CONSTATÉ**, ici le
+  capteur n'a pas encore parlé. **D1 reste intégralement en vigueur** (V1→V8 rejoués, tous PASS).
+  ⚠ **Tick BLANC au sens strict** : ne touche NI `halt`, NI `_haltPrev`, NI `state`, NI `timer`, NI
+  `stops`, NI `enabled` — sinon un simple rechargement compterait un **arrêt fantôme**.
+  (2) **§B — FILE STRICTE (FIFO)** : l'enveloppe « construction » de l'élévateur était répartie
+  **proportionnellement** → dix bâtiments posés ensemble descendaient tous au dixième de la vitesse et
+  aucun n'aboutissait. Désormais **un chantier à la fois**, trié sur `cst.seq` (ordre de CRÉATION, pas
+  la géométrie de la grille), **construction et amélioration dans la MÊME file** (vérifié).
+  ⚠ **`consDem` = `rem` de la TÊTE SEULEMENT**, pas la somme de la file (décision E2) : sinon la
+  catégorie réclamerait le débit de toute la file et l'**immobiliserait sans l'utiliser** — le FIFO
+  gaspillerait l'élévateur au lieu de le sérialiser. Mesuré à débit 16 384 : demande totale **4**
+  (= la tête), le reliquat reste disponible pour les sortants/intrants.
+  ⚠ **AUCUN débordement (E1)** : les chantiers en attente reçoivent **zéro**, même s'il reste du débit.
+  ⚠ **UN TICK DE LATENCE entre deux chantiers (E5)**, assumé : quand la tête se finalise, la suivante
+  ne prend le relais qu'au tick suivant. Mesuré sur 3 chantiers de 32 u à 16 u/s : finalisations aux
+  ticks 1 / 3 / 5, **0 chevauchement** (jamais deux `rate > 0` au même tick).
+  ⚠ **`nextUgSeq` porte son compteur sur `game`, PAS au niveau module** : un compteur de module n'est
+  jamais réinitialisé au changement de partie ni au chargement — c'est exactement le défaut corrigé en
+  14.51 sur `_elevTileCache`. `game.ugSeq` est **DÉRIVÉ au chargement** (`max + 1`), jamais persisté.
+  ⚠ **ÉCART AU BRIEF (P19)** : le §5 propose `gameRef.current` pour `restoreUgSeq` ; dans `loadSave` la
+  variable en portée est **`g`** (l'objet de partie en cours de construction), `gameRef.current` ne
+  pointe pas encore dessus. Corrigé, et la fonction est appelée **après la boucle des îles**.
+  (3) **UI** : la fiche d'un chantier en attente affiche **« en attente · N chantier(s) devant »** au
+  lieu d'un « en construction · 0 % » qui ne bouge pas (sans quoi le joueur croit l'élévateur en
+  panne) ; le panneau Élévateur gagne **« Chantiers en file : N · un seul servi à la fois »**, masquée
+  quand la file vaut 0 ou 1 (`consQueue` ajouté à `elevatorFlow`).
+  Validé : `node --check` (**7 blocs, 7 OK**) + Chromium **2 suites, 21 assertions, 0 KO, 0
+  `pageerror`** (seul bruit : le **404 PRÉEXISTANT** du serveur de test), suites **rejouées 2 fois sans
+  flottement**. §A : W1 (tick 1 → `enabled` true, `he3Used` 0, **stock He3 strictement inchangé**,
+  `stops` 0, état intact), W2 (tick 2 → `halt 'power'`, `stops` 1, jamais `'fuel'`), W3 (600 ticks
+  nominaux → `stops` 0), W4 (**non-régression du lot 1** : V1/V2/V3/V4/V8 tous conformes). §B : W5
+  (3 chantiers → `rate` 16/0/0, `queue` 0/1/2), W6+W15 (**0 chevauchement**, finalisations
+  séquentielles), W7 (E2 : demande = tête seule), W8 (construction + amélioration dans UNE file), W9
+  (fiche « en attente · 1 chantier(s) devant »), W10 (`consQueue` 3/1/0), W11 (**pose RÉELLE par
+  `tryPlace` ×3** → `seq` 1<2<3, save réelle écrite avec `cb.seq`, rechargée → **ordre identique**,
+  `ugSeq` 3), W12 (save **privée de `cb.seq`** → rangs réattribués dans l'ordre de balayage, 0
+  `tickError`), W13 (1 seul chantier → **16 u/s, débit plein, aucune régression**), W14 (souterrain non
+  relié → rien n'avance, 0 erreur).
+  ⚠ **PIÈGES DE HARNAIS (coûteux)** : (a) **`localStorage.clear()` dans un `addInitScript` REJOUE À
+  CHAQUE reload** → un test de rechargement repart sur une partie NEUVE (piège (h) déjà documenté en
+  14.47, retombé dessus) : garder le nettoyage derrière un drapeau posé au 1ᵉʳ boot ; (b) sans **ROUTE
+  port ↔ tuile élévateur EN SURFACE** (île 6), `undergroundBlocked` est vrai depuis 14.50 et
+  l'élévateur ne descend RIEN — on mesure alors le blocage, pas la file (m'a donné 5 faux KO) : le
+  harnais trace la route par un BFS sur l'île 6 ; (c) `tryPlace` échoue en silence si le **port de
+  l'île 6** ne couvre pas le coût (la construction souterraine y est payée) → remplir **toutes** les
+  clés de `RES_SHORT`, pas une liste choisie à la main ; (d) après un `reload`, attendre que
+  **`window.__gameRef.current.islands[7]`** existe : `!document.getElementById('splash')` ne suffit
+  pas, `gameRef.current` est encore `null` un instant.
+  ⚠ **Taille : 3 158 046 → 3 164 819 o (+6 773 o).**
+  ⚠ **HORS PÉRIMÈTRE, non touché (§3)** : tout le régime de déficit du lot 1 (`co.halt`, `co.stops`,
+  `stLabel`, toasts, astuce), `elevatorAllocate`, `elevatorRateAt`, `ELEVATOR_BASE_RATE`, les 3 modes
+  de répartition, l'ordre des catégories, le bridage `elevInFac`/`elevOutFac` (14.05), `underWorks` et
+  le refus d'empiler deux travaux sur un même bâtiment, les foreuses, l'échappement, la chaleur de la
+  cage, et **toute recherche infinie / réduction de coût / remboursement : LOT 3.**
+  ⚠ **Aucun réordonnancement par le joueur (E6)** : la file est strictement FIFO, à rouvrir seulement
+  si l'usage le réclame.
+- **État précédent : `GAME_BUILD = 340`, `GAME_VERSION = 'Alpha 14.58'`, `SAVE_VERSION = 31`.**
   Changement 14.58 (brief `BRIEFCOLLISIONNEURDEFICITL1`, **LOT 1**) : **LE COLLISIONNEUR NE TOLÈRE
   PLUS AUCUN DÉFICIT — revirement assumé de 14.17.** `SAVE_VERSION` INCHANGÉ ; le seul champ ajouté
   (`collider.stops`) est **OPTIONNEL avec repli `0`**. Base du brief EXACTE (339 / 14.57 /
