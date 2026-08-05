@@ -20863,7 +20863,9 @@ function OptionsModal({
       if (build > GAME_BUILD) setUpd({
         state: 'available',
         label: d.version || ('build ' + build),
-        // Édition testeur : APK testeur (repli sur l'APK dev si le champ manque).
+        // Édition DEV → `apkDev`. Le repli `|| d.apk` couvre un version.json ANTÉRIEUR à
+        // 14.55 (pas de champ `apkDev`). Édition PUBLIQUE → `apk`. ⚠ `apk` désigne désormais
+        // l'APK PUBLIQUE, d'appId différent de la dev : voir la note de migration du build 337.
         apk: (DEV_BUILD ? d.apkDev || d.apk : d.apk) || d.url || '',
         notes: d.notes || ''
       });else setUpd({
@@ -21641,7 +21643,9 @@ function App() {
         setUpdateInfo({
           build,
           label: d.version || ('build ' + build),
-          // Édition testeur : APK testeur (repli sur l'APK dev si le champ manque).
+          // Édition DEV → `apkDev`. Le repli `|| d.apk` couvre un version.json ANTÉRIEUR à
+          // 14.55 (pas de champ `apkDev`). Édition PUBLIQUE → `apk`. ⚠ `apk` désigne désormais
+          // l'APK PUBLIQUE, d'appId différent de la dev : voir la note de migration du build 337.
           apk: (DEV_BUILD ? d.apkDev || d.apk : d.apk) || d.url || '',
           notes: d.notes || ''
         });
@@ -23317,7 +23321,7 @@ function App() {
   // On accélère le TEMPS (plus de ticks/s), jamais les débits. En 10×, l'audio est coupé
   // automatiquement ; au retour en 1×, il est restauré en respectant le choix du joueur.
   function toggleFastMode() {
-    if (!DEV_BUILD) return; // mode rapide ×10 réservé au build dev (public et testeur : ×1)
+    if (!DEV_BUILD) return; // mode rapide ×10 réservé au build dev (édition publique : ×1)
     const g = gameRef.current;
     const goingFast = (g.timeScale || 1) === 1;
     if (goingFast) {

@@ -17,7 +17,99 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 336`, `GAME_VERSION = 'Alpha 14.54'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 337`, `GAME_VERSION = 'Alpha 14.55'`, `SAVE_VERSION = 31`.**
+  Changement 14.55 (brief `BRIEFEDITIONSCI`) : **DEUX ÉDITIONS AU LIEU DE TROIS — `TESTER_BUILD` est
+  SUPPRIMÉ, le MODE DÉVELOPPEUR passe sous `DEV_BUILD`, `index.html` (PWA) est bâti depuis l'édition
+  PUBLIQUE, et les 2 étapes CI à effet de bord sont GATÉES sur `main`.** `SAVE_VERSION` INCHANGÉ.
+  Les **16 ancres (H1→H5, W1→W10, G1) sont sorties telles quelles** (H2 à `count == 2` par conception).
+  (1) **`TESTER_BUILD` SUPPRIMÉ du HTML.** Une fois le Mode développeur passé sous `DEV_BUILD`, il ne
+  gatait plus AUCUNE différence de jeu — seulement le canal de MAJ et le suffixe d'étiquette : édition
+  testeur et édition publique étaient devenues identiques. Il ne reste que **2 commentaires**, 0 code.
+  (2) **Le Mode développeur (construction/améliorations gratuites) passe sous `DEV_BUILD`**, avec le
+  mode rapide ×10. ⚠ **`DEV_BUILD` n'est PAS `g.ui.dev`** : `g.ui.dev` est l'INTERRUPTEUR (Options),
+  `DEV_BUILD` est le BUILD qui a le droit de l'afficher. **`toggleDev` est l'UNIQUE écriture de
+  `g.ui.dev` dans tout le fichier** (vérifié par grep : les 2 autres occurrences sont les `dev: false`
+  d'init) → avec `if (!DEV_BUILD) return;` en tête, l'édition publique ne peut JAMAIS l'activer.
+  ⚠ **C'est ce qui rend le non-bump de `SAVE_VERSION` correct** : `dev` est absent de `uiPrefs`
+  (vérifié) et les 2 chemins d'init le forcent à `false`. Mesuré en moteur réel : publique → coût
+  débité EXACTEMENT ; dev + mode dev ON → 0 débité ; dev + mode dev OFF → coût débité.
+  ⚠ **Piège connu, sans conséquence ici** : `loadSave` fait `if (!g.ui) g.ui = {…dev:false…}` → charger
+  une save dans une session où `g.ui` EXISTE DÉJÀ conserve `dev`. Inatteignable en publique (dev ne peut
+  jamais y devenir vrai) ; en dev c'est le comportement voulu.
+  (3) **Canal de MAJ à 2 branches** : `apk: (DEV_BUILD ? d.apkDev || d.apk : d.apk) || d.url || ''`
+  (**2 sites** : boot + vérification manuelle). `version.json` : `build/version/url/apk/apkDev/notes`,
+  **`apkTester` supprimé**. Le repli `|| d.apk` couvre un `version.json` ANTÉRIEUR sans `apkDev`
+  (testé : jamais de lien vide, repli en cascade jusqu'à `d.url` puis `''`).
+  (4) **CI — 2 APK.** **PUBLIQUE** `ArchipelIndustry.apk`, appId **`fr.archipel.industry.pub`**, libellé
+  « Archipel Industry ». **DEV** `ArchipelIndustryDev.apk`, **appId d'ORIGINE `fr.archipel.industry`**
+  (pas de `-PappId`), libellé « Archipel Ind. Dev ».
+  ⚠ **L'appId d'origine reste sur la DEV À DESSEIN** : c'est le seul APK installé aujourd'hui, le garder
+  préserve son dossier de données WebView **donc la sauvegarde d'Ethan**. La publique prend un appId neuf
+  que personne n'a. Réversible à coût nul TANT QUE personne n'a installé la publique.
+  ⚠ **La PUBLIQUE est construite AVANT la DEV** pour que l'assertion d'appId par défaut de la dev ne
+  puisse pas être satisfaite par un reste de la publique.
+  ⚠ **Nouvelle étape `Assert appIds`** (hors brief, ajoutée) : `aapt2 dump badging` sur les 2 APK, échec
+  dur si l'un n'a pas l'appId attendu **ou si les 2 sont identiques** (installation côte à côte
+  impossible) → le V14 du brief devient une assertion CI au lieu d'un contrôle manuel.
+  (5) **`index.html` (PWA / navigateur — SEUL canal des utilisateurs Apple) est bâti depuis l'édition
+  PUBLIQUE**, avec une **assertion BLOQUANTE `grep -q "^const DEV_BUILD = false;$" index.html`**.
+  ⚠ **NE JAMAIS RETIRER CETTE LIGNE** : c'est elle qui empêche la version web de partir en édition dev
+  (construction gratuite pour tout le monde). Sabotage testé localement → le job échoue bien.
+  (6) **GATE DE BRANCHE `if: github.ref == 'refs/heads/main'` sur EXACTEMENT 2 étapes** : `Sync
+  version.json` (elle **pousse sur main**) et `Publish` (elle **recrée la release**). Build, artefacts
+  et `Sync PWA` restent LIBRES → on peut vérifier une branche sans rien publier.
+  ⚠ **C'est le correctif d'un vrai danger** relevé au lot précédent : `git push origin HEAD:main`
+  n'était gaté par RIEN — un dispatch depuis une branche publiait des APK issus de code non mergé ET
+  annonçait la version aux joueurs. Le `|| echo` qui avalait l'échec du push devient un `::warning::`.
+  ⚠ **ORDRE DES 2 ÉTAPES GATÉES INVERSÉ (revue adversariale)** : `Publish` tourne AVANT `Sync
+  version.json` — on téléverse les assets AVANT de les annoncer, sinon chaque run `main` ouvrait une
+  fenêtre où `version.json` pointait un nom d'asset absent de la release (404), aggravée par le
+  RENOMMAGE de l'asset public de ce lot. Si le push d'annonce échoue ensuite, la release est bonne et
+  les joueurs voient simplement encore l'ancienne version : dégradation sûre.
+  ⚠ **`concurrency.group` passe de global à PAR REF** (`android-apk-${{ github.ref }}`) : avec un
+  groupe global + `cancel-in-progress`, un dispatch de vérification depuis une branche — l'usage même
+  que le gate encourage — ANNULAIT un run `main` en cours, potentiellement entre le `gh release
+  delete` et le `create` de Publish → release détruite.
+  ⚠ **Durcissements de la même revue** : l'édition embarquée est vérifiée SUR L'ASSET des 2 APK
+  (`grep DEV_BUILD` sur `assets/index.html` avant chaque gradle — la publique DOIT être `false`, la
+  dev `true`) ; `Assert appIds` ne se désarme plus en silence (repli `aapt2` → `aapt` → **échec dur**,
+  plus de `::warning::` muet) ; le `BUILD` extrait pour le cache `sw.js` est validé « entier non
+  nul » (la garde d'avant comparait le sed à la MÊME variable : tautologique, un repli `0` passait) ;
+  `_config.yml` réécrit (il documentait le pipeline à 3 éditions et affirmait que la source était
+  l'édition dev — désormais : source = PUBLIQUE, `game-public.html` ajouté à l'exclude) ;
+  `android.yml.patched` (copie périmée du workflow, 0 référence) SUPPRIMÉ ; les 2 commentaires
+  au-dessus des lignes `apk:` réécrits (ils décrivaient encore testeur/apkTester avec le MAUVAIS
+  sens de repli).
+  (7) **`build.gradle` : COMMENTAIRE UNIQUEMENT** (`applicationId` inchangé, vérifié : 0 ligne de diff
+  non-commentaire).
+  Validé : `node --check` (**7 blocs, 7 OK**) + lint YAML + Chromium **55 assertions, 0 KO** (4 langues,
+  2 éditions, moteur réel) + **5 min de jeu par édition** (300 ticks, 0 `tickErrors`, 0 erreur console).
+  **CI RÉELLE — run #460 dispatché SUR LA BRANCHE** : succès, artefact produit, et **les 2 étapes gatées
+  prouvées SAUTÉES par leurs conséquences observables** — `main` n'a reçu AUCUN commit de synchro
+  (toujours `build 336`, clé `apkTester` encore là) et la release décrit toujours les anciennes éditions.
+  Le run ayant réussi, l'étape non gatée `Assert appIds` (échec dur) est passée → les 2 appId sont bons
+  et distincts.
+  ⚠ **PIÈGE DE HARNAIS (coûteux, nouveau)** : les panneaux `.slot-list` **DÉFILENT**. Un bouton en bas de
+  liste (ex. le toggle Mode développeur, y≈1060 dans un viewport de 900) est **hors viewport** :
+  `elementFromPoint` rend `null` et le clic souris part dans le vide **sans aucune erreur** — le test
+  conclut à tort que le bouton ne marche pas. Le `realClick` du harnais fait désormais TOUJOURS un
+  `scrollIntoView({block:'center'})` puis vérifie que la cible est bien dans le viewport ET au-dessus.
+  ⚠ **Autre piège** : les INFRA (`road`/`pipe`/`wire`) ont **`cost: {}`** (prix via `networkUnitCost`) →
+  un test « le coût est débité » posé sur une route est VACUEUX (0 attendu, 0 mesuré, vert à tort). Poser
+  un vrai bâtiment à `cost` non vide.
+  ⚠ **ÉTAPE MANUELLE UNIQUE POUR ETHAN** : son APK installé (build 336, `DEV_BUILD=false`) lit `d.apk`,
+  qui pointe désormais sur l'édition **publique**, d'appId DIFFÉRENT → Android l'installerait À CÔTÉ.
+  **Une seule fois : installer `ArchipelIndustryDev.apk` depuis la release** (même appId → mise à jour en
+  place, sauvegarde conservée). Ensuite les MAJ suivront `apkDev` toutes seules.
+  ⚠ **Corollaire non listé par le brief** : une installation **TESTEUR** encore déployée tourne sur
+  l'ancien code (`TESTER_BUILD = true`) et lit `d.apkTester || d.apk` ; `apkTester` disparaissant, elle
+  retombe sur `d.apk` = la publique, d'appId différent → installation à côté. C'est la migration
+  attendue (les 2 éditions étant devenues identiques), mais il faut le savoir.
+  ⚠ **Taille : 3 134 927 → 3 136 543 o (+1 616 o)** — commentaires de décision + note de version
+  (dont les commentaires de canal réécrits après revue).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `SUPPORT_URL` (toujours placeholder vide → section soutien masquée),
+  toute mécanique de jeu, le contenu de `sw.js` hors bump de cache, la signature APK et le keystore.
+- **État précédent : `GAME_BUILD = 336`, `GAME_VERSION = 'Alpha 14.54'`, `SAVE_VERSION = 31`.**
   Changement 14.54 (brief `BRIEFBOOSTERDEVSOUTIEN`, lots A/B/C) : **LE BOOSTER DE VITESSE EST
   SUPPRIMÉ, le MODE RAPIDE ×10 devient exclusif au build dev (`DEV_BUILD`), et les Options gagnent
   une section « Soutenir le projet » (`SUPPORT_URL`).** `SAVE_VERSION` INCHANGÉ — les champs

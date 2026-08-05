@@ -32,7 +32,12 @@ permissions:
   contents: write               # nécessaire pour créer la Release
 
 concurrency:
-  group: android-apk
+  # ⚠ CLÉ PAR REF, et pas un groupe global : le gate de branche encourage les dispatches de
+  # vérification depuis une branche. Avec un groupe unique + cancel-in-progress, un tel dispatch
+  # ANNULERAIT le run `main` en cours — potentiellement entre le `gh release delete` et le
+  # `gh release create` de l'étape Publish, ce qui DÉTRUIRAIT la release. Chaque ref a donc sa
+  # file : une branche ne peut plus interrompre main.
+  group: android-apk-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -92,6 +97,11 @@ jobs:
           VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
           echo "versionCode=$BUILD versionName=$VERSION"
           cp ../game-public.html app/src/main/assets/index.html
+          # ⚠ ASSERTION BLOQUANTE, symétrique de celle de la PWA : on vérifie l'édition SUR
+          # L'ASSET RÉELLEMENT EMBARQUÉ, pas seulement sur le fichier intermédiaire. C'est
+          # l'invariant central du lot (l'edition publique n'a pas le mode développeur).
+          grep -q "^const DEV_BUILD = false;$" app/src/main/assets/index.html \
+            || { echo "::error::l'asset embarque dans l'APK PUBLIQUE n'est pas l'edition publique"; exit 1; }
           ./gradlew assembleDebug --no-daemon --stacktrace \
             -Pvcode="${BUILD:-1}" -Pvname="${VERSION:-1.0}" \
             -PappId="fr.archipel.industry.pub" \
@@ -104,6 +114,10 @@ jobs:
           BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
           VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
           cp ../game-dev.html app/src/main/assets/index.html
+          # Assertion miroir de celle de la publique : l'asset embarqué doit être l'édition DEV
+          # (attrape une inversion de `cp` entre les deux builds).
+          grep -q "^const DEV_BUILD = true;$" app/src/main/assets/index.html \
+            || { echo "::error::l'asset embarque dans l'APK DEV n'est pas l'edition dev"; exit 1; }
           # PAS de -PappId : la dev garde l'appId d'ORIGINE (fr.archipel.industry) pour
           # continuer à mettre à jour l'app déjà installée sans perdre sa sauvegarde.
           ./gradlew assembleDebug --no-daemon --stacktrace \
@@ -113,10 +127,14 @@ jobs:
 
       - name: Assert appIds (les 2 éditions doivent être installables côte à côte)
         run: |
+          # ⚠ Ce garde-fou est le SEUL rempart contre deux APK au même appId (l'un écraserait
+          # l'autre à l'installation, et avec lui sa sauvegarde). Il ne doit donc PAS se désarmer
+          # tout seul : si aucun outil n'est trouvable, on ÉCHOUE. build-tools;34.0.0 est installé
+          # explicitement par une étape précédente, aapt2 y est toujours.
           AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1)
-          if [ -z "$AAPT" ]; then
-            echo "::warning::aapt2 introuvable — assertion d'appId sautée."; exit 0
-          fi
+          [ -n "$AAPT" ] || AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt 2>/dev/null | sort -V | tail -1)
+          [ -n "$AAPT" ] \
+            || { echo "::error::ni aapt2 ni aapt trouvables — impossible de verifier les appId"; exit 1; }
           pkg() { "$AAPT" dump badging "$1" | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -1; }
           PUB=$(pkg ArchipelIndustry.apk); DEV=$(pkg ArchipelIndustryDev.apk)
           echo "publique = $PUB"; echo "dev      = $DEV"
@@ -157,7 +175,12 @@ jobs:
       - name: Sync PWA (index.html + sw.js cache)
         run: |
           BUILD=$(grep -oP "const GAME_BUILD = \\K[0-9]+" Archipel_industry_alpha-7.html | head -1)
-          BUILD="${BUILD:-0}"
+          # ⚠ La garde plus bas compare le sed à la MÊME variable : elle ne peut donc PAS
+          # rattraper un BUILD faux. On valide donc la VALEUR ici — un entier non nul —, sinon
+          # le cache du service worker partirait en `archipel-0` et ne se rafraîchirait jamais.
+          case "$BUILD" in
+            ''|*[!0-9]*|0) echo "::error::GAME_BUILD illisible ou nul ('$BUILD') — ligne const renommee/reformatee ?"; exit 1 ;;
+          esac
           echo "PWA build=$BUILD"
           test -f game-public.html \
             || { echo "::error::game-public.html absent"; exit 1; }
@@ -173,8 +196,39 @@ jobs:
             || { echo "::error::bump du cache SW echoue"; exit 1; }
           echo "sw.js -> $(grep '^var CACHE' sw.js)"
 
+      - name: Publish to "apk-latest" release
+        # Gate de branche : cette étape RECRÉE la release publique. Jamais depuis une branche.
+        # ⚠ ORDRE VOULU : Publish tourne AVANT « Sync version.json ». On téléverse les assets
+        # AVANT d'annoncer la version, sinon `version.json` pointerait un nom de fichier absent
+        # de la release (404 pour le joueur) — d'autant plus que ce lot RENOMME l'asset public.
+        # Si le push de l'annonce échoue ensuite, la release est bonne et les joueurs voient
+        # simplement encore l'ancienne version : dégradation sûre.
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete apk-latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create apk-latest ArchipelIndustry.apk ArchipelIndustryDev.apk \
+            --title "APK Android — dernière version" \
+            --notes "Application Android **Archipel Industry** (hors-ligne) — deux éditions :
+
+          - \`ArchipelIndustry.apk\` — **édition publique**. C'est celle à installer. Pas de mode développeur, pas de mode rapide. Même contenu que la version web.
+          - \`ArchipelIndustryDev.apk\` — **édition dev** (construction gratuite + mode rapide ×10). Réservée au développement.
+
+          Les deux s'installent côte à côte sur le même téléphone (identifiants d'application distincts).
+
+          ⚠ **Si vous aviez déjà l'application installée**, elle correspond à l'édition **dev** : c'est \`ArchipelIndustryDev.apk\` qui la met à jour en conservant votre sauvegarde. Installer l'édition publique l'ajoute À CÔTÉ, avec une sauvegarde vierge.
+
+          Installation :
+          1. Téléchargez l'APK voulu ci-dessous.
+          2. Ouvrez le fichier ; autorisez l'installation depuis cette source si demandé.
+          3. Lancez **Archipel Industry** (publique) ou **Archipel Ind. Dev**.
+
+          Construit automatiquement depuis \`Archipel_industry_alpha-7.html\`."
+
       - name: Sync version.json from the game's GAME_BUILD
         # Gate de branche : cette étape POUSSE sur main. Sur une branche, on ne publie rien.
+        # ⚠ Elle vient APRÈS Publish : elle ANNONCE des assets qui existent déjà.
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -211,28 +265,3 @@ jobs:
           else
             echo "version.json + PWA already up to date."
           fi
-
-      - name: Publish to "apk-latest" release
-        # Gate de branche : cette étape RECRÉE la release publique. Jamais depuis une branche.
-        if: github.ref == 'refs/heads/main'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release delete apk-latest --yes --cleanup-tag 2>/dev/null || true
-          gh release create apk-latest ArchipelIndustry.apk ArchipelIndustryDev.apk \
-            --title "APK Android — dernière version" \
-            --notes "Application Android **Archipel Industry** (hors-ligne) — deux éditions :
-
-          - \`ArchipelIndustry.apk\` — **édition publique**. C'est celle à installer. Pas de mode développeur, pas de mode rapide. Même contenu que la version web.
-          - \`ArchipelIndustryDev.apk\` — **édition dev** (construction gratuite + mode rapide ×10). Réservée au développement.
-
-          Les deux s'installent côte à côte sur le même téléphone (identifiants d'application distincts).
-
-          ⚠ **Si vous aviez déjà l'application installée**, elle correspond à l'édition **dev** : c'est \`ArchipelIndustryDev.apk\` qui la met à jour en conservant votre sauvegarde. Installer l'édition publique l'ajoute À CÔTÉ, avec une sauvegarde vierge.
-
-          Installation :
-          1. Téléchargez l'APK voulu ci-dessous.
-          2. Ouvrez le fichier ; autorisez l'installation depuis cette source si demandé.
-          3. Lancez **Archipel Industry** (publique) ou **Archipel Ind. Dev**.
-
-          Construit automatiquement depuis \`Archipel_industry_alpha-7.html\`."
