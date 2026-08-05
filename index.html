@@ -7985,8 +7985,17 @@ const SAVE_VERSION = 31;
 // indéfinis, l'état 'ready' n'étant jamais atteint) est VOULUE. Ce n'est pas un bug.
 // ⚠ Nouveau compteur `co.stops`, SÉPARÉ de `co.penalties` (faute de câblage de la vanne) : les
 // mélanger rendrait la fiche mensongère. Champ persisté ADDITIF → `SAVE_VERSION` INCHANGÉ (31).
-const GAME_BUILD = 340;
-const GAME_VERSION = 'Alpha 14.58';
+// 14.59 — DEUX LOTS INDÉPENDANTS. (§A) CORRECTIF : `processCollider` tourne AVANT la boucle
+// énergie, donc au tout premier tick d'une session `co.powered` est `undefined` — la machine était
+// réputée alimentée et descendait droit au carburant (arrêt TOTAL He3 imméritée + hélium
+// réellement prélevé sans câble). Tant que le réseau n'a pas parlé, on ne juge RIEN : tick BLANC.
+// ⚠ Ce n'est PAS une tolérance au sens de D1 (14.58), qui reste intégralement en vigueur.
+// (§B) La construction SOUTERRAINE passe du proportionnel à une FILE STRICTE : un chantier à la
+// fois, dans l'ordre de création (`cst.seq`), construction et amélioration confondues.
+// ⚠ Aucun débordement : les chantiers en attente reçoivent ZÉRO, même s'il reste du débit — et la
+// catégorie ne réclame que la demande de la TÊTE, pour que le reliquat serve aux sortants/intrants.
+const GAME_BUILD = 341;
+const GAME_VERSION = 'Alpha 14.59';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -7995,7 +8004,7 @@ const GAME_VERSION = 'Alpha 14.58';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Le Collisionneur ne pardonne plus rien : une seule seconde sans assez d'électricité et il S'ARRÊTE — les 10 minutes de démarrage repartent de zéro et la séquence est à relancer à la main · Plus d'hélium 3 et c'est un ARRÊT TOTAL : son interrupteur retombe, il ne redémarrera JAMAIS tout seul, il faut aller le rallumer · Sa consommation oscille sur 10 minutes : dimensionne ton réseau sur le PIC, sinon il redémarrera et retombera en panne indéfiniment · Sa fiche compte désormais les « Arrêts (déficit) » à part des « Pénalités », un toast nomme la cause et une astuce explique quoi faire · Aucune sauvegarde touchée";
+const GAME_NOTES = "Au SOUTERRAIN, les chantiers se font désormais UN PAR UN, dans l'ordre où tu les as lancés : fini les dix bâtiments qui descendent tous au dixième de la vitesse sans qu'aucun n'aboutisse · Un chantier qui attend son tour le DIT dans sa fiche (« en attente · N chantier(s) devant ») et le panneau Élévateur affiche la longueur de la file · Le débit que le chantier de tête n'utilise pas part aux sortants et aux intrants au lieu d'être immobilisé · CORRECTIF : le Collisionneur ne pouvait pas être jugé au tout premier tick d'une partie rechargée — il pouvait subir un arrêt total « plus d'hélium 3 » imméritée, et brûler de l'hélium sans même être relié au câble · Aucune sauvegarde touchée";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -9601,6 +9610,15 @@ function elevatorAllocate(dems, budget, mode) {
 // doit DESCENDRE par l'élévateur (unités/s, priorité n°1 sur le débit) avant que le bâtiment soit
 // finalisé — un décompte + un sprite fantôme accompagnent la descente.
 const costUnits = cost => { let s = 0; if (cost) for (const k in cost) if (cost[k] > 0) s += cost[k]; return s; };
+// 14.59 — Rang croissant des chantiers souterrains (file stricte, cf. la passe élévateur). Le
+// compteur vit sur `game` et non au niveau MODULE : un compteur de module n'est jamais réinitialisé
+// au changement de partie ni au chargement d'une save (c'est exactement le défaut corrigé en 14.51
+// sur `_elevTileCache`). Dérivé au chargement, donc jamais persisté pour lui-même.
+function nextUgSeq(game) {
+  if (!game) return 0;
+  game.ugSeq = (game.ugSeq || 0) + 1;
+  return game.ugSeq;
+}
 // Coût d'amélioration (payé depuis le port de l'île 6, ×2/niveau — aligné sur portUpgradeCost).
 const ELEVATOR_BASE_COST = {
   piece_precision: 250,
@@ -11023,6 +11041,26 @@ function processCollider(game, isl) {
   // machine mise en pause dans le même tick : elle brûlait donc son carburant pendant toute une
   // panne électrique, exactement ce que le « tout ou rien » de 14.17 voulait éviter (« sinon l'He3
   // brûlerait pendant que la machine est en pause »). L'ordre est simplement inversé.
+  // 14.59 — CORRECTIF : `co.powered` est posé par la BOUCLE ÉNERGIE, qui tourne APRÈS
+  // processCollider. Au tout premier tick d'une session il vaut `undefined` (champ transitoire,
+  // jamais persisté). `undefined === false` étant FAUX, la machine était réputée ALIMENTÉE et
+  // passait droit au carburant — d'où (a) un ARRÊT TOTAL He3 (interrupteur qui tombe, relance
+  // manuelle) là où le tick suivant aurait donné un arrêt courant récupérable, et (b) de
+  // l'hélium 3 RÉELLEMENT PRÉLEVÉ sur une partie rechargée sans câble relié, ce que le
+  // tout-ou-rien du 14.24 existe précisément pour empêcher.
+  // Tant que le réseau n'a pas rendu son verdict, on ne juge RIEN : ni courant, ni carburant.
+  // ⚠ Ce n'est PAS une tolérance au sens de D1 (14.58) : D1 porte sur un déficit CONSTATÉ, ici
+  // le capteur n'a pas encore parlé. D1 reste intégralement en vigueur.
+  // ⚠ Tick BLANC : ne toucher NI `co.halt`, NI `co._haltPrev`, NI `co.state`, NI `co.timer`,
+  // NI `co.stops`, NI `co.enabled` — sinon un rechargement compterait un arrêt fantôme.
+  if (typeof co.powered !== 'boolean') {
+    co.want = osc;
+    co.cur = 0;
+    co.he3Used = 0;
+    co.palier = palier;
+    co.goal = COLLIDER_GOALS[palier] || 0;
+    return;
+  }
   const powerOut = co.powered === false;
   const fueled = powerOut ? false : colliderDrawHe3(game, isl, co.he3Need);
   // ── 14.58 — TOUT DÉFICIT ARRÊTE LA MACHINE (demande joueur) ─────────────────────────────────
@@ -12177,12 +12215,23 @@ function tickIsland(game, isl) {
       for (const k in a.inByType.pipePort || {}) inDem += rg * a.inByType.pipePort[k];
     }
     // Construction : bâtiments île 7 dont la matière n'a pas fini de descendre.
+    // 14.59 — FILE STRICTE (demande joueur) : un chantier à la fois, du premier au dernier.
+    // Avant, l'enveloppe « construction » était répartie PROPORTIONNELLEMENT : dix bâtiments posés
+    // ensemble descendaient tous au dixième de la vitesse et aucun n'aboutissait avant les autres.
+    // L'ordre est celui de CRÉATION (`cst.seq`), pas celui de la grille : un ordre géométrique
+    // reclasserait la file selon la position et non selon l'intention du joueur. Repli sur l'ordre
+    // de balayage quand `seq` est absent (vieille save) — le tri est stable, il le préserve.
     const consBlds = [];
-    let consDem = 0;
     for (let r = 0; r < def.rows; r++) for (let c = 0; c < def.cols; c++) {
       const bb = tiles[r][c].building;
-      if (bb && bb.construction && (bb.construction.rem || 0) > 1e-6) { consBlds.push(bb); consDem += bb.construction.rem; }
+      if (bb && bb.construction && (bb.construction.rem || 0) > 1e-6) consBlds.push(bb);
     }
+    consBlds.sort((a, b) => (a.construction.seq || 0) - (b.construction.seq || 0));
+    // ⚠ La demande de la catégorie est celle du chantier de TÊTE SEULEMENT, pas la somme de la
+    // file. Sinon « construction » réclamerait le débit de toute la file et l'immobiliserait sans
+    // l'utiliser : le FIFO gaspillerait l'élévateur au lieu de le sérialiser. Le reliquat part aux
+    // sortants/intrants, qui en ont l'usage.
+    const consDem = consBlds.length ? consBlds[0].construction.rem : 0;
     // Si le souterrain n'est pas relié à la surface (élévateur non réparé / non relié au port),
     // RIEN ne descend : ni construction, ni I/O (undergroundBlocked coupe déjà le régime des I/O).
     const elevMode = elevatorModeOf(game);
@@ -12239,8 +12288,14 @@ function tickIsland(game, isl) {
     }
     // Faire descendre la matière de construction (proportionnel) ; finaliser (activer) à 0.
     const consFrac = consDem > 0 ? consGive / consDem : 0;
-    for (const bb of consBlds) {
+    for (let qi = 0; qi < consBlds.length; qi++) {
+      const bb = consBlds[qi];
       const cst = bb.construction;
+      // Position dans la file, pour la fiche (transitoire, recalculé à chaque tick, jamais persisté).
+      cst.queue = qi;
+      // ⚠ FILE STRICTE : seule la TÊTE est servie. Les suivants ne reçoivent rien, même s'il reste
+      // du débit — c'est la règle demandée, pas un oubli d'optimisation.
+      if (qi > 0) { cst.rate = 0; continue; }
       const served = cst.rem * consFrac;
       cst.rem -= served;
       cst.rate = served; // unités/s réellement descendues → décompte du fantôme
@@ -12260,7 +12315,7 @@ function tickIsland(game, isl) {
       }
     }
     // Retour temps réel pour le panneau élévateur (débit consommé / max + ventilation par catégorie).
-    game.elevatorFlow = { demand: consDem + outDem + inDem, cap: elevCap, used: consGive + outGive + inGive, construction: consGive, out: outGive, in: inGive, level: game.elevatorLevel || 0, mode: elevMode, order: elevOrder };
+    game.elevatorFlow = { demand: consDem + outDem + inDem, cap: elevCap, used: consGive + outGive + inGive, construction: consGive, out: outGive, in: inGive, level: game.elevatorLevel || 0, mode: elevMode, order: elevOrder, consQueue: consBlds.length };
   }
   // ── FOREUSES : avancement du creusement (après le bridage de l'élévateur, donc au régime FINAL) ──
   // La pierre extraite doit être évacuée : si l'élévateur ne suit pas, la foreuse creuse d'autant
@@ -17128,6 +17183,12 @@ function InfoPanel({
         React.createElement("span", { className: "lbl" }, I18N.t('Constr. · sortants · intrants')),
         React.createElement("span", { className: "val" }, fmtR(flow.construction || 0) + ' · ' + fmtR(flow.out || 0) + ' · ' + fmtR(flow.in || 0) + I18N.t(' /s'))
       ),
+      // 14.59 — File stricte : le joueur doit savoir que ses autres chantiers ATTENDENT, sinon il
+      // croit l'élévateur en panne (ils sont à 0 %/s et ne bougent pas).
+      (flow.consQueue || 0) > 1 && React.createElement("div", { className: "ip-row", key: 'ugq' },
+        React.createElement("span", { className: "lbl" }, I18N.t('Chantiers en file')),
+        React.createElement("span", { className: "val", style: { color: 'var(--orange)' } }, fmtR(flow.consQueue) + I18N.t(' · un seul servi à la fois'))
+      ),
       // Mode de répartition du débit entre les 3 catégories (14.08), au choix du joueur.
       React.createElement("div", { className: "ip-fluxpri-lbl", key: 'eml' }, I18N.t('Répartition du débit')),
       React.createElement("div", { className: "ip-fluxpri-btns", key: 'emb' },
@@ -17834,7 +17895,12 @@ function InfoPanel({
     const cst = bld.construction;
     const secs = (cst.rate || 0) > 1e-6 ? Math.ceil(cst.rem / cst.rate) : null;
     const pct = cst.tot > 0 ? Math.round((1 - cst.rem / cst.tot) * 100) : 0;
-    speedReason = I18N.t('en construction') + ' · ' + pct + '%' + (secs != null ? ' · ~' + secs + 's' : ' · ' + I18N.t('en attente de l\'élévateur'));
+    // 14.59 — Un chantier en attente derrière un autre doit le DIRE : sans cela le joueur voit un
+    // fantôme à 0 % qui n'avance pas et croit à un blocage de l'élévateur.
+    const qpos = cst.queue || 0;
+    speedReason = qpos > 0
+      ? I18N.t('en attente · ') + qpos + I18N.t(' chantier(s) devant')
+      : I18N.t('en construction') + ' · ' + pct + '%' + (secs != null ? ' · ~' + secs + 's' : ' · ' + I18N.t('en attente de l\'élévateur'));
   } else if (bld.paused) {
     speedPct = 0;
     speedReason = I18N.t('en pause (par le joueur)');
@@ -21992,6 +22058,9 @@ function App() {
           // rate transitoire recalculé au tick). Sans ça, un reload finaliserait/perdrait le fantôme.
           if (b.construction && (b.construction.rem || 0) > 1e-6) {
             pl.cb = { rem: b.construction.rem, tot: b.construction.tot };
+            // 14.59 — Rang dans la file (champ ADDITIF, absent d'une vieille save → réattribué au
+            // chargement dans l'ordre de balayage). SAVE_VERSION inchangé.
+            if (b.construction.seq != null) pl.cb.seq = b.construction.seq;
             // Amélioration/densification souterraine en cours (14.03) : niveau visé (+ id du palier).
             if (b.construction.up != null) pl.cb.up = b.construction.up;
             if (b.construction.to) pl.cb.to = b.construction.to;
@@ -22702,6 +22771,7 @@ function App() {
           // Construction souterraine en cours (fantôme) — reprend la descente au chargement.
           if (p.cb && +p.cb.rem > 1e-6) {
             t.building.construction = { rem: +p.cb.rem, tot: +p.cb.tot || +p.cb.rem, rate: 0 };
+            if (p.cb.seq != null) t.building.construction.seq = +p.cb.seq;
             if (p.cb.up != null) t.building.construction.up = +p.cb.up;
             if (p.cb.to && BUILDINGS[p.cb.to]) t.building.construction.to = p.cb.to;
           }
@@ -22785,6 +22855,25 @@ function App() {
         }
       }
     }
+    // 14.59 — File souterraine : les chantiers d'une save antérieure n'ont pas de `seq`. On leur en
+    // attribue un dans l'ordre de balayage (déterministe), puis on repose `g.ugSeq` au maximum
+    // rencontré. Le compteur est DÉRIVÉ, jamais persisté : une save ne peut donc pas le désynchroniser.
+    // ⚠ ÉCART AU BRIEF : le §5 P19 propose `gameRef.current` ; ici la variable en portée est `g`
+    // (l'objet de partie en cours de construction), `gameRef.current` ne pointe pas encore dessus.
+    (function restoreUgSeq(gg) {
+      const tl = gg && gg.islands && gg.islands[7];
+      if (!tl) return;
+      let mx = 0;
+      const missing = [];
+      for (let r = 0; r < tl.length; r++) for (let c = 0; c < tl[r].length; c++) {
+        const bb = tl[r][c] && tl[r][c].building;
+        if (!bb || !bb.construction || !((bb.construction.rem || 0) > 1e-6)) continue;
+        if (bb.construction.seq != null) mx = Math.max(mx, bb.construction.seq);
+        else missing.push(bb);
+      }
+      for (const bb of missing) bb.construction.seq = ++mx;
+      gg.ugSeq = mx;
+    })(g);
     g.accumulators = {
       1: [],
       2: [],
@@ -23995,7 +24084,9 @@ function App() {
     // unités/s (priorité n°1) → à 0, le bâtiment s'active. En dev : construction instantanée.
     if (gameRef.current.currentIsland === 7 && b.kind === 'build' && !dev) {
       const u = costUnits(costToPay);
-      if (u > 0) t.building.construction = { rem: u, tot: u, rate: 0 };
+      // 14.59 — Rang dans la file de construction souterraine (cf. la passe élévateur). Compteur
+      // porté par `game`, dérivé au chargement — jamais persisté en tant que tel.
+      if (u > 0) t.building.construction = { rem: u, tot: u, rate: 0, seq: nextUgSeq(gameRef.current) };
     }
     // Dispositifs logiques : défauts. Capteur/actionneur → cible = 1er voisin bâtiment trouvé
     // (choix explicite modifiable au clic). Capteur → condition 'active'. Porte → sortie au Nord.
@@ -24181,7 +24272,7 @@ function App() {
     if (!bd || bd.kind !== 'build') return false;
     const u = costUnits(cost);
     if (!(u > 0)) return false;
-    t.building.construction = { rem: u, tot: u, rate: 0, up, to: toId || undefined };
+    t.building.construction = { rem: u, tot: u, rate: 0, seq: nextUgSeq(gameRef.current), up, to: toId || undefined };
     return true;
   }
   function tryUpgrade(r, c) {

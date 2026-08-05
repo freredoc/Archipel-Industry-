@@ -1,8 +1,8 @@
 {
-  "build": 340,
-  "version": "Alpha 14.58",
+  "build": 341,
+  "version": "Alpha 14.59",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Le Collisionneur ne pardonne plus rien : une seule seconde sans assez d'électricité et il S'ARRÊTE — les 10 minutes de démarrage repartent de zéro et la séquence est à relancer à la main · Plus d'hélium 3 et c'est un ARRÊT TOTAL : son interrupteur retombe, il ne redémarrera JAMAIS tout seul, il faut aller le rallumer · Sa consommation oscille sur 10 minutes : dimensionne ton réseau sur le PIC, sinon il redémarrera et retombera en panne indéfiniment · Sa fiche compte désormais les « Arrêts (déficit) » à part des « Pénalités », un toast nomme la cause et une astuce explique quoi faire · Aucune sauvegarde touchée"
+  "notes": "Au SOUTERRAIN, les chantiers se font désormais UN PAR UN, dans l'ordre où tu les as lancés : fini les dix bâtiments qui descendent tous au dixième de la vitesse sans qu'aucun n'aboutisse · Un chantier qui attend son tour le DIT dans sa fiche (« en attente · N chantier(s) devant ») et le panneau Élévateur affiche la longueur de la file · Le débit que le chantier de tête n'utilise pas part aux sortants et aux intrants au lieu d'être immobilisé · CORRECTIF : le Collisionneur ne pouvait pas être jugé au tout premier tick d'une partie rechargée — il pouvait subir un arrêt total « plus d'hélium 3 » imméritée, et brûler de l'hélium sans même être relié au câble · Aucune sauvegarde touchée"
 }
