@@ -1,8 +1,8 @@
 {
-  "build": 336,
-  "version": "Alpha 14.54",
+  "build": 337,
+  "version": "Alpha 14.55",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
-  "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "apkTester": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryTester.apk",
-  "notes": "Le booster de vitesse 🚀 est RETIRÉ du jeu : le bouton disparaît de la barre du bas (5 boutons au lieu de 6) et sa mécanique part avec lui — plus de réserve de 30 min qui se rechargeait toute seule, en jeu comme hors-ligne. Rien à faire de ton côté : une partie en cours se charge normalement, sa réserve est simplement ignorée · Le mode rapide ×10 (chronomètre) devient réservé à la version de développement — dans cette version le temps défile toujours à sa vitesse normale · Nouvelle section « Soutenir le projet » en bas des Options : Archipel Industry est gratuit et le restera"
+  "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
+  "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
+  "notes": "Deux éditions au lieu de trois. L'édition PUBLIQUE (celle à installer, et celle de la version web) n'a plus le mode développeur : la construction et les améliorations se paient normalement. L'édition DEV garde tout · ⚠ SI TU AVAIS DÉJÀ L'APPLICATION : c'est « ArchipelIndustryDev.apk » qui la met à jour en gardant ta sauvegarde. L'édition publique s'installe À CÔTÉ, avec une partie vierge · Rien ne change dans le jeu lui-même : aucune règle, aucune recette, aucune sauvegarde touchée"
 }
