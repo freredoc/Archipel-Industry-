@@ -1,8 +1,8 @@
 {
-  "build": 337,
-  "version": "Alpha 14.55",
+  "build": 338,
+  "version": "Alpha 14.56",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Deux éditions au lieu de trois. L'édition PUBLIQUE (celle à installer, et celle de la version web) n'a plus le mode développeur : la construction et les améliorations se paient normalement. L'édition DEV garde tout · ⚠ SI TU AVAIS DÉJÀ L'APPLICATION : c'est « ArchipelIndustryDev.apk » qui la met à jour en gardant ta sauvegarde. L'édition publique s'installe À CÔTÉ, avec une partie vierge · Rien ne change dans le jeu lui-même : aucune règle, aucune recette, aucune sauvegarde touchée"
+  "notes": "Le SOUTERRAIN a désormais son acoustique : sous terre, les sons résonnent comme dans une galerie. Les sons d'interface (clics, panneaux, onglets) restent secs · Deux nouveaux sons : la révélation de l'île 6 (une seule fois dans la partie) et le « Y aller » du panneau des surchauffes, jusqu'ici muet · L'onglet « Transit archipel » du Port a enfin son propre son d'ouverture de carte · Rien ne change dans le jeu lui-même : aucune règle, aucune recette, aucune sauvegarde touchée"
 }

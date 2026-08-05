@@ -7975,8 +7975,8 @@ const SAVE_VERSION = 31;
 // le garder préserve la sauvegarde) ; la publique prend `fr.archipel.industry.pub`.
 // ⚠ `SAVE_VERSION` INCHANGÉ (31) : `g.ui.dev` n'est pas persisté et `toggleDev` en est l'unique
 // écriture → dans l'édition publique il ne peut jamais passer à vrai.
-const GAME_BUILD = 337;
-const GAME_VERSION = 'Alpha 14.55';
+const GAME_BUILD = 338;
+const GAME_VERSION = 'Alpha 14.56';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -7985,7 +7985,7 @@ const GAME_VERSION = 'Alpha 14.55';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Deux éditions au lieu de trois. L'édition PUBLIQUE (celle à installer, et celle de la version web) n'a plus le mode développeur : la construction et les améliorations se paient normalement. L'édition DEV garde tout · ⚠ SI TU AVAIS DÉJÀ L'APPLICATION : c'est « ArchipelIndustryDev.apk » qui la met à jour en gardant ta sauvegarde. L'édition publique s'installe À CÔTÉ, avec une partie vierge · Rien ne change dans le jeu lui-même : aucune règle, aucune recette, aucune sauvegarde touchée";
+const GAME_NOTES = "Le SOUTERRAIN a désormais son acoustique : sous terre, les sons résonnent comme dans une galerie. Les sons d'interface (clics, panneaux, onglets) restent secs · Deux nouveaux sons : la révélation de l'île 6 (une seule fois dans la partie) et le « Y aller » du panneau des surchauffes, jusqu'ici muet · L'onglet « Transit archipel » du Port a enfin son propre son d'ouverture de carte · Rien ne change dans le jeu lui-même : aucune règle, aucune recette, aucune sauvegarde touchée";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -8013,7 +8013,17 @@ const SUPPORT_URL = '';
    ============================================================================ */
 const SFX = (() => {
   let ctx = null, master = null, volume = 0.55, noiseBuf = null;
+  // ── 14.56 — GRAPHE À DEUX BUS ──
+  //   worldBus ─┬─► master ─► destination        uiBus ─► master
+  //             └─► wetSend ─► conv ─► master
+  // `bus` est la cible COURANTE des 3 helpers (tone/noise/woosh) : play() la bascule avant
+  // d'invoquer le son, ce qui évite de retoucher les 67 définitions du catalogue.
+  let worldBus = null, uiBus = null, wetSend = null, conv = null, bus = null;
   let enabled = true;            // mute global (persisté dans la save)
+  // Sons d'INTERFACE : ils ne sont pas dans le monde, ils ne doivent JAMAIS résonner. Tout le
+  // reste passe par worldBus, donc par la réverbération quand elle est ouverte (île 7).
+  const DRY_UI = new Set(['click','clickAlt','tabSwitch','tabHover','panelOpen','panelClose',
+                          'invalid','notify','save','mapOpen']);
   const _last = {};             // horodatage du dernier déclenchement par son (cooldown)
   // Sons d'alerte : à jouer via SFX.playThrottled(...) pour éviter la répétition au tick.
   const ALERTS = ['powerAlert','fuelLow','stockFull','noInput','importBlocked',
@@ -8023,6 +8033,14 @@ const SFX = (() => {
     if(!ctx){
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       master = ctx.createGain(); master.gain.value = volume; master.connect(ctx.destination);
+      // Les deux bus sont à gain 1 : ils n'existent que pour AIGUILLER (le volume et le mute
+      // restent sur master, donc en aval — la réverbération n'a rien à câbler pour les suivre).
+      worldBus = ctx.createGain(); worldBus.connect(master);
+      uiBus    = ctx.createGain(); uiBus.connect(master);
+      // Départ d'effet : à 0 tant que le joueur n'est pas descendu. Le convolveur, lui, n'est
+      // construit qu'à la PREMIÈRE descente (cf. buildReverb) — une partie de surface ne paie rien.
+      wetSend = ctx.createGain(); wetSend.gain.value = 0; worldBus.connect(wetSend);
+      bus = worldBus;
     }
     if(ctx.state === 'suspended') ctx.resume();
     return ctx;
@@ -8047,7 +8065,7 @@ const SFX = (() => {
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.linearRampToValueAtTime(peak, t0 + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + attack + decay);
-    o.connect(g); g.connect(master);
+    o.connect(g); g.connect(bus);
     o.start(t0); o.stop(t0 + attack + decay + 0.02);
   }
 
@@ -8059,7 +8077,7 @@ const SFX = (() => {
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.linearRampToValueAtTime(peak, t0 + 0.004);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    src.connect(f); f.connect(g); g.connect(master);
+    src.connect(f); f.connect(g); g.connect(bus);
     src.start(t0); src.stop(t0 + dur + 0.02);
   }
 
@@ -8071,7 +8089,7 @@ const SFX = (() => {
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(peak, t0+dur*0.3);
     g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
-    src.connect(f); f.connect(g); g.connect(master);
+    src.connect(f); f.connect(g); g.connect(bus);
     src.start(t0); src.stop(t0+dur+0.02);
   }
 
@@ -8303,6 +8321,20 @@ const SFX = (() => {
         tone({type:'square', freq:495, t0:t0+0.25, attack:0.01, decay:0.25, peak:0.22}); };
       pair(t); pair(t+0.55); },
 
+    /* --- Découverte --- */
+    // La brume se lève, l'île 6 émerge : UNE SEULE FOIS dans toute la partie (drapeau archiVu6
+    // persisté). C'est le son le plus ample du jeu ; sa durée (~1,7 s) est calée sur les 1800 ms
+    // de l'animation de révélation.
+    reveal6(){ const t=ctx.currentTime;
+      woosh({t0:t, dur:1.2, f1:60, f2:900, peak:0.22, type:'lowpass', q:0.7});
+      [392,523,659,784].forEach((f,i)=>
+        tone({type:'sine', freq:f, t0:t+i*0.18, attack:0.02, decay:0.9, peak:0.16}));
+      tone({type:'sine', freq:1568, t0:t+0.9, attack:0.02, decay:0.8, peak:0.08}); },
+    // La caméra saute sur une tuile (« Y aller »). Bref, neutre, sans emphase.
+    locate(){ const t=ctx.currentTime;
+      tone({type:'sine', freq:880,  t0:t,      attack:0.002, decay:0.06, peak:0.14});
+      tone({type:'sine', freq:1318, t0:t+0.04, attack:0.002, decay:0.06, peak:0.14}); },
+
     /* --- Système & slots --- */
     save(){ const t=ctx.currentTime;
       tone({type:'sine', freq:660, t0:t,      attack:0.004, decay:0.07, peak:0.24});
@@ -8325,9 +8357,16 @@ const SFX = (() => {
   // Joue immédiatement (respecte le mute). Crée/reprend le contexte si besoin.
   // ensure() est dans le try/catch : un environnement sans Web Audio (jsdom, vieille
   // WebView) ne doit JAMAIS interrompre le jeu (l'audio échoue en silence).
+  // ⚠ `finally` obligatoire : si un son lève, `bus` resterait sur uiBus et TOUS les sons suivants
+  // seraient secs (bug silencieux, invisible hors île 7).
   function play(name){
     if(!enabled) return;
-    try { ensure(); if(S[name]) S[name](); } catch(e){ /* audio indispo : on n'interrompt jamais le jeu */ }
+    try {
+      ensure();
+      bus = DRY_UI.has(name) ? uiBus : worldBus;
+      if(S[name]) S[name]();
+    } catch(e){ /* audio indispo : on n'interrompt jamais le jeu */ }
+    finally { bus = worldBus; }
   }
   // Joue avec cooldown : ignore l'appel si le même son a sonné il y a moins de minMs.
   function playThrottled(name, minMs=1500){
@@ -8341,6 +8380,61 @@ const SFX = (() => {
   function setEnabled(v){ enabled = !!v; if(!enabled) loopStopAll(); }
   function isEnabled(){ return enabled; }
   function getVolume(){ return volume; }
+  /* ------- RÉVERBÉRATION DU SOUTERRAIN (île 7) ------- */
+  // Réponse impulsionnelle générée à la volée, STÉRÉO, construite PARESSEUSEMENT à la première
+  // descente : un joueur qui n'a jamais débloqué l'île 7 ne paie jamais la convolution.
+  // ⚠ Recette validée à l'écoute, chaque terme compte :
+  //  · décroissance EXPONENTIELLE (exp(-6.9·t) ≈ −60 dB en fin de queue). Une décroissance en
+  //    puissance (Math.pow(1-t,n)) traîne puis se coupe net : on entend une salve de bruit collée
+  //    derrière le son, pas un espace.
+  //  · RÉFLEXIONS PRÉCOCES : le composant le PLUS important. Sans elles le cerveau entend un bruit
+  //    ajouté, pas un volume. Positions ×1,07 à droite pour décorréler les deux canaux.
+  //  · normalisation en ÉNERGIE, pas en crête : sinon allonger la queue monterait aussi le niveau
+  //    et le réglage de durée cesserait d'être indépendant du volume.
+  const IR_SECONDS = 0.8, IR_PREDELAY = 0.014;
+  const IR_EARLY = [[0.013,0.60],[0.021,-0.48],[0.031,0.38],[0.043,-0.30],[0.059,0.22],[0.077,-0.16]];
+  function buildIR(){
+    const sr = ctx.sampleRate;
+    const len = Math.floor(sr * IR_SECONDS), pre = Math.floor(sr * IR_PREDELAY);
+    const buf = ctx.createBuffer(2, pre + len, sr);
+    for(let ch=0; ch<2; ch++){
+      const d = buf.getChannelData(ch);
+      let last = 0;
+      for(let i=0;i<len;i++){
+        const t = i / len;
+        const k = 0.85 - 0.70 * t;                       // passe-bas à un pôle, de plus en plus ouvert
+        const x = (Math.random()*2 - 1) * Math.exp(-6.9 * t);
+        last = last * k + x * (1 - k);
+        d[pre + i] = last;
+      }
+      const mul = ch ? 1.07 : 1;                          // canal droit décorrélé
+      for(const [ms, amp] of IR_EARLY){
+        const idx = pre + Math.round(ms * mul * sr);
+        if(idx < d.length) d[idx] += amp;
+      }
+      let e = 0;
+      for(let i=0;i<d.length;i++) e += d[i]*d[i];
+      const g = e > 0 ? 3.2 / Math.sqrt(e) : 0;
+      for(let i=0;i<d.length;i++) d[i] *= g;
+    }
+    return buf;
+  }
+  function buildReverb(){
+    if(conv) return;
+    conv = ctx.createConvolver();
+    conv.normalize = false;                               // la normalisation est faite dans buildIR
+    conv.buffer = buildIR();
+    wetSend.connect(conv); conv.connect(master);
+  }
+  // Une passe par frame (cf. colliderLoopFrame). Le fondu de 0,4 s installe l'acoustique DERRIÈRE
+  // le son d'ascenseur au lieu de claquer.
+  function reverbFrame(game){
+    if(!ctx || !wetSend) return;                          // aucun geste utilisateur : ensure() n'a pas tourné
+    const target = (game && game.currentIsland === 7) ? 0.30 : 0;
+    if(target > 0 && !conv) buildReverb();
+    wetSend.gain.setTargetAtTime(target, ctx.currentTime, 0.4);
+  }
+  function hasReverb(){ return !!conv; }                  // instrumentation de test
   /* ------- BOUCLES (bourdon de landmark) ------- */
   // Une voix = 2 oscillateurs + 1 filtre + 1 gain. Réservé aux LANDMARKS ; ici le Collisionneur
   // SEUL. Le désaccord (110,7 au lieu de 110 Hz) produit le battement lent d'une « machine ».
@@ -8359,7 +8453,9 @@ const SFX = (() => {
       o2.type = 'sine';     o2.frequency.setValueAtTime(110.7, t);
       f.type = 'lowpass'; f.Q.value = 0.8; f.frequency.setValueAtTime(90, t);
       g.gain.setValueAtTime(0.0001, t);
-      o1.connect(f); o2.connect(f); f.connect(g); g.connect(master);
+      // ⚠ worldBus EN DUR, pas `bus` : une boucle démarre HORS de play(), `bus` contiendrait
+      // alors la valeur laissée par le dernier son joué (uiBus si c'était un clic).
+      o1.connect(f); o2.connect(f); f.connect(g); g.connect(worldBus);
       o1.start(t); o2.start(t);
       _loops[id] = { o1, o2, f, g };
     } catch(e){ /* audio indispo : on n'interrompt jamais le jeu */ }
@@ -8392,7 +8488,7 @@ const SFX = (() => {
   function unlock(){ try { ensure(); } catch(e){} }   // à appeler au 1er geste utilisateur (mobile)
 
   return { play, playThrottled, unlock, setEnabled, isEnabled, setVolume, getVolume,
-           loopStart, loopSet, loopStop,
+           loopStart, loopSet, loopStop, reverbFrame, hasReverb,
            ALERTS, names:Object.keys(S) };
 })();
 // ── 14.40 — FILE DE SONS SIMULATION → UI ──
@@ -8445,6 +8541,12 @@ function colliderLoopFrame(game) {
     SFX.loopStart('collider');
     SFX.loopSet('collider', { gain: 0.10 * (0.2 + 0.8 * f), freq: 90 + 430 * f });
   } catch (e) { /* audio indispo : on n'interrompt jamais le jeu */ }
+}
+// ── 14.56 — ACOUSTIQUE DU SOUTERRAIN, une passe par frame (même patron que colliderLoopFrame) ──
+// Ouvre/ferme le départ de réverbération selon l'île courante. Toute la logique (construction
+// paresseuse du convolveur, fondu) vit dans le module audio ; ici on ne fait que la protéger.
+function reverbFrame(game) {
+  try { SFX.reverbFrame(game); } catch (e) { /* audio indispo : on n'interrompt jamais le jeu */ }
 }
 // Pont natif Android (coquille WebView) : présent uniquement dans l'APK. S'il existe, la mise à
 // jour se fait in-app (téléchargement de l'APK + installeur système, 1 tap) plutôt que par lien.
@@ -19005,6 +19107,8 @@ function PortPanel({
   React.useEffect(() => {
     if (!archReveal) return;
     if (game) game.archiVu6 = true;
+    // Appel DIRECT (et non qSfx) : on est dans un useEffect React, jamais dans le tick.
+    SFX.play('reveal6');
     const h = setTimeout(() => setArchReveal(null), 1800);
     return () => clearTimeout(h);
   }, [archReveal, game]);
@@ -19153,7 +19257,9 @@ function PortPanel({
     onClick: () => { SFX.play('tabSwitch'); setTab('island'); }
   }, I18N.t("Transit île")), React.createElement("button", {
     className: 'pp-tab' + (tab === 'archipel' ? ' on' : ''),
-    onClick: () => { SFX.play('tabSwitch'); setTab('archipel'); }
+    // L'onglet archipel EST la carte depuis 14.41 → `mapOpen` (le son dormait dans le catalogue
+    // depuis l'origine). L'onglet île garde `tabSwitch`.
+    onClick: () => { SFX.play('mapOpen'); setTab('archipel'); }
   }, I18N.t("Transit archipel"))), tab === 'island' ? React.createElement("div", {
     className: "rp-list"
   }, PORT_BASE_COST[currentIsland] && React.createElement("div", {
@@ -23776,12 +23882,11 @@ function App() {
     if (b.kind === 'infra') {
       SFX.play(id === 'road' ? 'road' : id === 'wire' ? 'cable' : 'pipe');
     } else {
-      // 14.40 — Landmark ⇒ placeC, sinon multi ⇒ placeHeavy, sinon place. Critère = EMPRISE
-      // (aucun champ `landmark` dans BUILDINGS, on n'en invente pas).
-      // ⚠ AUCUN bâtiment posable n'atteint 6 tuiles (max 2×2 = centrales ; le Collisionneur 3×2
-      // est un TERRAIN, jamais posé ici) → branche INERTE. Passer à 4 la vise aux centrales.
-      const LANDMARK_TILES = 6;
-      SFX.play(h * w >= LANDMARK_TILES ? 'placeC' : multi ? 'placeHeavy' : 'place');
+      // 14.56 — La branche `placeC` (landmark ≥ 6 tuiles) est SUPPRIMÉE : elle était inatteignable.
+      // Mesuré sur la base : 111 bâtiments en 1×1, 2 en 2×2 (les centrales nucléaires), aucun
+      // au-delà. Abaisser le seuil à 4 n'aurait fait que renommer le son des centrales et rendre
+      // `placeHeavy` inerte à son tour. `placeC` retourne en réserve, il reste au catalogue.
+      SFX.play(multi ? 'placeHeavy' : 'place');
     }
     if (verbose && b.kind !== 'infra') showToast(`✓ ${b.name}`, 'var(--green)');
     else if (verbose && extCost) showToast(`✓ ${b.name} V${joinLvl} — ${formatCost(extCost)}`, 'var(--green)');
@@ -27268,6 +27373,7 @@ function App() {
       // faire 200), rien au retour d'un hors-ligne (file débordée → purge).
       drainSfxQueue(g);
       colliderLoopFrame(g);
+      reverbFrame(g);
       checkTutorial();
       checkGuide();
       checkTips();
@@ -27560,7 +27666,7 @@ function App() {
       if (isl !== gameRef.current.currentIsland) switchIsland(isl);
       const at = a.at || (a.r != null ? { r: a.r, c: a.c } : null);
       const pos = a.kind === 'elevator' ? elevatorTileOf(gameRef.current, isl) : at;
-      if (pos) centerOnTile(pos.r, pos.c);
+      if (pos) { centerOnTile(pos.r, pos.c); SFX.play('locate'); }
     },
     onClose: () => { SFX.play('panelClose'); setHeatOpen(false); }
   }), alertsOpen && React.createElement(AlertsPanel, {
