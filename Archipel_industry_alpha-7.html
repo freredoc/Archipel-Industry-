@@ -7975,8 +7975,18 @@ const SAVE_VERSION = 31;
 // le garder préserve la sauvegarde) ; la publique prend `fr.archipel.industry.pub`.
 // ⚠ `SAVE_VERSION` INCHANGÉ (31) : `g.ui.dev` n'est pas persisté et `toggleDev` en est l'unique
 // écriture → dans l'édition publique il ne peut jamais passer à vrai.
-const GAME_BUILD = 339;
-const GAME_VERSION = 'Alpha 14.57';
+// 14.58 — LE COLLISIONNEUR NE TOLÈRE PLUS AUCUN DÉFICIT (revirement assumé de 14.17, demande
+// joueur). Un seul tick suffit, sans hystérésis : déficit ÉLECTRIQUE → ARRÊT, les 10 min de
+// démarrage sont intégralement reperdues et la séquence est à relancer à la main ; déficit
+// HÉLIUM 3 → ARRÊT TOTAL, l'interrupteur joueur retombe et rien ne redémarre tout seul.
+// ⚠ L'ordre courant-avant-carburant (14.24) est ce qui empêche une micro-coupure de faire tomber
+// l'interrupteur : un déficit He3 ne peut survenir que COURANT PRÉSENT.
+// ⚠ La boucle de redémarrage perpétuel (réseau sous le pic de la sinusoïde → arrêt / réamorçage
+// indéfinis, l'état 'ready' n'étant jamais atteint) est VOULUE. Ce n'est pas un bug.
+// ⚠ Nouveau compteur `co.stops`, SÉPARÉ de `co.penalties` (faute de câblage de la vanne) : les
+// mélanger rendrait la fiche mensongère. Champ persisté ADDITIF → `SAVE_VERSION` INCHANGÉ (31).
+const GAME_BUILD = 340;
+const GAME_VERSION = 'Alpha 14.58';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -7985,7 +7995,7 @@ const GAME_VERSION = 'Alpha 14.57';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les machines s'ENTENDENT depuis la carte : le bourdon du Collisionneur monte quand tu t'en approches et quand tu zoomes, et il se déplace à gauche ou à droite du casque selon l'endroit où il se trouve à l'écran · La CENTRALE NUCLÉAIRE a désormais sa propre voix : elle monte pendant les 5 minutes de calibrage, tient à pleine puissance, redescend à l'arrêt — et une centrale éteinte est TOTALEMENT silencieuse · Au casque, la scène sonore suit ce que tu regardes · Rien ne change dans le jeu lui-même : aucune règle, aucune recette, aucune sauvegarde touchée";
+const GAME_NOTES = "Le Collisionneur ne pardonne plus rien : une seule seconde sans assez d'électricité et il S'ARRÊTE — les 10 minutes de démarrage repartent de zéro et la séquence est à relancer à la main · Plus d'hélium 3 et c'est un ARRÊT TOTAL : son interrupteur retombe, il ne redémarrera JAMAIS tout seul, il faut aller le rallumer · Sa consommation oscille sur 10 minutes : dimensionne ton réseau sur le PIC, sinon il redémarrera et retombera en panne indéfiniment · Sa fiche compte désormais les « Arrêts (déficit) » à part des « Pénalités », un toast nomme la cause et une astuce explique quoi faire · Aucune sauvegarde touchée";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -10351,7 +10361,7 @@ function defaultColliderState() {
   // pénalité). Défaut allumé = comportement historique.
   // `launched` (14.08) : la SÉQUENCE doit être lancée à la main une fois le démarrage terminé
   // (bouton du panneau). Une pause ou une pénalité l'annule ET remet le compte à rebours à zéro.
-  return { state: 'off', timer: 0, cur: 0, from: 0, code: null, dcCode: null, dcAcc: 0, penalties: 0, enabled: true, launched: false, sigT: 0 };
+  return { state: 'off', timer: 0, cur: 0, from: 0, code: null, dcCode: null, dcAcc: 0, penalties: 0, stops: 0, enabled: true, launched: false, sigT: 0 };
 }
 // Reconstruit les réseaux de la COUCHE LOGIQUE (câbles logiques dans t.logic) : flood-fill 4-dir,
 // un networkId par composante connexe, écrit dans `t.logic.netId`. Système SÉPARÉ des réseaux
@@ -10960,7 +10970,10 @@ function processCollider(game, isl) {
     co.state = 'off';
     co.cur = 0;
     co.want = 0;
-    co.halt = null;
+    // 14.58 — `co.halt` N'EST PLUS EFFACÉ ICI. Un arrêt total He3 pose `enabled = false` ; si on
+    // effaçait la cause, le tick suivant passerait par cette branche et la fiche afficherait
+    // « éteint (par le joueur) » alors que le joueur n'a rien éteint. La cause est nettoyée par
+    // `toggleCollider` quand le joueur reprend la main (cf. P8).
     co.he3Used = 0;
     co.timer = 0;
     co.launched = false;
@@ -10989,7 +11002,11 @@ function processCollider(game, isl) {
     return;
   }
   // Machine d'état : off → starting (10 min) → running. La sigmoïde de puissance suit la rampe.
-  if (co.state === 'off') {
+  // 14.58 — GARDE : ne pas ré-amorcer tant que le déficit du tick précédent persiste. Sans elle,
+  // une panne prolongée rejouerait `colliderBoot` à CHAQUE tick (la branche off → starting est
+  // évaluée avant le déficit). `_haltPrev` porte encore la valeur du tick précédent à ce point.
+  // Conséquence assumée : le réamorçage est décalé d'exactement 1 tick après la fin du déficit.
+  if (co.state === 'off' && !co._haltPrev) {
     co.state = 'starting';
     co.timer = 0;
     co.from = co.cur || 0;
@@ -11008,33 +11025,57 @@ function processCollider(game, isl) {
   // brûlerait pendant que la machine est en pause »). L'ordre est simplement inversé.
   const powerOut = co.powered === false;
   const fueled = powerOut ? false : colliderDrawHe3(game, isl, co.he3Need);
-  // ── 14.17 — TOUT DÉFICIT MET EN PAUSE (demande joueur) ──────────────────────────────────────
-  // Avant : un manque de courant faisait RECULER le démarrage (jusqu'à repartir de zéro), sans que
-  // rien ne le dise clairement. Désormais une machine en déficit (courant OU hélium 3) est mise en
-  // PAUSE : son compte à rebours est GELÉ (il ne recule plus), elle n'émet plus aucun code et ne
-  // tire aucune manche — donc AUCUNE pénalité n'est possible pendant une panne dont le joueur n'est
-  // pas responsable. `co.halt` nomme la cause dans la fiche.
+  // ── 14.58 — TOUT DÉFICIT ARRÊTE LA MACHINE (demande joueur) ─────────────────────────────────
+  // ⚠ REVIREMENT ASSUMÉ DE 14.17, dont le commentaire est réécrit et NON conservé : il annonçait
+  // une PAUSE au compte à rebours GELÉ et « aucune pénalité possible pendant une panne ». C'est
+  // faux depuis ce lot — le déficit est désormais PUNITIF (cf. le bloc `if (co.halt)` plus bas) :
+  // les 10 min de démarrage sont reperdues, et un manque d'hélium 3 fait retomber l'interrupteur.
+  // Ce qui RESTE vrai de 14.17 : la machine n'émet aucun code et ne tire aucune manche en déficit,
+  // donc `co.penalties` (faute de câblage de la vanne) n'est jamais incrémenté par une panne — les
+  // arrêts sont comptés à part dans `co.stops`. `co.halt` nomme la cause dans la fiche.
   // ⚠ La DEMANDE électrique (`co.want`) reste publiée même en pause : c'est elle que la boucle
   // énergie compare au disponible pour poser `co.powered`. Si on la mettait à zéro, le tick suivant
   // conclurait « alimenté » (0 kW suffisent toujours), la machine repartirait à plein, retomberait
   // en déficit… soit un battement marche/arrêt à chaque tick. En pause elle ne CONSOMME rien
   // (`co.cur = 0`, cf. boucle énergie) mais reste inscrite au bilan : le joueur voit le déficit.
   co.halt = powerOut ? 'power' : !fueled ? 'fuel' : null;
-  // 14.40 — Pause sonore sur TRANSITION uniquement : sans cette garde le son partirait à CHAQUE
+  // 14.40 — Son de déficit sur TRANSITION uniquement : sans cette garde le son partirait à CHAQUE
   // tick de panne (1×/s). `_haltPrev` est transitoire (la save du collisionneur est une liste
-  // blanche : state/timer/cur/penalties/enabled/launched).
-  if (co.halt && !co._haltPrev) qSfx(game, 'colliderHalt');
+  // blanche : state/timer/cur/penalties/stops/enabled/launched).
+  // 14.58 — Un déficit n'est plus une pause mais un ARRÊT : on compte l'événement et on le
+  // notifie, sur TRANSITION uniquement (sans cette garde, tout partirait 1×/s pendant la panne).
+  if (co.halt && !co._haltPrev) {
+    qSfx(game, 'colliderHalt');
+    co.stops = (co.stops || 0) + 1;
+    game.colliderStopNotify = co.halt; // 'power' | 'fuel' — consommé hors tick (toast + astuce)
+  }
   co._haltPrev = co.halt;
   // Hélium 3 RÉELLEMENT prélevé ce tick (0 en pause) → conso affichée = conso réelle (14.24).
   co.he3Used = co.halt ? 0 : co.he3Need;
   if (co.halt) {
-    // L'ÉTAT est conservé tel quel (démarrage / prêt / en service) : la pause n'est pas une
-    // régression, c'est un gel. Dès que le déficit est comblé, la machine reprend exactement où
-    // elle en était (le compte à rebours n'a pas bougé). La fiche affiche la CAUSE en tête.
+    // 14.58 — TOUT DÉFICIT ARRÊTE LA MACHINE (revirement assumé du 14.17, demande joueur).
+    // Ce n'est plus un gel : le compte à rebours de 10 min est INTÉGRALEMENT REPERDU et la
+    // séquence devra être relancée à la main, exactement comme après une pénalité de vanne.
+    //  • déficit ÉLECTRIQUE → arrêt, redémarrage automatique des 10 min dès le courant revenu ;
+    //  • déficit HÉLIUM 3   → ARRÊT TOTAL : l'interrupteur joueur retombe, AUCUNE reprise
+    //    automatique, le joueur doit le rebasculer lui-même.
+    // ⚠ L'ordre courant-avant-carburant (14.24) garantit qu'une coupure de courant ne déclenche
+    // JAMAIS l'arrêt total : sans cela l'interrupteur tomberait à chaque micro-coupure.
+    // ⚠ BOUCLE PERPÉTUELLE VOULUE : si le réseau ne tient pas le pic de la sinusoïde, la machine
+    // redémarre, remonte sa rampe, retombe en déficit au même point, indéfiniment — elle peut ne
+    // JAMAIS atteindre l'état 'ready'. C'est le comportement demandé. NE PAS « CORRIGER ».
+    // ⚠ `co.want` reste publié (règle 14.17 conservée) : à want = 0 la boucle énergie conclurait
+    // « alimenté » au tick suivant et la machine repartirait à plein → battement à chaque tick.
     co.want = osc;
+    co.state = 'off';
+    co.timer = 0;
+    co.from = co.cur || 0;
     co.cur = 0;
     co.code = null;
     co.dcCode = null;
+    co.dcAcc = 0;
+    co.launched = false;
+    if (co.halt === 'fuel') co.enabled = false;
     co.palier = palier;
     co.goal = COLLIDER_GOALS[palier] || 0;
     return;
@@ -14814,6 +14855,14 @@ const GAME_TIPS = [{
   body: ["Tu as envoyé <b>1</b> à la vanne alors que les deux codes <b>différaient</b> : c'est une <b>pénalité</b>.", "Le Collisionneur est <b>complètement éteint</b> et ses <b>10 minutes de démarrage repartent de zéro</b>. Ce n'est pas un bug.", "Envoyer <b>0</b> ne coûte jamais rien : mieux vaut <b>ne rien envoyer</b> qu'envoyer un 1 douteux.", "La fiche du Collisionneur affiche les <b>deux codes</b>, les <b>faces émises</b> et le <b>verdict de la dernière manche</b> : touche-le pour voir ce que ton montage a réellement comparé.", "Vérifie ton comparateur — et au palier 3, n'oublie pas le <b>détecteur de leptons</b> (000 / 111), sur lesquels il FAUT envoyer 1."],
   when: () => false
 }, {
+  // 14.58 — Astuce de l'ARRÊT SUR DÉFICIT (≠ pénalité de vanne). Ouverte par le TICK via
+  // `colliderStopNotify`, jamais par sa condition : `when` reste faux, comme collider_penalite.
+  id: 'collider_arret',
+  icon: '⛔',
+  title: 'Le Collisionneur s\'est arrêté tout seul',
+  body: ["Le Collisionneur ne <b>tolère aucun déficit</b> : il suffit d'<b>une seconde</b> sans assez d'électricité ou sans hélium 3 pour qu'il s'arrête. Ce n'est pas un bug.", "<b>Électricité insuffisante</b> → arrêt, et les <b>10 minutes de démarrage repartent de zéro</b>. Dès que le courant revient, il se réamorce tout seul — mais la <b>séquence est à relancer à la main</b>.", "<b>Plus d'hélium 3</b> → <b>arrêt total</b> : l'interrupteur retombe et il ne redémarrera <b>jamais</b> seul. Touche le Collisionneur et <b>rebascule l'interrupteur</b> une fois le tuyau réalimenté.", "Sa consommation <b>oscille sur 10 minutes</b> : dimensionne ta production sur le <b>pic</b>, pas sur la moyenne. Sinon il redémarrera et retombera en panne <b>indéfiniment</b>, sans jamais atteindre l'état « prêt ».", "Sa fiche compte les <b>Arrêts (déficit)</b> à part des <b>Pénalités</b> : les arrêts viennent de ton réseau, les pénalités de ton câblage logique."],
+  when: () => false
+}, {
   id: 'plutonium',
   icon: '☢️',
   title: 'Plutonium & usine moteur',
@@ -17142,16 +17191,21 @@ function InfoPanel({
     const conf = game.techTree && game.techTree.colliderConfirms || 0;
     const repaired = colliderRepaired(game);
     const colOn = co.enabled !== false;
-    // 14.17 — Un déficit (courant OU hélium 3) met la machine EN PAUSE : le compte à rebours est
-    // gelé, aucun code n'est émis, aucune manche n'est tirée (donc aucune pénalité possible).
-    // La cause passe DEVANT l'état : c'est elle que le joueur doit corriger.
-    const halted = repaired && colOn && co.halt;
+    // 14.58 — Un déficit (courant OU hélium 3) ARRÊTE la machine : les 10 min de démarrage sont
+    // reperdues, et pour l'hélium 3 l'interrupteur joueur retombe de lui-même.
+    // ⚠ `colOn` est RETIRÉ de la condition (il y était depuis 14.17) : après un arrêt total He3 la
+    // machine est bel et bien `enabled === false`, mais ce n'est PAS le joueur qui l'a éteinte —
+    // la fiche afficherait « éteint (par le joueur) », exactement le contresens que la décision D8
+    // du brief cherche à éviter. La cause passe donc DEVANT l'état ET devant l'interrupteur dans
+    // les deux ternaires ci-dessous. Une extinction manuelle, elle, purge `halt` (cf.
+    // toggleCollider) → elle retombe bien sur « éteint (par le joueur) ».
+    const halted = repaired && co.halt;
     // 14.39 — `goalLocked` REMONTÉ ici : il était déclaré plus bas (après launchBlock) alors que
     // stLabel/stColor doivent désormais le lire — un `const` lu avant sa déclaration lève une
     // ReferenceError (zone morte temporelle), le panneau serait mort au premier rendu.
     const goalLocked = repaired && colliderGoalLocked(game);
-    const stLabel = !repaired ? I18N.t('en ruine — réparation à rechercher') : !colOn ? I18N.t('éteint (par le joueur)') : halted ? (co.halt === 'fuel' ? I18N.t('EN PAUSE — hélium 3 manquant') : I18N.t('EN PAUSE — électricité insuffisante')) : goalLocked ? I18N.t('ARRÊTÉ — palier atteint, réparation à livrer') : co.state === 'running' ? I18N.t('en service') : co.state === 'ready' ? I18N.t('prêt — séquence à lancer') : co.state === 'starting' ? I18N.t('démarrage…') : I18N.t('à l\'arrêt');
-    const stColor = !repaired ? 'var(--ink-dim)' : !colOn ? 'var(--orange)' : halted ? 'var(--red)' : goalLocked ? 'var(--orange)' : co.state === 'running' ? 'var(--green)' : co.state === 'ready' ? 'var(--yellow)' : co.state === 'starting' ? 'var(--orange)' : 'var(--red)';
+    const stLabel = !repaired ? I18N.t('en ruine — réparation à rechercher') : halted ? (co.halt === 'fuel' ? I18N.t('ARRÊTÉ — hélium 3 manquant, relance manuelle') : I18N.t('ARRÊTÉ — électricité insuffisante, démarrage perdu')) : !colOn ? I18N.t('éteint (par le joueur)') : goalLocked ? I18N.t('ARRÊTÉ — palier atteint, réparation à livrer') : co.state === 'running' ? I18N.t('en service') : co.state === 'ready' ? I18N.t('prêt — séquence à lancer') : co.state === 'starting' ? I18N.t('démarrage…') : I18N.t('à l\'arrêt');
+    const stColor = !repaired ? 'var(--ink-dim)' : halted ? 'var(--red)' : !colOn ? 'var(--orange)' : goalLocked ? 'var(--orange)' : co.state === 'running' ? 'var(--green)' : co.state === 'ready' ? 'var(--yellow)' : co.state === 'starting' ? 'var(--orange)' : 'var(--red)';
     // 14.24 — Conditions de LANCEMENT évaluées AVANT le clic (même helper que launchCollider) :
     // le bouton est grisé et la cause nommée, au lieu de laisser le joueur cliquer dans le vide.
     const launchBlock = colliderLaunchBlock(game);
@@ -17169,18 +17223,21 @@ function InfoPanel({
     if (repaired && colOn) row('osc', I18N.t('Conso (oscillation 10 min)'), fmtPower(COLLIDER_POWER_MIN) + ' → ' + fmtPower(COLLIDER_POWER[pal] || 0));
     // 14.17 — CARBURANT : l'hélium 3 alimente enfin quelque chose. Il arrive par TUYAU sur le
     // landmark (port si le réseau y est relié, citerne du réseau sinon), en tout ou rien.
-    if (repaired && colOn) row('he3', I18N.t('Hélium 3'), fmtPort(colliderHe3Need(pal)) + ' /s' + (co.halt === 'fuel' ? ' · ' + I18N.t('MANQUANT (tuyau ?)') : ''), co.halt === 'fuel' ? 'var(--red)' : 'var(--green)');
+    // 14.58 — Gate élargi à l'ARRÊT TOTAL He3 : la machine y est `enabled === false`, donc la ligne
+    // aurait disparu au moment précis où elle est la plus utile (§3.3 du brief la met en périmètre).
+    if ((repaired && colOn) || (repaired && co.halt === 'fuel')) row('he3', I18N.t('Hélium 3'), fmtPort(colliderHe3Need(pal)) + ' /s' + (co.halt === 'fuel' ? ' · ' + I18N.t('MANQUANT (tuyau ?)') : ''), co.halt === 'fuel' ? 'var(--red)' : 'var(--green)');
     // 14.31 (option 2) — Le raccordement au CÂBLE est désormais une vraie condition : sans réseau
     // câble adjacent, la machine n'est plus alimentée du tout. On le dit AVANT que le joueur ne
     // cherche pourquoi son démarrage recule.
     if (repaired && colOn) row('wr', I18N.t('Câble'), co.wireOk ? I18N.t('relié au réseau ✓') : I18N.t('non relié — amenez un câble jusqu\'au Collisionneur'), co.wireOk ? 'var(--green)' : 'var(--red)');
-    if (co.halt === 'power') row('nop', I18N.t('Électricité'), I18N.t('insuffisante — la machine est en pause (démarrage gelé)'), 'var(--red)');
+    if (co.halt === 'power') row('nop', I18N.t('Électricité'), I18N.t('insuffisante — machine ARRÊTÉE, les 10 min de démarrage sont perdues'), 'var(--red)');
     row('cf', I18N.t('Confirmations'), fmtPort(conf) + (goal ? ' / ' + fmtPort(goal) : ''), conf >= goal && goal ? 'var(--green)' : null);
     // 14.24 — Les deux conditions de lancement, visibles en permanence : le joueur sait AVANT
     // d'atteindre l'état « prêt » ce qui lui manque (réseau logique câblé, recherche du palier).
     if (repaired && colOn) row('lk', I18N.t('Réseau logique'), logicLinked ? I18N.t('émetteur et vanne câblés ✓') : I18N.t('non relié — câblez l\'émetteur ET la vanne'), logicLinked ? 'var(--green)' : 'var(--orange)');
     if (goalLocked) row('gl', I18N.t('Palier atteint'), I18N.t('machine coupée — validez la recherche du palier ET livrez la réparation suivante'), 'var(--orange)');
     if (co.penalties) row('pe', I18N.t('Pénalités'), fmtPort(co.penalties), 'var(--red)');
+    if (co.stops) row('sp', I18N.t('Arrêts (déficit)'), fmtPort(co.stops), 'var(--orange)');
     if (repaired && co.state === 'running' && !halted) {
       // 14.15 — On montre le code ET les 4 faces réellement publiées par l'émetteur
       // (α β γ + VALIDE), c'est-à-dire EXACTEMENT ce que le montage logique du joueur lit.
@@ -22080,6 +22137,9 @@ function App() {
         timer: g.collider.timer || 0,
         cur: g.collider.cur || 0,
         penalties: g.collider.penalties || 0,
+        // 14.58 — Arrêts sur déficit (courant ou He3). Champ ADDITIF : absent d'une vieille save
+        // = 0 → aucune migration, SAVE_VERSION inchangé.
+        stops: g.collider.stops || 0,
         // Interrupteur joueur (14.07) — champ additif : absent d'une vieille save = allumé.
         enabled: g.collider.enabled !== false,
         // Séquence lancée à la main (14.08) — champ additif : absent = non lancée.
@@ -22904,6 +22964,7 @@ function App() {
       g.collider.timer = Math.max(0, +dc.timer || 0);
       g.collider.cur = Math.max(0, +dc.cur || 0);
       g.collider.penalties = Math.max(0, +dc.penalties || 0);
+      g.collider.stops = Math.max(0, +dc.stops || 0);
       // Interrupteur joueur : absent d'une save antérieure au 14.07 → allumé (comportement d'avant).
       g.collider.enabled = dc.enabled !== false;
       // Séquence : une save antérieure au 14.08 qui tournait déjà (state 'running') est considérée
@@ -24436,9 +24497,11 @@ function App() {
     showToast(I18N.t('🛗 Élévateur réparé'), 'var(--green)');
     return true;
   }
-  // Interrupteur MARCHE/ARRÊT du Collisionneur (14.07) : éteint, il ne consomme plus rien et son
-  // compte à rebours de démarrage est gelé — le rallumer reprend exactement où il en était (ce
-  // n'est pas la pénalité, qui elle remet les 10 min à zéro).
+  // Interrupteur MARCHE/ARRÊT du Collisionneur (14.07) : éteint, il ne consomme plus rien.
+  // ⚠ Le commentaire d'origine (« le compte à rebours est gelé, le rallumer reprend où il en
+  // était ») est FAUX depuis 14.08 : une extinction remet les 10 min à ZÉRO, comme une pénalité.
+  // 14.58 — C'est aussi le SEUL point de sortie d'un ARRÊT TOTAL sur manque d'hélium 3 (le tick y
+  // pose `enabled = false` sans jamais le relever de lui-même).
   function toggleCollider() {
     const g = gameRef.current;
     if (!g.collider) g.collider = defaultColliderState();
@@ -24446,7 +24509,14 @@ function App() {
     const on = g.collider.enabled === false; // nouvel état
     g.collider.enabled = on;
     SFX.play(on ? 'toggleOn' : 'toggleOff');
-    showToast(on ? I18N.t('▶ Collisionneur allumé — démarrage depuis zéro') : I18N.t('⏸ Collisionneur éteint — le démarrage repart de zéro'), on ? 'var(--green)' : 'var(--orange)');
+    // 14.58 — Le joueur reprend la main : la cause de l'arrêt précédent est purgée (elle survit
+    // volontairement au retour anticipé `enabled === false`, cf. le bloc plus haut).
+    // ⚠ Purge dans LES DEUX SENS, et non au seul allumage comme le proposait le brief : sans
+    // cela, une extinction MANUELLE faite après un déficit électrique hériterait de la cause
+    // « ARRÊTÉ — électricité insuffisante » au lieu d'afficher « éteint (par le joueur) ».
+    g.collider.halt = null;
+    g.collider._haltPrev = null;
+    showToast(on ? I18N.t('▶ Collisionneur relancé — 10 min de démarrage depuis zéro') : I18N.t('⏸ Collisionneur éteint — le démarrage repart de zéro'), on ? 'var(--green)' : 'var(--orange)');
     bumpHud();
     markDirty();
     scheduleSave();
@@ -27411,6 +27481,25 @@ function App() {
           showToast(`☢️ Centrale ${islandLabel(isl)} en SÉCURITÉ — manque de refroidissement (redémarrage auto dans 5 min)`, 'var(--red)');
           g.nucNotify.length = 0;
           SFX.playThrottled('nucSafety', 8000);
+        }
+        // 14.58 — ARRÊT SUR DÉFICIT. Distinct d'une pénalité de vanne : le joueur n'a pas mal
+        // câblé, il a manqué de courant ou de carburant. Le message doit nommer la cause ET dire
+        // ce qu'il doit faire, sinon il croira à un bug (la machine s'éteint « toute seule »).
+        if (g.colliderStopNotify) {
+          const cause = g.colliderStopNotify;
+          g.colliderStopNotify = null;
+          showToast(cause === 'fuel'
+            ? I18N.t('⛔ Collisionneur ARRÊTÉ : plus d\'hélium 3 — rallumez-le à la main une fois le tuyau réalimenté')
+            : I18N.t('⚠️ Collisionneur ARRÊTÉ : électricité insuffisante — les 10 min de démarrage repartent de zéro'),
+            'var(--red)');
+          SFX.play('colliderStop');
+          // Popup explicative la PREMIÈRE fois seulement (§3.5 du brief : « toast + astuce à la
+          // première occurrence » — le patch P12 ne la décrivait pas, elle est calquée sur le
+          // circuit de la pénalité juste en dessous).
+          if (g.tipsSeen && !g.tipsSeen['collider_arret'] && g.tipsEnabled !== false && !activeTipRef.current) {
+            g.tipsSeen['collider_arret'] = true;
+            showTip('collider_arret');
+          }
         }
         // §8 — PÉNALITÉ du Collisionneur : le joueur a envoyé 1 sur des codes différents. Sans
         // explication il croira à un bug (c'est le tuto le plus important du brief) → toast rouge
