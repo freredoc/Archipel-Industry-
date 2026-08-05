@@ -17,7 +17,97 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 339`, `GAME_VERSION = 'Alpha 14.57'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 340`, `GAME_VERSION = 'Alpha 14.58'`, `SAVE_VERSION = 31`.**
+  Changement 14.58 (brief `BRIEFCOLLISIONNEURDEFICITL1`, **LOT 1**) : **LE COLLISIONNEUR NE TOLÈRE
+  PLUS AUCUN DÉFICIT — revirement assumé de 14.17.** `SAVE_VERSION` INCHANGÉ ; le seul champ ajouté
+  (`collider.stops`) est **OPTIONNEL avec repli `0`**. Base du brief EXACTE (339 / 14.57 /
+  3 150 064 o) : les **14 ancres sont sorties UNIQUES**, aucune re-dérivation.
+  (1) **Régime punitif** (`processCollider`) : déficit **ÉLECTRIQUE** → **ARRÊT** (`state = 'off'`,
+  `timer = 0`, `launched = false`) — les 10 min de démarrage sont **intégralement reperdues** et la
+  séquence est à relancer à la main ; déficit **HÉLIUM 3** → **ARRÊT TOTAL** (`enabled = false`),
+  **aucune reprise automatique**, le joueur doit rebasculer l'interrupteur. **Aucune tolérance, aucune
+  hystérésis** : un seul tick suffit (décision D1).
+  ⚠ **L'ordre courant-AVANT-carburant (14.24) est ce qui rend le lot vivable** : un déficit He3 ne
+  peut survenir que **courant présent** — sans lui, chaque micro-coupure ferait tomber l'interrupteur.
+  Mesuré : courant ET He3 absents simultanément → `halt === 'power'`, `enabled` reste `true`.
+  ⚠ **LA BOUCLE DE REDÉMARRAGE PERPÉTUEL EST VOULUE (D2), CE N'EST PAS UN BUG.** Un réseau qui ne
+  tient pas le **pic de la sinusoïde** (période `COLLIDER_START`) fait redémarrer la machine, remonter
+  sa rampe, retomber en déficit au même point, indéfiniment — elle peut ne **JAMAIS** atteindre
+  `ready`. Mesuré sur 3 000 ticks à 60 % du pic : 1 806 ticks `starting` / 1 194 `off`, **5 arrêts**,
+  `ready` jamais atteint. **NE PAS « CORRIGER ».**
+  ⚠ **`co.want` reste publié pendant l'arrêt** (règle 14.17 CONSERVÉE, D7) : à `want = 0` la boucle
+  énergie conclurait « alimenté » au tick suivant et la machine repartirait à plein → battement
+  marche/arrêt à chaque tick.
+  (2) **GARDE DE RÉAMORÇAGE indispensable** : la branche `off → starting` s'évalue **AVANT** le
+  déficit → sans `&& !co._haltPrev`, une panne prolongée rejouerait `colliderBoot` **1×/seconde**.
+  Mesuré : 60 ticks de panne → **0 `colliderBoot`, 1 seul `colliderHalt`, `stops` +1** (et non 60).
+  Conséquence assumée : le réamorçage est **décalé d'exactement 1 tick** après la fin du déficit
+  (tick N : rien ; tick N+1 : `starting`, `timer = 1`, un seul boot).
+  (3) **Compteur `co.stops` SÉPARÉ de `co.penalties` (D3)** : `penalties` désigne une **faute de
+  câblage** (vanne ouverte sur codes différents), `stops` une **panne de réseau**. Les mélanger
+  rendrait la fiche mensongère. Vérifié : sur V1→V9 `penalties` reste 0 ; une pénalité de vanne
+  laisse `stops` inchangé. Nouvelle ligne **« Arrêts (déficit) »** dans la fiche (orange).
+  (4) **`co.halt` N'EST PLUS EFFACÉ** par le retour anticipé `enabled === false` (D8) : sinon le tick
+  suivant effacerait la cause et la fiche afficherait « éteint (par le joueur) » alors que le joueur
+  n'a rien éteint. La purge se fait dans `toggleCollider`.
+  ⚠ **ÉCART AU BRIEF — `toggleCollider` purge `halt` dans LES DEUX SENS**, pas au seul allumage
+  (`if (on)` du P8) : sans cela, une extinction **manuelle** faite après un déficit électrique
+  hériterait de « ARRÊTÉ — électricité insuffisante ».
+  ⚠ **TROU DU BRIEF, comblé** : le §4 liste l'ancre **A13** (`const halted = repaired && colOn &&
+  co.halt;`) mais **aucun patch ne l'utilise** — or après un arrêt total He3 la machine EST
+  `enabled === false`, donc `halted` valait faux et le libellé retombait sur « éteint (par le
+  joueur) », **exactement le contresens que D8 cherche à éviter** (V6 aurait échoué). `colOn` est
+  retiré de la condition et `halted` **remonté devant `!colOn`** dans `stLabel` **et** `stColor`.
+  Même raison pour la **ligne « Hélium 3 »** (que le §3.3 met en périmètre) : son gate `repaired &&
+  colOn` la faisait disparaître au moment précis où elle est utile → élargi à `co.halt === 'fuel'`.
+  ⚠ **ASTUCE AJOUTÉE (§3.5)** : le périmètre exige « toast + astuce à la première occurrence » mais
+  **le patch P12 ne décrit que le toast**. Nouvelle astuce `collider_arret` (`when: () => false`,
+  ouverte par le TICK via `colliderStopNotify`, calquée sur `collider_penalite`).
+  ⚠ **COMMENTAIRE 14.17 RÉÉCRIT, PAS CONSERVÉ** (§1) : il annonçait « aucune pénalité n'est possible
+  pendant une panne » — laisser ça en place alors que le code inflige un arrêt serait le pire des
+  deux mondes. Le commentaire de `toggleCollider` est aussi corrigé (il prétendait depuis 14.07 que
+  le compte à rebours est « gelé » et repris au rallumage : **faux depuis 14.08**).
+  ⚠ **ANOMALIE SIGNALÉE, NON CORRIGÉE** : `processCollider` tourne **avant** la boucle énergie, donc
+  au **tout premier tick d'une session** `co.powered` est `undefined` (champ transitoire, jamais
+  sauvegardé) → la règle D5 ne peut pas s'appliquer et une partie rechargée **sans He3 ET sans câble**
+  prend un arrêt **`fuel`** (interrupteur qui tombe) là où elle prendrait un arrêt `power` au tick
+  suivant. Fenêtre d'un seul tick, comportement défendable (il n'y a effectivement pas d'He3) — à
+  arbitrer si un joueur le signale.
+  ⚠ **HORS PÉRIMÈTRE, non touché (§3)** : `colliderPenalty` et tout le circuit de pénalité,
+  `colliderGoalLocked`, `colliderPalier`, `colliderDrawHe3` et son tout-ou-rien, `COLLIDER_START`,
+  `COLLIDER_RAMP`, `COLLIDER_POWER`, `COLLIDER_HE3`, `COLLIDER_GOALS`, la garde `!!co.halt` de
+  `colliderLoopFrame` (devenue redondante mais strictement neutre), `SAVE_VERSION`, et **toute
+  recherche infinie / réduction de coût / remboursement / île 8 : LOTS ULTÉRIEURS.**
+  Validé : `node --check` (**7 blocs, 7 OK**) + Chromium **2 suites, 31 assertions, 0 KO, 0
+  `pageerror`** (le seul bruit console est le **404 PRÉEXISTANT** du serveur de test), suites
+  **rejouées 2 fois sans flottement**. Moteur : V1→V16 du brief tous PASS, dont V9 (boucle
+  perpétuelle observée = PASS attendu), V12 (**0 He3 prélevé** pendant un déficit électrique :
+  stock 990 → 990), V13 (**save RÉELLE** écrite puis **rechargée** : SAVE 31, `stops` conservé,
+  `enabled: false`), V14 (save **privée de `stops`** → 0, 0 `tickError`), V16 (la boucle audio
+  s'arrête à l'arrêt et repart avec la rampe). **UI RÉELLE** (vrais clics souris, tap canvas réel sur
+  le landmark) : toast rouge nommant la cause, **astuce `collider_arret` affichée**, fiche
+  « ARRÊTÉ — électricité insuffisante, démarrage perdu » puis « ARRÊTÉ — hélium 3 manquant, relance
+  manuelle » (**et non** « éteint (par le joueur) »), ligne « Arrêts (déficit) », ligne Électricité
+  reformulée, **clic réel sur « ▶ Allumer le Collisionneur »** → `halt = null`, `enabled = true`,
+  toast « relancé ».
+  ⚠ **PIÈGES DE HARNAIS (nouveaux, coûteux)** : (a) **`co.powered` est réécrit par la boucle énergie
+  à chaque tick** → un déficit électrique forgé ne survit pas : le **ré-affirmer en continu**
+  (`setInterval` ~25 ms), même patron que `conduitLoad` (14.51) et `collider.state` (14.57) ;
+  (b) piloter `processCollider` **directement** (exposé dans `window.__heat`) évite toute la boucle
+  de jeu, mais il faut alors fournir l'He3 par un **vrai réseau tuyau adjacent** à `colliderBounds` —
+  et **le réapprovisionner**, sinon les tests suivants héritent d'un pool vide et partent en arrêt
+  `fuel` (m'a donné 2 faux KO) ; (c) une save forgée dans `localStorage` est **écrasée par le flush
+  `pagehide`** à la navigation — geler `Storage.prototype.setItem` ne suffit pas, il faut la
+  **réinjecter dans un `addInitScript`** (qui s'exécute avant le script du jeu) ; (d) tester le repli
+  d'un champ absent exige que la machine soit **`enabled: false` dans la save forgée**, sinon le 1ᵉʳ
+  tick réel la fait légitimement s'arrêter et `stops` repasse à 1 — on mesure alors le tick, pas le
+  chargement ; (e) `switchIsland` n'est **pas globale** (portée React) → passer par `window.__ui()` ;
+  (f) débloquer les îles ouvre l'astuce « Transport inter-îles » qui **occupe le canal popup** →
+  l'astuce d'arrêt est différée (et NON marquée vue) : purger **avant** d'armer le déficit ;
+  (g) les toasts s'effacent seuls → les capter par **`MutationObserver`**, pas par une lecture
+  ponctuelle du DOM.
+  ⚠ **Taille : 3 150 064 → 3 158 046 o (+7 982 o)**, dominée par les commentaires de décision.
+- **État précédent : `GAME_BUILD = 339`, `GAME_VERSION = 'Alpha 14.57'`, `SAVE_VERSION = 31`.**
   Changement 14.57 (brief `BRIEFSFXBspatial`, **BRIEF B**, suite directe du A) : **LES BOUCLES SUIVENT
   LA CAMÉRA (volume + panoramique stéréo) ET LA CENTRALE NUCLÉAIRE REÇOIT SA VOIX.**
   `SAVE_VERSION` INCHANGÉ, aucun champ persisté ajouté (les 2 caches sont VOLATILS — vérifié sur une
