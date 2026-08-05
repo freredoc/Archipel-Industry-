@@ -17,7 +17,81 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 338`, `GAME_VERSION = 'Alpha 14.56'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 339`, `GAME_VERSION = 'Alpha 14.57'`, `SAVE_VERSION = 31`.**
+  Changement 14.57 (brief `BRIEFSFXBspatial`, **BRIEF B**, suite directe du A) : **LES BOUCLES SUIVENT
+  LA CAMÉRA (volume + panoramique stéréo) ET LA CENTRALE NUCLÉAIRE REÇOIT SA VOIX.**
+  `SAVE_VERSION` INCHANGÉ, aucun champ persisté ajouté (les 2 caches sont VOLATILS — vérifié sur une
+  save réelle : ni `_colliderBox` ni `_nucVoice` n'y figurent, `serialize` construisant une liste
+  blanche). Base du brief EXACTE (338 / 14.56) : les **5 ancres sont sorties UNIQUES**.
+  (1) **LOT 11 — moteur de boucle MULTI-VOIX** : table `LOOP_SPECS` en tête du module (collider :
+  `triangle` 55 + `sine` 110,7 Hz, filtre 90→520 ; nuclear : `sine` 118 + `triangle` 237,4 Hz, filtre
+  200→1600), `loopStart` retombe sur `collider` pour un id inconnu et reste **IDEMPOTENT** (10 appels
+  → 0 nœud créé). ⚠ **Le DÉSACCORD de la 2ᵉ voix (110,7 et non 110 ; 237,4 et non 237) est
+  INTENTIONNEL** — c'est lui qui produit le battement lent de « machine ». NE PAS ARRONDIR.
+  **`StereoPannerNode` inséré entre le filtre et le gain** (`f → p → g → worldBus`), avec repli
+  `f → g` si `createStereoPanner` n'existe pas. `worldBus` reste EN DUR (commentaire d'avertissement
+  conservé). ⚠ **`loopStop` a dû être amendé** : il déconnectait une liste FIXE de nœuds — sans y
+  ajouter `v.p`, chaque cycle aurait laissé un panner accroché au graphe (fuite). Mesuré : 20 cycles
+  × 2 voix → **80 oscillateurs et 40 panners créés PUIS relâchés**, 0 voix orpheline.
+  (2) **LOT 12 — `spatialPresence(game, r, c, w, h)`**, helper **PUR** (aucun DOM, aucun effet de
+  bord), rendant `{pres, pan}` ou **`null`** si la caméra n'est pas prête (premier rendu :
+  `cssW`/`cssH`/`tile` à 0) → l'appelant COUPE sa boucle au lieu de calculer sur des zéros.
+  **UNE SEULE implémentation**, partagée par les deux sources (vérifié par grep : 1 seul
+  `function spatialPresence`, 1 seul `0.20 + 0.80 * prox`, 1 seul `cam.zoom - MIN_ZOOM`).
+  ⚠ **`zf` se calcule depuis `cam.zoom`, JAMAIS depuis `cam.tile`** : `tile = max(MIN_TILE,
+  round(fitTile × zoom))` avec `fitTile` déjà borné à [26, 64] → sur un grand écran `tile` dépasse
+  MAX_TILE et le facteur saturerait à 1 sur presque toute la plage. `cam.zoom` va de 1 à 4 quelle que
+  soit la taille d'écran. Mesuré : centré+zoom max → `pres` **1,00** ; centré+zoom min → **0,60** ;
+  hors champ lointain → **0,20** (plancher) ; `pan` borné à **±0,8**.
+  (3) **LOT 13 — Collisionneur spatialisé** : `gain = 0.10 × (0.2 + 0.8×f) × pres`, `pan` transmis.
+  ⚠ **`f` (avancement du démarrage) n'est PAS touché** et ne doit JAMAIS être rebranché sur `co.cur`
+  (avertissement 14.38 toujours valable). L'emprise vient de **`colliderBounds` RÉUTILISÉE** (elle
+  faisait déjà ce balayage — pas de 2ᵉ implémentation), mise en cache sur **`game._colliderBox`**
+  (jamais au niveau module : leçon du 14.51, un cache de module survivrait à un changement de partie
+  ou de mode). Le terrain ne bouge jamais → aucune invalidation. Mesuré en jeu réel : **0,100**
+  centré+zoom max, **0,020** loin+dézoomé, **rapport exactement 5×**, pan −0,8 / +0,8 aux extrêmes.
+  (4) **LOT 14 — `nuclearLoopFrame(game)`**, inséré dans la frame ENTRE `colliderLoopFrame` et
+  `reverbFrame`. `gain = 0.008 × f × pres`, `freq = 200 + 1400×f`.
+  ⚠ **Gain 0,008 contre 0,100, et c'est VOULU** : à gain égal une fondamentale à 118 Hz est perçue
+  **~2,8× plus forte** qu'à 55 Hz (pondération A) → le résultat est à ~22 % du Collisionneur en SONIE.
+  Monter ce chiffre le rend immédiatement envahissant.
+  ⚠ **AUCUN plancher sur `f`** (pas de `0.2 + 0.8×f` comme le Collisionneur) : à `nucCur = 0` le
+  réacteur est **TOTALEMENT muet**. Un réacteur à l'arrêt qui ronronne serait un mensonge, et son
+  silence est précisément l'information utile. Mesuré : `nucCur ≈ 0` → gain **1e-6** ; pleine
+  puissance → **0,008** ; `stopping` → redescend en continuant de sonner ; `off`/`safety`/`damaged`
+  → **`loopStop`, 0 `loopSet`**. `maxPower` reprend l'expression du moteur (`NUC_POWER_BASE × 2^upgrade`).
+  **Localisation** : `maxPerIsland: 1` → au plus UNE voix, aucun mixage. Cache `game._nucVoice`
+  rafraîchi **au plus toutes les 30 frames** (`NUC_LOOP_RESCAN`) ET immédiatement à tout changement
+  d'île. Mesuré : démolition → voix coupée en **281-862 ms** ; construction → voix qui apparaît
+  **sans rechargement**. ⚠ En navigateur HEADLESS la rAF est throttlée (~21 fps mesurés) → les
+  30 frames y valent jusqu'à ~1,4 s ; à 60 fps réels c'est 0,5 s.
+  ⚠ **CORRECTIF NON DEMANDÉ MAIS INDISPENSABLE** : `onHide` coupait `'collider'` seulement. La rAF ne
+  tournant pas en arrière-plan, `nuclearLoopFrame` n'aurait JAMAIS été rappelée → **la voix nucléaire
+  aurait tourné écran éteint**. `SFX.loopStop('nuclear')` ajouté au même handler.
+  Validé : `node --check` (**7 blocs, 7 OK**) + Chromium **5 suites, 143 assertions, 1 KO** — le seul
+  KO est le **404 PRÉEXISTANT** du brief A (contre-épreuve déjà faite sur la base 337 : identique),
+  **0 `pageerror`**. Suites B rejouées 2 fois, suite A rejouée 5 fois, **sans flottement**. Les
+  3 suites du brief A rejouées en NON-RÉGRESSION : réverbération du souterrain (0,294 sous terre →
+  0,0005 en surface), 1 seul convolveur, catalogue toujours à 67 sons.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, nouveaux)** : (a) **`processCollider` réécrit `collider.state` en
+  tête de CHAQUE tick** (sans carburant il retombe à `off`/`halt`) → une valeur forgée ne survit pas
+  d'une frame à l'autre : la **ré-affirmer en continu** (`setInterval` ~25 ms), exactement comme
+  `conduitLoad` en 14.51 ; **même piège pour `nucState`/`nucCur`** (le moteur nucléaire fait retomber
+  la centrale en `stopping` sans carburant) ; (b) **ne JAMAIS lire `param.value` juste après
+  `setValueAtTime`** : tant qu'aucun quantum de rendu n'est passé il renvoie la valeur PAR DÉFAUT
+  (440 Hz, filtre 350 Hz) → faux KO ; espionner l'ÉCRITURE, c'est déterministe ; (c) le champ de
+  version d'une save s'appelle **`version`**, pas `v` ; (d) pour mesurer les gains, espionner
+  **`SFX.loopSet`** (ce qui est DEMANDÉ) et non le gain du nœud, qui est lissé sur 0,15 s ;
+  (e) une réflexion précoce d'IR se vérifie par **détecteur de PIC** (`d[i] − (d[i−1]+d[i+1])/2`) et
+  non par seuil sur la valeur brute : la queue est du bruit ALÉATOIRE et le test flotte (1 faux KO
+  sur 5 passes avant correction).
+  ⚠ **Taille : 3 142 916 → 3 150 064 o (+7 148 o)**, sous le plafond de 8 Ko du brief.
+  ⚠ **HORS PÉRIMÈTRE (§6), non touché** : spatialisation d'autres bâtiments (data center, géothermie,
+  four à arc), ambiances par densité, la réverbération du brief A, `f` du Collisionneur, nouveaux sons
+  ponctuels, `SAVE_VERSION`, `BUILDINGS`, `TECH_NODES`, sprites. **Le point conditionnel du §6
+  (déplacer la construction du convolveur vers le DÉBLOCAGE de l'île 7) n'a PAS été fait** : il est
+  gaté sur un constat de gel en APK réel, et aucun gel n'a été constaté à ce jour.
+- **État précédent : `GAME_BUILD = 338`, `GAME_VERSION = 'Alpha 14.56'`, `SAVE_VERSION = 31`.**
   Changement 14.56 (brief `BRIEFSFXAsouterrain`, **BRIEF A — le brief B n'est PAS anticipé**) :
   **GRAPHE AUDIO À DEUX BUS + RÉVERBÉRATION PAR CONVOLUTION À L'ÎLE 7 + 2 sons + 4 câblages.**
   `SAVE_VERSION` INCHANGÉ, **aucun champ persisté ajouté ni modifié** (vérifié sur une save réelle :
