@@ -1,8 +1,8 @@
 {
-  "build": 342,
-  "version": "Alpha 14.60",
+  "build": 343,
+  "version": "Alpha 14.61",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Sous le capot : les fondations des RECHERCHES INFINIES du Collisionneur sont posées — les points se gagneront aux confirmations (3 au premier palier de 10 000, puis 1 de plus à chaque doublement) et s'échangeront contre cinq recherches plafonnées : coût d'amélioration, coût de transit et d'élévateur, coût de remblai, rendement du Séparateur Cryogénique, temps de démarrage du Collisionneur · L'ACHAT et l'écran arrivent dans la prochaine mise à jour : pour l'instant RIEN ne change en jeu, tous les coûts et rendements sont identiques à la version précédente · Aucune sauvegarde touchée"
+  "notes": "Les RECHERCHES INFINIES sont là : touche le Collisionneur (nœud P3 validé) pour dépenser tes points — 3 points au palier de 10 000 confirmations, puis 1 de plus à chaque doublement · Cinq recherches à 10 niveaux : coût d'amélioration, coût de transit et d'élévateur, coût de remblai, rendement du Séparateur Cryogénique, temps de démarrage du Collisionneur · Chaque point dépensé est DÉFINITIF · Les recherches de COÛT te REMBOURSENT la différence sur tout ce que tu as déjà payé (bâtiments, ports, élévateur, remblais) — versée directement aux ports concernés · Aucune sauvegarde touchée"
 }

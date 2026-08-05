@@ -8003,8 +8003,16 @@ const SAVE_VERSION = 31;
 // ⚠ H1 : les SOFT CAPS (puits, éolienne, COST_SOFTCAP_X2) restent sur UPGRADE_SCALE_BASE = 2,7 à
 // TOUS les niveaux. ⚠ H2 : COLLIDER_START reste la PÉRIODE de la sinusoïde (600, jamais réduite) ;
 // seule la DURÉE de démarrage passe par colliderStartOf().
-const GAME_BUILD = 342;
-const GAME_VERSION = 'Alpha 14.60';
+// 14.61 — LOT 3B : ACHAT, REMBOURSEMENT RÉTROACTIF, INTERFACE des recherches infinies.
+// ⚠ J2 : le remboursement part TOUJOURS du barème en vigueur AVANT le point acheté (jamais de la
+// base d'origine) — l'inverse fabriquerait de la monnaie en silence. ⚠ J3 : arrondi PAR CRAN puis
+// soustraction de totaux d'entiers, jamais round(Σ des différences). ⚠ J4 : le double barème passe
+// par le paramètre explicite `scaleOv` — AUCUNE écriture temporaire dans *_SCALE_CUR.
+// Seules upg/transit/remblai remboursent (J1 : sep et boot ne sont pas des barèmes de coût).
+// L'interface vit dans la fiche du Collisionneur, gatée sur le nœud 43 (J10). Aucun champ de
+// sauvegarde ajouté : `techTree.research` existe depuis 14.60, SAVE_VERSION reste 31.
+const GAME_BUILD = 343;
+const GAME_VERSION = 'Alpha 14.61';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8013,7 +8021,7 @@ const GAME_VERSION = 'Alpha 14.60';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Sous le capot : les fondations des RECHERCHES INFINIES du Collisionneur sont posées — les points se gagneront aux confirmations (3 au premier palier de 10 000, puis 1 de plus à chaque doublement) et s'échangeront contre cinq recherches plafonnées : coût d'amélioration, coût de transit et d'élévateur, coût de remblai, rendement du Séparateur Cryogénique, temps de démarrage du Collisionneur · L'ACHAT et l'écran arrivent dans la prochaine mise à jour : pour l'instant RIEN ne change en jeu, tous les coûts et rendements sont identiques à la version précédente · Aucune sauvegarde touchée";
+const GAME_NOTES = "Les RECHERCHES INFINIES sont là : touche le Collisionneur (nœud P3 validé) pour dépenser tes points — 3 points au palier de 10 000 confirmations, puis 1 de plus à chaque doublement · Cinq recherches à 10 niveaux : coût d'amélioration, coût de transit et d'élévateur, coût de remblai, rendement du Séparateur Cryogénique, temps de démarrage du Collisionneur · Chaque point dépensé est DÉFINITIF · Les recherches de COÛT te REMBOURSENT la différence sur tout ce que tu as déjà payé (bâtiments, ports, élévateur, remblais) — versée directement aux ports concernés · Aucune sauvegarde touchée";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -8821,6 +8829,78 @@ const RESEARCH_DEFS = {
   boot:    { base: 600, step: 30   }   // démarrage Collisionneur   → 300 s au cap
 };
 const RESEARCH_KEYS = Object.keys(RESEARCH_DEFS);
+// ── ACHAT ET REMBOURSEMENT RÉTROACTIF (14.61, lot 3B) ────────────────────────────────────────
+// ⚠ Liste EXPLICITE (J1). `boot` possède `base`/`step` comme les trois autres, mais ce sont des
+// SECONDES : dériver cette liste de la présence de `base` rembourserait des ressources pour une
+// durée de démarrage. Ne jamais la rendre automatique.
+const RESEARCH_REFUNDABLE = { upg: 1, transit: 1, remblai: 1 };
+// Ressources à rendre pour le passage du niveau `lvl` au niveau `lvl + 1` d'une recherche de coût.
+// Rend { islandId: {res: n} }. ⚠ J2 : les DEUX barèmes se déduisent de `lvl`, jamais de la base
+// d'origine — un joueur ayant amélioré après le point 1 a payé à 2,69, pas à 2,70. Répété sur dix
+// points et des centaines de bâtiments, l'erreur serait une source de monnaie infinie et muette.
+// ⚠ J3 : chaque cran est arrondi AVANT soustraction (les fonctions de coût arrondissent déjà) ;
+// on soustrait donc des totaux d'entiers, on n'arrondit jamais une différence.
+function researchRefundDelta(game, key, lvl) {
+  if (!RESEARCH_REFUNDABLE[key]) return {};
+  const d = RESEARCH_DEFS[key];
+  const sBefore = d.base - d.step * lvl;
+  const sAfter = d.base - d.step * (lvl + 1);
+  const acc = {};
+  const add = (isl, cost, sign) => {
+    if (!cost) return;
+    const bag = acc[isl] || (acc[isl] = {});
+    for (const k in cost) bag[k] = (bag[k] || 0) + sign * cost[k];
+  };
+  if (key === 'upg') {
+    for (const isl in game.islands) {
+      const tiles = game.islands[isl];
+      if (!tiles) continue;
+      const seen = new Set();
+      for (let r = 0; r < tiles.length; r++) for (let c = 0; c < tiles[r].length; c++) {
+        const t = tiles[r][c], b = t && t.building;
+        if (!b || !b.id || !BUILDINGS[b.id]) continue;
+        // Emprise multi-tuiles : ne compter le bâtiment qu'UNE fois. `b` est l'objet partagé par
+        // toutes ses tuiles → l'identité d'objet suffit et ne dépend d'aucune convention d'ancrage.
+        if (seen.has(b)) continue;
+        seen.add(b);
+        add(isl, cumulativeInvested(b.id, b.upgrade || 0, sBefore), +1);
+        add(isl, cumulativeInvested(b.id, b.upgrade || 0, sAfter), -1);
+      }
+    }
+  } else if (key === 'transit') {
+    const ps = game.portSpeed || {};
+    for (const isl in ps) {
+      for (let k = 0; k < (ps[isl] || 0); k++) {
+        add(isl, portUpgradeCost(+isl, k, sBefore), +1);
+        add(isl, portUpgradeCost(+isl, k, sAfter), -1);
+      }
+    }
+    // Élévateur : il relie les îles 6 et 7, et le souterrain n'a pas de port propre (`portPool`
+    // renvoie celui de l'île 6). Le remboursement va donc au port de l'ÎLE 6 (J5).
+    for (let k = 0; k < (game.elevatorLevel || 0); k++) {
+      add(6, elevatorUpgradeCost(k, sBefore), +1);
+      add(6, elevatorUpgradeCost(k, sAfter), -1);
+    }
+  } else if (key === 'remblai') {
+    const ec = game.extensionsCount || {};
+    for (const isl in ec) {
+      for (let n = 0; n < (ec[isl] || 0); n++) {
+        add(isl, extensionCost(n, sBefore), +1);
+        add(isl, extensionCost(n, sAfter), -1);
+      }
+    }
+  }
+  // Purge : un delta nul ou négatif ne doit RIEN produire. Négatif = incohérence de barème ;
+  // on l'écarte au lieu de retirer des ressources au joueur.
+  const out = {};
+  for (const isl in acc) {
+    const bag = {};
+    let any = false;
+    for (const k in acc[isl]) if (acc[isl][k] > 0) { bag[k] = Math.round(acc[isl][k]); any = true; }
+    if (any) out[isl] = bag;
+  }
+  return out;
+}
 // Niveau acheté d'une recherche, TOUJOURS borné [0, RESEARCH_CAP] — une save trafiquée ne doit
 // pas pouvoir pousser la base transit sous 1,7 ni le remblai sous 7 (barèmes jamais validés).
 function researchLvl(game, key) {
@@ -8841,6 +8921,13 @@ function researchPointsSpent(game) {
   let s = 0;
   for (const k of RESEARCH_KEYS) s += researchLvl(game, k);
   return s;
+}
+// 14.61 — BRANCHEMENT île 8 (affichée « Île 7 » au joueur : l'île 7 interne est le souterrain,
+// libellé « Île 6 S », le joueur n'a donc jamais vu d'« Île 7 »). Aucune condition active à ce
+// stade — le seuil, le contenu et les tuiles sont hors lot. Ce helper existe pour que le futur
+// déverrouillage ait un point d'accroche unique et déjà testé (J11 : « juste un branchement »).
+function island8Unlocked(game) {
+  return false; // seuil non fixé — cf. lot ultérieur (researchPointsSpent est le candidat prévu)
 }
 function researchPointsAvailable(game) {
   return Math.max(0, researchPointsEarned(game) - researchPointsSpent(game));
@@ -9190,9 +9277,9 @@ function repairCost(n) {
     beton_arme: 100 * f
   };
 }
-function extensionCost(n) {
+function extensionCost(n, scaleOv) {
   // 14.60 — La recherche « remblai » abaisse la base (10 → 7 au cap) + Math.round (H9).
-  const f = Math.pow(EXT_SCALE_CUR, n);
+  const f = Math.pow(scaleOv != null ? scaleOv : EXT_SCALE_CUR, n);
   return {
     pierre: Math.round(10000 * f),
     ciment: Math.round(1000 * f),
@@ -9280,7 +9367,7 @@ const accCapacity = bld => (BUILDINGS[bld.id] && BUILDINGS[bld.id].capacity || 5
 // c'est ce bridage — le même que l'aciérie/câblerie — qui joue le rôle du « hard cap au Nv.10 »
 // sans introduire de mécanisme neuf : au-delà du Nv.10 le coût d'amélioration DOUBLE à chaque cran.
 const COST_SOFTCAP_X2 = { atelier_meca: 1, cablerie: 1, acierie: 1, broyeur_uranium: 1, tour_aerorefrigerante: 1 };
-function upgradeCostFactor(buildingId, level) {
+function upgradeCostFactor(buildingId, level, scaleOv) {
   if (buildingId === 'puits_petrole' && level >= 5) {
     let p = Math.pow(UPGRADE_SCALE_BASE, 4);
     for (let k = 5; k <= level; k++) p *= 3.0 * Math.pow(1.2, k - 5);
@@ -9305,19 +9392,26 @@ function upgradeCostFactor(buildingId, level) {
   // remboursements (cumulativeInvested) incohérents avec ce qui a été réellement payé. H1 le dit
   // en toutes lettres (« y compris sous leur seuil ») : règle unique, lisible dans l'infobulle.
   const soft = buildingId === 'puits_petrole' || buildingId === 'eolienne' || COST_SOFTCAP_X2[buildingId];
-  return Math.pow(soft ? UPGRADE_SCALE_BASE : UPGRADE_SCALE_CUR, level);
+  // 14.61 — `scaleOv` : barème EXPLICITE, utilisé uniquement par le calcul de remboursement pour
+  // évaluer le même état aux deux barèmes (J4). ⚠ Ne JAMAIS remplacer ce paramètre par une
+  // écriture temporaire dans UPGRADE_SCALE_CUR suivie d'une restauration : une exception au milieu
+  // laisserait TOUTE l'économie sur un mauvais barème, sans exception ni signal.
+  // ⚠ Les soft caps ignorent `scaleOv` comme ils ignorent CUR : leur delta est nul par
+  // construction (J6). C'est voulu — ne pas ajouter de filtre ailleurs.
+  return Math.pow(soft ? UPGRADE_SCALE_BASE : (scaleOv != null ? scaleOv : UPGRADE_SCALE_CUR), level);
 }
-function upgradeCost(baseCost, level, buildingId) {
+function upgradeCost(baseCost, level, buildingId, scaleOv) {
   // Bâtiment de palier (V2/V3/arc) : coût = forfait × 2,7^(level − entry).
   const step = TIER_STEP[buildingId];
   if (step) {
-    const f = Math.pow(UPGRADE_SCALE_CUR, level - step.entry);
+    const f = Math.pow(scaleOv != null ? scaleOv : UPGRADE_SCALE_CUR, level - step.entry);
     const out = {};
     for (const k in step.forfait) out[k] = Math.round(step.forfait[k] * f);
     return out;
   }
   // Sinon : comportement historique (coût de base × facteur, exception puits_petrole incluse).
-  const f = upgradeCostFactor(buildingId, level);
+  // ⚠ J3 : le Math.round PAR CRAN reste en place — le remboursement soustrait des totaux d'entiers.
+  const f = upgradeCostFactor(buildingId, level, scaleOv);
   const out = {};
   for (const k in baseCost || {}) out[k] = Math.round(baseCost[k] * f);
   return out;
@@ -9334,7 +9428,7 @@ function cumulativeUpgradeCost(baseCost, level, buildingId) {
 // paliers V1→…→id et somme, pour chaque palier, le coût pour atteindre chaque niveau
 // (pose comprise pour le V1). Utilisé pour : remboursement à la démolition, et coût de pose
 // directe d'un bâtiment de palier depuis la barre d'outils.
-function cumulativeInvested(id, upgrade) {
+function cumulativeInvested(id, upgrade, scaleOv) {
   const chain = [id];
   let cur = id;
   while (TIER_PREV[cur]) { cur = TIER_PREV[cur]; chain.unshift(cur); }
@@ -9345,7 +9439,7 @@ function cumulativeInvested(id, upgrade) {
     const isLast = i === chain.length - 1;
     const to = isLast ? (upgrade || 0) : TIER_NEXT[cid].cap;
     for (let k = from; k <= to; k++) {
-      const c = upgradeCost(BUILDINGS[cid] && BUILDINGS[cid].cost, k, cid);
+      const c = upgradeCost(BUILDINGS[cid] && BUILDINGS[cid].cost, k, cid, scaleOv);
       for (const key in c) out[key] = (out[key] || 0) + c[key];
     }
   }
@@ -9724,9 +9818,9 @@ const ELEVATOR_BASE_COST = {
   alliage_tungstene: 500,
   cable_irradie: 2500
 };
-const elevatorUpgradeCost = lvl => {
+const elevatorUpgradeCost = (lvl, scaleOv) => {
   // 14.60 — Même base que le transit (recherche « transit », 2 → 1,70 au cap) + Math.round (H9).
-  const m = Math.pow(PORT_SCALE_CUR, lvl || 0), out = {};
+  const m = Math.pow(scaleOv != null ? scaleOv : PORT_SCALE_CUR, lvl || 0), out = {};
   for (const k in ELEVATOR_BASE_COST) out[k] = Math.round(ELEVATOR_BASE_COST[k] * m);
   return out;
 };
@@ -15237,12 +15331,12 @@ const PORT_BASE_COST = {
   }
 };
 // Cost to go from current portSpeed level to level+1 = base × 2^(currentLevel).
-function portUpgradeCost(islandId, currentLevel) {
+function portUpgradeCost(islandId, currentLevel, scaleOv) {
   const base = PORT_BASE_COST[islandId] || {};
   // 14.60 — La recherche « transit » abaisse la base (2 → 1,70 au cap). Le coût devient alors
   // fractionnaire → Math.round sur le coût FINAL ; à recherche 0, round(base × 2^n) est
-  // l'identité : aucune régression (H9).
-  const mult = Math.pow(PORT_SCALE_CUR, currentLevel);
+  // l'identité : aucune régression (H9). `scaleOv` : cf. J4 (remboursement, 14.61).
+  const mult = Math.pow(scaleOv != null ? scaleOv : PORT_SCALE_CUR, currentLevel);
   const out = {};
   for (const k in base) out[k] = Math.round(base[k] * mult);
   return out;
@@ -17202,6 +17296,7 @@ function InfoPanel({
   onDrill,
   onUpgradeElevator,
   onToggleCollider,
+  onBuyResearch,
   onLaunchCollider,
   onSetElevatorMode,
   onPromoteElevatorCategory,
@@ -17479,7 +17574,34 @@ function InfoPanel({
         style: { marginTop: '8px' },
         onClick: () => onToggleCollider && onToggleCollider(),
         title: colOn ? I18N.t("Éteindre le Collisionneur (il cesse de consommer ; ⚠ le démarrage de 10 min repartira de zéro)") : I18N.t("Rallumer le Collisionneur (le démarrage de 10 min repart de zéro)")
-      }, colOn ? '⏸ ' + I18N.t('Éteindre le Collisionneur') : '▶ ' + I18N.t('Allumer le Collisionneur'))));
+      }, colOn ? '⏸ ' + I18N.t('Éteindre le Collisionneur') : '▶ ' + I18N.t('Allumer le Collisionneur')),
+      // ── RECHERCHES INFINIES (nœud 43) — 14.61, lot 3B ────────────────────────────────────
+      // Section masquée tant que le nœud 43 n'est pas confirmé (J10) : avant, aucun point ne peut
+      // exister et une section vide éventerait la suite. ⚠ `var(--violet)` n'existe pas dans la
+      // palette CSS du jeu → littéral #B47CFF (signalé au rapport).
+      isNodeConfirmed(game, COLLIDER_PUZZLE_NODES[2]) && React.createElement("div", { className: "ip-row ip-theo", key: 'rhead', style: { marginTop: '10px' } },
+        React.createElement("span", { className: "lbl" }, I18N.t('Points de recherche')),
+        React.createElement("span", { className: "val", style: { color: '#B47CFF', fontWeight: 700 } },
+          fmtPort(researchPointsAvailable(game)) + ' / ' + fmtPort(researchPointsEarned(game)))),
+      isNodeConfirmed(game, COLLIDER_PUZZLE_NODES[2]) && RESEARCH_KEYS.map(k => {
+        const lvl = researchLvl(game, k);
+        const max = lvl >= RESEARCH_CAP;
+        const can = !max && researchPointsAvailable(game) >= 1;
+        const d = RESEARCH_DEFS[k];
+        const label = { upg: I18N.t("Coût d'amélioration"), transit: I18N.t('Coût de transit'), remblai: I18N.t('Coût de remblai'), sep: I18N.t('Rendement du séparateur'), boot: I18N.t('Démarrage du Collisionneur') }[k];
+        const eff = d.mult
+          ? '×' + (Math.pow(d.mult, lvl)).toFixed(2)
+          : (d.base - d.step * lvl).toFixed(2) + (k === 'boot' ? ' s' : '');
+        return React.createElement("button", {
+          key: 'r_' + k,
+          className: "ip-up" + (can ? ' armed' : ' locked'),
+          style: { marginTop: '6px' },
+          disabled: !can,
+          onClick: () => can && onBuyResearch && onBuyResearch(k),
+          title: max ? I18N.t('Recherche au maximum')
+            : I18N.t('⚠ Le point dépensé est DÉFINITIF et ne peut pas être récupéré.')
+        }, label + ' — Nv. ' + lvl + '/' + RESEARCH_CAP + ' · ' + eff + (max ? ' · ' + I18N.t('max') : can ? ' · −1 pt' : ''));
+      })));
   }
   // ===== COUCHE LOGIQUE : panneau de config d'un élément de la SURCOUCHE (t.logic) =====
   // Rotation LIBRE (4 dir) + §6 mode de capteur selon le SUPPORT + polarité de l'actionneur.
@@ -21694,7 +21816,7 @@ function App() {
   if (typeof window !== 'undefined') window.__gameRef = gameRef;
   // 14.50 — `askPortFor` et `setLogicConfig` vivent dans le scope d'App (hors de portée de
   // window.__heat, posé au niveau module) → exposés ici pour les E2E (marge d'import, inhibition).
-  if (typeof window !== 'undefined') window.__ui = () => ({ tryPlace, canPlace, switchIsland, askPortFor, setLogicConfig });
+  if (typeof window !== 'undefined') window.__ui = () => ({ tryPlace, canPlace, switchIsland, askPortFor, setLogicConfig, buyResearch });
   if (gameRef.current === null) {
     const islands = {};
     for (const def of ISLAND_TERRAINS) islands[def.id] = buildIslandTiles(def);
@@ -23868,6 +23990,29 @@ function App() {
   function refund(cost, isl) {
     const res = portPool(gameRef.current, isl);
     for (const k in cost) res[k] = (res[k] || 0) + cost[k];
+  }
+  // 14.61 — Achat d'un niveau de recherche infinie. ATOMIQUE (J7) : vérifications, calcul du
+  // delta, crédit, incrément, rafraîchissement — dans cet ordre. Incrémenter avant de calculer
+  // décalerait le remboursement d'un cran, ce qui ne lève aucune erreur et ne se voit qu'aux
+  // stocks. Aucune confirmation (J8) : le point est définitif, l'infobulle du bouton le dit.
+  // ⚠ Pas de SFX : la banque n'a pas de son 'research' (le brief interdit d'en inventer un).
+  function buyResearch(key) {
+    const g = gameRef.current;
+    if (!g || !RESEARCH_DEFS[key]) return;
+    const lvl = researchLvl(g, key);
+    if (lvl >= RESEARCH_CAP) return;
+    if (researchPointsAvailable(g) < 1) return;
+    const delta = researchRefundDelta(g, key, lvl);
+    for (const isl in delta) refund(delta[isl], +isl);
+    if (!g.techTree.research) g.techTree.research = {};
+    g.techTree.research[key] = lvl + 1;
+    refreshResearchEffects(g);
+    const back = Object.keys(delta).length;
+    showToast(back
+      ? I18N.t('🔬 Recherche améliorée — remboursement versé aux ports')
+      : I18N.t('🔬 Recherche améliorée'), 'var(--green)');
+    bumpHud();
+    scheduleSave();
   }
   function hasAdjacentRoad(r, c) {
     const tiles = curTiles();
@@ -28224,6 +28369,7 @@ function App() {
     onDrillDir: setDrillDir,
     onUpgradeElevator: () => tryUpgradeElevator(),
     onToggleCollider: () => toggleCollider(),
+    onBuyResearch: key => buyResearch(key),
     onLaunchCollider: () => launchCollider(),
     onSetElevatorMode: m => setElevatorMode(m),
     onPromoteElevatorCategory: cat => promoteElevatorCategory(cat),
@@ -28538,6 +28684,7 @@ if (typeof window !== 'undefined') {
     // sont des `let` de module, les figer dans l'objet __heat rendrait les tests mensongers.
     RESEARCH_DEFS, RESEARCH_KEYS, RESEARCH_CAP, RESEARCH_FIRST, RESEARCH_FIRST_POINTS, CRYO_BASE_OUT,
     researchLvl, researchPointsEarned, researchPointsSpent, researchPointsAvailable, refreshResearchEffects,
+    researchRefundDelta, RESEARCH_REFUNDABLE, island8Unlocked, // 14.61
     researchScales: () => ({ upg: UPGRADE_SCALE_CUR, transit: PORT_SCALE_CUR, remblai: EXT_SCALE_CUR, boot: COLLIDER_START_CUR }),
     upgradeCost,
     // 14.39 — palier/garde-fou du Collisionneur, fluides du Refroidisseur, refroidissement nucléaire.
