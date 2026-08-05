@@ -7975,8 +7975,8 @@ const SAVE_VERSION = 31;
 // le garder préserve la sauvegarde) ; la publique prend `fr.archipel.industry.pub`.
 // ⚠ `SAVE_VERSION` INCHANGÉ (31) : `g.ui.dev` n'est pas persisté et `toggleDev` en est l'unique
 // écriture → dans l'édition publique il ne peut jamais passer à vrai.
-const GAME_BUILD = 338;
-const GAME_VERSION = 'Alpha 14.56';
+const GAME_BUILD = 339;
+const GAME_VERSION = 'Alpha 14.57';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -7985,7 +7985,7 @@ const GAME_VERSION = 'Alpha 14.56';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Le SOUTERRAIN a désormais son acoustique : sous terre, les sons résonnent comme dans une galerie. Les sons d'interface (clics, panneaux, onglets) restent secs · Deux nouveaux sons : la révélation de l'île 6 (une seule fois dans la partie) et le « Y aller » du panneau des surchauffes, jusqu'ici muet · L'onglet « Transit archipel » du Port a enfin son propre son d'ouverture de carte · Rien ne change dans le jeu lui-même : aucune règle, aucune recette, aucune sauvegarde touchée";
+const GAME_NOTES = "Les machines s'ENTENDENT depuis la carte : le bourdon du Collisionneur monte quand tu t'en approches et quand tu zoomes, et il se déplace à gauche ou à droite du casque selon l'endroit où il se trouve à l'écran · La CENTRALE NUCLÉAIRE a désormais sa propre voix : elle monte pendant les 5 minutes de calibrage, tient à pleine puissance, redescend à l'arrêt — et une centrale éteinte est TOTALEMENT silencieuse · Au casque, la scène sonore suit ce que tu regardes · Rien ne change dans le jeu lui-même : aucune règle, aucune recette, aucune sauvegarde touchée";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -8441,23 +8441,36 @@ const SFX = (() => {
   // ⚠ Timbre validé à l'écoute : TRIANGLE, pas sawtooth (trop riche à 55 Hz, s'entend comme une
   // agression même à faible gain). NE PAS « améliorer ».
   const _loops = {};
+  // 14.57 — Une entrée par voix. ⚠ Le léger DÉSACCORD de la seconde voix (110,7 et non 110 ;
+  // 237,4 et non 237) est INTENTIONNEL : il produit le battement lent qui donne la sensation de
+  // machine. NE PAS ARRONDIR. Timbres et bornes de filtre validés à l'écoute.
+  const LOOP_SPECS = {
+    collider: { o1:'triangle', f1:55,  o2:'sine',     f2:110.7, fmin:90,  fmax:520  },
+    nuclear:  { o1:'sine',     f1:118, o2:'triangle', f2:237.4, fmin:200, fmax:1600 }
+  };
   function loopStart(id){
     if(!enabled) return;
     try {
       ensure();
       if(_loops[id]) return;              // idempotent
+      const sp = LOOP_SPECS[id] || LOOP_SPECS.collider;   // repli sur le Collisionneur
       const t = ctx.currentTime;
       const o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
       const f = ctx.createBiquadFilter(), g = ctx.createGain();
-      o1.type = 'triangle'; o1.frequency.setValueAtTime(55, t);
-      o2.type = 'sine';     o2.frequency.setValueAtTime(110.7, t);
-      f.type = 'lowpass'; f.Q.value = 0.8; f.frequency.setValueAtTime(90, t);
+      o1.type = sp.o1; o1.frequency.setValueAtTime(sp.f1, t);
+      o2.type = sp.o2; o2.frequency.setValueAtTime(sp.f2, t);
+      f.type = 'lowpass'; f.Q.value = 0.8; f.frequency.setValueAtTime(sp.fmin, t);
       g.gain.setValueAtTime(0.0001, t);
+      // Panoramique : f → p → g. Repli sans panner sur une WebView qui n'expose pas
+      // createStereoPanner (le son reste centré, tout le reste fonctionne).
+      const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
       // ⚠ worldBus EN DUR, pas `bus` : une boucle démarre HORS de play(), `bus` contiendrait
       // alors la valeur laissée par le dernier son joué (uiBus si c'était un clic).
-      o1.connect(f); o2.connect(f); f.connect(g); g.connect(worldBus);
+      o1.connect(f); o2.connect(f);
+      if(p){ f.connect(p); p.connect(g); } else { f.connect(g); }
+      g.connect(worldBus);
       o1.start(t); o2.start(t);
-      _loops[id] = { o1, o2, f, g };
+      _loops[id] = { o1, o2, f, g, p };
     } catch(e){ /* audio indispo : on n'interrompt jamais le jeu */ }
   }
   // ⚠ setTargetAtTime UNIQUEMENT : une affectation directe produit un zipper noise audible.
@@ -8468,6 +8481,10 @@ const SFX = (() => {
       const t = ctx.currentTime;
       if(typeof opt.gain === 'number') v.g.gain.setTargetAtTime(opt.gain, t, 0.15);
       if(typeof opt.freq === 'number') v.f.frequency.setTargetAtTime(opt.freq, t, 0.15);
+      // ⚠ 0,30 et NON 0,15 : le panoramique est lissé DEUX FOIS plus lentement que le gain.
+      // À 0,15 s, faire glisser la carte produit un tremblement stéréo désagréable (mesuré).
+      if(typeof opt.pan === 'number' && v.p)
+        v.p.pan.setTargetAtTime(Math.max(-1, Math.min(1, opt.pan)), t, 0.30);
     } catch(e){ /* audio indispo */ }
   }
   function loopStop(id){
@@ -8481,7 +8498,8 @@ const SFX = (() => {
       v.g.gain.setTargetAtTime(0.0001, t, 0.08);   // ≈ 0 en 0,25 s
       v.o1.stop(t + 0.25); v.o2.stop(t + 0.25);
       // Déconnexion à la fin : sinon les nœuds restent accrochés au graphe (fuite).
-      v.o1.onended = () => { try { v.o1.disconnect(); v.o2.disconnect(); v.f.disconnect(); v.g.disconnect(); } catch(e){} };
+      // ⚠ Le PANNER doit être déconnecté avec les autres (il est dans la chaîne depuis 14.57).
+      v.o1.onended = () => { try { v.o1.disconnect(); v.o2.disconnect(); v.f.disconnect(); v.g.disconnect(); if(v.p) v.p.disconnect(); } catch(e){} };
     } catch(e){ try { v.o1.stop(); v.o2.stop(); } catch(e2){} }
   }
   function loopStopAll(){ for(const k in _loops) loopStop(k); }
@@ -8521,6 +8539,32 @@ function drainSfxQueue(game) {
   }
   q.length = 0;
 }
+// ── 14.57 — PRÉSENCE SPATIALE : volume et panoramique d'une source, depuis la CAMÉRA ──
+// UNE SEULE implémentation, partagée par le Collisionneur et la Centrale nucléaire : deux copies
+// du calcul, c'est la garantie qu'elles divergeront à la prochaine évolution.
+// Rend { pres, pan } ou `null` si la caméra n'est pas prête — l'appelant coupe alors sa boucle
+// plutôt que de calculer sur des zéros (premier rendu : cssW/cssH/tile valent 0).
+// Fonction PURE : aucun accès au DOM, aucun effet de bord.
+// ⚠ `zf` se calcule depuis `cam.zoom`, JAMAIS depuis `cam.tile` : `tile = max(MIN_TILE,
+// round(fitTile × zoom))` avec `fitTile` déjà borné à [26, 64] → sur un grand écran `tile` dépasse
+// largement MAX_TILE et le facteur saturerait à 1 sur presque toute la plage. `cam.zoom` va de 1 à
+// 4 quelle que soit la taille d'écran : c'est la seule mesure indépendante du support.
+function spatialPresence(game, r, c, w, h) {
+  const cam = game && game.cam;
+  if (!cam || !cam.cssW || !cam.cssH || !cam.tile) return null;
+  const ox = cam.baseX - cam.x, oy = cam.baseY - cam.y;
+  const sx = ox + (c + w / 2) * cam.tile;      // centre de la source, en pixels ÉCRAN
+  const sy = oy + (r + h / 2) * cam.tile;
+  const dx = sx - cam.cssW / 2, dy = sy - cam.cssH / 2;
+  const half = Math.hypot(cam.cssW / 2, cam.cssH / 2);
+  const d = Math.hypot(dx, dy) / half;         // 0 centré · 1 dans un coin · > 1 hors champ
+  const prox = Math.max(0, Math.min(1, 1 - d / 2));            // éteint à deux rayons de viewport
+  const zf = Math.max(0, Math.min(1, (cam.zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)));
+  return {
+    pres: 0.20 + 0.80 * prox * (0.5 + 0.5 * zf),               // plancher de présence 0,20
+    pan: Math.max(-1, Math.min(1, dx / (cam.cssW / 2))) * 0.8  // amplitude 0,8
+  };
+}
 // ── 14.40 — BOUCLE AUDIO DU COLLISIONNEUR (§6), une passe par frame ──
 // ⚠ NE PAS piloter par `co.cur` : c'est une sinusoïde PERMANENTE de période COLLIDER_START
 // (600 ticks) — une boucle indexée dessus respirerait de haut en bas toutes les 10 min, À VIE.
@@ -8538,8 +8582,66 @@ function colliderLoopFrame(game) {
     const f = co.state === 'starting'
       ? 1 / (1 + Math.exp(-8 * (Math.min(1, (co.timer || 0) / COLLIDER_START) - 0.5)))
       : 1;                                   // 'ready' et 'running' → palier TENU
+    // 14.57 — Emprise du Collisionneur : c'est un TERRAIN (`terrain === 'collider'`), pas un
+    // bâtiment posé. `colliderBounds` fait déjà ce balayage — on le RÉUTILISE (une seule
+    // implémentation) et on met le résultat en cache SUR `game` (jamais au niveau module :
+    // leçon du 14.51, un cache de module survivrait à un changement de partie ou de mode).
+    // Le terrain ne bouge jamais → aucune invalidation à maintenir.
+    let box = game._colliderBox;
+    if (!box) {
+      const b = colliderBounds(game, 6);
+      if (!b) { SFX.loopStop('collider'); return; }   // île 6 pas encore construite : on réessaiera
+      box = game._colliderBox = { r: b.minR, c: b.minC, w: b.maxC - b.minC + 1, h: b.maxR - b.minR + 1 };
+    }
+    const sp = spatialPresence(game, box.r, box.c, box.w, box.h);
+    if (!sp) { SFX.loopStop('collider'); return; }    // caméra pas prête (premier rendu)
     SFX.loopStart('collider');
-    SFX.loopSet('collider', { gain: 0.10 * (0.2 + 0.8 * f), freq: 90 + 430 * f });
+    SFX.loopSet('collider', { gain: 0.10 * (0.2 + 0.8 * f) * sp.pres, freq: 90 + 430 * f, pan: sp.pan });
+  } catch (e) { /* audio indispo : on n'interrompt jamais le jeu */ }
+}
+// ── 14.57 — VOIX DE LA CENTRALE NUCLÉAIRE, une passe par frame (patron de colliderLoopFrame) ──
+// `maxPerIsland: 1` → AU PLUS UNE centrale par île, donc au plus une voix : pas de mixage.
+// ⚠ Gain 0,008 contre 0,100 pour le Collisionneur, et c'est VOULU : à gain égal une fondamentale
+// à 118 Hz est perçue ~2,8× plus forte qu'à 55 Hz (pondération A). Le résultat est à ~22 % du
+// Collisionneur en SONIE. Monter ce chiffre le rendrait immédiatement envahissant.
+const NUC_LOOP_RESCAN = 30;   // frames entre deux balayages de grille (~0,5 s)
+function nuclearLoopFrame(game) {
+  try {
+    const off0 = !game || game.audioEnabled === false || !SFX.isEnabled() ||
+      (typeof document !== 'undefined' && document.hidden);
+    if (off0) { SFX.loopStop('nuclear'); return; }
+    // Une centrale se construit et se démolit : le cache est RAFRAÎCHI (au plus toutes les
+    // 30 frames, et immédiatement à tout changement d'île). Balayer la grille 60 fois par seconde
+    // se verrait ; une demi-seconde de latence sur un bourdonnement, non.
+    const isl = game.currentIsland;
+    let nc = game._nucVoice;
+    if (!nc || nc.isl !== isl || (game.animClock || 0) - nc.at >= NUC_LOOP_RESCAN) {
+      const def = defById(isl), tiles = game.islands && game.islands[isl];
+      let found = null;
+      if (def && tiles) {
+        for (let r = 0; r < def.rows && !found; r++) for (let c = 0; c < def.cols && !found; c++) {
+          const t = tiles[r] && tiles[r][c];
+          // Seule l'ANCRE porte le bâtiment réel (les autres tuiles ont `.occupied`).
+          const b = t && t.building && BUILDINGS[t.building.id];
+          if (b && b.nuclear) found = { r, c, bld: t.building, size: b.size || [2, 2] };
+        }
+      }
+      nc = game._nucVoice = { isl, at: game.animClock || 0, found };
+    }
+    const fo = nc.found;
+    const bld = fo && fo.bld;
+    if (!fo || !bld || bld.damaged || bld.nucState === 'off' || bld.nucState === 'safety') {
+      SFX.loopStop('nuclear'); return;
+    }
+    const maxPower = NUC_POWER_BASE * Math.pow(2, bld.upgrade || 0);   // = NUC_POWER × upMult du tick
+    const f = Math.max(0, Math.min(1, maxPower > 0 ? (bld.nucCur || 0) / maxPower : 0));
+    const sp = spatialPresence(game, fo.r, fo.c, fo.size[1] || 2, fo.size[0] || 2);
+    if (!sp) { SFX.loopStop('nuclear'); return; }
+    SFX.loopStart('nuclear');
+    // ⚠ AUCUN plancher sur `f` (pas de `0.2 + 0.8*f` comme le Collisionneur) : à `nucCur = 0` le
+    // réacteur doit être TOTALEMENT muet. Un réacteur à l'arrêt qui ronronne serait un mensonge,
+    // et son silence est précisément l'information utile au joueur.
+    SFX.loopSet('nuclear', { gain: 0.008 * f * sp.pres, freq: 200 + 1400 * f, pan: sp.pan });
   } catch (e) { /* audio indispo : on n'interrompt jamais le jeu */ }
 }
 // ── 14.56 — ACOUSTIQUE DU SOUTERRAIN, une passe par frame (même patron que colliderLoopFrame) ──
@@ -27373,6 +27475,7 @@ function App() {
       // faire 200), rien au retour d'un hors-ligne (file débordée → purge).
       drainSfxQueue(g);
       colliderLoopFrame(g);
+      nuclearLoopFrame(g);
       reverbFrame(g);
       checkTutorial();
       checkGuide();
@@ -27456,7 +27559,8 @@ function App() {
       if (document.visibilityState !== 'hidden') return;
       // 14.40 — La rAF ne tourne plus en arrière-plan → `colliderLoopFrame` ne coupera jamais le
       // bourdon. Sans cet arrêt EXPLICITE la voix tournerait écran éteint.
-      try { SFX.loopStop('collider'); } catch (e) { /* audio indispo */ }
+      // 14.57 — MÊME RAISON pour la voix nucléaire : `nuclearLoopFrame` ne tourne pas non plus.
+      try { SFX.loopStop('collider'); SFX.loopStop('nuclear'); } catch (e) { /* audio indispo */ }
       if (gameRef.current.saveTimer) flushSave();
     };
     document.addEventListener('visibilitychange', onHide);
