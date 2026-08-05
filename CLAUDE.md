@@ -17,7 +17,90 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 343`, `GAME_VERSION = 'Alpha 14.61'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 344`, `GAME_VERSION = 'Alpha 14.61'` (étiquette INCHANGÉE, voir
+  ci-dessous), `SAVE_VERSION = 31`.**
+  Changement build 344 (brief `BRIEFDIVERSL4`, **LOT 4 « DIVERS » — deux changements INDÉPENDANTS**) :
+  **(§A) le forfait des 7 mines V4 gagne 1 ordinateur quantique + 1 moteur quantique ; (§B) cavalier —
+  `toggleCollider` purge aussi `co.powered`.** `SAVE_VERSION` INCHANGÉ, **aucun champ de sauvegarde touché**
+  (`co.powered` est transitoire, absent de la liste blanche). Base du brief EXACTE (343 / 14.61 /
+  3 184 653 o) : les **8 ancres M1→M8 sont sorties UNIQUES**, aucune re-dérivation.
+  ⚠ **`GAME_VERSION` N'A PAS ÉTÉ BUMPÉE, À DESSEIN** : le brief l'interdit explicitement deux fois
+  (§0 « Aucune étiquette `GAME_VERSION` » et §10 « Ne proposer aucune étiquette »). Seul `GAME_BUILD`
+  passe 343 → 344 — c'est lui qui porte la notification de mise à jour. **Un build dont l'étiquette
+  n'avance pas est donc NORMAL ici** ; les commentaires de ce lot sont datés « build 344 » et non
+  « 14.6x ». Signalé au rapport comme écart assumé à la convention du projet (« bumper à CHAQUE modif »).
+  (1) **§A — forfait des mines V4** : `{ alliage_tungstene: 100, piece_precision: 10 }` devient
+  `{ …, ordinateur_quantique: 1, moteur_quantique: 1 }` sur les **7** lignes (fer, charbon, carrière,
+  cuivre, or, uranium, tungstène). **AJOUT, pas remplacement** (L1) — un remplacement aurait donné une
+  courbe à ressource unique, très granuleuse dans le bas (1 → 3 → 7).
+  ⚠ **LE FORFAIT EST LA BASE D'UNE COURBE, PAS UN COÛT FIXE** (L3) : le coût d'un niveau `u` vaut
+  `round(forfait × barème^(u − entry))` → les deux ressources quantiques apparaissent à **TOUS** les
+  niveaux V4, en quantités croissantes. Mesuré (T2, recherche `upg` à 0 donc barème 2,7) : Nv.31 →
+  `{alliage 270, précision 27, ordi 3, moteur 3}` · **Nv.35 → `{alliage 14 349, précision 1 435,
+  ordi 143, moteur 143}`**. Au Nv.40 le moteur quantique se compte en dizaines de milliers. C'est voulu.
+  ⚠ **LA MINE DE TUNGSTÈNE EST AVANTAGÉE, C'EST UNE DÉCISION (L2), PAS UN OUBLI** : les `entry`
+  diffèrent (30 · 30 · 30 · 30 · 20 · 20 · **10**) pour un forfait IDENTIQUE → elle atteint son V4
+  **vingt niveaux plus tôt** que le fer, au même prix. Mesuré (T3) : `upgradeCost(…, 10,
+  'mine_tungstene_v4')` = exactement le forfait nu, comme le fer au Nv.30. **NE PAS « RÉÉQUILIBRER ».**
+  ⚠ **`entry` NON TOUCHÉES** et **aucun autre forfait de `TIER_STEP` modifié** : diff complet publié —
+  **41 entrées, 7 lignes de données modifiées, les 34 autres identiques à l'octet** (T5, 0 écart).
+  Le commentaire `14.08` au-dessus du bloc annonçait « identiques : alliage de tungstène + pièces de
+  précision » — devenu faux, il est **corrigé sur place** (le brief ne le mentionnait pas).
+  (2) **§B — cavalier `co.powered`** : le lot 2 (14.59) avait couvert le cas `undefined` (premier tick
+  d'une session). Restait le cas **PÉRIMÉ** : l'affectation de `co.powered` par la boucle énergie est
+  gardée par `state !== 'off'`, donc **machine à l'arrêt = mesure GELÉE**. Après un arrêt carburant elle
+  vaut `true` (un arrêt He3 suppose le courant présent, ordre courant-avant-carburant de 14.24) ; si le
+  réseau s'est effondré entre-temps, le rallumage jugeait sur cette valeur morte et **prélevait un tick
+  d'hélium 3 à vide**. `toggleCollider` purge désormais `co.powered = undefined` **au même endroit et
+  dans les deux sens** que `halt`/`_haltPrev` (L4).
+  ⚠ **`undefined` et NON `false` (L5)** : `false` provoquerait un arrêt courant IMMÉRITÉ au tick suivant ;
+  `undefined` fait retomber la machine dans la garde du lot 2 (`typeof co.powered !== 'boolean'`) → tick
+  sans jugement ni prélèvement. **L'invariant devient : `co.powered` ne fait foi que tant que la boucle
+  énergie l'entretient.**
+  ⚠ **La garde `state !== 'off'` de la boucle énergie est CORRECTE et n'a PAS été touchée (L6)** :
+  entretenir `powered` sur une machine éteinte n'aurait aucun sens. C'est la **consommation** de la
+  valeur périmée qui était fautive, pas sa non-mise-à-jour. La garde `typeof !== 'boolean'` du lot 2 est
+  elle aussi intacte — c'est elle qui recueille le cas créé ici.
+  **CONTRE-ÉPREUVE EXÉCUTÉE, même scénario sur les deux fichiers** : base 14.61 → `powered` reste `true`
+  au rallumage et **l'He3 passe de 1000 à 999** (1 prélevé à vide) ; build 344 → `powered` devient
+  `undefined` et **l'He3 reste à 1000**. C'est la preuve directe du correctif.
+  ⚠ **ÉCART BRIEF/CODE SIGNALÉ, non corrigé** : T10 du brief annonce « Tick 1 : tick blanc. Tick 2 :
+  démarrage ». En réalité la branche de **réamorçage** (`state === 'off' && !_haltPrev` → `starting` +
+  `colliderBoot`) se trouve **AVANT** la garde du lot 2 dans `processCollider` → le réamorçage a lieu
+  DÈS le tick 1, et le tick 2 est le premier qui juge et fait avancer le timer. Le résultat observable
+  visé par le brief tient : **`colliderBoot` joué exactement UNE fois, 0 hélium prélevé au tick 1**
+  (mesuré). Le commentaire du lot 2 (« tick BLANC : ne touche NI `state` … ») décrit donc la garde
+  elle-même, pas la branche qui la précède.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **16 assertions, 0 KO**, suite **rejouée
+  2 fois sans flottement**. T6 = densification RÉELLE en jeu (clic souris sur « ✦ Densifier » de la fiche,
+  2 temps) : `mine_fer_v3` Nv.30 → `mine_fer_v4` u=30, **débité au port : alliage 100 · précision 10 ·
+  ordi quantique 1 · moteur quantique 1**. T7 : `cumulativeInvested('mine_fer_v4', 32)` contient
+  `ordi 11 / moteur 11` et la portion V1→V3 **aucun**. T8/T9 : rallumage réel après arrêt carburant →
+  stock He3 **strictement inchangé**, 0 arrêt compté, puis arrêt `power` normal au tick suivant.
+  T12 : lots 1-2 intacts (tick blanc W1, arrêt électrique V1, arrêt total He3 V4, 60 ticks de panne →
+  0 boot rejoué, 1 seul arrêt). T13 : lots 3A/3B intacts (frontières de points [0,3,4,5], soft caps sous
+  seuil, Σ séparateur = 1, remboursement R1 = 44 883 pierre/minerai à l'unité, soft caps et `sep`/`boot`
+  à zéro, `island8Unlocked` false, 7 îles). T14 : **620 ticks réels** avec montage logique complet
+  (émetteurs → XNOR → vanne) → 0 `tickError`, 0 arrêt, 0 pénalité, 19 confirmations.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **`colliderPalier` s'indexe sur
+  `COLLIDER_REPAIR_NODES`, PAS sur `COLLIDER_PUZZLE_NODES`** (correctif 14.39) → un test qui confirme
+  tout l'arbre puis « relocke les puzzles » reste **au palier 3** : il faut relocker les réparations II
+  et III (en gardant la I, sinon `colliderRepaired` tombe). Symptômes trompeurs : He3 à 16/s au lieu de
+  1/s, et un comparateur XNOR 1 bit qui prend une pénalité (il est juste au palier 1, faux au palier 3) ;
+  (b) **`switchIsland(6)` REFUSE si l'île est verrouillée** — poser `g.islandUnlocked[6] = true` avant,
+  sinon on tape le canvas de l'île 1 et « la fiche ne s'ouvre pas » ; (c) un bloc de test qui remplit un
+  port à 1e12 et confirme tout l'arbre **pollue tous les blocs suivants** (palier, remboursements
+  globaux) → juger les deltas de remboursement **par île**, pas globalement ; (d) le montage logique
+  du Collisionneur exige de **purger `t.logic` avant de le reposer** et de remettre à plat
+  `code`/`dcCode`/`dcAcc`/`roundDone`, sinon la toute première manche est jugée sur un état périmé
+  (1 pénalité fantôme) ; (e) le bouton « ✦ Densifier » est à **2 temps** et la fiche défile →
+  `scrollIntoViewIfNeeded` + re-localisation entre les deux clics.
+  ⚠ **Taille : 3 184 653 → 3 186 954 o (+2 301 o)**, dominée par les commentaires de décision.
+  ⚠ **HORS PÉRIMÈTRE, non touché (§3)** : les `entry` des mines V4 et tout autre forfait de `TIER_STEP`,
+  les recettes/sorties/sigmoïdes/sprites des mines, la garde `state !== 'off'` de la boucle énergie,
+  la garde `typeof co.powered !== 'boolean'` du lot 2, le reste du régime de déficit, la file FIFO,
+  les recherches infinies, le format de sauvegarde.
+- **État précédent : `GAME_BUILD = 343`, `GAME_VERSION = 'Alpha 14.61'`, `SAVE_VERSION = 31`.**
   Changement 14.61 (brief `BRIEFRECHERCHESINFINIESL3B`, **LOT 3B — clôture des recherches infinies**) :
   **ACHAT des recherches + REMBOURSEMENT RÉTROACTIF + INTERFACE (fiche du Collisionneur) + crochet
   île 8 inerte.** `SAVE_VERSION` INCHANGÉ, **aucun champ persisté ajouté** (l'achat écrit

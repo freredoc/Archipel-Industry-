@@ -8011,7 +8011,14 @@ const SAVE_VERSION = 31;
 // Seules upg/transit/remblai remboursent (J1 : sep et boot ne sont pas des barèmes de coût).
 // L'interface vit dans la fiche du Collisionneur, gatée sur le nœud 43 (J10). Aucun champ de
 // sauvegarde ajouté : `techTree.research` existe depuis 14.60, SAVE_VERSION reste 31.
-const GAME_BUILD = 343;
+// build 344 (lot 4 « DIVERS », brief BRIEFDIVERSL4) — deux changements indépendants : (a) le forfait
+// des 7 mines V4 gagne 1 ordinateur quantique + 1 moteur quantique (AJOUT, pas remplacement) ;
+// (b) `toggleCollider` purge aussi `co.powered` (cavalier : la boucle énergie ne l'entretient pas
+// quand la machine est à l'arrêt, la valeur GÈLE et un rallumage jugeait sur une mesure périmée).
+// ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
+// nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
+// notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
+const GAME_BUILD = 344;
 const GAME_VERSION = 'Alpha 14.61';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
@@ -8021,7 +8028,7 @@ const GAME_VERSION = 'Alpha 14.61';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les RECHERCHES INFINIES sont là : touche le Collisionneur (nœud P3 validé) pour dépenser tes points — 3 points au palier de 10 000 confirmations, puis 1 de plus à chaque doublement · Cinq recherches à 10 niveaux : coût d'amélioration, coût de transit et d'élévateur, coût de remblai, rendement du Séparateur Cryogénique, temps de démarrage du Collisionneur · Chaque point dépensé est DÉFINITIF · Les recherches de COÛT te REMBOURSENT la différence sur tout ce que tu as déjà payé (bâtiments, ports, élévateur, remblais) — versée directement aux ports concernés · Aucune sauvegarde touchée";
+const GAME_NOTES = "Densifier une mine en V4 demande désormais AUSSI 1 ordinateur quantique et 1 moteur quantique (en plus de l'alliage de tungstène et des pièces de précision) — la chaîne quantique de l'île 6 devient le passage obligé des mines V4 · Correctif : rallumer le Collisionneur après un arrêt hélium 3 ne prélève plus un tick d'hélium à vide quand le réseau électrique s'est effondré entre-temps · Aucune sauvegarde touchée";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -9061,14 +9068,20 @@ const TIER_STEP = {
   circuit_v2:         { entry: 10, forfait: { beton_arme_irradie: 5000, acier_irradie: 2500, element_moteur_nuc: 100 } },
   separateur_air_v2:  { entry: 10, forfait: { processeur: 50, beton_arme_irradie: 1000, cable_irradie: 1000 } },
   accumulateur_v2:    { entry: 10, forfait: { alliage_tungstene: 100, cable_supraconducteur: 50 } },
-  // 14.08 — Forfaits des mines V4 (identiques : alliage de tungstène + pièces de précision).
-  mine_fer_v4:     { entry: 30, forfait: { alliage_tungstene: 100, piece_precision: 10 } },
-  mine_charbon_v4: { entry: 30, forfait: { alliage_tungstene: 100, piece_precision: 10 } },
-  carriere_v4:     { entry: 30, forfait: { alliage_tungstene: 100, piece_precision: 10 } },
-  mine_cuivre_v4:  { entry: 30, forfait: { alliage_tungstene: 100, piece_precision: 10 } },
-  mine_or_v4:      { entry: 20, forfait: { alliage_tungstene: 100, piece_precision: 10 } },
-  mine_uranium_v4: { entry: 20, forfait: { alliage_tungstene: 100, piece_precision: 10 } },
-  mine_tungstene_v4: { entry: 10, forfait: { alliage_tungstene: 100, piece_precision: 10 } },
+  // 14.08 — Forfaits des mines V4, IDENTIQUES pour les 7 (le contenu a changé en build 344).
+  // build 344 — Densification V4 ancrée dans la chaîne quantique de l'île 6 : AJOUT (et non
+  // remplacement) d'un ordinateur et d'un moteur quantiques au forfait. ⚠ Le forfait est la BASE
+  // d'une courbe, pas un coût fixe : ces deux ressources apparaissent donc à TOUS les niveaux V4,
+  // en quantités croissantes (des dizaines de milliers au Nv.40). C'est voulu.
+  // ⚠ Les entrées diffèrent (30 · 20 · 10) pour un forfait IDENTIQUE : la mine de tungstène atteint
+  // son V4 vingt niveaux plus tôt que le fer. Décision assumée, ne pas « rééquilibrer ».
+  mine_fer_v4:     { entry: 30, forfait: { alliage_tungstene: 100, piece_precision: 10, ordinateur_quantique: 1, moteur_quantique: 1 } },
+  mine_charbon_v4: { entry: 30, forfait: { alliage_tungstene: 100, piece_precision: 10, ordinateur_quantique: 1, moteur_quantique: 1 } },
+  carriere_v4:     { entry: 30, forfait: { alliage_tungstene: 100, piece_precision: 10, ordinateur_quantique: 1, moteur_quantique: 1 } },
+  mine_cuivre_v4:  { entry: 30, forfait: { alliage_tungstene: 100, piece_precision: 10, ordinateur_quantique: 1, moteur_quantique: 1 } },
+  mine_or_v4:      { entry: 20, forfait: { alliage_tungstene: 100, piece_precision: 10, ordinateur_quantique: 1, moteur_quantique: 1 } },
+  mine_uranium_v4: { entry: 20, forfait: { alliage_tungstene: 100, piece_precision: 10, ordinateur_quantique: 1, moteur_quantique: 1 } },
+  mine_tungstene_v4: { entry: 10, forfait: { alliage_tungstene: 100, piece_precision: 10, ordinateur_quantique: 1, moteur_quantique: 1 } },
   // 14.08 — Chaînes V2 « or/silicium/processeur » (P1) puis nucléaire (P2), et antenne V2 (P3).
   fonderie_or_v2:             { entry: 10, forfait: { alliage_tungstene: 300, cable_supraconducteur: 300, element_moteur_nuc: 10 } },
   raffineur_silicium_v2:      { entry: 10, forfait: { alliage_tungstene: 200, cable_supraconducteur: 200, piece_precision: 100 } },
@@ -24882,6 +24895,16 @@ function App() {
     // « ARRÊTÉ — électricité insuffisante » au lieu d'afficher « éteint (par le joueur) ».
     g.collider.halt = null;
     g.collider._haltPrev = null;
+    // build 344 — CAVALIER : `co.powered` est purgé lui aussi. L'affectation de `powered` par la
+    // boucle énergie est gardée par `state !== 'off'` : une machine à l'arrêt garde donc une mesure
+    // GELÉE. Après un arrêt carburant, cette mesure vaut `true` (un arrêt He3 suppose le courant
+    // présent) ; si le réseau s'est effondré entre-temps, le rallumage jugerait sur une valeur
+    // périmée et prélèverait un tick d'hélium 3 à vide.
+    // ⚠ `undefined` et NON `false` : `false` provoquerait un arrêt courant immérité au tick suivant,
+    // tandis qu'`undefined` fait retomber la machine dans la garde du lot 2 (`typeof !== 'boolean'`)
+    // → tick blanc, aucun jugement, aucun prélèvement. L'invariant devient : `co.powered` ne fait
+    // foi que tant que la boucle énergie l'entretient.
+    g.collider.powered = undefined;
     showToast(on ? I18N.t('▶ Collisionneur relancé — 10 min de démarrage depuis zéro') : I18N.t('⏸ Collisionneur éteint — le démarrage repart de zéro'), on ? 'var(--green)' : 'var(--orange)');
     bumpHud();
     markDirty();
