@@ -17,7 +17,93 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 342`, `GAME_VERSION = 'Alpha 14.60'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 343`, `GAME_VERSION = 'Alpha 14.61'`, `SAVE_VERSION = 31`.**
+  Changement 14.61 (brief `BRIEFRECHERCHESINFINIESL3B`, **LOT 3B — clôture des recherches infinies**) :
+  **ACHAT des recherches + REMBOURSEMENT RÉTROACTIF + INTERFACE (fiche du Collisionneur) + crochet
+  île 8 inerte.** `SAVE_VERSION` INCHANGÉ, **aucun champ persisté ajouté** (l'achat écrit
+  `techTree.research`, champ du lot 3A ; le remboursement crédite les ports existants). Base du brief
+  EXACTE (342 / 14.60 / 3 175 388 o) : les **14 ancres K1→K14 sont sorties UNIQUES** (comptes publiés,
+  aucune re-dérivation).
+  ⚠ **CE LOT CONTIENT LA SEULE OPÉRATION DU PROJET QUI PEUT FABRIQUER DE LA MONNAIE SANS RIEN CASSER**
+  (un remboursement trop généreux est invisible : aucun crash, aucun test rouge, juste une économie
+  faussée). Les 4 garde-fous J1/J2/J3/J4 sont la substance du lot — ne jamais les « simplifier » :
+  (1) **J1 — liste EXPLICITE `RESEARCH_REFUNDABLE = {upg, transit, remblai}`** : `boot` possède
+  `base`/`step` comme les autres mais ce sont des SECONDES — dériver la liste de la présence de `base`
+  rembourserait des ressources pour une durée de démarrage. `sep` (multiplicatif) n'a rien à rembourser.
+  Mesuré (R9) : `sep` et `boot` achetés avec four Nv.10 + port Nv.5 + 3 remblais en stock → **0 port
+  touché**.
+  (2) **J2 — le remboursement part TOUJOURS du barème d'AVANT CE POINT** (`sBefore = base − step·lvl`,
+  `sAfter = base − step·(lvl+1)`), jamais de 2,70 fixe. Mesuré (R2) : four monté au Nv.12 SOUS 2,69
+  puis achat du 2ᵉ point → rendu **380 165** pierre ; un calcul depuis 2,70 aurait rendu **775 447**
+  (le double — c'est l'exploit « monter pas cher, se faire rembourser cher » qui est bloqué).
+  (3) **J3 — arrondi PAR CRAN puis soustraction des totaux entiers** (`Σround(ancien) − Σround(nouveau)`,
+  jamais `round(ΣΔ)`) : le joueur a PAYÉ des crans arrondis un par un, le remboursement doit suivre le
+  même chemin. Mesuré (R3, 40 bâtiments) : écart entre les deux méthodes
+  `{pierre:+1, ciment:+2, acier:+6, lingot_fer:−6, silicium:−11}` — les deux DIFFÈRENT, c'est la
+  version niveau-par-niveau qui est livrée.
+  (4) **J4 — paramètre `scaleOv` OPTIONNEL en dernière position sur les 6 fonctions de coût**
+  (`upgradeCostFactor`/`upgradeCost`/`cumulativeInvested`/`portUpgradeCost`/`elevatorUpgradeCost`/
+  `extensionCost`) pour évaluer le même état aux deux barèmes — **JAMAIS d'écriture temporaire dans
+  `*_SCALE_CUR` suivie d'une restauration** (une exception au milieu laisserait toute l'économie sur
+  un mauvais barème). Grep publié : les seules écritures de `UPGRADE_SCALE_CUR`/`PORT_SCALE_CUR`/
+  `EXT_SCALE_CUR`/`COLLIDER_START_CUR` sont les 4 `let` d'init + les 4 affectations DANS
+  `refreshResearchEffects` (lignes 8944-8947 / 8952-8955). N1 prouve que les 6 signatures étendues
+  rendent des résultats **identiques à l'octet à 14.60** sans l'argument (20 ids × 31 niveaux +
+  facteurs + ports 5×21 + élévateur 16 + remblai 9, contre le VRAI code 14.60 via `_ref1460.html`).
+  (5) **J6 — les soft caps remboursent zéro STRUCTURELLEMENT** (aucun filtre explicite) : ils ignorent
+  `scaleOv` comme ils ignorent CUR (branche `soft` du lot 3A) → leur delta est nul par construction.
+  Mesuré (R4) : `puits` Nv.8 + `eolienne` Nv.12 + les 5 `COST_SOFTCAP_X2` Nv.12 seuls sur une île →
+  delta `{}`, **aucune entrée de port créée**, le niveau de recherche passe quand même à 1.
+  (6) **J7 — achat ATOMIQUE** (`buyResearch` : vérifier → delta → créditer → incrémenter → refresh) :
+  l'incrément de niveau vient APRÈS le crédit. Mesuré (A4) : un `refund` qui LÈVE (Proxy piégé sur
+  `game.port[1]`) laisse le niveau à 0 ET le barème à 2,7 — aucun état à moitié écrit.
+  (7) **J5 — chaque île reçoit SON delta ; l'île 7 crédite le PORT 6** (via `portPool`), l'élévateur
+  aussi. Mesuré (R5) : gains `{1: 980, 3: 75, 6: 465}` où 465 = 86 (bâtiments île 6) + 379 (souterrain),
+  **aucun `game.port[7]` créé**. Emprise multi-tuiles comptée UNE fois (R6 : centrale 2×2 → delta d'UN
+  bâtiment, dédup par identité d'objet `t.building` dans un `Set`).
+  (8) **UI (bloc C, ancre K11)** : section « Points de recherche » dans la fiche du Collisionneur,
+  gatée sur le nœud 43 confirmé — `disponibles / gagnés` (`fmtPort`) + 5 boutons `Nv. N/10 · effet`
+  (`2.70` → `2.60`, `×1.00` → `×2.59`, `600.00 s` → `300.00 s`, « max » au cap), infobulle « ⚠ Le point
+  dépensé est DÉFINITIF et ne peut pas être récupéré » (J8 : AUCUNE confirmation à 2 temps — décision
+  du brief, le tooltip porte l'avertissement). Achat par VRAI clic souris vérifié (U3 : « 3 / 3 » →
+  « 2 / 3 », Nv. 1, barème 2,69, toast « 🔬 Recherche améliorée »).
+  ⚠ **3 ADAPTATIONS AU BRIEF, assumées et signalées** : (a) le brief demandait un SFX à l'achat — il
+  n'existe AUCUN son « research » dans le catalogue (67 sons) → **retiré**, à câbler si un son est
+  livré un jour ; (b) le brief proposait `var(--violet)` pour la couleur du compteur — cette variable
+  CSS **n'existe pas** → littéral `#B47CFF` ; (c) `bumpHud()` + `scheduleSave()` ajoutés en fin de
+  `buyResearch` (pattern standard de TOUS les handlers — sans eux le HUD n'affiche le crédit qu'au
+  tick suivant et une fermeture immédiate perdrait l'achat).
+  ⚠ **`island8Unlocked(game)` rend `false` en dur (bloc E, J11)** : c'est le SEUL crochet du lot pour
+  l'île 8 — aucune île supplémentaire nulle part (N5 : 7 îles). Le jour venu : brancher la condition
+  réelle ici, et se souvenir que l'id 8 s'affichera via `islandLabel`.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **2 suites, 31 assertions (22 moteur +
+  9 UI réelle), 0 KO** (seul bruit : le 404 PRÉEXISTANT du serveur de test), moteur rejoué **3 fois,
+  UI 2 fois, sans flottement**. R1 vérifié à l'unité contre un calcul indépendant : 1 four Nv.10 →
+  achat `upg` → **{pierre: 44 883, minerai_fer: 44 883}** exactement. R7 transit : île 1 +75 428,
+  île 2 +1 715, élévateur → port 6 +1 638. R8 remblai : île 2 +935 370 pierre +93 537 ciment +9 354
+  béton irradié = Σ des 4 crans re-cotés. A6 persistance réelle : save/reload → niveaux conservés,
+  barèmes 2,68/1,97/570 corrects, **port STRICTEMENT identique** (aucun remboursement rejoué). N4 :
+  600+ ticks réels avec montage logique COMPLET → 0 tickError, 0 arrêt, 0 pénalité, 20 confirmations.
+  N2/N3 : sous-ensemble essentiel des lots 1/2/3A rejoué (frontières de points, soft caps sous seuil,
+  somme séparateur = 1, tick blanc W1, arrêt électrique V1, arrêt total He3 V4) — les suites
+  COMPLÈTES X/Y/Z/V/W ont été jouées sur cette même base aux livraisons 14.58-14.60, et N1 prouve
+  l'identité à l'octet des 6 fonctions de coût.
+  ⚠ **PIÈGES DE HARNAIS (nouveaux, coûteux)** : (a) **l'`innerText` des fiches est en MAJUSCULES**
+  (CSS `text-transform`) → tout matcher de libellé doit être insensible à la casse (`NV. 0/10 ·
+  600.00 S`) — m'a donné 5 faux KO d'un coup ; (b) **pollution d'état entre blocs de test** : 40 000
+  confirmations + nœud 43 confirmé laissés par un bloc précédent déclenchent `colliderGoalLocked`
+  (seuil atteint, puzzle non validé) → early-return AVANT le régime de déficit testé ensuite — purger
+  `node43.status`/`colliderConfirms` entre blocs ; (c) le compteur « N / M » de la fiche a un JUMEAU
+  (la ligne CONFIRMATIONS) → un `match(/\d+ \/ \d+/)` naïf attrape la mauvaise ligne ; (d) pour A4,
+  un `new Proxy({}, { set() { throw } })` posé sur `game.port[1]` prouve l'atomicité sans toucher au
+  code.
+  ⚠ **Taille : 3 175 388 → 3 184 653 o (+9 265 o).**
+  ⚠ **`__heat` étendu** : `researchRefundDelta`, `RESEARCH_REFUNDABLE`, `island8Unlocked`
+  (`cumulativeInvested` y était déjà — ne pas dupliquer la clé) ; **`__ui` étendu** : `buyResearch`.
+  ⚠ **HORS PÉRIMÈTRE, non touché (§3)** : le contenu des 5 barèmes (lot 3A), `researchPointsEarned`
+  et ses frontières, le régime de déficit (lots 1-2), la file FIFO, toute génération d'île 8 (seul le
+  crochet `island8Unlocked` existe, inerte), `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 342`, `GAME_VERSION = 'Alpha 14.60'`, `SAVE_VERSION = 31`.**
   Changement 14.60 (brief `BRIEFRECHERCHESINFINIESL3A`, **LOT 3A**) : **FONDATIONS DES RECHERCHES
   INFINIES — cinq barèmes pilotables, calcul des points, persistance, rafraîchissement. NI achat, NI
   remboursement, NI interface (lot 3B).** `SAVE_VERSION` INCHANGÉ ; seul champ ajouté
