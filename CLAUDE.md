@@ -17,7 +17,88 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 337`, `GAME_VERSION = 'Alpha 14.55'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 338`, `GAME_VERSION = 'Alpha 14.56'`, `SAVE_VERSION = 31`.**
+  Changement 14.56 (brief `BRIEFSFXAsouterrain`, **BRIEF A — le brief B n'est PAS anticipé**) :
+  **GRAPHE AUDIO À DEUX BUS + RÉVERBÉRATION PAR CONVOLUTION À L'ÎLE 7 + 2 sons + 4 câblages.**
+  `SAVE_VERSION` INCHANGÉ, **aucun champ persisté ajouté ni modifié** (vérifié sur une save réelle :
+  ni `wetSend`, ni `conv`, ni `reverb`). Base du brief EXACTE (337 / 14.55 / 3 136 543 o) : les
+  **12 ancres sont sorties UNIQUES** (dont `src.connect(f)…` à **2** occurrences, comme annoncé).
+  (1) **DEUX BUS** : `worldBus ─┬─► master` / `└─► wetSend ─► conv ─► master`, et `uiBus ─► master`.
+  Les 3 helpers (`tone`/`noise`/`woosh`) visent une variable **`bus`** que `play()` bascule avant
+  d'invoquer le son → **les 67 définitions du catalogue sont intactes**. `DRY_UI` (10 sons
+  d'interface : click, clickAlt, tabSwitch, tabHover, panelOpen, panelClose, invalid, notify, save,
+  mapOpen) → `uiBus` ; tout le reste → `worldBus`.
+  ⚠ **`bus` est remis à `worldBus` dans un `finally`**, pas après l'appel : sans lui, un son qui LÈVE
+  laisserait `bus` sur `uiBus` et **TOUS les sons suivants deviendraient secs** — bug silencieux,
+  invisible hors île 7. Testé en forçant une exception dans `createOscillator`.
+  ⚠ **La voix de boucle vise `worldBus` EN DUR, pas `bus`** : elle démarre HORS de `play()`, `bus`
+  contiendrait la valeur laissée par le dernier son joué (mesuré : après un `click`, elle partirait
+  sur `uiBus`). **0 `g.connect(master)` restant** (grep) ; les 3 `connect(master)` subsistants sont
+  légitimes : `worldBus→master`, `uiBus→master`, `conv→master`.
+  (2) **RÉVERBÉRATION — IR générée à la volée, STÉRÉO, construction PARESSEUSE** à la première
+  descente (`buildReverb` appelé par `reverbFrame` seulement si l'île 7 est visée). Mesuré :
+  **0 convolveur** après 30 frames en surface ET sur une partie de surface entière ; **56 ms** de
+  génération à la première descente ; **1 SEUL `ConvolverNode`** après 20 aller-retours.
+  Recette (0,8 s + 14 ms de pré-délai, `normalize = false`) : queue diffuse `exp(-6.9·t)` filtrée
+  par un passe-bas à un pôle `k = 0,85 − 0,70·t` ; **6 réflexions précoces** (13/21/31/43/59/77 ms,
+  amplitudes ±0,60→0,16), positions **×1,07 sur le canal droit** ; normalisation en **ÉNERGIE**
+  (`g = 3,2/√Σd²`).
+  ⚠ **La décroissance DOIT être exponentielle** : contre-épreuve numérique exécutée — en `(1−t)⁴`
+  les incréments de RMS partent à −3,4 dB puis plongent à **−26,3 dB** (ça traîne puis se coupe net,
+  on entend une salve de bruit), contre **−4,4 à −5,4 dB réguliers** en exponentiel.
+  ⚠ **Normalisation en ÉNERGIE et non en crête** : mesurée à `Σd² = 10,240` exactement sur les DEUX
+  canaux → allonger la queue ne monte plus le niveau, le réglage de durée reste indépendant du volume.
+  ⚠ **Les réflexions précoces sont le composant le plus important** (sans elles : un bruit ajouté,
+  pas un volume). Vérifiées : impulsion positive à **13,0 ms** à gauche, la MÊME à **13,91 ms** à
+  droite, corrélation L/R **≈ 0,02** (canaux bien décorrélés).
+  (3) **`reverbFrame(g)`** inséré dans la frame entre `colliderLoopFrame(g)` et `checkTutorial()`
+  (wrapper module-level avec `try/catch`, même patron que `colliderLoopFrame`) : cible
+  `currentIsland === 7 ? 0,30 : 0`, fondu `setTargetAtTime(…, 0,4)` → l'acoustique s'installe
+  **derrière** le son d'ascenseur. Mesuré en jeu réel : 0 → **0,291** à la descente, retour à
+  **0,0002** à la remontée, avec une valeur INTERMÉDIAIRE (0,105) pendant le fondu — donc pas de
+  claquement. **Le mute agit sur `master`, donc en aval : rien à câbler.**
+  (4) **2 sons** (**catalogue 65 → 67**), nouvelle section `/* --- Découverte --- */` :
+  **`reveal6`** (woosh lowpass 60→900 Hz sur 1,2 s + montée 392/523/659/784 Hz + shimmer 1568 Hz,
+  ~1,7 s, calé sur les 1800 ms de l'animation) et **`locate`** (880 → 1318 Hz, bref, neutre).
+  (5) **4 câblages** : `reveal6` dans l'effet de révélation de l'île 6 (**après** la pose de
+  `archiVu6`, appel direct — on est dans un `useEffect`, pas dans le tick) ; onglet « Transit
+  archipel » `tabSwitch` → **`mapOpen`** (l'onglet EST la carte depuis 14.41, le son dormait dans le
+  fichier depuis l'origine ; l'onglet île garde `tabSwitch`) ; **`locate`** sur le « Y aller » du
+  panneau de surchauffe (affordance jusque-là totalement muette) ; **branche `placeC` SUPPRIMÉE** de
+  la pose.
+  ⚠ **`placeC` était INATTEIGNABLE** : 111 bâtiments en 1×1, **2 en 2×2** (les centrales nucléaires),
+  aucun au-delà → le seuil de 6 tuiles ne pouvait rien viser, et l'abaisser à 4 n'aurait fait que
+  renommer le son des centrales en rendant `placeHeavy` inerte à son tour. `placeC` **reste au
+  catalogue**, en réserve. Vérifié en moteur réel : 1×1 → `place`, 2×2 → `placeHeavy`, `placeC` jamais.
+  Validé : `node --check` (**7 blocs, 7 OK**) + Chromium **3 suites, 80 assertions, 1 KO** — le seul
+  KO est un **404 PRÉEXISTANT** (contre-épreuve exécutée sur la base 337 : **identique**, ressource
+  absente du serveur de test), **0 `pageerror`**. Suite 1 **rejouée 6 fois sans flottement**.
+  Instrumentation : espion sur `AudioNode.prototype.connect` + marquage des nœuds à la création →
+  le graphe est mesuré, pas supposé (routage des 10 sons DRY_UI et de 9 sons de monde vérifié
+  un par un). **UI RÉELLE** (vrais clics souris) : `reveal6` sonne à l'ouverture du Port avec l'île 6
+  fraîchement débloquée puis **PLUS JAMAIS** après fermeture/réouverture ; onglet archipel → `mapOpen`
+  seul, onglet île → `tabSwitch` seul ; bouton 🔥 → panneau → « Y aller » → `locate`. **Save réelle**
+  écrite puis **rechargée** : SAVE 31, `archiVu6` restauré, 0 `tickError`, horloge qui avance.
+  **Mute** sous terre → plus aucun son créé (donc plus rien n'alimente la queue), démute → retour
+  immédiat. **Arrière-plan/retour** : 1 seul convolveur, acoustique restaurée.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, nouveaux)** : (a) le navigateur de test est en locale **EN** →
+  `button[title="Configuration du port (commerce)"]` ne matche pas : forcer
+  `localStorage['archipel_lang'] = 'fr'` **dans l'`addInitScript`** ; (b) **forger un bâtiment
+  déclenche une astuce** dont la `.tip-popup` + son `.research-backdrop` recouvrent la barre
+  d'inventaire → purger les astuces **APRÈS la forge**, pas avant (et par de VRAIS clics souris :
+  un `.click()` DOM est avalé par `useGhostGuard`) ; (c) pour un test d'UI de surchauffe, forger un
+  bâtiment **`damaged`** (état PERSISTANT) plutôt qu'une chaleur qui monte (`heatEmit` est recalculé
+  à chaque tick, piège 14.53) ; (d) comparer un échantillon brut d'IR au bruit ALÉATOIRE de la queue
+  donne un test **INSTABLE** (2 faux KO sur 6 passes) → asserter sur la valeur SIGNÉE aux positions
+  attendues et sur la corrélation L/R, jamais sur un argmax ; (e) `mine_fer` exige un gisement
+  `resource` — pour un test de pose 1×1 sur `land`, prendre `cimenterie`.
+  ⚠ **Taille : 3 136 543 → 3 142 916 o (+6 373 o)**, sous le plafond de 10 Ko du brief.
+  ⚠ **HORS PÉRIMÈTRE, non touché (§4)** : **tout le brief B** (présence spatiale, panoramique stéréo,
+  voix nucléaire) — `loopStart`/`loopSet`/`colliderLoopFrame` ne sont modifiés qu'au point 8.3 ;
+  réverbération sur une autre île que la 7 ; ambiances de bâtiment ; réseau de délais en remplacement
+  de la convolution ; sonorisation de `gaz_echappement` et de l'inhibition des portes logiques ;
+  `SAVE_VERSION`, `BUILDINGS`, `TECH_NODES`, les sprites.
+- **État précédent : `GAME_BUILD = 337`, `GAME_VERSION = 'Alpha 14.55'`, `SAVE_VERSION = 31`.**
   Changement 14.55 (brief `BRIEFEDITIONSCI`) : **DEUX ÉDITIONS AU LIEU DE TROIS — `TESTER_BUILD` est
   SUPPRIMÉ, le MODE DÉVELOPPEUR passe sous `DEV_BUILD`, `index.html` (PWA) est bâti depuis l'édition
   PUBLIQUE, et les 2 étapes CI à effet de bord sont GATÉES sur `main`.** `SAVE_VERSION` INCHANGÉ.
