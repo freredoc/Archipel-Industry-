@@ -1,8 +1,8 @@
 {
-  "build": 338,
-  "version": "Alpha 14.56",
+  "build": 339,
+  "version": "Alpha 14.57",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Le SOUTERRAIN a désormais son acoustique : sous terre, les sons résonnent comme dans une galerie. Les sons d'interface (clics, panneaux, onglets) restent secs · Deux nouveaux sons : la révélation de l'île 6 (une seule fois dans la partie) et le « Y aller » du panneau des surchauffes, jusqu'ici muet · L'onglet « Transit archipel » du Port a enfin son propre son d'ouverture de carte · Rien ne change dans le jeu lui-même : aucune règle, aucune recette, aucune sauvegarde touchée"
+  "notes": "Les machines s'ENTENDENT depuis la carte : le bourdon du Collisionneur monte quand tu t'en approches et quand tu zoomes, et il se déplace à gauche ou à droite du casque selon l'endroit où il se trouve à l'écran · La CENTRALE NUCLÉAIRE a désormais sa propre voix : elle monte pendant les 5 minutes de calibrage, tient à pleine puissance, redescend à l'arrêt — et une centrale éteinte est TOTALEMENT silencieuse · Au casque, la scène sonore suit ce que tu regardes · Rien ne change dans le jeu lui-même : aucune règle, aucune recette, aucune sauvegarde touchée"
 }
