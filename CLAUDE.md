@@ -17,7 +17,83 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 341`, `GAME_VERSION = 'Alpha 14.59'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 342`, `GAME_VERSION = 'Alpha 14.60'`, `SAVE_VERSION = 31`.**
+  Changement 14.60 (brief `BRIEFRECHERCHESINFINIESL3A`, **LOT 3A**) : **FONDATIONS DES RECHERCHES
+  INFINIES — cinq barèmes pilotables, calcul des points, persistance, rafraîchissement. NI achat, NI
+  remboursement, NI interface (lot 3B).** `SAVE_VERSION` INCHANGÉ ; seul champ ajouté
+  `techTree.research` (5 entiers, optionnel, clampé [0,10] à l'écriture ET à la lecture). Base du
+  brief EXACTE (341 / 14.59 / 3 164 819 o) : les **18 ancres sont sorties UNIQUES**.
+  (1) **Cinq barèmes** (`RESEARCH_DEFS`) : `upg` 2,7 −0,01/niv (2,60 au cap), `transit` 2 −0,03
+  (1,70 — port ET élévateur), `remblai` 10 −0,3 (7), `sep` ×1,1 multiplicatif sur He3 ET He4
+  (méthane = RELIQUAT, somme exactement 1), `boot` 600 s −30 (300). Variables de MODULE
+  (`UPGRADE_SCALE_CUR`/`PORT_SCALE_CUR`/`EXT_SCALE_CUR`/`COLLIDER_START_CUR`) rafraîchies par
+  **`refreshResearchEffects(game)`**, appelée à **3 sites** : (1) tête de `onTick` (le FILET H4 — un
+  site d'invalidation oublié coûte un tick, jamais une dérive), (2) fin de `loadSave` (avant le seul
+  `return true`), (3) création de partie neuve (après `ensureIslandDefaults`).
+  ⚠ **CONTRADICTION INTERNE DU BRIEF, tranchée en faveur de la DÉCISION (P5 adapté)** : H1 exige que
+  les soft caps gardent 2,7 « **y compris sous leur seuil** », mais le patch P5 verbatim
+  (`return Math.pow(UPGRADE_SCALE_CUR, level)`) aurait fait payer 2,6^k au puits (< Nv.5) et à
+  l'éolienne (< Nv.10) alors que leurs branches au-dessus du seuil repartent d'un préfixe
+  **2,7^4 / 2,7^9** → discontinuité au seuil + remboursements (`cumulativeInvested`) incohérents avec
+  ce qui a été payé. La branche finale teste donc le buildingId (`soft ? BASE : CUR`). Mesuré (Y2) :
+  avec `upg = 10`, puits Nv.3 = 2,7³ ET Nv.8, éolienne Nv.7 ET Nv.12, aciérie Nv.5 ET Nv.12 — tous
+  STRICTEMENT identiques à recherche 0.
+  ⚠ **`UPGRADE_SCALE` N'EXISTE PLUS** (séparé en `_BASE` soft caps / `_CUR` barème normal) :
+  `grep 'UPGRADE_SCALE[^_]'` hors commentaires = **0**. Ne jamais réintroduire un nom unique.
+  ⚠ **`COLLIDER_START` reste la PÉRIODE de la sinusoïde (600, JAMAIS réduite — H2)** ; seule la
+  DURÉE de démarrage passe par `colliderStartOf()` (4 sites : fin de démarrage + clamp du timer,
+  fiche « Démarrage restant », rampe du son). **G11 (l'oscillation) est resté INCHANGÉ** — vérifié au
+  SHA. Mesuré (Y8) : avec `boot = 10` (démarrage 300 ticks, mesuré), les maxima de `co.want` sur
+  1 200 ticks restent espacés de **600**, pas de 300.
+  ⚠ **Séparateur : mutation GLOBALE de `BUILDINGS.separateur_cryogenique.outputs` depuis la base
+  figée `CRYO_BASE_OUT`** (H5) — l'avertissement « ne jamais muter b.outputs » vise la mutation par
+  INSTANCE ; recalculer depuis la valeur COURANTE composerait l'effet à chaque tick (l'hélium
+  partirait à l'infini). Idempotence mesurée (Z7) : 20 appels → valeurs stables. Au cap : He3
+  0,025937 · He4 0,259374 · méthane 0,714689, somme = 1 (±1e-12).
+  ⚠ **Points DÉRIVÉS, jamais stockés (H7)** : `researchPointsEarned` = fonction pure, gatée sur le
+  nœud 43 confirmé ; **boucle entière, PAS `Math.log2`** (H8). Frontières exactes mesurées (Z2) :
+  [9 999, 10 000, 19 999, 20 000, 40 000, 80 000, 10 000·2²⁰] → **[0, 3, 3, 4, 5, 6, 23]**.
+  `researchPointsAvailable` est clampée à 0 (un dépensé > gagné — save d'une version future — ne
+  rend jamais un négatif).
+  ⚠ **Coûts fractionnaires → `Math.round` sur le coût FINAL** de `portUpgradeCost` /
+  `elevatorUpgradeCost` / `extensionCost` (H9) : à recherche 0, round sur `2^n` et `10^n` est
+  l'identité — **vérifié à l'octet** (série X).
+  **MÉTHODE DE NON-RÉGRESSION (série X)** : la table de référence est calculée par le VRAI code
+  14.59 — copie jetable `_ref1459.html` du commit précédent avec **un export `upgradeCost` injecté
+  dans `__heat`** (seule fonction manquante), jamais une réimplémentation du harnais. 20 bâtiments ×
+  31 niveaux + 7 courbes de facteurs + ports 5×21 + élévateur 16 + remblai 9 : **identiques à
+  l'octet** (JSON.stringify). X8 = partie réelle 600+ ticks avec **montage logique COMPLET**
+  (émetteurs → XNOR → vanne) : 38 manches, 20 confirmations, **0 pénalité, 0 arrêt, 0 tickError**.
+  Validé : `node --check` (**7 blocs, 7 OK**) + Chromium **2 suites, 27 assertions, 0 KO, 0
+  `pageerror`**, rejouées **3 fois sans flottement** (X1→X8, Y1→Y9, Z1→Z8 tous PASS). Persistance
+  réelle : save écrite/rechargée (Z4 : niveaux conservés, `UPGRADE_SCALE_CUR` 2,63 réaligné au
+  chargement), save privée de `research` (Z5 : tout à 0 = 14.59), save trafiquée `{upg:47,
+  transit:-3}` (Z6 : clampée 10/0), mode Difficile par la vraie ModeModal (Z8).
+  ⚠ **PIÈGES DE HARNAIS (coûteux)** : (a) **le piège (h) frappe encore** — `localStorage.clear()`
+  dans un `addInitScript` rejoue au reload et la course clear ↔ flush-`pagehide` donne des boots
+  **INCOHÉRENTS d'un run à l'autre** (slot actif recréé, save perdue ou non) : symptôme vu ici,
+  `research` rechargé correct mais barèmes restés à 2,7 dans un run, partie neuve dans l'autre —
+  TOUJOURS garder le clear derrière un drapeau ; (b) **le montage logique du Collisionneur exige 3
+  réseaux DISJOINTS** (α_col → XNOR ; α_DC → XNOR ; sortie → vanne) : le flood-fill des fils est
+  4-dir, **une seule adjacence parasite court-circuite tout** (1 pénalité + machine éteinte au
+  premier essai) — router en évitant les faces β/S, γ/O et VALIDE/E des émetteurs ET les tuiles
+  voisines de la vanne ; un fil logique posé PAR-DESSUS le landmark (t.logic en surcouche) fonctionne ;
+  (c) pour X8, l'état du **Data Center est ré-affirmé à chaque tick** (`active/inFac/pwrAvg/heat`) —
+  son alimentation complète (azote + conduit + tour depuis 14.36) n'est pas l'objet du test ;
+  (d) Z3 : donner assez de confirmations pour `earned > spent`, sinon le clamp à 0 d'`available`
+  fait échouer l'assertion naïve `available === earned − spent`.
+  ⚠ **Taille : 3 164 819 → 3 175 388 o (+10 569 o).**
+  ⚠ **`__heat` étendu** : `colliderStartOf`, `RESEARCH_DEFS/KEYS/CAP/FIRST/FIRST_POINTS`,
+  `CRYO_BASE_OUT`, `researchLvl`, `researchPointsEarned/Spent/Available`, `refreshResearchEffects`,
+  `upgradeCost`, et **`researchScales()` en GETTER** (les barèmes sont des `let` de module — les
+  figer dans l'objet rendrait les tests mensongers).
+  ⚠ **HORS PÉRIMÈTRE, non touché (§3)** : l'achat, le remboursement, l'interface (**lot 3B** — aucun
+  bouton, aucune écriture joueur de `techTree.research`), le régime de déficit (lots 1-2), la file
+  FIFO, `COLLIDER_POWER`/`COLLIDER_RAMP`/`COLLIDER_HE3`/`COLLIDER_GOALS`, `colliderGoalLocked`,
+  `colliderPalier`, `TIER_STEP`/`TIER_NEXT`, le CONTENU de `COST_SOFTCAP_X2`, `PORT_BASE_COST`,
+  `ELEVATOR_BASE_COST`, la recette du Séparateur hors `outputs` (intrants/conso/sigmoïde), l'île 8
+  (`researchPointsSpent` est le helper prévu pour son branchement, sans condition active).
+- **État précédent : `GAME_BUILD = 341`, `GAME_VERSION = 'Alpha 14.59'`, `SAVE_VERSION = 31`.**
   Changement 14.59 (brief `BRIEFHOTFIXP13ETSOUTERRAINFIFOL2`, **LOT 2, deux sous-lots indépendants**) :
   **(§A) le Collisionneur ne peut plus être jugé au premier tick d'une session ; (§B) la construction
   SOUTERRAINE passe du proportionnel à une FILE STRICTE.** `SAVE_VERSION` INCHANGÉ ; seul champ ajouté
