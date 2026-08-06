@@ -17,7 +17,101 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 347`, `GAME_VERSION = 'Alpha 14.64'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 348`, `GAME_VERSION = 'Alpha 14.65'`, `SAVE_VERSION = 31`.**
+  Changement 14.65 (brief `BRIEFINTEGRATIONBicones`, **INTÉGRATION B — 7 chantiers, tous livrés**) :
+  **les emoji de tête des toasts, des astuces et de l'Aide deviennent des SPRITES (26 icônes neuves
+  + 9 arts refaits), et le clamp de chaleur se ré-arme à chaque changement de plafond.**
+  `SAVE_VERSION` INCHANGÉ, **aucun champ persisté ajouté** (`heatCapSeen` est transitoire).
+  Base 347 / 14.64 / 3 204 873 o EXACTE ; **16/16 ancres uniques**, **14/14 SHA-256 de bloc
+  conformes**, **35/35 SHA-256 de PNG conformes**.
+  ⚠ **LE PACK EST ARRIVÉ EN 2 TEMPS** : la 1ʳᵉ session n'a reçu que le `.md` (le lot A avait consommé
+  `archipel-sprites.zip` sans le commiter). **Livraison SUSPENDUE au chantier 0** plutôt que de
+  générer un art de substitution — mesuré alors : 22 des 48 sprites de la table existaient déjà, les
+  26 manquants étaient EXACTEMENT ceux de C1a, et le repli de C3 est la **chaîne VIDE** → un toast
+  `❌ Manque acier` aurait perdu son emoji. **C'était le bon arbitrage** ; le zip fourni ensuite a
+  débloqué C1a→C5 **sans la moindre adaptation**.
+  (1) **§C0 — LE DRAPEAU DEVIENT UNE MÉMOIRE DU PLAFOND.** `heatCapAdj` était un booléen à **usage
+  unique**, consommé au PREMIER `processHeat`. Or le gate `pwrAvg` de la 14.63 garantit que la zone
+  d'antenne est **ÉTEINTE au tick 1** après un chargement → le plafond y est calculé **NON boosté**,
+  donc le **plus GRAND** : le clamp ne trouve rien à raboter et **se dépense pour rien**. Au tick 2 la
+  zone s'allume, le plafond **RÉTRÉCIT**, et la protection n'existe plus → **jauge bloquée à 135 %**.
+  `bld.heatCapSeen = cap` → le clamp se ré-arme à **chaque changement** de plafond (allumage de zone,
+  amélioration, densification, chargement) et ne fait rien quand il n'y a rien à raboter.
+  ⚠ **Pourquoi le plafond RÉTRÉCIT à l'allumage** : depuis le lot A, `heatEmitMaxOf` part de
+  `meanPower` pour un bâtiment boosté. Ratio mesuré = `meanPower/nominalPower × (1 + antElecBoost)`
+  = **0,5625 × 1,2 = 0,675** pour une antenne Nv.1 sur une sigmoïde 1→8. **D'où le seuil de 67,5 %**
+  du §8.17 : en dessous, le plafond ne rétrécit pas assez pour que le clamp ait à mordre.
+  ⚠ **Deux effets de bord cherchés, aucun trouvé** (mesurés) : cycler le plafond **CONVERGE en UN
+  cycle** — 22,1616 → 11,54736 au 1ᵉʳ rétrécissement puis **identique à 1e-12 sur 10 changements**
+  (le clamp ne mord que si la chaleur DÉPASSE : pas de pompe à chaleur) ; et quand le plafond
+  **GRANDIT** le clamp ne remonte **jamais** la chaleur.
+  (2) **§C1a/C1b — 35 PNG.** 26 icônes NEUVES injectées en assignations
+  `window.__SPRITE_DATA__["ui_…"]=…` (l'ancre est le commentaire des spritesheets) + **9 arts
+  REFAITS** dans le grand littéral (`ui_alerte`, `ui_baisser`, `ui_batiment`, `ui_demolir`,
+  `ui_mode_productivite`, `ui_monter`, `ui_port`, `ui_reparation`, `ui_route`) — ces 9-là étaient
+  **déjà affichés** par la barre d'outils et le HUD, ils changent donc d'aspect immédiatement.
+  ⚠ **Deux formes de déclaration cohabitent** dans `SPRITE_DATA` (grand littéral `"clé":"data:…"` ET
+  assignation `window.__SPRITE_DATA__["clé"]="data:…"`) : un contrôle aller-retour par regex DOIT
+  gérer les deux, sinon il conclut à tort que 26 clés sont absentes (m'est arrivé).
+  (3) **§C2 — `UI_ICON_BY_EMOJI` (49 entrées) + `leadIconOf(msg)`**, posés juste avant `uiIcon`.
+  `leadIconOf` lit le **premier code point** (`codePointAt`, donc les emoji hors BMP passent), saute
+  un éventuel **sélecteur de variante U+FE0F** puis les espaces, et rend `{name, rest}` ou `null`.
+  ⚠ **PIÈGE DU §6, vérifié** : la flèche de l'astuce `traverser` est **U+219D** (↝), pas U+21DD —
+  `grep` confirme 0 occurrence de U+21DD dans le fichier. Une table écrite au jugé aurait raté
+  cette entrée en silence.
+  (4) **§C3/§C4a/§C4b/§C5 — trois sites de rendu.** Toast (`toast.msg`), icône du popup d'astuce et
+  icône des cartes de l'Aide (`tip.icon`). **Le repli diffère et c'est voulu** : le toast retombe sur
+  la chaîne d'origine (l'emoji est DANS le message), les astuces retombent sur `tip.icon` puis `💡`.
+  **Aucune des 48 entrées de `GAME_TIPS` n'est retouchée** : leur champ `icon` reste un emoji, c'est
+  la table qui traduit au rendu. CSS : `.toast-ico{width:1em;height:1em;vertical-align:-.12em}`.
+  ⚠ **COUVERTURE MESURÉE : 42 astuces sur 48** (le brief annonçait 44/52 — `GAME_TIPS` en compte 48
+  au runtime). Les **6 non couvertes** sont exactement celles dont le §3 déclare qu'aucun art n'est
+  livré (🏝 🚢 🛢 🔗 ⚗) → **la couverture est complète au regard de l'art disponible**, et une astuce
+  sans icône garde son emoji (vérifié en jeu : 🏝️ s'affiche tel quel dans l'Aide).
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **8 suites, 91 assertions, 0 KO**,
+  **rejouées 2 fois sans flottement**. **§8.9** (le test qui valide le §3) : les **DEUX branches d'un
+  gabarit ternaire** `⬆`/`⬇` rendent chacune LEUR sprite, et les deux data-URI sont **différentes** —
+  c'est la preuve que traduire à l'AFFICHAGE (et non réécrire les 300 `showToast`) couvre les
+  messages construits. **§8.13** : la suite ENTIÈRE rejouée en **locale EN** → le sprite apparaît sur
+  la chaîne TRADUITE (« Missing acier »), le texte traduit est intact, aucune régression i18n.
+  **§8.17 sur un RECHARGEMENT RÉEL** : zone éteinte au 1ᵉʳ tick (plafond 7,68), allumée au suivant
+  (plafond 5,184 = **0,675×**), jauge qui **serait à 122 %** sans le clamp → **ne dépasse jamais
+  100 %**, **aucun trip**. §8.18 contre-épreuve : `heatCapSeen` pré-positionné → le clamp ne mord pas,
+  la chaleur RESTE à 135 % (et le bâtiment en marche **s'endommage**) — c'est bien le clamp qui
+  protégeait. Contrôles du §7 : **16/16 ancres à `count == 1`**, **14/14 blocs re-extraits au SHA-256
+  conforme**, **35/35 PNG re-décodés depuis le HTML patché identiques octet à octet au pack**
+  (16×16, 193 px opaques, alpha binaire, 5 couleurs — 6 pour `ui_route`).
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **un bâtiment en PAUSE est sauté EN
+  TÊTE de la boucle bâtiment** → son `antennaBuff`/`antennaProd` n'est **jamais remis à jour** et son
+  plafond reste FIGÉ : la zone semble ne jamais s'éteindre. **Idem pour un bâtiment AFFAMÉ.** Pour
+  cycler une zone il faut donc que le bâtiment TOURNE — donc un vrai refroidissement ; (b) le
+  **Refroidisseur en mode `sec`** (`bld.cool = {sel:'sec'}`) absorbe 0,5 MJ/s **sans aucun fluide** :
+  c'est le seul refroidissement montable sans réseau de tuyau jusqu'au port ; (c) **la migration de
+  palier (13.27) remonte au Nv.11 tout bâtiment de `TIER_STEP` au rechargement** → `centrale_
+  enrichissement_v2` voit son plafond ×1024 et tous les seuils calculés avant la save deviennent
+  faux. Prendre une source **hors palier** : `presse_uhp` (sigmoïde 128→1024, `heatCap`, ratio 0,675,
+  émission faible) — vérifié `TIER_STEP['presse_uhp'] === undefined` ; (d) `usine_moteur_nuc` a une
+  émission **PLATE** dans `heatEmitMaxOf` → son plafond **ne rétrécit PAS** (ratio 1) : inutilisable
+  pour ce test ; (e) couper un câble **à l'intérieur d'un long `page.evaluate` asynchrone** ne prend
+  pas — piloter les mutations depuis Node, avec les attentes entre deux `evaluate` ;
+  (f) **`showToast` vit dans le scope d'App** et n'est PAS exposé par `window.__ui()` (comme
+  `askPortFor` avant lui). Sonder les hooks de la fibre React est **DANGEREUX** (écrire dans le hook
+  `info`/`upgrade` fait planter le rendu). La voie propre : **envelopper `React.useState` dans un
+  `addInitScript`** — l'UMD fait `window.React = {}` PUIS remplit l'objet, donc il faut un accesseur
+  sur `window.React` **ET** un accesseur sur `React.useState` ; on enregistre les paires
+  `[état, setter]`, on déclenche **un vrai toast du jeu** (`tryPlace` sur de l'eau, verbeux), et le
+  hook dont l'état vaut `{msg, color, key}` désigne `setToast`. Le jeu déstructure
+  `const {useState} = React` **une seule fois** au chargement du module : l'enveloppe doit être posée
+  avant ; (g) un toast s'efface tout seul au bout de 1 800 ms et un toast de jeu peut s'intercaler →
+  relire en boucle courte, et **comparer les data-URI ENTIÈRES** (deux sprites 16×16 partagent leurs
+  60 premiers caractères de base64 — un `slice(0,60)` donne un faux KO).
+  ⚠ **Taille : 3 204 873 → 3 216 105 o (+11 232 o)** — dont **+11 173 pour le code** ; le brief
+  annonçait +10 334, l'écart de **+839 o est le commentaire de décision du §C0** exigé par les
+  conventions du projet (11 lignes), le reste étant le bump et `GAME_NOTES`.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : les 4 sprites dormants (`ui_deplacer`, `ui_mode_vitesse`,
+  `ui_pause_logique`, `ui_mode_productivite` en icône de bouton), les emoji au MILIEU d'un libellé,
+  les sheets `_breeze` des tuiles de remblai, `heatEmitMaxOf`, `HEAT_CAP_SECONDS`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 347`, `GAME_VERSION = 'Alpha 14.64'`, `SAVE_VERSION = 31`.**
   Changement 14.64 (brief `BRIEFINTEGRATIONAremblai`, **INTÉGRATION A — 2 chantiers indépendants**) :
   **(A) le REMBLAI devient VISIBLE (6 tuiles dédiées) ; (B) le plafond de chaleur se réaligne sur
   `meanPower`.** `SAVE_VERSION` INCHANGÉ, **aucun champ persisté ajouté** (`heatCapAdj` est
