@@ -8144,8 +8144,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 350;
-const GAME_VERSION = 'Alpha 14.67';
+const GAME_BUILD = 351;
+const GAME_VERSION = 'Alpha 14.68';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8154,7 +8154,7 @@ const GAME_VERSION = 'Alpha 14.67';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Onze libell\u00e9s de plus passent de l'emoji \u00e0 l'ic\u00f4ne : les bandeaux Alertes, Surchauffes et d\u00e9ficit \u00e9lectrique, les boutons du Collisionneur, le bouton de forage, l'en-t\u00eate Production, la puissance d'un n\u0153ud de recherche, le titre de densification et les deux \u00e9tats de l'accumulateur. Un libell\u00e9 dont l'emoji n'a pas d'ic\u00f4ne garde son emoji \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Vingt libell\u00e9s de plus passent de l'emoji \u00e0 l'ic\u00f4ne : bandeaux de d\u00e9ficit, fiche de centrale, chantier souterrain, boutons Densifier et Pause, colonne interdit du Port, accumulateurs du panneau c\u00e2ble, en-t\u00eate des Options, export de sauvegarde et messages de mise \u00e0 jour. Le gisement des libell\u00e9s convertibles est d\u00e9sormais \u00e9puis\u00e9 \u00b7 Aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -16640,7 +16640,7 @@ function AlertsPanel({
     className: "alert-isl"
   }, islandLabel(a.isl)), React.createElement("span", {
     className: "alert-res"
-  }, a.nets > 1 ? iconLabel("⚡ " + a.nets + I18N.t(" réseaux en déficit · 0% batterie")) : a.nets === 1 ? I18N.t("⚡ Réseau en déficit · 0% batterie") : I18N.t("⚡ Déficit · 0% batterie")), React.createElement("span", {
+  }, a.nets > 1 ? iconLabel("⚡ " + a.nets + I18N.t(" réseaux en déficit · 0% batterie")) : a.nets === 1 ? iconLabel(I18N.t("⚡ Réseau en déficit · 0% batterie")) : iconLabel(I18N.t("⚡ Déficit · 0% batterie"))), React.createElement("span", {
     className: "alert-val"
   }, fmtPower(a.supply) + " / " + fmtPower(a.demand)), goBtn(a.isl))), alerts.map(a => React.createElement("div", {
     key: a.isl + '-' + a.res,
@@ -17944,7 +17944,7 @@ function InfoPanel({
           }, DIRN[d] + (gwired.indexOf(d) >= 0 ? ' ⚠' : '')))));
       }
       if (gwired.length) rows.push(React.createElement("div", { className: "ip-note", key: 'gwarn', style: { color: '#ffcf6b', fontSize: '11px', padding: '2px 0' } },
-        I18N.t("⚠ Face(s) ") + gwired.map(d => DIRN[d]).join(' · ') + I18N.t(" câblée(s) mais INHIBÉE(S) : leur signal n'entre pas dans la porte. Déplacez le fil sur une face vive, ou inhibez une autre face.")));
+        iconLabel(I18N.t("⚠ Face(s) ")) + gwired.map(d => DIRN[d]).join(' · ') + I18N.t(" câblée(s) mais INHIBÉE(S) : leur signal n'entre pas dans la porte. Déplacez le fil sur une face vive, ou inhibez une autre face.")));
       rows.push(React.createElement("div", { className: "ip-row", key: 'gsig' },
         React.createElement("span", { className: "lbl" }, I18N.t("Signal reçu")),
         React.createElement("span", { className: "val", style: { color: lg.logicIn ? '#00E5A0' : 'var(--ink-dim)', fontWeight: 700 } }, lg.logicIn ? '1' : '0')));
@@ -18623,7 +18623,7 @@ function InfoPanel({
       className: "lbl"
     }, I18N.t("Sortie")), React.createElement("span", {
       className: "val io"
-    }, "⚡ " + fmtPower(NUC_POWER * upMult * realFrac) + (b.noHeat ? "" : " · 🔥 " + fmtHeat(NUC_POWER * upMult * realFrac * HEAT_PER_MW / 1000) + "/s"))), React.createElement("div", {
+    },iconLabel( "⚡ " + fmtPower(NUC_POWER * upMult * realFrac) + (b.noHeat ? "" : " · 🔥 " + fmtHeat(NUC_POWER * upMult * realFrac * HEAT_PER_MW / 1000) + "/s")))), React.createElement("div", {
       className: "ip-row ip-theo"
     }, React.createElement("span", {
       className: "lbl"
@@ -18635,7 +18635,7 @@ function InfoPanel({
       className: "lbl"
     }, I18N.t("Prod. théorique")), React.createElement("span", {
       className: "val io"
-    }, "⚡ " + fmtPower(NUC_POWER * upMult * frac) + (b.noHeat ? "" : " · 🔥 " + fmtHeat(NUC_POWER * upMult * frac * HEAT_PER_MW / 1000) + "/s"))), React.createElement("div", {
+    },iconLabel( "⚡ " + fmtPower(NUC_POWER * upMult * frac) + (b.noHeat ? "" : " · 🔥 " + fmtHeat(NUC_POWER * upMult * frac * HEAT_PER_MW / 1000) + "/s")))), React.createElement("div", {
       className: "ip-nuc-irr"
     }, React.createElement("div", {
       className: "ip-nuc-irr-hd"
@@ -18886,7 +18886,7 @@ function InfoPanel({
         fontWeight: 700
       },
       title: I18N.t("La tour doit toucher un CONDUIT (réseau cuivre, chaleur) ET un tuyau d'eau pour évacuer la chaleur d'une source. Sinon elle ne refroidit rien.")
-    }, onC ? fmtHeat(absorb) + " / " + fmtHeat(capA) + I18N.t("/s évacués") : I18N.t("⚠ pas relié à un conduit"))),
+    }, onC ? fmtHeat(absorb) + " / " + fmtHeat(capA) + I18N.t("/s évacués") : iconLabel(I18N.t("⚠ pas relié à un conduit")))),
     // 14.36 — Ligne « Eau » MASQUÉE pour le Refroidisseur : elle lit `bld.waterNeed`/`waterDrawn`,
     // jamais renseignés pour lui (il ne puise pas hors boucle). Son fluide apparaît déjà dans la
     // ligne « Entrées » du rendu standard.
@@ -19009,8 +19009,8 @@ function InfoPanel({
     const wname = wk.to && BUILDINGS[wk.to] ? BUILDINGS[wk.to].name : I18N.t('Nv.') + (wk.up + 1);
     return React.createElement("div", { className: "ip-row", key: 'uw' },
       React.createElement("span", { className: "lbl" }, I18N.t("Travaux")),
-      React.createElement("span", { className: "val", style: { color: '#B084F7', fontWeight: 700 } },
-        '🚧 ' + wname + ' · ' + wpct + '%' + (wsecs != null ? ' · ~' + wsecs + 's' : ' · ' + I18N.t("en attente de l'élévateur"))));
+      React.createElement("span", { className: "val", style: { color: '#B084F7', fontWeight: 700 } },iconLabel(
+        '🚧 ' + wname + ' · ' + wpct + '%' + (wsecs != null ? ' · ~' + wsecs + 's' : ' · ' + I18N.t("en attente de l'élévateur")))));
   })(), (antBoost > 1 || antProd > 1) && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
@@ -19377,7 +19377,7 @@ function InfoPanel({
       onDensify && onDensify(info.r, info.c);
     },
     title: !densUnlocked ? I18N.t('Recherche requise : ') + (densNode ? densNode.name : '') : armed ? I18N.t('Confirmer · Coût : ') + (formatCost(densCost) || 'gratuit') : I18N.t('Niveau max. atteint — densifier vers ') + BUILDINGS[densId].name
-  }, densUnlocked ? "✦ " : "🔒 ", armed ? I18N.t(" Confirmer ") : I18N.t(" Densifier "), React.createElement("span", {
+  },iconLabel( densUnlocked ? "✦ " : "🔒 "), armed ? I18N.t(" Confirmer ") : I18N.t(" Densifier "), React.createElement("span", {
     className: "ip-sub"
   }, densUnlocked ? BUILDINGS[densId].name : densNode ? densNode.name : I18N.t("Recherche requise"))) : React.createElement("button", {
     className: "ip-up" + (armed ? ' armed' : ''),
@@ -19432,7 +19432,7 @@ function InfoPanel({
       } else setArmedPause(true);
     },
     title: bld.paused ? I18N.t('Relancer la production de ce bâtiment') : I18N.t('Suspendre ce bâtiment (ne consomme et ne produit plus rien)')
-  }, bld.paused ? "▶ " + I18N.t("Reprendre la production") : "⏸" + (armedPause ? I18N.t(" Confirmer ?") : " " + I18N.t("Mettre en pause"))), React.createElement("button", {
+  },iconLabel( bld.paused ? "▶ " + I18N.t("Reprendre la production") : "⏸" + (armedPause ? I18N.t(" Confirmer ?") : " " + I18N.t("Mettre en pause")))), React.createElement("button", {
     className: "ip-demolish" + (armedDem ? ' armed' : ''),
     onClick: () => {
       if (armedDem) {
@@ -20243,7 +20243,7 @@ function PortPanel({
       className: 'pp-c-tog' + (cfg.interdit ? ' active' : ''),
       onClick: () => onSetCfg(currentIsland, res, 'interdit', !cfg.interdit),
       title: I18N.t("Interdire l'export de cette ressource")
-    }, cfg.interdit ? '⛔' : '○'), React.createElement("span", {
+    },iconLabel( cfg.interdit ? '⛔' : '○')), React.createElement("span", {
       className: "pp-c-pri"
     }, React.createElement("button", {
       disabled: i === 0,
@@ -20757,7 +20757,7 @@ function NetworkPanel({
       color: netObj && netObj.elevatorLinked ? 'var(--green)' : 'var(--orange)'
     },
     title: netObj && netObj.elevatorLinked ? I18N.t("Ce conduit touche la tuile élévateur : la chaleur transite entre le souterrain et la surface par le tampon de la cage.") : I18N.t("Ce conduit ne touche PAS la tuile élévateur : aucune chaleur ne transite entre le souterrain et la surface. Prolongez-le jusqu'à la cage.")
-  }, netObj && netObj.elevatorLinked ? I18N.t('relié à la cage') : I18N.t('⚠ non relié à la cage'))), isConduit && game.elevatorRepaired && (currentIsland === 6 || currentIsland === 7) && netObj && netObj.elevatorLinked && React.createElement("div", {
+  }, netObj && netObj.elevatorLinked ? I18N.t('relié à la cage') : iconLabel(I18N.t('⚠ non relié à la cage')))), isConduit && game.elevatorRepaired && (currentIsland === 6 || currentIsland === 7) && netObj && netObj.elevatorLinked && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -20806,7 +20806,7 @@ function NetworkPanel({
   }, I18N.t("R\xE9serve")), React.createElement("span", {
     className: "val io",
     title: I18N.t("\xC9nergie stock\xE9e dans les accumulateurs branch\xE9s sur ce r\xE9seau c\xE2ble (charge / capacit\xE9).")
-  }, '🔋 ' + fmtEnergyPair(wi.accStored, wi.accCap) + ' \xB7 ' + Math.round(wi.accStored / wi.accCap * 100) + '%')), isWire && wi && (cappedByThroughput || prodDeficit) && React.createElement("div", {
+  },iconLabel( '🔋 ' + fmtEnergyPair(wi.accStored, wi.accCap) + ' \xB7 ' + Math.round(wi.accStored / wi.accCap * 100) + '%'))), isWire && wi && (cappedByThroughput || prodDeficit) && React.createElement("div", {
     className: "ip-row" + (cappedByThroughput ? ' capped' : '')
   }, React.createElement("span", {
     className: "lbl"
@@ -20829,7 +20829,7 @@ function NetworkPanel({
       fontSize: '11px',
       padding: '2px 0'
     }
-  }, "⚡ Production insuffisante sur ce r\xE9seau c\xE2ble."), prodEntries.length > 0 && React.createElement("div", {
+  },iconLabel( "⚡ Production insuffisante sur ce r\xE9seau c\xE2ble.")), prodEntries.length > 0 && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -21254,7 +21254,7 @@ function DensifyLockPopup({
     className: "rd-popup"
   }, React.createElement("div", {
     className: "rd-icon"
-  }, "🔒"), React.createElement("div", {
+  },iconLabel( "🔒")), React.createElement("div", {
     className: "rd-title"
   }, I18N.t("Recherche requise")), React.createElement("div", {
     className: "rd-name"
@@ -21490,7 +21490,7 @@ function SlotPanel({
       color: 'var(--ink-dim)',
       marginBottom: '8px'
     }
-  }, copied ? "✓ Copi\xE9 dans le presse-papier. Conserve-le pour le r\xE9importer." : I18N.t("S\xE9lectionne et copie ce texte, garde-le en lieu s\xFBr.")), React.createElement("textarea", {
+  },iconLabel( copied ? "✓ Copi\xE9 dans le presse-papier. Conserve-le pour le r\xE9importer." : I18N.t("S\xE9lectionne et copie ce texte, garde-le en lieu s\xFBr."))), React.createElement("textarea", {
     readOnly: true,
     value: exportText,
     onFocus: e => e.target.select(),
@@ -21794,7 +21794,7 @@ function OptionsModal({
     }, I18N.t("Vérification…"));
     if (upd.state === 'uptodate') return React.createElement("div", {
       className: "opt-upd-status ok"
-    }, I18N.t("✓ Le jeu est à jour."));
+    }, iconLabel(I18N.t("✓ Le jeu est à jour.")));
     if (upd.state === 'error') return React.createElement("div", {
       className: "opt-upd-status err"
     }, I18N.t("Impossible de vérifier (hors-ligne ?)."));
@@ -21811,16 +21811,16 @@ function OptionsModal({
         className: "opt-upd-dl",
         onClick: startNativeUpdate,
         disabled: dlPct != null && dlPct >= 0 && dlPct < 100
-      }, dlPct == null || dlPct < 0 ? I18N.t("⬇ Mettre à jour maintenant") : dlPct >= 100 ? I18N.t("Ouverture de l'installeur…") : I18N.t("Téléchargement… ") + dlPct + " %") : link;
+      }, dlPct == null || dlPct < 0 ? iconLabel(I18N.t("⬇ Mettre à jour maintenant")) : dlPct >= 100 ? I18N.t("Ouverture de l'installeur…") : I18N.t("Téléchargement… ") + dlPct + " %") : link;
       return React.createElement("div", {
         className: "opt-upd-status new"
-      }, React.createElement("div", null, I18N.t("⬆ Mise à jour disponible : "), React.createElement("b", null, upd.label)), upd.notes && React.createElement("div", {
+      }, React.createElement("div", null, iconLabel(I18N.t("⬆ Mise à jour disponible : ")), React.createElement("b", null, upd.label)), upd.notes && React.createElement("div", {
         className: "opt-upd-notes"
       }, String(upd.notes).split(' · ').map((n, i) => React.createElement("div", {
         key: i
       }, n))), action, NATIVE_UPDATER && dlPct === -1 && React.createElement("div", {
         className: "opt-upd-notes"
-      }, I18N.t("❌ Échec du téléchargement. Réessayez, ou "), link, "."));
+      }, iconLabel(I18N.t("❌ Échec du téléchargement. Réessayez, ou ")), link, "."));
     }
     return null;
   };
@@ -21833,7 +21833,7 @@ function OptionsModal({
     className: "slot-head"
   }, React.createElement("span", {
     className: "slot-title"
-  }, I18N.t("⚙ Options")), React.createElement("button", {
+  }, iconLabel(I18N.t("⚙ Options"))), React.createElement("button", {
     className: "slot-close",
     onClick: onClose,
     title: I18N.t("Fermer")

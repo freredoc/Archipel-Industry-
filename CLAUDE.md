@@ -17,7 +17,71 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 350`, `GAME_VERSION = 'Alpha 14.67'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 351`, `GAME_VERSION = 'Alpha 14.68'`, `SAVE_VERSION = 31`.**
+  Changement 14.68 (brief `BRIEFLIBELLESvague2`, **20 blocs**) : **20 libellés JSX de plus passent
+  de l'emoji au SPRITE** — bandeaux de déficit (les 3 branches), fiche de centrale, chantier
+  souterrain, boutons Densifier et Pause/Reprise, colonne « interdit » du Port, accumulateurs du
+  panneau câble, en-tête des Options, export de sauvegarde, messages de mise à jour.
+  `SAVE_VERSION` INCHANGÉ, **aucun champ persisté touché**. Base EXACTE (350 / 14.67 / 3 225 392 o),
+  sur la branche `claude/big-patch-fix-o2jyh9`.
+  ⚠ **BRIEF PRÉ-COMPILÉ, 5ᵉ fois de suite** : **20/20 ancres uniques**, **20/20 hachages conformes
+  AVANT application**, **`node --check` 7/7 du premier coup**, **delta d'octets EXACT (+220)**.
+  ⚠ **CHANGEMENT DE MÉTHODE CÔTÉ BRIEF, à réclamer** : la vague 1 plaçait les parenthèses à vue et
+  avait cassé le fichier deux fois. Cette vague-ci a été produite par un outil qui **CALCULE
+  l'étendue de l'argument React** (compte les délimiteurs, saute chaînes et gabarits, s'arrête à la
+  virgule de plus haut niveau). Les 20 sites sont sortis d'un coup, sans reprise. **Le point de
+  fermeture ne se devine pas, il se calcule.**
+  (1) **Tous les blocs sont de la forme `expr` → `iconLabel(expr)`**, aucun code nouveau : le helper
+  et la table datent des lots 14.65/14.67. Les 20 ancres sont des expressions COMPLÈTES, donc chaque
+  ancre est une sous-chaîne de son remplacement → **`old_count` reste à 1 partout** après patch.
+  (2) **LE GISEMENT EST ÉPUISÉ.** L'outil a classé tous les littéraux à emoji de tête : 20
+  convertibles (ce lot), 26 déjà enveloppés, 5 arguments de `showToast` (déjà traités au rendu),
+  9 valeurs de PROPRIÉTÉ (`afterToast:`, `title:`… — un attribut ne prend qu'une chaîne), 23 lignes
+  de tables i18n (données, pas rendu), la table elle-même, 1 contexte indéterminable.
+  ⚠ Les 9 `afterToast:` sont des chaînes de `TUTORIAL_STEPS` qui **finissent dans `showToast`** :
+  les convertir serait une DOUBLE conversion. **56 littéraux subsistent, aucun n'est un oubli.**
+  (3) **§4 — trois cas voulus, à ne pas « corriger »** : (a) `cfg.interdit ? '⛔' : '○'` — l'interdit
+  devient un sprite, le ○ de l'état autorisé reste un GLYPHE (l'interdiction se voit, l'autorisation
+  reste discrète) ; (b) deux libellés réduits à l'emoji SEUL (`✦ `/`🔒 ` du bouton Densifier, `🔒`
+  d'un bouton verrouillé) → reste vide, sprite suivi d'une espace, sans conséquence ; (c) la fiche
+  de centrale porte un **SECOND emoji 🔥 en MILIEU de chaîne** : seul celui de TÊTE est converti,
+  `leadIconOf` ne voit que le premier code point — comportement attendu, vérifié.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + **`iconLabel` ré-extrait du fichier patché et
+  exercé sous Node avec un React minimal** (**10 assertions, 0 KO** — le tableau du §6 : `ui_energie`
+  / `ui_alerte` / `ui_chantier` / `ui_densifier` / `ui_arret` / `ui_batterie` / `ui_ok` /
+  `ui_configurer` / `ui_refus`, plus `○` → texte brut) + Chromium **3 suites, 37 assertions, 0 KO**,
+  **rejouées 2 fois sans flottement**, et les **7 suites des lots 14.65 → 14.67 rejouées en
+  non-régression** (95 assertions, 0 KO).
+  **Test 7** (emoji en milieu de chaîne) : la ligne de puissance de la centrale rend le sprite
+  énergie en tête, **le 🔥 du milieu reste un emoji**, et la paire « puissance · chaleur » est
+  intacte. **Test 8** (valeurs interpolées) : « Travaux [sprite] Nv.2 · 42% · en attente de
+  l'élévateur » — pourcentage ET état conservés. **Test 16** (découpe) : sur les 20 sites, aucun
+  texte tronqué ni dupliqué ; les valeurs interpolées vérifiées une par une (nombre de réseaux,
+  pourcentages, paire kWh « 8,39 / 16,8 GWh · 50% », libellé de version « Alpha 99.9 »).
+  ⚠ **AUDIT AJOUTÉ (hors brief), 0 défaut** : les **49 entrées** de `UI_ICON_BY_EMOJI` pointent
+  TOUTES vers un sprite existant. C'est le contrôle qui manquait — un nom absent de `SPRITE_DATA`
+  ferait retomber `uiIcon` sur son repli (**la chaîne VIDE**), donc le libellé perdrait son emoji
+  SANS gagner d'icône. À rejouer à chaque ajout dans la table.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **le site 🚧 est la ligne TRAVAUX**
+  (amélioration en cours), pas la construction simple — il faut `construction.up` ; sans lui on tombe
+  sur le libellé « en construction · N% » de la ligne Vitesse, **qui n'a pas d'emoji** et fait
+  conclure à tort à un sprite manquant ; (b) **un Proxy qui rend un sprite pour TOUTE clé masque
+  l'absence réelle** dans le test isolé — c'est ce qui m'a fait croire à un bug de `iconLabel` alors
+  que le site testé n'était pas le bon ; (c) laisser une **centrale 2×2** posée fait retomber le tap
+  suivant dessus (l'emprise déborde de la tuile visée) → nettoyer les 4 tuiles entre deux tests ;
+  (d) le panneau **Sauvegarde s'ouvre DEPUIS les Options**, pas depuis le HUD ; (e) le presse-papier
+  exige `grantPermissions(['clipboard-read','clipboard-write'])`, sinon `copied` reste faux et la
+  branche `✓` n'est jamais rendue ; (f) le détecteur de MAJ se pilote proprement en **forgeant la
+  réponse de `fetch`** (le vrai chemin `checkUpdate → setUpd → updStatus` est alors exercé).
+  ⚠ **DEUX LIBELLÉS NON ATTEIGNABLES EN NAVIGATEUR** (couverts par le test isolé seulement) :
+  `⬇ Mettre à jour maintenant` et `❌ Échec du téléchargement` sont gatés sur **`NATIVE_UPDATER`**,
+  qui n'existe que dans la coquille Android.
+  ⚠ **Taille : 3 225 392 → 3 225 608 o (+216 o)** — le CODE seul pèse **+220 o** (exactement
+  l'attendu) ; le total est plus petit de 4 octets parce que le nouveau `GAME_NOTES` est plus court.
+  ⚠ **HORS PÉRIMÈTRE (§3), non touché** : les 9 valeurs de propriété, les 23 lignes de tables i18n,
+  les emoji en MILIEU de chaîne, et les 4 sprites dormants (`ui_deplacer`, `ui_mode_vitesse`,
+  `ui_pause_logique`, `ui_mode_productivite` en icône de bouton).
+- **État précédent : `GAME_BUILD = 350`, `GAME_VERSION = 'Alpha 14.67'`, `SAVE_VERSION = 31`.**
   Changement 14.67 (brief `BRIEFLIBELLESvague1`, **13 blocs**) : **11 libellés JSX passent de l'emoji
   au SPRITE** (bandeaux Alertes / Surchauffes / déficit électrique, boutons du Collisionneur, bouton
   de forage, en-tête Production, puissance de la chaîne du Calculateur, titre de densification,
