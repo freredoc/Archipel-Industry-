@@ -17,7 +17,105 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 346`, `GAME_VERSION = 'Alpha 14.63'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 347`, `GAME_VERSION = 'Alpha 14.64'`, `SAVE_VERSION = 31`.**
+  Changement 14.64 (brief `BRIEFINTEGRATIONAremblai`, **INTÉGRATION A — 2 chantiers indépendants**) :
+  **(A) le REMBLAI devient VISIBLE (6 tuiles dédiées) ; (B) le plafond de chaleur se réaligne sur
+  `meanPower`.** `SAVE_VERSION` INCHANGÉ, **aucun champ persisté ajouté** (`heatCapAdj` est
+  transitoire — la sérialisation des placements est une liste blanche). Base du brief EXACTE
+  (346 / 14.63 / 3 199 226 o).
+  ⚠ **BRIEF PRÉ-COMPILÉ, ET ÇA S'EST VU (2ᵉ fois de suite)** : **5/5 ancres uniques du premier coup,
+  4/4 hachages de remplacement conformes AVANT application, 6/6 SHA-256 des PNG conformes, et delta
+  d'octets EXACT (+5 952 au byte près, mesuré avant le bump)**. Aucune adaptation. **C'est la méthode
+  à réclamer.**
+  ⚠ **LE PACK N'ÉTAIT PAS JOINT À LA SESSION** (seul le `.md` est arrivé) : les 6 PNG sont
+  introuvables dans les 6 zips du dépôt. Livraison **suspendue et pack redemandé** plutôt que de
+  générer un art de substitution — les SHA-256 du §6 n'auraient jamais concordé. Les 4 blocs de CODE
+  ont été appliqués et validés pendant l'attente (ils dégradent proprement : A2 retombe sur
+  `tile_i<N>_coast`, A3 sur l'emoji).
+  (1) **§A — LE REMBLAI SE VOIT.** Une tuile comblée (`isFilledTile` : `baseTerrain 'water'` +
+  `terrain 'coast'`) prend une **clé dédiée par île**, `tile_i<N>_remblai` (6 tuiles, îles 1 à 6).
+  ⚠ **La clé est PRIORITAIRE sur le calcul d'adjacence, et c'est tout le point** : la clé normale sort
+  de `coastIsCoast()`, **pas de `t.terrain`** → une tuile comblée que le joueur finit par entourer de
+  terre serait redessinée en `land` et **le remblai disparaîtrait**. Mesuré : remblai encerclé de terre
+  → toujours `tile_i1_remblai`, contre-épreuve même voisinage sans le drapeau → `tile_i1_land`.
+  Une clé par île suffit donc, là où l'adjacence en aurait demandé 12.
+  ⚠ **Île 7 exclue** : la branche `isTun` passe avant. Mesuré : tuile percée → `tile_i7_land`, les
+  anneaux de coût (`drillLayer`) restent lisibles.
+  ⚠ **LES TUILES DE REMBLAI SONT STATIQUES** (constat non prévu par le brief) : il n'existe pas de
+  sheet `tile_i<N>_remblai_breeze`, alors que `tile_i{1..5}_coast` sont routées vers une animation de
+  brise par `TILE_ANIM_BY_KEY`. Un remblai ne frissonne donc pas au milieu d'un littoral qui ondule.
+  Défendable (un enrochement n'a pas de raison de miroiter) mais **c'est une différence visible** —
+  à trancher si elle choque. C'est aussi ce qui explique qu'un espion `drawImage` mappé sur le seul
+  `SPRITE_DATA` voie la clé du remblai mais **pas** celle de la côte des îles 1-5 (elle passe par
+  `drawTileAnim`) : mapper AUSSI `__ANIM_DATA__`, sinon on croit à tort à un KO.
+  ⚠ **Écume et falaises CONSERVÉES, mais pas là où le brief le dit** : le §3 annonce qu'elles « se
+  posent par-dessus le remblai » ; en réalité (règle 10.75) **elles se dessinent sur les tuiles d'EAU**,
+  d'après la terre voisine. Mesuré : les voisins d'eau d'un remblai calculent bien leur écume à partir
+  de lui (`coast_ligne_w` / `coast_ligne_e`) → **le trait de rive reste continu**, et
+  `coastTransitionTri` rend `null` sur un remblai (aucun triangle), exactement comme annoncé.
+  (2) **§B — LE PLAFOND DE CHALEUR SUIT ENFIN L'ÉMISSION.** Le lot 2 (14.63) a fait passer la référence
+  du boost d'antenne de `nominalPower` (PIC) à `meanPower` (MOYENNE) ; **`heatEmitMaxOf` n'avait pas
+  suivi**. Sur un bâtiment à sigmoïde le plafond valait donc **1,7778× l'émission réelle** (= 256/144),
+  contredisant l'invariant de `HEAT_CAP_SECONDS` (« 60 s d'émission de pointe »). Mesuré, ratio
+  ancien/nouveau **exactement 1,7778** sur les 4 bâtiments à sigmoïde concernés (`presse_uhp`,
+  `centrale_enrichissement_v2`, `usine_moteur_nuc_v2`, `usine_moteur_quantique`).
+  ⚠ **Ce n'était PAS qu'une marge de sécurité** : `heatCapOf` est le dénominateur de `heat / cap`
+  partout — art du conduit, fiche, et **capteur `surchauffe` réglé en POURCENTAGE (lot 1)**. Mesuré :
+  un capteur réglé à **80 %** sur une presse boostée basculait en réalité à **142 % du chemin réel vers
+  le trip**, c'est-à-dire **après** que le bâtiment aurait dû tripper. Il bascule désormais à 80 % pile.
+  ⚠ **RIEN NE CHANGE pour une conso FIXE** (`meanPower == nominalPower`) : `machine_outil` mesurée à
+  ratio **1,0000**, et les émissions PLATES (`usine_moteur_nuc`, `cryostat`, `data_center`) sortent
+  avant par leur propre branche. Hors zone d'antenne : ratio 1,0000 aussi.
+  ⚠ **LE CLAMP §B2 NE COUVRE PAS LE CAS RECHARGEMENT — ANOMALIE MESURÉE, LIVRÉE TELLE QUELLE.**
+  `heatCapAdj` est un **one-shot** consommé au 1ᵉʳ `processHeat`. Or 14.63 documente qu'**une save
+  rechargée a sa zone d'antenne ÉTEINTE au 1ᵉʳ tick** (`pwrAvg` absent → 0), rallumée au suivant. Donc
+  au tick 1 le plafond est calculé **NON boosté** (le plus GRAND : 7,68 pour une presse), le clamp ne
+  trouve rien à raboter **et se consomme** ; au tick 2 la zone s'allume, le plafond tombe à 5,184, et
+  la protection est déjà dépensée. Mesuré sur bâtiment refroidi (trip impossible, on n'observe que le
+  clamp) : zone active au tick 1 → heat 7,0 **rabotée à 5,132**, jauge 99 %, stable ; **save rechargée
+  → heat reste à 7,0 pour un plafond de 5,184, soit une jauge FIGÉE à 135 %**, indéfiniment au-dessus
+  du plafond. Conséquences : jauge > 100 %, capteur `surchauffe` en alerte permanente, et **si le
+  bâtiment se remet à monter il tripe sans filet**. Le brief étant pré-compilé et exigeant la
+  conformité SHA-256, **B2 est livré VERBATIM** ; le correctif (ré-armer `heatCapAdj` quand le plafond
+  CHANGE, au lieu d'un one-shot) est une décision de design à arbitrer.
+  ⚠ **Le clamp ne fait jamais tripper** (vérifié) : il s'exécute **avant** le test de trip.
+  Contre-épreuve décisive : même état avec `heatCapAdj` pré-posé (= comportement SANS clamp) →
+  `damaged = true` ; avec le clamp → `damaged = false`.
+  ⚠ **`loadSave` clampe DÉJÀ `heat` au plafond au chargement** (filet 14.30) : c'est lui qui a ramené
+  une chaleur de 8,0 à 7,68 dans le test de save réelle — ne pas l'attribuer au clamp B2.
+  ⚠ **`meanPower` (13666) est déclarée APRÈS `heatEmitMaxOf` (10075)** : sans effet, ce sont des
+  déclarations de fonction hoistées du même bloc `<script>` (le code appelait déjà `nominalPower` et
+  `antElecBoost`, tous deux plus bas).
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium, **0 `pageerror`**, seul bruit console le
+  **404 PRÉEXISTANT** du serveur de test. Contrôles du §7 : 5/5 ancres à `count == 1` avant et après ;
+  **4/4 SHA-256 aller-retour** re-extraits du fichier patché ; **6/6 PNG re-décodés identiques
+  octet-à-octet** au pack (32×32, palette, opaques, 11-14 couleurs) ; **delta +5 952 o EXACT** avant
+  bump (3 199 226 → 3 205 178 ; 3 204 873 après bump, `GAME_NOTES` étant plus court que le précédent) ;
+  `grep` = **6 déclarations + 2 usages**. **En jeu** : les 6 îles dessinent bien LEUR clé de remblai ;
+  **remblai RÉEL** posé par le handler du bouton « Remblayer » → sauvegarde forcée → **rechargement** →
+  `terrainMods` conservé et **rendu en `tile_i1_remblai`** ; annulation → retour à `tile_i1_water` ;
+  bouton du panneau d'extension portant `tile_i1_remblai` ; **save créée par la BASE 346 rechargée en
+  347** → remblai conservé, **aucun trip**, 0 `tickError`, 20 s de jeu réel, canvas peint ; lisibilité
+  contrôlée à la capture au rendu **MIN_TILE (26 px)** — enrochement gris net, distinct du littoral
+  turquoise et de la terre, sans moirage.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) le panneau de remblai est **gaté par
+  la recherche AU TAP** (`isTerrainExtendUnlocked`) → sans confirmer le nœud portant
+  `unlocks.terrainExtend`, le tap sur une tuile de mer **n'ouvre rien** et on croit le rendu cassé ;
+  (b) `tryExtend` n'est **PAS exposée** dans `window.__ui()` → passer par le **handler React du bouton
+  via la fibre** (`__reactProps$…`), comme en 14.62 ; (c) `useGhostGuard` avale le 1ᵉʳ clic du panneau —
+  et même amorcé, le vrai clic souris n'a pas suffi ici : la fibre est la voie fiable ; (d) le 1ᵉʳ
+  `<img>` du panneau d'extension est le **swatch d'en-tête** (= terrain REMPLACÉ, donc `tile_i<N>_water`)
+  — l'icône de A3 est sur le **bouton** (`class ui-ico`, parent `ip-demolish`) : viser le mauvais
+  `<img>` fait conclure à tort à un échec ; (e) forger des tuiles « au centre de la vue » tombe sur la
+  TERRE de l'île — pour un remblai il faut chercher de l'**eau adjacente à la terre** ; (f) un bâtiment
+  à chaleur non alimenté a `heatEmit = 0` donc `rising` faux → **il ne tripe jamais** : un test de trip
+  doit poser `heatEmit` explicitement (le tick le recalcule, piège 14.53).
+  ⚠ **Taille : 3 199 226 → 3 204 873 o (+5 647 o)** — dont **+5 952 pour les 5 blocs** (exactement
+  l'attendu), le reste étant le bump et un `GAME_NOTES` plus court.
+  ⚠ **HORS PÉRIMÈTRE, non touché (§3)** : les 35 icônes du pack (**intégration B**), `tile_i7_remblai`
+  (abandonné en séance d'art), les triangles `coast_tri_*` (vérifiés sans interaction), `coastFoamPieces`,
+  `HEAT_CAP_SECONDS`, `HEAT_PER_MW`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 346`, `GAME_VERSION = 'Alpha 14.63'`, `SAVE_VERSION = 31`.**
   Changement 14.63 (brief `BRIEFLOT2antenne`, **LOT 2 — l'ANTENNE AMPLIFICATRICE, 7 chantiers sur un
   même sous-système**) : **3 exploits fermés, 2 rééquilibrages, 2 bugs d'affichage.** `SAVE_VERSION`
   INCHANGÉ, **aucun champ persisté ajouté** (`antPowered` est transitoire — la sérialisation des
