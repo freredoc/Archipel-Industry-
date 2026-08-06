@@ -210,15 +210,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .prod-row .pc-n{text-align:right;}
 .prod-row .pc-n.ok{color:#7fd98a;}.prod-row .pc-n.bad{color:#ff8079;}
 .prod-empty{color:var(--ink-dim);font-style:italic;font-size:.78rem;padding:8px 0;}
-.prod-sub{font-family:'Bebas Neue',sans-serif;letter-spacing:.06em;color:#7fd0ff;font-size:.82rem;
-  margin-top:12px;padding-bottom:4px;border-bottom:1px solid var(--line);}
-.prod-transit{display:flex;flex-direction:column;}
-.prod-trow{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;
-  padding:3px 0;font-family:'DM Mono',monospace;font-size:.76rem;border-bottom:1px solid rgba(255,255,255,.05);}
-.prod-trow .pt-route{color:var(--ink-dim);}
-.prod-trow .pc-res{display:flex;align-items:center;gap:5px;color:var(--ink);}
-.prod-trow .pc-res .inv-ico{width:15px;height:15px;}
-.prod-trow .pt-rate{color:#7fd0ff;text-align:right;}
 /* Sprite Réparer (déblocage île suivante) à gauche d'INVENTAIRE : icône SEULE, affichée en
    permanence dès qu'une île suivante existe. Atténuée tant que la recherche d'accès n'est pas
    atteinte (locked) ; pastille de notification (notif-dot) quand la réparation devient possible. */
@@ -438,6 +429,7 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
 .pp-cfg-head .pp-c-num,.pp-cfg-head .pp-c-tog,.pp-cfg-head .pp-c-pri{text-align:center;}
 .pp-cfg-row{padding:3px 0;border-top:1px solid rgba(255,255,255,.04);}
 .pp-cfg-row.off{opacity:.5;}
+.pp-c-num.held{border-color:#e6b673;color:#e6b673;}
 /* Bascule « Cible ⇒ Réserve » (haut de la liste de transit) : la cible pilote la réserve, par île. */
 .pp-link-reserve{width:100%;margin:2px 0 4px;font-family:'Barlow Condensed',sans-serif;font-weight:600;
   font-size:.78rem;letter-spacing:.02em;color:var(--ink-dim);background:var(--panel-2);
@@ -7285,6 +7277,8 @@ function sensorModesFor(support) {
     // 14.02 — route/tuyau : en plus de la saturation, un capteur peut lire UN INTRANT et un SEUIL
     // (ex. « 1e7 acier = 1 »). La ressource et le seuil sont réglés dans le panneau (sensorRes /
     // sensorSeuil) ; le stock lu est celui que ce réseau dessert (port s'il est relié, citerne sinon).
+    // 14.62 — Le seuil du mode `surchauffe` ne passe PLUS par `sensorSeuil` mais par le champ dédié
+    // `sensorPct` (pourcentage entier 1→100) : les deux modes ne partagent plus le même champ.
     // 14.50 — LOT F : le CONDUIT n'a AUCUN stock de ressource à lire — le mode `seuil` ne lui était
     // offert que parce qu'il tombe dans cette branche route/tuyau. Il est RETIRÉ du conduit (route et
     // tuyau le CONSERVENT) et remplacé par `surchauffe` = fraction de chaleur de ses SOURCES.
@@ -7441,6 +7435,15 @@ function applyGameMode(mode) {
 }
 applyGameMode('difficile');
 const portPosFor = islandId => PORTS[islandId] || null;
+// 14.62 — CHENAL D'ACCÈS du port : le cargo navigue sur la LIGNE du port, à gauche de celui-ci
+// (ponton en portC-1, approche depuis portC-7 — cf. drawPortExtras). Remblayer là ferait naviguer
+// le bateau sur la terre ferme. Règle volontairement LARGE — toute la ligne à gauche du port, et
+// pas seulement les 7 tuiles de l'animation courante — pour rester vraie si l'animation change.
+// Île 7 (souterrain) : absente de PORTS → portPosFor null → aucun chenal, la foreuse reste libre.
+const isPortChannel = (islandId, r, c) => {
+  const p = portPosFor(islandId);
+  return !!p && r === p.r && c < p.c;
+};
 const SOLID_THROUGHPUT_V1 = 32;
 const NETWORK_THROUGHPUT = {
   1: 128,
@@ -8018,8 +8021,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 344;
-const GAME_VERSION = 'Alpha 14.61';
+const GAME_BUILD = 345;
+const GAME_VERSION = 'Alpha 14.62';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8028,7 +8031,7 @@ const GAME_VERSION = 'Alpha 14.61';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Densifier une mine en V4 demande désormais AUSSI 1 ordinateur quantique et 1 moteur quantique (en plus de l'alliage de tungstène et des pièces de précision) — la chaîne quantique de l'île 6 devient le passage obligé des mines V4 · Correctif : rallumer le Collisionneur après un arrêt hélium 3 ne prélève plus un tick d'hélium à vide quand le réseau électrique s'est effondré entre-temps · Aucune sauvegarde touchée";
+const GAME_NOTES = "Le seuil du capteur en mode Surchauffe se règle enfin : il passe en POURCENTAGE ENTIER (1 à 100, défaut 80) dans un champ dédié — il était auparavant inréglable (toute saisie sous 1 retombait au défaut) et se marchait sur les pieds du mode Seuil · Le chenal d'accès du port ne peut plus être remblayé : le cargo y navigue · La section Transit du panneau Production est retirée (l'information reste dans l'onglet Transit archipel du Port) · « Demander au port » tient désormais AUSSI la réserve d'export, rendue automatiquement dès que la ressource est dépensée — la matière importée ne repart plus en aval avant que l'amélioration soit payable · Aucune sauvegarde touchée";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -10176,11 +10179,22 @@ function conduitSourceHeatFrac(sources) {
   }
   return Math.min(1, worst);
 }
-// Seuil du mode `surchauffe` : une FRACTION de jauge (0→1), réglée dans `sensorSeuil` (champ déjà
-// persisté, partagé avec le mode `seuil` qui lui y met un stock). Défaut 0,8 = le 3ᵉ palier de l'art
-// `_chauffe3` → le capteur bascule quand le conduit vire au rouge. Valeur > 1 clampée.
+// Seuil du mode `surchauffe` : une FRACTION de jauge (0→1) en interne, mais RÉGLÉE EN POURCENTAGE
+// ENTIER (1→100) par le champ DÉDIÉ `sensorPct` depuis le lot 1 de la 14.62. `SENSOR_HEAT_SEUIL_DEF`
+// reste la fraction de REPLI (0,8 = le 3ᵉ palier de l'art `_chauffe3` → le capteur bascule quand le
+// conduit vire au rouge). ⚠ `sensorSeuil` n'est plus lu ici que pour les saves d'AVANT le lot : il
+// redevient la propriété exclusive du mode `seuil` (un STOCK).
 const SENSOR_HEAT_SEUIL_DEF = 0.8;
+// 14.62 — Le seuil se règle désormais en POURCENTAGE ENTIER (1→100) via le champ DÉDIÉ
+// `sensorPct`. Motif : NumField valide en `Math.floor()` et affiche via fmtPort (qui ARRONDIT) —
+// une fraction 0→1 y était illisible (0,8 s'affichait « 1 ») ET inréglable (toute saisie < 1
+// retombait à 0, donc au défaut). Champ OPTIONNEL : absent → repli sur l'ancien `sensorSeuil`
+// (fraction, saves d'avant le lot), puis sur le défaut. Aucun bump de SAVE_VERSION.
+// ⚠ `sensorSeuil` redevient la propriété EXCLUSIVE du mode `seuil` (un STOCK) : les deux modes
+// ne se marchent plus dessus (un seuil de 1e7 acier ne devient plus un seuil de chaleur clampé à 1).
 const sensorHeatSeuil = bld => {
+  const p = bld && +bld.sensorPct;
+  if (p > 0) return Math.min(1, p / 100);
   const v = bld && +bld.sensorSeuil;
   return v > 0 ? Math.min(1, v) : SENSOR_HEAT_SEUIL_DEF;
 };
@@ -16067,23 +16081,6 @@ function ProductionPanel({
     enD += e.demand || 0;
   }
   const enN = enP - enD;
-  const transits = [];
-  const tf = game.transitFlow || {};
-  for (const key in tf) {
-    const parts = key.split('_');
-    const src = +parts[0],
-      dest = +parts[1];
-    if (!src || !dest) continue;
-    if (sel !== 'all' && src !== sel && dest !== sel) continue;
-    const rec = tf[key] || {};
-    for (const k in rec) if (rec[k] > 1e-6) transits.push({
-      src,
-      dest,
-      k,
-      rate: rec[k]
-    });
-  }
-  transits.sort((a, b) => b.rate - a.rate);
   const resCell = k => {
     const ikey = SPRITES_ENABLED ? itemSpriteKey(k) : null;
     const idata = ikey && SPRITE_DATA[ikey];
@@ -16151,20 +16148,7 @@ function ProductionPanel({
     }, fmtRateSci(c)), React.createElement("span", {
       className: 'pc-n ' + (n >= -1e-6 ? 'ok' : 'bad')
     }, n >= 0 ? '+' : '', fmtRateSci(n)));
-  })), React.createElement("div", {
-    className: "prod-sub"
-  }, I18N.t("Transit entre îles")), transits.length === 0 ? React.createElement("div", {
-    className: "prod-empty"
-  }, I18N.t("Aucun transit en cours.")) : React.createElement("div", {
-    className: "prod-transit"
-  }, transits.map((t, i) => React.createElement("div", {
-    className: "prod-trow",
-    key: i
-  }, React.createElement("span", {
-    className: "pt-route"
-  }, islandLabel(t.src), " → ", islandLabel(t.dest)), resCell(t.k), React.createElement("span", {
-    className: "pt-rate"
-  }, fmtRateSci(t.rate), "/s")))))));
+  })))));
 }
 // Tous les flux de transit inter-îles en cours (game.transitFlow src_dest -> {res: rate}),
 // groupés par direction src→dest. Utilisé par l'onglet « Transit archipel » du panneau Port.
@@ -17724,9 +17708,13 @@ function InfoPanel({
         className: 'ip-nuc-mat' + (cur === m.k ? ' on' : ''),
         onClick: () => onLogicSet && onLogicSet(info.r, info.c, { sensorMode: m.k })
       }, I18N.t(m.label)))));
-      // 14.50 — LOT F, mode SURCHAUFFE : le seuil est une FRACTION de jauge (0→1, défaut 0,8 = le
-      // palier « rouge » de l'art de conduit). Réutilise `sensorSeuil` (déjà persisté) + affiche la
-      // jauge LUE en direct — bâtiment à chaleur (heat / heatCapOf) ou pire source du conduit.
+      // 14.50 — LOT F, mode SURCHAUFFE : le seuil est une FRACTION de jauge en interne (0→1, défaut
+      // 0,8 = le palier « rouge » de l'art de conduit) + affiche la jauge LUE en direct — bâtiment
+      // à chaleur (heat / heatCapOf) ou pire source du conduit.
+      // 14.62 — Le réglage se fait en POURCENTAGE ENTIER (1→100) dans le champ DÉDIÉ `sensorPct`,
+      // PLUS dans `sensorSeuil` : NumField planche en `Math.floor()` et affiche via fmtPort (qui
+      // ARRONDIT), donc une fraction 0→1 y était illisible ET inréglable. Plancher à 1 % (un seuil
+      // de 0 basculerait le signal en permanence), plafond 100 %.
       if (cur === 'surchauffe') {
         const _hFrac = (() => {
           const sbd = sup && BUILDINGS[sup.id];
@@ -17739,11 +17727,11 @@ function InfoPanel({
           return hc > 0 ? Math.min(1, (sup.heat || 0) / hc) : 0;
         })();
         const _hSeuil = sensorHeatSeuil(lg);
-        rows.push(React.createElement("div", { className: "ip-row", key: 'hs' }, React.createElement("span", { className: "lbl" }, I18N.t("Seuil de surchauffe")), React.createElement(NumField, {
+        rows.push(React.createElement("div", { className: "ip-row", key: 'hs' }, React.createElement("span", { className: "lbl" }, I18N.t("Seuil de surchauffe"), " (%)"), React.createElement(NumField, {
           className: "pp-num",
-          value: _hSeuil,
-          title: I18N.t("Fraction de la jauge de chaleur (0 → 1) au-delà de laquelle le signal passe à 1. Défaut 0,8."),
-          onCommit: v => onLogicSet && onLogicSet(info.r, info.c, { sensorSeuil: Math.max(0, Math.min(1, v)) })
+          value: Math.round(_hSeuil * 100),
+          title: I18N.t("Pourcentage de la jauge de chaleur (1 → 100) au-delà duquel le signal passe à 1. Défaut 80."),
+          onCommit: v => onLogicSet && onLogicSet(info.r, info.c, { sensorPct: Math.max(1, Math.min(100, Math.round(v))) })
         })));
         rows.push(React.createElement("div", { className: "ip-row", key: 'hl' }, React.createElement("span", { className: "lbl" }, I18N.t("Chaleur lue")), React.createElement("span", { className: "val", style: { color: _hFrac >= _hSeuil ? 'var(--red)' : 'var(--ink-dim)', fontWeight: 700 } }, Math.round(_hFrac * 100) + ' %')));
       }
@@ -17806,7 +17794,7 @@ function InfoPanel({
     const dev = game.ui && game.ui.dev;
     // Chaque mode de terrain fournit : cost, count (null = pas de ligne compteur), countLabel,
     // unlocked (techno), title, swatch, btnLabel, icon (fallback emoji), onAct (action).
-    let count, cost, countLabel, unlocked, title, swatch, btnLabel, icon, emoji, onAct, iconSprite = null;
+    let count, cost, countLabel, unlocked, title, swatch, btnLabel, icon, emoji, onAct, iconSprite = null, blockMsg = null;
     // Tuile déjà REMBLAYÉE (ou mur déjà percé) → le panneau bascule en mode ANNULATION (14.08).
     const tilesX = game.islands[currentIsland] || [];
     const tileX = tilesX[info.r] && tilesX[info.r][info.c];
@@ -17830,6 +17818,9 @@ function InfoPanel({
       swatch = 'var(--blue, #0277BD)';
       btnLabel = under ? I18N.t(' Percer le mur (5 min)') : I18N.t(' Remblayer');
       icon = 'batiment'; emoji = "\u{1F3D7}"; onAct = onExtend;
+      // 14.62 — Tuile du chenal d'accès : le bouton reste visible mais DÉSACTIVÉ, avec le motif
+      // affiché en clair. Refuser en silence donnerait l'impression d'un bouton cassé.
+      if (!under && isPortChannel(currentIsland, info.r, info.c)) blockMsg = I18N.t("Chenal d'accès du port — le cargo passe ici");
       // Icône = sprite de TUILE TERRAIN produite par le remblai (souterrain île 7 → sol de tunnel
       // `tile_i7_land` ; en surface → littoral `tile_i<N>_coast`).
       iconSprite = SPRITES_ENABLED ? currentIsland === 7 ? 'tile_i7_land' : 'tile_i' + currentIsland + '_coast' : null;
@@ -17917,9 +17908,16 @@ function InfoPanel({
       style: {
         color: 'var(--ink-dim)'
       }
-    }, I18N.t("Technologie non débloquée")))), !cancelFill && React.createElement("button", {
+    }, I18N.t("Technologie non débloquée"))), blockMsg && React.createElement("div", {
+      className: "ip-row"
+    }, React.createElement("span", {
+      className: "val",
+      style: {
+        color: 'var(--red)'
+      }
+    }, blockMsg))), !cancelFill && React.createElement("button", {
       className: "ip-demolish",
-      disabled: !unlocked || !affordable,
+      disabled: !unlocked || !affordable || !!blockMsg,
       onClick: () => {
         if (onAct) onAct(info.r, info.c);
       },
@@ -19946,10 +19944,10 @@ function PortPanel({
       onCommit: v => onSetCfg(currentIsland, res, 'stockCible', v),
       title: I18N.t("Stock cible (quantit\xE9 \xE0 importer ici)")
     }), React.createElement(NumField, {
-      className: "pp-c-num",
+      className: 'pp-c-num' + (cfg.askPrev != null ? ' held' : ''),
       value: cfg.seuilExport,
       onCommit: v => onSetCfg(currentIsland, res, 'seuilExport', v),
-      title: I18N.t("R\xE9serve locale (on n'exporte que le surplus au-dessus)")
+      title: cfg.askPrev != null ? I18N.t("R\xE9serve tenue par une demande au port \u2014 elle redescendra quand la ressource sera d\xE9pens\xE9e") : I18N.t("R\xE9serve locale (on n'exporte que le surplus au-dessus)")
     }), React.createElement("button", {
       className: 'pp-c-tog' + (cfg.interdit ? ' active' : ''),
       onClick: () => onSetCfg(currentIsland, res, 'interdit', !cfg.interdit),
@@ -22268,6 +22266,9 @@ function App() {
           if (lg.sensorMode) lp.sm = lg.sensorMode;
           if (lg.sensorRes) lp.sr = lg.sensorRes;
           if (lg.sensorSeuil > 0) lp.sq = lg.sensorSeuil;
+          // 14.62 — Seuil de SURCHAUFFE en pourcentage entier (champ dédié, distinct de `sq` qui
+          // reste le seuil de STOCK du mode `seuil`). Optionnel : absent = défaut 80 %.
+          if (lg.sensorPct > 0) lp.sp = lg.sensorPct;
           if (lg.sensorDir != null) lp.sd = lg.sensorDir;
           if (lg.gateDir != null) lp.gd = lg.gateDir;
           // 14.50 — Face(s) INHIBÉE(s) d'une porte : champ OPTIONNEL (aucun bump de SAVE_VERSION).
@@ -22882,11 +22883,17 @@ function App() {
       g.tradeConfig[id] = {};
       for (const res in data.tradeConfig[id]) {
         const c = data.tradeConfig[id][res] || {};
-        g.tradeConfig[id][res] = {
+        const nc = {
           stockCible: c.stockCible || 0,
           seuilExport: c.seuilExport || 0,
           interdit: !!c.interdit
         };
+        // 14.62 — Réserve TENUE par une demande au port. Champ OPTIONNEL (aucun bump de
+        // SAVE_VERSION) : absent = aucun hold, comportement d'avant le lot. La restauration est
+        // une LISTE BLANCHE — sans cette ligne, le hold est perdu au rechargement et la réserve
+        // gonflée resterait en place à vie.
+        if (c.askPrev != null) nc.askPrev = +c.askPrev || 0;
+        g.tradeConfig[id][res] = nc;
       }
     }
     g.tradePriority = {};
@@ -22980,6 +22987,7 @@ function App() {
             if (p.sm) lt.logic.sensorMode = p.sm;
             if (p.sr) lt.logic.sensorRes = p.sr;
             if (p.sq > 0) lt.logic.sensorSeuil = +p.sq;
+            if (p.sp > 0) lt.logic.sensorPct = +p.sp;
             if (p.sd != null) lt.logic.sensorDir = +p.sd;
             if (p.gd != null) lt.logic.gateDir = +p.gd;
             if (p.ad != null) lt.logic.actDir = +p.ad;
@@ -23103,6 +23111,7 @@ function App() {
           if (lp.sm) lt.logic.sensorMode = lp.sm;
           if (lp.sr) lt.logic.sensorRes = lp.sr;
           if (lp.sq > 0) lt.logic.sensorSeuil = +lp.sq;
+          if (lp.sp > 0) lt.logic.sensorPct = +lp.sp;
           if (lp.sd != null) lt.logic.sensorDir = +lp.sd;
           if (lp.gd != null) lt.logic.gateDir = +lp.gd;
           // 14.50 — Face inhibée persistée (champ additif `gx`). Absent = défaut dérivé → une save
@@ -23996,9 +24005,33 @@ function App() {
     }
     return miss;
   }
+  // 14.62 — Rend la réserve TENUE par « Demander au port » (cfg.askPrev) dès que la ressource est
+  // réellement DÉPENSÉE : la demande est comblée, la réserve n'a plus lieu d'être. Relâcher plus tôt
+  // (à l'ARRIVÉE de la marchandise) rouvrirait la fenêtre qu'on ferme — le bateau réexpédierait en
+  // aval la matière à peine débarquée.
+  // ⚠ Résolution d'île IDENTIQUE à portPool : `isl` peut être absent (pay(cost) sans île). Sans ce
+  // repli, portIslandOf(undefined) rend undefined et le hold ne se relâche jamais, en silence.
+  // ⚠ LECTURE SEULE sur tradeConfig : ne JAMAIS passer par tradeCfgFor ici, il CRÉERAIT une entrée
+  // pour chaque ressource de chaque coût payé dans la partie.
+  function releaseAskHold(g, cost, isl) {
+    if (!g || !cost || !g.tradeConfig) return;
+    const id = isl != null ? isl : g.currentIsland;
+    const per = g.tradeConfig[portIslandOf(g, id)];
+    if (!per) return;
+    let touched = false;
+    for (const k in cost) {
+      const cfg = per[k];
+      if (!cfg || cfg.askPrev == null) continue;
+      cfg.seuilExport = cfg.askPrev;
+      delete cfg.askPrev;
+      touched = true;
+    }
+    if (touched) scheduleSave();
+  }
   function pay(cost, isl) {
     const res = portPool(gameRef.current, isl);
     for (const k in cost) res[k] = (res[k] || 0) - cost[k];
+    releaseAskHold(gameRef.current, cost, isl);
   }
   function refund(cost, isl) {
     const res = portPool(gameRef.current, isl);
@@ -24782,6 +24815,16 @@ function App() {
     // On délègue donc entièrement à la foreuse adjacente : aucun coût d'extension (le coût, c'est
     // la foreuse), 5 min d'opération, et pas de gate sur la techno de remblai (la foreuse EST l'outil).
     if (isl === 7) return tryDrill(r, c);
+    // 14.62 — Le chenal d'accès du port n'est PAS remblayable (cf. isPortChannel). Garde placée
+    // APRÈS la délégation île 7 (le souterrain n'a pas de port) et AVANT le gate de techno et le
+    // paiement : on refuse sans rien débiter.
+    // ⚠ Rétro-compatibilité : les tuiles DÉJÀ remblayées dans un chenal sur une save existante
+    // restent en l'état (décision assumée — aucune migration, aucun remboursement).
+    if (isPortChannel(isl, r, c)) {
+      showToast(I18N.t("❌ Chenal d'accès du port — remblai impossible"), 'var(--red)');
+      SFX.play('invalid');
+      return false;
+    }
     if (!isTerrainExtendUnlocked(g)) {
       showToast(I18N.t('❌ Technologie non débloquée'), 'var(--red)');
       return false;
@@ -25621,9 +25664,16 @@ function App() {
   //  • ne BAISSE jamais rien (on ignore une cible déjà suffisante) ;
   //  • n'écrit QUE stockCible — l'ordre de priorité du transit (game.tradePriority) et les
   //    interdits (cfg.interdit, tradeBlockDest) ne sont PAS touchés ;
+  //  • relève AUSSI la réserve d'export (`seuilExport`) à la même valeur : sans ça, la matière
+  //    importée pour l'amélioration repart aussitôt en aval (on n'exporte que le surplus AU-DESSUS
+  //    de la réserve, nulle par défaut) et l'amélioration n'est jamais payable. L'ancienne réserve
+  //    est mémorisée dans `askPrev` et RENDUE par `pay` quand la ressource est dépensée (releaseAskHold).
+  //  • ⚠ le motif inverse écrit en 14.42 (« l'île cesserait de réexporter en aval ») est CADUC :
+  //    transitForwardBudget sur-remplit déjà l'île intermédiaire pour qu'elle relaie en aval sans
+  //    jamais descendre sous sa réserve. Le transit de passage n'est donc pas bloqué.
   //  • ⚠ écriture DIRECTE sur cfg, PAS via setTradeCfg : ce dernier applique le lien
-  //    « Cible ⇒ Réserve » (game.tradeLinkReserve) qui remonterait AUSSI la réserve d'export —
-  //    l'île cesserait alors de réexporter en aval. Le joueur n'a pas demandé ça.
+  //    « Cible ⇒ Réserve » (game.tradeLinkReserve), qui écraserait la réserve SANS mémoriser
+  //    l'ancienne valeur — on ne pourrait plus la rendre.
   function askPortFor(cost, islandId) {
     const g = gameRef.current;
     if (!cost) return;
@@ -25641,11 +25691,19 @@ function App() {
       const want = Math.ceil(cost[k] * 1.05) + 1;
       if ((cfg.stockCible || 0) >= want) continue;
       cfg.stockCible = want;
+      // 14.62 — La demande TIENT la réserve le temps que le joueur dépense. `askPrev` mémorise la
+      // réserve d'origine UNE SEULE FOIS : une 2ᵉ demande sur la même ressource ne l'écrase pas
+      // (sinon on rendrait plus tard une réserve déjà gonflée par la 1re demande).
+      // Ne BAISSE jamais une réserve déjà supérieure. Champ OPTIONNEL, aucun bump de SAVE_VERSION.
+      if ((cfg.seuilExport || 0) < want) {
+        if (cfg.askPrev == null) cfg.askPrev = cfg.seuilExport || 0;
+        cfg.seuilExport = want;
+      }
       raised.push((RES_SHORT[k] || k) + ' ' + fmtPort(want));
     }
     if (raised.length) {
       SFX.play('click');
-      showToast('🚢 ' + I18N.t("Cible d'import relevée : ") + raised.join(', '));
+      showToast('🚢 ' + I18N.t("Cible et réserve relevées : ") + raised.join(', '));
     }
     if (blocked.length) {
       showToast('⚠ ' + I18N.t('Non transitable par bateau : ') + blocked.join(', '), 'var(--yellow)');
@@ -25664,6 +25722,10 @@ function App() {
       // cible aligne la réserve dessus ; éditer la réserve ne touche PAS la cible
       // (on peut donc garder une réserve différente, elle sera réalignée à la
       // prochaine édition de la cible).
+      // 14.62 — Le joueur reprend la main sur la cible ou la réserve : le « hold » posé par
+      // « Demander au port » est ABANDONNÉ (plus rien à restaurer plus tard, et surtout : ne pas
+      // écraser plus tard le réglage qu'il vient de saisir).
+      if (cfg.askPrev != null) delete cfg.askPrev;
       if (field === 'stockCible' && g.tradeLinkReserve && g.tradeLinkReserve[islandId]) {
         cfg.seuilExport = nv;
       }
