@@ -17,7 +17,82 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 354`, `GAME_VERSION = 'Alpha 14.71'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 355`, `GAME_VERSION = 'Alpha 14.72'`, `SAVE_VERSION = 31`.**
+  Changement 14.72 (brief `BRIEFLOTCOURTpriorite`, **2 blocs**) : **les 4 boutons de réordonnancement
+  des listes de priorité passent du glyphe au SPRITE** (`▲`/`▼` → `ui_monter`/`ui_baisser`) — priorité
+  de transit du **Port** et priorité d'alimentation de l'**Énergie**. `SAVE_VERSION` INCHANGÉ, aucun
+  champ persisté, aucune règle de simulation touchée. Base EXACTE (354 / 14.71 / 3 236 301 o).
+  ⚠ **BRIEF PRÉ-COMPILÉ, 6ᵉ fois de suite** : **2/2 ancres uniques**, **2/2 hachages conformes AVANT
+  application**, `node --check` 7/7 du premier coup, **delta +74 o EXACT**.
+  (1) **Les glyphes ne rejoignent PAS `UI_ICON_BY_EMOJI`** (décision du brief, à ne pas « simplifier »)
+  : `▲`/`▼` servent AILLEURS de caractères de mise en page (chevrons de repli `▾`/`▸`) — les faire
+  basculer globalement toucherait des sites qui doivent rester typographiques. On appelle donc
+  `uiIcon()` **directement** sur les 4 sites, **avec le glyphe en repli**. Mesuré après patch :
+  `"▲"` et `"▼"` restent à **2 occurrences chacun**, mais **toutes les 4 sont désormais des
+  replis de `uiIcon` — 0 glyphe NU**.
+  ⚠ **PIÈGE DE MESURE** : le fichier stocke ces glyphes en **séquences d'échappement littérales**
+  (`▲`, 6 caractères), pas en UTF-8 → un `grep` du vrai caractère `▲` renvoie **0** et fait
+  conclure à tort que le patch a tout retiré.
+  (2) **AUCUNE règle CSS ajoutée** : `.pp-c-pri button:disabled{opacity:.3}` existait déjà → le sprite
+  désactivé reste **VISIBLE en opacité réduite**, il ne disparaît pas (exigence §6.8, mesurée :
+  `opacity 0.3`, `16×16 px`, `visible true`). Les boutons passent d'un glyphe à `.6rem` (~10 px) à un
+  sprite de 16 px : la ligne du Port fait 30 px, les boutons restent **centrés sur la ligne à 0,5 px**
+  et le sprite est **centré dans son bouton à 0,00 px**.
+  ⚠ **ANOMALIE PRÉEXISTANTE CONFIRMÉE, NON CORRIGÉE (hors périmètre — le brief écrit noir sur blanc
+  « le patch conserve cette inversion telle quelle »)** : dans le **panneau Énergie**, le bouton titré
+  **« Monter » DESCEND l'entrée**, et « Descendre » la monte. Le brief anticipait l'inversion des
+  signes (`Monter` → `onMovePriority(+1)`, l'inverse du Port) et demandait de **« vérifier que monter
+  monte »** : **il ne monte pas.** `moveEnergyPriority(key, +1)` fait `splice(i,1)` puis
+  `splice(i+1,0,key)` → l'entrée descend d'un rang, alors que l'en-tête annonce « haut = servi en
+  premier » et que `.ep-rank` numérote 1, 2, 3… de haut en bas. Les `disabled` sont cohérents avec le
+  MOUVEMENT (`+1` désactivé sur la DERNIÈRE ligne) et donc **incohérents avec les TITRES** : à l'écran,
+  la 1ʳᵉ ligne a sa flèche BAS grisée et la dernière sa flèche HAUT grisée — l'inverse de ce qu'on
+  attend. **Contre-épreuve exécutée sur la base 354 non patchée : comportement IDENTIQUE** (`(9,14)`
+  passe de la position 2 à la 3 en cliquant « Monter »), donc **ce n'est PAS une régression de ce lot**.
+  ⚠ **MAIS ce lot la rend BEAUCOUP plus visible** : un tooltip « Monter » ne se survole pas au doigt,
+  une **flèche ▲ se lit d'un coup d'œil**. Correctif d'une ligne si on veut le fermer : échanger les
+  deux `title:` OU les deux signes `+1`/`-1` **et** les deux conditions `disabled` du bloc Énergie.
+  Le **Port est correct** (vérifié : « Monter » sur la 2ᵉ ligne → elle passe 1ʳᵉ).
+  (3) **§5 — L'AUDIT DE LA TABLE DEVIENT PERMANENT** (le brief l'institutionnalise, il était né hors
+  brief au lot 14.68) : **vérifier que chacune des 49 entrées de `UI_ICON_BY_EMOJI` pointe vers un
+  sprite RÉELLEMENT présent dans `SPRITE_DATA`**. Mode de défaillance vicieux : nom absent → `uiIcon`
+  retombe sur son repli, qui est la **chaîne VIDE** quand l'appelant est `leadIconOf`/`iconLabel` →
+  **le libellé perd son emoji SANS gagner d'icône**, rien ne casse, personne ne le voit. **À REJOUER À
+  CHAQUE AJOUT DANS LA TABLE et à chaque suppression de sprite.** Mesuré sur 355 : **49 entrées,
+  46 noms de sprite distincts, 0 manquant.**
+  ⚠ **`ui_deplacer` RESTE ORPHELIN, ET C'EST NORMAL** (correction d'un inventaire erroné des lots
+  précédents) : il n'a aucun site parce que **la fonction qu'il illustre n'existe pas** — il n'y a pas
+  de déplacement de bâtiment dans le jeu (`onMove` est `onMovePriority`, tout autre chose). Les 3
+  autres « sprites dormants » que le mémo listait sont en fait **UTILISÉS** : `ui_pause_logique` par
+  `drawSprite` **sur le CANVAS** (marqueur de bâtiment coupé par un actionneur), `ui_mode_vitesse` et
+  `ui_mode_productivite` par le sélecteur de mode d'antenne. L'inventaire précédent ne regardait que
+  les appels `uiIcon()` et la table — il ratait le canvas et les appels indirects.
+  ⚠ **Le logo `🏭` du splash reste un emoji** (décision du brief) : il est en **HTML statique, avant
+  React**, à `font-size:56px` ; `ui_usine` est un 16×16 qu'il faudrait agrandir 3,5× — chunky à côté du
+  titre. À revoir seulement si un logo à sa taille est produit.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + **4 assertions d'audit** + Chromium **15 assertions
+  sur 16** (le seul KO est l'anomalie préexistante ci-dessus, contre-épreuvée sur la base) + **10
+  assertions de non-régression** : **save créée par la BASE 354 puis rechargée en 355** → ordre de
+  priorité ÉNERGIE conservé, ordre de priorité TRANSIT conservé, stocks et déblocage d'île intacts,
+  `SAVE_VERSION` toujours 31, **0 `tickError`, 20 s de jeu réel, 0 `pageerror`**.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **`.pp-c-pri` est AUSSI la classe de la
+  cellule d'EN-TÊTE** (« Prio ») du tableau du Port → toujours filtrer sur la présence d'un `<button>`,
+  sinon l'en-tête compte comme une ligne et le test d'ordre compare deux fois la même chaîne ;
+  (b) **`useGhostGuard` frappe encore** — un `.click()` DOM sur un bouton du Port juste après son
+  ouverture est **AVALÉ** : amorcer le garde par un `pointerdown` dispatché **DANS** `.port-panel`
+  avant de cliquer (le panneau Énergie, lui, ne l'a pas avalé — ne pas en déduire que le garde est
+  inactif) ; (c) la liste de priorité du panneau Énergie est **VIDE tant qu'aucun consommateur
+  électrique n'existe sur l'île** (`energyConsumerList` balaie la GRILLE) → forger des bâtiments à
+  `power > 0` avant d'ouvrir le panneau ; (d) mesurer l'alignement d'un sprite contre `.pp-res-name`
+  donne **−3,84 px** et fait crier au bug : le nom est sur la 1ʳᵉ des DEUX lignes de la cellule
+  ressource alors que les boutons sont centrés sur la ligne ENTIÈRE — mesurer contre le **bouton** et
+  contre la **ligne**, pas contre le texte.
+  ⚠ **Taille : 3 236 301 → 3 236 375 o (+74 o EXACT** pour les 2 blocs, l'attendu au byte près) ;
+  3 236 325 après bump, le nouveau `GAME_NOTES` étant plus court.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `UI_ICON_BY_EMOJI` (aucune entrée ajoutée), `leadIconOf`,
+  `uiIcon`, `iconLabel`, le CSS, l'inversion Monter/Descendre du panneau Énergie, le logo du splash,
+  `ui_deplacer`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 354`, `GAME_VERSION = 'Alpha 14.71'`, `SAVE_VERSION = 31`.**
   Changement 14.71 (brief `BRIEF-ETAPE3-icones-gabarit`, **ÉTAPE 3 sur 3, la dernière du pack
   `archipelsprites3etapes`**) : **7 icônes `ui_*` rejoignent le gabarit commun de 193 pixels opaques.**
   `SAVE_VERSION` INCHANGÉ, **aucun champ persisté, aucune clé changée, AUCUN câblage** — remplacement
