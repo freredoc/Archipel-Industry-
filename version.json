@@ -1,8 +1,8 @@
 {
-  "build": 346,
-  "version": "Alpha 14.63",
+  "build": 347,
+  "version": "Alpha 14.64",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "L'antenne amplificatrice doit désormais être RÉELLEMENT alimentée pour que sa zone agisse : un simple bout de câble ne suffit plus, et une antenne non servie coupe son boost · Les centrales et éoliennes ne sont plus boostées (le boost se paie en électricité, qu'un générateur ne consomme pas) · Une seule antenne par île, V1 et V2 confondues — même règle pour la centrale nucléaire · Le mode PRODUCTIVITÉ ne ralentit plus la production : il ne fait plus qu'économiser des matières (il était injouable au-delà du Nv.4) · Le boost électrique se calcule sur la conso MOYENNE du bâtiment et non sur son pic : entrer dans une zone ne fait plus bondir la conso de plancher · Panneau Énergie et fiche bâtiment affichent enfin la vraie conso d'un bâtiment boosté · Aucune sauvegarde touchée"
+  "notes": "Le REMBLAI se voit enfin : une tuile gagnee sur la mer prend son propre motif d'enrochement, une teinte par ile, et le garde meme entouree de terre · L'icone du bouton « Remblayer » montre desormais le terrain reellement produit, plus un littoral naturel · Le plafond de chaleur d'un batiment boste par une antenne suit enfin son emission reelle (il etait 1,78x trop genereux sur une conso oscillante) : la jauge, la fiche et le capteur « surchauffe » disent tous la meme chose · Aucune sauvegarde touchee"
 }
