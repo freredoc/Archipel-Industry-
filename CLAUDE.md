@@ -17,7 +17,41 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 352`, `GAME_VERSION = 'Alpha 14.69'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 353`, `GAME_VERSION = 'Alpha 14.70'`, `SAVE_VERSION = 31`.**
+  Changement 14.70 (brief `BRIEF-ETAPE1-animation-remblai`, **ÉTAPE 1 sur 3, à intégrer APRÈS la 2**) :
+  **les remblais des îles 1 à 5 s'animent** (5 sheets 128×32 + 5 entrées de table). `SAVE_VERSION`
+  INCHANGÉ, **aucun code de rendu touché** — la table est le SEUL point de branchement.
+  (1) **Le défaut** : le rendu tente `drawTileAnim` puis retombe sur `drawSprite`. Une tuile de
+  remblai n'avait pas de sheet → elle restait **figée au milieu d'un littoral qui scintille à 3 fps**.
+  À cette cadence l'œil ne lit pas « de la pierre, donc immobile », il lit **une tuile non chargée**.
+  (2) **Amplitude MOITIÉ de celle du littoral** (arbitrage du brief, à ne pas « corriger ») : écart
+  moyen 4,7 contre 10,2 pour `tile_i1_coast_breeze`. Un enrochement bouge moins qu'une végétation ;
+  l'objectif est de supprimer la lecture « non chargée », pas de faire onduler un ouvrage de génie
+  civil. L'asymétrie du cycle (départ et retour doux vers la frame 0) est obtenue **par
+  construction** — chaque pixel reçoit un profil temporel nul en frame 0 → l'invariant est mécanique,
+  pas espéré. Les joints sombres sont exclus de la gigue.
+  ⚠ **PIÈGE SÉMANTIQUE de `TILE_ANIM_BY_KEY`** : la **CLÉ** est celle du sprite **STATIQUE**, la
+  propriété **`cle`** celle de la **SHEET**. L'entrée existante `tile_i3_oil → 'tile_i3_petrole_breeze'`
+  le prouve. Les entrées ajoutées sont donc `tile_i1_remblai: { cle: 'tile_i1_remblai_breeze', … }`
+  et **non** `tile_i1_remblai_breeze: {…}`. Vérifié après patch : 5 clés statiques, 5 `cle` de sheet.
+  ⚠ **NE PAS délimiter la table par une chaîne sentinelle** : elle se termine par `\n};` et **non**
+  `\n  };` — une sentinelle erronée renvoie EN SILENCE un bloc qui court jusqu'à la fin du fichier.
+  Délimitation faite par **parcours d'accolades** depuis `const TILE_ANIM_BY_KEY = {`.
+  ⚠ **L'ÎLE 6 N'A PAS DE SHEET, ET C'EST VOULU** : `tile_i6_land`/`tile_i6_coast` n'en ont pas non
+  plus et l'île 6 est absente de la table. Un remblai statique y est entouré de voisins statiques —
+  **cohérent, ne pas « compléter » par symétrie**. Mesuré en jeu : sur l'île 6 le remblai est dessiné
+  par `drawSprite` (`tile_i6_remblai`), aucune sheet de remblai n'y est demandée.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + les 2 ancres à `count == 1`, **table 16 → 21
+  entrées**, **5/5 SHA-256 re-extraits du HTML patché identiques au pack**, sheets **128×32 alpha
+  uniformément 255**, **invariant frame 0 == sprite statique : 5/5, les DEUX décodés depuis le HTML
+  PATCHÉ** (et non depuis les fichiers sources), **delta +11 912 octets EXACT**.
+  **En jeu** (espion `drawImage` enregistrant l'OFFSET SOURCE, donc la frame réellement dessinée) :
+  zone 4×4 comblée sur l'île 1 → la sheet est utilisée et **les 4 frames sont parcourues**
+  (`sx = 0, 32, 64, 96`), le littoral voisin s'anime en même temps ; **au zoom minimum, même
+  résultat** (aucune retombée sur le statique) ; sur l'île 6, **aucune sheet de remblai**.
+  ⚠ **HORS PÉRIMÈTRE** : les 16 sheets existantes, `drawTileAnim`, `drawSprite`, l'ordre de tentative
+  des deux, les sprites statiques de remblai, l'île 6, l'île 7.
+- **État précédent : `GAME_BUILD = 352`, `GAME_VERSION = 'Alpha 14.69'`, `SAVE_VERSION = 31`.**
   Changement 14.69 (brief `BRIEF-ETAPE2-retirage-i2`, **1 bloc — ÉTAPE 2 sur 3, à intégrer EN
   PREMIER**) : **la tuile `tile_i2_remblai` est retirée.** `SAVE_VERSION` INCHANGÉ, **aucun code
   touché** (remplacement de données, clé inchangée → aucun site d'appel à modifier).
