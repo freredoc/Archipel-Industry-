@@ -8184,8 +8184,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 355;
-const GAME_VERSION = 'Alpha 14.72';
+const GAME_BUILD = 356;
+const GAME_VERSION = 'Alpha 14.73';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8194,7 +8194,7 @@ const GAME_VERSION = 'Alpha 14.72';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les quatre boutons de r\u00e9ordonnancement des listes de priorit\u00e9 \u2014 transit au Port, alimentation dans \u00c9nergie \u2014 affichent enfin les ic\u00f4nes du pack au lieu des fl\u00e8ches typographiques. C'\u00e9taient les derni\u00e8res \u00e0 montrer un glyphe \u00e0 c\u00f4t\u00e9 d'un sprite dans la m\u00eame fiche \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Dans le panneau \u00c9nergie, le bouton \u00ab Monter \u00bb faisait DESCENDRE l'entr\u00e9e, et inversement \u2014 en contradiction avec son propre en-t\u00eate (\u00ab haut = servi en premier \u00bb) et sa propre num\u00e9rotation. Les deux boutons sont permut\u00e9s : le panneau se comporte d\u00e9sormais comme celui du Port \u00b7 Aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -20454,12 +20454,12 @@ function EnergyPanel({
   }, fmtPower(cc.power)), React.createElement("span", {
     className: "pp-c-pri"
   }, React.createElement("button", {
-    disabled: i === consumers.length - 1,
-    onClick: () => onMovePriority(currentIsland, cc.key, +1),
-    title: I18N.t("Monter")
-  }, uiIcon('monter', "\u25B2")), React.createElement("button", {
     disabled: i === 0,
     onClick: () => onMovePriority(currentIsland, cc.key, -1),
+    title: I18N.t("Monter")
+  }, uiIcon('monter', "\u25B2")), React.createElement("button", {
+    disabled: i === consumers.length - 1,
+    onClick: () => onMovePriority(currentIsland, cc.key, +1),
     title: I18N.t("Descendre")
   }, uiIcon('baisser', "\u25BC")))))) : React.createElement("div", {
     className: "pp-note"
