@@ -8021,8 +8021,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 345;
-const GAME_VERSION = 'Alpha 14.62';
+const GAME_BUILD = 346;
+const GAME_VERSION = 'Alpha 14.63';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8031,7 +8031,7 @@ const GAME_VERSION = 'Alpha 14.62';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Le seuil du capteur en mode Surchauffe se règle enfin : il passe en POURCENTAGE ENTIER (1 à 100, défaut 80) dans un champ dédié — il était auparavant inréglable (toute saisie sous 1 retombait au défaut) et se marchait sur les pieds du mode Seuil · Le chenal d'accès du port ne peut plus être remblayé : le cargo y navigue · La section Transit du panneau Production est retirée (l'information reste dans l'onglet Transit archipel du Port) · « Demander au port » tient désormais AUSSI la réserve d'export, rendue automatiquement dès que la ressource est dépensée — la matière importée ne repart plus en aval avant que l'amélioration soit payable · Aucune sauvegarde touchée";
+const GAME_NOTES = "L'antenne amplificatrice doit désormais être RÉELLEMENT alimentée pour que sa zone agisse : un simple bout de câble ne suffit plus, et une antenne non servie coupe son boost · Les centrales et éoliennes ne sont plus boostées (le boost se paie en électricité, qu'un générateur ne consomme pas) · Une seule antenne par île, V1 et V2 confondues — même règle pour la centrale nucléaire · Le mode PRODUCTIVITÉ ne ralentit plus la production : il ne fait plus qu'économiser des matières (il était injouable au-delà du Nv.4) · Le boost électrique se calcule sur la conso MOYENNE du bâtiment et non sur son pic : entrer dans une zone ne fait plus bondir la conso de plancher · Panneau Énergie et fiche bâtiment affichent enfin la vraie conso d'un bâtiment boosté · Aucune sauvegarde touchée";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -11137,14 +11137,25 @@ function islandHasUnlimitableNet(game, islandId, type) {
 //     puis négative). Le RENDEMENT, lui, continue de doubler à chaque niveau.
 // SORTIE ×(1−malus) ; INTRANTS ×(1−malus)/(1+bonus) → matières par unité produite ÷(1+bonus).
 // Partagé par le tick (mécanique) et les fiches (affichage) — une seule source de vérité.
+// 14.6x — Le MALUS DE VITESSE est SUPPRIME. Motif : il etait plafonne a -80 %, donc des le Nv.5
+// la sortie se figeait a x0,20 pour toujours pendant que la conso continuait de doubler a chaque
+// niveau -> l'electricite par unite produite doublait a production CONSTANTE (x261 au Nv.10).
+// Le mode etait injouable au-dela du Nv.4. Le modele Factorio (module productivite compense par
+// des diffuseurs de vitesse) est hors d'atteinte ici : l'antenne est A LA FOIS le module et le
+// diffuseur, et son mode est unique par ile -> les deux couches ne peuvent pas se superposer.
+// Sans malus, les deux modes deviennent symetriques et se paient au meme prix : VITESSE achete
+// du debit par tuile a electricite CONSTANTE par unite, PRODUCTIVITE achete du rendement matiere
+// avec une electricite par unite qui monte exactement du facteur dont la matiere descend.
+// Ratio prix/gain = 1,00 a tous les niveaux, dans les deux modes.
+// `malus` est CONSERVE dans l'objet retourne (deux fiches l'affichent) et vaut desormais 0.
 function antProdEffect(f) {
   const bonus = 0.05 * (f > 1 ? f : 2);
-  const malus = Math.min(0.8, 0.025 * (f > 1 ? f : 2));
+  const malus = 0;
   return {
     bonus,
     malus,
-    outMul: 1 - malus,
-    inMul: (1 - malus) / (1 + bonus)
+    outMul: 1,
+    inMul: 1 / (1 + bonus)
   };
 }
 // 13.70 : les DEUX autres effets d'antenne suivent la MÊME règle « ÷10 au Nv.1, monte avec le
@@ -11821,6 +11832,21 @@ function tickIsland(game, isl) {
     if (bl.paused || bl.logicOff) continue;
     // antenna is effective only if wire-connected (drives its own 1024 kW too)
     if (adjacentNetworks(game, isl, r, c, 'wire').length === 0) continue;
+    // 14.6x — Le cable ADJACENT ne suffit plus : l'antenne doit etre REELLEMENT alimentee.
+    // Sans ce gate, une seule tuile de cable reliee a RIEN suffisait a ouvrir la zone complete ;
+    // et sans meme cette ruse, il suffisait de placer l'antenne EN DERNIER dans l'ordre de
+    // priorite energie pour qu'elle recoive 0 kW tout en boostant a 100 %.
+    // On lit le tick PRECEDENT (pwrAvg n'est calcule qu'apres cette pre-passe) : meme decalage
+    // d'un tick que les capteurs logiques, assume.
+    // HYSTERESIS : s'allume a >= 0,999, ne s'eteint que sous 0,90. Sans elle, sur un reseau
+    // juste en limite, couper la zone baisse la demande, ce qui reallume la zone, ce qui la
+    // remonte -> clignotement a chaque tick.
+    // pwrAvg absent (save fraichement chargee) = eteint ; relatche des le tick suivant.
+    // `antPowered` est TRANSITOIRE : la serialisation des placements est une liste blanche,
+    // il n'est jamais sauvegarde.
+    const antServed = bl.pwrAvg != null ? bl.pwrAvg : 0;
+    bl.antPowered = bl.antPowered ? antServed >= 0.9 : antServed >= 0.999;
+    if (!bl.antPowered) continue;
     antBld = bl;
     // VITESSE : zone active seulement si l'antenne n'est PAS endommagée.
     // PRODUCTIVITÉ : zone (debuff) active aussi pendant la surchauffe (debuff persiste 5 min).
@@ -12012,7 +12038,13 @@ function tickIsland(game, isl) {
     // depuis 14.02)
     // — et sa conso élec. OSCILLE en sigmoïde jusqu'à ×(1+antElecBoost(f)) du nominal (13.70 :
     // 10 %×f, Nv.1 ×1→×1,2, plafonné ×1→×3). f = buffSet (2, ×2/niv).
-    const eligible = effOutputs && !b.antenna && b.kind === 'build';
+    // 14.6x — Les PRODUCTEURS d'electricite sont exclus de la zone. Le prix du boost est la
+    // conso elec. majoree du voisin ; or un generateur a `power: 0`, donc sa reference vaut 0 et
+    // le prix aussi : en vitesse une eolienne boostee produisait x(1+0,05f) d'electricite pour
+    // ZERO contrepartie, et en productivite l'antenne n'emettait meme aucune chaleur (elle est
+    // indexee sur la conso en plus des voisins, nulle ici). Le nucleaire etait deja hors du
+    // chemin generique ; on aligne tous les autres.
+    const eligible = effOutputs && !b.antenna && b.kind === 'build' && !effOutputs.energie_kw;
     const speedFac = hasAntenna && eligible && buffSet[r + '-' + c] ? buffSet[r + '-' + c] : 1;
     const prodFac = eligible && debuffSet[r + '-' + c] ? debuffSet[r + '-' + c] : 1;
     const buffed = speedFac > 1;
@@ -12027,12 +12059,17 @@ function tickIsland(game, isl) {
     // la conso « en plus » du nominal pour la chaleur de l'antenne en mode productivité.
     if (buffed || debuffed) {
       bld.antennaSigT = (bld.antennaSigT || 0) + 1;
-      const nomP = nominalPower(bld);
+      // 14.6x — REFERENCE = puissance MOYENNE, plus le pic (cf. meanPower). L'oscillation
+      // x1 -> x(1+antElecBoost) est conservee telle quelle ; elle tourne desormais autour de la
+      // conso moyenne du batiment au lieu de partir de son pic. Rien ne change pour un batiment
+      // a conso FIXE (meanPower == nominalPower). La chaleur suit la meme reference, donc elle
+      // baisse de x0,5625 sur un batiment a sigmoide : on ne facture plus une conso fantome.
+      const refP = meanPower(bld);
       const fac = buffed ? speedFac : prodFac;
-      power = nomP * (1 + (1 + Math.sin(2 * Math.PI * bld.antennaSigT / 60)) / 2 * antElecBoost(fac));
+      power = refP * (1 + (1 + Math.sin(2 * Math.PI * bld.antennaSigT / 60)) / 2 * antElecBoost(fac));
       if (debuffed) {
-        antExtraKw += Math.max(0, power - nomP);
-        antExtraKwMax += nomP * antElecBoost(fac); // pic : sin_term = 1
+        antExtraKw += Math.max(0, power - refP);
+        antExtraKwMax += refP * antElecBoost(fac); // pic : sin_term = 1
       }
     }
     // Intrants & sortants.
@@ -13058,9 +13095,11 @@ function tickIsland(game, isl) {
       // la demande max (retour testeur 13.69 ; barème ÷10 au Nv.1 depuis 13.70).
       const antFac = Math.max(cc.bld.antennaBuff || 1, cc.bld.antennaProd || 1);
       if (antFac > 1) {
-        const nomP = nominalPower(cc.bld);
-        demMin += nomP;
-        demMax += nomP * (1 + antElecBoost(antFac));
+        // 14.6x — Meme reference que le tick (meanPower) : sans ca les bornes min/max du
+        // panneau Energie et du panneau Cable repartent du pic et surestiment la demande.
+        const refP = meanPower(cc.bld);
+        demMin += refP;
+        demMax += refP * (1 + antElecBoost(antFac));
         hasVarCons = true;
       } else {
         demMin += minPower(cc.bld);
@@ -13325,6 +13364,31 @@ function onIslandChange(game, id) {
 // ⚠ Les éléments logiques vivent dans la SURCOUCHE `t.logic` (pas `t.building`) depuis 13.96 :
 // ces compteurs scrutent LES DEUX slots, sinon un `reqs` de type `buildAny` sur une porte logique
 // ne peut JAMAIS être satisfait (c'était le cas du nœud #34).
+// 14.6x — FAMILLE de paliers d'un batiment : l'id lui-meme, ses paliers amont et ses paliers aval
+// (chaine TIER_NEXT). `maxPerIsland` se comptait PAR ID : `antenne` et `antenne_v2` etant deux ids
+// capes a 1 chacun, on pouvait poser une V1 ET une V2 sur la meme ile (idem centrale nucleaire
+// V1/V2, ce qui cassait l'invariant ecrit dans le code : « une centrale par ile, donc au plus une
+// voix : pas de mixage »). Le cap a toujours voulu dire « un par ile », jamais « un par palier ».
+// Deux antennes cassaient en prime `antBld`, qui ne retient que la DERNIERE balayee : l'autre
+// n'emettait jamais de chaleur et n'avait aucun plafond de trip.
+// Bornes de garde a 8 : les chaines font 2 a 4 paliers ; une boucle dans TIER_NEXT ne bloquerait pas.
+function tierFamily(id) {
+  let root = id;
+  for (let guard = 0; guard < 8; guard++) {
+    let prev = null;
+    for (const k in TIER_NEXT) if (TIER_NEXT[k] && TIER_NEXT[k].next === root) { prev = k; break; }
+    if (!prev) break;
+    root = prev;
+  }
+  const out = [];
+  let cur = root;
+  for (let guard = 0; guard < 8 && cur; guard++) {
+    if (out.indexOf(cur) === -1) out.push(cur);
+    cur = TIER_NEXT[cur] ? TIER_NEXT[cur].next : null;
+  }
+  if (out.indexOf(id) === -1) out.push(id);
+  return out;
+}
 function countBuildingsOnIsland(game, isl, id) {
   const def = ISLAND_TERRAINS.find(d => d.id === isl);
   const tiles = game.islands[isl];
@@ -13593,6 +13657,23 @@ function minPower(bld) {
   if (b.randomP) return b.randomP.min * mult;
   return (b.power || 0) * mult;
 }
+// 14.6x — Puissance MOYENNE sur le cycle sigmoide : (base + amp/2) x mult x qStab. Identique a
+// nominalPower pour une conso FIXE (aucun changement pour Acierie, Data Center, Refroidisseur).
+// Sert de REFERENCE au boost d'antenne : le boost multiplie desormais la conso MOYENNE du batiment
+// au lieu d'ecraser son profil a son PIC. Avant ce correctif, entrer dans une zone d'antenne faisait
+// sauter le PLANCHER de conso de `base` a `base+amp` (x8 sur une recette au rapport 1->8) avant meme
+// le boost, soit un surcout cache de x1,778 en kWh par unite produite, dans les DEUX modes.
+function meanPower(bld) {
+  const b = BUILDINGS[bld.id];
+  if (!b) return 0;
+  const mult = Math.pow(2, bld.upgrade || 0);
+  const arcS = ARC_DEF[bld.id] ? arcEffective(bld, null).sigmoid : null;
+  const qs = bld.qStab > 0 && bld.qStab < 1 ? bld.qStab : 1;
+  if (arcS) return (arcS.base + arcS.amp / 2) * mult * qs;
+  if (b.sigmoid) return (b.sigmoid.base + b.sigmoid.amp / 2) * mult * qs;
+  if (b.randomP) return (b.randomP.min + b.randomP.max) / 2 * mult;
+  return (b.power || 0) * mult;
+}
 // List of {key,r,c,id,bld,power} consumers on an island, ordered by the saved
 // priority list (present keys first, in order), remaining appended by idx.
 function energyConsumerList(game, isl) {
@@ -13608,7 +13689,14 @@ function energyConsumerList(game, isl) {
       c,
       id: bld.id,
       bld,
-      power: nominalPower(bld)
+      // 14.6x — Conso REELLE : un batiment boste tire meanPower x (1+antElecBoost), pas son
+      // nominal non boste. La liste affichait le nominal et sous-declarait donc chaque batiment
+      // boste (x2,6 au pic pour une antenne Nv.4). Les TOTAUX, eux, etaient deja justes : ils
+      // sont calcules dans le tick. Le bug etait purement dans la ligne par batiment.
+      power: (() => {
+        const af = Math.max(bld.antennaBuff || 1, bld.antennaProd || 1);
+        return af > 1 ? meanPower(bld) * (1 + antElecBoost(af)) : nominalPower(bld);
+      })()
     });
   }
   const order = (game.energyPriority && game.energyPriority[isl]) || [];
@@ -18733,8 +18821,8 @@ function InfoPanel({
       color: '#26C6DA',
       fontWeight: 700
     },
-    title: antBoost > 1 ? I18N.t("Bâtiment dans la zone d'une antenne : intrants & production ×ce facteur") : I18N.t("Bâtiment dans la zone d'une antenne en PRODUCTIVITÉ : consomme moins de matières par unité produite, mais tourne un peu plus lentement ; conso élec. boostée")
-  }, antBoost > 1 ? "×" + fxDec(antBoost) : antPE ? I18N.t("rendement") + " +" + Math.round(antPE.bonus * 100) + " % · " + I18N.t("vitesse") + " −" + Math.round(antPE.malus * 100) + " %" : "")), bIn && React.createElement("div", {
+    title: antBoost > 1 ? I18N.t("Bâtiment dans la zone d'une antenne : intrants & production ×ce facteur") : I18N.t("Bâtiment dans la zone d'une antenne en PRODUCTIVITÉ : consomme moins de matières par unité produite à vitesse inchangée ; conso élec. boostée")
+  }, antBoost > 1 ? "×" + fxDec(antBoost) : antPE ? I18N.t("rendement") + " +" + Math.round(antPE.bonus * 100) + " %" : "")), bIn && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -18814,7 +18902,10 @@ function InfoPanel({
     // Bâtiment boosté par une antenne : sa conso élec. oscille en sigmoïde de ×1 à ×(1+boost)
     // du nominal (cf. tick). On affiche cette plage boostée (≠ d'une mine non boostée).
     if (antElecFac > 0) {
-      const nomP = (bSigmoid ? bSigmoid.base + bSigmoid.amp : bRandomP ? bRandomP.max : b.power || 0) * mult;
+      // 14.6x — On passe par meanPower au lieu de recalculer en local : le calcul local partait
+      // du PIC et surtout oubliait le facteur du Stabilisateur Quantique, donc la fiche annoncait
+      // une plage que le moteur n'appliquait pas (+10,8 % avec un stabilisateur Nv.2).
+      const nomP = meanPower(bld);
       return I18N.t('boosté ×1→×') + fxDec(1 + antElecFac) + ' · ' + fmtPower(nomP) + '→' + fmtPower(nomP * (1 + antElecFac));
     }
     // Conso variable (sigmoïde/aléatoire) : on affiche l'AMPLITUDE fixe min→max — la
@@ -18840,7 +18931,7 @@ function InfoPanel({
     const eb = fxDec(1 + antElecBoost(f));
     if (am === 'prod') {
       const pe = antProdEffect(f);
-      return I18N.t("Productivité : rendement +") + Math.round(pe.bonus * 100) + I18N.t(" % (moins de matières par unité produite) · vitesse −") + Math.round(pe.malus * 100) + I18N.t(" % (8 cases) · émet de la chaleur · conso élec. ×1→×") + eb + I18N.t(" (sigmoïde)");
+      return I18N.t("Productivité : rendement +") + Math.round(pe.bonus * 100) + I18N.t(" % (moins de matières par unité produite, vitesse inchangée) · émet de la chaleur · conso élec. ×1→×") + eb + I18N.t(" (sigmoïde)");
     }
     return "×" + fxDec(antSpeedMul(f)) + I18N.t(" intrants & production des 8 cases · conso élec. ×1→×") + eb + I18N.t(" (sigmoïde)");
   })()))), arcIO && (() => {
@@ -24330,7 +24421,10 @@ function App() {
     }
     if (b.maxPerIsland != null) {
       const g = gameRef.current;
-      if (countBuildingsOnIsland(g, g.currentIsland, id) >= b.maxPerIsland) {
+      // 14.6x — Comptage sur la FAMILLE de paliers, pas sur l'id seul (cf. tierFamily).
+      let famCount = 0;
+      for (const fid of tierFamily(id)) famCount += countBuildingsOnIsland(g, g.currentIsland, fid);
+      if (famCount >= b.maxPerIsland) {
         if (verbose) { showToast(`❌ ${b.name} : une seule par île`, 'var(--red)'); SFX.play('invalid'); }
         return false;
       }

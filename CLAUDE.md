@@ -17,7 +17,110 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 345`, `GAME_VERSION = 'Alpha 14.62'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 346`, `GAME_VERSION = 'Alpha 14.63'`, `SAVE_VERSION = 31`.**
+  Changement 14.63 (brief `BRIEFLOT2antenne`, **LOT 2 — l'ANTENNE AMPLIFICATRICE, 7 chantiers sur un
+  même sous-système**) : **3 exploits fermés, 2 rééquilibrages, 2 bugs d'affichage.** `SAVE_VERSION`
+  INCHANGÉ, **aucun champ persisté ajouté** (`antPowered` est transitoire — la sérialisation des
+  placements est une liste blanche). Base du brief EXACTE (345 / 14.62 / 3 192 664 o).
+  ⚠ **BRIEF PRÉ-COMPILÉ, ET ÇA S'EST VU** : après les deux ratés du lot 1 (ancre mal échappée, patch
+  à qui il manquait une parenthèse), l'auteur a appliqué ses 13 blocs sur une copie locale et publié
+  les SHA-256 **RE-EXTRAITS du fichier patché**. Résultat ici : **13/13 ancres uniques du premier
+  coup, 13/13 hachages conformes, delta d'octets EXACT (+6 447 au byte près)**. Aucune adaptation.
+  **C'est la méthode à réclamer pour les prochains briefs.**
+  (1) **§C1 — LA ZONE EXIGE UNE ANTENNE RÉELLEMENT ALIMENTÉE.** La pré-passe ne testait que
+  l'ADJACENCE à un réseau câble : **une tuile de câble reliée à RIEN suffisait** à ouvrir la zone
+  complète, et sans même cette ruse il suffisait de placer l'antenne **EN DERNIER dans l'ordre de
+  priorité énergie** pour qu'elle reçoive 0 kW en boostant à 100 % (au Nv.10 : **524 MW de conso
+  propre esquivés**). Nouveau gate sur `pwrAvg`, lu au tick PRÉCÉDENT (même décalage d'un tick que
+  les capteurs logiques, assumé).
+  ⚠ **HYSTÉRÉSIS 0,999 / 0,90, indispensable** : sur un réseau juste en limite, couper la zone baisse
+  la demande, ce qui rallume la zone, ce qui la remonte → clignotement à chaque tick. Mesuré 60 s sur
+  un réseau calé à **1 288 kW pour un pic de demande de 1 305,6** : **1 seule transition** (le
+  allumage initial), zone stable ensuite.
+  ⚠ **Save rechargée = zone ÉTEINTE au 1ᵉʳ tick** (`pwrAvg` absent → 0), rallumée au suivant. Mesuré.
+  (2) **§C2 — LES PRODUCTEURS D'ÉLECTRICITÉ SORTENT DE LA ZONE.** Le prix du boost est la conso
+  élec. MAJORÉE du voisin ; or un générateur a `power: 0`, donc sa référence vaut 0 **et le prix
+  aussi** → une éolienne boostée produisait davantage pour **ZÉRO contrepartie**, et en mode
+  productivité l'antenne n'émettait même **aucune chaleur** (celle-ci est indexée sur la conso EN PLUS
+  des voisins). 8 bâtiments concernés ; le nucléaire était déjà hors du chemin générique.
+  Mesuré : éolienne en zone = **même régime** que sa jumelle hors zone ; antenne en prod avec un seul
+  producteur dans sa zone → **`heatEmit` = 0**, et contre-épreuve avec un consommateur → chaleur > 0.
+  (3) **§C3 — `maxPerIsland` compte par FAMILLE DE PALIERS** (nouveau helper `tierFamily`, remonte
+  puis redescend la chaîne `TIER_NEXT`). Il comptait **par id** : `antenne` et `antenne_v2` étant deux
+  ids capés à 1 chacun, on pouvait poser **une V1 ET une V2** sur la même île — idem
+  `centrale_nucleaire` V1/V2, ce qui cassait l'invariant écrit noir sur blanc dans le code (« une
+  centrale par île, donc au plus une voix : pas de mixage »).
+  ⚠ **Deux antennes cassaient en prime `antBld`**, qui ne retient que la DERNIÈRE balayée : l'autre
+  n'émettait jamais de chaleur et n'avait **aucun plafond de trip**.
+  ⚠ **Le cap ne joue qu'À LA POSE** : une save contenant déjà deux antennes n'est PAS migrée.
+  Mesuré : `tierFamily('antenne')` = `[antenne, antenne_v2]`, `mine_fer_v2` → la chaîne V1→V4
+  complète, `data_center` → lui seul ; pose V1 acceptée puis V2 **refusée**, et contre-épreuve
+  2 aciéries acceptées (aucun cap).
+  (4) **§C4 — LE MALUS DE VITESSE DU MODE PRODUCTIVITÉ EST SUPPRIMÉ.** Il était plafonné à −80 %,
+  atteint au **Nv.5** : au-delà la sortie restait figée à ×0,20 **pour toujours** pendant que la conso
+  continuait de doubler → l'électricité par unité produite doublait **à production CONSTANTE** (×261
+  au Nv.10). **Le mode était injouable passé le Nv.4.**
+  ⚠ **Le modèle Factorio est hors d'atteinte ici** (module productivité compensé par des diffuseurs
+  de vitesse) : l'antenne est **À LA FOIS** le module et le diffuseur, et son mode est **unique par
+  île** → les deux couches ne peuvent pas se superposer. Sans malus les deux modes deviennent
+  symétriques : **ratio prix/gain = 1,00 à TOUS les niveaux, dans les deux modes** (vérifié Nv.1→10).
+  ⚠ **`malus` est CONSERVÉ dans l'objet retourné** (deux fiches le lisent) et vaut désormais 0 ; les
+  3 textes qui affichaient « vitesse −N % » sont réécrits, sinon les fiches annonçaient « vitesse −0 % ».
+  Mesuré en moteur réel : sortie **identique** hors zone (1/s), intrants **÷ 1,1 exactement**
+  (16 → 14,545 et 8 → 7,273).
+  (5) **§C5 — LA RÉFÉRENCE DU BOOST DEVIENT LA PUISSANCE MOYENNE** (nouveau `meanPower`, miroir exact
+  de `nominalPower` : mêmes branches arc/sigmoïde/random/fixe, **même traitement de `qStab`**).
+  `nominalPower` rend le **PIC** : entrer dans une zone d'antenne faisait donc sauter le **PLANCHER**
+  de conso de `base` à `base+amp` — **×8 sur une recette au rapport 1→8** — AVANT même le boost, soit
+  un surcoût caché de **×1,778 en kWh par unité produite**, dans les DEUX modes.
+  ⚠ **RIEN NE CHANGE pour un bâtiment à conso FIXE** (`meanPower == nominalPower`) : Aciérie, Data
+  Center, Refroidisseur vérifiés identiques.
+  ⚠ **CONSÉQUENCE ASSUMÉE** : la chaleur d'antenne suit la même référence → **×0,5625** sur un
+  bâtiment à sigmoïde. C'est voulu (on ne facture plus une conso fantôme). Si le refroidissement
+  devient trop peu contraignant, le levier est `HEAT_PER_MW`, **pas** un retour à la référence pic.
+  Mesuré sur un `circuit` (sigmoïde 32→256, moyenne 144) boosté ×1,2 : bornes du réseau
+  **1 200 → 1 452,8** au lieu de 1 312 → … avec l'ancienne référence.
+  (6) **§C6 — la liste de priorité du panneau Énergie affiche la conso RÉELLE** : elle remplissait
+  chaque ligne avec `nominalPower`, le pic **NON boosté**, ignorant complètement `antennaBuff`
+  (sous-déclaration ×2,6 au pic pour une antenne Nv.4). **Les TOTAUX étaient déjà justes** (calculés
+  dans le tick) — le bug était purement dans la ligne par bâtiment.
+  (7) **§C7 — la fiche bâtiment passe par `meanPower`** au lieu de recalculer en local : le calcul
+  local partait du pic **et surtout oubliait le facteur du Stabilisateur Quantique**, donc la fiche
+  annonçait une plage que le moteur n'appliquait pas (**+10,8 % avec un stabilisateur Nv.2**).
+  Mesuré en UI réelle : « boosté ×1→×1,2 · **144 kW→173 kW** », et avec stabilisateur Nv.2 la
+  référence tombe à **129,96** (= 144 × 0,95²).
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **7 suites, 86 assertions, 0 KO**,
+  **rejouées 2 fois sans flottement** — seul bruit console : le **404 PRÉEXISTANT** du serveur de
+  test. **§7.19 sur une save RÉELLE créée par la BASE 345 puis rechargée en 346** : antenne Nv.4,
+  mode productivité, réglages de transit et stocks tous conservés, 0 `tickError`, 20 s de jeu réel,
+  canvas peint, 0 `pageerror`.
+  ⚠ **ANOMALIE SIGNALÉE, NON CORRIGÉE (hors des 13 blocs)** : `heatEmitMaxOf` calcule le PLAFOND de
+  chaleur d'un bâtiment boosté avec `nominalPower × (1 + antElecBoost)`, alors que son émission réelle
+  part désormais de `meanPower`. Sur un bâtiment à sigmoïde le plafond est donc **~1,78× plus généreux**
+  que l'émission — **marge de sécurité, jamais un trip imméritée** ; à réaligner sur `meanPower` si on
+  veut que le plafond colle à nouveau à l'émission.
+  ⚠ **INCOHÉRENCE COSMÉTIQUE CONNUE ET ACCEPTÉE (§4 du brief)** : `game.antennaBuff[isl]` reste
+  l'ensemble des **TUILES**, non filtré par éligibilité → **une éolienne dans la zone affiche encore le
+  liseré** alors qu'elle n'a plus aucun effet. La corriger demanderait de dupliquer le test
+  d'éligibilité dans le rendu.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) une rangée de câble posée en travers
+  d'une île **COUPE le blob de routes** et tous les bâtiments au nord passent `disc: 'road'` — poser
+  une **jonction route/câble** pour laisser passer la route (axes perpendiculaires, règle 13.18) ;
+  (b) le **débit du câble V1 plafonne la composante à 512 kW** : sans passer les réseaux en
+  `unlimited`, on mesure le plafond du réseau et l'antenne (1 024 kW) n'est **jamais servie** — donc
+  `antPowered` reste faux et on croit à tort que le gate est cassé ; (c) **forger des bâtiments
+  déclenche une astuce** dont le popup vole les clics du canvas → purger les astuces **APRÈS** la
+  forge, pas seulement avant ; (d) fermer une fiche par `.click()` DOM est avalé par `useGhostGuard`
+  → vrai clic souris **et** attendre la disparition du panneau, sinon le tap suivant relit la fiche
+  encore ouverte ; (e) `tierFamily`, `meanPower`, `energyConsumerList`, `islandFlowAgg` sont des
+  **déclarations de MODULE** → accessibles par leur nom nu dans `page.evaluate`, inutile de les
+  exposer dans `__heat`.
+  ⚠ **Taille : 3 192 664 → 3 199 226 o (+6 562 o)** — dont **+6 447 pour les 13 blocs** (exactement
+  l'attendu), le reste étant `GAME_NOTES`.
+  ⚠ **HORS PÉRIMÈTRE, non touché (§4)** : le rayon d'influence, les barèmes `antSpeedMul` /
+  `antElecBoost`, le plafond de rendement (retiré en 14.03, il le reste), `HEAT_PER_MW`, le chemin
+  nucléaire (`nucList`), `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 345`, `GAME_VERSION = 'Alpha 14.62'`, `SAVE_VERSION = 31`.**
   Changement 14.62 (brief `BRIEFLOT1capteurchenaltransitreserve`, **LOT 1 — quatre chantiers INDÉPENDANTS**) :
   **(A) le seuil du capteur `surchauffe` se règle en POURCENTAGE ENTIER ; (B) le chenal d'accès du port
   n'est plus remblayable ; (C) la section « Transit entre îles » quitte le panneau Production ;
