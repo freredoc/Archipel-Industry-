@@ -8030,8 +8030,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 347;
-const GAME_VERSION = 'Alpha 14.64';
+const GAME_BUILD = 348;
+const GAME_VERSION = 'Alpha 14.65';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8040,7 +8040,7 @@ const GAME_VERSION = 'Alpha 14.64';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Le REMBLAI se voit enfin : une tuile gagnee sur la mer prend son propre motif d'enrochement, une teinte par ile, et le garde meme entouree de terre · L'icone du bouton « Remblayer » montre desormais le terrain reellement produit, plus un littoral naturel · Le plafond de chaleur d'un batiment boste par une antenne suit enfin son emission reelle (il etait 1,78x trop genereux sur une conso oscillante) : la jauge, la fiche et le capteur « surchauffe » disent tous la meme chose · Aucune sauvegarde touchee";
+const GAME_NOTES = "Correctif : la jauge de chaleur d'un bâtiment boosté par une antenne pouvait rester bloquée au-dessus de 100 % après un rechargement, et le bâtiment tomber en panne sans raison. Le rabot de sécurité ne se déclenchait qu'une seule fois par session : il se dépensait au premier tick, alors que la zone d'antenne est encore éteinte, et n'existait plus quand elle s'allumait au tick suivant. Il se réarme désormais à chaque fois que le plafond change · Aucune sauvegarde touchée";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -10478,10 +10478,19 @@ function processHeat(game, isl) {
     // chaleur accumulee sous l'ancien plafond peut se retrouver au-dessus du nouveau et faire
     // tripper au premier tick. Meme parade qu'en 14.30 pour le plafond fixe : on rabote le stock
     // au plafond SANS declencher, une seule fois - le tick suivant repart d'un etat coherent.
-    // `heatCapAdj` est transitoire (liste blanche a la serialisation), donc le clamp se rejoue
-    // apres chaque chargement, ce qui est sans effet quand il n'y a rien a raboter.
-    if (!bld.heatCapAdj) {
-      bld.heatCapAdj = true;
+    // 14.6x - LE DRAPEAU DEVIENT UNE MEMOIRE DU PLAFOND. `heatCapAdj` etait a USAGE UNIQUE, donc
+    // consomme au PREMIER processHeat : or le gate `pwrAvg` de la 14.63 garantit que la zone
+    // d'antenne est ETEINTE au tick 1 apres un chargement -> le plafond y est calcule NON boste,
+    // donc le plus GRAND, le clamp ne trouve rien a raboter et se depense pour rien. Au tick 2 la
+    // zone s'allume, le plafond RETRECIT, et la protection n'existe plus : jauge bloquee a 135 %.
+    // En memorisant la VALEUR du plafond, le clamp se re-arme a chaque fois qu'il change (allumage
+    // de zone, amelioration, densification, chargement) et ne fait rien quand il n'y a rien a
+    // raboter. `heatCapSeen` est transitoire (liste blanche a la serialisation).
+    // Deux effets de bord cherches, aucun trouve : cycler la zone ON/OFF CONVERGE en un cycle (le
+    // clamp ne mord que si la chaleur DEPASSE, il n'y a pas de pompe a chaleur), et quand le
+    // plafond GRANDIT le clamp ne remonte jamais la chaleur.
+    if (bld.heatCapSeen !== cap) {
+      bld.heatCapSeen = cap;
       if ((bld.heat || 0) > cap) bld.heat = cap * 0.99;
     }
     if (rising && (bld.heat || 0) >= cap - 1e-9) {

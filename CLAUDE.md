@@ -17,7 +17,61 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 347`, `GAME_VERSION = 'Alpha 14.64'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 348`, `GAME_VERSION = 'Alpha 14.65'`, `SAVE_VERSION = 31`.**
+  Changement 14.65 (brief `BRIEFINTEGRATIONBicones`, **CHANTIER 0 SEUL — les 6 autres sont BLOQUÉS,
+  voir ci-dessous**) : **le clamp de chaleur se ré-arme à chaque changement de plafond.**
+  `SAVE_VERSION` INCHANGÉ (`heatCapSeen` est transitoire, jamais sérialisé). Base 347 / 14.64 /
+  3 204 873 o EXACTE ; l'ancre est sortie unique et le **SHA-256 du remplacement est conforme au
+  brief** (`462703b2…`).
+  ⚠ **LE PACK `archipel-sprites.zip` N'A PAS ÉTÉ FOURNI — 6 des 7 chantiers sont EN ATTENTE.**
+  Vérifié : absent des pièces jointes, absent du dépôt, absent de l'historique git, absent des 6 zips
+  déjà commités. Le **lot A l'a consommé sans le commiter** — il n'est pas récupérable.
+  **NE PAS APPLIQUER C2→C5 SANS C1a** : mesuré, **22 des 48 sprites de la table existent déjà, les
+  26 manquants sont EXACTEMENT ceux de C1a** ; or le repli de C3 est la **chaîne VIDE**
+  (`uiIcon(_ti.name, '', 'toast-ico')`) → un toast `❌ Manque acier` perdrait purement son emoji.
+  C4a/C4b, eux, replient sur l'emoji (sans risque). **À la réception du zip : appliquer C1a+C1b
+  D'ABORD**, le reste suit sans adaptation.
+  (1) **§C0 — LE DRAPEAU DEVIENT UNE MÉMOIRE DU PLAFOND.** `heatCapAdj` était un booléen à **usage
+  unique**, consommé au PREMIER `processHeat`. Or le gate `pwrAvg` de la 14.63 garantit que la zone
+  d'antenne est **ÉTEINTE au tick 1** après un chargement → le plafond y est calculé **NON boosté**,
+  donc le **plus GRAND** : le clamp ne trouve rien à raboter et **se dépense pour rien**. Au tick 2 la
+  zone s'allume, le plafond **RÉTRÉCIT**, et la protection n'existe plus → **jauge bloquée à 135 %**.
+  `bld.heatCapSeen = cap` → le clamp se ré-arme à **chaque changement** de plafond (allumage de zone,
+  amélioration, densification, chargement) et ne fait rien quand il n'y a rien à raboter.
+  ⚠ **Pourquoi le plafond RÉTRÉCIT à l'allumage** : depuis le lot A, `heatEmitMaxOf` part de
+  `meanPower` pour un bâtiment boosté. Ratio mesuré = `meanPower/nominalPower × (1 + antElecBoost)`
+  = **0,5625 × 1,2 = 0,675** pour une antenne Nv.1 sur une sigmoïde 1→8. **D'où le seuil de 67,5 %**
+  du §8.17 : en dessous, le plafond ne rétrécit pas assez pour que le clamp ait à mordre.
+  ⚠ **Deux effets de bord cherchés, aucun trouvé** (mesurés) : cycler le plafond **CONVERGE en UN
+  cycle** — 22,1616 → 11,54736 au 1ᵉʳ rétrécissement puis **identique à 1e-12 sur 10 changements**
+  (le clamp ne mord que si la chaleur DÉPASSE : pas de pompe à chaleur) ; et quand le plafond
+  **GRANDIT** le clamp ne remonte **jamais** la chaleur.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **4 suites, 42 assertions, 0 KO**,
+  **rejouées 2 fois sans flottement**. **§8.17 sur un RECHARGEMENT RÉEL** : zone éteinte au 1ᵉʳ tick
+  (plafond 7,68), allumée au suivant (plafond 5,184 = **0,675×**), jauge qui **serait à 122 %** sans
+  le clamp → **ne dépasse jamais 100 %**, **aucun trip**. §8.18 contre-épreuve : `heatCapSeen`
+  pré-positionné → le clamp ne mord pas, la chaleur RESTE à 135 % (et le bâtiment en marche
+  **s'endommage**) — c'est bien le clamp qui protégeait.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **un bâtiment en PAUSE est sauté EN
+  TÊTE de la boucle bâtiment** → son `antennaBuff`/`antennaProd` n'est **jamais remis à jour** et son
+  plafond reste FIGÉ : la zone semble ne jamais s'éteindre. **Idem pour un bâtiment AFFAMÉ.** Pour
+  cycler une zone il faut donc que le bâtiment TOURNE — donc un vrai refroidissement ; (b) le
+  **Refroidisseur en mode `sec`** (`bld.cool = {sel:'sec'}`) absorbe 0,5 MJ/s **sans aucun fluide** :
+  c'est le seul refroidissement montable sans réseau de tuyau jusqu'au port ; (c) **la migration de
+  palier (13.27) remonte au Nv.11 tout bâtiment de `TIER_STEP` au rechargement** → `centrale_
+  enrichissement_v2` voit son plafond ×1024 et tous les seuils calculés avant la save deviennent
+  faux. Prendre une source **hors palier** : `presse_uhp` (sigmoïde 128→1024, `heatCap`, ratio 0,675,
+  émission faible) — vérifié `TIER_STEP['presse_uhp'] === undefined` ; (d) `usine_moteur_nuc` a une
+  émission **PLATE** dans `heatEmitMaxOf` → son plafond **ne rétrécit PAS** (ratio 1) : inutilisable
+  pour ce test ; (e) couper un câble **à l'intérieur d'un long `page.evaluate` asynchrone** ne prend
+  pas — piloter les mutations depuis Node, avec les attentes entre deux `evaluate`.
+  ⚠ **Taille : 3 204 873 → 3 205 697 o (+824 o)** — commentaire de décision + `GAME_NOTES`.
+  ⚠ **HORS PÉRIMÈTRE / EN ATTENTE DU PACK** : C1a (26 icônes), C1b (9 remplacements d'art), C2
+  (`UI_ICON_BY_EMOJI` + `leadIconOf`), C3 (rendu du toast), C4a/C4b (astuces), C5 (CSS `.toast-ico`).
+  Également hors périmètre du brief : les 4 sprites dormants (`ui_deplacer`, `ui_mode_vitesse`,
+  `ui_pause_logique`, `ui_mode_productivite` en icône de bouton), les emoji au MILIEU d'un libellé,
+  et les sheets `_breeze` des tuiles de remblai.
+- **État précédent : `GAME_BUILD = 347`, `GAME_VERSION = 'Alpha 14.64'`, `SAVE_VERSION = 31`.**
   Changement 14.64 (brief `BRIEFINTEGRATIONAremblai`, **INTÉGRATION A — 2 chantiers indépendants**) :
   **(A) le REMBLAI devient VISIBLE (6 tuiles dédiées) ; (B) le plafond de chaleur se réaligne sur
   `meanPower`.** `SAVE_VERSION` INCHANGÉ, **aucun champ persisté ajouté** (`heatCapAdj` est
