@@ -17,7 +17,114 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 344`, `GAME_VERSION = 'Alpha 14.61'` (étiquette INCHANGÉE, voir
+- **État au dernier passage : `GAME_BUILD = 345`, `GAME_VERSION = 'Alpha 14.62'`, `SAVE_VERSION = 31`.**
+  Changement 14.62 (brief `BRIEFLOT1capteurchenaltransitreserve`, **LOT 1 — quatre chantiers INDÉPENDANTS**) :
+  **(A) le seuil du capteur `surchauffe` se règle en POURCENTAGE ENTIER ; (B) le chenal d'accès du port
+  n'est plus remblayable ; (C) la section « Transit entre îles » quitte le panneau Production ;
+  (D) « Demander au port » TIENT aussi la réserve d'export.** `SAVE_VERSION` INCHANGÉ, **les 2 champs
+  ajoutés sont OPTIONNELS avec repli** (`sensorPct` côté surcouche logique, `askPrev` côté `tradeConfig`).
+  Base du brief EXACTE (344 / 14.61 / 3 186 954 o).
+  ⚠ **4 ANCRES DU BRIEF ÉTAIENT MAL ÉCHAPPÉES** (A2, B4, C2, D1a) : le fichier **mélange** les deux
+  encodages — les blocs récents portent des caractères UTF-8 **littéraux** (`é`, `→`, `î`, `⚠`), les blocs
+  passés par Babel des **`\xNN`**. Les ancres du brief supposaient `\xNN` partout → `count == 0`. Ré-extraites
+  du fichier, puis `count == 1`. **Ne jamais présumer l'encodage d'une ancre : la sortir du fichier.**
+  ⚠ **ERREUR DE PARENTHÉSAGE DANS LE BRIEF (§4.C2), corrigée** : le remplacement proposé `  }))));`
+  compte **UN `)` DE MOINS** que nécessaire. Après retrait de la section transit il faut refermer
+  **arrow → `resKeys.map` → `div.prod-table` → `div.prod-body` → `div.prod-panel` → Fragment**, soit
+  `})))));` (5 parenthèses). Livré avec 5 ; `node --check` (7 blocs, 7 OK) est ce qui tranche.
+  (1) **§A — le seuil de `surchauffe` passe en POURCENTAGE ENTIER** (champ **dédié `sensorPct`**, 1→100,
+  défaut 80). Le bug : `NumField` valide en `Math.floor()` et affiche via `fmtPort` (qui **arrondit**) —
+  une fraction 0→1 y était **illisible** (0,8 s'affichait « 1 ») **et inréglable** (toute saisie < 1 était
+  plancherée à 0, donc retombait au défaut). **Seule la valeur 1 était atteignable.**
+  ⚠ **`sensorSeuil` redevient la propriété EXCLUSIVE du mode `seuil`** (un STOCK) : les deux modes
+  partageaient le même champ, donc un seuil de 1e7 acier devenait un seuil de chaleur clampé à 1 en
+  changeant de mode. Mesuré (T11) : `sensorPct = 55` + `sensorSeuil = 1e7` → chaleur **0,55**, stock **1e7**,
+  les deux intacts après un aller-retour de mode ET un rechargement.
+  ⚠ **Plancher à 1 %, pas 0** : un seuil de 0 % basculerait le signal en permanence. Saisie 0 → 1,
+  250 → 100, « 42,7 » → 42 (mesuré en UI réelle).
+  ⚠ **PIÈGE — les surcouches logiques sont sérialisées par LISTE BLANCHE** (`t.logic` est recopié champ
+  par champ vers des clés courtes `sm`/`sr`/`sq`/`sd`/`gd`…). Ajouter `sensorPct` à l'objet en mémoire
+  **NE SUFFIT PAS** : sans les 3 sites (sérialisation `lp.sp` + **DEUX** chemins de restauration —
+  migration `< v28` depuis `t.building`, et chargement `v28+` depuis `logicPlacements`), le réglage
+  disparaît au rechargement. Les 3 sont patchés ; **save réelle écrite puis rechargée** : `sp:55` présent
+  dans le fichier, `sensorPct` restauré, fraction toujours 0,55.
+  (2) **§B — le CHENAL D'ACCÈS du port n'est plus remblayable** : le cargo navigue sur la **LIGNE du port,
+  à gauche de celui-ci** (`drawPortExtras` pose le ponton en `portC-1` et fait naviguer le bateau depuis
+  `portC-7`, tous sur `portR`). `tryExtend` ne testait que « eau + adjacent à la terre » → on pouvait
+  remblayer là, et le cargo naviguait ensuite **sur la terre ferme**.
+  ⚠ **La règle est volontairement LARGE — TOUTE la ligne à gauche du port**, pas les 7 tuiles de
+  l'animation courante : elle doit rester vraie si l'animation change. Nouveau helper `isPortChannel`.
+  ⚠ **Île 7 absente de `PORTS`** → `portPosFor` rend `null` → aucun chenal, et la garde est de toute
+  façon placée **APRÈS** `if (isl === 7) return tryDrill(r, c);` → **la foreuse n'est pas touchée**.
+  ⚠ **AUCUNE MIGRATION (décision assumée)** : une tuile déjà remblayée dans un chenal sur une save
+  existante **reste remblayée** — aucun remboursement, aucun rollback.
+  ⚠ **Défense en DEUX temps, les deux testées** : (a) UI — le bouton « Remblayer » reste **visible mais
+  désactivé**, avec le motif en clair (`blockMsg`, rouge) ; refuser en silence donnerait l'impression d'un
+  bouton cassé ; (b) MOTEUR — garde dans `tryExtend` (toast rouge + `SFX.invalid`), **avant** le gate de
+  techno et le paiement : **rien n'est débité**. Le (b) a été exercé en appelant le **handler React du
+  bouton** via la fibre (`__reactProps$…`), ce qui court-circuite `disabled` ET le ghost-guard.
+  (3) **§C — la section « Transit entre îles » quitte le panneau Production** (calcul, rendu, CSS + les
+  5 règles orphelines `.prod-trow`/`.pt-route`/`.pc-res`/`.pt-rate`/`.prod-transit`). `grep transits` = 0,
+  `grep prod-sub|prod-transit|prod-trow|pt-route|pt-rate` = 0. **`allTransitFlows` et l'onglet « Transit
+  archipel » du Port sont CONSERVÉS INTACTS** (grep inchangé à 3) — c'est là que l'information vit
+  désormais, sous forme de **CARTE** (14.41 : on touche une liaison pour voir son transit, ce n'est plus
+  une liste). `.prod-empty` est **conservée** (encore utilisée par le tableau de ressources vide).
+  ⚠ **Les clés i18n `"Transit entre îles"` / `"Aucun transit en cours."` deviennent ORPHELINES dans les
+  5 tables et sont LAISSÉES EN PLACE** (décision du brief) : ce sont des lignes géantes, les éditer est du
+  risque pur pour zéro gain.
+  (4) **§D — « Demander au port » TIENT la réserve d'export.** `askPortFor` relevait la cible d'import
+  mais laissait `seuilExport` à 0 : on n'exporte que le surplus **au-dessus** de la réserve, donc la
+  matière importée pour l'amélioration **repartait en aval dès son arrivée** et l'amélioration n'était
+  jamais payable. Elle relève désormais les DEUX, mémorise l'ancienne réserve dans **`askPrev`**, et
+  `pay` la **REND** via le nouveau `releaseAskHold`.
+  ⚠ **RELÂCHE À LA DÉPENSE, PAS À L'ARRIVÉE** (décision) : relâcher quand la marchandise débarque rouvre
+  exactement la fenêtre qu'on ferme — le bateau réexpédierait en aval ce qui vient d'arriver.
+  ⚠ **LE COMMENTAIRE DE 14.42 DISAIT L'INVERSE ET A ÉTÉ RÉÉCRIT, PAS CONSERVÉ** : il justifiait de ne pas
+  toucher `seuilExport` (« l'île cesserait de réexporter en aval »). C'est **CADUC** depuis
+  `transitForwardBudget`, qui sur-remplit l'île intermédiaire pour qu'elle relaie en aval **sans jamais
+  descendre sous sa réserve**. En revanche l'**écriture DIRECTE sur `cfg`** (et non via `setTradeCfg`) est
+  **CONSERVÉE** : `setTradeCfg` applique le lien « Cible ⇒ Réserve » qui écraserait la réserve **sans
+  mémoriser** l'ancienne valeur — on ne pourrait plus la rendre.
+  ⚠ **`askPrev` n'est mémorisé QU'UNE FOIS** : une 2ᵉ demande sur la même ressource ne l'écrase pas
+  (sinon on rendrait plus tard une réserve déjà gonflée par la 1ʳᵉ). Mesuré : demande 100 puis 1000 →
+  réserve 106 puis 1051, **`askPrev` reste 0**. Et une réserve **déjà supérieure** n'est jamais baissée
+  (99999 conservée, aucun `askPrev` posé).
+  ⚠ **PIÈGE — `pay(cost, isl)` accepte `isl` ABSENT.** `portPool` fait le repli
+  `islandId != null ? islandId : game.currentIsland` ; **`portIslandOf` NE LE FAIT PAS** et rend
+  `undefined` → `g.tradeConfig[undefined]` **n'échoue pas, il ne fait rien**, et le hold ne se relâcherait
+  **jamais, en silence**. `releaseAskHold` refait la résolution à l'identique.
+  ⚠ **LECTURE SEULE sur `tradeConfig` dans `releaseAskHold`** : ne JAMAIS passer par `tradeCfgFor`, il
+  **CRÉERAIT** une entrée pour chaque ressource de chaque coût payé dans la partie.
+  ⚠ **Édition manuelle = abandon du hold** (`setTradeCfg` supprime `askPrev`) : sans ça, on écraserait
+  plus tard le réglage que le joueur vient de saisir. Mesuré : réserve éditée à 321 → bordure ocre
+  disparue, et la dépense ne la remet **pas** à 0.
+  ⚠ **`askPrev` doit être ajouté à la LISTE BLANCHE de restauration de `tradeConfig`** — sans cette
+  ligne le hold est perdu au rechargement et **la réserve gonflée resterait en place à vie**.
+  ⚠ **Le hold est VISIBLE** (`.pp-c-num.held`, bordure + texte ocre `#e6b673`) : un `title` seul est
+  inatteignable au doigt sur mobile. Mesuré : `rgb(230, 182, 115)` sur le champ Réserve **et lui seul**.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **6 suites, 80 assertions, 0 KO**, **rejouées
+  2 fois sans flottement**, + une suite de **non-régression, 12 assertions** — seul bruit console : le
+  **404 PRÉEXISTANT** du serveur de test. **§2.4 vérifié sur une save RÉELLE créée par la BASE 344 puis
+  rechargée en 345** : réglages de transit conservés (900/400), **aucun `askPrev` nulle part**, stock
+  intact, capteur à l'ancienne (`sensorSeuil = 0,35`) **toujours à 0,35** (repli), 0 `tickError`,
+  20 s de jeu réel à ~1 tick/s, canvas peint, 0 `pageerror`.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **`page.click({force:true})` est AVALÉ**
+  par l'UI — il faut un vrai `mouse.move` + `down` + pause + `up` ; (b) **`tryPlace(r, c, id, verbose)`
+  prend l'id EN PARAMÈTRE**, il ne le lit PAS dans `g.ui.tool` — l'appeler à 2 arguments rend `false` en
+  silence (m'a coûté 3 itérations) ; (c) **`askPortFor` ne relève QUE ce qui est en DÉFICIT** → remplir le
+  port AVANT l'appel le rend inopérant : mettre le port à 0, appeler, PUIS livrer ; (d) le piège (g) de
+  14.47 frappe encore — **confirmer tout l'arbre de recherche déclenche une FILE d'astuces** dont le
+  `.research-backdrop` vole les clics du canvas : ne confirmer QUE le nœud portant le flag voulu
+  (`unlocks.terrainExtend`), et couper `g.ui.tipsEnabled` AVANT ; (e) `game.transitFlow` est **remis à
+  zéro à chaque tick** par `tickShips` → une valeur forgée ne survit pas, la **ré-affirmer** en
+  `setInterval` (~25 ms), même patron que `conduitLoad` (14.51) ; (f) les champs `NumField` affichent en
+  **notation port** (`1 051`, espace fine) → normaliser avant de comparer à `"1051"`.
+  ⚠ **Taille : 3 186 954 → 3 192 664 o (+5 710 o)**, dominée par les commentaires de décision.
+  ⚠ **HORS PÉRIMÈTRE, non touché (§2.2)** : **l'antenne amplificatrice (zone, boost, conso, chaleur,
+  `maxPerIsland`) — c'est le LOT 2, séparé** ; le mode `seuil` du capteur et son champ `sensorSeuil` ;
+  l'onglet « Transit archipel » et `allTransitFlows` ; `transitForwardBudget`, `game.tradePriority`,
+  `cfg.interdit`, `tradeBlockDest` ; les tables i18n ; `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 344`, `GAME_VERSION = 'Alpha 14.61'` (étiquette INCHANGÉE, voir
   ci-dessous), `SAVE_VERSION = 31`.**
   Changement build 344 (brief `BRIEFDIVERSL4`, **LOT 4 « DIVERS » — deux changements INDÉPENDANTS**) :
   **(§A) le forfait des 7 mines V4 gagne 1 ordinateur quantique + 1 moteur quantique ; (§B) cavalier —
