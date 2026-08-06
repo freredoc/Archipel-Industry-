@@ -8184,8 +8184,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 354;
-const GAME_VERSION = 'Alpha 14.71';
+const GAME_BUILD = 355;
+const GAME_VERSION = 'Alpha 14.72';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8194,7 +8194,7 @@ const GAME_VERSION = 'Alpha 14.71';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Sept ic\u00f4nes rejoignent le gabarit commun du pack : m\u00eame disque de 193 pixels, m\u00eame contour, m\u00eame alignement que les autres. Leur disque \u00e9tait d'un cheveu plus petit et l\u00e9g\u00e8rement d\u00e9cal\u00e9, ce qui se voyait d\u00e8s qu'elles voisinaient une ic\u00f4ne au gabarit. Les glyphes n'ont pas \u00e9t\u00e9 redessin\u00e9s, seulement repos\u00e9s \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Les quatre boutons de r\u00e9ordonnancement des listes de priorit\u00e9 \u2014 transit au Port, alimentation dans \u00c9nergie \u2014 affichent enfin les ic\u00f4nes du pack au lieu des fl\u00e8ches typographiques. C'\u00e9taient les derni\u00e8res \u00e0 montrer un glyphe \u00e0 c\u00f4t\u00e9 d'un sprite dans la m\u00eame fiche \u00b7 Aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -20289,11 +20289,11 @@ function PortPanel({
       disabled: i === 0,
       onClick: () => onMovePriority(currentIsland, res, -1),
       title: I18N.t("Monter")
-    }, "\u25B2"), React.createElement("button", {
+    }, uiIcon('monter', "\u25B2")), React.createElement("button", {
       disabled: i === visiblePriority.length - 1,
       onClick: () => onMovePriority(currentIsland, res, +1),
       title: I18N.t("Descendre")
-    }, "\u25BC")));
+    }, uiIcon('baisser', "\u25BC"))));
   }), React.createElement("div", {
     className: "pp-note"
   }, I18N.t("Cible = quantit\xE9 voulue ici (import). R\xE9serve = stock gard\xE9 localement (export du surplus uniquement). Priorit\xE9 = ordre de chargement au d\xE9part."))) : React.createElement("div", {
@@ -20457,11 +20457,11 @@ function EnergyPanel({
     disabled: i === consumers.length - 1,
     onClick: () => onMovePriority(currentIsland, cc.key, +1),
     title: I18N.t("Monter")
-  }, "\u25B2"), React.createElement("button", {
+  }, uiIcon('monter', "\u25B2")), React.createElement("button", {
     disabled: i === 0,
     onClick: () => onMovePriority(currentIsland, cc.key, -1),
     title: I18N.t("Descendre")
-  }, "\u25BC"))))) : React.createElement("div", {
+  }, uiIcon('baisser', "\u25BC")))))) : React.createElement("div", {
     className: "pp-note"
   }, explain[mode]))));
 }
