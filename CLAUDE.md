@@ -17,7 +17,31 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 351`, `GAME_VERSION = 'Alpha 14.68'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 352`, `GAME_VERSION = 'Alpha 14.69'`, `SAVE_VERSION = 31`.**
+  Changement 14.69 (brief `BRIEF-ETAPE2-retirage-i2`, **1 bloc — ÉTAPE 2 sur 3, à intégrer EN
+  PREMIER**) : **la tuile `tile_i2_remblai` est retirée.** `SAVE_VERSION` INCHANGÉ, **aucun code
+  touché** (remplacement de données, clé inchangée → aucun site d'appel à modifier).
+  ⚠ **L'ORDRE 2 → 1 → 3 EST OBLIGATOIRE et n'est PAS un caprice** : la sheet `tile_i2_remblai_breeze`
+  de l'étape 1 a sa **frame 0 calée sur la tuile RETIRÉE**. Intégrer l'étape 1 d'abord casserait
+  l'invariant « frame 0 == sprite statique » au moment du retirage. L'étape 3 est, elle, réellement
+  indépendante.
+  (1) **Le défaut, mesuré sur la tuile d'origine** : **colonne 0 et colonne 31 identiques à l'octet
+  près** — un joint du Voronoï tombait pile sur la couture verticale, écart au raccord **0,00** pour
+  un écart interne moyen de 37,2. Le pavage restait correct mais installait une **ligne verticale
+  tous les 32 px** sur une grande zone comblée. La nouvelle tuile mesurée **en jeu** (re-décodée du
+  HTML patché) : raccord vertical **0,97×** l'écart interne, horizontal **0,98×** — exactement les
+  valeurs du §1. Plus aucun bord identique à son opposé.
+  ⚠ **`SPRITE_DATA` a DEUX formes de déclaration** (littéral d'objet ET ~1330 affectations
+  `window.__SPRITE_DATA__["clé"]=…`). `tile_i2_remblai` est de la **seconde** : une regex qui ne voit
+  que le littéral ne la trouve pas. Piège déjà rencontré au lot 14.65, re-confirmé ici.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + ancre à `count == 1` avant / **0 après**,
+  `grep tile_i2_remblai` inchangé à 1 (la clé existe toujours), **SHA-256 re-extrait du HTML patché
+  identique au pack** (`d0bbe1c1…`), PNG **32×32, alpha uniformément 255, 13 couleurs**, **delta
+  +60 octets EXACT**. En jeu : zone **4×4 comblée sur l'île 2** + zoom minimum, espion `drawImage` →
+  **`tile_i2_remblai` est bien la clé dessinée**, et **aucune autre tuile de remblai** ne l'est.
+  ⚠ **HORS PÉRIMÈTRE** : les 5 autres tuiles de remblai, `tile_i2_coast`, les triangles
+  `coast_tri_*`, toute logique de rendu.
+- **État précédent : `GAME_BUILD = 351`, `GAME_VERSION = 'Alpha 14.68'`, `SAVE_VERSION = 31`.**
   Changement 14.68 (brief `BRIEFLIBELLESvague2`, **20 blocs**) : **20 libellés JSX de plus passent
   de l'emoji au SPRITE** — bandeaux de déficit (les 3 branches), fiche de centrale, chantier
   souterrain, boutons Densifier et Pause/Reprise, colonne « interdit » du Port, accumulateurs du
