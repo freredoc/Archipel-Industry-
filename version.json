@@ -1,8 +1,8 @@
 {
-  "build": 345,
-  "version": "Alpha 14.62",
+  "build": 346,
+  "version": "Alpha 14.63",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Le seuil du capteur en mode Surchauffe se règle enfin : il passe en POURCENTAGE ENTIER (1 à 100, défaut 80) dans un champ dédié — il était auparavant inréglable (toute saisie sous 1 retombait au défaut) et se marchait sur les pieds du mode Seuil · Le chenal d'accès du port ne peut plus être remblayé : le cargo y navigue · La section Transit du panneau Production est retirée (l'information reste dans l'onglet Transit archipel du Port) · « Demander au port » tient désormais AUSSI la réserve d'export, rendue automatiquement dès que la ressource est dépensée — la matière importée ne repart plus en aval avant que l'amélioration soit payable · Aucune sauvegarde touchée"
+  "notes": "L'antenne amplificatrice doit désormais être RÉELLEMENT alimentée pour que sa zone agisse : un simple bout de câble ne suffit plus, et une antenne non servie coupe son boost · Les centrales et éoliennes ne sont plus boostées (le boost se paie en électricité, qu'un générateur ne consomme pas) · Une seule antenne par île, V1 et V2 confondues — même règle pour la centrale nucléaire · Le mode PRODUCTIVITÉ ne ralentit plus la production : il ne fait plus qu'économiser des matières (il était injouable au-delà du Nv.4) · Le boost électrique se calcule sur la conso MOYENNE du bâtiment et non sur son pic : entrer dans une zone ne fait plus bondir la conso de plancher · Panneau Énergie et fiche bâtiment affichent enfin la vraie conso d'un bâtiment boosté · Aucune sauvegarde touchée"
 }
