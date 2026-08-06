@@ -17,7 +17,66 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 349`, `GAME_VERSION = 'Alpha 14.66'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 350`, `GAME_VERSION = 'Alpha 14.67'`, `SAVE_VERSION = 31`.**
+  Changement 14.67 (brief `BRIEFLIBELLESvague1`, **13 blocs**) : **11 libellés JSX passent de l'emoji
+  au SPRITE** (bandeaux Alertes / Surchauffes / déficit électrique, boutons du Collisionneur, bouton
+  de forage, en-tête Production, puissance de la chaîne du Calculateur, titre de densification,
+  les 2 états de l'accumulateur). `SAVE_VERSION` INCHANGÉ, **aucun champ persisté touché**.
+  Base du brief EXACTE (349 / 14.66 / 3 224 561 o), sur la branche `claude/big-patch-fix-o2jyh9`.
+  ⚠ **BRIEF PRÉ-COMPILÉ, 4ᵉ fois de suite** : **13/13 ancres uniques**, **13/13 hachages conformes
+  AVANT application**, **delta d'octets EXACT (+1 030 au byte près)**. Aucune adaptation.
+  (1) **§L1 — nouveau helper `iconLabel(txt, cls)`**, posé juste avant `uiIcon`. Il réutilise la
+  MÊME table que les toasts (`UI_ICON_BY_EMOJI` + `leadIconOf`, lot 14.65) : aucune clé i18n touchée,
+  les ternaires sont couverts d'office (on lit la chaîne RÉSOLUE), et le **repli est intégral** —
+  un emoji absent de la table renvoie le texte INCHANGÉ.
+  ⚠ **Pourquoi site par site et pas un entonnoir** : les toasts ont un site de rendu UNIQUE ;
+  les libellés n'en ont AUCUN. **55 libellés portent encore un emoji de tête sur la base 349**, sous
+  55 formes différentes (concaténations, ternaires imbriqués, arguments React séparés). Chacun
+  demande de lire l'étendue exacte de l'expression pour poser la parenthèse fermante — c'est
+  exactement la faute qui avait donné une page blanche au lot A. **Ce lot en convertit 11 ; les 44
+  restants sont une 2ᵉ vague délibérée.**
+  ⚠ **UN CAS EST STRUCTURELLEMENT INCONVERTIBLE** : `placeholder: "🔍 " + I18N.t("Rechercher un
+  bâtiment…")` — un attribut HTML ne prend qu'une chaîne, jamais un nœud React. Il gardera son emoji.
+  (2) **§L2 — `.lbl-ico`**, jumelle de `.toast-ico` (`1em`, `vertical-align:-.12em`, pixelated).
+  (3) **8 des 13 blocs ont une ancre qui est une SOUS-CHAÎNE de leur remplacement** (L1, L2, L3, L4,
+  L6, L7, L9, L10) → leur `old_count` reste à **1** après patch. Ce n'est pas un échec ; seuls
+  L5, L8, L11, L12, L13 tombent à 0. Vérifié explicitement à l'aller-retour.
+  ⚠ **ÉCART DE LIBELLÉ DANS LE BRIEF, sans conséquence** : le §5 nomme L6 « puissance de recherche »
+  et le test 14 « Panneau Recherche ». Le site réel est **`.calc-power` du CALCULATEUR**
+  (`iconLabel("⚡ " + fmtPower(res.power))`, `res` = résultat de `computeProductionChain`). Testé là.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + **`iconLabel` EXTRAIT du fichier patché et exercé
+  sous Node avec un React minimal** (`iconlabel.js` : 4 fragments, **11 assertions, 0 KO**) — les
+  8 entrées du tableau du §6 (`ui_alerte`/`ui_chaleur`/`ui_energie`/`ui_reprendre`/`ui_pause`/
+  `ui_verrou`/`ui_mine`/`ui_batterie`), les 2 replis, et la classe **`ui-ico lbl-ico`**.
+  + Chromium **3 suites, 39 assertions, 0 KO**, **rejouées 2 fois sans flottement** (la suite du
+  Collisionneur rejouée 3 fois après stabilisation), et les **5 suites des lots 14.65/14.66 rejouées
+  en non-régression** (63 assertions, 0 KO).
+  **Test 8** (concaténation) : « ⚡ » + `a.nets` + libellé → sprite énergie ET **le nombre 2 est
+  conservé** (« 2 réseaux en déficit · 0% batterie »). **Test 10** (ternaire à 3 branches) : les
+  **trois** branches du bouton « Lancer la séquence » rendent chacune LEUR sprite — `logic` →
+  `ui_verrou`, `goal` → `ui_verrou`, prêt → `ui_reprendre` — et le bouton marche/arrêt rend
+  `ui_reprendre` / `ui_pause` selon `colOn`. **Test 15** (repli) : 🏝️ dans l'Aide s'affiche
+  toujours en emoji, **0 icône vide**. Aucun texte tronqué ni dupliqué nulle part.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **une astuce en file recouvre le
+  CANVAS** — son `.tip-illu-canvas` intercepte le tap et `elementFromPoint` le confirme ; purger en
+  boucle sur `.tip-popup button` (pas seulement `.tip-ok`) AVANT chaque tap ; (b) **recentrer la
+  caméra puis viser immédiatement RATE la tuile** : `clampPan` recale `cam.x`/`cam.y` à la frame
+  suivante → relire les coordonnées APRÈS l'attente, et réessayer ; (c) **le tick reconstruit
+  `game.wireInfo` PUIS rend dans la même passe** — une valeur forgée en `setInterval` est
+  systématiquement écrasée avant le rendu : pour tester l'alerte énergie, remplacer la fonction
+  `activeEnergyAlerts` (accessible via `window`, déclaration de fonction d'un script classique),
+  le chemin de RENDU testé reste le vrai ; (d) le **sol de tunnel de l'île 7 est `coast`, pas
+  `land`** (`buildIslandTiles` promeut toute terre touchant de l'eau) ; (e) le bouton
+  **Calculateur est SOUS l'inventaire OUVERT** ; (f) le panneau du Collisionneur ne se re-rend qu'au
+  bump du HUD → relire en boucle courte (1 flottement observé sur 2 passes avant correction).
+  ⚠ **Taille : 3 224 561 → 3 225 392 o (+831 o)** — le CODE seul pèse **+1 030 o** (exactement
+  l'attendu, commentaires du brief inclus) ; le total est plus PETIT parce que le nouveau
+  `GAME_NOTES` est plus court que celui de la 14.66.
+  ⚠ **HORS PÉRIMÈTRE (§3), non touché** : les **44 libellés restants** (2ᵉ vague), le `placeholder`
+  de recherche (inconvertible), les **9 emoji en MILIEU de chaîne** (`✓`, puces `●`/`○` — `leadIconOf`
+  ne les voit pas), et les 4 sprites dormants (`ui_deplacer`, `ui_mode_vitesse`, `ui_pause_logique`,
+  `ui_mode_productivite` en icône de bouton) qui demandent un `uiIcon()` posé à la main.
+- **État précédent : `GAME_BUILD = 349`, `GAME_VERSION = 'Alpha 14.66'`, `SAVE_VERSION = 31`.**
   Changement 14.66 (brief `BRIEFFORMATSNUMERIQUES`, **15 blocs**) : **les grands nombres deviennent
   cohérents partout (séparateur de milliers sous le seuil, scientifique OU préfixe SI au-dessus,
   seuil réglable), et le panneau Énergie gagne une ligne « Dimensionnement » à trois états.**
