@@ -17,7 +17,57 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 355`, `GAME_VERSION = 'Alpha 14.72'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 356`, `GAME_VERSION = 'Alpha 14.73'`, `SAVE_VERSION = 31`.**
+  Changement 14.73 (brief `BRIEFCORRECTIFinversionenergie`, **1 bloc**) : **l'inversion Monter/Descendre
+  du panneau Énergie est FERMÉE** — c'est l'anomalie signalée au lot 14.72, ici corrigée.
+  `SAVE_VERSION` INCHANGÉ, **delta 0 OCTET** (le patch PERMUTE, il n'ajoute rien).
+  Base EXACTE (355 / 14.72 / 3 236 325 o) ; **1/1 ancre unique, hachage conforme AVANT application**
+  (7ᵉ brief pré-compilé d'affilée), `node --check` 7/7 du premier coup.
+  (1) **Le défaut** : `moveEnergyPriority(key, dir)` fait `splice(i,1)` puis `splice(i+dir,0,key)` →
+  `+1` déplace vers le BAS. Or le bouton qui appelait `+1` portait le titre « Monter » **et**, depuis
+  14.72, le sprite `ui_monter`. L'en-tête annonce « Ordre de priorité (haut = servi en premier) » et
+  `.ep-rank` numérote 1, 2, 3… de haut en bas : aucune ambiguïté sur ce que « monter » devrait faire.
+  ⚠ **Le défaut est PRÉEXISTANT** (contre-épreuvé sur la base 354 au lot précédent) ; 14.72 ne l'a pas
+  créé, il l'a rendu VOYANT — un `title=` ne se survole pas au doigt, une flèche se lit d'un coup d'œil.
+  (2) **3 options écartées, la 4ᵉ retenue** : échanger les deux `title:` laisserait la flèche VERS LE
+  HAUT sur le bouton qui descend (on corrige le mot, on garde le mensonge visuel — **pire qu'avant**) ;
+  inverser le signe DANS `moveEnergyPriority` ferait diverger sa convention de celle de `movePriority`
+  du Port (piège pour la suite). **Retenu : PERMUTER LES DEUX BOUTONS.** Le bloc qui appelle `-1` passe
+  en premier avec « Monter » + `ui_monter` ; celui qui appelle `+1` passe en second avec « Descendre »
+  + `ui_baisser`. Les `disabled` suivent leur bouton. **Les titres et les sprites NE BOUGENT PAS** — ce
+  sont les comportements qui viennent se placer sous les bons libellés. Résultat : le panneau Énergie
+  devient **strictement identique au Port** (même ordre, même convention de signe, mêmes états grisés).
+  ⚠ **C'EST UN CHANGEMENT DE COMPORTEMENT**, assumé : un joueur qui avait appris la manipulation
+  actuelle (cliquer la flèche du haut pour rétrograder) verra les deux boutons échangés. **Aucune
+  migration possible et aucune nécessaire** — `energyPriority` stocke une LISTE ORDONNÉE, pas un sens
+  de tri ; les ordres existants sont conservés tels quels, seuls les boutons changent de place.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + **delta 0 octet EXACT** (ancre et remplacement font
+  **379 octets chacun**) + le bloc du **PORT vérifié INCHANGÉ** (`count == 1` avant ET après).
+  **Chromium, 3 suites, 37 assertions, 0 KO** :
+  **Test 6 (LE test du lot)** : `(10,13) (10,14) (10,15) (10,16)` → clic « Monter » sur la 2ᵉ ligne →
+  `(10,14) (10,13) (10,15) (10,16)` — **elle passe 1ʳᵉ**. **Test 7** : « Descendre » sur la 2ᵉ → elle
+  passe 3ᵉ. **Test 8** : ligne 1 = flèche du HAUT grisée (opacité .3, 16×16, visible), dernière ligne =
+  l'inverse ; rangs 1,2,3,4 de haut en bas — **capture avant/après à l'appui, le symptôme est retourné**.
+  **Test 10 en MOTEUR RÉEL** (et non sur une assertion creuse) : 1 éolienne Nv.16 (**262 144 kW**) +
+  câble illimité + **4 refroidisseurs** (131 072 kW pièce, **aucun intrant, aucune sortie** → ni route
+  ni tuyau nécessaires, c'est ce qui rend le montage possible) → demande 524 288 pour 262 144 produits,
+  **exactement 2 servis** ; les 2 derniers coupés avec le motif **`power`** ; puis le DERNIER remonté en
+  tête **par les vrais boutons « Monter »** → **il devient servi et celui qu'il a doublé est coupé**.
+  **Test 11** : la suite complète du lot 14.72 rejouée → **16/16** (le Port n'a pas bougé ; l'assertion
+  qui échouait alors affiche désormais « VERDICT : le bouton titré « Monter » MONTE »).
+  **Tests 12/13** : ordre modifié conservé au rechargement, et **save créée par la BASE 355 rechargée en
+  356** → ordre ÉNERGIE conservé tel quel, ordre TRANSIT conservé, stocks intacts, `SAVE_VERSION` 31,
+  **0 `tickError`, 20 s de jeu réel, 0 `pageerror`**.
+  ⚠ **PIÈGE DE HARNAIS (nouveau)** : l'île de départ est **trop exiguë** pour une bande 3×6 de terre
+  libre → un montage électrique de test doit **combler des tuiles d'eau** (`baseTerrain 'water'` +
+  `terrain 'coast'`, le remblai du jeu) pour dégager la place, sinon la recherche de zone rend `null`
+  et le test s'effondre sur `build.keys`. Et pour un déficit mesurable il faut des consommateurs
+  **SANS intrants ni sorties** (`refroidisseur` en mode `sec`) : tout le reste sort de
+  `energyConsumers` faute de desserte, et on mesure alors une liste VIDE.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `moveEnergyPriority` (sa convention de signe reste celle de
+  `movePriority`), le panneau Port, `energyConsumerList`, `cutToFitMode`, les titres, les sprites,
+  le CSS, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 355`, `GAME_VERSION = 'Alpha 14.72'`, `SAVE_VERSION = 31`.**
   Changement 14.72 (brief `BRIEFLOTCOURTpriorite`, **2 blocs**) : **les 4 boutons de réordonnancement
   des listes de priorité passent du glyphe au SPRITE** (`▲`/`▼` → `ui_monter`/`ui_baisser`) — priorité
   de transit du **Port** et priorité d'alimentation de l'**Énergie**. `SAVE_VERSION` INCHANGÉ, aucun
@@ -38,8 +88,9 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   `opacity 0.3`, `16×16 px`, `visible true`). Les boutons passent d'un glyphe à `.6rem` (~10 px) à un
   sprite de 16 px : la ligne du Port fait 30 px, les boutons restent **centrés sur la ligne à 0,5 px**
   et le sprite est **centré dans son bouton à 0,00 px**.
-  ⚠ **ANOMALIE PRÉEXISTANTE CONFIRMÉE, NON CORRIGÉE (hors périmètre — le brief écrit noir sur blanc
-  « le patch conserve cette inversion telle quelle »)** : dans le **panneau Énergie**, le bouton titré
+  ⚠ **ANOMALIE PRÉEXISTANTE CONFIRMÉE, NON CORRIGÉE ICI — FERMÉE AU LOT 14.73** (hors périmètre de ce
+  lot-ci : le brief écrivait noir sur blanc « le patch conserve cette inversion telle quelle ») : dans
+  le **panneau Énergie**, le bouton titré
   **« Monter » DESCEND l'entrée**, et « Descendre » la monte. Le brief anticipait l'inversion des
   signes (`Monter` → `onMovePriority(+1)`, l'inverse du Port) et demandait de **« vérifier que monter
   monte »** : **il ne monte pas.** `moveEnergyPriority(key, +1)` fait `splice(i,1)` puis
