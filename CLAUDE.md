@@ -17,7 +17,90 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 348`, `GAME_VERSION = 'Alpha 14.65'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 349`, `GAME_VERSION = 'Alpha 14.66'`, `SAVE_VERSION = 31`.**
+  Changement 14.66 (brief `BRIEFFORMATSNUMERIQUES`, **15 blocs**) : **les grands nombres deviennent
+  cohérents partout (séparateur de milliers sous le seuil, scientifique OU préfixe SI au-dessus,
+  seuil réglable), et le panneau Énergie gagne une ligne « Dimensionnement » à trois états.**
+  `SAVE_VERSION` INCHANGÉ, **les 2 champs ajoutés sont OPTIONNELS avec repli** (`numFormat`,
+  `numThreshold` dans `uiPrefs`). Base du brief EXACTE (348 / 14.65 / 3 216 105 o).
+  ⚠ **BRIEF PRÉ-COMPILÉ, 3ᵉ fois de suite, et ça se voit** : **15/15 ancres uniques du premier coup,
+  15/15 hachages conformes AVANT application, delta d'octets EXACT (+8 402 au byte près, mesuré
+  avant le bump)**. Aucune adaptation.
+  (1) **§N1 — `fmtInt` devient le formateur PILOTABLE.** Sous le seuil : **toujours** le séparateur
+  de milliers (`toLocaleString('fr-FR')` → espace fine insécable U+202F). Au-dessus : `sci`
+  (`2,35e6`, défaut) ou `si` (`2,35 M`). Seuil réglable 1e3 → 1e9 ou **`Infinity` (« jamais »)**.
+  ⚠ **`fmtInt` est HORS React** : il est appelé depuis des fonctions qui n'ont accès ni au state ni
+  à `game` → la source de vérité est une paire de **variables de MODULE** (`NUM_FORMAT`,
+  `NUM_THRESHOLD`) poussée par **`setNumPrefs`**. Le state React ne sert qu'à redessiner ; c'est
+  pourquoi `chooseNumFormat` appelle `setNumPrefs` **ET** `setNumFormat`. Oublier l'un des deux
+  donne soit un affichage figé, soit un `<select>` qui ne reflète plus la valeur.
+  ⚠ **Pourquoi SI et pas k/m/b/t** : en français « b » = billion = 1e12, en anglais 1e9 — un stock
+  de **2,57e12** (relevé sur une partie réelle) s'écrirait « 2,57 b » avec DEUX sens. Le jeu affiche
+  déjà « 285 GW » et « 8,39 GWh » : le SI est la seule écriture cohérente avec l'existant.
+  ⚠ **Le seuil EXPLICITE reste prioritaire** : `fmtInt(n, thresh)` garde son paramètre pour les
+  appelants qui imposent un seuil ; seuls `fmtPort` et `fmtRateSci` passent désormais sans, et
+  suivent donc le joueur.
+  (2) **§N5 — `formatCost` ne formatait RIEN** : `` `${v} ${RES_SHORT[k]}` `` sortait la valeur
+  BRUTE. C'était la source des nombres à rallonge du **menu Améliorer**, du bouton **« Aligner »**,
+  des boutons **V+/V−** du panneau réseau et de **3 toasts** — **20 sites d'appel corrigés par une
+  seule ligne** (passage par `fmtPort`). Mesuré : `{acier: 2345000}` → « 2,35e6 acier ».
+  (3) **§N3 — `fmtRate` : deux défauts d'un coup.** Les milliers n'étaient PAS séparés (un débit de
+  12 345/s s'écrivait « 12345 » **juste à côté** d'un stock « 12 345 », dans le même panneau) et la
+  décimale était un **point** (« 12.34 ») là où tout le jeu met une virgule.
+  (4) **§N6/N7 — `fmtPower`/`fmtEnergy` montent jusqu'au PW/PWh** : la chaîne s'arrêtait au
+  gigawatt et imprimait ensuite une mantisse non séparée (2,57e12 kW → « 2570000 GW »). Latent,
+  atteignable en fin de partie longue. Mesuré : `fmtPower(2.57e12)` = **2,57 PW**.
+  (5) **§N8/N9 — persistance.** ⚠ **`Infinity` NE SURVIT PAS à `JSON.stringify`** (il devient
+  `null`) → le seuil « jamais » est sérialisé en **chaîne `'inf'`** et reconverti à la lecture.
+  ⚠ **`setNumPrefs` DOIT être appelé dans `loadSave`** : sans lui la save serait relue mais
+  l'affichage garderait les défauts jusqu'au premier changement d'option (vérifié : après
+  rechargement, `fmtPort(12345)` rend « 12,3 k » dès le 1ᵉʳ rendu).
+  (6) **§N13/N14 — nouveau helper `selRow`** (ligne d'option à `<select>`, gabarit de la ligne
+  « Langue ») + les 2 lignes **« Grands nombres »** et **« Seuil de bascule »**. Un `<select>` et
+  non des boutons segmentés **parce que le seuil a SIX choix**, ce qui déborderait sur mobile.
+  ⚠ **N14 doit être appliqué AVANT N13** (`selRow` doit exister avant d'être appelé).
+  (7) **§N15 — ligne « Dimensionnement » à 3 états** : `gross < ideal.prod` → **sous-dimensionné**
+  (rouge, les accus se vident) ; `ideal.prod ≤ gross ≤ demMax` → **optimal** (vert, les accus
+  absorbent la bosse) ; `gross > demMax` → **au-dessus du pic** (ocre). Le vert/rouge d'avant ne
+  montrait qu'UNE borne ; il en manquait la symétrique.
+  ⚠ **FORMULATION VOLONTAIREMENT MESURÉE, à ne pas « simplifier »** : au-dessus du pic les
+  accumulateurs ne sont **PAS inutiles**, ils restent le tampon des PANNES (centrale à court de
+  combustible, réacteur qui trippe, zone d'antenne qui s'éteint sur le gate `pwrAvg`). L'infobulle
+  dit donc « ne servent plus qu'**en cas de panne** » — écrire « inutiles » pousserait le joueur à
+  démonter une sécurité. **Testé explicitement** : le mot « inutile » est ABSENT de l'infobulle.
+  ⚠ La ligne est gatée sur **`showSpread`**, comme les 3 lignes « idéales » qui la suivent : sans
+  oscillation un accumulateur ne sert à rien et les cibles vaudraient 0.
+  ⚠ **HORS PÉRIMÈTRE (§4), non touché** : `fmtSig`, `fmtHeat`, `fmtR`, `fmtN` — ils affichent des
+  GRANDEURS à 3 chiffres significatifs avec unité, pas des quantités, et ne suivent donc pas la
+  préférence ; `fmtPower`/`fmtEnergy` gardent leurs préfixes d'unité (unités physiques, pas une
+  convention d'affichage) — seule leur table est étendue.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + **chaîne de formatage EXTRAITE du fichier patché
+  et exercée isolément sous Node** (`fmtchain.js` : 6 fragments, **22 assertions, 0 KO**) — le
+  tableau du §7 est retrouvé aux 14 cases (`999`/`12 345`/`99 999`/`1e5`/`2,35e6`/`8,61e9`/`2,57e12`
+  et `100 k`/`2,35 M`/`8,61 G`/`2,57 T`), plus seuil `Infinity` → `2 565 633 264 880`, seuil 1e3 en
+  SI → `12,3 k`, `fmtRate` 3 cas, `fmtPower` 2 cas. + Chromium **3 suites, 40 assertions, 0 KO**,
+  **rejouées 2 fois sans flottement**, et les **3 suites du lot 14.65 rejouées en non-régression**
+  (35 assertions, 0 KO).
+  **Test 6** (le défaut d'origine du lot) : `formatCost` ne sort plus AUCUNE valeur brute.
+  **Test 10** : réglés → sauvegardés (`uiPrefs.numFormat: 'si'`, `numThreshold: 1000`) → rechargés
+  → appliqués **dès le premier rendu** ; et le round-trip de `Infinity` passe bien par `'inf'`.
+  **Test 15** : au-dessus du pic → ocre, infobulle « ne servent plus qu'en cas de panne », **mot
+  « inutile » absent**. **Test 17** : save créée par la **BASE 348** rechargée en 349 → stock intact,
+  0 `tickError`, 20 s de jeu réel ; **test 11** : cette même save (sans les 2 champs) retombe sur
+  `sci` / 1e5, soit l'affichage d'avant.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **le panneau Énergie doit être
+  OUVERT AVANT de forger `game.energy`** — une fois l'état forgé, la pastille ⚡ change de largeur au
+  re-rendu et le vrai clic souris rate sa cible (`boundingBox` périmée) ; (b) le panneau ne se
+  re-rend qu'au **bump du HUD** → relire en boucle courte jusqu'à ce que le rendu ait rattrapé l'état
+  forgé, sinon on lit le rendu PRÉCÉDENT (3 faux KO d'affilée) ; (c) une **astuce en file peut
+  refermer le panneau** au milieu du test → purger et ré-ouvrir avant chaque lecture ; (d) comparer
+  des nombres formatés exige de normaliser **U+202F ET U+00A0 ET U+2009** (`toLocaleString('fr-FR')`
+  rend l'espace FINE insécable, pas une espace ordinaire) ; (e) le sélecteur du panneau Énergie est
+  **`.stock.energy`**, pas `.stocks`.
+  ⚠ **Taille : 3 216 105 → 3 224 561 o (+8 456 o)** — dont **+8 402 pour les 15 blocs** (exactement
+  l'attendu, les commentaires de décision étant déjà inclus dans les blocs du brief), le reste étant
+  le bump et `GAME_NOTES`.
+- **État précédent : `GAME_BUILD = 348`, `GAME_VERSION = 'Alpha 14.65'`, `SAVE_VERSION = 31`.**
   Changement 14.65 (brief `BRIEFINTEGRATIONBicones`, **INTÉGRATION B — 7 chantiers, tous livrés**) :
   **les emoji de tête des toasts, des astuces et de l'Aide deviennent des SPRITES (26 icônes neuves
   + 9 arts refaits), et le clamp de chaleur se ré-arme à chaque changement de plafond.**
