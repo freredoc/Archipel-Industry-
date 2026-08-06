@@ -1,8 +1,8 @@
 {
-  "build": 348,
-  "version": "Alpha 14.65",
+  "build": 357,
+  "version": "Alpha 14.74",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Les messages du jeu passent en icônes : 26 nouvelles icônes livrées, et l'emoji de tête des notifications, des astuces et de l'aide est remplacé par le sprite correspondant (l'emoji reste affiché quand aucune icône n'existe). 9 icônes existantes gagnent un art refait · Correctif : la jauge de chaleur d'un bâtiment boosté par une antenne pouvait rester bloquée au-dessus de 100 % après un rechargement, et le bâtiment tomber en panne sans raison — le rabot de sécurité se réarme désormais à chaque changement de plafond · Aucune sauvegarde touchée"
+  "notes": "Neuf emoji de plus deviennent des ic\\u00f4nes du pack : bateau, p\\u00e9trole, carte, montagne, \\u00eele, m\\u00e9lange, dossier, boussole, colis. Les deux cartes de l'\\u00e9cran de choix de mode y passent aussi, l\\u00e0 o\\u00f9 l'emoji \\u00e9chappait au m\\u00e9canisme automatique. Trois ic\\u00f4nes ont \\u00e9t\\u00e9 \\u00e9cart\\u00e9es en s\\u00e9ance faute de lisibilit\\u00e9 \\u00e0 16 px \\u00b7 Aucune sauvegarde touch\\u00e9e"
 }
