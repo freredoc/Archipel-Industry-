@@ -8131,8 +8131,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 348;
-const GAME_VERSION = 'Alpha 14.65';
+const GAME_BUILD = 349;
+const GAME_VERSION = 'Alpha 14.66';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8141,7 +8141,7 @@ const GAME_VERSION = 'Alpha 14.65';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les messages du jeu passent en icônes : 26 nouvelles icônes livrées, et l'emoji de tête des notifications, des astuces et de l'aide est remplacé par le sprite correspondant (l'emoji reste affiché quand aucune icône n'existe). 9 icônes existantes gagnent un art refait · Correctif : la jauge de chaleur d'un bâtiment boosté par une antenne pouvait rester bloquée au-dessus de 100 % après un rechargement, et le bâtiment tomber en panne sans raison — le rabot de sécurité se réarme désormais à chaque changement de plafond · Aucune sauvegarde touchée";
+const GAME_NOTES = "Les grands nombres deviennent lisibles partout : le s\u00e9parateur de milliers s'applique sous le seuil, et au-dessus vous choisissez entre l'\u00e9criture scientifique (2,35e6) et les pr\u00e9fixes SI (2,35 M) \u2014 deux nouvelles options, avec un seuil de bascule r\u00e9glable jusqu'\u00e0 \u00ab jamais \u00bb. Les co\u00fbts du menu Am\u00e9liorer, du bouton Aligner et des boutons de niveau de r\u00e9seau ne sortent plus en chiffres bruts \u00b7 Le panneau \u00c9nergie gagne une ligne Dimensionnement \u00e0 trois \u00e9tats (sous-dimensionn\u00e9 / optimal / au-dessus du pic) \u00b7 Aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -8819,9 +8819,47 @@ const TAP_THRESHOLD = 6;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 // À partir d'un million, on bascule en notation scientifique « 1e6 », « 2,43e8 »
 // (virgule décimale française). En dessous, séparateurs de milliers classiques.
+// 14.6x - FORMAT DES GRANDS NOMBRES, reglable dans les Options.
+// Sous le seuil : TOUJOURS le separateur de milliers (espace fine insecable U+202F fournie par
+// toLocaleString('fr-FR')) - ce n'est pas un mode, c'est le comportement de base, deja celui du jeu.
+// Au-dessus : deux ecritures au choix du joueur.
+//   'sci' (defaut) : 2,35e6      - compact, exact, sans ambiguite d'echelle
+//   'si'           : 2,35 M      - prefixes SI k/M/G/T/P/E
+// Pourquoi SI et pas k/m/b/t : en francais « b » = billion = 1e12, en anglais 1e9. Un stock de
+// 2,57e12 (releve sur une partie reelle) s'ecrirait donc « 2,57 b » avec DEUX sens possibles. Le
+// jeu affiche par ailleurs deja « 285 GW » et « 8,39 GWh » : le SI est la seule ecriture coherente
+// avec ce qui est deja a l'ecran.
+// NUM_THRESHOLD peut valoir Infinity (« jamais ») : le separateur s'applique alors a toute valeur,
+// ce qui donne des nombres tres longs (2 565 633 264 880 = 17 caracteres) - choix explicite du joueur.
+let NUM_FORMAT = 'sci';
+let NUM_THRESHOLD = 1e5;
+const SI_PREFIX = ['', 'k', 'M', 'G', 'T', 'P', 'E'];
+// Applique les preferences d'affichage numerique (appelee au chargement et a chaque changement).
+function setNumPrefs(fmt, thresh) {
+  NUM_FORMAT = fmt === 'si' ? 'si' : 'sci';
+  NUM_THRESHOLD = thresh === Infinity || thresh > 0 ? thresh : 1e5;
+}
+// Separateur de milliers seul (aucun basculement) - la base commune aux deux modes.
+const fmtSep = n => Math.round(n).toLocaleString('fr-FR');
+// Mantisse a 3 chiffres significatifs + prefixe SI. Rang plafonne a E (1e18) : au-dela on garde
+// le dernier prefixe plutot que de sortir de la table.
+function fmtSiNum(n) {
+  const a = Math.abs(n);
+  if (a < 1000) return fmtSep(n);
+  let i = Math.floor(Math.log10(a) / 3);
+  if (i > 6) i = 6;
+  const m = n / Math.pow(1000, i);
+  const am = Math.abs(m);
+  const dec = am >= 99.95 ? 0 : am >= 9.995 ? 1 : 2;
+  return String(Number(m.toFixed(dec))).replace('.', ',') + ' ' + SI_PREFIX[i];
+}
+// `thresh` explicite = seuil IMPOSE par l'appelant (reste prioritaire sur la preference) ;
+// absent = seuil du joueur. Les appelants « stock » et « debit » ne passent plus rien.
 const fmtInt = (n, thresh) => {
   const r = Math.round(n);
-  if (Math.abs(r) >= (thresh || 1e6)) {
+  const t = thresh || NUM_THRESHOLD;
+  if (Math.abs(r) >= t) {
+    if (NUM_FORMAT === 'si') return fmtSiNum(r);
     let exp = Math.floor(Math.log10(Math.abs(r)));
     let mant = Math.round(r / Math.pow(10, exp) * 100) / 100;
     if (Math.abs(mant) >= 10) {
@@ -8834,7 +8872,9 @@ const fmtInt = (n, thresh) => {
 };
 // Format « port » : notation scientifique (1,5e5, 1e6…) dès 1e5 pour compacter les
 // gros stocks affichés dans l'inventaire et le panneau Port.
-const fmtPort = n => fmtInt(n, 1e5);
+// 14.6x - Plus de seuil code en dur : fmtPort suit la preference du joueur (defaut 1e5, donc
+// comportement identique tant qu'il n'y touche pas).
+const fmtPort = n => fmtInt(n);
 // Parse une saisie numérique acceptant la notation scientifique et la virgule
 // française : « 1e6 », « 2,43e8 », « 2.43e8 », « 1000000 » -> nombre (NaN sinon).
 function parseNum(s) {
@@ -8843,21 +8883,27 @@ function parseNum(s) {
   const v = Number(s.trim().replace(/\s/g, '').replace(',', '.'));
   return isFinite(v) ? v : NaN;
 }
+// 14.6x - formatCost ne formatait RIEN : `${v}` sortait la valeur brute, d'ou les nombres a
+// rallonge du menu Ameliorer, du bouton « Aligner », des boutons V+/V- du panneau reseau et de
+// trois toasts. 20 sites d'appel corriges d'un coup en passant par fmtPort.
 function formatCost(cost) {
-  return Object.entries(cost || {}).map(([k, v]) => `${v} ${RES_SHORT[k]}`).join(' · ');
+  return Object.entries(cost || {}).map(([k, v]) => `${fmtPort(v)} ${RES_SHORT[k]}`).join(' · ');
 }
 function formatRecipe(rec, mult) {
   const m = mult || 1;
   const parts = Object.entries(rec || {}).map(([k, v]) => `${fmtRateSci(v * m)} ${RES_SHORT[k]}`);
   return parts.length ? parts.join(' + ') : '—';
 }
+// 14.6x - Deux corrections : les milliers sont SEPARES (un debit de 12 345/s s'ecrivait « 12345 »
+// juste a cote d'un stock « 12 345 », dans le meme panneau), et la decimale est une VIRGULE comme
+// partout ailleurs dans le jeu (le `.toString()` rendait « 12.34 »).
 function fmtRate(v) {
-  if (Math.abs(v - Math.round(v)) < 1e-9) return String(Math.round(v));
-  return (Math.round(v * 100) / 100).toString();
+  if (Math.abs(v - Math.round(v)) < 1e-9) return fmtSep(v);
+  return (Math.round(v * 100) / 100).toString().replace('.', ',');
 }
 // Débit /s pour les panneaux Production/Réseaux : notation scientifique (1,5e5…) dès 1e5
 // pour compacter les gros débits ; décimales fines en dessous (comme fmtRate).
-const fmtRateSci = v => Math.abs(v) >= 1e5 ? fmtInt(v, 1e5) : fmtRate(v);
+const fmtRateSci = v => Math.abs(v) >= NUM_THRESHOLD ? fmtInt(v) : fmtRate(v);
 // Mantisse : 3 chiffres significatifs maximum (demande utilisateur — « 131 MW », « 65,5 MW »,
 // « 1,02 MW », jamais « 131,07 MW »). Zéros de fin retirés, virgule décimale française.
 const fmtSig = v => {
@@ -8867,8 +8913,12 @@ const fmtSig = v => {
 };
 // Puissance (donnée en kW) avec unité adaptée à l'ampleur : kW < 1000, MW < 1e6, GW au-delà.
 // Le signe est conservé. Renvoie la valeur + l'unité (ex. « 1,5 MW », « 4 GW », « 512 kW »).
+// 14.6x - Ajout de TW et PW : la chaine s'arretait au gigawatt et imprimait ensuite une mantisse
+// non separee (2,57e12 kW donnait « 2570000 GW »). Atteignable en fin de partie longue.
 function fmtPower(kw) {
   const a = Math.abs(kw);
+  if (a >= 1e12) return fmtSig(kw / 1e12) + ' PW';
+  if (a >= 1e9) return fmtSig(kw / 1e9) + ' TW';
   if (a >= 1e6) return fmtSig(kw / 1e6) + ' GW';
   if (a >= 1e3) return fmtSig(kw / 1e3) + ' MW';
   return Math.round(kw) + ' kW';
@@ -8894,6 +8944,8 @@ function fmtPlaytime(ticks) {
 // Énergie stockée (donnée en kWh) : kWh < 1000, MWh < 1e6, GWh au-delà.
 function fmtEnergy(kwh) {
   const a = Math.abs(kwh);
+  if (a >= 1e12) return fmtSig(kwh / 1e12) + ' PWh';
+  if (a >= 1e9) return fmtSig(kwh / 1e9) + ' TWh';
   if (a >= 1e6) return fmtSig(kwh / 1e6) + ' GWh';
   if (a >= 1e3) return fmtSig(kwh / 1e3) + ' MWh';
   return Math.round(kwh) + ' kWh';
@@ -20299,7 +20351,23 @@ function EnergyPanel({
     className: "pp-note"
   }, "⚡ L'\xE9lectricit\xE9 circule par r\xE9seau de c\xE2bles : chaque r\xE9seau c\xE2ble est un sous-r\xE9seau \xE9lectrique distinct (les g\xE9n\xE9rateurs, consommateurs et accumulateurs qu'il relie se partagent l'\xE9nergie). Le d\xE9bit du c\xE2ble (V1, V2…) borne la puissance transmissible : montez-le si un r\xE9seau sature. Les totaux ci-dessous additionnent tous les r\xE9seaux de l'\xEEle."), React.createElement("div", {
     className: "ep-stats"
-  }, statRow(I18N.t("Production (g\xE9n\xE9rateurs)"), fmtPower(gross)), battery > 0.5 && statRow(I18N.t("Batterie (d\xE9charge)"), "+" + fmtPower(battery), "var(--green)"), statRow(I18N.t("Demande totale"), fmtPower(dem)), showRange && statRow(I18N.t("Consommation min → max"), fmtPower(demMin) + " → " + fmtPower(demMax), '#8fd0ff'), showSpread && statRow(I18N.t("Amplitude (sigmo\xEFdes)"), fmtPower(demSpread), '#8fd0ff'), cut > 0.5 && statRow(I18N.t("Demande non servie"), "-" + fmtPower(cut), '#ff8079'), statRow(I18N.t("Bilan r\xE9el"), (netE >= 0 ? '+' : '') + fmtPower(netE), netE < -1e-6 ? '#ff8079' : 'var(--green)'), showSpread && statRow(I18N.t("Production id\xE9ale"), fmtPower(ideal.prod), gross + 1e-6 >= ideal.prod ? 'var(--green)' : '#ff8079', I18N.t("Production \xE0 installer si les accumulateurs absorbent la bosse des sigmo\xEFdes : la demande MOYENNE (et non le pic), major\xE9e de la perte de charge des accumulateurs V1 (rendement 0,8).")), showSpread && statRow(I18N.t("Stockage id\xE9al"), fmtEnergy(ideal.store), accCap + 1e-6 >= ideal.store ? 'var(--green)' : '#ffcf6b', I18N.t("Capacit\xE9 d'accumulateurs n\xE9cessaire pour absorber la bosse au-dessus de la moyenne sur une p\xE9riode de 60 s, soit \u2248 9,55 \xD7 amplitude.")), showSpread && statRow(I18N.t("Ratio id\xE9al"), fmtSig(ideal.ratio) + I18N.t(" kWh / kW") + (gross > 0.5 ? I18N.t(" \xB7 actuel ") + fmtSig(accCap / gross) : ''), null, I18N.t("Stockage id\xE9al \xF7 production id\xE9ale. Sur une \xEEle 100 % sigmo\xEFde (rapport 1\u21928), il vaut \u2248 14 kWh de stockage par kW de production.")), accPct != null && statRow(I18N.t("Accumulateurs"), fmtEnergyPair(accStored, accCap) + " \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
+  }, statRow(I18N.t("Production (g\xE9n\xE9rateurs)"), fmtPower(gross)), battery > 0.5 && statRow(I18N.t("Batterie (d\xE9charge)"), "+" + fmtPower(battery), "var(--green)"), statRow(I18N.t("Demande totale"), fmtPower(dem)), showRange && statRow(I18N.t("Consommation min → max"), fmtPower(demMin) + " → " + fmtPower(demMax), '#8fd0ff'), showSpread && statRow(I18N.t("Amplitude (sigmo\xEFdes)"), fmtPower(demSpread), '#8fd0ff'), cut > 0.5 && statRow(I18N.t("Demande non servie"), "-" + fmtPower(cut), '#ff8079'), statRow(I18N.t("Bilan r\xE9el"), (netE >= 0 ? '+' : '') + fmtPower(netE), netE < -1e-6 ? '#ff8079' : 'var(--green)'), showSpread && (() => {
+    // 14.6x - DIMENSIONNEMENT, trois etats. Le vert/rouge d'avant ne montrait qu'une borne :
+    // « la production couvre-t-elle l'ideal ». Il en manquait une seconde, symetrique : quand la
+    // production depasse le PIC de demande, les accumulateurs ne se dechargent plus JAMAIS, donc
+    // tout le stockage installe pour la sigmoide dort.
+    // Formulation volontairement mesuree : ils ne sont PAS inutiles pour autant, ils restent le
+    // tampon des pannes (centrale a court de combustible, reacteur qui trippe, zone d'antenne
+    // qui s'eteint sur le gate pwrAvg). Dire « inutiles » pousserait a demonter une securite.
+    const over = gross > demMax + 1e-6;
+    const under = gross + 1e-6 < ideal.prod;
+    return statRow(I18N.t("Dimensionnement"),
+      under ? I18N.t("sous-dimensionné") : over ? I18N.t("au-dessus du pic") : I18N.t("optimal"),
+      under ? '#ff8079' : over ? '#ffcf6b' : 'var(--green)',
+      under ? I18N.t("La production est sous la moyenne de la demande : les accumulateurs se vident et ne se rechargent pas. Visez la ligne « Production idéale ».")
+        : over ? I18N.t("La production dépasse le PIC de demande : les accumulateurs ne se déchargent jamais et ne servent plus qu'en cas de panne. Vous pourriez descendre à la « Production idéale » et garder le stockage comme sécurité.")
+        : I18N.t("La production est entre la moyenne et le pic : les accumulateurs absorbent la bosse des sigmoïdes, c'est leur rôle."));
+  })(), showSpread && statRow(I18N.t("Production id\xE9ale"), fmtPower(ideal.prod), gross + 1e-6 >= ideal.prod ? 'var(--green)' : '#ff8079', I18N.t("Production \xE0 installer si les accumulateurs absorbent la bosse des sigmo\xEFdes : la demande MOYENNE (et non le pic), major\xE9e de la perte de charge des accumulateurs V1 (rendement 0,8).")), showSpread && statRow(I18N.t("Stockage id\xE9al"), fmtEnergy(ideal.store), accCap + 1e-6 >= ideal.store ? 'var(--green)' : '#ffcf6b', I18N.t("Capacit\xE9 d'accumulateurs n\xE9cessaire pour absorber la bosse au-dessus de la moyenne sur une p\xE9riode de 60 s, soit \u2248 9,55 \xD7 amplitude.")), showSpread && statRow(I18N.t("Ratio id\xE9al"), fmtSig(ideal.ratio) + I18N.t(" kWh / kW") + (gross > 0.5 ? I18N.t(" \xB7 actuel ") + fmtSig(accCap / gross) : ''), null, I18N.t("Stockage id\xE9al \xF7 production id\xE9ale. Sur une \xEEle 100 % sigmo\xEFde (rapport 1\u21928), il vaut \u2248 14 kWh de stockage par kW de production.")), accPct != null && statRow(I18N.t("Accumulateurs"), fmtEnergyPair(accStored, accCap) + " \xB7 " + accPct + "%"), accPct != null && React.createElement("div", {
     className: "ep-bar",
     key: "bar"
   }, React.createElement("i", {
@@ -21568,6 +21636,10 @@ function ModeModal({
 }
 function OptionsModal({
   dev,
+  numFormat,
+  numThreshold,
+  onSetNumFormat,
+  onSetNumThreshold,
   showLevels,
   showDeficitPct,
   showDeficitSprite,
@@ -21611,6 +21683,25 @@ function OptionsModal({
     onClick: onClick,
     title: on ? I18N.t('Activé') : I18N.t('Désactivé')
   }));
+  // 14.6x - Ligne d'option a CHOIX MULTIPLE (<select>), sur le gabarit de la ligne « Langue » :
+  // `opts` est une liste de paires [valeur, libelle]. Un <select> plutot que des boutons segmentes
+  // parce que le seuil a six choix, ce qui deborderait la largeur sur mobile.
+  const selRow = (name, desc, value, opts, onPick) => React.createElement("div", {
+    className: "opt-row"
+  }, React.createElement("div", {
+    className: "opt-lbl"
+  }, React.createElement("span", {
+    className: "opt-name"
+  }, name), React.createElement("span", {
+    className: "opt-desc"
+  }, desc)), React.createElement("select", {
+    className: "opt-lang-sel",
+    value: value,
+    onChange: e => onPick && onPick(e.target.value)
+  }, opts.map(o => React.createElement("option", {
+    key: o[0],
+    value: o[0]
+  }, o[1]))));
   const sliderRow = (name, desc, value, min, max, step, onInput, fmt) => React.createElement("div", {
     className: "opt-row"
   }, React.createElement("div", {
@@ -21770,7 +21861,7 @@ function OptionsModal({
   }, I18N.available().map(code => React.createElement("option", {
     key: code,
     value: code
-  }, I18N.names[code])))), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Production hors-ligne"), I18N.t("Rattrape la production pendant une absence. D\xE9sactiv\xE9 : le jeu ne progresse que lorsqu'il est ouvert."), offlineEnabled !== false, onToggleOffline), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Guide"), I18N.t("Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)"), guideEnabled !== false, onToggleGuide), toggleRow(I18N.t("Sons"), I18N.t("Effets sonores du jeu (pose, am\xE9lioration, alertes…)"), audioEnabled !== false, onToggleAudio), sliderRow(I18N.t("Volume"), I18N.t("Volume des effets sonores"), audioVolume == null ? 0.55 : audioVolume, 0, 1, 0.05, v => onSetAudioVolume && onSetAudioVolume(v), v => Math.round(v * 100) + '%'), React.createElement("button", {
+  }, I18N.names[code])))), selRow(I18N.t("Grands nombres"), I18N.t("\xC9criture des valeurs au-dessus du seuil. En dessous, s\xE9parateur de milliers dans les deux cas."), numFormat === 'si' ? 'si' : 'sci', [['sci', I18N.t('Scientifique \u2014 2,35e6')], ['si', I18N.t('Pr\xE9fixe SI \u2014 2,35 M')]], onSetNumFormat), selRow(I18N.t("Seuil de bascule"), I18N.t("\xC0 partir de quelle valeur on quitte le s\xE9parateur de milliers. \xAB jamais \xBB donne 2 565 633 264 880 en entier."), numThreshold === Infinity ? 'inf' : String(numThreshold || 1e5), [['1000', '1 000'], ['10000', '10 000'], ['100000', '100 000'], ['1000000', '1 000 000'], ['1000000000', '1 000 000 000'], ['inf', I18N.t('jamais')]], onSetNumThreshold), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Production hors-ligne"), I18N.t("Rattrape la production pendant une absence. D\xE9sactiv\xE9 : le jeu ne progresse que lorsqu'il est ouvert."), offlineEnabled !== false, onToggleOffline), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Guide"), I18N.t("Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)"), guideEnabled !== false, onToggleGuide), toggleRow(I18N.t("Sons"), I18N.t("Effets sonores du jeu (pose, am\xE9lioration, alertes…)"), audioEnabled !== false, onToggleAudio), sliderRow(I18N.t("Volume"), I18N.t("Volume des effets sonores"), audioVolume == null ? 0.55 : audioVolume, 0, 1, 0.05, v => onSetAudioVolume && onSetAudioVolume(v), v => Math.round(v * 100) + '%'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onResetTips
   }, uiIcon('astuce', "💡"), I18N.t(" Revoir les astuces")), DEV_BUILD && toggleRow(I18N.t("Mode d\xE9veloppeur"), I18N.t("Construction et am\xE9liorations gratuites"), dev, onToggleDev, 'dev'), React.createElement("button", {
@@ -22359,6 +22450,27 @@ function App() {
   const [simplifyOffline, setSimplifyOffline] = useState(false);
   const [offlineEnabled, setOfflineEnabled] = useState(true);
   const [theme, setTheme] = useState('bleu');
+  // 14.6x - Format des grands nombres. Le state ne sert qu'a REDESSINER : la source de verite lue
+  // par fmtInt est la paire de variables de module (setNumPrefs), car fmtInt est appele depuis des
+  // fonctions hors React qui n'ont acces ni au state ni a `game`.
+  const [numFormat, setNumFormat] = useState('sci');
+  const [numThreshold, setNumThreshold] = useState(1e5);
+  const chooseNumFormat = f => {
+    const g = gameRef.current;
+    g.ui.numFormat = f === 'si' ? 'si' : 'sci';
+    setNumPrefs(g.ui.numFormat, g.ui.numThreshold || 1e5);
+    setNumFormat(g.ui.numFormat);
+    bumpHud();
+    scheduleSave();
+  };
+  const chooseNumThreshold = t => {
+    const g = gameRef.current;
+    g.ui.numThreshold = t === 'inf' ? Infinity : +t;
+    setNumPrefs(g.ui.numFormat || 'sci', g.ui.numThreshold);
+    setNumThreshold(g.ui.numThreshold);
+    bumpHud();
+    scheduleSave();
+  };
   // Applique l'ambiance « inox » via une classe sur <body> (CSS body.theme-inox).
   useEffect(() => {
     if (typeof document !== 'undefined') document.body.classList.toggle('theme-inox', theme === 'inox');
@@ -22776,6 +22888,11 @@ function App() {
       },
       // Préférences d'affichage (Options) — persistées pour survivre aux mises à jour.
       uiPrefs: {
+        // 14.6x - Format des grands nombres. Champs ADDITIFS : absents d'une save anterieure ->
+        // defauts 'sci' / 1e5, soit exactement le comportement historique. Aucun bump SAVE_VERSION.
+        // Infinity ne survit pas a JSON.stringify (rendu `null`) -> on serialise la chaine 'inf'.
+        numFormat: g.ui && g.ui.numFormat === 'si' ? 'si' : 'sci',
+        numThreshold: g.ui && g.ui.numThreshold === Infinity ? 'inf' : g.ui && g.ui.numThreshold || 1e5,
         showLevels: (g.ui && g.ui.showLevels) !== false,
         badgeScale: g.ui && g.ui.badgeScale || 1,
         showDeficitPct: (g.ui && g.ui.showDeficitPct) !== false,
@@ -23664,6 +23781,12 @@ function App() {
       logicLayer: false
     };
     const up = data.uiPrefs || {};
+    // 14.6x - Format des grands nombres (champs additifs, cf. ecriture). 'inf' -> Infinity.
+    // setNumPrefs pousse les valeurs dans les variables de module lues par fmtInt : sans cet
+    // appel la save serait relue mais l'affichage garderait les defauts.
+    g.ui.numFormat = up.numFormat === 'si' ? 'si' : 'sci';
+    g.ui.numThreshold = up.numThreshold === 'inf' ? Infinity : (+up.numThreshold > 0 ? +up.numThreshold : 1e5);
+    setNumPrefs(g.ui.numFormat, g.ui.numThreshold);
     g.ui.showLevels = up.showLevels !== false;
     g.ui.showDeficitPct = up.showDeficitPct !== false;
     g.ui.showDeficitSprite = up.showDeficitSprite !== false;
@@ -28836,6 +28959,10 @@ function App() {
     }
   }), optionsOpen && React.createElement(OptionsModal, {
     dev: dev,
+    numFormat: numFormat,
+    numThreshold: numThreshold,
+    onSetNumFormat: chooseNumFormat,
+    onSetNumThreshold: chooseNumThreshold,
     showLevels: showLevels,
     showDeficitPct: showDeficitPct,
     showDeficitSprite: showDeficitSprite,
