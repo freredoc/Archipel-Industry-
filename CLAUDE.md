@@ -17,7 +17,115 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 351`, `GAME_VERSION = 'Alpha 14.68'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 354`, `GAME_VERSION = 'Alpha 14.71'`, `SAVE_VERSION = 31`.**
+  Changement 14.71 (brief `BRIEF-ETAPE3-icones-gabarit`, **ÉTAPE 3 sur 3, la dernière du pack
+  `archipelsprites3etapes`**) : **7 icônes `ui_*` rejoignent le gabarit commun de 193 pixels opaques.**
+  `SAVE_VERSION` INCHANGÉ, **aucun champ persisté, aucune clé changée, AUCUN câblage** — remplacement
+  de données pur. Base EXACTE annoncée par le brief : 350 / 14.67 ; base RÉELLE d'exécution : **353 /
+  14.70** (les étapes 2 et 1 étaient déjà livrées) — le brief prévoit ce cas (« si la base a avancé, ne
+  pas s'arrêter »), et **les 7 ancres sont sorties à `count == 1` sans la moindre adaptation** :
+  l'étape 3 est réellement indépendante des deux autres, dans les deux sens.
+  ⚠ **LE PIÈGE DU BRIEF, CONFIRMÉ EN PRATIQUE : `SPRITE_DATA` A DEUX FORMES DE DÉCLARATION** — un
+  littéral d'objet `"clé":"data:…"` ET ~1330 affectations `window.__SPRITE_DATA__["clé"]="data:…";`.
+  Les 7 icônes sont **réparties sur les deux** : 6 dans le littéral (`ui_astuce`, `ui_calculateur`,
+  `ui_chaleur`, `ui_energie`, `ui_mode_vitesse`, `ui_production`), **1 seule en affectation**
+  (`ui_pause_logique`). Mesuré : `grep 'window.__SPRITE_DATA__["ui_astuce"]='` renvoie **0**. Un patch
+  uniforme aurait donc échoué **6 fois sur 7**, en silence. (Le même piège avait déjà mordu au lot
+  14.65 sur un contrôle aller-retour par regex — c'est la **2ᵉ fois** : toute manipulation de
+  `SPRITE_DATA` doit gérer les DEUX formes, sans exception.)
+  (1) **Le défaut** : les icônes du pack partagent un masque de disque de **193 pixels opaques** sur
+  256, identique bit à bit. Sept exceptions subsistaient. Les 6 à 172 px partagent **EXACTEMENT** le
+  même écart (−23 / +2) : c'est un **gabarit antérieur**, pas six erreurs indépendantes ; le disque
+  était d'un cheveu plus petit et légèrement décalé. `ui_energie` et `ui_chaleur` sont parmi les icônes
+  les plus affichées du jeu. Le tableau du §1 du brief a été **retrouvé à l'identique sur la base 353**
+  (172 opaques × 6 avec −23/+2, `ui_pause_logique` à 185 avec −8/+0 ; couleurs 26/12/16/14/26/13/6).
+  ⚠ **LES GLYPHES N'ONT PAS ÉTÉ REDESSINÉS** (décision de l'auteur du pack, à ne pas « améliorer ») :
+  chaque glyphe a été EXTRAIT de l'icône actuelle et reposé sur un disque reconstruit au gabarit. Une
+  tentative de redessin avait donné un résultat inférieur (« la flamme devenait une maison, la
+  calculatrice perdait ses touches »). **Vérifié à la capture avant/après** : l'ampoule reste une
+  ampoule, la calculatrice garde ses touches, la flamme reste une flamme, l'éclair reste un éclair.
+  ⚠ **La chute du nombre de couleurs n'est PAS une perte** : l'antialiasing des 2 icônes à 26 couleurs
+  portait sur le **DISQUE**, pas sur le glyphe → leur passage à 5 couleurs ne perd rien de l'identité
+  visuelle. Compte final mesuré : **6 pour `ui_chaleur`, 5 pour les six autres** (conforme au §5.7).
+  (2) **AUCUN câblage** : les 7 clés sont inchangées et déjà appelées — 4 par `uiIcon()` direct, 3 via
+  `UI_ICON_BY_EMOJI` — et le restent. `UI_ICON_BY_EMOJI`, `leadIconOf`, `uiIcon`, `iconLabel` et les
+  tables i18n ne sont pas touchés.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + **les 7 PNG re-décodés depuis le HTML PATCHÉ** :
+  SHA-256 **7/7 conformes** au pack, **16×16**, alpha **BINAIRE** (`{0, 255}`, aucune valeur
+  intermédiaire), masque comparé bit à bit à `ui_port` → **193 px opaques, 0 pixel d'écart sur les 7**,
+  **contour intégralement `#1E2128` sur 7/7**. + Chromium **8 assertions, 0 KO**.
+  **Test 10 (le seul qui compte selon le brief — « un écart de 21 pixels ne se juge pas agrandi »)** :
+  les 7 dessinées **À TAILLE RÉELLE (16 px, `imageSmoothingEnabled = false`, sans zoom)** à côté de
+  `ui_port` / `ui_monter` / `ui_ok` / `ui_arret`, puis le disque **mesuré au pixel dans le canvas** :
+  bbox `{top:1, bottom:15, left:1, right:15}` et **193 opaques — identique aux 4 références sur les 11
+  icônes**. Même diamètre, même alignement, prouvé au pixel et pas à l'œil.
+  **Test 11** : `ui_energie` rend bien la pastille ⚡ du HUD (16×16) et `ui_chaleur` le bouton
+  Surchauffes (`.inv-heat-btn`), toutes deux reconnaissables à la capture.
+  **Test 12** : diff des **1 502 clés de sprite** entre `HEAD` et le fichier patché → **exactement les
+  7 attendues ont changé**, aucune autre ; et les **91 icônes `ui_*` décodent** toujours (0 échec).
+  ⚠ **Taille : 3 237 578 → 3 236 302 o (−1 276 o EXACT**, l'attendu au byte près — le fichier RÉTRÉCIT,
+  les icônes sont plus simples) ; 3 236 301 après bump, le nouveau `GAME_NOTES` étant 1 octet plus court.
+  ⚠ **HORS PÉRIMÈTRE (§3), non touché** : toutes les autres icônes, `UI_ICON_BY_EMOJI`, `leadIconOf`,
+  `uiIcon()`, les tables i18n, et **tout code de rendu** (aucune des 3 étapes du pack n'en touche).
+- **État précédent : `GAME_BUILD = 353`, `GAME_VERSION = 'Alpha 14.70'`, `SAVE_VERSION = 31`.**
+  Changement 14.70 (brief `BRIEF-ETAPE1-animation-remblai`, **ÉTAPE 1 sur 3, à intégrer APRÈS la 2**) :
+  **les remblais des îles 1 à 5 s'animent** (5 sheets 128×32 + 5 entrées de table). `SAVE_VERSION`
+  INCHANGÉ, **aucun code de rendu touché** — la table est le SEUL point de branchement.
+  (1) **Le défaut** : le rendu tente `drawTileAnim` puis retombe sur `drawSprite`. Une tuile de
+  remblai n'avait pas de sheet → elle restait **figée au milieu d'un littoral qui scintille à 3 fps**.
+  À cette cadence l'œil ne lit pas « de la pierre, donc immobile », il lit **une tuile non chargée**.
+  (2) **Amplitude MOITIÉ de celle du littoral** (arbitrage du brief, à ne pas « corriger ») : écart
+  moyen 4,7 contre 10,2 pour `tile_i1_coast_breeze`. Un enrochement bouge moins qu'une végétation ;
+  l'objectif est de supprimer la lecture « non chargée », pas de faire onduler un ouvrage de génie
+  civil. L'asymétrie du cycle (départ et retour doux vers la frame 0) est obtenue **par
+  construction** — chaque pixel reçoit un profil temporel nul en frame 0 → l'invariant est mécanique,
+  pas espéré. Les joints sombres sont exclus de la gigue.
+  ⚠ **PIÈGE SÉMANTIQUE de `TILE_ANIM_BY_KEY`** : la **CLÉ** est celle du sprite **STATIQUE**, la
+  propriété **`cle`** celle de la **SHEET**. L'entrée existante `tile_i3_oil → 'tile_i3_petrole_breeze'`
+  le prouve. Les entrées ajoutées sont donc `tile_i1_remblai: { cle: 'tile_i1_remblai_breeze', … }`
+  et **non** `tile_i1_remblai_breeze: {…}`. Vérifié après patch : 5 clés statiques, 5 `cle` de sheet.
+  ⚠ **NE PAS délimiter la table par une chaîne sentinelle** : elle se termine par `\n};` et **non**
+  `\n  };` — une sentinelle erronée renvoie EN SILENCE un bloc qui court jusqu'à la fin du fichier.
+  Délimitation faite par **parcours d'accolades** depuis `const TILE_ANIM_BY_KEY = {`.
+  ⚠ **L'ÎLE 6 N'A PAS DE SHEET, ET C'EST VOULU** : `tile_i6_land`/`tile_i6_coast` n'en ont pas non
+  plus et l'île 6 est absente de la table. Un remblai statique y est entouré de voisins statiques —
+  **cohérent, ne pas « compléter » par symétrie**. Mesuré en jeu : sur l'île 6 le remblai est dessiné
+  par `drawSprite` (`tile_i6_remblai`), aucune sheet de remblai n'y est demandée.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + les 2 ancres à `count == 1`, **table 16 → 21
+  entrées**, **5/5 SHA-256 re-extraits du HTML patché identiques au pack**, sheets **128×32 alpha
+  uniformément 255**, **invariant frame 0 == sprite statique : 5/5, les DEUX décodés depuis le HTML
+  PATCHÉ** (et non depuis les fichiers sources), **delta +11 912 octets EXACT**.
+  **En jeu** (espion `drawImage` enregistrant l'OFFSET SOURCE, donc la frame réellement dessinée) :
+  zone 4×4 comblée sur l'île 1 → la sheet est utilisée et **les 4 frames sont parcourues**
+  (`sx = 0, 32, 64, 96`), le littoral voisin s'anime en même temps ; **au zoom minimum, même
+  résultat** (aucune retombée sur le statique) ; sur l'île 6, **aucune sheet de remblai**.
+  ⚠ **HORS PÉRIMÈTRE** : les 16 sheets existantes, `drawTileAnim`, `drawSprite`, l'ordre de tentative
+  des deux, les sprites statiques de remblai, l'île 6, l'île 7.
+- **État précédent : `GAME_BUILD = 352`, `GAME_VERSION = 'Alpha 14.69'`, `SAVE_VERSION = 31`.**
+  Changement 14.69 (brief `BRIEF-ETAPE2-retirage-i2`, **1 bloc — ÉTAPE 2 sur 3, à intégrer EN
+  PREMIER**) : **la tuile `tile_i2_remblai` est retirée.** `SAVE_VERSION` INCHANGÉ, **aucun code
+  touché** (remplacement de données, clé inchangée → aucun site d'appel à modifier).
+  ⚠ **L'ORDRE 2 → 1 → 3 EST OBLIGATOIRE et n'est PAS un caprice** : la sheet `tile_i2_remblai_breeze`
+  de l'étape 1 a sa **frame 0 calée sur la tuile RETIRÉE**. Intégrer l'étape 1 d'abord casserait
+  l'invariant « frame 0 == sprite statique » au moment du retirage. L'étape 3 est, elle, réellement
+  indépendante.
+  (1) **Le défaut, mesuré sur la tuile d'origine** : **colonne 0 et colonne 31 identiques à l'octet
+  près** — un joint du Voronoï tombait pile sur la couture verticale, écart au raccord **0,00** pour
+  un écart interne moyen de 37,2. Le pavage restait correct mais installait une **ligne verticale
+  tous les 32 px** sur une grande zone comblée. La nouvelle tuile mesurée **en jeu** (re-décodée du
+  HTML patché) : raccord vertical **0,97×** l'écart interne, horizontal **0,98×** — exactement les
+  valeurs du §1. Plus aucun bord identique à son opposé.
+  ⚠ **`SPRITE_DATA` a DEUX formes de déclaration** (littéral d'objet ET ~1330 affectations
+  `window.__SPRITE_DATA__["clé"]=…`). `tile_i2_remblai` est de la **seconde** : une regex qui ne voit
+  que le littéral ne la trouve pas. Piège déjà rencontré au lot 14.65, re-confirmé ici.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + ancre à `count == 1` avant / **0 après**,
+  `grep tile_i2_remblai` inchangé à 1 (la clé existe toujours), **SHA-256 re-extrait du HTML patché
+  identique au pack** (`d0bbe1c1…`), PNG **32×32, alpha uniformément 255, 13 couleurs**, **delta
+  +60 octets EXACT**. En jeu : zone **4×4 comblée sur l'île 2** + zoom minimum, espion `drawImage` →
+  **`tile_i2_remblai` est bien la clé dessinée**, et **aucune autre tuile de remblai** ne l'est.
+  ⚠ **HORS PÉRIMÈTRE** : les 5 autres tuiles de remblai, `tile_i2_coast`, les triangles
+  `coast_tri_*`, toute logique de rendu.
+- **État précédent : `GAME_BUILD = 351`, `GAME_VERSION = 'Alpha 14.68'`, `SAVE_VERSION = 31`.**
   Changement 14.68 (brief `BRIEFLIBELLESvague2`, **20 blocs**) : **20 libellés JSX de plus passent
   de l'emoji au SPRITE** — bandeaux de déficit (les 3 branches), fiche de centrale, chantier
   souterrain, boutons Densifier et Pause/Reprise, colonne « interdit » du Port, accumulateurs du
