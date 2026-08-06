@@ -100,6 +100,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   padding:2px 8px;cursor:pointer;display:flex;align-items:center;gap:4px;flex-shrink:0;}
 .inv-prod-btn:hover{border-color:#5bc0ff;color:var(--ink);}
 .inv-prod-btn .ui-ico{width:11px;height:11px;}
+.mode-card-icon .ui-ico.ico-mode{width:32px;height:32px;image-rendering:pixelated;}
 .inv-calc-btn{font-family:'Bebas Neue',sans-serif;font-size:.78rem;letter-spacing:.08em;
   color:var(--ink-dim);background:var(--panel);border:1px solid var(--line);border-radius:4px;
   padding:3px 11px;cursor:pointer;flex-shrink:0;margin-top:2px;}
@@ -3737,6 +3738,15 @@ window.__SPRITE_DATA__["ui_gemme"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUg
 window.__SPRITE_DATA__["ui_irradie"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PxOyWpGtF87mVAeISh4+HglAAAAAXRSTlMAQObYZgAAAFhJREFUeF5FzcENgDAMA8B+MoAJCwATRC4bhH+rKvuvglJA5OOT/Ugp/0lEzOyApjoAaEvsTAiWg4YzQRquItAXG0isE2rIhvaBrDmVQbp7S9QHMtw9/u83MNsRiZc6EnoAAAAASUVORK5CYII=";
 window.__SPRITE_DATA__["ui_reprendre"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PxOyWpGtF87mVAeISh4+HglAAAAAXRSTlMAQObYZgAAAFlJREFUeF5FzbENwCAMRFE3HsBxFghMgI5sYHoE8v6rRIZIXPNfd0Rn7O6rIyWExnNloAdEA5weEcW7Idp+3IEiotaIcxGtARSFLQA1QBMwsx6oGzzNzM/7B5UNEvLS9DPmAAAAAElFTkSuQmCC";
 window.__SPRITE_DATA__["ui_traverser"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PxOqPxGluE7f78eISjHhvu0AAAAAXRSTlMAQObYZgAAAF5JREFUeF5NjcENgzAQBPdzBVwCBeSoIBrTwflvGbn/VpBBUZjX7H5G+mNjjLmsRzCthzs0qX9e3zdNFr7h7LIIgCqLDbxUmU+Wn/j6eIDiWaUDMrNNKbfYkZl39aqfck0R1bwkqeQAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["ui_bateau"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PxOqPxGluE7f78eISjHhvu0AAAAAXRSTlMAQObYZgAAAFNJREFUeF5NzbERwCAMA0A3HsDHBDgjiGwgehLO+6/CmRREjb7RSeREI2L3647UY5lxoDW73KKeQBf1alZaAgDYRS8ALbFH9oNMgORItA86ScZ5Xx7cESGsWbJwAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["ui_petrole"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PzRjTO4eip6ThoeISjBE9L/AAAAAXRSTlMAQObYZgAAAFBJREFUeF5NzcENwCAMA8B8MoBXgBFMNwh/WpT9V6lMW1F/fJIfNtvxzFx9ApAuAOAQCgUvqAQPQVN/0RZIRDevH6jpD5tkRAyhPfAZEbnfb0U4EblSpfnTAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["ui_carte"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PxZs75QoKpEiJAeISiK26dmAAAAAXRSTlMAQObYZgAAAE5JREFUeF5NzbERwCAMQ1E3HkArwAgiG4iehPP+q+QMlyO/0etkdvKIWPuUwtSNbBw4SiVxJQCim6N+ILmx+oNkk7rZJCWNRNvwKSnO+wsd2xFBVjzM0gAAAABJRU5ErkJggg==";
+window.__SPRITE_DATA__["ui_montagne"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PyGj5x4gIxmbHceISh9gfUlAAAAAXRSTlMAQObYZgAAAFhJREFUeF5VzcENgDAMA8B8MoBBDNB2AuSyQfhXrbL/KigUqcIfn/yxyIq6+9s9Z4Z62grZRDrAgCZgJy5RADhxTOCHQrLaLUqS9qEGZMRgLVAndJiZr/cHWxwSOpGgZrkAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["ui_ile"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PxOqPxGluE7f78eISjHhvu0AAAAAXRSTlMAQObYZgAAAFZJREFUeF5NzcENgDAMA8B8MoAFC7SM4LJB8q9aZf9VUIpQ8ccnfyyyoxGxegBMjQqQPVGOhNaFW7QCAF20JE4XxYqLXiSb/ZcPMkkz64n2QqeZxX5/AD6MESQxw3UkAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["ui_melange"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+Pyoe+CWbshaQngeISjYLvaeAAAAAXRSTlMAQObYZgAAAFVJREFUeF5FzbENgEAMQ9E0GcAjECZA/9gg9MDp9l8FBZDOjZ/c2GzGxxhv3xGULkninPCIFdjNFwk4frTDPADyW9QKm6QsAK1gHTLzLLQP3jNzzPcHuAYTbqb8gDkAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["ui_dossier"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PzRjTO4eip6ThoeISjBE9L/AAAAAXRSTlMAQObYZgAAAElJREFUeF5jYEAA1tDQUDAdpKRkDGIFCgopGxsHgBiCwiAGqyAYmMIYrsQxjI2NTVxcXBkYgo2NXVxcAkAMEwiDNdjFxSUUYTsA9RoQiK1bDtcAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["ui_boussole"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+Pyoe+CWbshaQngeISjYLvaeAAAAAXRSTlMAQObYZgAAAFdJREFUeF5FzcENgDAMA8B8MkDEBAQ2cJgA91+1yv6roABS/fHJH4usaGa+PdxRGu5m6AvqvtuGq2AGNFE/eSMKJMAmepCIAgDwRxRk1sBeiA86SeZ6fwAPYRTLP1LzSwAAAABJRU5ErkJggg==";
+window.__SPRITE_DATA__["ui_colis"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PzRjTO4eip6ThoeISjBE9L/AAAAAXRSTlMAQObYZgAAAFZJREFUeF5VzdEJgDAMBND8ZIAYF2g3CKkbXP+rJfuvIlGkmJ97BwchWscR8eRVq6dOEREdC1y2oqZHwtS0E2e3/YccJ+yDuzegE013ACPRXvAEEOv7DSe1EW2poRvlAAAAAElFTkSuQmCC";
 // --- spritesheets (frame 0 == sprite statique, verifie pixel a pixel) ---
 window.__ANIM_DATA__["tile_i1_remblai_breeze"]="data:image/png;base64,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";
 window.__ANIM_DATA__["tile_i2_remblai_breeze"]="data:image/png;base64,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";
@@ -4372,7 +4382,16 @@ const UI_ICON_BY_EMOJI = {
   '💾': 'sauvegarde',
   '📊': 'production',
   '🧮': 'calculateur',
-  '⚙': 'configurer'
+  '⚙': 'configurer',
+  '🚢': 'bateau',
+  '🛢': 'petrole',
+  '🗺': 'carte',
+  '⛰': 'montagne',
+  '🏝': 'ile',
+  '⚗': 'melange',
+  '📂': 'dossier',
+  '🧭': 'boussole',
+  '📦': 'colis'
 };
 // Detache l emoji de tete d un message et renvoie { name, rest } - ou null si le message ne
 // commence pas par un emoji connu. Consomme le SELECTEUR DE VARIANTE U+FE0F (les entrees de
@@ -8184,8 +8203,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 356;
-const GAME_VERSION = 'Alpha 14.73';
+const GAME_BUILD = 357;
+const GAME_VERSION = 'Alpha 14.74';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8194,7 +8213,7 @@ const GAME_VERSION = 'Alpha 14.73';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Dans le panneau \u00c9nergie, le bouton \u00ab Monter \u00bb faisait DESCENDRE l'entr\u00e9e, et inversement \u2014 en contradiction avec son propre en-t\u00eate (\u00ab haut = servi en premier \u00bb) et sa propre num\u00e9rotation. Les deux boutons sont permut\u00e9s : le panneau se comporte d\u00e9sormais comme celui du Port \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Neuf emoji de plus deviennent des ic\u00f4nes du pack : bateau, p\u00e9trole, carte, montagne, \u00eele, m\u00e9lange, dossier, boussole, colis. Les deux cartes de l'\u00e9cran de choix de mode y passent aussi, l\u00e0 o\u00f9 l'emoji \u00e9chappait au m\u00e9canisme automatique. Trois ic\u00f4nes ont \u00e9t\u00e9 \u00e9cart\u00e9es en s\u00e9ance faute de lisibilit\u00e9 \u00e0 16 px \u00b7 Aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -21673,7 +21692,7 @@ function ModeModal({
     className: "mode-sub"
   }, I18N.t("Le mode fixe la taille des \xEEles pour cette partie.")), React.createElement("div", {
     className: "mode-opts"
-  }, card('normal', "🗺", I18N.t("Normal"), I18N.t("Grandes \xEEles, plus d'espace pour construire.")), card('difficile', "⛰", I18N.t("Difficile"), I18N.t("\xCEles compactes, espace limit\xE9."))), DEV_BUILD && React.createElement("div", {
+  }, card('normal', uiIcon('carte', "🗺", 'ico-mode'), I18N.t("Normal"), I18N.t("Grandes \xEEles, plus d'espace pour construire.")), card('difficile', uiIcon('montagne', "⛰", 'ico-mode'), I18N.t("Difficile"), I18N.t("\xCEles compactes, espace limit\xE9."))), DEV_BUILD && React.createElement("div", {
     className: "mode-fast-row"
   }, React.createElement("button", {
     className: 'opt-toggle' + (fast ? ' on' : ''),

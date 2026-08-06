@@ -17,7 +17,81 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 356`, `GAME_VERSION = 'Alpha 14.73'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 357`, `GAME_VERSION = 'Alpha 14.74'`, `SAVE_VERSION = 31`.**
+  Changement 14.74 (brief `BRIEF-neuf-icones`, pack `archipelicones finale`, **4 modifications de nature
+  DIFFÉRENTE**) : **9 emoji de plus deviennent des icônes du pack** (bateau, pétrole, carte, montagne,
+  île, mélange, dossier, boussole, colis). `SAVE_VERSION` INCHANGÉ, aucun champ persisté.
+  Base annoncée 355 / 14.72 ; base RÉELLE d'exécution **356 / 14.73** — **les 4 ancres sont sorties à
+  `count == 1` sans adaptation**, le lot 14.73 n'ayant touché que les boutons de priorité.
+  ⚠ **Le lot n'est PAS « neuf insertions de données ».** Il en embarque quatre natures, et trois ne
+  sont pas mécaniques : (A) 9 affectations `window.__SPRITE_DATA__[…]` (clés NEUVES → forme homogène,
+  le piège du littéral d'objet ne concerne que les REMPLACEMENTS) ; (B) 9 entrées dans
+  `UI_ICON_BY_EMOJI` (**49 → 58**) ; (C) **2 sites React que le mécanisme automatique ne couvre pas** ;
+  (D) **1 règle CSS sans laquelle ces 2 sites deviennent illisibles**.
+  (1) **§2C — L'EMOJI PASSÉ EN ARGUMENT POSITIONNEL ÉCHAPPE À `leadIconOf`.** Sur l'écran de choix de
+  mode, `card(mode, icon, name, desc)` rend son 2ᵉ argument **tel quel** : aucune chaîne n'est lue,
+  donc `leadIconOf` ne voit rien. Il faut poser `uiIcon()` **à la main** sur les 2 sites
+  (`card('normal', uiIcon('carte', "🗺", 'ico-mode')` et l'équivalent montagne). Le repli emoji est
+  conservé → le site ne peut pas casser si le sprite manque. **Parenthèses vérifiées PAR PARCOURS**
+  (compteur de profondeur sautant chaînes et échappements) sur le fichier PATCHÉ, pas à l'œil : une
+  parenthèse manquante ici donne une **page blanche**, pas une erreur visible.
+  (2) ⚠ **CORRECTION FACTUELLE AU BRIEF (§2D), sans conséquence sur le patch** : il justifie la règle
+  CSS par « `.ui-ico` fait 11×11 px ». **Faux** — la règle de BASE `.ui-ico` fait **16×16** (ligne 242) ;
+  le 11×11 est scopé à `.inv-prod-btn` (ligne 102), et c'est cette ligne-là que l'ancre `.ui-ico{width:
+  11px;height:11px;}` attrape (en sous-chaîne, `count == 1`). **La conclusion reste juste** : sans règle
+  dédiée l'icône de mode tomberait de ~32 px (emoji à `font-size:2rem`) à **16 px**. La règle
+  `.mode-card-icon .ui-ico.ico-mode{width:32px;…}` est donc bien nécessaire, et sa spécificité (0,3,0)
+  bat `.ui-ico` (0,1,0) **quel que soit son emplacement** → posée à l'ancre du brief (ligne 103, au
+  milieu des règles de la barre d'inventaire), ce qui est stylistiquement bizarre mais fonctionnellement
+  identique. Mesuré en jeu : **32×32 px**, classe `ui-ico ico-mode`, sur les DEUX cartes.
+  (3) ⚠ **LES CLÉS DE LA TABLE PORTENT L'EMOJI NU, SANS U+FE0F** — et c'est vérifié dans les deux sens.
+  `leadIconOf` lit `String.fromCodePoint(msg.codePointAt(0))` **puis** consomme le sélecteur de variante
+  séparément : une clé avec VS16 ne matcherait jamais. Or plusieurs de ces emoji sont suivis de U+FE0F
+  dans les tables i18n. Mesuré sur les 9 : reconnus **NUS** ET **suivis de U+FE0F**, avec le reste du
+  libellé intact. Audit : **0 clé porteuse de VS16** sur les 58.
+  ⚠ **La valeur est le nom SANS le préfixe `ui_`** (`'carte'`, pas `'ui_carte'`) — c'est `uiIcon` qui
+  préfixe. Vérifié sur les 58.
+  (4) **NEUF, PAS DOUZE — 3 icônes ÉCARTÉES en séance d'art, à ne pas réintroduire** : `ui_diplome` 🎓
+  (lit comme un casque après 4 tentatives), `ui_maillon` 🔗 (les anneaux lisent « lunettes », la version
+  reliée « H »), `ui_retour` 🌙 (le croissant lit « C » ; la variante sablier **EST** `ui_attente` à
+  l'identique). Elles sont dans `ecartees/` du pack pour arbitrage. **Ces 3 emoji restent des emoji en
+  jeu — ce n'est PAS un défaut** (mesuré : `leadIconOf` rend `null`, aucun sprite `ui_diplome`/
+  `ui_maillon`/`ui_retour` en base).
+  ⚠ **5 pistes de la spec d'origine abandonnées pour COLLISION** avec des icônes déjà en base : 🛢
+  « goutte » contre `ui_carburant`, 🗺 « quadrillage » contre `ui_densifier`, ⚗ « barres verticales »
+  contre `ui_production`, 🎓 et 🧭 « losange » contre `ui_gemme`. Les formes livrées sont AUTRES —
+  volontaire, ce ne sont pas des écarts à corriger.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + **delta +3 089 o EXACT** (`os.path.getsize`) +
+  les **9 PNG re-décodés depuis le HTML PATCHÉ** : SHA-256 **9/9 conformes**, **16×16**, alpha
+  **BINAIRE**, **5 couleurs**, masque bit à bit vs `ui_port` → **193 px opaques, 0 pixel d'écart sur
+  les 9**, contour intégralement `#1E2128`. + Chromium **12 assertions, 0 KO** et **10 de
+  non-régression**.
+  **Test 12 (celui qui prouve que la règle CSS existe)** : écran de choix de mode capturé AVANT le
+  choix → les 2 cartes rendent `ui_carte` / `ui_montagne` à **32×32**, plus aucun emoji résiduel.
+  **Test 10 en canvas, à TAILLE RÉELLE (16 px, sans zoom)** : les 9 dessinées à côté de `ui_port` /
+  `ui_monter` / `ui_ok` / `ui_arret` → bbox `{top:1, bottom:15, left:1, right:15}` et **193 opaques,
+  identiques aux 4 références sur les 13 icônes**.
+  **Test 13** : la 1ʳᵉ astuce du tutoriel rend `ui_ile` (et non 🏝). **Test 15** : les **100** icônes
+  `ui_*` décodent (0 échec) ; diff des clés de sprite **1 502 → 1 511** = **exactement les 9 ajoutées,
+  0 modifiée**. **Save créée par la BASE 356 rechargée en 357** → ordres de priorité énergie ET transit
+  conservés, stocks intacts, `SAVE_VERSION` 31, **0 `tickError`, 20 s de jeu réel, 0 `pageerror`**.
+  ⚠ **L'AUDIT DE LA TABLE (institué au lot 14.72) EST REJOUÉ ET DOIT L'ÊTRE ICI PLUS QUE JAMAIS** :
+  ce lot fait passer la table de 49 à 58 entrées. Mesuré : **58 entrées, 55 noms de sprite distincts,
+  0 manquant, 0 VS16**.
+  ⚠ **PIÈGE DE HARNAIS** : `SPRITE_DATA` est une `const` de MODULE, pas une propriété de `window` →
+  `page.waitForFunction(() => window.SPRITE_DATA)` **expire** ; attendre la disparition de `#splash`,
+  puis référencer `SPRITE_DATA` **par son nom nu** dans `page.evaluate`. Et une capture de bandeau à
+  `transform:scale(2)` est **rognée par le viewport de 420 px** : au-delà de ~11 icônes il faut passer
+  sur deux lignes.
+  ⚠ **ÉTIQUETTE PÉRIMÉE DANS LE PACK, sans effet** : `planches/finale_test.png` porte encore le titre
+  « 12 nouvelles mélangées à 12 déjà en base » alors que 3 ont été écartées. C'est l'artefact d'art qui
+  est daté, pas la livraison.
+  ⚠ **Taille : 3 236 323 → 3 239 412 o (+3 089 o EXACT**, l'attendu au byte près) ; 3 239 471 après
+  bump, le nouveau `GAME_NOTES` étant plus long.
+  ⚠ **HORS PÉRIMÈTRE (§2), non touché** : toute autre icône, tout autre site d'appel (les 7 autres
+  emoji du lot sont couverts d'office par `leadIconOf` / `iconLabel` / le champ `icon:` de `GAME_TIPS`
+  — **aucun appel à poser à la main**), `uiIcon`, `iconLabel`, les tables i18n, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 356`, `GAME_VERSION = 'Alpha 14.73'`, `SAVE_VERSION = 31`.**
   Changement 14.73 (brief `BRIEFCORRECTIFinversionenergie`, **1 bloc**) : **l'inversion Monter/Descendre
   du panneau Énergie est FERMÉE** — c'est l'anomalie signalée au lot 14.72, ici corrigée.
   `SAVE_VERSION` INCHANGÉ, **delta 0 OCTET** (le patch PERMUTE, il n'ajoute rien).
