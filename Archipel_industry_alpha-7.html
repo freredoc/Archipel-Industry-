@@ -862,6 +862,7 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 
 /* ── Toast ── */
 .toast-ico{width:1em;height:1em;vertical-align:-.12em;image-rendering:pixelated;}
+.lbl-ico{width:1em;height:1em;vertical-align:-.12em;image-rendering:pixelated;}
 .toast{position:absolute;left:50%;top:12px;transform:translateX(-50%) scale(.9);
   background:rgba(13,13,26,.94);border:1px solid var(--line);border-radius:5px;
   padding:7px 16px;font-size:.92rem;font-weight:600;letter-spacing:.01em;color:var(--ink);
@@ -4345,6 +4346,18 @@ function leadIconOf(msg) {
   if (msg.charCodeAt(i) === 0xFE0F) i++;
   while (msg[i] === ' ') i++;
   return { name: name, rest: msg.slice(i) };
+}
+// 14.6x - LIBELLE A ICONE. Meme table que les toasts (UI_ICON_BY_EMOJI + leadIconOf), appliquee
+// cette fois a un libelle JSX quelconque : bandeau, bouton, en-tete de panneau. Les toasts sont
+// traites par un site de rendu unique ; les libelles, eux, n'ont AUCUN entonnoir commun - ce sont
+// 55 expressions de formes differentes (concatenations, ternaires, arguments React separes). On
+// les convertit donc site par site, avec ce helper pour que le mecanisme reste unique.
+// Renvoie le texte INCHANGE si l'emoji de tete n'est pas dans la table : un site converti trop
+// tot, avant que son icone existe, continue d'afficher son emoji.
+function iconLabel(txt, cls) {
+  const p = leadIconOf(txt);
+  if (!p) return txt;
+  return React.createElement(React.Fragment, null, uiIcon(p.name, '', cls || 'lbl-ico'), ' ', p.rest);
 }
 function uiIcon(name, fallback, cls) {
   const key = 'ui_' + name;
@@ -8131,8 +8144,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 349;
-const GAME_VERSION = 'Alpha 14.66';
+const GAME_BUILD = 350;
+const GAME_VERSION = 'Alpha 14.67';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8141,7 +8154,7 @@ const GAME_VERSION = 'Alpha 14.66';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les grands nombres deviennent lisibles partout : le s\u00e9parateur de milliers s'applique sous le seuil, et au-dessus vous choisissez entre l'\u00e9criture scientifique (2,35e6) et les pr\u00e9fixes SI (2,35 M) \u2014 deux nouvelles options, avec un seuil de bascule r\u00e9glable jusqu'\u00e0 \u00ab jamais \u00bb. Les co\u00fbts du menu Am\u00e9liorer, du bouton Aligner et des boutons de niveau de r\u00e9seau ne sortent plus en chiffres bruts \u00b7 Le panneau \u00c9nergie gagne une ligne Dimensionnement \u00e0 trois \u00e9tats (sous-dimensionn\u00e9 / optimal / au-dessus du pic) \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Onze libell\u00e9s de plus passent de l'emoji \u00e0 l'ic\u00f4ne : les bandeaux Alertes, Surchauffes et d\u00e9ficit \u00e9lectrique, les boutons du Collisionneur, le bouton de forage, l'en-t\u00eate Production, la puissance d'un n\u0153ud de recherche, le titre de densification et les deux \u00e9tats de l'accumulateur. Un libell\u00e9 dont l'emoji n'a pas d'ic\u00f4ne garde son emoji \u00b7 Aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -16265,7 +16278,7 @@ function CalculatorPanel({
   }, chip(item), React.createElement("b", null, fmtRateSci(rate) + " " + (RES_SHORT[item] || item) + " /s")), React.createElement("div", {
     className: "calc-power",
     title: I18N.t("Consommation électrique totale de la chaîne (puissance nominale)")
-  }, "⚡ " + fmtPower(res.power)), React.createElement("div", {
+  }, iconLabel("⚡ " + fmtPower(res.power))), React.createElement("div", {
     className: "pp-section-label"
   }, I18N.t("Ressources nécessaires /s")), resRows.length === 0 ? React.createElement("div", {
     className: "pp-empty"
@@ -16391,7 +16404,7 @@ function ProductionPanel({
     className: "prod-body"
   }, React.createElement("div", {
     className: "prod-energy"
-  }, React.createElement("span", null, I18N.t("⚡ Prod "), fmtPower(enP)), React.createElement("span", null, I18N.t("Conso "), fmtPower(enD)), React.createElement("span", {
+  }, React.createElement("span", null, iconLabel(I18N.t("⚡ Prod ")), fmtPower(enP)), React.createElement("span", null, I18N.t("Conso "), fmtPower(enD)), React.createElement("span", {
     className: 'pe-net ' + (enN >= 0 ? 'ok' : 'bad')
   }, I18N.t("Net "), enN >= 0 ? '+' : '', fmtPower(enN))), React.createElement("div", {
     className: "prod-table"
@@ -16627,7 +16640,7 @@ function AlertsPanel({
     className: "alert-isl"
   }, islandLabel(a.isl)), React.createElement("span", {
     className: "alert-res"
-  }, a.nets > 1 ? "⚡ " + a.nets + I18N.t(" réseaux en déficit · 0% batterie") : a.nets === 1 ? I18N.t("⚡ Réseau en déficit · 0% batterie") : I18N.t("⚡ Déficit · 0% batterie")), React.createElement("span", {
+  }, a.nets > 1 ? iconLabel("⚡ " + a.nets + I18N.t(" réseaux en déficit · 0% batterie")) : a.nets === 1 ? I18N.t("⚡ Réseau en déficit · 0% batterie") : I18N.t("⚡ Déficit · 0% batterie")), React.createElement("span", {
     className: "alert-val"
   }, fmtPower(a.supply) + " / " + fmtPower(a.demand)), goBtn(a.isl))), alerts.map(a => React.createElement("div", {
     key: a.isl + '-' + a.res,
@@ -16646,7 +16659,7 @@ function AlertsPanel({
     className: "slot-head"
   }, React.createElement("span", {
     className: "slot-title"
-  }, "⚠️ Alertes"), React.createElement("button", {
+  }, iconLabel("⚠️ Alertes")), React.createElement("button", {
     className: "rp-close",
     onClick: onClose
   }, "×")), React.createElement("div", {
@@ -16712,7 +16725,7 @@ function HeatPanel({
     className: "slot-head"
   }, React.createElement("span", {
     className: "slot-title"
-  }, "🔥 " + I18N.t("Surchauffes")), React.createElement("button", {
+  }, iconLabel("🔥 " + I18N.t("Surchauffes"))), React.createElement("button", {
     className: "rp-close",
     onClick: onClose
   }, "×")), React.createElement("div", {
@@ -17831,9 +17844,9 @@ function InfoPanel({
         title: launchBlock === 'logic' ? I18N.t("Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur")
           : launchBlock === 'goal' ? I18N.t("Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante")
           : I18N.t("Lancer la séquence de collision (le Collisionneur commence à émettre des codes)")
-      }, launchBlock === 'logic' ? '🔒 ' + I18N.t('Réseau logique requis')
+      }, iconLabel(launchBlock === 'logic' ? '🔒 ' + I18N.t('Réseau logique requis')
         : launchBlock === 'goal' ? '🔒 ' + I18N.t('Palier atteint — réparation requise')
-        : '▶ ' + I18N.t('Lancer la séquence')),
+        : '▶ ' + I18N.t('Lancer la séquence'))),
       repaired && colOn && co.state === 'running' && React.createElement("div", { className: "ip-row ip-theo" },
         React.createElement("span", { className: "lbl" }, I18N.t('Séquence')),
         React.createElement("span", { className: "val", style: { color: 'var(--green)' } }, I18N.t('lancée'))),
@@ -17844,7 +17857,7 @@ function InfoPanel({
         style: { marginTop: '8px' },
         onClick: () => onToggleCollider && onToggleCollider(),
         title: colOn ? I18N.t("Éteindre le Collisionneur (il cesse de consommer ; ⚠ le démarrage de 10 min repartira de zéro)") : I18N.t("Rallumer le Collisionneur (le démarrage de 10 min repart de zéro)")
-      }, colOn ? '⏸ ' + I18N.t('Éteindre le Collisionneur') : '▶ ' + I18N.t('Allumer le Collisionneur')),
+      }, iconLabel(colOn ? '⏸ ' + I18N.t('Éteindre le Collisionneur') : '▶ ' + I18N.t('Allumer le Collisionneur'))),
       // ── RECHERCHES INFINIES (nœud 43) — 14.61, lot 3B ────────────────────────────────────
       // Section masquée tant que le nœud 43 n'est pas confirmé (J10) : avant, aucun point ne peut
       // exister et une section vide éventerait la suite. ⚠ `var(--violet)` n'existe pas dans la
@@ -19075,8 +19088,8 @@ function InfoPanel({
         ss = sec % 60;
       return mm + ' min ' + (ss < 10 ? '0' : '') + ss + ' s';
     };
-    if (d > 1e-6) return cap - st <= 0 ? '🔋 ' + I18N.t('plein') : '⬆ ' + I18N.t('plein dans ') + fmtT((cap - st) / d);
-    if (d < -1e-6) return st <= 0 ? I18N.t('vide') : '⬇ ' + I18N.t('vide dans ') + fmtT(st / -d);
+    if (d > 1e-6) return iconLabel(cap - st <= 0 ? '🔋 ' + I18N.t('plein') : '⬆ ' + I18N.t('plein dans ') + fmtT((cap - st) / d));
+    if (d < -1e-6) return iconLabel(st <= 0 ? I18N.t('vide') : '⬇ ' + I18N.t('vide dans ') + fmtT(st / -d));
     return I18N.t('stable (ni charge ni décharge)');
   })())), !b.nuclear && !b.accumulator && !b.driller && React.createElement("div", {
     className: "ip-row"
@@ -19292,7 +19305,7 @@ function InfoPanel({
         className: "ip-up densify-btn" + (ready ? '' : ' locked'),
         disabled: !ready,
         onClick: () => ready && onDrill && onDrill(tgt.r, tgt.c)
-      }, work ? "⛏ " + I18N.t("Creusement en cours…") : "⛏ " + I18N.t("Percer le mur")));
+      }, iconLabel(work ? "⛏ " + I18N.t("Creusement en cours…") : "⛏ " + I18N.t("Percer le mur"))));
   })(), (usesNet || drawsPower) && React.createElement("div", {
     className: "ip-fluxpri"
   }, React.createElement("div", {
@@ -19308,7 +19321,7 @@ function InfoPanel({
     className: "ip-up-preview"
   }, React.createElement("div", {
     className: "ip-up-ptitle"
-  }, "✦ ", I18N.t("Densification → "), BUILDINGS[densId].name), React.createElement("div", {
+  }, iconLabel("✦ " + I18N.t("Densification → ")), BUILDINGS[densId].name), React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
