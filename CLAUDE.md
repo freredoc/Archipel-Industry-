@@ -17,7 +17,57 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 353`, `GAME_VERSION = 'Alpha 14.70'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 354`, `GAME_VERSION = 'Alpha 14.71'`, `SAVE_VERSION = 31`.**
+  Changement 14.71 (brief `BRIEF-ETAPE3-icones-gabarit`, **ÉTAPE 3 sur 3, la dernière du pack
+  `archipelsprites3etapes`**) : **7 icônes `ui_*` rejoignent le gabarit commun de 193 pixels opaques.**
+  `SAVE_VERSION` INCHANGÉ, **aucun champ persisté, aucune clé changée, AUCUN câblage** — remplacement
+  de données pur. Base EXACTE annoncée par le brief : 350 / 14.67 ; base RÉELLE d'exécution : **353 /
+  14.70** (les étapes 2 et 1 étaient déjà livrées) — le brief prévoit ce cas (« si la base a avancé, ne
+  pas s'arrêter »), et **les 7 ancres sont sorties à `count == 1` sans la moindre adaptation** :
+  l'étape 3 est réellement indépendante des deux autres, dans les deux sens.
+  ⚠ **LE PIÈGE DU BRIEF, CONFIRMÉ EN PRATIQUE : `SPRITE_DATA` A DEUX FORMES DE DÉCLARATION** — un
+  littéral d'objet `"clé":"data:…"` ET ~1330 affectations `window.__SPRITE_DATA__["clé"]="data:…";`.
+  Les 7 icônes sont **réparties sur les deux** : 6 dans le littéral (`ui_astuce`, `ui_calculateur`,
+  `ui_chaleur`, `ui_energie`, `ui_mode_vitesse`, `ui_production`), **1 seule en affectation**
+  (`ui_pause_logique`). Mesuré : `grep 'window.__SPRITE_DATA__["ui_astuce"]='` renvoie **0**. Un patch
+  uniforme aurait donc échoué **6 fois sur 7**, en silence. (Le même piège avait déjà mordu au lot
+  14.65 sur un contrôle aller-retour par regex — c'est la **2ᵉ fois** : toute manipulation de
+  `SPRITE_DATA` doit gérer les DEUX formes, sans exception.)
+  (1) **Le défaut** : les icônes du pack partagent un masque de disque de **193 pixels opaques** sur
+  256, identique bit à bit. Sept exceptions subsistaient. Les 6 à 172 px partagent **EXACTEMENT** le
+  même écart (−23 / +2) : c'est un **gabarit antérieur**, pas six erreurs indépendantes ; le disque
+  était d'un cheveu plus petit et légèrement décalé. `ui_energie` et `ui_chaleur` sont parmi les icônes
+  les plus affichées du jeu. Le tableau du §1 du brief a été **retrouvé à l'identique sur la base 353**
+  (172 opaques × 6 avec −23/+2, `ui_pause_logique` à 185 avec −8/+0 ; couleurs 26/12/16/14/26/13/6).
+  ⚠ **LES GLYPHES N'ONT PAS ÉTÉ REDESSINÉS** (décision de l'auteur du pack, à ne pas « améliorer ») :
+  chaque glyphe a été EXTRAIT de l'icône actuelle et reposé sur un disque reconstruit au gabarit. Une
+  tentative de redessin avait donné un résultat inférieur (« la flamme devenait une maison, la
+  calculatrice perdait ses touches »). **Vérifié à la capture avant/après** : l'ampoule reste une
+  ampoule, la calculatrice garde ses touches, la flamme reste une flamme, l'éclair reste un éclair.
+  ⚠ **La chute du nombre de couleurs n'est PAS une perte** : l'antialiasing des 2 icônes à 26 couleurs
+  portait sur le **DISQUE**, pas sur le glyphe → leur passage à 5 couleurs ne perd rien de l'identité
+  visuelle. Compte final mesuré : **6 pour `ui_chaleur`, 5 pour les six autres** (conforme au §5.7).
+  (2) **AUCUN câblage** : les 7 clés sont inchangées et déjà appelées — 4 par `uiIcon()` direct, 3 via
+  `UI_ICON_BY_EMOJI` — et le restent. `UI_ICON_BY_EMOJI`, `leadIconOf`, `uiIcon`, `iconLabel` et les
+  tables i18n ne sont pas touchés.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + **les 7 PNG re-décodés depuis le HTML PATCHÉ** :
+  SHA-256 **7/7 conformes** au pack, **16×16**, alpha **BINAIRE** (`{0, 255}`, aucune valeur
+  intermédiaire), masque comparé bit à bit à `ui_port` → **193 px opaques, 0 pixel d'écart sur les 7**,
+  **contour intégralement `#1E2128` sur 7/7**. + Chromium **8 assertions, 0 KO**.
+  **Test 10 (le seul qui compte selon le brief — « un écart de 21 pixels ne se juge pas agrandi »)** :
+  les 7 dessinées **À TAILLE RÉELLE (16 px, `imageSmoothingEnabled = false`, sans zoom)** à côté de
+  `ui_port` / `ui_monter` / `ui_ok` / `ui_arret`, puis le disque **mesuré au pixel dans le canvas** :
+  bbox `{top:1, bottom:15, left:1, right:15}` et **193 opaques — identique aux 4 références sur les 11
+  icônes**. Même diamètre, même alignement, prouvé au pixel et pas à l'œil.
+  **Test 11** : `ui_energie` rend bien la pastille ⚡ du HUD (16×16) et `ui_chaleur` le bouton
+  Surchauffes (`.inv-heat-btn`), toutes deux reconnaissables à la capture.
+  **Test 12** : diff des **1 502 clés de sprite** entre `HEAD` et le fichier patché → **exactement les
+  7 attendues ont changé**, aucune autre ; et les **91 icônes `ui_*` décodent** toujours (0 échec).
+  ⚠ **Taille : 3 237 578 → 3 236 302 o (−1 276 o EXACT**, l'attendu au byte près — le fichier RÉTRÉCIT,
+  les icônes sont plus simples) ; 3 236 301 après bump, le nouveau `GAME_NOTES` étant 1 octet plus court.
+  ⚠ **HORS PÉRIMÈTRE (§3), non touché** : toutes les autres icônes, `UI_ICON_BY_EMOJI`, `leadIconOf`,
+  `uiIcon()`, les tables i18n, et **tout code de rendu** (aucune des 3 étapes du pack n'en touche).
+- **État précédent : `GAME_BUILD = 353`, `GAME_VERSION = 'Alpha 14.70'`, `SAVE_VERSION = 31`.**
   Changement 14.70 (brief `BRIEF-ETAPE1-animation-remblai`, **ÉTAPE 1 sur 3, à intégrer APRÈS la 2**) :
   **les remblais des îles 1 à 5 s'animent** (5 sheets 128×32 + 5 entrées de table). `SAVE_VERSION`
   INCHANGÉ, **aucun code de rendu touché** — la table est le SEUL point de branchement.
