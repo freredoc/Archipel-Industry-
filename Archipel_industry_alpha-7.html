@@ -7850,23 +7850,20 @@ const REC = (function () {
         lay: u.logicLayer ? 1 : 0
       });
     },
-    // Export : fichier .jsonl (fiable en APK) + tentative de presse-papier. Même
-    // motif que l'export de sauvegarde (Blob + <a download>).
+    // Export : fichier .txt via le PONT NATIF Android (`saveTextFile`), avec repli Blob
+    // en navigateur, + tentative de presse-papier.
+    // ⚠ Le lot 1 disait « .jsonl, fiable en APK, même motif que l'export de sauvegarde » :
+    // les trois affirmations étaient fausses. L'export de sauvegarde passe par
+    // `window.ArchipelNative.saveText` AVANT tout Blob, et dans la WebView de l'APK un Blob
+    // seul ne produit aucun fichier atteignable. Journal exporté = INTROUVABLE sur l'appareil.
     exportNow: function () {
       const head = { i: 0, t: 0, k: 'meta', build: GAME_BUILD, ver: GAME_VERSION, n: buf.length };
       const txt = [head].concat(buf).map(o => JSON.stringify(o)).join('\n');
-      try {
-        const blob = new Blob([txt], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'archipel-journal-' + GAME_BUILD + '.jsonl';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function () {
-          try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch (e) {}
-        }, 200);
-      } catch (e) {}
+      // Même chemin que l'export de sauvegarde : pont natif Android d'abord, Blob en repli.
+      // Extension .txt et NON .jsonl — Android n'associe aucune application à .jsonl, le
+      // fichier devient inouvrable et impartageable sur l'appareil. Le contenu reste du
+      // JSON-lines : une ligne = un objet.
+      try { saveTextFile('archipel-journal-' + GAME_BUILD + '.txt', txt); } catch (e) {}
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).catch(function () {});
       } catch (e) {}
@@ -8301,8 +8298,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 359;
-const GAME_VERSION = 'Alpha 14.76';
+const GAME_BUILD = 360;
+const GAME_VERSION = 'Alpha 14.77';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8311,7 +8308,7 @@ const GAME_VERSION = 'Alpha 14.76';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "L'option de diagnostic \u00ab Enregistrer mes actions \u00bb devient exclusive \u00e0 l'\u00e9dition d\u00e9veloppeur : elle dispara\u00eet de l'\u00e9dition publique, o\u00f9 le journal ne tourne plus du tout \u00b7 Aucun comportement de jeu modifi\u00e9, aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "L'export du journal de diagnostic emprunte d\u00e9sormais le pont natif Android, comme l'export de sauvegarde : le fichier atterrit r\u00e9ellement sur l'appareil, en .txt et non en .jsonl \u00b7 Aucun comportement de jeu modifi\u00e9, aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -8981,6 +8978,37 @@ function reverbFrame(game) {
 const NATIVE_UPDATER = typeof window !== 'undefined' && window.ArchipelNative && typeof window.ArchipelNative.update === 'function';
 // Coquille Android : sauvegarde d'un fichier .txt via le pont natif (sinon repli téléchargement Blob).
 const NATIVE_SAVE = typeof window !== 'undefined' && window.ArchipelNative && typeof window.ArchipelNative.saveText === 'function';
+// Télécharge du texte en .txt : via le pont natif Android s'il existe, sinon par Blob
+// (navigateur). ⚠ REMONTÉ ici depuis SlotsModal : l'export du journal de l'enregistreur
+// doit emprunter EXACTEMENT ce chemin. Sans le pont natif, un Blob dans la WebView de
+// l'APK ne produit aucun fichier atteignable — c'était le défaut du lot 1.
+// Placement : après `NATIVE_SAVE` qu'il lit, et après le module `REC` qui l'appelle —
+// l'appel n'a lieu qu'au clic, donc aucune zone morte temporelle.
+const saveTextFile = (name, text) => {
+  if (NATIVE_SAVE) {
+    try {
+      window.ArchipelNative.saveText(name, text);
+      return;
+    } catch (e) {}
+  }
+  try {
+    const blob = new Blob([text], {
+      type: 'text/plain'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (e) {}
+    }, 200);
+  } catch (e) {}
+};
 const MIN_TILE = 26,
   MAX_TILE = 64;
 const MAX_ZOOM = 4,
@@ -21466,32 +21494,8 @@ function SlotPanel({
   const fileRef = useRef(null);
   // Nom de fichier .txt : « archipel-<nom du slot>.txt » (caractères sûrs).
   const exportFileName = () => 'archipel-' + (exportName || 'sauvegarde').replace(/[^a-z0-9_-]+/gi, '_').slice(0, 40) + '.txt';
-  // Télécharge le texte en .txt : via le pont natif Android s'il existe, sinon par Blob (navigateur).
-  const saveTextFile = (name, text) => {
-    if (NATIVE_SAVE) {
-      try {
-        window.ArchipelNative.saveText(name, text);
-        return;
-      } catch (e) {}
-    }
-    try {
-      const blob = new Blob([text], {
-        type: 'text/plain'
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        try {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        } catch (e) {}
-      }, 200);
-    } catch (e) {}
-  };
+  // `saveTextFile` a ete REMONTE au niveau module (voir juste apres `NATIVE_SAVE`) :
+  // l'export du journal de l'enregistreur doit emprunter le MEME chemin, pont natif compris.
   // Lecture d'un fichier .txt choisi (input file) → remplit la zone d'import.
   const onFilePicked = e => {
     const file = e.target.files && e.target.files[0];
