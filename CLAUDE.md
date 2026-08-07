@@ -17,7 +17,45 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 366`, `GAME_VERSION = 'Alpha 14.83'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 367`, `GAME_VERSION = 'Alpha 14.84'`, `SAVE_VERSION = 31`.**
+  Changement 14.84 (brief `BRIEFTUTOLOT3Ehaloetape6`, **LOT 3E — 1 SEUL site, 2 `when` allongés**) :
+  **à l'étape 6, le halo désignait le RÉSEAU pendant toute la phase d'amélioration.** `SAVE_VERSION`
+  INCHANGÉ. Base EXACTE (366 / 14.83) ; **1/1 ancre unique, 2/2 hachages conformes AVANT application**,
+  `node --check` 7/7, **delta +556 o EXACT**.
+  (1) ⚠ **C'EST L'ÉCART QUE J'AVAIS SIGNALÉ AU LOT 3D EN LE JUGEANT « SANS CONSÉQUENCE » — ET CE
+  JUGEMENT ÉTAIT FAUX.** J'avais mesuré que le halo repointait Réseau quand l'outil route est
+  **désarmé**, et conclu que le cas était marginal. Ce que je n'avais pas mesuré : **cliquer sur
+  Améliorer désarme précisément la route**. Le halo désignait donc le Réseau **au moment exact où le
+  joueur fait ce qu'on lui demande**, pendant toute la phase d'amélioration. Contre-épreuve exécutée
+  sur la base 366 : outil route → `.tab-upg` ✅ · outil **Améliorer → `.tab-net`** ✗ · aucun outil →
+  `.tab-net` ✗. **Leçon : un halo qui pointe l'onglet que le joueur vient de quitter n'est pas un
+  détail cosmétique ; « l'étape se franchit quand même » ne suffit pas à classer un défaut de guidage.**
+  (2) **Le correctif** : les 2 `when` réseau reçoivent `&& (tutCountConnected(g,1,'mine_fer') < 5 ||
+  tutCountConnected(g,1,'carriere') < 5)` — ils testaient `tutCount` (**POSÉES**) là où il fallait
+  `tutCountConnected` (**RELIÉES**). Comme `.tab-net` précède `.tab-upg` et que la machine à cibles
+  s'arrête sur la PREMIÈRE condition vraie, il suffisait que ces `when` restent vrais pour que le
+  Réseau reprenne la main. Mesuré après patch : les **3 états d'outil donnent `.tab-upg`**.
+  (3) ⚠ **LA CONTRE-ÉPREUVE EST LE TEST QUI COMPTE** (test 2 du brief) : avec **3 mines reliées sur 5**
+  et l'outil Améliorer armé, le halo doit **encore** désigner `.tab-net`. Sans elle, une condition trop
+  large passerait le test 1 en éteignant DÉFINITIVEMENT la cible réseau — et l'étape redeviendrait
+  infaisable, soit exactement le défaut que le lot 3D venait de fermer. Mesuré : `.tab-net`. ✅
+  (4) **Le contrôle permanent du 3D est rejoué et reste vert** : ce lot restreint un `when`, jamais un
+  `sel` — or `tabAllowed` ne lit QUE les `sel`. **0 étape infaisable** (constaté, pas supposé).
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **12 assertions du lot, 0 KO, rejouées
+  2 fois sans flottement** (les 3 états d'outil, la contre-épreuve 3+3, 6/10 puis 8/10 améliorés →
+  halo qui reste sur Améliorer, franchissement de bout en bout → bannière « Tuto 7/10 ») **+ 193
+  assertions en NON-RÉGRESSION des lots 3A (63), 3B (50), 3C (38) et 3D (42) rejouées sur ce build**,
+  page blanche DEV et PUBLIQUE console vide.
+  ⚠ **PIÈGE DE MESURE (m'a donné un état de test inexploitable)** : à l'étape 6, **« 6/10 améliorés »
+  est l'état de DÉPART**, pas une progression — les 3 mines + 3 carrières de l'étape 5 sont déjà au
+  Nv.2. Une sonde qui « monte 6 bâtiments de plus » monte en fait les 4 restants et **franchit
+  l'étape** au lieu de mesurer une progression intermédiaire. Pour un état distinct, monter **2** de
+  plus (8/10).
+  ⚠ **Taille : 3 276 520 → 3 277 083 o** (+556 le bloc EXACT, +7 le nouveau `GAME_NOTES`).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : les 9 autres étapes, `tabAllowed`, les `goal`/`done`/`progress`/
+  `why` (donc aucune table i18n à toucher — l'alignement PAR INDEX d'`applyToData` est préservé),
+  **Démolir toujours actif** (décision D4) et le défaut de `roadReachesPortFootprint`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 366`, `GAME_VERSION = 'Alpha 14.83'`, `SAVE_VERSION = 31`.**
   Changement 14.83 (brief `BRIEFTUTOLOT3Dreseau`, **LOT 3D — 1 SEUL site : `TUTORIAL_STEPS`**) :
   **le menu Réseau était VERROUILLÉ sur les six étapes qui exigent de relier un bâtiment au port**
   (3, 4, 6, 7, 8, 9). `SAVE_VERSION` INCHANGÉ, aucun champ ajouté. Base EXACTE (365 / 14.82) ;
@@ -43,7 +81,9 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   (la machine à cibles s'arrête sur la PREMIÈRE cible dont `when` est vrai). Séquence mesurée :
   étape 3 Bâtiment → tuiles → **Réseau** → liaison ; étape 4 Copier → **Réseau** → liaison ;
   étape 6 Bâtiment → **Réseau** → Améliorer ; étapes 7/8/9 Bâtiment → tuiles → **Réseau** → liaison.
-  (3) ⚠ **ÉCART MESURÉ, LIVRÉ VERBATIM (non bloquant) — le `when` de `.tab-net` à l'étape 6 teste
+  (3) ⚠ **ÉCART MESURÉ, LIVRÉ VERBATIM — FERMÉ DEPUIS PAR LE LOT 3E (14.84), ET MON « non bloquant »
+  ÉTAIT FAUX : cliquer sur Améliorer DÉSARME la route, donc le halo pointait le Réseau pendant toute
+  la phase d'amélioration. Description d'origine conservée ci-dessous.** Le `when` de `.tab-net` teste
   `tutCount` (POSÉES) et non `tutCountConnected` (RELIÉES)** : une fois les 10 reliées, si le joueur
   **désarme** l'outil route, le halo **repointe Réseau** alors qu'il n'y a plus rien à relier (mesuré
   aux 3 états : outil route armé → `.tab-upg` ✅ ; désarmé → `.tab-net` ; menu Réseau ouvert →
