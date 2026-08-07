@@ -248,7 +248,11 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .inventory.open{flex-wrap:wrap;align-items:center;
   /* Superposition : ancré juste sous le HUD (top:100% = hauteur du HUD, la barre repliée
      n'étant pas rendue quand ouvert), au-dessus de la scène, sans occuper de hauteur de layout. */
-  position:absolute;top:100%;left:0;right:0;z-index:40;
+  /* `--tuto-h` = hauteur du bandeau tutoriel/guide, publiée par TutorialBanner (0 sans
+     bandeau) : l'inventaire s'ouvre SOUS lui au lieu de le recouvrir. Sans ce décalage,
+     l'objectif, les compteurs et « Passer » étaient masqués — visible depuis 11.36 en
+     ouvrant l'inventaire pendant le tutoriel, systématique depuis le dépliage d'office. */
+  position:absolute;top:calc(100% + var(--tuto-h, 0px));left:0;right:0;z-index:40;
   max-height:65vh;overflow-y:auto;box-shadow:0 8px 20px rgba(0,0,0,.45);}
 .inv-break{flex-basis:100%;width:100%;height:0;margin:0;padding:0;}
 .inv-tier-sep{font-family:'Bebas Neue',sans-serif;font-size:.62rem;letter-spacing:.12em;
@@ -304,7 +308,17 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .hud-side{flex-wrap:wrap;gap:6px;margin-left:auto;}
 .hud-side .stocks{flex:0 0 auto;overflow:visible;}
 /* ── Bandeau tutoriel (sous le HUD) ── */
-.tuto-banner{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:7px 12px;
+/* ⚠ position/z-index : l'inventaire OUVERT est en SUPERPOSITION (11.36 : position:absolute,
+   top:100% du .hud-stack, pour recouvrir la carte au lieu de la pousser). Il se plaçait donc
+   PAR-DESSUS ce bandeau — mesuré : inventaire y 108→238, bandeau y 108→174, entièrement
+   masqué, « Passer » inatteignable et compteurs invisibles. Défaut PRÉEXISTANT (reproduit
+   sur la base 363 en ouvrant l'inventaire à la main pendant le tutoriel), que le dépliage
+   d'office à la création (14.81) rendait SYSTÉMATIQUE au premier lancement — c'est-à-dire
+   au seul moment où l'objectif et les compteurs comptent vraiment.
+   21 suffit : .hud-stack porte `position:relative; z-index:20`, donc il ENFERME le z-index 40
+   de l'inventaire dans son propre contexte d'empilement ; le bandeau n'a qu'à dépasser 20.
+   Reste sous les boutons flottants (45) et sous les panneaux/popups (120-131). */
+.tuto-banner{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:7px 12px;position:relative;z-index:21;
   background:linear-gradient(90deg,rgba(76,175,80,.2),var(--panel-2));border-bottom:1px solid var(--line);}
 .tuto-main{display:flex;align-items:center;gap:9px;min-width:0;flex:1;}
 .tuto-step{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.05em;color:#9ee29f;
@@ -313,6 +327,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 /* Compteur de progression DANS l'étape (« Mines 2/3 »). flex-shrink:0 pour qu'il survive
    à l'ellipse de .tuto-goal : c'est l'information la plus utile quand la place manque. */
+/* Boutons du HUD verrouillés : visibles mais manifestement inertes. Le `disabled` suffit
+   à couper le clic ; ceci le rend LISIBLE, sinon le joueur tape trois fois et croit à un bug. */
+.hud-locked{opacity:.38;filter:grayscale(1);cursor:not-allowed;pointer-events:auto;}
+.hud-locked:active{transform:none;}
 .tuto-count{display:flex;gap:7px;flex-shrink:0;margin-left:auto;padding-left:8px;}
 .tuto-count-item{font-family:'Bebas Neue',sans-serif;font-size:.78rem;letter-spacing:.04em;
   color:var(--ink-dim);background:rgba(255,255,255,.06);border:1px solid var(--line);
@@ -8368,8 +8386,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 363;
-const GAME_VERSION = 'Alpha 14.80';
+const GAME_BUILD = 364;
+const GAME_VERSION = 'Alpha 14.81';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8378,7 +8396,7 @@ const GAME_VERSION = 'Alpha 14.80';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Chaque \u00e9tape du tutoriel affiche un compteur de progression (pos\u00e9, reli\u00e9, niveau, d\u00e9bit) \u00b7 Les popups d'astuce ne s'\u00e9crasent plus : ils se mettent en file et une astuce n'est marqu\u00e9e vue qu'\u00e0 sa fermeture \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Une partie neuve d\u00e9marre directement, sans \u00e9cran de choix, inventaire d\u00e9pli\u00e9 \u00b7 Port, Recherche et Calculateur restent gris\u00e9s tant qu'ils n'ont rien \u00e0 montrer, la pastille d'\u00e9nergie est masqu\u00e9e avant la deuxi\u00e8me \u00eele \u00b7 Aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -15343,6 +15361,24 @@ function tipResearchActionable(game) {
   }
   return false;
 }
+// Le panneau Recherche a-t-il quelque chose à montrer ? (verrou du bouton, 14.81)
+// ⚠ NE PAS utiliser `tipResearchActionable` ici : il compte `condition_ok`, or le nœud 2
+// (« Accès Île 2 », mode delivery à `reqs` vides) est condition_ok DÈS LE PREMIER TICK, sans
+// être payable — mesuré. Le bouton ne serait donc jamais grisé et le verrou ne servirait à
+// rien. `hasPendingResearch` est le prédicat « à portée » : il gate les livraisons sur
+// `deliveryReady` (13.68), donc il ne devient vrai que lorsque le port couvre réellement le
+// coût. On y ajoute « un nœud déjà confirmé » pour rendre l'ouverture IRRÉVERSIBLE : sans ce
+// terme, dépenser ses ressources après une validation reprendrait au joueur l'accès au panneau.
+// Effet de bord assumé AVANT la première validation : le bouton suit le stock (il s'allume
+// quand la livraison devient payable, se re-grise si le joueur dépense) — c'est la définition
+// de « à portée ». Aligné sur le guide : `go_recherche` ne pointe le bouton que si
+// `hasPendingResearch`, donc le halo ne désigne JAMAIS un bouton grisé.
+function researchPanelUnlocked(game) {
+  if (hasPendingResearch(game)) return true;
+  const ns = game.techTree && game.techTree.nodes || [];
+  for (const n of ns) if (n.id !== 1 && n.status === 'confirmed') return true;
+  return false;
+}
 // Au moins un réseau (route/tuyau/câble) est saturé : sa demande dépasse son débit.
 function tipAnyNetworkSaturated(game) {
   const ns = game.netSaturated || {};
@@ -17118,6 +17154,8 @@ function Hud({
   onOpenHelp,
   onOpenProduction,
   onOpenCalc,
+  researchUnlocked,
+  islandTradeUnlocked,
   updateInfo
 }) {
   // Bilan « production vs demande » : génération RÉELLE des générateurs (`gross`, SANS la
@@ -17175,22 +17213,32 @@ function Hud({
   })), React.createElement("div", {
     className: "hud-grp hud-side"
   }, React.createElement("button", {
-    className: "research-btn",
+    // Port, Recherche et Calculateur restent GRISÉS tant qu'ils n'ont rien à montrer :
+    // trois panneaux vides au premier lancement, c'est trois occasions de se perdre.
+    className: "research-btn" + (islandTradeUnlocked ? '' : ' hud-locked'),
+    disabled: !islandTradeUnlocked,
     'data-tut': "port",
     onClick: onOpenPort,
-    title: I18N.t("Configuration du port (commerce)")
+    title: islandTradeUnlocked ? I18N.t("Configuration du port (commerce)") : I18N.t("Disponible quand une deuxième île est accessible")
   }, uiIcon('port', "\u2693"), React.createElement("span", {
     className: "rlabel"
   }, I18N.t("Port"))), React.createElement("button", {
-    className: "research-btn" + (researchPending ? ' pending' : ''),
+    // ⚠ Le déverrouillage est IRRÉVERSIBLE par construction : `tipResearchActionable` reste
+    // vrai dès qu'un nœud est `confirmed`, pas seulement quand il est prêt. Un prédicat qui
+    // retomberait après la première validation reprendrait au joueur l'accès au panneau.
+    className: "research-btn" + (researchPending ? ' pending' : '') + (researchUnlocked ? '' : ' hud-locked'),
+    disabled: !researchUnlocked,
     'data-tut': "research",
     onClick: onOpenResearch,
-    title: researchPending ? I18N.t("Recherche prête à valider !") : I18N.t("Panneau Recherche")
+    title: !researchUnlocked ? I18N.t("Disponible quand un nœud est à portée") : researchPending ? I18N.t("Recherche prête à valider !") : I18N.t("Panneau Recherche")
   }, uiIcon('recherche', "\uD83D\uDD2C"), React.createElement("span", {
     className: "rlabel"
   }, I18N.t("Recherche")), researchPending && React.createElement("span", {
     className: "notif-dot"
-  })), React.createElement("div", {
+  })), islandTradeUnlocked && React.createElement("div", {
+    // MASQUÉ tant que l'île 2 n'est pas accessible : sur l'île 1 rien ne consomme
+    // d'électricité, la pastille afficherait +0 kW en permanence. On la cache au lieu de
+    // la griser — une jauge à zéro attire l'œil sans rien apprendre.
     // Indicateur d'\u00E9nergie (+ batterie) \u2014 \u00C0 DROITE du bouton RECHERCHE (demande testeur,
     // remplace l'emplacement barre d'inventaire du 13.40). M\u00EAme JSX (clic \u2192 panneau \u00C9nergie) ;
     // la classe stocks-inv garde la disposition en LIGNE + pastilles compactes.
@@ -17309,7 +17357,8 @@ function Hud({
       className: "inv-break",
       key: "calc-br"
     }), React.createElement("button", {
-      className: "inv-calc-btn",
+      className: "inv-calc-btn" + (islandTradeUnlocked ? '' : ' hud-locked'),
+      disabled: !islandTradeUnlocked,
       key: "calc",
       onClick: onOpenCalc,
       title: I18N.t("Calculateur de production : b\u00e2timents et \u00e9lectricit\u00e9 n\u00e9cessaires pour un d\u00e9bit cible")
@@ -22394,8 +22443,27 @@ function TutorialBanner({
   // total > 0 : bandeau du TUTORIEL (« Tuto x/y ») ; total === 0 : bandeau du GUIDE
   // dynamique (« Objectif », sans compteur — les objectifs n'ont pas d'ordre fixe).
   const isGuide = !(total > 0);
+  // Publie la HAUTEUR du bandeau dans `--tuto-h` : l'inventaire OUVERT est en superposition
+  // (absolute, top:100% du .hud-stack, 11.36) et se plaçait donc PAR-DESSUS ce bandeau —
+  // objectif, compteurs et « Passer » masqués. Il s'ancre désormais SOUS lui. La hauteur est
+  // MESURÉE et non figée : le bandeau passe à deux lignes sur écran étroit (le goal y est en
+  // white-space:normal) et le compteur du lot 3A peut le faire wrapper. Remise à 0 au
+  // démontage, sinon l'inventaire garderait un décalage sans bandeau.
+  const banRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = banRef.current;
+    const set = () => document.documentElement.style.setProperty('--tuto-h', ((el && el.offsetHeight) || 0) + 'px');
+    set();
+    const ro = typeof ResizeObserver !== 'undefined' && el ? new ResizeObserver(set) : null;
+    if (ro) ro.observe(el);
+    return () => {
+      if (ro) ro.disconnect();
+      document.documentElement.style.setProperty('--tuto-h', '0px');
+    };
+  }, []);
   return React.createElement("div", {
-    className: "tuto-banner"
+    className: "tuto-banner",
+    ref: banRef
   }, React.createElement("div", {
     className: "tuto-main"
   }, React.createElement("span", {
@@ -28480,13 +28548,22 @@ function App() {
       for (const id in BUILDINGS) if (isBuildingUnlocked(gSeen, id)) gSeen.seenBuildings[id] = true;
     }
     if (!loaded) rebuildNetworks(gameRef.current, gameRef.current.currentIsland);
-    // Partie neuve (aucune sauvegarde) : proposer le choix du mode de jeu.
-    // ⚠️ La ref est posée SYNCHRONE en plus du state : checkTips tourne dans la boucle rAF
-    // et pouvait lire needModeRef=false avant la resynchro useEffect → l'astuce « bienvenue »
-    // s'affichait PAR-DESSUS la modale de choix de mode (course au 1er lancement).
+    // Partie neuve : on DÉMARRE DIRECTEMENT en mode normal, sans rien demander. La modale
+    // de choix ne s'ouvre plus au premier lancement — un écran de configuration avant
+    // d'avoir vu le jeu n'a de sens que pour qui connaît déjà les deux modes.
+    // ⚠️ CONSÉQUENCE ASSUMÉE : `ModeModal` n'a plus AUCUN point d'entrée, donc le mode
+    // difficile n'est plus créable tant que l'accès par les Options n'est pas posé. Les
+    // parties existantes ne sont pas touchées (le mode vit dans la sauvegarde).
+    // `needModeRef` reste posée SYNCHRONE le temps de l'appel : `checkTips` tourne dans la
+    // boucle rAF et lisait la ref avant la resynchro du state — sans elle, « bienvenue »
+    // s'affichait par-dessus. `chooseMode` la repasse à false en fin de course.
     if (!loaded) {
       needModeRef.current = true;
-      setNeedMode(true);
+      chooseMode('normal', false);
+      // Inventaire déplié à la CRÉATION seulement : le joueur voit ses ressources monter
+      // et comprend ce que coûte une pose. Au rechargement d'une sauvegarde on ne touche
+      // à rien — `invOpen` n'est pas persisté, il repart replié, et c'est voulu.
+      setInvOpen(true);
     }
     evaluateTechTree(gameRef.current);
     // Redraw when async sprite images finish decoding.
@@ -29037,6 +29114,14 @@ function App() {
       setResearchPending(false);
     },
     researchPending: researchPending,
+    // Recherche : ouverte dès qu'un nœud est à portée — c'est le bouton Réparer qui montre
+    // les montants, la Recherche n'a rien à dire avant. Reste ouverte ensuite (cf. §D).
+    // ⚠ ÉCART AU BRIEF, NÉCESSAIRE : il proposait `tipResearchActionable`, qui est vrai DÈS
+    // LE BOOT (le nœud 2 est un delivery à reqs vides, donc condition_ok immédiatement) — le
+    // bouton n'aurait jamais été grisé. Voir `researchPanelUnlocked` pour la démonstration.
+    researchUnlocked: researchPanelUnlocked(game),
+    // Port, Calculateur et pastille d'énergie : rien à montrer avant une deuxième île.
+    islandTradeUnlocked: !!(game.islandUnlocked && game.islandUnlocked[2]),
     dev: dev,
     onToggleDev: toggleDev,
     saveLabel: saveLabel(),
