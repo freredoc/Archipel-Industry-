@@ -17,7 +17,56 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 368`, `GAME_VERSION = 'Alpha 14.85'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 369`, `GAME_VERSION = 'Alpha 14.86'`, `SAVE_VERSION = 31`.**
+  Changement 14.86 (brief `BRIEFTUTOLOT5etape4halo`, **LOT 5 — 9 sites A→E, dont 4 tables i18n**) :
+  **l'étape 4 n'enseigne plus Copier** (on pose au menu Bâtiment, comme partout ailleurs), **elle
+  perd son popup**, et **le halo prend la couleur et le nom du bâtiment attendu**. `SAVE_VERSION`
+  INCHANGÉ. Base EXACTE (368 / 14.85) ; **9/9 ancres uniques, 18/18 hachages conformes AVANT
+  application**, `node --check` 7/7, **delta +1 765 o EXACT**.
+  (1) **Copier sort de la trame** : plus aucune étape 1..9 ne déclare `.tab-copy` (mesuré sur les 9),
+  et `tabAllowed` n'en garde qu'**UNE occurrence** dans tout le fichier. Le bouton revient à l'étape
+  10 par la règle du lot 4 (`si >= 9 → return true`) — **aucun code ajouté pour ça**.
+  (2) ⚠ **ÉCART NÉCESSAIRE, MESURÉ — sans lui le §1 du brief était FAUX.** Le brief annonce que
+  `tut_copier` « reste consultable dans l'Aide ». Or l'étape 4 perd son `why` : **plus rien n'ouvre
+  cette astuce, donc plus rien ne la marque `tipsSeen`** — et l'Aide filtre sur
+  `tipsSeen[id] || when(game)` (13.41) avec un `when: () => false`. Mesuré sur le patch verbatim :
+  **`visibleDansAide: false`, à l'étape 10 COMME tutoriel terminé — l'astuce disparaissait purement
+  et simplement.** Correctif d'une ligne : `when: g => !(g.tutorial && g.tutorial.active) ||
+  g.tutorial.step >= 9` → elle se débloque exactement quand le bouton Copier est rendu au joueur.
+  `silent: true` la garde **muette** (jamais ouverte d'elle-même). Vérifié dans le VRAI panneau Aide :
+  absente avant l'étape 10, présente à l'étape 10 et dépliable en texte intégral (349 caractères).
+  (3) **Les 4 tables i18n sont indispensables et le brief a raison de les traiter ensemble** :
+  `applyToData` réécrit les objectifs **PAR INDEX**, donc ne changer que le français aurait laissé
+  l'anglais, l'espagnol et l'allemand annoncer le bouton Copier **sans qu'aucune erreur n'apparaisse**.
+  Mesuré au runtime dans les 4 langues : **0 objectif mentionnant Copier/Copy/Copiar/Kopieren**.
+  (4) **Halo différencié** : `mark(r, c, col, lab)` — `col`/`lab` **facultatifs**, donc `@upgradable`,
+  `@disconnected` et `@saturated` gardent le halo vert d'origine (vérifié : 14 rects
+  `rgba(76,175,80,…)`, 0 libellé). Les 6 types du plan ont bien 6 couleurs distinctes et leurs
+  libellés (`FER`, `PIER`, `CHAR`, `FOUR`, `CIM`) ; **la route a un `label` vide** → case colorée
+  sans texte. Sous 18 px de tuile, le libellé disparaît et la case reste (mesuré à 14 px : 0 libellé).
+  (5) **L'invariant du lot 4 tient** : le changement d'apparence n'a pas touché la source — halo et
+  verrou restent identiques sur **49 152 combinaisons, 0 écart**.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **37 assertions du lot, 0 KO, rejouées
+  2 fois sans flottement** — dont les **9 poses du plan de l'étape 4 par taps réels SANS Copier**
+  (9/9 acceptées, étape validée) **+ 251 assertions en NON-RÉGRESSION des lots 3A (63), 3B (50),
+  3C (38), 3D (42), 3E (12) et 4 (46)**, page blanche DEV et PUBLIQUE console vide.
+  ⚠ **3 assertions renversées VOLONTAIREMENT** (lots 3D et 4) : à l'étape 4 le halo initial passe de
+  `.tab-copy` à `.tab-build`, Copier y est désormais FERMÉ, et le test « pose par Copier soumise au
+  verrou » n'a plus d'objet — **il ne reste aucune étape à plan où Copier soit posable**.
+  ⚠ **PIÈGES DE HARNAIS** : (a) **armer un outil ne fait PAS descendre le halo sur les tuiles** à
+  l'étape 4 — son `when` teste `!ui.buildOpen`, il faut **OUVRIR le menu Bâtiment** ; sinon on
+  capture un halo vide et on croit le patch mort ; (b) franchir plusieurs étapes d'un coup laisse la
+  **file d'astuces** du lot 3A pleine : purger la file avant d'affirmer qu'« aucun popup ne s'ouvre » ;
+  (c) le backdrop d'un popup **avale le clic sur le bouton Aide** — purger avant d'ouvrir l'Aide.
+  ⚠ **Taille : 3 281 591 → 3 283 945 o** (+1 765 les 9 blocs EXACT, +603 le correctif `when` et son
+  commentaire, −14 le nouveau `GAME_NOTES`).
+  ⚠ **POINT DE DESIGN LAISSÉ OUVERT (§2 du brief, à trancher par Ethan)** : sans le geste Copier, les
+  étapes 4 et 6 énoncent des objectifs voisins — « 2 mines et 2 carrières de plus, reliées » (1+1 → 3+3),
+  puis la même chose « et au niveau 2 » (3+3 → 5+5). Les textes ont été différenciés ; **la fusion des
+  deux étapes n'est PAS tranchée ici**.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : le plan de pose et le verrou (lot 4), `tabAllowed`, les autres
+  étapes, le défaut de `roadReachesPortFootprint`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 368`, `GAME_VERSION = 'Alpha 14.85'`, `SAVE_VERSION = 31`.**
   Changement 14.85 (brief `BRIEFTUTOLOT4forcage`, **LOT 4 — 5 sites A→E**) : **le tutoriel impose
   désormais OÙ poser.** Un plan de 32 poses **relevé sur une partie réelle** (journal du build 367),
   pas calculé : le halo désigne les tuiles exactes et le verrou n'accepte qu'elles. `SAVE_VERSION`
