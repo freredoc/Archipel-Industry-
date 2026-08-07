@@ -1,8 +1,8 @@
 {
-  "build": 364,
-  "version": "Alpha 14.81",
+  "build": 365,
+  "version": "Alpha 14.82",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Une partie neuve d\\u00e9marre directement, sans \\u00e9cran de choix, inventaire d\\u00e9pli\\u00e9 \\u00b7 Port, Recherche et Calculateur restent gris\\u00e9s tant qu'ils n'ont rien \\u00e0 montrer, la pastille d'\\u00e9nergie est masqu\\u00e9e avant la deuxi\\u00e8me \\u00eele \\u00b7 Aucune sauvegarde touch\\u00e9e"
+  "notes": "Les astuces sont resserr\\u00e9es : une phrase courte dans le popup, le texte complet dans l'Aide \\u00b7 Six astuces ne s'ouvrent plus d'elles-m\\u00eames mais restent consultables \\u00b7 Les fours \\u00e0 arc n'ont plus qu'une astuce et plusieurs conditions se d\\u00e9clenchent au bon moment \\u00b7 Aucune sauvegarde touch\\u00e9e"
 }
