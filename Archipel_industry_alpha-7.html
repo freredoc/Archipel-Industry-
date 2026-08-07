@@ -8386,8 +8386,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 367;
-const GAME_VERSION = 'Alpha 14.84';
+const GAME_BUILD = 368;
+const GAME_VERSION = 'Alpha 14.85';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8396,7 +8396,7 @@ const GAME_VERSION = 'Alpha 14.84';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Pendant l\u2019\u00e9tape 6 du tutoriel, le halo d\u00e9signe l\u2019onglet Am\u00e9liorer d\u00e8s que tout est reli\u00e9, quel que soit l\u2019outil en main \u00b7 Il continue de d\u00e9signer le R\u00e9seau tant qu\u2019il reste un b\u00e2timent \u00e0 relier \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Le tutoriel indique d\u00e9sormais O\u00d9 poser : seules les tuiles qui clignotent acceptent une pose, dans l\u2019ordre que vous voulez \u00b7 D\u00e9molir se ferme pendant ces \u00e9tapes, puisqu\u2019une pose hors plan est refus\u00e9e avant d\u2019exister \u00b7 \u00c0 la derni\u00e8re \u00e9tape, toute la barre revient \u00b7 Aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -13951,6 +13951,55 @@ function tutFlowOf(game, isl, res) {
   const f = islandFlowAgg(game, isl);
   return Math.floor((f.prod && f.prod[res]) || 0);
 }
+// PLAN DE POSE DU TUTORIEL — relevé sur une partie réelle enregistrée (journal build 367),
+// pas calculé. Chaque ligne est [rangée, colonne, bâtiment], dans le repère PADDÉ de l'île 1
+// en mode NORMAL (16×16 + SEA_PAD 8, port en 21,12). Le tutoriel ne démarre qu'en partie
+// neuve, donc toujours en mode normal : les coordonnées sont stables.
+// Vérifié avant écriture : 32 poses valides sur le terrain, mines toutes sur gisement,
+// 19 routes formant un chemin continu jusqu'au port, aucun bâtiment orphelin.
+// ⚠ L'ORDRE N'EST PAS IMPOSÉ : le joueur doit poser SUR une des tuiles restantes de son
+// étape, pas dans la séquence relevée. Il peut tracer ses routes avant ses bâtiments.
+const TUT_PLAN = {
+  0: [[17, 12, 'mine_fer']],
+  1: [[18, 12, 'road'], [19, 12, 'road'], [20, 12, 'road']],
+  2: [[18, 11, 'carriere']],
+  3: [[16, 13, 'mine_fer'], [15, 13, 'mine_fer'], [19, 11, 'carriere'], [18, 14, 'carriere'],
+      [17, 13, 'road'], [18, 13, 'road'], [17, 14, 'road'], [16, 14, 'road'], [15, 14, 'road']],
+  5: [[18, 18, 'mine_fer'], [19, 18, 'mine_fer'], [18, 16, 'carriere'], [18, 17, 'carriere'],
+      [19, 13, 'road'], [19, 14, 'road'], [19, 15, 'road'], [19, 16, 'road'], [19, 17, 'road'],
+      [17, 18, 'road'], [16, 18, 'road'], [16, 15, 'road'], [16, 16, 'road'], [16, 17, 'road']],
+  6: [[16, 20, 'mine_charbon'], [16, 19, 'road']],
+  7: [[18, 15, 'four_fer']],
+  8: [[17, 15, 'cimenterie']]
+};
+// Tuiles du plan de l'étape courante qui ne portent pas encore le bon bâtiment.
+// Sert AU HALO et AU VERROU : une seule source, donc le joueur ne peut jamais se voir
+// refuser une tuile qui clignote, ni en réussir une qui ne clignote pas.
+function tutPlanRemaining(game) {
+  const t = game && game.tutorial;
+  if (!t || !t.active || game.currentIsland !== 1) return [];
+  const plan = TUT_PLAN[t.step];
+  if (!plan) return [];
+  const tiles = game.islands && game.islands[1];
+  if (!tiles) return [];
+  const out = [];
+  for (const e of plan) {
+    const row = tiles[e[0]];
+    const b = row && row[e[1]] && row[e[1]].building;
+    if (!b || b.id !== e[2]) out.push(e);
+  }
+  return out;
+}
+// Cette pose est-elle celle attendue ? `true` hors tutoriel, hors île 1, et aux étapes
+// sans plan (5 = améliorer, 9 = monter en cadence) : le verrou ne doit contraindre QUE
+// les étapes qui décrivent une pose.
+function tutPlanAllows(game, r, c, id) {
+  const t = game && game.tutorial;
+  if (!t || !t.active || game.currentIsland !== 1) return true;
+  if (!TUT_PLAN[t.step]) return true;
+  for (const e of tutPlanRemaining(game)) if (e[0] === r && e[1] === c && e[2] === id) return true;
+  return false;
+}
 function tutCountConnected(game, isl, id) {
   const t = tutIsland(game, isl);
   if (!t) return 0;
@@ -13994,7 +14043,7 @@ const TUTORIAL_STEPS = [{
   targets: [
     { sel: '.tab-build',            when: (g, ui) => !ui.buildOpen && g.ui.tool !== 'mine_fer' },
     { sel: '[data-tut="mine_fer"]', when: g => g.ui.tool !== 'mine_fer' },
-    { tiles: 'mine_fer',            when: () => true }
+    { tiles: '@plan',            when: () => true }
   ],
   progress: g => [['Mines', tutCount(g, 1, 'mine_fer'), 1]],
   done: g => tutCount(g, 1, 'mine_fer') >= 1,
@@ -14006,7 +14055,7 @@ const TUTORIAL_STEPS = [{
   targets: [
     { sel: '.tab-net',          when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' },
     { sel: '[data-tut="road"]', when: g => g.ui.tool !== 'road' },
-    { tiles: 'link',            when: () => true }
+    { tiles: '@plan',            when: () => true }
   ],
   progress: g => [['Reliée', tutCountConnected(g, 1, 'mine_fer'), 1]],
   done: g => tutConnected(g, 1, 'mine_fer'),
@@ -14019,12 +14068,12 @@ const TUTORIAL_STEPS = [{
     // Poser d'abord…
     { sel: '.tab-build',            when: (g, ui) => tutCount(g, 1, 'carriere') < 1 && !ui.buildOpen && g.ui.tool !== 'carriere' },
     { sel: '[data-tut="carriere"]', when: g => tutCount(g, 1, 'carriere') < 1 && g.ui.tool !== 'carriere' },
-    { tiles: 'carriere',            when: g => tutCount(g, 1, 'carriere') < 1 },
+    { tiles: '@plan',            when: g => tutCount(g, 1, 'carriere') < 1 },
     // …puis RELIER. Sans `.tab-net` dans cette liste, `tabAllowed` garde le menu Réseau
     // verrouillé et l'étape devient infaisable dès que le joueur a changé d'outil.
     { sel: '.tab-net',              when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' },
     { sel: '[data-tut="road"]',     when: g => g.ui.tool !== 'road' },
-    { tiles: 'link',                when: () => true }
+    { tiles: '@plan',                when: () => true }
   ],
   progress: g => [['Carrières reliées', tutCountConnected(g, 1, 'carriere'), 1]],
   done: g => tutConnected(g, 1, 'carriere'),
@@ -14039,7 +14088,7 @@ const TUTORIAL_STEPS = [{
     // était le seul chemin possible, et personne ne le devine.
     { sel: '.tab-net',          when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' && tutCount(g, 1, 'mine_fer') >= 3 && tutCount(g, 1, 'carriere') >= 3 },
     { sel: '[data-tut="road"]', when: g => g.ui.tool !== 'road' && tutCount(g, 1, 'mine_fer') >= 3 && tutCount(g, 1, 'carriere') >= 3 },
-    { tiles: 'link',            when: () => true }
+    { tiles: '@plan',            when: () => true }
   ],
   progress: g => [['Mines', tutCountConnected(g, 1, 'mine_fer'), 3], ['Carrières', tutCountConnected(g, 1, 'carriere'), 3]],
   done: g => tutCountConnected(g, 1, 'mine_fer') >= 3 && tutCountConnected(g, 1, 'carriere') >= 3,
@@ -14069,7 +14118,7 @@ const TUTORIAL_STEPS = [{
     { sel: '.tab-net',          when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' && tutCount(g, 1, 'mine_fer') >= 5 && tutCount(g, 1, 'carriere') >= 5 && (tutCountConnected(g, 1, 'mine_fer') < 5 || tutCountConnected(g, 1, 'carriere') < 5) },
     { sel: '[data-tut="road"]', when: g => g.ui.tool !== 'road' && tutCount(g, 1, 'mine_fer') >= 5 && tutCount(g, 1, 'carriere') >= 5 && (tutCountConnected(g, 1, 'mine_fer') < 5 || tutCountConnected(g, 1, 'carriere') < 5) },
     { sel: '.tab-upg',          when: g => !tutAllUpgraded(g, 1, ['mine_fer', 'carriere'], 1) && tutCountConnected(g, 1, 'mine_fer') >= 5 && tutCountConnected(g, 1, 'carriere') >= 5 },
-    { tiles: 'link',            when: () => true }
+    { tiles: '@plan',            when: () => true }
   ],
   progress: g => [['Reliées', tutCountConnected(g, 1, 'mine_fer') + tutCountConnected(g, 1, 'carriere'), 10], ['Au niveau 2', tutUpgradedCount(g, 1, ['mine_fer', 'carriere'], 1), 10]],
   done: g => tutCountConnected(g, 1, 'mine_fer') >= 5 && tutCountConnected(g, 1, 'carriere') >= 5 && tutAllUpgraded(g, 1, ['mine_fer', 'carriere'], 1),
@@ -14081,10 +14130,10 @@ const TUTORIAL_STEPS = [{
   targets: [
     { sel: '.tab-build',                when: (g, ui) => tutCount(g, 1, 'mine_charbon') < 1 && !ui.buildOpen && g.ui.tool !== 'mine_charbon' },
     { sel: '[data-tut="mine_charbon"]', when: g => tutCount(g, 1, 'mine_charbon') < 1 && g.ui.tool !== 'mine_charbon' },
-    { tiles: 'mine_charbon',            when: g => tutCount(g, 1, 'mine_charbon') < 1 },
+    { tiles: '@plan',            when: g => tutCount(g, 1, 'mine_charbon') < 1 },
     { sel: '.tab-net',                  when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' },
     { sel: '[data-tut="road"]',         when: g => g.ui.tool !== 'road' },
-    { tiles: 'link',                    when: () => true }
+    { tiles: '@plan',                    when: () => true }
   ],
   progress: g => [['Posée', tutCount(g, 1, 'mine_charbon'), 1], ['Reliée', tutCountConnected(g, 1, 'mine_charbon'), 1]],
   done: g => tutConnected(g, 1, 'mine_charbon'),
@@ -14096,10 +14145,10 @@ const TUTORIAL_STEPS = [{
   targets: [
     { sel: '.tab-build',            when: (g, ui) => tutCount(g, 1, 'four_fer') < 1 && !ui.buildOpen && g.ui.tool !== 'four_fer' },
     { sel: '[data-tut="four_fer"]', when: g => tutCount(g, 1, 'four_fer') < 1 && g.ui.tool !== 'four_fer' },
-    { tiles: 'four_fer',            when: g => tutCount(g, 1, 'four_fer') < 1 },
+    { tiles: '@plan',            when: g => tutCount(g, 1, 'four_fer') < 1 },
     { sel: '.tab-net',              when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' },
     { sel: '[data-tut="road"]',     when: g => g.ui.tool !== 'road' },
-    { tiles: 'link',                when: () => true }
+    { tiles: '@plan',                when: () => true }
   ],
   progress: g => [['Posé', tutCount(g, 1, 'four_fer'), 1], ['Relié', tutCountConnected(g, 1, 'four_fer'), 1]],
   done: g => tutConnected(g, 1, 'four_fer'),
@@ -14111,10 +14160,10 @@ const TUTORIAL_STEPS = [{
   targets: [
     { sel: '.tab-build',              when: (g, ui) => tutCount(g, 1, 'cimenterie') < 1 && !ui.buildOpen && g.ui.tool !== 'cimenterie' },
     { sel: '[data-tut="cimenterie"]', when: g => tutCount(g, 1, 'cimenterie') < 1 && g.ui.tool !== 'cimenterie' },
-    { tiles: 'cimenterie',            when: g => tutCount(g, 1, 'cimenterie') < 1 },
+    { tiles: '@plan',            when: g => tutCount(g, 1, 'cimenterie') < 1 },
     { sel: '.tab-net',                when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' },
     { sel: '[data-tut="road"]',       when: g => g.ui.tool !== 'road' },
-    { tiles: 'link',                  when: () => true }
+    { tiles: '@plan',                  when: () => true }
   ],
   progress: g => [['Posée', tutCount(g, 1, 'cimenterie'), 1], ['Reliée', tutCountConnected(g, 1, 'cimenterie'), 1]],
   done: g => tutConnected(g, 1, 'cimenterie'),
@@ -17896,7 +17945,17 @@ function Toolbar({
   const tabAllowed = key => {
     if (logicLayer && key === 'upg') return false; // amélioration inutilisable en couche logique
     if (!tutStep) return true;
-    if (key === 'dem') return true; // D4, non négociable
+    // Étape 10 (index 9) : plus aucune pose imposée, on rend TOUTE la barre au joueur.
+    // C'est un objectif de cadence, pas une trame — il doit pouvoir bâtir à sa guise.
+    // `tutStep` est l'OBJET d'étape, pas son index : on le retrouve par identité de
+    // référence — les entrées de TUTORIAL_STEPS sont uniques et jamais recopiées.
+    const si = TUTORIAL_STEPS.indexOf(tutStep);
+    if (si >= 9) return true;
+    // D4 EST RENVERSÉ ICI. Démolir n'existait que comme porte de sortie d'une pose ratée ;
+    // avec le plan (§A) une pose hors tuile est refusée AVANT d'exister, donc il n'y a plus
+    // rien à défaire. ⚠ Ce renversement n'est valide QUE tant que le verrou tient : le
+    // rouvrir sans rendre Démolir enfermerait le joueur sur sa première erreur.
+    if (key === 'dem') return TUT_PLAN[si] == null;
     const sels = (tutStep.targets || []).map(t => t.sel || '').join(' ');
     if (key === 'bat') return sels.includes('.tab-build');
     if (key === 'net') return sels.includes('.tab-net');
@@ -27148,6 +27207,15 @@ function App() {
       ctx.fillRect(x + 2, y + 2, tile - 4, tile - 4);
       ctx.strokeRect(x + 2, y + 2, tile - 4, tile - 4);
     };
+    if (tg.tiles === '@plan') {
+      // Halo du plan : EXACTEMENT les tuiles que le verrou acceptera, bâtiments et routes
+      // confondus. Remplace la polyligne décorative de l'ancien mode 'link', qui ne
+      // désignait aucune tuile posable et pointait `mine_fer` même quand l'étape parlait
+      // de la carrière, du charbon, du four ou de la cimenterie — six étapes sur sept.
+      for (const e of tutPlanRemaining(g)) mark(e[0], e[1]);
+      ctx.restore();
+      return;
+    }
     if (tg.tiles === 'link') {
       // Étape 2 : « relie CECI à CELA ». Pas de pathfinding — on halote la source et le
       // port, reliés par une polyligne pointillée en L. C'est une INDICATION, pas un ordre.
@@ -28417,7 +28485,14 @@ function App() {
       handleTap(tile, e);
     } else if (drag.mode === 'place' && !drag.panned && drag.dist < TAP_THRESHOLD && tile) {
       // Tap franc en mode construction = pose sur la tuile.
-      REC.act(g, 'place', tile.r, tile.c, g.ui.tool, tryPlace(tile.r, tile.c, g.ui.tool, true));
+      // VERROU DU TUTORIEL : la pose n'est acceptée que sur une tuile du plan de l'étape.
+      // Le refus est journalisé comme une pose ratée (ok:0) — c'est ce qui permettra de
+      // mesurer, sur un journal réel, combien de fois le joueur vise à côté du halo.
+      if (!tutPlanAllows(g, tile.r, tile.c, g.ui.tool)) {
+        REC.act(g, 'place', tile.r, tile.c, g.ui.tool, false);
+        showToast(I18N.t('Pose-le sur la tuile qui clignote'), 'var(--orange)');
+        SFX.play('invalid');
+      } else REC.act(g, 'place', tile.r, tile.c, g.ui.tool, tryPlace(tile.r, tile.c, g.ui.tool, true));
     } else if (drag.mode === 'upgrade' && !drag.panned && drag.dist < TAP_THRESHOLD && tile) {
       // Tap franc en mode amélioration : amélioration immédiate (option activée) ou
       // ouverture du panneau de confirmation (par défaut).
