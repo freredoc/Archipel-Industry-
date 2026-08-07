@@ -17,7 +17,77 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 363`, `GAME_VERSION = 'Alpha 14.80'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 364`, `GAME_VERSION = 'Alpha 14.81'`, `SAVE_VERSION = 31`.**
+  Changement 14.81 (brief `BRIEFTUTOLOT3Bverrous`, **LOT 3B — 8 sites A→H**) : **une partie neuve
+  DÉMARRE DIRECTEMENT** (plus d'écran de choix de mode), **inventaire déplié à la création**, et
+  **Port / Recherche / Calculateur restent grisés tant qu'ils n'ont rien à montrer** (pastille
+  d'énergie MASQUÉE, pas grisée). `SAVE_VERSION` INCHANGÉ, aucun champ ajouté (`invOpen` n'est pas
+  persisté et ne le devient pas). Base EXACTE (363 / 14.80) ; **8/8 ancres uniques, 16/16 hachages
+  conformes AVANT application**, `node --check` 7/7, **delta des 8 blocs +2 652 o EXACT**, contrôles
+  sémantiques 4/4 (`setNeedMode(true)` 0, `chooseMode('normal', false)` 1, `disabled: !islandTrade…` 2,
+  `disabled: !researchUnlocked` 1).
+  (1) ⚠ **`ModeModal` N'A PLUS AUCUN POINT D'ENTRÉE — le mode DIFFICILE n'est plus créable.**
+  Décision d'Ethan, assumée, à rouvrir par les Options plus tard : **ne pas « réparer » ce point.**
+  Les parties existantes ne sont pas touchées (le mode vit dans la save et `loadSave` le rétablit
+  lui-même, AVANT le `if (!loaded)`) — vérifié par le vrai chemin : partie difficile créée sur la
+  base 363, rechargée en 364 → **îles restées 28×28** (contre 32×32 en normal), `mode: 'difficile'`,
+  **aucun toast de mode** (donc `chooseMode` n'a pas tourné — preuve par les conséquences, un appel
+  ici reconstruirait les îles et détruirait la partie).
+  (2) ⚠ **ÉCART NÉCESSAIRE 1 — le prédicat de la Recherche.** Le brief impose `tipResearchActionable`,
+  qui compte `condition_ok` : or le **nœud 2 (« Accès Île 2 », `delivery` à `reqs` vides) est
+  `condition_ok` DÈS LE PREMIER TICK**, sans être payable (piège déjà documenté en 13.61 pour
+  `go_recherche`). Mesuré au boot : `tipResearchActionable = true` → **le bouton n'aurait JAMAIS été
+  grisé** et l'objectif n°4 du brief était manqué (Port/Calculateur/pastille, eux, étaient corrects).
+  Nouveau helper `researchPanelUnlocked` = **`hasPendingResearch` (gaté par `deliveryReady` depuis
+  13.68 → vraiment « à portée ») OU un nœud déjà confirmé** (pour l'irréversibilité exigée au test 7).
+  Mesuré : grisé au boot, actif dès la livraison payable, **reste actif après validation même port
+  VIDÉ**. Aligné sur le guide : `go_recherche` ne pointe le bouton que si `hasPendingResearch`, donc
+  **le halo ne désigne jamais un bouton grisé** (idem `go_liaison`/Port avec `islandUnlocked[2]`).
+  ⚠ Effet assumé AVANT la première validation : le bouton suit le stock (s'allume quand la livraison
+  devient payable, se re-grise si le joueur dépense) — c'est la définition de « à portée ».
+  (3) ⚠ **ÉCART NÉCESSAIRE 2 — l'inventaire déplié RECOUVRAIT le bandeau du tutoriel.** L'inventaire
+  ouvert est en SUPERPOSITION (`position:absolute; top:100%` du `.hud-stack`, 11.36) : mesuré sur
+  420/360/390 px, il se plaçait **exactement sur le bandeau** (inventaire y 108→238, bandeau y
+  108→174) → objectif, **compteurs du lot 3A** et bouton « Passer » **invisibles et inatteignables au
+  premier lancement**, c'est-à-dire au seul moment où ils comptent. **CONTRE-ÉPREUVE : défaut
+  PRÉEXISTANT** (base 363, inventaire ouvert À LA MAIN pendant le tutoriel → recouvrement identique ;
+  inventaire fermé → bandeau à y=144, cliquable) que le dépliage d'office rendait SYSTÉMATIQUE.
+  Corrigé en deux temps, car **le z-index seul ne suffit pas** : le bandeau étant semi-transparent, il
+  se superposait au texte de l'inventaire (« Tuto 1/10 » sur « INVENTAIRE ») — illisible, donc pire.
+  (a) `.tuto-banner{position:relative;z-index:21}` — 21 suffit : `.hud-stack` porte
+  `position:relative;z-index:20` et **ENFERME** le z-index 40 de l'inventaire dans son contexte
+  d'empilement ; reste sous les boutons flottants (45) et les panneaux (120-131). (b) `TutorialBanner`
+  publie sa **hauteur MESURÉE** dans `--tuto-h` (`useLayoutEffect` + `ResizeObserver`, remise à 0 au
+  démontage) et `.inventory.open` s'ancre à `top:calc(100% + var(--tuto-h, 0px))` → les deux
+  s'EMPILENT. Hauteur mesurée et non figée : le bandeau passe à deux lignes sur écran étroit.
+  Re-mesuré : inventaire à y=174 sur les 3 viewports, **5 items sur 5 visibles**, `Passer`/goal/
+  compteur tous atteignables. Corrige aussi le cas préexistant pour tous les joueurs.
+  (4) **Conséquence cosmétique SIGNALÉE, non corrigée** : `chooseMode` affiche son toast
+  « 🗺 Mode Normal — grandes îles » au premier lancement — un mode que le joueur n'a pas choisi est
+  donc nommé à l'écran. Sans effet fonctionnel ; le retirer demanderait de toucher `chooseMode`,
+  hors des 8 blocs.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **113 assertions, 0 KO, rejouées 2 fois
+  sans flottement** — 50 pour le lot (démarrage direct, création de slot par le VRAI chemin
+  Options → Sauvegarde → nouvel emplacement, rechargement d'une partie difficile, 3 verrous +
+  clics sans effet, déverrouillages successifs, contre-épreuve île 2 re-verrouillée, page blanche
+  DEV + PUBLIQUE) **+ 63 en NON-RÉGRESSION du lot 3A rejouées sur ce build** (déroulé 1→10,
+  compteurs, file d'attente, marquage à la fermeture, 360 px, guide sans compteur).
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **le `PortPanel` porte les classes
+  `research-panel port-panel`** → un sélecteur `.research-panel` matche AUSSI le Port (utiliser
+  `:not(.port-panel)`) ; (b) valider un nœud ouvre **`.rd-popup` (« Recherche terminée »)**, dont le
+  backdrop avale le clic suivant — une purge qui ne ferme que `.tip-popup` ne suffit pas ; (c) fermer
+  un panneau demande d'**amorcer `useGhostGuard`** (pointerdown INTERNE, 13.50) puis de boucler
+  jusqu'à disparition réelle, sinon le panneau reste ouvert et recouvre la cible suivante ;
+  (d) **valider le nœud 2 EST « Accès Île 2 »** → Port/Calculateur/pastille s'ouvrent du même coup :
+  toute assertion « ils restent grisés » doit être posée AVANT la validation ; (e) une île difficile
+  fait **28×28** (12 + 2×`SEA_PAD`) contre 32×32 en normal — pas de seuil « < 24 » ; (f) un
+  `addInitScript` s'exécute **avant `document.documentElement`** → un `MutationObserver` posé là lève.
+  ⚠ **Taille : 3 262 251 → 3 268 951 o** (+2 652 les 8 blocs EXACT, le reste = les 2 écarts,
+  le bump et `GAME_NOTES`).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `ModeModal` (laissée en place, inatteignable), l'accès au mode
+  difficile par les Options, `chooseMode` et son toast, `tipResearchActionable` (conservée telle
+  quelle — elle sert aux astuces), `SAVE_VERSION`, le tutoriel et ses compteurs (lot 3A).
+- **État précédent : `GAME_BUILD = 363`, `GAME_VERSION = 'Alpha 14.80'`, `SAVE_VERSION = 31`.**
   Changement 14.80 (brief `BRIEFTUTOLOT3Acompteurs`, **LOT 3A — 9 sites A→H**) : **chaque étape du
   tutoriel affiche un COMPTEUR de progression (« Mines 2/3 », posé/relié, niveau, débit) et les popups
   d'astuce ne s'écrasent plus — ils se mettent en FILE, et une astuce n'est marquée « vue » qu'à sa
