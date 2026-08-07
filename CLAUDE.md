@@ -17,7 +17,53 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 359`, `GAME_VERSION = 'Alpha 14.76'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 360`, `GAME_VERSION = 'Alpha 14.77'`, `SAVE_VERSION = 31`.**
+  Changement 14.77 (brief `BRIEFTUTOLOT1cexportnatif`, **LOT 1c — 3 blocs, dont un DÉPLACEMENT de
+  fonction entre portées**) : **le journal exporté était INTROUVABLE sur l'appareil** — l'export
+  empruntait un `Blob` + `<a download>` là où la WebView de l'APK ne produit aucun fichier atteignable.
+  `SAVE_VERSION` INCHANGÉ, aucun champ persisté. Base EXACTE (359 / 14.76) ; **3/3 ancres uniques,
+  6/6 hachages conformes AVANT application**, `node --check` 7/7 du premier coup, **delta +832 o EXACT**.
+  (1) **Le vrai mécanisme, c'est le PONT NATIF** : l'export de SAUVEGARDE appelle
+  `window.ArchipelNative.saveText(name, text)` **AVANT** toute tentative de Blob (via `NATIVE_SAVE`,
+  13.63). Le lot 1 avait lu le repli et pris le repli pour le mécanisme. `saveTextFile` **REMONTE** de
+  `SlotsModal` au niveau module et devient l'**unique** implémentation, partagée par les deux exports.
+  ⚠ **Contrôle sémantique à rejouer à chaque retouche** : **1** définition `saveTextFile = (name, text)`,
+  **2** appels `saveTextFile(` — le déplacement met en risque l'appel historique de `SlotsModal`, qui se
+  résout désormais vers la portée module.
+  (2) **`.jsonl` → `.txt`** : Android n'associe **aucune application** à `.jsonl` → fichier ni ouvrable
+  ni partageable. Le CONTENU reste du JSON-lines (une ligne = un objet). Après patch, `.jsonl` n'apparaît
+  plus que dans les **3 occurrences de commentaire** qui expliquent l'abandon, **0 en code**.
+  (3) ⚠ **ORDRE DE DÉCLARATION, même piège TDZ qu'au lot 1b — ne pas « ranger » le code.**
+  `saveTextFile` est posé juste après `NATIVE_SAVE` qu'il lit, donc **APRÈS** le module `REC` qui
+  l'appelle (offsets mesurés sur la base 359 : **`REC` à 2 109 119, `NATIVE_SAVE` à 2 185 848**). Sans
+  risque : l'appel n'a lieu qu'au clic. Le remonter avant `NATIVE_SAVE` rouvrirait la zone morte
+  temporelle → **page blanche**.
+  (4) ⚠ **LE COMMENTAIRE DU LOT 1 ÉTAIT FAUX SUR SES TROIS AFFIRMATIONS** (« .jsonl », « fiable en APK »,
+  « même motif que l'export de sauvegarde ») : l'ancre du §J **commence au commentaire**, pas à
+  `exportNow`. Un commentaire mensonger qui survit à la correction qu'il décrit est pire que pas de
+  commentaire — c'est lui qui m'avait fait livrer le défaut au lot 1.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **33 assertions, 0 KO**, **rejouées 2 fois
+  sans flottement**. ⚠ **Le pont `ArchipelNative` est SIMULÉ** (injecté par `addInitScript` AVANT le
+  script du jeu — `NATIVE_SAVE` est évalué au chargement du module) : c'est le seul moyen d'exercer en
+  labo le chemin qui échouait sur APK. **Test 1** : `saveText` appelé **1 fois**, nom
+  `archipel-journal-360.txt`, et **AUCUN Blob créé** — le pont court-circuite bien le repli.
+  **CONTRE-ÉPREUVE EXÉCUTÉE sur la BASE 359 avec le MÊME pont présent** : `saveText` **n'est PAS
+  appelé** (n=0) et un Blob est créé à la place → c'est exactement le défaut, et le test est falsifiable.
+  **Test 3** : sans pont, `NATIVE_SAVE` est **`undefined`** (valeur de retour du `&&`, pas `false` —
+  piège d'assertion) donc falsy → repli Blob, **même nom de fichier**. **Test 4** : presse-papier
+  conservé et **strictement identique** au contenu du fichier (440 o des deux côtés). **Test 5**
+  (le site mis en risque par le déplacement) : export de sauvegarde par de VRAIS clics
+  Options → Sauvegarde → Exporter → « ⤓ Télécharger .txt » → passe par le pont, nom
+  `archipel-Partie_1.txt`, aucun Blob, et le contenu **se ré-importe** (`decodeSave` + `JSON.parse` OK).
+  **Test 6** : les 2 éditions démarrent, console vide, 0 `ReferenceError`.
+  ⚠ **Taille : 3 245 389 → 3 246 200 o.** Les 3 blocs pèsent **+832 o EXACT** ; le reste est le bump et
+  le nouveau `GAME_NOTES` (plus court).
+  ⚠ **PIÈGE DE HARNAIS** : `play()` ne doit pas présumer qu'un panneau Options est ouvert — le fermer
+  seulement s'il existe, sinon le scénario qui n'allume pas l'enregistreur s'effondre sur `.slot-close`.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : le verrou du tuto (lot 2), `copyText`, le format JSON-lines, le
+  double-échappement de `notes` dans `version.json` (anomalie préexistante signalée au lot 1b),
+  `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 359`, `GAME_VERSION = 'Alpha 14.76'`, `SAVE_VERSION = 31`.**
   Changement 14.76 (brief `BRIEFTUTOLOT1bdevbuild`, **LOT 1b — 3 blocs**) : **l'enregistreur d'actions
   du lot 1 devient EXCLUSIF à l'édition DEV** (décision d'Ethan). `SAVE_VERSION` INCHANGÉ, aucun champ
   persisté. Base EXACTE (358 / 14.75) ; **3/3 ancres uniques, 6/6 hachages conformes AVANT application**,
