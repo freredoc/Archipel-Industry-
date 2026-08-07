@@ -17,7 +17,64 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 360`, `GAME_VERSION = 'Alpha 14.77'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 361`, `GAME_VERSION = 'Alpha 14.78'`, `SAVE_VERSION = 31`.**
+  Changement 14.78 (brief `BRIEFTUTOLOT1djournaleffets`, **LOT 1d — 12 blocs, dont 7 dans le moteur**) :
+  **le journal passe des GESTES aux EFFETS** — il note désormais si une pose a abouti ou été refusée,
+  le motif du refus, l'étape de tutoriel en cours et les variations de stock. `SAVE_VERSION` INCHANGÉ,
+  aucun champ persisté. Base EXACTE (360 / 14.77) ; **12/12 ancres uniques, 24/24 hachages conformes
+  AVANT application**, `node --check` 7/7 du premier coup, **delta +4 139 o EXACT**.
+  (1) **Ce que le premier journal réel a montré** (188 s, 142 lignes, exporté depuis l'APK) : 43 entrées
+  `?` en doublon des `tap` (**31 % du fichier**), des étiquettes dépendantes de la langue (`txt:INVENTAIRE`)
+  ou ambiguës (`txt:✕` porté par **cinq** boutons distincts), et surtout **aucun moyen de savoir si un
+  geste a abouti**.
+  (2) **Doublon canvas fermé** (§C) : un tap sur la carte produit AUSSI un clic DOM qui remonte à la
+  capture racine, sur un `<canvas>` que `closest` ne reconnaît pas → entrée `?`. Écarté à la source par
+  `t.closest('canvas')`. Mesuré après : **10 poses → 10 `tap`, 0 `?`**.
+  (3) **`labelOf` v2** : le repli TEXTE passe en DERNIER recours, une **première classe** s'intercale
+  avant lui. ⚠ **La liste blanche reste PRIORITAIRE** : `"tab-btn tab-build"` donnerait `tab-btn`,
+  générique à tous les onglets. Mesuré : les 3 croix testées sortent **distinctes** (`cls:ip-close`,
+  `cls:res-pop-close`, `cls:slot-close`), **0 `txt:✕`**, et `cls:inv-label-btn` au lieu de
+  `txt:INVENTAIRE`.
+  (4) **`REC.act(g, kind, r, c, id, ok)` RENVOIE `ok` INCHANGÉ** — c'est ce qui permet d'envelopper
+  `tryPlace`/`tryUpgrade`/`tryDemolish` sans que l'appelant voie une différence. **C'est le vrai risque
+  du lot** : 7 sites moteur. Vérifié par les 6 chemins réels (tap, panneau d'amélioration, amélioration
+  rapide, fiche bâtiment × 2, démolition au tap).
+  (5) **Motifs de refus par `showToast`** (§K) : point de passage UNIQUE, plutôt que les onze
+  `return false` de `tryPlace`. Mesuré : `{"fx":"place","r":5,"c":9,"id":"mine_fer","ok":0}` suivi de
+  `{"fx":"msg","m":"❌ Mine Fer V1 : terrain non autorisé"}`.
+  (6) **Variations de stock** : le 1ᵉʳ effet porte l'inventaire complet, les suivants le seul delta,
+  et **rien du tout** si rien n'a bougé. ⚠ **Changement d'île → `lastRes` est purgé** → inventaire
+  complet de la nouvelle île, jamais un delta croisé (mesuré : `{"acier":7,"ciment":3}` après bascule).
+  ⚠ Le tampon `lastRes` n'est PAS remis à zéro par `toggle()` — sans conséquence, `fx` sortant avant
+  `resDelta` quand l'enregistreur est éteint : le 1ᵉʳ effet après un allumage porte bien l'inventaire
+  complet tant qu'on n'a pas déjà enregistré dans la même page.
+  (7) ⚠ **LE §E PATCHE UNE BRANCHE MORTE, et le test 5 du brief repose sur une prémisse fausse.**
+  `drag.mode = 'paint'` n'apparaît **qu'UNE seule fois dans tout le fichier** — au site consommateur
+  patché ; `onPointerDown` ne l'assigne **jamais** (branches réelles : `select`/`place`/`upgrade`/
+  `demolish`, cf. 14.75). Un glissé outil route **déplace la carte**, il ne pose rien. Mesuré :
+  5 tuiles glissées → **0 posée, 0 `fx place`** — le journal reflète donc EXACTEMENT ce que le jeu a
+  fait. Le bloc est appliqué verbatim (inerte, sans risque) ; **si la pose au glissé doit revenir,
+  c'est `onPointerDown` qu'il faut rouvrir**, pas ce site.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **61 assertions, 0 KO**, **rejouées 2 fois
+  sans flottement**. **Test 8** : tutoriel déroulé de bout en bout → **`fx tutstep` step 1..8**, une
+  entrée par franchissement, `tutorial.active` à `false` à la fin. **Test 9** : 5 100 clics → `count()`
+  plafonne à **5 000**, plus ancienne conservée `i:102`. **Test 10** : éteint, 40 s de jeu + gestes →
+  `count() === 0`, puis allumage + export **sans geste intermédiaire** → `n:1` (le clic d'export seul).
+  **Test 11** : 3 min de jeu enregistrement actif → 0 `tickError`, canvas peint, 0 erreur console.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) `tryUpgrade` refuse LÉGITIMEMENT quand
+  le port est vide — un test d'amélioration doit **approvisionner le port** (`RES_SHORT` en boucle),
+  sinon on mesure le manque de ressources et non la préservation du retour ; (b) un flood de routes
+  BFS **sature l'île** (87 land + 36 coast, 120 routes posées → plus une seule tuile libre) : tracer
+  des **chemins ciblés** port→bâtiment ; (c) une tuile **adjacente au port** donne un chemin BFS VIDE,
+  donc aucune route posée, et `roadReachesPortFootprint` échoue alors que le bâtiment touche le port —
+  imposer une distance ≥ 3 ; (d) `checkTutorial` est un **`while`** : si toutes les conditions sont
+  vraies d'un coup, les 8 étapes défilent dans la même frame.
+  ⚠ **Taille : 3 246 200 → 3 250 360 o.** Les 12 blocs pèsent **+4 139 o EXACT** ; le reste est le bump
+  et le nouveau `GAME_NOTES`.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : le verrou du tuto (lot 2), l'ajout de `data-tut` (le repli
+  « première classe » suffit), l'échantillonnage périodique des ressources (écarté au §2 du brief),
+  `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 360`, `GAME_VERSION = 'Alpha 14.77'`, `SAVE_VERSION = 31`.**
   Changement 14.77 (brief `BRIEFTUTOLOT1cexportnatif`, **LOT 1c — 3 blocs, dont un DÉPLACEMENT de
   fonction entre portées**) : **le journal exporté était INTROUVABLE sur l'appareil** — l'export
   empruntait un `Blob` + `<a download>` là où la WebView de l'APK ne produit aucun fichier atteignable.
