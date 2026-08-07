@@ -8386,8 +8386,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 365;
-const GAME_VERSION = 'Alpha 14.82';
+const GAME_BUILD = 366;
+const GAME_VERSION = 'Alpha 14.83';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8396,7 +8396,7 @@ const GAME_VERSION = 'Alpha 14.82';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les astuces sont resserr\u00e9es : une phrase courte dans le popup, le texte complet dans l'Aide \u00b7 Six astuces ne s'ouvrent plus d'elles-m\u00eames mais restent consultables \u00b7 Les fours \u00e0 arc n'ont plus qu'une astuce et plusieurs conditions se d\u00e9clenchent au bon moment \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Le menu R\u00e9seau est d\u00e9sormais accessible aux six \u00e9tapes du tutoriel qui demandent de relier un b\u00e2timent au port \u00b7 Le halo d\u00e9signe le r\u00e9seau une fois la pose faite, puis l\u2019am\u00e9lioration une fois les liaisons faites \u00b7 Aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -14016,9 +14016,15 @@ const TUTORIAL_STEPS = [{
   goal: 'Pose une carrière et relie-la au port.',
   why: 'tut_carriere',
   targets: [
-    { sel: '.tab-build',            when: (g, ui) => !ui.buildOpen && g.ui.tool !== 'carriere' },
-    { sel: '[data-tut="carriere"]', when: g => g.ui.tool !== 'carriere' },
-    { tiles: 'carriere',            when: () => true }
+    // Poser d'abord…
+    { sel: '.tab-build',            when: (g, ui) => tutCount(g, 1, 'carriere') < 1 && !ui.buildOpen && g.ui.tool !== 'carriere' },
+    { sel: '[data-tut="carriere"]', when: g => tutCount(g, 1, 'carriere') < 1 && g.ui.tool !== 'carriere' },
+    { tiles: 'carriere',            when: g => tutCount(g, 1, 'carriere') < 1 },
+    // …puis RELIER. Sans `.tab-net` dans cette liste, `tabAllowed` garde le menu Réseau
+    // verrouillé et l'étape devient infaisable dès que le joueur a changé d'outil.
+    { sel: '.tab-net',              when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' },
+    { sel: '[data-tut="road"]',     when: g => g.ui.tool !== 'road' },
+    { tiles: 'link',                when: () => true }
   ],
   progress: g => [['Carrières reliées', tutCountConnected(g, 1, 'carriere'), 1]],
   done: g => tutConnected(g, 1, 'carriere'),
@@ -14028,8 +14034,12 @@ const TUTORIAL_STEPS = [{
   goal: 'Avec le bouton Copier : 2 mines de fer et 2 carrières de plus, toutes reliées.',
   why: 'tut_copier',
   targets: [
-    { sel: '.tab-copy', when: (g, ui) => g.ui.tool !== COPY },
-    { tiles: 'link',    when: () => true }
+    { sel: '.tab-copy',         when: g => g.ui.tool !== COPY && (tutCount(g, 1, 'mine_fer') < 3 || tutCount(g, 1, 'carriere') < 3) },
+    // Le menu Réseau est ouvert dès le départ : copier une ROUTE pour relier ses copies
+    // était le seul chemin possible, et personne ne le devine.
+    { sel: '.tab-net',          when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' && tutCount(g, 1, 'mine_fer') >= 3 && tutCount(g, 1, 'carriere') >= 3 },
+    { sel: '[data-tut="road"]', when: g => g.ui.tool !== 'road' && tutCount(g, 1, 'mine_fer') >= 3 && tutCount(g, 1, 'carriere') >= 3 },
+    { tiles: 'link',            when: () => true }
   ],
   progress: g => [['Mines', tutCountConnected(g, 1, 'mine_fer'), 3], ['Carrières', tutCountConnected(g, 1, 'carriere'), 3]],
   done: g => tutCountConnected(g, 1, 'mine_fer') >= 3 && tutCountConnected(g, 1, 'carriere') >= 3,
@@ -14051,9 +14061,11 @@ const TUTORIAL_STEPS = [{
   goal: '2 mines et 2 carrières de plus, reliées et au niveau 2.',
   why: 'tut_marge',
   targets: [
-    { sel: '.tab-build', when: (g, ui) => !ui.buildOpen && tutCountConnected(g, 1, 'mine_fer') < 5 },
-    { sel: '.tab-upg',   when: g => !tutAllUpgraded(g, 1, ['mine_fer', 'carriere'], 1) },
-    { tiles: 'link',     when: () => true }
+    { sel: '.tab-build',        when: (g, ui) => !ui.buildOpen && (tutCount(g, 1, 'mine_fer') < 5 || tutCount(g, 1, 'carriere') < 5) },
+    { sel: '.tab-net',          when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' && tutCount(g, 1, 'mine_fer') >= 5 && tutCount(g, 1, 'carriere') >= 5 },
+    { sel: '[data-tut="road"]', when: g => g.ui.tool !== 'road' && tutCount(g, 1, 'mine_fer') >= 5 && tutCount(g, 1, 'carriere') >= 5 },
+    { sel: '.tab-upg',          when: g => !tutAllUpgraded(g, 1, ['mine_fer', 'carriere'], 1) && tutCountConnected(g, 1, 'mine_fer') >= 5 && tutCountConnected(g, 1, 'carriere') >= 5 },
+    { tiles: 'link',            when: () => true }
   ],
   progress: g => [['Reliées', tutCountConnected(g, 1, 'mine_fer') + tutCountConnected(g, 1, 'carriere'), 10], ['Au niveau 2', tutUpgradedCount(g, 1, ['mine_fer', 'carriere'], 1), 10]],
   done: g => tutCountConnected(g, 1, 'mine_fer') >= 5 && tutCountConnected(g, 1, 'carriere') >= 5 && tutAllUpgraded(g, 1, ['mine_fer', 'carriere'], 1),
@@ -14063,9 +14075,12 @@ const TUTORIAL_STEPS = [{
   goal: 'Pose une mine de charbon et relie-la au port.',
   why: 'tut_charbon',
   targets: [
-    { sel: '.tab-build',                when: (g, ui) => !ui.buildOpen && g.ui.tool !== 'mine_charbon' },
-    { sel: '[data-tut="mine_charbon"]', when: g => g.ui.tool !== 'mine_charbon' },
-    { tiles: 'mine_charbon',            when: () => true }
+    { sel: '.tab-build',                when: (g, ui) => tutCount(g, 1, 'mine_charbon') < 1 && !ui.buildOpen && g.ui.tool !== 'mine_charbon' },
+    { sel: '[data-tut="mine_charbon"]', when: g => tutCount(g, 1, 'mine_charbon') < 1 && g.ui.tool !== 'mine_charbon' },
+    { tiles: 'mine_charbon',            when: g => tutCount(g, 1, 'mine_charbon') < 1 },
+    { sel: '.tab-net',                  when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' },
+    { sel: '[data-tut="road"]',         when: g => g.ui.tool !== 'road' },
+    { tiles: 'link',                    when: () => true }
   ],
   progress: g => [['Posée', tutCount(g, 1, 'mine_charbon'), 1], ['Reliée', tutCountConnected(g, 1, 'mine_charbon'), 1]],
   done: g => tutConnected(g, 1, 'mine_charbon'),
@@ -14075,9 +14090,12 @@ const TUTORIAL_STEPS = [{
   goal: 'Pose un four à fer et relie-le au port.',
   why: 'tut_four',
   targets: [
-    { sel: '.tab-build',            when: (g, ui) => !ui.buildOpen && g.ui.tool !== 'four_fer' },
-    { sel: '[data-tut="four_fer"]', when: g => g.ui.tool !== 'four_fer' },
-    { tiles: 'four_fer',            when: () => true }
+    { sel: '.tab-build',            when: (g, ui) => tutCount(g, 1, 'four_fer') < 1 && !ui.buildOpen && g.ui.tool !== 'four_fer' },
+    { sel: '[data-tut="four_fer"]', when: g => tutCount(g, 1, 'four_fer') < 1 && g.ui.tool !== 'four_fer' },
+    { tiles: 'four_fer',            when: g => tutCount(g, 1, 'four_fer') < 1 },
+    { sel: '.tab-net',              when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' },
+    { sel: '[data-tut="road"]',     when: g => g.ui.tool !== 'road' },
+    { tiles: 'link',                when: () => true }
   ],
   progress: g => [['Posé', tutCount(g, 1, 'four_fer'), 1], ['Relié', tutCountConnected(g, 1, 'four_fer'), 1]],
   done: g => tutConnected(g, 1, 'four_fer'),
@@ -14087,9 +14105,12 @@ const TUTORIAL_STEPS = [{
   goal: 'Pose une cimenterie et relie-la au port.',
   why: 'tut_ciment',
   targets: [
-    { sel: '.tab-build',              when: (g, ui) => !ui.buildOpen && g.ui.tool !== 'cimenterie' },
-    { sel: '[data-tut="cimenterie"]', when: g => g.ui.tool !== 'cimenterie' },
-    { tiles: 'cimenterie',            when: () => true }
+    { sel: '.tab-build',              when: (g, ui) => tutCount(g, 1, 'cimenterie') < 1 && !ui.buildOpen && g.ui.tool !== 'cimenterie' },
+    { sel: '[data-tut="cimenterie"]', when: g => tutCount(g, 1, 'cimenterie') < 1 && g.ui.tool !== 'cimenterie' },
+    { tiles: 'cimenterie',            when: g => tutCount(g, 1, 'cimenterie') < 1 },
+    { sel: '.tab-net',                when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' },
+    { sel: '[data-tut="road"]',       when: g => g.ui.tool !== 'road' },
+    { tiles: 'link',                  when: () => true }
   ],
   progress: g => [['Posée', tutCount(g, 1, 'cimenterie'), 1], ['Reliée', tutCountConnected(g, 1, 'cimenterie'), 1]],
   done: g => tutConnected(g, 1, 'cimenterie'),
