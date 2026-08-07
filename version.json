@@ -1,8 +1,8 @@
 {
-  "build": 359,
-  "version": "Alpha 14.76",
+  "build": 360,
+  "version": "Alpha 14.77",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "L'option de diagnostic \\u00ab Enregistrer mes actions \\u00bb devient exclusive \\u00e0 l'\\u00e9dition d\\u00e9veloppeur : elle dispara\\u00eet de l'\\u00e9dition publique, o\\u00f9 le journal ne tourne plus du tout \\u00b7 Aucun comportement de jeu modifi\\u00e9, aucune sauvegarde touch\\u00e9e"
+  "notes": "L'export du journal de diagnostic emprunte d\\u00e9sormais le pont natif Android, comme l'export de sauvegarde : le fichier atterrit r\\u00e9ellement sur l'appareil, en .txt et non en .jsonl \\u00b7 Aucun comportement de jeu modifi\\u00e9, aucune sauvegarde touch\\u00e9e"
 }
