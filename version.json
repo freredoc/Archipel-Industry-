@@ -1,8 +1,8 @@
 {
-  "build": 366,
-  "version": "Alpha 14.83",
+  "build": 367,
+  "version": "Alpha 14.84",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Le menu R\\u00e9seau est d\\u00e9sormais accessible aux six \\u00e9tapes du tutoriel qui demandent de relier un b\\u00e2timent au port \\u00b7 Le halo d\\u00e9signe le r\\u00e9seau une fois la pose faite, puis l\\u2019am\\u00e9lioration une fois les liaisons faites \\u00b7 Aucune sauvegarde touch\\u00e9e"
+  "notes": "Pendant l\\u2019\\u00e9tape 6 du tutoriel, le halo d\\u00e9signe l\\u2019onglet Am\\u00e9liorer d\\u00e8s que tout est reli\\u00e9, quel que soit l\\u2019outil en main \\u00b7 Il continue de d\\u00e9signer le R\\u00e9seau tant qu\\u2019il reste un b\\u00e2timent \\u00e0 relier \\u00b7 Aucune sauvegarde touch\\u00e9e"
 }

@@ -8386,8 +8386,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 366;
-const GAME_VERSION = 'Alpha 14.83';
+const GAME_BUILD = 367;
+const GAME_VERSION = 'Alpha 14.84';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8396,7 +8396,7 @@ const GAME_VERSION = 'Alpha 14.83';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Le menu R\u00e9seau est d\u00e9sormais accessible aux six \u00e9tapes du tutoriel qui demandent de relier un b\u00e2timent au port \u00b7 Le halo d\u00e9signe le r\u00e9seau une fois la pose faite, puis l\u2019am\u00e9lioration une fois les liaisons faites \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Pendant l\u2019\u00e9tape 6 du tutoriel, le halo d\u00e9signe l\u2019onglet Am\u00e9liorer d\u00e8s que tout est reli\u00e9, quel que soit l\u2019outil en main \u00b7 Il continue de d\u00e9signer le R\u00e9seau tant qu\u2019il reste un b\u00e2timent \u00e0 relier \u00b7 Aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -14062,8 +14062,12 @@ const TUTORIAL_STEPS = [{
   why: 'tut_marge',
   targets: [
     { sel: '.tab-build',        when: (g, ui) => !ui.buildOpen && (tutCount(g, 1, 'mine_fer') < 5 || tutCount(g, 1, 'carriere') < 5) },
-    { sel: '.tab-net',          when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' && tutCount(g, 1, 'mine_fer') >= 5 && tutCount(g, 1, 'carriere') >= 5 },
-    { sel: '[data-tut="road"]', when: g => g.ui.tool !== 'road' && tutCount(g, 1, 'mine_fer') >= 5 && tutCount(g, 1, 'carriere') >= 5 },
+    // ⚠ `tutCountConnected`, PAS `tutCount` : avec les bâtiments seulement POSÉS, ce `when`
+    // restait vrai une fois tout relié. Comme `.tab-net` précède `.tab-upg`, cliquer sur
+    // Améliorer désarmait la route et renvoyait le halo vers le Réseau — pendant toute la
+    // phase d'amélioration, le guidage désignait l'onglet que le joueur venait de quitter.
+    { sel: '.tab-net',          when: (g, ui) => !ui.netOpen && g.ui.tool !== 'road' && tutCount(g, 1, 'mine_fer') >= 5 && tutCount(g, 1, 'carriere') >= 5 && (tutCountConnected(g, 1, 'mine_fer') < 5 || tutCountConnected(g, 1, 'carriere') < 5) },
+    { sel: '[data-tut="road"]', when: g => g.ui.tool !== 'road' && tutCount(g, 1, 'mine_fer') >= 5 && tutCount(g, 1, 'carriere') >= 5 && (tutCountConnected(g, 1, 'mine_fer') < 5 || tutCountConnected(g, 1, 'carriere') < 5) },
     { sel: '.tab-upg',          when: g => !tutAllUpgraded(g, 1, ['mine_fer', 'carriere'], 1) && tutCountConnected(g, 1, 'mine_fer') >= 5 && tutCountConnected(g, 1, 'carriere') >= 5 },
     { tiles: 'link',            when: () => true }
   ],
