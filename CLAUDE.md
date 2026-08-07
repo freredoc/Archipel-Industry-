@@ -17,7 +17,66 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 362`, `GAME_VERSION = 'Alpha 14.79'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 363`, `GAME_VERSION = 'Alpha 14.80'`, `SAVE_VERSION = 31`.**
+  Changement 14.80 (brief `BRIEFTUTOLOT3Acompteurs`, **LOT 3A — 9 sites A→H**) : **chaque étape du
+  tutoriel affiche un COMPTEUR de progression (« Mines 2/3 », posé/relié, niveau, débit) et les popups
+  d'astuce ne s'écrasent plus — ils se mettent en FILE, et une astuce n'est marquée « vue » qu'à sa
+  FERMETURE effective.** `SAVE_VERSION` INCHANGÉ (`tipsSeen` existe déjà ; seul le moment où il est
+  écrit change). Base EXACTE (362 / 14.79) ; **9/9 ancres uniques, 18/18 hachages conformes AVANT
+  application**, `node --check` 7/7 du premier coup, **delta des 9 blocs +4 712 o EXACT**.
+  (1) **La file (§A/§B)** : `showTip` empile quand un popup est déjà ouvert (dédoublonné) ; `closeTip`
+  marque vu PUIS dépile. Le cas réel visé : tout monter au Nv.2 AVANT de relier la 3e carrière valide
+  les étapes 4 et 5 **dans la même frame** — mesuré : popup `tut_ameliorer` affiché, `tut_marge` le
+  REMPLACE à sa fermeture, aucun des deux marqué vu avant fermeture, les deux dans l'Aide ensuite,
+  file vide après (pas de 3e, pas de doublon sur tout le déroulé).
+  (2) **Les compteurs (§C→§H)** : champ `progress: g => [[label, actuel, max]]` par étape, rendus dans
+  la bannière (`.tuto-count-item`, vert `done` quand actuel ≥ max, `Math.min` d'affichage), recalculés
+  à chaque bump du HUD. Nouveaux helpers `tutUpgradedCount` (nombre au niveau voulu) et `tutFlowOf`
+  (**`Math.floor`** du débit brut, MÊME source `islandFlowAgg` que l'étape → jamais « 10/10 » pendant
+  que l'étape refuse ; mesuré à 9,9/s → « 9/10 » et refus). Compteur affiché même à max = 1 (décision
+  d'Ethan) ; étapes charbon/four/cimenterie distinguent **« Posée 1/1 · Reliée 0/1 »** — c'est là que
+  les joueurs se bloquaient.
+  (3) ⚠ **ÉCART NÉCESSAIRE 1 — la branche étape-0 de `checkTips` généralisée à l'étape COURANTE**
+  (et son marquage à l'ouverture retiré) : sans cela le test 3 du brief (« recharger sans fermer →
+  il se réaffiche ») était INFAISABLE — `tut_mine` restait marqué à l'ouverture, et pour les étapes
+  ≥ 1 le §B rendait l'explication **IRRÉCUPÉRABLE** au rechargement popup ouvert (le franchissement ne
+  se rejoue jamais, et l'astuce non marquée + `when: () => false` disparaissait AUSSI de l'Aide).
+  Étape courante SEULEMENT (re-proposer les étapes passées ferait une rafale au boot des saves
+  antérieures au lot 2). Mesuré : reload popup ouvert → réaffiché (`tut_mine` ET `tut_route`) ;
+  fermé → marqué, plus réaffiché ; save « à l'ancienne » (why marqué à l'ouverture) → aucun popup au
+  boot, bannière 6/10.
+  (4) ⚠ **ÉCART NÉCESSAIRE 2 — `scheduleSave()` ajouté au marquage de `closeTip`** : déplacé à la
+  fermeture, le marquage n'était plus persisté NULLE PART (l'ancien monde le sauvait via le
+  `scheduleSave` qui suivait l'ouverture) → un popup lu serait revenu à chaque lancement si le joueur
+  quittait sans autre action.
+  (5) ⚠ **ÉCART NÉCESSAIRE 3 — `.tuto-main{flex-wrap:wrap}` ajouté au bloc §H (≤ 480 px)** : deux
+  compteurs larges (« Reliées 10/10 · Au niveau 2 6/10 ») **débordaient du viewport 360 px** (mesuré :
+  bord droit à 369 px) — le compteur est `flex-shrink:0` par design (il doit survivre à l'ellipse du
+  goal), donc rien ne pouvait céder ; le test 9 du brief était infaisable. Il passe désormais ENTIER
+  sur sa propre ligne (re-mesuré : 34→261 px, rien de coupé).
+  (6) **« 10/10 » double est TRANSITOIRE par construction** : dès que les deux conditions passent, le
+  `while` de `checkTutorial` gagne la frame et la bannière disparaît. L'état « 10/10 vert » ne
+  s'observe que si l'AUTRE compteur bloque — mesuré ainsi (« Ciments/s 10/10 » vert pendant
+  « Lingots/s 9/10 »). Ne pas chercher à observer le double 10/10, c'est structurel.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **63 assertions (38 + 25), 0 KO,
+  rejouées 2 fois sans flottement** : déroulé 1→10 avec compteurs à chaque étape, progression
+  1/3 → 2/3 → 3/3-vert, posée-non-reliée n'incrémente JAMAIS, double franchissement + file,
+  concordance panneau Production (10/9), floor 9,9 → 9/10, marquage à la fermeture par RECHARGEMENTS
+  réels (avec contre-épreuve), 360 px, `.tip-dismiss` intact, astuces contextuelles reprennent au
+  skip, bandeau du GUIDE sans compteur (`gcount = 0`), page blanche DEV + PUBLIQUE (console vide).
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) une tuile-sonde « posée mais PAS
+  reliée » doit être choisie **SANS route adjacente** — voisine d'une route existante, elle est
+  connectée DÈS la pose et l'étape franchit avant la lecture (3 faux KO d'un coup) ; (b)
+  `islandFlowAgg` est une déclaration de fonction d'un script classique → **réassignable via
+  `window`** pour forger un flux fractionnaire (même famille que `activeEnergyAlerts` en 14.67) —
+  restaurer après ; (c) sur une partie neuve « skippée », AUCUN objectif du guide n'est actif → pas
+  de bandeau du tout : poser une mine non reliée pour armer `fix_deconnecte` avant d'asserter.
+  ⚠ **Taille : 3 256 281 → 3 262 251 o** (+4 712 blocs EXACT, +282 écart 2, +367 écart 3, +609
+  écart 1 + bump/`GAME_NOTES`).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `nextPendingTip` marque toujours à la SÉLECTION (astuces
+  contextuelles — les toucher affecterait les 32 astuces hors tuto), les marquages à l'ouverture du
+  guide (K7, 13.61) et du Collisionneur (14.58), `SAVE_VERSION`, l'enregistreur `REC`, `TIP_SCENES`.
+- **État précédent : `GAME_BUILD = 362`, `GAME_VERSION = 'Alpha 14.79'`, `SAVE_VERSION = 31`.**
   Changement 14.79 (brief `BRIEFTUTOLOT2dixetapes`, **LOT 2 — 5 blocs A→E**) : **la trame du tutoriel
   passe de 8 à 10 étapes** — le bouton Copier entre dans la trame (étape 4), une étape de réserve
   précède les transformateurs (étape 6), et l'objectif final devient une CADENCE à atteindre (étape 10).
