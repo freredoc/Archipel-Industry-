@@ -1,8 +1,8 @@
 {
-  "build": 362,
-  "version": "Alpha 14.79",
+  "build": 363,
+  "version": "Alpha 14.80",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Le tutoriel passe de huit \\u00e0 dix \\u00e9tapes : le bouton Copier entre dans la trame, une \\u00e9tape de r\\u00e9serve pr\\u00e9c\\u00e8de les transformateurs, et l'objectif final devient une cadence \\u00e0 atteindre \\u00b7 Les popups du tutoriel deviennent courts, le texte complet reste dans l'Aide \\u00b7 Aucune sauvegarde touch\\u00e9e"
+  "notes": "Chaque \\u00e9tape du tutoriel affiche un compteur de progression (pos\\u00e9, reli\\u00e9, niveau, d\\u00e9bit) \\u00b7 Les popups d'astuce ne s'\\u00e9crasent plus : ils se mettent en file et une astuce n'est marqu\\u00e9e vue qu'\\u00e0 sa fermeture \\u00b7 Aucune sauvegarde touch\\u00e9e"
 }

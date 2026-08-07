@@ -311,10 +311,23 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   background:rgba(76,175,80,.18);border:1px solid #4CAF50;border-radius:4px;padding:1px 8px;flex-shrink:0;white-space:nowrap;}
 .tuto-goal{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.94rem;color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* Compteur de progression DANS l'étape (« Mines 2/3 »). flex-shrink:0 pour qu'il survive
+   à l'ellipse de .tuto-goal : c'est l'information la plus utile quand la place manque. */
+.tuto-count{display:flex;gap:7px;flex-shrink:0;margin-left:auto;padding-left:8px;}
+.tuto-count-item{font-family:'Bebas Neue',sans-serif;font-size:.78rem;letter-spacing:.04em;
+  color:var(--ink-dim);background:rgba(255,255,255,.06);border:1px solid var(--line);
+  border-radius:4px;padding:1px 7px;white-space:nowrap;}
+.tuto-count-item.done{color:#9ee29f;border-color:#4CAF50;background:rgba(76,175,80,.18);}
 .tuto-skip{flex-shrink:0;background:var(--panel);border:1px solid var(--line);color:var(--ink-dim);
   border-radius:5px;padding:4px 11px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.78rem;}
 .tuto-skip:hover{border-color:var(--red);color:#ff8079;}
-@media (max-width:480px){.tuto-banner{padding:6px 9px;gap:7px;}.tuto-goal{font-size:.82rem;white-space:normal;}}
+@media (max-width:480px){.tuto-banner{padding:6px 9px;gap:7px;}.tuto-goal{font-size:.82rem;white-space:normal;}
+  .tuto-count{gap:5px;padding-left:5px;}.tuto-count-item{font-size:.72rem;padding:1px 5px;}
+  /* Deux compteurs larges (« Reliées 10/10 · Au niveau 2 6/10 ») ne TIENNENT pas sur la
+     ligne d'un 360 px : le compteur etant flex-shrink:0 (il doit survivre a l'ellipse du
+     goal), il debordait du viewport. On laisse la ligne WRAPPER : le compteur passe
+     ENTIER sur sa propre ligne au lieu d'etre coupe. */
+  .tuto-main{flex-wrap:wrap;row-gap:3px;}}
 /* Halo pulsé du tutoriel (cible DOM) — pointer-events:none : ne bloque JAMAIS le tap dessous. */
 .tut-halo{
   position:fixed; z-index:9000; pointer-events:none;
@@ -8355,8 +8368,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 362;
-const GAME_VERSION = 'Alpha 14.79';
+const GAME_BUILD = 363;
+const GAME_VERSION = 'Alpha 14.80';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8365,7 +8378,7 @@ const GAME_VERSION = 'Alpha 14.79';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Le tutoriel passe de huit \u00e0 dix \u00e9tapes : le bouton Copier entre dans la trame, une \u00e9tape de r\u00e9serve pr\u00e9c\u00e8de les transformateurs, et l'objectif final devient une cadence \u00e0 atteindre \u00b7 Les popups du tutoriel deviennent courts, le texte complet reste dans l'Aide \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Chaque \u00e9tape du tutoriel affiche un compteur de progression (pos\u00e9, reli\u00e9, niveau, d\u00e9bit) \u00b7 Les popups d'astuce ne s'\u00e9crasent plus : ils se mettent en file et une astuce n'est marqu\u00e9e vue qu'\u00e0 sa fermeture \u00b7 Aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -13902,6 +13915,24 @@ function tutConnected(game, isl, id) {
 }
 // COMBIEN de bâtiments `id` sont reliés au port — `tutConnected` s'arrête au premier.
 // Les étapes 4 et 6 demandent un NOMBRE de bâtiments reliés, pas un seul.
+// COMBIEN de bâtiments sont déjà au niveau voulu — `tutAllUpgraded` ne rend qu'un
+// booléen, le compteur de la bannière a besoin du nombre.
+function tutUpgradedCount(game, isl, ids, minUpg) {
+  const t = tutIsland(game, isl);
+  if (!t) return 0;
+  let n = 0;
+  for (let r = 0; r < t.def.rows; r++) for (let c = 0; c < t.def.cols; c++) {
+    const b = t.tiles[r][c].building;
+    if (b && ids.indexOf(b.id) !== -1 && (b.upgrade || 0) >= minUpg) n++;
+  }
+  return n;
+}
+// Débit brut d'une ressource, arrondi à l'entier pour l'affichage. Même source que
+// `tutFlowAtLeast` : le compteur ne peut donc pas afficher 10 alors que l'étape refuse.
+function tutFlowOf(game, isl, res) {
+  const f = islandFlowAgg(game, isl);
+  return Math.floor((f.prod && f.prod[res]) || 0);
+}
 function tutCountConnected(game, isl, id) {
   const t = tutIsland(game, isl);
   if (!t) return 0;
@@ -13947,6 +13978,7 @@ const TUTORIAL_STEPS = [{
     { sel: '[data-tut="mine_fer"]', when: g => g.ui.tool !== 'mine_fer' },
     { tiles: 'mine_fer',            when: () => true }
   ],
+  progress: g => [['Mines', tutCount(g, 1, 'mine_fer'), 1]],
   done: g => tutCount(g, 1, 'mine_fer') >= 1,
   afterToast: '✅ La mine extrait — mais le minerai reste sur place. Il lui faut une route.'
 }, {
@@ -13958,6 +13990,7 @@ const TUTORIAL_STEPS = [{
     { sel: '[data-tut="road"]', when: g => g.ui.tool !== 'road' },
     { tiles: 'link',            when: () => true }
   ],
+  progress: g => [['Reliée', tutCountConnected(g, 1, 'mine_fer'), 1]],
   done: g => tutConnected(g, 1, 'mine_fer'),
   afterToast: '✅ Le minerai arrive au port. Regarde ton stock monter.'
 }, {
@@ -13969,6 +14002,7 @@ const TUTORIAL_STEPS = [{
     { sel: '[data-tut="carriere"]', when: g => g.ui.tool !== 'carriere' },
     { tiles: 'carriere',            when: () => true }
   ],
+  progress: g => [['Carrières reliées', tutCountConnected(g, 1, 'carriere'), 1]],
   done: g => tutConnected(g, 1, 'carriere'),
   afterToast: '✅ Deux extracteurs alimentent ton port.'
 }, {
@@ -13979,6 +14013,7 @@ const TUTORIAL_STEPS = [{
     { sel: '.tab-copy', when: (g, ui) => g.ui.tool !== COPY },
     { tiles: 'link',    when: () => true }
   ],
+  progress: g => [['Mines', tutCountConnected(g, 1, 'mine_fer'), 3], ['Carrières', tutCountConnected(g, 1, 'carriere'), 3]],
   done: g => tutCountConnected(g, 1, 'mine_fer') >= 3 && tutCountConnected(g, 1, 'carriere') >= 3,
   afterToast: '✅ Copier évite de rouvrir le menu à chaque pose.'
 }, {
@@ -13990,6 +14025,7 @@ const TUTORIAL_STEPS = [{
     { tiles: '@upgradable',        when: (g, ui) => !ui.upOpen },
     { sel: '[data-tut="upgrade"]', when: () => true }
   ],
+  progress: g => [['Au niveau 2', tutUpgradedCount(g, 1, ['mine_fer', 'carriere'], 1), tutCount(g, 1, 'mine_fer') + tutCount(g, 1, 'carriere')]],
   done: g => tutAllUpgraded(g, 1, ['mine_fer', 'carriere'], 1),
   afterToast: '✅ Même tuile, production doublée. C\'est le cœur de la progression.'
 }, {
@@ -14001,6 +14037,7 @@ const TUTORIAL_STEPS = [{
     { sel: '.tab-upg',   when: g => !tutAllUpgraded(g, 1, ['mine_fer', 'carriere'], 1) },
     { tiles: 'link',     when: () => true }
   ],
+  progress: g => [['Reliées', tutCountConnected(g, 1, 'mine_fer') + tutCountConnected(g, 1, 'carriere'), 10], ['Au niveau 2', tutUpgradedCount(g, 1, ['mine_fer', 'carriere'], 1), 10]],
   done: g => tutCountConnected(g, 1, 'mine_fer') >= 5 && tutCountConnected(g, 1, 'carriere') >= 5 && tutAllUpgraded(g, 1, ['mine_fer', 'carriere'], 1),
   afterToast: '✅ Assez d\'avance pour nourrir tes transformateurs sans les affamer.'
 }, {
@@ -14012,6 +14049,7 @@ const TUTORIAL_STEPS = [{
     { sel: '[data-tut="mine_charbon"]', when: g => g.ui.tool !== 'mine_charbon' },
     { tiles: 'mine_charbon',            when: () => true }
   ],
+  progress: g => [['Posée', tutCount(g, 1, 'mine_charbon'), 1], ['Reliée', tutCountConnected(g, 1, 'mine_charbon'), 1]],
   done: g => tutConnected(g, 1, 'mine_charbon'),
   afterToast: '✅ Du charbon au port. Il ne sert à rien seul — il faut le brûler.'
 }, {
@@ -14023,6 +14061,7 @@ const TUTORIAL_STEPS = [{
     { sel: '[data-tut="four_fer"]', when: g => g.ui.tool !== 'four_fer' },
     { tiles: 'four_fer',            when: () => true }
   ],
+  progress: g => [['Posé', tutCount(g, 1, 'four_fer'), 1], ['Relié', tutCountConnected(g, 1, 'four_fer'), 1]],
   done: g => tutConnected(g, 1, 'four_fer'),
   afterToast: '✅ Ton four fabrique des lingots. Tu transformes, tu ne fais plus qu\'extraire.'
 }, {
@@ -14034,6 +14073,7 @@ const TUTORIAL_STEPS = [{
     { sel: '[data-tut="cimenterie"]', when: g => g.ui.tool !== 'cimenterie' },
     { tiles: 'cimenterie',            when: () => true }
   ],
+  progress: g => [['Posée', tutCount(g, 1, 'cimenterie'), 1], ['Reliée', tutCountConnected(g, 1, 'cimenterie'), 1]],
   done: g => tutConnected(g, 1, 'cimenterie'),
   afterToast: '✅ Du ciment. Il ne reste qu\'à monter en cadence.'
 }, {
@@ -14044,6 +14084,7 @@ const TUTORIAL_STEPS = [{
     { sel: '.tab-upg',      when: g => g.ui.tool !== UPGRADE },
     { tiles: '@upgradable', when: (g, ui) => !ui.upOpen }
   ],
+  progress: g => [['Lingots/s', tutFlowOf(g, 1, 'lingot_fer'), 10], ['Ciments/s', tutFlowOf(g, 1, 'ciment'), 10]],
   done: g => tutFlowAtLeast(g, 1, 'lingot_fer', 10) && tutFlowAtLeast(g, 1, 'ciment', 10),
   afterToast: '🎓 Tu tiens la boucle : extraire → acheminer → transformer → monter en cadence.'
 }]
@@ -22347,6 +22388,7 @@ function TutorialBanner({
   step,
   total,
   goal,
+  counters,
   onSkip
 }) {
   // total > 0 : bandeau du TUTORIEL (« Tuto x/y ») ; total === 0 : bandeau du GUIDE
@@ -22360,7 +22402,12 @@ function TutorialBanner({
     className: "tuto-step"
   }, isGuide ? I18N.t("Objectif") : [I18N.t("Tuto "), step + 1, "/", total]), React.createElement("span", {
     className: "tuto-goal"
-  }, goal)), React.createElement("button", {
+  }, goal), counters && counters.length > 0 && React.createElement("span", {
+    className: "tuto-count"
+  }, counters.map((c, i) => React.createElement("span", {
+    key: i,
+    className: 'tuto-count-item' + (c[1] >= c[2] ? ' done' : '')
+  }, I18N.t(c[0]), " ", Math.min(c[1], c[2]), "/", c[2])))), React.createElement("button", {
     className: "tuto-skip",
     onClick: onSkip,
     title: isGuide ? I18N.t("Désactiver le guide (réactivable dans les Options)") : I18N.t("Passer le tutoriel et tout débloquer")
@@ -24371,12 +24418,10 @@ function App() {
       const st = TUTORIAL_STEPS[g.tutorial.step];
       if (st) {
         for (const id of st.reveal) { showToast('🔓 ' + (BUILDINGS[id] ? BUILDINGS[id].name : id) + I18N.t(' débloqué !'), 'var(--green)'); SFX.play('buildingUnlock'); }
-        // Popup « pourquoi » à l'entrée de l'étape (marqué vu → visible ensuite dans l'Aide).
-        if (st.why && g.tipsEnabled !== false) {
-          g.tipsSeen = g.tipsSeen || {};
-          g.tipsSeen[st.why] = true;
-          showTip(st.why);
-        }
+        // Popup « pourquoi » à l'entrée de l'étape. Le marquage `tipsSeen` a été DÉPLACÉ
+        // dans `closeTip` : marqué ici, un popup empilé derrière un autre était compté
+        // comme lu sans avoir jamais été montré, et disparaissait aussi de l'Aide.
+        if (st.why && g.tipsEnabled !== false) showTip(st.why);
       }
     }
     if (g.tutorial.step >= TUTORIAL_STEPS.length) {
@@ -24411,13 +24456,40 @@ function App() {
     markDirty();
     scheduleSave();
   }
+  // FILE D'ATTENTE des astuces. `showTip` écrasait sans condition : quand la boucle de
+  // `checkTutorial` franchit DEUX étapes dans la même frame, le « pourquoi » de la première
+  // était affiché puis remplacé aussitôt par celui de la seconde — et comme il avait déjà
+  // été marqué vu, `nextPendingTip` ne le reproposait plus JAMAIS.
+  // Cas réel avec la trame à dix étapes : améliorer tout au niveau 2 AVANT de relier la
+  // troisième carrière valide les étapes 4 et 5 ensemble ; le joueur perd l'explication de
+  // l'amélioration précisément parce qu'il l'a comprise seul.
+  const tipQueue = useRef([]);
   const showTip = id => {
+    if (activeTipRef.current) {
+      // Déjà une astuce à l'écran : on empile au lieu d'écraser. Pas de doublon — une
+      // astuce peut être redemandée par plusieurs chemins dans la même frame.
+      if (activeTipRef.current !== id && tipQueue.current.indexOf(id) === -1) tipQueue.current.push(id);
+      return;
+    }
     activeTipRef.current = id;
     setActiveTip(id);
   };
   const closeTip = () => {
-    activeTipRef.current = null;
-    setActiveTip(null);
+    // Le marquage « vu » se fait ICI, à la fermeture EFFECTIVE, et non à l'ouverture :
+    // une astuce empilée puis jamais affichée ne doit pas être comptée comme lue.
+    const cur = activeTipRef.current;
+    const g = gameRef.current;
+    if (cur && g) {
+      g.tipsSeen = g.tipsSeen || {};
+      g.tipsSeen[cur] = true;
+      // Persister le marquage : l'ancien monde le sauvait via le scheduleSave qui suivait
+      // l'ouverture ; déplacé à la fermeture, il serait perdu si le joueur quitte sans
+      // autre action — le popup déjà lu reviendrait à chaque lancement.
+      scheduleSave();
+    }
+    const next = tipQueue.current.shift();
+    activeTipRef.current = next || null;
+    setActiveTip(next || null);
   };
   // Affiche la prochaine astuce contextuelle si une mécanique vient d'apparaître.
   // Appelé chaque frame. Une seule astuce à la fois ; rien tant qu'une est ouverte
@@ -24533,11 +24605,18 @@ function App() {
         }
         return;
       }
-      // Popup « pourquoi » de l'ÉTAPE 0 : checkTutorial ne l'ouvre qu'au franchissement
-      // d'étape — l'étape 0 n'est jamais franchie. Séquence : bienvenue → tut_mine.
-      if (g.tutorial.step === 0 && !g.tipsSeen.tut_mine && TIP_BY_ID.tut_mine) {
-        g.tipsSeen.tut_mine = true;
-        showTip('tut_mine');
+      // Popup « pourquoi » de l'étape COURANTE s'il n'a jamais été FERMÉ (lot 3A : le
+      // marquage « vu » vit désormais dans closeTip). Couvre l'étape 0 (jamais « franchie »,
+      // donc jamais ouverte par checkTutorial — séquence : bienvenue → tut_mine) ET le
+      // rechargement pendant qu'un popup d'étape était affiché : sans cette branche, le
+      // §B aurait rendu l'explication IRRÉCUPÉRABLE (plus re-proposée, et absente de
+      // l'Aide puisque plus marquée vue au franchissement). Étape courante SEULEMENT :
+      // re-proposer les étapes passées non vues ferait une rafale de popups au boot d'une
+      // save antérieure au lot 2. Pas de ré-entrée : checkTips sort tant qu'un popup est
+      // ouvert (activeTipRef), et closeTip pose le marquage qui éteint la condition.
+      const stCur = TUTORIAL_STEPS[g.tutorial.step];
+      if (stCur && stCur.why && !g.tipsSeen[stCur.why] && TIP_BY_ID[stCur.why]) {
+        showTip(stCur.why);
         markDirty();
         scheduleSave();
       }
@@ -29031,6 +29110,13 @@ function App() {
     },
     onClose: () => { SFX.play('panelClose'); setAlertsOpen(false); }
   }), tutorialStep >= 0 && React.createElement(TutorialBanner, {
+    // Recalculé à chaque rendu du HUD (bumpHud), comme le reste de la bannière : les
+    // compteurs suivent donc la production en direct à l'étape 10.
+    counters: (() => {
+      const st = TUTORIAL_STEPS[tutorialStep];
+      if (!st || !st.progress) return null;
+      try { return st.progress(game); } catch (e) { return null; }
+    })(),
     step: tutorialStep,
     total: TUTORIAL_STEPS.length,
     goal: TUTORIAL_STEPS[tutorialStep] ? TUTORIAL_STEPS[tutorialStep].goal : '',
