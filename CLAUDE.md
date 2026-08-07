@@ -17,7 +17,62 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 364`, `GAME_VERSION = 'Alpha 14.81'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 365`, `GAME_VERSION = 'Alpha 14.82'`, `SAVE_VERSION = 31`.**
+  Changement 14.82 (brief `BRIEFTUTOLOT3Castuces`, **LOT 3C — 6 sites A→F**) : **le catalogue
+  d'astuces est resserré** — 39 `short` de plus (popup = UNE phrase, l'Aide garde le texte intégral),
+  9 textes longs réécrits, 2 titres, **6 astuces rendues MUETTES** (`silent`), 7 conditions de
+  déclenchement corrigées, et l'astuce `four_arc_cuivre` supprimée (fusion dans `four_arc_fer`).
+  `SAVE_VERSION` INCHANGÉ. Base EXACTE (364 / 14.81) ; **6/6 ancres uniques, 12/12 hachages conformes
+  AVANT application**, `node --check` 7/7, **delta des 6 blocs +4 160 o EXACT**.
+  (1) **Le champ `silent` (§F), et pourquoi PAS `when: () => false`** : `HelpPanel` appelle
+  `t.when(game)` pour décider si une entrée est débloquée → neutraliser `when` **effacerait l'astuce
+  de l'Aide**, l'inverse de la consigne. `silent` n'est lu que par `nextPendingTip`. Mesuré : les 6
+  (`transport`, `priorite`, `batiment_deconnecte`, `liaisons_port`, `reserves`, `copier`) ne s'ouvrent
+  JAMAIS **alors que leurs 6 conditions sont vraies** (le test est donc falsifiable) et figurent
+  toutes dans l'Aide, dépliables en texte intégral.
+  (2) **§C/§D/§E — le guide ouvre les popups LUI-MÊME** (`checkGuide` → `showTip(o.why)`, sans
+  consulter `when` ni `silent`) : trois objectifs pointaient vers des astuces devenues muettes
+  (`go_ile2`→`transport`, `fix_deconnecte`→`batiment_deconnecte`, `go_liaison`→`liaisons_port`) et
+  auraient continué de les ouvrir. Leur `why` est retiré ; le bandeau et le halo du guide sont
+  intacts (mesuré). Contrôle permanent : **aucun `why` du guide ne doit pointer vers une astuce
+  `silent`** — il en reste 4 (`deficit`, `reseau_sature`, `eolienne`, `energie`), tous sains.
+  (3) ⚠ **`tipAnyAtLevel(g, 'puits_petrole', 4)` : `minUpg` est un INDICE** (0 = Nv.1), donc
+  « niveau 5 » s'écrit **4** — même convention que `tutUpgradedCount`. Mesuré aux 3 crans : muet aux
+  Nv.1 et Nv.4, actif au Nv.5. Un cran d'écart déclencherait l'astuce avant le piège qu'elle annonce.
+  (4) ⚠ **ÉCART NÉCESSAIRE — `I18N.applyToData` RÉÉCRIT `title` ET `body` des astuces depuis les
+  tables LOCALES** (même piège qu'au lot 2 avec les goals, et qu'en 14.50/14.53) : **23 des 50 astuces
+  ont une entrée LOCALES**, donc leur texte inline est ignoré au runtime. Mesuré : 3 changements du
+  lot étaient **invisibles en jeu** — le titre « L'antenne Amplificatrice » restait « L'antenne T5 »,
+  et les body réécrits de `bienvenue` et `accumulateur` restaient à l'ancienne version. Corrigé :
+  titre de l'antenne dans les 4 langues (aligné sur le nom du bâtiment, renommé en 14.74) + body fr
+  de ces 2 astuces. Les 7 autres textes réécrits (`densifier`, `four_arc_fer`, `puits_piege`,
+  `foreuse`, les 3 du Collisionneur) n'ont pas d'entrée LOCALES → ils passaient déjà.
+  (5) ⚠ **CONSÉQUENCE DU (4), à connaître : `applyToData` fusionne les tableaux `body` PAR INDEX.**
+  Une langue dont la traduction a MOINS de paragraphes que l'inline hérite des paragraphes
+  surnuméraires **EN FRANÇAIS** — mesuré après le correctif (4) : « Trois réseaux relient tout » en
+  4ᵉ position d'un texte anglais. Les 2 paragraphes ajoutés ont donc été **traduits en en/es/de**
+  (+662 o). **Audit ajouté et à rejouer à chaque retouche de texte : pour chaque astuce des LOCALES,
+  la traduction doit avoir AUTANT de paragraphes que le fr** — mesuré après correction : **0
+  déséquilibre** sur les 23 × 3.
+  (6) **`four_arc_cuivre`** : l'astuce disparaît, le **BÂTIMENT est intact** (12 occurrences hors
+  `GAME_TIPS`, dont `ARC_MODE_FROM_OLD`). Une save ayant vu l'astuce conserve l'identifiant orphelin
+  dans `tipsSeen` — `HelpPanel` itère sur `GAME_TIPS`, pas sur `tipsSeen` : vérifié par rechargement
+  RÉEL d'une save créée sur la base 364, l'Aide s'ouvre sans erreur et l'entrée a simplement disparu.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **151 assertions, 0 KO, rejouées 2 fois
+  sans flottement** — 38 pour le lot (6 muettes jamais ouvertes mais présentes dans l'Aide, bandeau
+  du guide + halo sans popup, les 7 conditions une par une, `irradie` muet pendant le calibrage et
+  actif en `running`, fusion des fours, save ancienne, textes du Collisionneur et de la foreuse,
+  page blanche) **+ 113 en NON-RÉGRESSION des lots 3A et 3B rejouées sur ce build**.
+  ⚠ **PIÈGES DE HARNAIS** : (a) une astuce « muette » se prouve par un espion qui note TOUT popup
+  ouvert au fil du jeu (un simple coup d'œil à un instant donné ne prouve rien) ; (b) pour rejouer la
+  suite du lot 3B, la base doit être le build **363** — sur une base 364 la ModeModal n'existe plus
+  et la partie difficile du test 3 est incréable.
+  ⚠ **Taille : 3 268 951 → 3 274 102 o** (+4 160 les 6 blocs EXACT, +300 le correctif LOCALES fr,
+  +662 les traductions, le reste = bump et `GAME_NOTES`).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : le bâtiment `four_arc_cuivre` et `ARC_MODE_FROM_OLD`, les 2 ids
+  orphelins des LOCALES (`upgrade_vs_v2`, `non_stockable`, inoffensifs), les messages d'erreur du
+  Collisionneur (`collider_penalite`, `collider_arret`, inchangés), `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 364`, `GAME_VERSION = 'Alpha 14.81'`, `SAVE_VERSION = 31`.**
   Changement 14.81 (brief `BRIEFTUTOLOT3Bverrous`, **LOT 3B — 8 sites A→H**) : **une partie neuve
   DÉMARRE DIRECTEMENT** (plus d'écran de choix de mode), **inventaire déplié à la création**, et
   **Port / Recherche / Calculateur restent grisés tant qu'ils n'ont rien à montrer** (pastille
