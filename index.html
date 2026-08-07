@@ -7776,6 +7776,95 @@ function lsDel(k) {
     localStorage.removeItem(k);
   } catch (e) {}
 }
+// ── ENREGISTREUR D'ACTIONS (tuto, lot 1) ─────────────────────────────────────
+// Journal de découverte : QUOI le joueur touche, DANS QUEL ORDRE. Sert à écrire les
+// chapitres du tuto forcé (lot 2) sur des parcours réels plutôt que supposés.
+// Anneau EN MÉMOIRE (CAP entrées, les plus anciennes tombent) : le journal n'entre
+// JAMAIS dans la sauvegarde. Seul le drapeau ON/OFF persiste, via lsGet/lsSet —
+// aucun champ de save, donc aucune migration ni bump de SAVE_VERSION.
+// ⚠ La capture est posée sur la racine .app en phase CAPTURE : elle voit donc aussi
+// les rares clics que useGhostGuard avale ensuite (anti tap-through). Le journal peut
+// contenir un clic fantôme isolé juste après l'ouverture d'un panneau — limite assumée
+// du lot 1 : il n'y a AUCUN verrou ici, rien ne dépend de cette exactitude.
+const REC_KEY = 'archipel_rec';
+const REC = (function () {
+  const CAP = 2000;
+  let on = lsGet(REC_KEY) === '1';
+  let buf = [];
+  let t0 = Date.now();
+  let seq = 0;
+  const push = (k, d) => {
+    if (!on) return;
+    if (buf.length >= CAP) buf.shift();
+    const e = { i: ++seq, t: Date.now() - t0, k: k };
+    for (const q in d) e[q] = d[q];
+    buf.push(e);
+  };
+  // Étiquette d'un élément cliqué, par STABILITÉ décroissante : data-tut (posé
+  // volontairement, survit au restyling) > classe significative (.tab-build…) >
+  // texte visible tronqué. Le lot 2 étendra data-tut aux boutons que CE journal
+  // montrera comme mal identifiés — pas avant : on ne sait pas encore lesquels comptent.
+  const labelOf = el => {
+    if (!el) return '?';
+    if (el.dataset && el.dataset.tut) return 'tut:' + el.dataset.tut;
+    const cls = typeof el.className === 'string' ? el.className : '';
+    const m = cls.match(/(tab-(?!btn\b)[a-z]+|opt-[a-z-]+|slot-[a-z]+|research-btn|island-tab)/);
+    if (m) return 'cls:' + m[1];
+    const tx = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 24);
+    return tx ? 'txt:' + tx : (el.tagName || '?').toLowerCase();
+  };
+  return {
+    isOn: () => on,
+    count: () => buf.length,
+    toggle: function () {
+      on = !on;
+      lsSet(REC_KEY, on ? '1' : '0');
+      if (on) { buf = []; seq = 0; t0 = Date.now(); }
+      return on;
+    },
+    // Clic DOM — phase capture sur la racine .app.
+    onClickCapture: function (e) {
+      if (!on) return;
+      const t = e && e.target;
+      const el = t && t.closest ? t.closest('button,select,input,a,[data-tut],[role="button"]') : null;
+      push('ui', { s: labelOf(el) });
+    },
+    // Tap CANVAS : ne traverse aucun bouton, d'où ce point d'entrée séparé.
+    tap: function (g, tile) {
+      if (!on || !g) return;
+      const u = g.ui || {};
+      push('tap', {
+        isl: g.currentIsland,
+        r: tile ? tile.r : -1,
+        c: tile ? tile.c : -1,
+        tool: u.tool == null ? null : String(u.tool),
+        lay: u.logicLayer ? 1 : 0
+      });
+    },
+    // Export : fichier .jsonl (fiable en APK) + tentative de presse-papier. Même
+    // motif que l'export de sauvegarde (Blob + <a download>).
+    exportNow: function () {
+      const head = { i: 0, t: 0, k: 'meta', build: GAME_BUILD, ver: GAME_VERSION, n: buf.length };
+      const txt = [head].concat(buf).map(o => JSON.stringify(o)).join('\n');
+      try {
+        const blob = new Blob([txt], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'archipel-journal-' + GAME_BUILD + '.jsonl';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () {
+          try { document.body.removeChild(a); URL.revokeObjectURL(url); } catch (e) {}
+        }, 200);
+      } catch (e) {}
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).catch(function () {});
+      } catch (e) {}
+      return buf.length;
+    }
+  };
+})();
 // --- Encodage compact des sauvegardes exportées (LZW sur octets UTF-8 → base64) ---
 // But : l'export copier/coller (et le .txt) devient un jeton court et OPAQUE au lieu d'un pavé
 // de JSON éditable → plus digeste ET impossible à trafiquer à la main. decodeSave reste
@@ -8203,8 +8292,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 357;
-const GAME_VERSION = 'Alpha 14.74';
+const GAME_BUILD = 358;
+const GAME_VERSION = 'Alpha 14.75';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8213,7 +8302,7 @@ const GAME_VERSION = 'Alpha 14.74';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Neuf emoji de plus deviennent des ic\u00f4nes du pack : bateau, p\u00e9trole, carte, montagne, \u00eele, m\u00e9lange, dossier, boussole, colis. Les deux cartes de l'\u00e9cran de choix de mode y passent aussi, l\u00e0 o\u00f9 l'emoji \u00e9chappait au m\u00e9canisme automatique. Trois ic\u00f4nes ont \u00e9t\u00e9 \u00e9cart\u00e9es en s\u00e9ance faute de lisibilit\u00e9 \u00e0 16 px \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Nouvelle option de diagnostic \u00ab Enregistrer mes actions \u00bb : un journal note en m\u00e9moire chaque bouton touch\u00e9 et chaque tuile tap\u00e9e, exportable en fichier. \u00c9teint par d\u00e9faut, il sert \u00e0 construire le futur tutoriel sur des parcours r\u00e9els \u00b7 Aucun comportement de jeu modifi\u00e9, aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -21742,6 +21831,9 @@ function OptionsModal({
   badgeScale,
   onSetBadgeScale
 }) {
+  // Enregistreur : REC est un singleton hors React, d'où cet état local qui ne sert
+  // QU'À redessiner la ligne d'option. Aucune prop à câbler depuis App.
+  const [recOn, setRecOn] = useState(REC.isOn());
   const toggleRow = (name, desc, on, onClick, extraCls) => React.createElement("div", {
     className: "opt-row"
   }, React.createElement("div", {
@@ -21933,7 +22025,10 @@ function OptionsModal({
   }, I18N.available().map(code => React.createElement("option", {
     key: code,
     value: code
-  }, I18N.names[code])))), selRow(I18N.t("Grands nombres"), I18N.t("\xC9criture des valeurs au-dessus du seuil. En dessous, s\xE9parateur de milliers dans les deux cas."), numFormat === 'si' ? 'si' : 'sci', [['sci', I18N.t('Scientifique \u2014 2,35e6')], ['si', I18N.t('Pr\xE9fixe SI \u2014 2,35 M')]], onSetNumFormat), selRow(I18N.t("Seuil de bascule"), I18N.t("\xC0 partir de quelle valeur on quitte le s\xE9parateur de milliers. \xAB jamais \xBB donne 2 565 633 264 880 en entier."), numThreshold === Infinity ? 'inf' : String(numThreshold || 1e5), [['1000', '1 000'], ['10000', '10 000'], ['100000', '100 000'], ['1000000', '1 000 000'], ['1000000000', '1 000 000 000'], ['inf', I18N.t('jamais')]], onSetNumThreshold), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Production hors-ligne"), I18N.t("Rattrape la production pendant une absence. D\xE9sactiv\xE9 : le jeu ne progresse que lorsqu'il est ouvert."), offlineEnabled !== false, onToggleOffline), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Guide"), I18N.t("Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)"), guideEnabled !== false, onToggleGuide), toggleRow(I18N.t("Sons"), I18N.t("Effets sonores du jeu (pose, am\xE9lioration, alertes…)"), audioEnabled !== false, onToggleAudio), sliderRow(I18N.t("Volume"), I18N.t("Volume des effets sonores"), audioVolume == null ? 0.55 : audioVolume, 0, 1, 0.05, v => onSetAudioVolume && onSetAudioVolume(v), v => Math.round(v * 100) + '%'), React.createElement("button", {
+  }, I18N.names[code])))), selRow(I18N.t("Grands nombres"), I18N.t("\xC9criture des valeurs au-dessus du seuil. En dessous, s\xE9parateur de milliers dans les deux cas."), numFormat === 'si' ? 'si' : 'sci', [['sci', I18N.t('Scientifique \u2014 2,35e6')], ['si', I18N.t('Pr\xE9fixe SI \u2014 2,35 M')]], onSetNumFormat), selRow(I18N.t("Seuil de bascule"), I18N.t("\xC0 partir de quelle valeur on quitte le s\xE9parateur de milliers. \xAB jamais \xBB donne 2 565 633 264 880 en entier."), numThreshold === Infinity ? 'inf' : String(numThreshold || 1e5), [['1000', '1 000'], ['10000', '10 000'], ['100000', '100 000'], ['1000000', '1 000 000'], ['1000000000', '1 000 000 000'], ['inf', I18N.t('jamais')]], onSetNumThreshold), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Production hors-ligne"), I18N.t("Rattrape la production pendant une absence. D\xE9sactiv\xE9 : le jeu ne progresse que lorsqu'il est ouvert."), offlineEnabled !== false, onToggleOffline), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Guide"), I18N.t("Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)"), guideEnabled !== false, onToggleGuide), toggleRow(I18N.t("Enregistrer mes actions"), I18N.t("Journal de diagnostic : note chaque bouton touché et chaque tuile tapée. Sert à construire le tutoriel."), recOn, () => setRecOn(REC.toggle())), recOn && React.createElement("button", {
+    className: "slot-new opt-fullbtn",
+    onClick: () => REC.exportNow()
+  }, I18N.t("Exporter le journal")), toggleRow(I18N.t("Sons"), I18N.t("Effets sonores du jeu (pose, am\xE9lioration, alertes…)"), audioEnabled !== false, onToggleAudio), sliderRow(I18N.t("Volume"), I18N.t("Volume des effets sonores"), audioVolume == null ? 0.55 : audioVolume, 0, 1, 0.05, v => onSetAudioVolume && onSetAudioVolume(v), v => Math.round(v * 100) + '%'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onResetTips
   }, uiIcon('astuce', "💡"), I18N.t(" Revoir les astuces")), DEV_BUILD && toggleRow(I18N.t("Mode d\xE9veloppeur"), I18N.t("Construction et am\xE9liorations gratuites"), dev, onToggleDev, 'dev'), React.createElement("button", {
@@ -27914,6 +28009,14 @@ function App() {
     }
     const tile = pointerToTile(e);
     const wasMode = drag.mode;
+    // Enregistreur (lot 1) : un TAP FRANC, QUEL QUE SOIT LE MODE, avant l'aiguillage.
+    // ⚠ ÉCART AU BRIEF, délibéré : le §B plaçait ce point d'entrée DANS `handleTap`,
+    // qui n'est appelé que pour `drag.mode === 'select'` (voir juste en dessous) — pose,
+    // amélioration et démolition n'auraient donc JAMAIS été journalisées, alors que ce sont
+    // précisément les gestes que le tutoriel enseigne et que le lot 2 doit rejouer. Ici on
+    // journalise une fois par tap franc, avec l'outil réellement armé ; un glissé (pan,
+    // au-delà de TAP_THRESHOLD) n'est pas un geste de jeu et n'est pas retenu.
+    if (!drag.panned && drag.dist < TAP_THRESHOLD) REC.tap(g, tile);
     if (drag.mode === 'select' && drag.dist < TAP_THRESHOLD) {
       handleTap(tile, e);
     } else if (drag.mode === 'place' && !drag.panned && drag.dist < TAP_THRESHOLD && tile) {
@@ -28666,7 +28769,8 @@ function App() {
     };
   }
   return React.createElement("div", {
-    className: "app"
+    className: "app",
+    onClickCapture: REC.onClickCapture
   }, React.createElement(Hud, {
     // Île 7 (souterrain) : l'inventaire affiché EST celui de l'île 6 (l'élévateur relie les deux ;
     // portPool renvoie game.port[6] pour l'île 7). Ainsi la construction souterraine « puise » dans

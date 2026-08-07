@@ -1,8 +1,8 @@
 {
-  "build": 357,
-  "version": "Alpha 14.74",
+  "build": 358,
+  "version": "Alpha 14.75",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Neuf emoji de plus deviennent des ic\\u00f4nes du pack : bateau, p\\u00e9trole, carte, montagne, \\u00eele, m\\u00e9lange, dossier, boussole, colis. Les deux cartes de l'\\u00e9cran de choix de mode y passent aussi, l\\u00e0 o\\u00f9 l'emoji \\u00e9chappait au m\\u00e9canisme automatique. Trois ic\\u00f4nes ont \\u00e9t\\u00e9 \\u00e9cart\\u00e9es en s\\u00e9ance faute de lisibilit\\u00e9 \\u00e0 16 px \\u00b7 Aucune sauvegarde touch\\u00e9e"
+  "notes": "Nouvelle option de diagnostic \\u00ab Enregistrer mes actions \\u00bb : un journal note en m\\u00e9moire chaque bouton touch\\u00e9 et chaque tuile tap\\u00e9e, exportable en fichier. \\u00c9teint par d\\u00e9faut, il sert \\u00e0 construire le futur tutoriel sur des parcours r\\u00e9els \\u00b7 Aucun comportement de jeu modifi\\u00e9, aucune sauvegarde touch\\u00e9e"
 }
