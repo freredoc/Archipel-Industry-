@@ -17,7 +17,71 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 357`, `GAME_VERSION = 'Alpha 14.74'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 358`, `GAME_VERSION = 'Alpha 14.75'`, `SAVE_VERSION = 31`.**
+  Changement 14.75 (brief `BRIEFTUTOLOT1enregistreur`, **LOT 1 sur 2 — l'ENREGISTREUR D'ACTIONS**) :
+  **une option de diagnostic journalise chaque bouton touché et chaque tuile tapée**, exportable en
+  `.jsonl`. `SAVE_VERSION` INCHANGÉ, **aucun champ de sauvegarde** (le journal vit en MÉMOIRE, seul le
+  drapeau ON/OFF persiste dans `localStorage`). Base EXACTE (357 / 14.74) ; **5/5 ancres uniques,
+  10/10 hachages conformes AVANT application**, `node --check` 7/7 du premier coup, **delta des 5 blocs
+  +4 661 o EXACT** (l'attendu au byte près).
+  (1) **Objet** : le lot 2 (tuto forcé) se branchera sur la MÊME couche de capture. **Aucun verrou ici,
+  aucun comportement de jeu modifié.**
+  (2) **Anneau MÉMOIRE de 2 000 entrées** (`REC`, posé juste après `lsDel`) : les plus anciennes tombent.
+  Zéro impact sauvegarde, zéro migration. Le drapeau seul persiste (`lsGet`/`lsSet`, clé `archipel_rec`),
+  **défaut OFF**. Capture des clics en **phase CAPTURE sur la racine `.app`** (`onClickCapture`) : un seul
+  point au lieu des ~178 `onClick`.
+  (3) ⚠ **ÉCART AU BRIEF, DÉLIBÉRÉ ET NÉCESSAIRE — le point d'entrée du tap canvas est DÉPLACÉ.** Le §B
+  posait `REC.tap` **dans `handleTap`**. Or `handleTap` n'a **qu'un seul appelant**, gardé par
+  `drag.mode === 'select'` (`onPointerUp`) : il n'est atteint que quand **aucun outil n'est armé**. Pose,
+  amélioration et démolition passent par trois AUTRES branches → **elles n'auraient JAMAIS été
+  journalisées**, alors que ce sont exactement les gestes que le tutoriel enseigne. **Mesuré avant
+  correctif : 0 entrée `tap` pour deux taps outil Mine de fer en main** (le test 4 du brief exige
+  pourtant `tool:"mine_fer"` — son ancre et son critère d'acceptation se contredisent). L'appel est donc
+  posé **dans `onPointerUp`, avant l'aiguillage**, sur le **tap franc** (`!drag.panned && drag.dist <
+  TAP_THRESHOLD`) → une entrée par tap, tous modes confondus, avec l'outil réellement armé ; un glissé
+  (pan) n'est pas retenu. `handleTap` est laissé intact. **Mesuré après : 2 entrées, coordonnées exactes,
+  `tool:"mine_fer"`.** ⚠ `drag.mode === 'paint'` n'est plus jamais posé par `onPointerDown` (branche
+  morte) → les 4 modes réels sont couverts.
+  (4) ⚠ **LE TEST 1 DU BRIEF EST INEXACT (sans conséquence)** : il attend `n:0` après activation +
+  export. **Le clic sur « Exporter le journal » se journalise LUI-MÊME** — la capture racine s'exécute
+  **avant** le `onClick` du bouton — donc `n:1`, avec une entrée `cls:slot-new`. Mesuré. Le vrai critère
+  (rien n'est enregistré tant que l'option est éteinte) est vérifié séparément : **`REC.count() === 0`
+  après 5 clics et 5 taps OFF** — et il ne peut pas être prouvé par l'export, puisque `toggle()` **vide
+  le tampon** à l'allumage.
+  (5) **Étiquetage par stabilité décroissante** : `data-tut` > classe significative > texte tronqué.
+  ⚠ **Le `(?!btn\b)` de la regex est LA pièce critique** : `className` vaut `"tab-btn tab-build …"` →
+  sans le lookahead, tous les onglets deviendraient `cls:tab-btn`, **indiscernables**. Mesuré au test 3 :
+  `["cls:tab-build","tut:mine_fer","cls:tab-net","tut:port"]`, **0 `cls:tab-btn`**.
+  (6) **Export** : fichier `.jsonl` (Blob + `<a download>`, le motif de l'export de sauvegarde) **+**
+  tentative de presse-papier. Le fichier est fiable en APK, le presse-papier ne l'est pas.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **49 assertions, 0 KO**, **rejouées 2 fois
+  sans flottement**, viewport 420 px / DPR 3. **Test 1** : option éteinte, bouton d'export ABSENT,
+  `archipel_rec` absent du `localStorage`, `REC.count() === 0` après 10 gestes ; puis allumage →
+  **téléchargement RÉEL** de `archipel-journal-358.jsonl` avec en-tête `{k:"meta", build:358,
+  ver:"Alpha 14.75"}`. **Test 2** : drapeau conservé au rechargement, et **la sauvegarde réelle ne
+  contient ni `"rec"` ni `archipel_rec`**. **Test 4** : les 2 taps aux bonnes coordonnées, puis
+  **couche logique ouverte par le VRAI bouton** → `lay:1`. **Test 5** : 2 100 clics → `count()` plafonne
+  à **2 000**, la plus ancienne conservée est `i:101` (et non `i:1`), la numérotation continue à 2 100.
+  **Test 6** : enregistrement ACTIF, pose + amélioration + démolition + Port + Recherche + couche logique
+  + **20 s de jeu réel** → 0 `tickError`, canvas peint, **0 erreur console**. **Test 7** : `useGhostGuard`
+  intact — le clic fantôme est bien AVALÉ (le journal, lui, peut le contenir : la capture racine passe
+  avant le garde, **limite assumée, rien n'en dépend au lot 1**). **Test 8** : tuto intact (bannière
+  « Tuto 1/8 » → « Tuto 2/8 », halo DOM ET canvas, menu filtré à 1 carte, 3 onglets `tab-locked`).
+  ⚠ **CONTRE-ÉPREUVE EXÉCUTÉE** : le popup « pourquoi » de l'étape 2 ne s'ouvre pas — **comportement
+  PRÉEXISTANT**, identique sur la base 357 non patchée (`tipsSeen === ["bienvenue"]` des deux côtés).
+  Ce n'est PAS une régression de ce lot ; à instruire séparément si le tuto doit expliquer chaque étape.
+  ⚠ **PIÈGE DE HARNAIS** : l'extraction des blocs `<script>` doit **conserver ce qui suit le `>`** sur la
+  ligne d'ouverture — les deux UMD React commencent par `/**` **sur la ligne du tag** ; un extracteur qui
+  jette la ligne entière rend 2 blocs sur 7 en `SyntaxError` et fait croire à une casse du patch.
+  ⚠ **Taille : 3 239 471 → 3 244 736 o.** Les 5 blocs du brief pèsent **+4 661 o EXACT** ; le reste est
+  le bump, le nouveau `GAME_NOTES` et le déplacement du point d'entrée du tap (commentaire de décision).
+  ⚠ **DETTE ASSUMÉE** : les **4 libellés ne sont traduits dans aucune table** (français dans les
+  5 langues) — acceptable pour un outil de diagnostic, à combler s'il reste en build public. Tout bouton
+  tombant sur le repli `txt:` est un candidat à `data-tut` au lot 2 : **c'est précisément le but du
+  premier journal réel**.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : tout verrouillage de bouton, la fusion tuto/guide, l'extension de
+  `data-tut`, les chapitres île 2, `SAVE_VERSION`, `useGhostGuard`, `handleTap`.
+- **État précédent : `GAME_BUILD = 357`, `GAME_VERSION = 'Alpha 14.74'`, `SAVE_VERSION = 31`.**
   Changement 14.74 (brief `BRIEF-neuf-icones`, pack `archipelicones finale`, **4 modifications de nature
   DIFFÉRENTE**) : **9 emoji de plus deviennent des icônes du pack** (bateau, pétrole, carte, montagne,
   île, mélange, dossier, boussole, colis). `SAVE_VERSION` INCHANGÉ, aucun champ persisté.
