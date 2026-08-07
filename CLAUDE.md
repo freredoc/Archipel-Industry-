@@ -17,7 +17,63 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 361`, `GAME_VERSION = 'Alpha 14.78'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 362`, `GAME_VERSION = 'Alpha 14.79'`, `SAVE_VERSION = 31`.**
+  Changement 14.79 (brief `BRIEFTUTOLOT2dixetapes`, **LOT 2 — 5 blocs A→E**) : **la trame du tutoriel
+  passe de 8 à 10 étapes** — le bouton Copier entre dans la trame (étape 4), une étape de réserve
+  précède les transformateurs (étape 6), et l'objectif final devient une CADENCE à atteindre (étape 10).
+  Les popups du tutoriel deviennent COURTS (une phrase), le texte intégral reste dans l'Aide.
+  `SAVE_VERSION` INCHANGÉ, aucun champ persisté (la save ne stocke que `tutorial.step`, un entier).
+  Base EXACTE (361 / 14.78) ; **5/5 ancres uniques, 10/10 hachages conformes AVANT application**,
+  `node --check` 7/7 du premier coup, **delta des 5 blocs +5 268 o EXACT** (+603 o d'écart i18n
+  documenté ci-dessous, le reste étant le bump et `GAME_NOTES`).
+  (1) **La trame** : mine → route → carrière → **Copier (2 mines + 2 carrières DE PLUS, reliées → 3
+  et 3)** → tout au Nv.2 → **réserve (2 + 2 de plus, reliées ET Nv.2 → 5 et 5)** → mine de charbon →
+  four à fer → cimenterie → **cadence 10 lingots/s ET 10 ciments/s**. Nouveaux prédicats
+  `tutCountConnected(g, id, n)` (compte les bâtiments RELIÉS au port — une mine posée dans un coin
+  sans route ne compte pas, mesuré) et `tutFlowAtLeast(g, res, n)` (lit `islandFlowAgg().prod` =
+  production BRUTE ; mesuré : 10 lingots + 9 ciments → étape OUVERTE, 10 + 10 → franchie).
+  (2) **§E — le bouton Copier obéit à la trame** : `tabAllowed('copy')` rend vrai quand la cible de
+  l'étape contient `.tab-copy` (lecture de `st.targets[].sel`). ⚠ **À l'étape 4 les menus Bâtiment ET
+  Réseau restent verrouillés — c'est voulu** : le joueur DOIT copier, **y compris la ROUTE** (la
+  branche COPY de `handleTap` arme `t.building.id` quel qu'il soit ; mesuré : copie d'une route →
+  `tool='road'`, c'est ainsi qu'on relie les bâtiments copiés). Copier re-grise à l'étape 5 (mesuré).
+  (3) **§D — champ `short` des astuces** : `TipPopup` affiche `tip.short` (UNE phrase) quand il
+  existe, sinon `body` intégral ; l'Aide affiche TOUJOURS `body`. Contrôles sémantiques du brief :
+  **11 `short`, 0 au-delà de 20 mots (max 18), 0 `why` orphelin, `tut_recherche` conservé** (sa carte
+  reste dans l'Aide bien que l'étape recherche ait quitté la trame). Une astuce SANS `short`
+  (bienvenue) rend son body complet (mesuré : 3 paragraphes).
+  (4) ⚠ **ÉCART NÉCESSAIRE AU BRIEF — les 4 tables i18n `tutorial` portées de 8 à 10 goals**
+  (fr/en/es/de, +603 o) : `I18N.applyToData` réécrit `s.goal` **PAR INDEX** depuis les tables
+  (`s.goal = _g('tutorial', String(i))`) → appliqué verbatim, la bannière aurait MENTI de l'étape 4 à
+  l'étape 8 **dans les 5 langues** (les goals de l'ancienne trame décalés d'un cran ; mesuré à la
+  sonde avant correction, corrigé et re-mesuré : les 10 goals sortent justes en fr/en/de).
+  (5) ⚠ **CORRECTION D'UN DIAGNOSTIC DES LOTS 1 ET 1d — le « popup pourquoi qui ne s'ouvre pas »
+  était un ARTEFACT DE HARNAIS, pas un préexistant du jeu.** La purge des popups cliquait
+  `.tip-popup button` = le PREMIER bouton = **`.tip-dismiss` (« désactiver les astuces »)** →
+  `tipsEnabled` passait à `false` dès la bienvenue et plus AUCUN popup ne s'ouvrait. En fermant par
+  **`.tip-ok`**, les popups « pourquoi » s'ouvrent tous (mesuré : bienvenue + les 10 popups d'étape,
+  chacun en 1 paragraphe = le `short`). La contre-épreuve « identique sur la base » du lot 1 était
+  vraie mais mesurait le même harnais défectueux des deux côtés.
+  (6) **T8 — save mi-tuto de la base 361 rechargée en 362** : `step: 5` conservé tel quel → bannière
+  **« Tuto 6/10 »** avec l'objectif de la NOUVELLE étape 6, aucun plantage, le joueur continue sur la
+  nouvelle trame (comportement assumé : le step est un simple entier, pas de re-mapping).
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **54 assertions, 0 KO, rejouées 2 fois
+  sans flottement** : déroulé RÉEL 1→10 (progression stricte `[1..10]`, **jamais de recul** même en
+  posant des bâtiments Nv.1 pendant l'étape 6), `fx tutstep` 1..10 (cohérent lot 1d), 4/5 carrières
+  Nv.2 → étape 6 PAS validée (exige 5 et 5), panneau Production concordant (ling.fer 10 / ciment 9),
+  fin de tuto `active:false`, goals 4 langues, page blanche DEV + PUBLIQUE (console vide).
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **fermer un popup d'astuce par
+  `.tip-ok`, JAMAIS par le premier bouton** (qui est `.tip-dismiss` — c'est l'artefact du point 5) ;
+  (b) le panneau Production se parse **par cellules** (`.prod-row` → `.pc-res`/`.pc-p`), pas au
+  `textContent` concaténé (« 10 » + « 0 » se lit « 100 ») — et la cellule du nom contient l'`<img>`
+  du sprite, donc elle n'est JAMAIS un élément « feuille » ; comparer au nom court `RES_SHORT` lu au
+  runtime ; (c) le survol en mode Copier émet le **frame error PRÉEXISTANT 14.46**
+  (`canPlace('__copy')`) → le filtrer des assertions console, ce n'est pas une régression.
+  ⚠ **Taille : 3 250 360 → 3 256 281 o** (+5 268 blocs, +603 i18n, +50 bump/`GAME_NOTES`).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `SAVE_VERSION`, l'enregistreur `REC` (lot 1d), le guide
+  dynamique (13.61), les scènes d'illustration `TIP_SCENES` (les nouvelles astuces réutilisent les
+  scènes existantes ou n'en ont pas), le verrou d'onglets hors Copier, `checkTips`.
+- **État précédent : `GAME_BUILD = 361`, `GAME_VERSION = 'Alpha 14.78'`, `SAVE_VERSION = 31`.**
   Changement 14.78 (brief `BRIEFTUTOLOT1djournaleffets`, **LOT 1d — 12 blocs, dont 7 dans le moteur**) :
   **le journal passe des GESTES aux EFFETS** — il note désormais si une pose a abouti ou été refusée,
   le motif du refus, l'étape de tutoriel en cours et les variations de stock. `SAVE_VERSION` INCHANGÉ,
