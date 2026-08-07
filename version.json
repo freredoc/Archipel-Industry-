@@ -1,8 +1,8 @@
 {
-  "build": 363,
-  "version": "Alpha 14.80",
+  "build": 364,
+  "version": "Alpha 14.81",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Chaque \\u00e9tape du tutoriel affiche un compteur de progression (pos\\u00e9, reli\\u00e9, niveau, d\\u00e9bit) \\u00b7 Les popups d'astuce ne s'\\u00e9crasent plus : ils se mettent en file et une astuce n'est marqu\\u00e9e vue qu'\\u00e0 sa fermeture \\u00b7 Aucune sauvegarde touch\\u00e9e"
+  "notes": "Une partie neuve d\\u00e9marre directement, sans \\u00e9cran de choix, inventaire d\\u00e9pli\\u00e9 \\u00b7 Port, Recherche et Calculateur restent gris\\u00e9s tant qu'ils n'ont rien \\u00e0 montrer, la pastille d'\\u00e9nergie est masqu\\u00e9e avant la deuxi\\u00e8me \\u00eele \\u00b7 Aucune sauvegarde touch\\u00e9e"
 }
