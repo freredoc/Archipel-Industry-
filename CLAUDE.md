@@ -17,7 +17,69 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 365`, `GAME_VERSION = 'Alpha 14.82'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 366`, `GAME_VERSION = 'Alpha 14.83'`, `SAVE_VERSION = 31`.**
+  Changement 14.83 (brief `BRIEFTUTOLOT3Dreseau`, **LOT 3D — 1 SEUL site : `TUTORIAL_STEPS`**) :
+  **le menu Réseau était VERROUILLÉ sur les six étapes qui exigent de relier un bâtiment au port**
+  (3, 4, 6, 7, 8, 9). `SAVE_VERSION` INCHANGÉ, aucun champ ajouté. Base EXACTE (365 / 14.82) ;
+  **1/1 ancre unique, 2/2 hachages conformes AVANT application**, `node --check` 7/7 du premier coup,
+  **delta +2 451 o EXACT**.
+  (1) **Le défaut** : `tabAllowed(key)` construit la liste des onglets ouverts à partir des SEULS
+  `sel` des `targets` de l'étape courante (`sels.includes('.tab-net')`). Aucune de ces six étapes ne
+  déclarait `.tab-net`. Le tutoriel restait jouable **tant que le joueur ne changeait pas d'outil**
+  (l'outil route reste armé après l'étape 2) ; dès qu'il sélectionne un bâtiment, il perd la route et
+  **ne peut plus la reprendre**. Constaté en jeu à l'étape 6 : quatre bâtiments posés à 0 %, compteur
+  figé à 6/10, **aucune sortie**.
+  ⚠ **POURQUOI 151 ASSERTIONS NE L'ONT PAS VU — la leçon de méthode du lot.** Tous les tests des lots
+  3A/3B/3C vérifiaient qu'une condition de sortie, **une fois atteinte**, valide bien l'étape. Aucun ne
+  vérifiait qu'elle est **ATTEIGNABLE avec les seuls boutons autorisés**. Ce sont deux propriétés
+  distinctes, et seule la première était testée. **Contrôle désormais permanent (test 1) : pour chaque
+  étape, croiser la liste des onglets ouverts par `tabAllowed` avec les prédicats appelés par son
+  `done` — toute étape dont le `done` appelle `tutConnected`/`tutCountConnected` DOIT ouvrir
+  `.tab-net`, toute étape qui appelle `tutAllUpgraded`/`tutFlow*` DOIT ouvrir `.tab-upg`.** Mesuré :
+  **0 infaisable après patch**, et le même contrôle rejoué **sur la base 365 en rend 6** (étapes 3, 4,
+  6, 7, 8, 9) — le test est donc falsifiable, ce n'est pas une assertion creuse.
+  (2) **Les cibles de pose s'ÉTEIGNENT une fois la pose faite** (`when: g => tutCount(g, 1, 'x') < 1`)
+  — sans quoi le halo resterait sur les tuiles de construction et **ne désignerait jamais le réseau**
+  (la machine à cibles s'arrête sur la PREMIÈRE cible dont `when` est vrai). Séquence mesurée :
+  étape 3 Bâtiment → tuiles → **Réseau** → liaison ; étape 4 Copier → **Réseau** → liaison ;
+  étape 6 Bâtiment → **Réseau** → Améliorer ; étapes 7/8/9 Bâtiment → tuiles → **Réseau** → liaison.
+  (3) ⚠ **ÉCART MESURÉ, LIVRÉ VERBATIM (non bloquant) — le `when` de `.tab-net` à l'étape 6 teste
+  `tutCount` (POSÉES) et non `tutCountConnected` (RELIÉES)** : une fois les 10 reliées, si le joueur
+  **désarme** l'outil route, le halo **repointe Réseau** alors qu'il n'y a plus rien à relier (mesuré
+  aux 3 états : outil route armé → `.tab-upg` ✅ ; désarmé → `.tab-net` ; menu Réseau ouvert →
+  `[data-tut="road"]`). **Sans conséquence** : Améliorer reste déverrouillé (`locked:false`) et l'étape
+  se franchit (mesuré). Le cas n'existe QU'à l'étape 6 — partout ailleurs la liaison franchit l'étape
+  immédiatement, il n'y a pas de « suite » après elle. Correctif d'une ligne si on veut le fermer :
+  ajouter `&& (tutCountConnected(g,1,'mine_fer') < 5 || tutCountConnected(g,1,'carriere') < 5)` aux
+  `when` de `.tab-net` et `[data-tut="road"]` de l'étape 6. **2 assertions posées pour le rendre
+  falsifiable** si un lot ultérieur le corrige.
+  (4) **Contrôle sémantique fort, à rejouer à chaque retouche de `TUTORIAL_STEPS`** : les 10 `goal`,
+  `why`, `done`, `progress`, `afterToast` et `reveal` sont **IDENTIQUES à l'ancre, dans le même ordre**
+  — seuls les `targets` changent. C'est ce qui garantit qu'`I18N.applyToData` (qui réécrit `s.goal`
+  **PAR INDEX** depuis les tables LOCALES, piège du lot 2) reste aligné : **aucune table i18n à
+  toucher**. Vérifié au runtime dans les 4 langues (10 étapes, 0 incomplète, goals justes en fr/en).
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **42 assertions, 0 KO, rejouées 2 fois
+  sans flottement** (+ le test 1 et sa contre-épreuve) — atteignabilité des 10 étapes, parcours RÉEL
+  de l'étape 6 qui bloquait (2 mines + 2 carrières posées **sans Copier**, clic RÉEL sur Réseau puis
+  sur la route, liaison, compteur 6/10 → 10/10 vert, étape franchie), étape 4 reliée par le menu
+  Réseau après Copier, halo qui suit la progression, verrous d'onglets (étape 3 Copier fermé, étape 4
+  Bâtiment fermé, étape 6 Copier fermé, étape 10 **seul Améliorer** + Démolir), page blanche DEV et
+  PUBLIQUE console vide **+ 151 assertions en NON-RÉGRESSION des lots 3A (63), 3B (50) et 3C (38)
+  rejouées sur ce build**.
+  ⚠ **PIÈGE DE HARNAIS (coûteux, 1 faux KO)** : **forcer `game.tutorial.step` ne suffit pas à changer
+  l'étape vue par l'UI.** La `Toolbar` lit le **state REACT** `tutorialStep`, que `checkTutorial` ne
+  met à jour que s'il a posé `changed` — or forcer le step sans rien d'autre ne déclenche ni
+  franchissement ni changement de `targetIdx`. Résultat : `g.tutorial.step === 9` mais des onglets
+  d'étape 1 (Bâtiment ouvert, Améliorer verrouillé), qui se lit comme un défaut du patch. Remède :
+  **désaligner `targetIdx`** (une valeur qui ne sera pas recalculée, ex. 7) pour forcer la synchro,
+  puis contrôler la bannière (« Tuto 10/10 ») avant d'asserter quoi que ce soit sur les onglets.
+  ⚠ **Taille : 3 274 102 → 3 276 520 o** (+2 451 le bloc EXACT, −33 le nouveau `GAME_NOTES` plus court).
+  ⚠ **HORS PÉRIMÈTRE (§3), non touché** : **Démolir reste actif** (décision D4) — Ethan veut le retirer,
+  mais seulement une fois la tuile de pose verrouillée ET le défaut de `roadReachesPortFootprint` traité
+  (**un bâtiment posé contre le port n'est jamais reconnu comme relié** ; sans Démolir le joueur n'aurait
+  aucune issue). **Lot séparé, rien anticipé ici.** Également non touchés : `tabAllowed` lui-même, les
+  `goal`/`done`/`progress`/`why`, les tables i18n, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 365`, `GAME_VERSION = 'Alpha 14.82'`, `SAVE_VERSION = 31`.**
   Changement 14.82 (brief `BRIEFTUTOLOT3Castuces`, **LOT 3C — 6 sites A→F**) : **le catalogue
   d'astuces est resserré** — 39 `short` de plus (popup = UNE phrase, l'Aide garde le texte intégral),
   9 textes longs réécrits, 2 titres, **6 astuces rendues MUETTES** (`silent`), 7 conditions de
