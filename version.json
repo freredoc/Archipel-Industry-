@@ -1,8 +1,8 @@
 {
-  "build": 360,
-  "version": "Alpha 14.77",
+  "build": 361,
+  "version": "Alpha 14.78",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "L'export du journal de diagnostic emprunte d\\u00e9sormais le pont natif Android, comme l'export de sauvegarde : le fichier atterrit r\\u00e9ellement sur l'appareil, en .txt et non en .jsonl \\u00b7 Aucun comportement de jeu modifi\\u00e9, aucune sauvegarde touch\\u00e9e"
+  "notes": "Le journal de diagnostic passe des gestes aux EFFETS : il note d\\u00e9sormais si une pose a abouti ou \\u00e9t\\u00e9 refus\\u00e9e, le motif du refus, l'\\u00e9tape de tutoriel en cours et les variations de stock \\u00b7 Aucun comportement de jeu modifi\\u00e9, aucune sauvegarde touch\\u00e9e"
 }

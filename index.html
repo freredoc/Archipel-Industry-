@@ -7788,11 +7788,17 @@ function lsDel(k) {
 // du lot 1 : il n'y a AUCUN verrou ici, rien ne dépend de cette exactitude.
 const REC_KEY = 'archipel_rec';
 const REC = (function () {
-  const CAP = 2000;
+  const CAP = 5000;
   let on = lsGet(REC_KEY) === '1';
   let buf = [];
   let t0 = Date.now();
   let seq = 0;
+  // Dernier état connu du stock de l'île courante, pour n'écrire QUE les variations.
+  // Un instantané intégral à chaque effet serait illisible et pèserait ~360 caractères
+  // par ligne en fin de partie ; ce qui intéresse la lecture, c'est ce qui a bougé.
+  // Le premier effet d'une session porte donc l'inventaire complet, les suivants le delta.
+  let lastRes = null;
+  let lastIsl = null;
   // ⚠ `DEV_BUILD` est déclaré APRÈS ce module dans le fichier : le lire à
   // l'initialisation de l'IIFE lèverait une ReferenceError (zone morte temporelle)
   // et donnerait une page blanche. Il n'est donc consulté qu'ICI et dans `toggle`,
@@ -7808,14 +7814,42 @@ const REC = (function () {
   // volontairement, survit au restyling) > classe significative (.tab-build…) >
   // texte visible tronqué. Le lot 2 étendra data-tut aux boutons que CE journal
   // montrera comme mal identifiés — pas avant : on ne sait pas encore lesquels comptent.
+  // Étiquette d'un élément cliqué, par STABILITÉ décroissante. Le repli TEXTE est passé
+  // en DERNIER recours (il était 3e) : le premier journal réel a rendu `txt:INVENTAIRE`
+  // et `txt:✕` — le premier change avec la langue de l'interface, le second est porté par
+  // cinq boutons de fermeture distincts (`ip-close`, `rp-close`, `res-pop-close`,
+  // `slot-close`, `bp-search-clear`). Une classe, même hors liste blanche, distingue ces
+  // cinq-là et ne bouge pas d'une langue à l'autre.
+  // ⚠ La liste blanche reste PRIORITAIRE sur la première classe : `tab-btn tab-build`
+  // donnerait `tab-btn`, générique à tous les onglets et donc inutilisable.
   const labelOf = el => {
     if (!el) return '?';
     if (el.dataset && el.dataset.tut) return 'tut:' + el.dataset.tut;
     const cls = typeof el.className === 'string' ? el.className : '';
     const m = cls.match(/(tab-(?!btn\b)[a-z]+|opt-[a-z-]+|slot-[a-z]+|research-btn|island-tab)/);
     if (m) return 'cls:' + m[1];
+    const first = cls.trim().split(/\s+/)[0];
+    if (first) return 'cls:' + first;
     const tx = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 24);
     return tx ? 'txt:' + tx : (el.tagName || '?').toLowerCase();
+  };
+  // Variations du stock de l'île courante depuis le dernier appel. Renvoie `undefined`
+  // quand rien n'a bougé, pour que la ligne reste courte.
+  const resDelta = g => {
+    if (!g || !g.port) return undefined;
+    const isl = g.currentIsland;
+    const cur = g.port[isl] || {};
+    const out = {};
+    let any = false;
+    if (lastIsl !== isl) { lastRes = null; lastIsl = isl; }
+    for (const k in cur) {
+      const v = Math.round(cur[k] || 0);
+      if (!lastRes || lastRes[k] !== v) { out[k] = v; any = true; }
+    }
+    const snap = {};
+    for (const k in cur) snap[k] = Math.round(cur[k] || 0);
+    lastRes = snap;
+    return any ? out : undefined;
   };
   return {
     isOn: () => on,
@@ -7835,8 +7869,31 @@ const REC = (function () {
     onClickCapture: function (e) {
       if (!on) return;
       const t = e && e.target;
+      // ⚠ Un tap sur la carte produit AUSSI un clic DOM qui remonte jusqu'ici, sur un
+      // <canvas> que `closest` ne reconnaît pas → une entrée `?` en double de chaque
+      // `tap`. Mesuré sur le premier journal réel : 43 doublons sur 142 lignes, soit
+      // 31 % du fichier, à moins de 50 ms du tap (médiane 7 ms). On les écarte à la
+      // source ; le geste reste journalisé par `tap`, qui porte l'outil et la tuile.
+      if (t && t.closest && t.closest('canvas')) return;
       const el = t && t.closest ? t.closest('button,select,input,a,[data-tut],[role="button"]') : null;
       push('ui', { s: labelOf(el) });
+    },
+    // EFFET de jeu, par opposition à un geste : ce que la partie a réellement fait.
+    // Un clic seul ne dit pas si la pose a abouti, et certains changements n'ont aucun
+    // clic (recherche qui aboutit, étape de tutoriel franchie, message d'erreur).
+    fx: function (g, kind, d) {
+      if (!on) return;
+      const e = { fx: kind };
+      for (const q in d) e[q] = d[q];
+      const dr = resDelta(g);
+      if (dr) e.res = dr;
+      push('fx', e);
+    },
+    // Variante pour les SITES D'APPEL : journalise et RENVOIE `ok` inchangé, pour pouvoir
+    // envelopper un appel existant sans modifier ce que voit l'appelant.
+    act: function (g, kind, r, c, id, ok) {
+      this.fx(g, kind, { r: r, c: c, id: id == null ? undefined : String(id), ok: ok ? 1 : 0 });
+      return ok;
     },
     // Tap CANVAS : ne traverse aucun bouton, d'où ce point d'entrée séparé.
     tap: function (g, tile) {
@@ -8298,8 +8355,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 360;
-const GAME_VERSION = 'Alpha 14.77';
+const GAME_BUILD = 361;
+const GAME_VERSION = 'Alpha 14.78';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8308,7 +8365,7 @@ const GAME_VERSION = 'Alpha 14.77';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "L'export du journal de diagnostic emprunte d\u00e9sormais le pont natif Android, comme l'export de sauvegarde : le fichier atterrit r\u00e9ellement sur l'appareil, en .txt et non en .jsonl \u00b7 Aucun comportement de jeu modifi\u00e9, aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Le journal de diagnostic passe des gestes aux EFFETS : il note d\u00e9sormais si une pose a abouti ou \u00e9t\u00e9 refus\u00e9e, le motif du refus, l'\u00e9tape de tutoriel en cours et les variations de stock \u00b7 Aucun comportement de jeu modifi\u00e9, aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -22728,6 +22785,10 @@ function App() {
   const curTiles = () => gameRef.current.islands[gameRef.current.currentIsland];
   const toastTimer = useRef(null);
   const showToast = useCallback((msg, color = 'var(--ink)') => {
+    // Point de passage UNIQUE des messages du jeu : le journaliser donne le MOTIF de
+    // chaque refus (« pas assez de … », « tuile occupée »…) sans instrumenter les onze
+    // `return false` de `tryPlace`, et capture au passage tout ce que le jeu annonce.
+    REC.fx(gameRef.current, 'msg', { m: String(msg).slice(0, 80) });
     setToast({
       msg,
       color,
@@ -24223,6 +24284,10 @@ function App() {
       const prev = TUTORIAL_STEPS[g.tutorial.step];
       if (prev && prev.afterToast) showToast(I18N.t(prev.afterToast), 'var(--green)');
       g.tutorial.step++;
+      // Sans cette ligne, rien dans le journal ne dit à quelle étape du tutoriel un geste
+      // appartient — le premier journal réel ne permettait même pas de savoir si le
+      // tutoriel était actif. C'est l'effet qui rend tous les autres alignables.
+      REC.fx(g, 'tutstep', { step: g.tutorial.step });
       g.tutorial.targetIdx = 0; // reset du halo sur la 1re cible de la nouvelle étape
       changed = true;
       const st = TUTORIAL_STEPS[g.tutorial.step];
@@ -27987,7 +28052,7 @@ function App() {
       markDirty();
     } else if (drag.mode === 'paint' && tile) {
       if (!drag.last || drag.last.r !== tile.r || drag.last.c !== tile.c) {
-        tryPlace(tile.r, tile.c, g.ui.tool, false);
+        REC.act(g, 'place', tile.r, tile.c, g.ui.tool, tryPlace(tile.r, tile.c, g.ui.tool, false));
         drag.last = tile;
       }
     } else if (drag.mode === 'place' || drag.mode === 'upgrade' || drag.mode === 'demolish') {
@@ -28034,15 +28099,15 @@ function App() {
       handleTap(tile, e);
     } else if (drag.mode === 'place' && !drag.panned && drag.dist < TAP_THRESHOLD && tile) {
       // Tap franc en mode construction = pose sur la tuile.
-      tryPlace(tile.r, tile.c, g.ui.tool, true);
+      REC.act(g, 'place', tile.r, tile.c, g.ui.tool, tryPlace(tile.r, tile.c, g.ui.tool, true));
     } else if (drag.mode === 'upgrade' && !drag.panned && drag.dist < TAP_THRESHOLD && tile) {
       // Tap franc en mode amélioration : amélioration immédiate (option activée) ou
       // ouverture du panneau de confirmation (par défaut).
-      if (g.ui.fastUpgrade) tryUpgrade(tile.r, tile.c);
+      if (g.ui.fastUpgrade) REC.act(g, 'upgrade', tile.r, tile.c, null, tryUpgrade(tile.r, tile.c));
       else openUpgrade(tile.r, tile.c);
     } else if (drag.mode === 'demolish' && !drag.panned && drag.dist < TAP_THRESHOLD && tile) {
       // Tap franc en mode démolition = démolit UNIQUEMENT le bâtiment touché (remb. 100%).
-      tryDemolish(tile.r, tile.c, true);
+      REC.act(g, 'demolish', tile.r, tile.c, null, tryDemolish(tile.r, tile.c, true));
     }
     drag.active = false;
     drag.mode = null;
@@ -28974,8 +29039,8 @@ function App() {
     currentIsland: game.currentIsland,
     stageRef: stageRef,
     onClose: () => { SFX.play('panelClose'); setInfo(null); },
-    onDemolish: () => tryDemolish(info.r, info.c, true),
-    onUpgrade: (r, c) => tryUpgrade(r, c),
+    onDemolish: () => REC.act(gameRef.current, 'demolish', info.r, info.c, null, tryDemolish(info.r, info.c, true)),
+    onUpgrade: (r, c) => REC.act(gameRef.current, 'upgrade', r, c, null, tryUpgrade(r, c)),
     onUpgradeAll: (r, c) => upgradeAllSameType(r, c),
     onDowngrade: (r, c) => tryDowngrade(r, c),
     // Densification réussie → on ferme la fiche (elle capturait l'ANCIEN bâtiment ; le
@@ -29027,7 +29092,7 @@ function App() {
     stageRef: stageRef,
     onAskPort: cost => askPortFor(cost, game.currentIsland),
     onClose: () => { SFX.play('panelClose'); setUpgrade(null); },
-    onUpgrade: (r, c) => tryUpgrade(r, c),
+    onUpgrade: (r, c) => REC.act(gameRef.current, 'upgrade', r, c, null, tryUpgrade(r, c)),
     onDensify: (r, c) => tryDensify(r, c),
     onDensifyLocked: id => {
       SFX.play('panelOpen');
