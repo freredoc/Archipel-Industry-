@@ -17,7 +17,56 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 358`, `GAME_VERSION = 'Alpha 14.75'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 359`, `GAME_VERSION = 'Alpha 14.76'`, `SAVE_VERSION = 31`.**
+  Changement 14.76 (brief `BRIEFTUTOLOT1bdevbuild`, **LOT 1b — 3 blocs**) : **l'enregistreur d'actions
+  du lot 1 devient EXCLUSIF à l'édition DEV** (décision d'Ethan). `SAVE_VERSION` INCHANGÉ, aucun champ
+  persisté. Base EXACTE (358 / 14.75) ; **3/3 ancres uniques, 6/6 hachages conformes AVANT application**,
+  `node --check` 7/7 du premier coup, **delta +723 o EXACT** (l'attendu au byte près).
+  (1) ⚠ **LE LOT EST UN PIÈGE DE ZONE MORTE TEMPORELLE, ET LE BRIEF LE DÉSAMORCE — NE PAS
+  « SIMPLIFIER ».** `const DEV_BUILD = false;` est déclaré **APRÈS** le module `REC` dans le fichier
+  (offsets mesurés sur la base 358 : **`REC` à 2 109 119, `DEV_BUILD` à 2 145 019**). Porter la garde sur
+  l'initialisation (`let on = DEV_BUILD && lsGet(…)`) lève une `ReferenceError` **au chargement** →
+  **page blanche**. `DEV_BUILD` n'est donc consulté QUE dans les corps de `push` et de `toggle`, appelés
+  au clic ou au tap, longtemps après. **Contre-épreuve EXÉCUTÉE** (le module `REC` extrait du fichier
+  PATCHÉ, exécuté dans un `vm` où `const DEV_BUILD` est déclaré APRÈS lui, exactement l'ordre du
+  fichier) : la variante livrée **démarre**, la variante naïve lève `ReferenceError: Cannot access
+  'DEV_BUILD' before initialization`. Les deux côte à côte — sans quoi le montage ne prouverait rien.
+  (2) **`isOn()` peut rendre `true` en édition PUBLIQUE et c'est VOULU** : un `archipel_rec` à `'1'`
+  hérité d'une édition DEV sur la même origine survit. Sans effet — `push` refuse, `toggle` refuse, la
+  ligne d'option n'est plus rendue. **Ne pas « corriger » cet état apparent : le neutraliser à l'init,
+  c'est rouvrir la TDZ.** C'est toute la raison d'être de la garde dans `push` (§E) : sans elle, le
+  journal tournerait **en silence, sans aucune UI pour l'éteindre ni l'exporter**. Test 4 exécuté :
+  drapeau posé à la main + **2 min de jeu réel** → `REC.count() === 0`, `toggle()` rend `false`.
+  (3) **La dette de traduction du lot 1 est ANNULÉE** : les 4 libellés restent en français et n'ont plus
+  à entrer dans les tables i18n — l'édition publique ne les rend plus. Rien à faire, ni maintenant ni
+  au lot 2. ⚠ **La capacité d'enregistrer sur APK est INTACTE** : l'édition DEV (`fr.archipel.industry`)
+  est précisément celle installée sur le téléphone d'Ethan (14.55).
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **40 assertions, 0 KO**, **rejouées 2 fois
+  sans flottement** + **3 assertions de contre-épreuve TDZ** sous Node. **Test 2 (édition DEV)** : suite
+  du lot 1 rejouée en entier — étiquettes `["cls:tab-build","tut:mine_fer","cls:tab-net","tut:port"]`,
+  **0 `cls:tab-btn`**, tap journalisé avec `tool:"mine_fer"`, **téléchargement RÉEL** de
+  `archipel-journal-359.jsonl` (en-tête `build:359`, entrées `ui` ET `tap`), anneau plafonné à 2 000.
+  **Test 3 (édition PUBLIQUE)** : ni ligne d'option ni bouton d'export ; **« Sons » suit immédiatement
+  « Guide »**, le fragment retiré ne laisse pas de trou. **Test 5** : les 2 éditions démarrent, **console
+  vide au chargement, 0 `ReferenceError`** — c'est LE risque du lot et il ne se voit que là.
+  **Test 6** : les **5** assertions `DEV_BUILD` du workflow (lignes 73/75/103/119/191) rejouées en
+  simulation locale, **5/5 vertes** — dont le contrôle bloquant 14.55 sur `index.html`.
+  ⚠ **ÉCART DEV/PUBLIQUE ATTENDU, ne pas le lire comme un défaut** : l'édition DEV a **DEUX** lignes
+  d'options de plus, pas une — l'enregistreur **et « Mode développeur »**, ce dernier gaté sur
+  `DEV_BUILD` depuis 14.55. Vérifié : hors ces 2 lignes, les listes sont **identiques et dans le même
+  ordre** (15 lignes), rien n'est perdu en publique. Une assertion qui n'excepte que l'enregistreur
+  tombe en KO à tort (c'est arrivé à la 1ʳᵉ passe).
+  ⚠ **Taille : 3 244 736 → 3 245 389 o.** Les 3 blocs pèsent **+723 o EXACT** (mesuré AVANT le bump :
+  3 245 459) ; le total redescend parce que le nouveau `GAME_NOTES` est 70 octets plus court.
+  ⚠ **ANOMALIE PRÉEXISTANTE SIGNALÉE, NON CORRIGÉE (hors périmètre)** : le champ `notes` de
+  `version.json` est **doublement échappé** par l'étape CI « Sync version.json » (`\\u00ab` au lieu de
+  `«`) → le bandeau « Mise à jour disponible » affiche littéralement `é` / `«` au lieu des
+  accents et des guillemets. **Ce n'est PAS une régression** : le build 357 porte exactement le même
+  défaut (`ic\\u00f4nes du pack`), et probablement tous les précédents. Les notes SONT rendues au joueur.
+  Correctif d'une ligne dans le workflow, à faire dans un lot séparé.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : le verrou du tuto (lot 2), `TESTER_BUILD`, le mode rapide, les
+  tables i18n, `SAVE_VERSION`, `exportNow` (non gaté — inatteignable en publique, son bouton n'existe pas).
+- **État précédent : `GAME_BUILD = 358`, `GAME_VERSION = 'Alpha 14.75'`, `SAVE_VERSION = 31`.**
   Changement 14.75 (brief `BRIEFTUTOLOT1enregistreur`, **LOT 1 sur 2 — l'ENREGISTREUR D'ACTIONS**) :
   **une option de diagnostic journalise chaque bouton touché et chaque tuile tapée**, exportable en
   `.jsonl`. `SAVE_VERSION` INCHANGÉ, **aucun champ de sauvegarde** (le journal vit en MÉMOIRE, seul le

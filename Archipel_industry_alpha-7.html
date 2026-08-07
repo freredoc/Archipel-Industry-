@@ -7793,8 +7793,12 @@ const REC = (function () {
   let buf = [];
   let t0 = Date.now();
   let seq = 0;
+  // ⚠ `DEV_BUILD` est déclaré APRÈS ce module dans le fichier : le lire à
+  // l'initialisation de l'IIFE lèverait une ReferenceError (zone morte temporelle)
+  // et donnerait une page blanche. Il n'est donc consulté qu'ICI et dans `toggle`,
+  // c'est-à-dire au clic ou au tap — bien après le chargement.
   const push = (k, d) => {
-    if (!on) return;
+    if (!on || !DEV_BUILD) return;
     if (buf.length >= CAP) buf.shift();
     const e = { i: ++seq, t: Date.now() - t0, k: k };
     for (const q in d) e[q] = d[q];
@@ -7817,6 +7821,11 @@ const REC = (function () {
     isOn: () => on,
     count: () => buf.length,
     toggle: function () {
+      // Édition PUBLIQUE : l'enregistreur est mort. La garde ne sert pas l'UI (la ligne
+      // d'option n'y est plus rendue) mais un `archipel_rec` à '1' laissé par une édition
+      // DEV antérieure sur la même origine — sans elle, le journal tournerait sans que
+      // personne puisse l'éteindre ni l'exporter.
+      if (!DEV_BUILD) return false;
       on = !on;
       lsSet(REC_KEY, on ? '1' : '0');
       if (on) { buf = []; seq = 0; t0 = Date.now(); }
@@ -8292,8 +8301,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 358;
-const GAME_VERSION = 'Alpha 14.75';
+const GAME_BUILD = 359;
+const GAME_VERSION = 'Alpha 14.76';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8302,7 +8311,7 @@ const GAME_VERSION = 'Alpha 14.75';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Nouvelle option de diagnostic \u00ab Enregistrer mes actions \u00bb : un journal note en m\u00e9moire chaque bouton touch\u00e9 et chaque tuile tap\u00e9e, exportable en fichier. \u00c9teint par d\u00e9faut, il sert \u00e0 construire le futur tutoriel sur des parcours r\u00e9els \u00b7 Aucun comportement de jeu modifi\u00e9, aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "L'option de diagnostic \u00ab Enregistrer mes actions \u00bb devient exclusive \u00e0 l'\u00e9dition d\u00e9veloppeur : elle dispara\u00eet de l'\u00e9dition publique, o\u00f9 le journal ne tourne plus du tout \u00b7 Aucun comportement de jeu modifi\u00e9, aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -22025,7 +22034,7 @@ function OptionsModal({
   }, I18N.available().map(code => React.createElement("option", {
     key: code,
     value: code
-  }, I18N.names[code])))), selRow(I18N.t("Grands nombres"), I18N.t("\xC9criture des valeurs au-dessus du seuil. En dessous, s\xE9parateur de milliers dans les deux cas."), numFormat === 'si' ? 'si' : 'sci', [['sci', I18N.t('Scientifique \u2014 2,35e6')], ['si', I18N.t('Pr\xE9fixe SI \u2014 2,35 M')]], onSetNumFormat), selRow(I18N.t("Seuil de bascule"), I18N.t("\xC0 partir de quelle valeur on quitte le s\xE9parateur de milliers. \xAB jamais \xBB donne 2 565 633 264 880 en entier."), numThreshold === Infinity ? 'inf' : String(numThreshold || 1e5), [['1000', '1 000'], ['10000', '10 000'], ['100000', '100 000'], ['1000000', '1 000 000'], ['1000000000', '1 000 000 000'], ['inf', I18N.t('jamais')]], onSetNumThreshold), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Production hors-ligne"), I18N.t("Rattrape la production pendant une absence. D\xE9sactiv\xE9 : le jeu ne progresse que lorsqu'il est ouvert."), offlineEnabled !== false, onToggleOffline), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Guide"), I18N.t("Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)"), guideEnabled !== false, onToggleGuide), toggleRow(I18N.t("Enregistrer mes actions"), I18N.t("Journal de diagnostic : note chaque bouton touché et chaque tuile tapée. Sert à construire le tutoriel."), recOn, () => setRecOn(REC.toggle())), recOn && React.createElement("button", {
+  }, I18N.names[code])))), selRow(I18N.t("Grands nombres"), I18N.t("\xC9criture des valeurs au-dessus du seuil. En dessous, s\xE9parateur de milliers dans les deux cas."), numFormat === 'si' ? 'si' : 'sci', [['sci', I18N.t('Scientifique \u2014 2,35e6')], ['si', I18N.t('Pr\xE9fixe SI \u2014 2,35 M')]], onSetNumFormat), selRow(I18N.t("Seuil de bascule"), I18N.t("\xC0 partir de quelle valeur on quitte le s\xE9parateur de milliers. \xAB jamais \xBB donne 2 565 633 264 880 en entier."), numThreshold === Infinity ? 'inf' : String(numThreshold || 1e5), [['1000', '1 000'], ['10000', '10 000'], ['100000', '100 000'], ['1000000', '1 000 000'], ['1000000000', '1 000 000 000'], ['inf', I18N.t('jamais')]], onSetNumThreshold), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Production hors-ligne"), I18N.t("Rattrape la production pendant une absence. D\xE9sactiv\xE9 : le jeu ne progresse que lorsqu'il est ouvert."), offlineEnabled !== false, onToggleOffline), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Guide"), I18N.t("Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)"), guideEnabled !== false, onToggleGuide), DEV_BUILD && toggleRow(I18N.t("Enregistrer mes actions"), I18N.t("Journal de diagnostic : note chaque bouton touché et chaque tuile tapée. Sert à construire le tutoriel."), recOn, () => setRecOn(REC.toggle())), DEV_BUILD && recOn && React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: () => REC.exportNow()
   }, I18N.t("Exporter le journal")), toggleRow(I18N.t("Sons"), I18N.t("Effets sonores du jeu (pose, am\xE9lioration, alertes…)"), audioEnabled !== false, onToggleAudio), sliderRow(I18N.t("Volume"), I18N.t("Volume des effets sonores"), audioVolume == null ? 0.55 : audioVolume, 0, 1, 0.05, v => onSetAudioVolume && onSetAudioVolume(v), v => Math.round(v * 100) + '%'), React.createElement("button", {
