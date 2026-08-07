@@ -17,7 +17,65 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 367`, `GAME_VERSION = 'Alpha 14.84'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 368`, `GAME_VERSION = 'Alpha 14.85'`, `SAVE_VERSION = 31`.**
+  Changement 14.85 (brief `BRIEFTUTOLOT4forcage`, **LOT 4 — 5 sites A→E**) : **le tutoriel impose
+  désormais OÙ poser.** Un plan de 32 poses **relevé sur une partie réelle** (journal du build 367),
+  pas calculé : le halo désigne les tuiles exactes et le verrou n'accepte qu'elles. `SAVE_VERSION`
+  INCHANGÉ, aucun champ persisté. Base EXACTE (367 / 14.84) ; **5/5 ancres uniques, 10/10 hachages
+  conformes AVANT application**, `node --check` 7/7, **delta +4 445 o EXACT**.
+  (1) ⚠ **LE PLAN A ÉTÉ RE-VÉRIFIÉ CONTRE LE TERRAIN AVANT D'ÊTRE APPLIQUÉ, et ce contrôle est
+  OBLIGATOIRE à chaque retouche du plan** : Démolir étant désormais fermé (§4), un plan qui ne
+  suffirait pas à valider son étape **enfermerait le joueur sans recours**. Rejoué sur la base 367 :
+  **32/32 poses acceptées par `tryPlace`**, 6/6 mines sur `resource`, **19/19 routes en un seul blob
+  touchant le port**, 0 bâtiment orphelin, 0 empreinte ≠ 1×1, et surtout **8/8 étapes à plan se
+  valident avec les SEULES poses disponibles jusque-là** (le `done` évalué étape par étape).
+  (2) **Halo et verrou partagent leur source** (`tutPlanRemaining`) : le joueur ne peut jamais se
+  voir refuser une tuile qui clignote, ni réussir sur une tuile qui ne clignote pas. **Invariant
+  vérifié EXHAUSTIVEMENT : 49 152 combinaisons (8 étapes × toute la grille × 6 bâtiments), 0 écart.**
+  C'est le test central du lot ; s'il se rompt, le guidage ment.
+  (3) ⚠ **D4 EST RENVERSÉ — Démolir se ferme, et ce renversement est CONDITIONNEL.** Démolir
+  n'existait que comme porte de sortie d'une pose ratée ; le verrou refusant la pose **avant qu'elle
+  existe**, il n'y a plus rien à défaire. **Rouvrir la pose libre sans rendre Démolir enfermerait le
+  joueur sur sa première erreur** — les deux vont ensemble. Mesuré sur les 10 étapes : Démolir fermé
+  **exactement** sur les 8 étapes à plan, ouvert aux étapes 5 et 10.
+  (4) **L'ordre n'est pas imposé** (décision d'Ethan) : le joueur pose sur *une* des tuiles restantes
+  de son étape, pas dans la séquence relevée. Mesuré à l'étape 4 : route → bâtiment → route, 0 refus.
+  (5) **L'ancien halo `link` disparaît** : il dessinait une polyligne décorative sans désigner aucune
+  tuile posable, et cherchait **toujours `mine_fer`** — y compris aux étapes de la carrière, du
+  charbon, du four et de la cimenterie (six étapes sur sept montraient le mauvais bâtiment).
+  (6) **CONTRÔLE AJOUTÉ HORS BRIEF, et il fallait le faire** : **l'étape 4 impose Copier** — si la
+  capture armait un chemin de pose distinct, le forçage n'aurait pas couvert cette étape. Vérifié par
+  le vrai geste (clic réel sur Copier → tap sur une mine → outil `mine_fer`) : la pose retombe bien
+  dans la branche `place` verrouillée — **hors plan REFUSÉE avec le toast, sur le plan acceptée**.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **49 assertions, 0 KO, rejouées 2 fois
+  sans flottement** + **7 assertions d'audit du plan** — dont le **tutoriel déroulé de bout en bout,
+  étapes 1 à 9, par 32 TAPS CANVAS RÉELS sur les seules tuiles du halo : 32 posées, 0 refusée**
+  (`tryPlace` direct contournerait le verrou, qui vit dans `onPointerUp` — un test de forçage DOIT
+  passer par de vrais taps) **+ 205 assertions en NON-RÉGRESSION des lots 3A (63), 3B (50), 3C (38),
+  3D (42) et 3E (12)**, page blanche DEV et PUBLIQUE console vide.
+  ⚠ **2 assertions du lot 3D mises à jour, ce sont des RENVERSEMENTS VOULUS, pas des régressions** :
+  les cibles `tiles: '<id>'` deviennent `tiles: '@plan'`, et l'étape 10 rend **toute la barre** (elle
+  n'ouvrait que Améliorer + Démolir).
+  ⚠ **PIÈGES DE HARNAIS (4 causes distinctes, 21 faux KO à la 1ʳᵉ passe — à ne pas redécouvrir)** :
+  (a) **l'INVENTAIRE est déplié d'office depuis le lot 3B et se pose EN SUPERPOSITION** sur le haut
+  du canvas → tout tap y atterrit (`span.iv`) : le replier ; (b) **purger les popups AVANT de toucher
+  au HUD** — leur `.research-backdrop` avale le clic, donc replier l'inventaire d'abord ne marche
+  pas ; (c) **`el.tagName === 'CANVAS'` NE SUFFIT PAS** pour vérifier qu'un point vise la carte : un
+  popup d'astuce ouvert pose son propre `<canvas class="tip-illu-canvas">` par-dessus, et le tap part
+  dedans **sans le moindre toast** — comparer à `document.querySelector('.stage canvas')` ;
+  (d) **`clampPan` recale la caméra** : après centrage, REFAIRE le trajet inverse de `pointerToTile`
+  et vérifier que le point désigne bien la tuile visée, sinon réessayer. Et (e) un espion de toasts
+  **ne doit PAS dédoublonner** sur le dernier message : deux refus successifs du verrou émettent le
+  même texte, et le second passerait pour muet.
+  ⚠ **Bruit console PRÉEXISTANT à filtrer, pas une régression** : le survol en mode Copier émet
+  `Archipel frame error: … reading 'kind'` (`canPlace('__copy')`, `BUILDINGS['__copy']` undefined,
+  documenté en 14.46).
+  ⚠ **Taille : 3 277 083 → 3 281 591 o** (+4 445 les 5 blocs EXACT, +63 le nouveau `GAME_NOTES`).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : les `goal`/`done`/`progress`/`why`/`afterToast` (donc **aucune
+  table i18n** — l'alignement PAR INDEX d'`applyToData` est préservé), le défaut de
+  `roadReachesPortFootprint` (un bâtiment posé contre le port n'est jamais reconnu comme relié),
+  `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 367`, `GAME_VERSION = 'Alpha 14.84'`, `SAVE_VERSION = 31`.**
   Changement 14.84 (brief `BRIEFTUTOLOT3Ehaloetape6`, **LOT 3E — 1 SEUL site, 2 `when` allongés**) :
   **à l'étape 6, le halo désignait le RÉSEAU pendant toute la phase d'amélioration.** `SAVE_VERSION`
   INCHANGÉ. Base EXACTE (366 / 14.83) ; **1/1 ancre unique, 2/2 hachages conformes AVANT application**,
