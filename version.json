@@ -1,8 +1,8 @@
 {
-  "build": 379,
-  "version": "Alpha 14.96",
+  "build": 380,
+  "version": "Alpha 14.97",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Le halo vert de guidage ne reste plus collé en permanence sur l’onglet « Améliorer » : la saturation d’un réseau est un état durable de milieu de partie, l’objectif restait donc allumé pendant des heures. La bannière « Un réseau est saturé » continue d’afficher l’information."
+  "notes": "Maintenance interne, sans effet visible en jeu : la table de traduction du tutoriel contenait une copie périmée à 7 étapes, déjà neutralisée au chargement par une seconde table correcte à 10 étapes. Les deux sont désormais alignées, pour qu'une modification future ne puisse pas réveiller l'ancienne."
 }
