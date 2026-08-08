@@ -17,7 +17,60 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 375`, `GAME_VERSION = 'Alpha 14.92'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 376`, `GAME_VERSION = 'Alpha 14.93'`, `SAVE_VERSION = 31`.**
+  Changement 14.93 (brief `BRIEFlotforeuseoffline`, **2 chantiers indépendants — 1 SEUL livré**) :
+  **l'écran de rattrapage hors-ligne annonce les ticks qu'il simule, et sa barre cesse de mentir.**
+  `SAVE_VERSION` INCHANGÉ, aucun champ de partie. Base EXACTE (375 / 14.92 / 3 319 817 o).
+  **4 ancres de code + 1 bloc i18n, toutes à `count == 1`. Delta +1 980 o.**
+  (1) ⚠ **CHANTIER 1 (sprite foreuse Nord) NON LIVRÉ : les 2 PNG ne sont joints NULLE PART** — ni
+  dans les pièces jointes de la session (seul le `.md` est arrivé), ni dans aucun des 7 zips du dépôt.
+  Les `bat_foreuse_n.png` trouvés portent `e14fea1a…` (v3.2, **l'art actuellement EN JEU**, donc le
+  défectueux) et `0c3db872…` (v2.8) ; le brief attend `61fa71ae…`. **Aucun art de substitution
+  fabriqué** : le test 1.5 exige la concordance SHA-256, un art régénéré ne la produirait jamais
+  (même arbitrage qu'aux lots 14.64/14.65, jugé le bon). `scratchpad/fo/patch_sprite.py` est écrit
+  et **refuse d'écrire** si SHA/taille/dimensions, silhouette (706 px opaques, 0 écart d'alpha),
+  frame 0 == statique ou continuité de la bande orange ne concordent pas.
+  ⚠ **DÉFAUT CARACTÉRISÉ AU PIXEL en attendant** (sprite re-décodé depuis la data-URL en jeu) :
+  y21/y22 portent l'orange en x5..x9 puis **x21..x26**, avec un trou rempli par les pixels du mât
+  (`B8C1CE`/`C2CBD6`/`8A95A4`/`5E6978`). ⚠ **Le brief se trompe sur la largeur du trou** : il annonce
+  x11..x19 (9 px), la mesure donne **x10..x20 (11 px)**. Les **706 pixels opaques** du §1.6 sont exacts.
+  (2) **LE VRAI DÉFAUT DU CHANTIER 2 N'EST PAS L'ABSENCE DE CHIFFRES, C'EST QUE LE POURCENTAGE MENT.**
+  Il se calculait sur `ticks` (durée totale de l'absence) alors que la boucle ne simule que `WARM`
+  ticks avant d'extrapoler ; en simplifié `WARM = min(ticks, 900)`. Mesuré sur la base, 8 h d'absence :
+  la barre **plafonne à 3 %** puis saute à 100 %. Afficher `done / ticks` en chiffres, comme le §2.1
+  le demande isolément, aurait **reproduit le mensonge en plus visible**. Livré : la progression se
+  rapporte à `WARM` et l'extrapolation est annoncée à part → `885 / 900 ticks simulés · 27 900
+  extrapolés` (mode complet : `1 692 / 1 800 ticks`, sans mention).
+  (3) ⚠ **`WARM` et `simplify` sont RELUS À CHAQUE APPEL de `showOverlay`**, jamais capturés au
+  démarrage : la bascule anti-gel (`CATCHUP_BUDGET_MS`) redéfinit les deux **pendant** l'échauffon.
+  Ce sont des `let` de la même fermeture, la lecture directe suffit. `showOverlay` ne prend donc plus
+  de paramètre et calcule le pourcentage elle-même (le §2.2 laissait le choix ; c'est la seule voie
+  qui garantisse la fraîcheur).
+  (4) ⚠ **SEUIL DE FORMAT IMPOSÉ : `fmtInt(n, Infinity)`** — piège NON signalé par le brief (qui ne
+  mettait en garde que contre `formatCost`). Sans argument, `fmtInt` suit la préférence **« Grands
+  nombres » du joueur**, qui descend jusqu'à 1 000 → **28 800 s'afficherait `2,88e4`**. Un nombre de
+  ticks est une DURÉE, pas un stock : il garde toujours le séparateur de milliers.
+  (5) **`OVERLAY_AFTER_MS = 180` CONSERVÉ** (test 2.1 : absence de 72 s → aucun overlay).
+  **Validé** : `node --check` 7/7 (publique ET dev) + **30 assertions, 0 KO**, dont **2.8 (contre-épreuve
+  sur la base 375 : aucune ligne de ticks, barre plafonnée à 3 % — le test est falsifiable)** et les
+  4 langues (`ticks simulated` / `simulados` / `Ticks simuliert`, **0 chaîne française résiduelle**).
+  ⚠ **2.4 — LA TRANSITION DE `WARM` N'EST PAS OBSERVABLE À L'ÉCRAN, et il faut le savoir avant de
+  chercher** : horloge accélérée → le budget est franchi dès la 1ʳᵉ tranche, donc **avant** les 180 ms
+  de différé de l'overlay ; temps réel → la machine simule 28 800 ticks bien en deçà des 90 s du mode
+  complet, la bascule **ne se déclenche jamais**. La propriété se prouve par **COMPARAISON de deux
+  runs à absence et mode identiques (8 h, complet)** ne différant que par l'horloge : **28 800 sans
+  bascule, 900 avec** — une implémentation qui capturerait `WARM` au démarrage afficherait 28 800 dans
+  les DEUX cas. Plus l'invariant `total affiché + extrapolés == durée de l'absence`, vrai sur les
+  **359 relevés**.
+  ⚠ **PIÈGE DE HARNAIS, 3 faux KO** : à 120 ms d'échantillonnage le rattrapage de 8 h se termine entre
+  deux relevés → **1 seul échantillon** capté, et toute assertion portant sur « le dernier échantillon »
+  mesure un instantané au hasard (46 % là où le maximum réel est 98 %). Échantillonner à **25 ms** et
+  asserter sur un **invariant vrai à chaque relevé** (`pct == round(100 × faits / simulés)`), jamais sur
+  une valeur finale.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `OFFLINE_MAX_TICKS`, `MIN_WARM`, `SAMPLE`, `CATCHUP_BUDGET_MS`,
+  `OVERLAY_AFTER_MS`, le mécanisme d'extrapolation, les orientations S/O/E de la foreuse, les
+  déclarations `ANIM_META` antérieures (écrasées par construction), `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 375`, `GAME_VERSION = 'Alpha 14.92'`, `SAVE_VERSION = 31`.**
   Changement 14.92 (brief `BRIEFlothalosantenne`, **lot « Halos d'antenne après déficit » — 2 ancres**) :
   **après un déficit, les halos de l'antenne revenaient au bout de ~55 s ; ils reviennent en 3.**
   `SAVE_VERSION` INCHANGÉ, **aucun champ persisté** (`antTicks`/`antNeed` sont transitoires comme
