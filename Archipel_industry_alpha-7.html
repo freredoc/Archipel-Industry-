@@ -3193,9 +3193,12 @@ const defById = id => ISLAND_TERRAINS.find(d => d.id === id);
 // Une tuile REMBLAYÉE (ou un mur percé au souterrain) : sa mer/roche d'origine a été comblée par le
 // joueur. C'est exactement ce que `terrainMods` sérialise → annulable (14.08).
 const isFilledTile = t => !!(t && t.baseTerrain === 'water' && (t.terrain === 'land' || t.terrain === 'coast'));
+// ⚠ Le stock de départ est écrit à TROIS endroits : ici, dans l'objet de partie neuve et
+// dans le repli de chargement (`if (!g.port[1])`). Les changer ensemble, sinon le stock
+// dépend du chemin d'entrée dans la partie.
 const INITIAL_RESOURCES = {
-  pierre: 20,
-  minerai_fer: 20,
+  pierre: 30,
+  minerai_fer: 30,
   charbon: 0,
   lingot_fer: 0,
   ciment: 0,
@@ -8386,8 +8389,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 370;
-const GAME_VERSION = 'Alpha 14.87';
+const GAME_BUILD = 371;
+const GAME_VERSION = 'Alpha 14.88';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8396,7 +8399,7 @@ const GAME_VERSION = 'Alpha 14.87';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Pendant le tutoriel, les tuiles o\u00f9 poser sont d\u00e9sormais visibles en permanence, sans avoir \u00e0 ouvrir le menu \u00b7 Chaque tuile porte le sprite du b\u00e2timent attendu et une couleur qui tranche sur la carte \u00b7 Les routes restent des cases color\u00e9es \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Un b\u00e2timent trop cher annonce d\u00e9sormais son propre nom au lieu d\u2019\u00ab Extension V1 \u00bb \u00b7 Stock de d\u00e9part port\u00e9 \u00e0 30 pierre et 30 minerai de fer \u00b7 La derni\u00e8re \u00e9tape du tutoriel ne d\u00e9signe plus rien : \u00e0 vous de conduire \u00b7 Les alertes de saturation et de d\u00e9ficit y reprennent la parole \u00b7 Le bouton R\u00e9parer est d\u00e9sign\u00e9 quand l\u2019\u00eele suivante est \u00e0 port\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -14187,10 +14190,12 @@ const TUTORIAL_STEPS = [{
   reveal: [],
   goal: 'Produis 10 lingots de fer et 10 ciments par seconde.',
   why: 'tut_debit',
-  targets: [
-    { sel: '.tab-upg',      when: g => g.ui.tool !== UPGRADE },
-    { tiles: '@upgradable', when: (g, ui) => !ui.upOpen }
-  ],
+  // AUCUNE cible : plus de halo à cette étape. Elle n'impose ni geste ni emplacement —
+  // toute la barre est rendue au joueur (lot 4) et le plan de pose est épuisé. Désigner
+  // Améliorer et les bâtiments fraîchement posés revenait à lui dicter sa stratégie
+  // alors que l'objectif est justement de le laisser conduire. L'objectif et les deux
+  // compteurs restent, eux : ils disent où il en est sans lui dire quoi toucher.
+  targets: [],
   progress: g => [['Lingots/s', tutFlowOf(g, 1, 'lingot_fer'), 10], ['Ciments/s', tutFlowOf(g, 1, 'ciment'), 10]],
   done: g => tutFlowAtLeast(g, 1, 'lingot_fer', 10) && tutFlowAtLeast(g, 1, 'ciment', 10),
   afterToast: '🎓 Tu tiens la boucle : extraire → acheminer → transformer → monter en cadence.'
@@ -15565,6 +15570,25 @@ const GUIDE_OBJECTIVES = [
   targets: [{ sel: '.tab-upg', when: g => g.ui.tool !== UPGRADE }, { tiles: '@saturated', when: () => true }]
 }, {
   // ── DÉCOUVERTES ───────────────────────────────────────────────────────────
+  // Après le tutoriel : le joueur a la cadence, il lui manque de savoir OÙ elle sert.
+  // Le bouton Réparer affiche les montants exigés par l'accès à l'île suivante — c'est
+  // le seul endroit du jeu qui les montre. Objectif de découverte : une seule fois.
+  id: 'go_reparer',
+  kind: 'discover',
+  goal: 'Ouvre Réparer : il indique ce qu\'il faut livrer pour ouvrir l\'île suivante.',
+  // ⚠ `repairInfo` est une variable LOCALE au rendu, pas un champ de `game` : le prédicat
+  // le recalcule depuis la source, `ISLAND_ACCESS_NODE` + le statut du nœud d'accès —
+  // exactement ce que fait le composant. `condition_ok` = le bouton est déverrouillé.
+  when: g => {
+    const nx = (g.currentIsland || 1) + 1;
+    const nd = ISLAND_ACCESS_NODE[nx];
+    if (!nd || (g.islandUnlocked && g.islandUnlocked[nx])) return false;
+    const n = g.techTree && g.techTree.nodes && g.techTree.nodes[nd - 1];
+    return !!n && n.status === 'condition_ok';
+  },
+  done: g => !!(g.guide && g.guide.done && g.guide.done.go_reparer),
+  targets: [{ sel: '[data-tut="repair"]', when: () => true }]
+}, {
   id: 'go_recherche',
   kind: 'fix',
   // 'fix' : une recherche prête doit TOUJOURS se signaler (K2)
@@ -17432,6 +17456,7 @@ function Hud({
     // notification (notif-dot) apparaît quand la réparation devient possible (ressources livrées).
     const repairBtn = repairInfo && React.createElement("button", {
       className: "inv-repair-ico" + (repairInfo.locked ? ' locked' : '') + (canRepair ? ' ready' : ''),
+      'data-tut': "repair",
       onClick: repairInfo.locked ? undefined : onShowRepair,
       disabled: !!repairInfo.locked,
       title: repairInfo.locked ? I18N.t("R\xE9paration \xCEle ") + repairInfo.island + I18N.t(" — recherche d'acc\xE8s non atteinte") : I18N.t("R\xE9parer le port pour d\xE9bloquer l'\xEEle ") + repairInfo.island
@@ -22776,8 +22801,8 @@ function App() {
       resources: {},
       port: {
         1: {
-          pierre: 20,
-          minerai_fer: 20
+          pierre: 30,
+          minerai_fer: 30
         },
         2: {},
         3: {},
@@ -23689,8 +23714,8 @@ function App() {
       for (const k in p) if (!(p[k] > 0)) p[k] = 0;
     }
     if (!g.port[1]) g.port[1] = {
-      pierre: 20,
-      minerai_fer: 20
+      pierre: 30,
+      minerai_fer: 30
     };
     g.energy = {};
     if (data.energy) for (const id in data.energy) {
@@ -24861,6 +24886,23 @@ function App() {
         showTip(stCur.why);
         markDirty();
         scheduleSave();
+        return;
+      }
+      // ÉTAPE 10 (index 9) : le joueur n'est plus guidé, il monte en cadence librement —
+      // et c'est là que la saturation et le déficit apparaissent. Ces deux alertes sont
+      // donc rendues à la parole, elles seules. ⚠ Leur condition est TRANSITOIRE : différées
+      // jusqu'à la fin du tutoriel, elles ne se déclencheraient jamais si le réseau se
+      // désature entre-temps. Les autres astuces restent différées.
+      if (g.tutorial.step >= 9) {
+        for (const id of ['reseau_sature', 'deficit']) {
+          const t = TIP_BY_ID[id];
+          if (t && !g.tipsSeen[id] && t.when(g)) {
+            showTip(id);
+            markDirty();
+            scheduleSave();
+            return;
+          }
+        }
       }
       return;
     }
@@ -25385,7 +25427,11 @@ function App() {
     if (!dev) {
       const miss = missingFor(costToPay);
       if (miss.length) {
-        if (verbose) { showToast(I18N.t('❌ Extension V') + joinLvl + I18N.t(' : manque ') + miss.join(', '), 'var(--red)'); SFX.play('invalid'); }
+        // « Extension V<n> » ne vaut que pour un RÉSEAU rejoignant un réseau de niveau n.
+      // `joinLvl` reste à 1 pour tout autre bâtiment (il n'est calculé que dans la branche
+      // `kind === 'infra'`) : une mine impayable annonçait donc « Extension V1 : manque
+      // 9 pierre », un vocabulaire que le joueur ne connaît pas et qui désigne autre chose.
+      if (verbose) { showToast((b.kind === 'infra' ? I18N.t('❌ Extension V') + joinLvl : '❌ ' + (b.name || id)) + I18N.t(' : manque ') + miss.join(', '), 'var(--red)'); SFX.play('invalid'); }
         return false;
       }
       pay(costToPay);

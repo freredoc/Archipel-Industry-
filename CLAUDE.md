@@ -17,7 +17,72 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 370`, `GAME_VERSION = 'Alpha 14.87'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 371`, `GAME_VERSION = 'Alpha 14.88'`, `SAVE_VERSION = 31`.**
+  Changement 14.88 (brief `BRIEFTUTOLOT7retours`, **LOT 7 — 8 sites A→H, quatre retours indépendants**) :
+  **le toast d'échec nomme le bâtiment**, **le stock de départ passe de 20 à 30**, **l'étape 10 rend la
+  main** (plus de halo, les astuces d'alerte se débloquent) et **le guide désigne le bouton Réparer**.
+  `SAVE_VERSION` INCHANGÉ, aucun champ persisté. Base EXACTE (370 / 14.87) ; **8/8 ancres uniques,
+  16/16 hachages conformes AVANT application**, `node --check` 7/7, **delta +2 878 o EXACT**.
+  (1) **§A — le toast disait « ❌ Extension V1 : manque 20 pierre » pour un BÂTIMENT.** Le message
+  d'échec de `tryPlace` était écrit pour les réseaux et servait à tout : poser une mine sans pierre
+  annonçait une « extension » que le joueur n'avait pas demandée. Le libellé se scinde désormais sur
+  `b.kind === 'infra'` : les réseaux gardent « Extension V\<niveau\> », les bâtiments prennent leur
+  **nom** (`b.name || id`). Mesuré : « ❌ Mine Fer V1 : manque 20 pierre » ; contre-épreuve sur une
+  route → « ❌ Extension V2 : manque 10 ciment » (inchangé).
+  (2) **§B/C/D — stock de départ 20 → 30 pierre et minerai de fer.** ⚠ **Il est écrit à TROIS
+  endroits** (`INITIAL_RESOURCES`, l'objet de partie neuve, et le repli `if (!g.port[1])` du
+  chargement) : n'en changer qu'un fait dépendre le stock du **chemin d'entrée** dans la partie
+  (partie neuve vs slot rechargé). Les 3 sont patchés et un commentaire d'avertissement est posé
+  au-dessus d'`INITIAL_RESOURCES`. Mesuré : **3 sites à 30, 0 stock resté à 20**.
+  ⚠ **PIÈGE DE MESURE (m'a donné 3 faux KO)** : le coût des fours **paraît changé** parce que
+  `TIER_COST_MULT` (t1 ×2) s'applique **au chargement du module** sur `BUILDINGS[id].cost` → la
+  source dit 20+20, le runtime rend **40+40**. Le contrôle du §3 (« coûts de bâtiment inchangés »)
+  doit donc comparer à `20 × mult`, jamais au littéral. Les 4 littéraux `pierre: 20`/`minerai_fer: 20`
+  restants sont bien des **coûts** (mine, carrière, four fer, four cuivre) et le 4ᵉ `pierre: 30` est
+  le coût **préexistant** de la cimenterie (`pierre: 30, minerai_fer: 10`) — pas un stock oublié.
+  (3) **§E/§F — l'étape 10 rend la main.** Elle était la dernière étape à plan… sans plan : elle
+  gardait un halo (`targets`) qui ne désignait plus rien d'utile, et `checkTips` **coupait toutes les
+  astuces contextuelles** tant que le tutoriel était actif. Désormais `targets: []` (aucun halo, DOM
+  ni canvas) et `checkTips` laisse passer **`reseau_sature` puis `deficit`** dès l'étape 10 — ce sont
+  exactement les deux pannes que la montée en cadence provoque. **La bannière et les 2 compteurs sont
+  CONSERVÉS** (l'objectif reste lisible). Mesuré : 0 cible, 0 halo, bannière « Tuto 10/10 » intacte.
+  ⚠ **Le `return` a dû être DÉPLACÉ dans le `if`** : laissé à sa place, il sortait de `checkTips`
+  avant le nouveau bloc et l'étape 10 restait muette (le patch aurait été inerte).
+  ⚠ **CONTRE-ÉPREUVE EXÉCUTÉE** : à l'étape 6, la saturation est bien **muette** ET **non marquée
+  vue** → l'astuce reste disponible pour l'étape 10. `port` et `energie` restent différées (leurs
+  conditions sont vraies dès le boot ; les rendre passantes ferait une rafale au franchissement).
+  ⚠ **FAUSSE ALERTE QUE J'AI LEVÉE PUIS INSTRUITE** : j'ai d'abord cru que `reseau_sature` portait
+  `silent: true` (mon grep captait le `silent` de l'astuce SUIVANTE) — donc que le lot 7 contredisait
+  le lot 3C. Vérification exhaustive : les 7 astuces muettes sont `tut_copier`, `transport`,
+  `priorite`, `batiment_deconnecte`, `liaisons_port`, `reserves`, `copier` — **ni `reseau_sature`,
+  ni `deficit`**. Aucun conflit ; l'assertion est conservée comme **contrôle de cohérence permanent**
+  (si un lot futur rend l'une des deux muette, le §E devient inerte en silence).
+  (4) **§G/§H — le guide désigne enfin le bouton Réparer.** Le tutoriel fini, le joueur devait
+  « réparer » l'île 2 sans que rien ne pointe le bouton : `go_recherche` l'envoyait à la Recherche,
+  où le nœud d'accès est en `condition_ok` mais **se livre depuis le bouton Réparer du HUD**. Nouvel
+  objectif **`go_reparer`**, inséré **AVANT** `go_recherche` (ordre = correctifs récurrents d'abord,
+  règle K1 du lot Guide), avec `data-tut="repair"` posé sur `.inv-repair-ico`. Son `when` recalcule
+  le nœud depuis `ISLAND_ACCESS_NODE` et teste `g.techTree.nodes[nd - 1].status === 'condition_ok'`.
+  ⚠ **`nodes[id - 1]`, pas `nodes[id]`** : c'est la convention d'indexation du jeu ; un `nodes[nd]`
+  aurait désigné le nœud suivant et l'objectif se serait armé au mauvais moment.
+  Mesuré : muet tant que le nœud n'est pas `condition_ok`, bandeau + halo sur le bouton Réparer
+  ensuite, **muet à nouveau** une fois l'île 2 ouverte.
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **38 assertions du lot, 0 KO, rejouées
+  2 fois sans flottement** — **+ 326 assertions en NON-RÉGRESSION des lots 3A (63), 3B (50), 3C (38),
+  3D (42), 3E (12), 4 (46), 5 (35) et 6 (40) rejouées sur ce build, 0 KO, 0 assertion à adapter**
+  (le lot 7 ne renverse aucune assertion antérieure : les lots 4-6 testent les étapes **à plan**,
+  or l'étape 10 n'en a jamais eu). Page blanche DEV et PUBLIQUE console vide.
+  ⚠ **PIÈGES DE HARNAIS** : (a) **le serveur de test doit être lancé depuis le DÉPÔT**, pas depuis le
+  scratchpad — sinon la page rend 404 et l'on croit à une page blanche (`__gameRef` absent, splash
+  jamais retiré) ; (b) un `boot()` qui remplit le port avant lecture **efface le stock de départ** :
+  capturer la valeur AVANT de fournir quoi que ce soit ; (c) à l'étape 10 le popup capté par défaut
+  est **`tut_debit`** (le `why` de l'étape, servi plus tôt dans `checkTips`) — purger avant d'asserter
+  sur `reseau_sature`, sinon on mesure le mauvais popup.
+  ⚠ **Taille : 3 286 158 → 3 289 188 o** (+2 878 les 8 blocs EXACT, +152 le nouveau `GAME_NOTES`).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : le plan de pose et le verrou (lot 4), la palette et les fantômes
+  du halo (lot 6), les astuces `port`/`energie` (toujours différées pendant le tutoriel), les autres
+  objectifs du guide, `tabAllowed`, le défaut de `roadReachesPortFootprint`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 370`, `GAME_VERSION = 'Alpha 14.87'`, `SAVE_VERSION = 31`.**
   Changement 14.87 (brief `BRIEFTUTOLOT6halo`, **LOT 6 — 5 sites A→E, tous dans le dessin du halo**) :
   **le halo de tuiles devient PERMANENT**, il reçoit **une palette dédiée** et **le sprite du bâtiment
   attendu en fantôme**. `SAVE_VERSION` INCHANGÉ, aucun champ persisté. Base EXACTE (369 / 14.86) ;
