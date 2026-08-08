@@ -1,8 +1,8 @@
 {
-  "build": 380,
-  "version": "Alpha 14.97",
+  "build": 381,
+  "version": "Alpha 14.98",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Maintenance interne, sans effet visible en jeu : la table de traduction du tutoriel contenait une copie périmée à 7 étapes, déjà neutralisée au chargement par une seconde table correcte à 10 étapes. Les deux sont désormais alignées, pour qu'une modification future ne puisse pas réveiller l'ancienne."
+  "notes": "Le tutoriel ne s'arrête plus au bout de l'île 1 : un chapitre de 4 étapes enchaîne sur la réparation de la liaison maritime, le passage sur l'île 2, la première demande d'import au port et l'amélioration du transit. « Cible ⇒ Réserve » démarre désormais sur OUI en nouvelle partie, pour que ce qu'on importe ne reparte pas aussitôt."
 }
