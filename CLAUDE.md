@@ -17,7 +17,50 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 379`, `GAME_VERSION = 'Alpha 14.96'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 380`, `GAME_VERSION = 'Alpha 14.97'`, `SAVE_VERSION = 31`.**
+  Changement 14.97 (brief `BRIEFlotAprimei18ntutoriel`, **lot A′ — 4 sites, bloc 6**) : **les 4 tables
+  `LOCALES.<lang>.tutorial` du grand littéral passent de 7 à 10 entrées.** `SAVE_VERSION` INCHANGÉ.
+  4 ancres à `count == 1`, `node --check` 7/7 (publique ET dev), **delta +775 o** (code seul).
+  ⚠ **LA PRÉMISSE DU BRIEF EST FAUSSE — LE DÉFAUT DÉCRIT N'EST PAS ATTEIGNABLE EN JEU, MESURÉ.**
+  Le littéral à 7 entrées est **MORT** : une **IIFE d'augmentation (13.60), DANS LE MÊME BLOC 6**,
+  fait `L.tutorial = m.tutorial` — **remplacement en bloc, INCONDITIONNEL** — avec les **10 entrées
+  CORRECTES** dans les 4 langues. Trois preuves sur la base **NON patchée** : (a) bloc 6 tronqué
+  avant l'IIFE → 7 entrées périmées, bloc 6 complet → 10 entrées justes ; (b) rejeu du **VRAI `_g`**
+  → `fr/en/es/de = 10/10`, 0 null sur 40, `fr == goal inline` ; (c) **bannière relevée EN JEU** →
+  l'étape 2 affiche DÉJÀ « Relie la mine au port avec une route. » (et non « Posez une carrière »,
+  le contre-test proposé par le brief), et les étapes 8/9/10 sont DÉJÀ traduites en en/es/de.
+  ⚠ **LE TEXTE DU BRIEF N'A DONC PAS ÉTÉ APPLIQUÉ TEL QUEL** : il **diverge de la source vivante en
+  4 points** (`en[5]` « Two more mines » vs « 2 more mines » · `es[4]` « Mejora » vs « Sube » ·
+  `es[5]` · `de[5]`). Invisible (l'augmentation gagne), mais le fichier porterait **deux copies
+  crédibles qui se contredisent** — un piège PIRE que celui qu'on retire, et exactement celui que le
+  §« Piège à ne pas reproduire » du brief dénonce. **Livré : les 4 tables littérales sont RÉGÉNÉRÉES
+  DEPUIS l'augmentation**, jamais retapées → `littéral == augmentation` sur les 4 langues,
+  **UNE SEULE VÉRITÉ**.
+  (1) **Ce que le lot apporte réellement** : (a) il **retire le piège** — le prochain lecteur de
+  `LOCALES.fr.tutorial` ne lira plus l'inverse de la vérité (c'est ce qui a trompé l'auteur du
+  brief) ; (b) **défense en profondeur** — l'IIFE est **GARDÉE** (`if(!window.I18N||!I18N.locales)
+  return;`), donc si un refactor cessait d'exposer `I18N.locales` le jeu retomberait EN SILENCE sur
+  le littéral : mesuré, ce repli donne « Posez une carrière » + `[7] undefined` sur 379, et le texte
+  JUSTE sur 380. **Le bug du brief deviendrait réel sur 379 dans ce scénario, plus sur 380.**
+  ⚠ **C'EST UN NO-OP POUR LE JOUEUR, ET C'EST PROUVÉ, PAS SUPPOSÉ** : bannière relevée en navigateur
+  **4 langues × 10 étapes avant ET après → 40/40 IDENTIQUES**. `GAME_NOTES` le dit sans surpromesse
+  (« maintenance interne, sans effet visible en jeu »).
+  **Validé** : `node --check` 7/7 (publique ET dev) + rejeu de `_g` **9 OK / 0 KO** + **40/40
+  bannières identiques** + **boot des 2 éditions** (canvas 100 %, 0 `tickError`, 0 erreur console)
+  + **non-régression du lot A rejouée sur 380 : 15 OK / 0 KO** (144,00 u/s, 0 halo).
+  ⚠ **ÉCART DE HASH ASSUMÉ, DEUX CAUSES** : bloc 6 = **227 358** car. (`bb270eed…`) et non les
+  227 374 du brief (**−16** : on reprend le texte de l'augmentation, cf. ci-dessus) ; bloc 7 =
+  `d1719184…` car il porte les bumps + commentaires des lots A et A′, là où le brief hache un bloc
+  **sans aucun bump**.
+  ⚠ **LEÇON DE MÉTHODE, À RETENIR** : avant d'appliquer un brief i18n, **vérifier QUI FAIT FOI AU
+  RUNTIME**. Ce fichier superpose un **grand littéral `LOCALES`** et **plusieurs IIFE d'augmentation**
+  posées par les lots successifs (13.32, 13.60, 14.31…) ; certaines **FUSIONNENT** (`for(k in m.ui)
+  if(!L.ui[k])`), d'autres **REMPLACENT EN BLOC** (`L.tutorial = m.tutorial`). Lire le littéral seul
+  mène à un diagnostic FAUX — c'est arrivé ici, et un lot appliqué sans ce contrôle aurait introduit
+  une divergence silencieuse.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : l'IIFE d'augmentation (source vivante), `applyToData`, `_g`,
+  `TUTORIAL_STEPS` et ses `goal` inline, les sous-clés `res`/`bld`/`tech`/`tips`/`ui`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 379`, `GAME_VERSION = 'Alpha 14.96'`, `SAVE_VERSION = 31`.**
   Changement 14.96 (brief `BRIEFlotAhalosature1`, **lot A — 1 SEUL site**) : **le halo vert pulsé ne
   reste plus collé en permanence sur l'onglet « Améliorer ».** `SAVE_VERSION` INCHANGÉ, aucun champ
   de partie. Base EXACTE (378 / 14.95 / SHA-256 `975836e7…`) ; **1 ancre à `count == 1`**,
