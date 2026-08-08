@@ -650,6 +650,8 @@ button.pp-c-tog.active{border-color:var(--red);color:#ff7a72;background:rgba(255
   border:1px solid var(--line);white-space:nowrap;}
 .rp-ci.ok{color:var(--green);border-color:rgba(48,209,88,.4);}
 .rp-ci.miss{color:var(--red);border-color:rgba(255,59,48,.35);}
+.rp-island-note{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;color:var(--yellow);
+  white-space:nowrap;align-self:center;}
 .rp-ready-note{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--green);flex:1;}
 .rp-btn{background:var(--yellow);color:#1a1a10;border:none;border-radius:5px;padding:5px 14px;
   font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.05em;cursor:pointer;flex-shrink:0;}
@@ -3076,6 +3078,7 @@ for(var code in G){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; va
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.36 */ var ADD={"en": {"Fluide de refroidissement": "Coolant", "aucun fluide": "no coolant", "/s absorbés": "/s absorbed", "Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.": "A nobler coolant absorbs more for a lower flow. With no coolant the cooler still runs — badly. Power draw is unchanged.", "Air (sec)": "Air (dry)", "Eau": "Water", "Azote": "Nitrogen", "Hélium": "Helium", "Hélium liquide": "Liquid helium"}, "es": {"Fluide de refroidissement": "Refrigerante", "aucun fluide": "sin refrigerante", "/s absorbés": "/s absorbidos", "Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.": "Un refrigerante más noble absorbe más con un caudal menor. Sin refrigerante el refrigerador funciona igualmente — mal. El consumo eléctrico no cambia.", "Air (sec)": "Aire (seco)", "Eau": "Agua", "Azote": "Nitrógeno", "Hélium": "Helio", "Hélium liquide": "Helio líquido"}, "de": {"Fluide de refroidissement": "Kühlmittel", "aucun fluide": "kein Kühlmittel", "/s absorbés": "/s aufgenommen", "Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.": "Ein edleres Kühlmittel nimmt bei geringerem Durchsatz mehr auf. Ohne Kühlmittel läuft der Kühler trotzdem — schlecht. Der Stromverbrauch bleibt gleich.", "Air (sec)": "Luft (trocken)", "Eau": "Wasser", "Azote": "Stickstoff", "Hélium": "Helium", "Hélium liquide": "Flüssiges Helium"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.39 */ var ADD={"en": {"ARRÊTÉ — palier atteint, réparation à livrer": "STOPPED — tier goal reached, repair to deliver", "machine coupée — validez la recherche du palier ET livrez la réparation suivante": "machine shut down — confirm the tier research AND deliver the next repair", "Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante": "The tier's confirmation goal is reached: the machine stays shut down until the research is confirmed AND the next repair is delivered", "Palier atteint — réparation requise": "Tier reached — repair required", "❌ Palier atteint — validez la recherche et livrez la réparation suivante": "❌ Tier goal reached — confirm the research and deliver the next repair"}, "es": {"ARRÊTÉ — palier atteint, réparation à livrer": "DETENIDO — nivel alcanzado, reparación por entregar", "machine coupée — validez la recherche du palier ET livrez la réparation suivante": "máquina detenida — confirma la investigación del nivel Y entrega la siguiente reparación", "Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante": "Se alcanzó el umbral de confirmaciones del nivel: la máquina queda detenida hasta confirmar la investigación Y entregar la siguiente reparación", "Palier atteint — réparation requise": "Nivel alcanzado — reparación requerida", "❌ Palier atteint — validez la recherche et livrez la réparation suivante": "❌ Nivel alcanzado — confirma la investigación y entrega la siguiente reparación"}, "de": {"ARRÊTÉ — palier atteint, réparation à livrer": "GESTOPPT — Stufenziel erreicht, Reparatur ausstehend", "machine coupée — validez la recherche du palier ET livrez la réparation suivante": "Maschine abgeschaltet — bestätige die Stufenforschung UND liefere die nächste Reparatur", "Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante": "Die Bestätigungsschwelle der Stufe ist erreicht: Die Maschine bleibt abgeschaltet, bis die Forschung bestätigt UND die nächste Reparatur geliefert ist", "Palier atteint — réparation requise": "Stufe erreicht — Reparatur erforderlich", "❌ Palier atteint — validez la recherche et livrez la réparation suivante": "❌ Stufenziel erreicht — bestätige die Forschung und liefere die nächste Reparatur"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.54 */ var ADD={"en": {"Soutenir le projet": "Support the project", "Archipel Industry est gratuit et le restera.": "Archipel Industry is free and will stay free."}, "es": {"Soutenir le projet": "Apoyar el proyecto", "Archipel Industry est gratuit et le restera.": "Archipel Industry es gratuito y seguir\xE1 si\xE9ndolo."}, "de": {"Soutenir le projet": "Das Projekt unterst\xFCtzen", "Archipel Industry est gratuit et le restera.": "Archipel Industry ist kostenlos und bleibt es."}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* 14.9x recherche par livraison */ var ADD={"en": {"\xC0 livrer depuis l'": "To deliver from "}, "es": {"\xC0 livrer depuis l'": "A entregar desde la "}, "de": {"\xC0 livrer depuis l'": "Zu liefern von "}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
 </script>
 <script>
 const {
@@ -8433,8 +8436,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 373;
-const GAME_VERSION = 'Alpha 14.90';
+const GAME_BUILD = 374;
+const GAME_VERSION = 'Alpha 14.91';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8443,7 +8446,7 @@ const GAME_VERSION = 'Alpha 14.90';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les gisements portent d\u00e9sormais la COULEUR de la ressource exclusive de leur \u00eele : charbon noir sur l\u2019\u00eele 1, cuivre sur la 2, or sur la 4, uranium vert sur la 5, tungst\u00e8ne gris sur la 6, et h\u00e9lium cyan pour les poches du souterrain \u00b7 On lit ce qu\u2019une \u00eele permet d\u2019extraire sans ouvrir le menu";
+const GAME_NOTES = "Les recherches ne se valident plus d\u2019un clic : 29 d\u2019entre elles r\u00e9clament d\u00e9sormais une LIVRAISON au port \u00b7 On livre ce que le n\u0153ud vient de prouver qu\u2019on sait produire, et SUR SON \u00ceLE : le cuivre sur l\u2019\u00eele 2, le p\u00e9trole sur la 3, l\u2019uranium sur la 5 \u00b7 Le panneau Recherche indique l\u2019\u00eele attendue \u00b7 Correctif : la livraison \u00e9tait impossible au souterrain, o\u00f9 l\u2019\u00eele 7 n\u2019a pas de port \u00e0 elle";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -14605,6 +14608,13 @@ function reqValue(game, req) {
   }
 }
 const nodeCond = (game, def) => (def.reqs || []).every(r => reqValue(game, r).ok);
+// 14.9x - LOT « RECHERCHE PAR LIVRAISON ». Facteur global des 29 livraisons ajoutées par ce lot.
+// Passer ce SEUL chiffre à 2, 5 ou 10 met toutes ces livraisons à l'échelle d'un coup : la table
+// ci-dessous reste lisible AUX VALEURS DE BASE, on ne recode jamais 29 lignes multipliées en dur.
+// ⚠ Ne s'applique QU'AUX nœuds de ce lot, reconnus à leur champ `island` (ajouté par le lot) :
+// les 10 livraisons d'accès/réparation d'île antérieures (2, 8, 14, 21, 28, 31, 34, 38, 40, 42)
+// n'en portent pas et gardent leurs quantités d'origine — leur rééquilibrage est hors périmètre.
+const RESEARCH_DELIVERY_FACTOR = 1;
 const TECH_NODES = [{
   id: 1,
   name: 'Île 1 — Disponible',
@@ -14634,12 +14644,16 @@ const TECH_NODES = [{
   id: 3,
   name: 'Four Cuivre V1',
   prereq: 2,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'minerai_cuivre',
     n: 100
   }],
+  island: 2,
+  delivery: {
+    minerai_cuivre: 100
+  },
   unlocks: {
     buildings: ['four_cuivre']
   }
@@ -14647,7 +14661,7 @@ const TECH_NODES = [{
   id: 4,
   name: 'Éolienne + Câblerie',
   prereq: 3,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'lingot_cuivre',
@@ -14657,6 +14671,10 @@ const TECH_NODES = [{
     res: 'charbon',
     n: 1
   }],
+  island: 2,
+  delivery: {
+    lingot_cuivre: 100
+  },
   unlocks: {
     buildings: ['eolienne', 'cablerie']
   }
@@ -14664,7 +14682,7 @@ const TECH_NODES = [{
   id: 5,
   name: 'Centrale Charbon + Aciérie',
   prereq: 4,
-  mode: 'manual',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'cable',
@@ -14674,6 +14692,10 @@ const TECH_NODES = [{
     id: 'eolienne',
     n: 4
   }],
+  island: 2,
+  delivery: {
+    cable: 50
+  },
   unlocks: {
     buildings: ['centrale_charbon', 'acierie']
   }
@@ -14681,7 +14703,7 @@ const TECH_NODES = [{
   id: 6,
   name: 'Jonctions (3 types)',
   prereq: 5,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'build',
     id: 'centrale_charbon',
@@ -14691,6 +14713,10 @@ const TECH_NODES = [{
     res: 'acier',
     n: 100
   }],
+  island: 2,
+  delivery: {
+    acier: 100
+  },
   unlocks: {
     buildings: ['jonction_route_cable', 'jonction_route_tuyau', 'jonction_cable_tuyau']
   }
@@ -14698,7 +14724,7 @@ const TECH_NODES = [{
   id: 7,
   name: 'Upgrades V2 — Extraction',
   prereq: 5,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'acier',
@@ -14708,6 +14734,11 @@ const TECH_NODES = [{
     res: 'lingot_cuivre',
     n: 10000
   }],
+  island: 2,
+  delivery: {
+    acier: 10000,
+    lingot_cuivre: 10000
+  },
   unlocks: {
     buildings: ['mine_fer_v2', 'mine_cuivre_v2', 'carriere_v2', 'mine_charbon_v2']
   }
@@ -14736,12 +14767,16 @@ const TECH_NODES = [{
   id: 9,
   name: 'Usine Polymère',
   prereq: 8,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'petrole',
     n: 100
   }],
+  island: 3,
+  delivery: {
+    petrole: 100
+  },
   unlocks: {
     buildings: ['usine_polymere', 'pompe_eau']
   }
@@ -14749,12 +14784,16 @@ const TECH_NODES = [{
   id: 10,
   name: 'Bétonnière + Atelier Méca.',
   prereq: 9,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'polymere',
     n: 100
   }],
+  island: 3,
+  delivery: {
+    polymere: 100
+  },
   unlocks: {
     buildings: ['betonniere', 'atelier_meca'],
     terrainRepair: true
@@ -14763,7 +14802,7 @@ const TECH_NODES = [{
   id: 11,
   name: 'Centrale Diesel + Raffinerie',
   prereq: 10,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'beton_arme',
@@ -14773,6 +14812,11 @@ const TECH_NODES = [{
     res: 'piece_meca',
     n: 100
   }],
+  island: 3,
+  delivery: {
+    beton_arme: 100,
+    piece_meca: 100
+  },
   unlocks: {
     buildings: ['centrale_diesel', 'raffinerie']
   }
@@ -14780,7 +14824,7 @@ const TECH_NODES = [{
   id: 12,
   name: 'Circuit V1',
   prereq: 11,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'build',
     id: 'centrale_diesel',
@@ -14789,6 +14833,10 @@ const TECH_NODES = [{
     t: 'energy',
     n: 128
   }],
+  island: 3,
+  delivery: {
+    polymere: 500
+  },
   unlocks: {
     buildings: ['circuit']
   }
@@ -14796,12 +14844,16 @@ const TECH_NODES = [{
   id: 13,
   name: 'Upgrades V2 — Transformation',
   prereq: 12,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'circuit',
     n: 1000
   }],
+  island: 3,
+  delivery: {
+    circuit: 1000
+  },
   unlocks: {
     buildings: ['four_fer_v2', 'four_cuivre_v2', 'cimenterie_v2', 'pompe_eau_v2', 'centrale_charbon_v2']
   }
@@ -14831,12 +14883,16 @@ const TECH_NODES = [{
   id: 15,
   name: 'Broyeur + Distillerie',
   prereq: 14,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'minerai_or',
     n: 100
   }],
+  island: 4,
+  delivery: {
+    minerai_or: 100
+  },
   unlocks: {
     buildings: ['broyeur', 'distillerie']
   }
@@ -14844,7 +14900,7 @@ const TECH_NODES = [{
   id: 16,
   name: 'Fonderie Or + Raffineur Si',
   prereq: 15,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'silicium',
@@ -14854,6 +14910,11 @@ const TECH_NODES = [{
     res: 'acide',
     n: 200
   }],
+  island: 4,
+  delivery: {
+    silicium: 200,
+    acide: 200
+  },
   unlocks: {
     buildings: ['fonderie_or', 'raffineur_silicium', 'separateur_air']
   }
@@ -14861,7 +14922,7 @@ const TECH_NODES = [{
   id: 17,
   name: 'Fab. Processeur',
   prereq: 16,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'lingot_or',
@@ -14871,6 +14932,11 @@ const TECH_NODES = [{
     res: 'silicium_raffine',
     n: 40
   }],
+  island: 4,
+  delivery: {
+    lingot_or: 300,
+    silicium_raffine: 40
+  },
   unlocks: {
     buildings: ['fab_processeur']
   }
@@ -14878,12 +14944,16 @@ const TECH_NODES = [{
   id: 18,
   name: 'Accumulateur',
   prereq: 17,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'processeur',
     n: 10
   }],
+  island: 4,
+  delivery: {
+    processeur: 10
+  },
   unlocks: {
     buildings: ['accumulateur']
   }
@@ -14891,11 +14961,15 @@ const TECH_NODES = [{
   id: 19,
   name: 'Densification Avancée',
   prereq: 18,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'accu',
     n: 1
   }],
+  island: 4,
+  delivery: {
+    processeur: 50
+  },
   unlocks: {
     buildings: ['betonniere_v2', 'broyeur_v2']
   }
@@ -14903,12 +14977,16 @@ const TECH_NODES = [{
   id: 20,
   name: 'Éolienne Offshore + Plateforme',
   prereq: 17,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'processeur',
     n: 1000
   }],
+  island: 4,
+  delivery: {
+    processeur: 1000
+  },
   unlocks: {
     buildings: ['eolienne_offshore', 'plateforme_petroliere', 'usine_polymere_v2', 'raffinerie_v2', 'centrale_diesel_v2']
   }
@@ -14936,12 +15014,16 @@ const TECH_NODES = [{
   id: 22,
   name: 'Broyeur Uranium',
   prereq: 21,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'uranium',
     n: 100
   }],
+  island: 5,
+  delivery: {
+    uranium: 100
+  },
   unlocks: {
     buildings: ['broyeur_uranium']
   }
@@ -14949,12 +15031,16 @@ const TECH_NODES = [{
   id: 23,
   name: 'Centrale Enrichissement',
   prereq: 22,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'yellow_cake',
     n: 100
   }],
+  island: 5,
+  delivery: {
+    yellow_cake: 100
+  },
   unlocks: {
     buildings: ['centrale_enrichissement']
   }
@@ -14962,12 +15048,16 @@ const TECH_NODES = [{
   id: 24,
   name: 'Centrale Nucléaire + Tour aéroréfrigérante',
   prereq: 23,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'combustible_u235',
     n: 64
   }],
+  island: 5,
+  delivery: {
+    combustible_u235: 64
+  },
   unlocks: {
     buildings: ['centrale_nucleaire', 'tour_aerorefrigerante']
   }
@@ -14975,7 +15065,7 @@ const TECH_NODES = [{
   id: 25,
   name: 'Usine Moteur Nucléaire',
   prereq: 24,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'acier_irradie',
@@ -14992,6 +15082,12 @@ const TECH_NODES = [{
     t: 'node',
     id: 24
   }],
+  island: 5,
+  delivery: {
+    acier_irradie: 1000,
+    beton_arme_irradie: 1000,
+    cable_irradie: 1000
+  },
   unlocks: {
     buildings: ['usine_moteur_nuc']
   }
@@ -14999,7 +15095,7 @@ const TECH_NODES = [{
   id: 26,
   name: 'Mines V3 + Fours à Arc',
   prereq: 25,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'element_moteur_nuc',
@@ -15008,6 +15104,10 @@ const TECH_NODES = [{
     t: 'node',
     id: 25
   }],
+  island: 5,
+  delivery: {
+    element_moteur_nuc: 100
+  },
   unlocks: {
     buildings: ['mine_fer_v3', 'mine_cuivre_v3', 'carriere_v3', 'mine_charbon_v3', 'mine_or_v3', 'mine_uranium_v3', 'four_arc_fer', 'four_arc_cuivre', 'distillerie_v2', 'puits_petrole_v2', 'separateur_air_v2', 'circuit_v2', 'pompe_eau_v3']
   }
@@ -15015,12 +15115,16 @@ const TECH_NODES = [{
   id: 27,
   name: 'Antenne Amplificatrice',
   prereq: 25,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'element_moteur_nuc',
     n: 1000
   }],
+  island: 5,
+  delivery: {
+    element_moteur_nuc: 1000
+  },
   unlocks: {
     buildings: ['antenne'],
     terrainExtend: true
@@ -15062,12 +15166,16 @@ const TECH_NODES = [{
   id: 29,
   name: 'Four à Arc Tungstène',
   prereq: 28,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'tungstene',
     n: 100
   }],
+  island: 6,
+  delivery: {
+    tungstene: 100
+  },
   unlocks: {
     buildings: ['four_arc_tungstene']
   }
@@ -15075,12 +15183,16 @@ const TECH_NODES = [{
   id: 30,
   name: 'Machine-Outil',
   prereq: 29,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'alliage_tungstene',
     n: 100
   }],
+  island: 6,
+  delivery: {
+    alliage_tungstene: 100
+  },
   unlocks: {
     buildings: ['machine_outil']
   }
@@ -15111,8 +15223,12 @@ const TECH_NODES = [{
   id: 32,
   name: 'Câble Supraconducteur',
   prereq: 31,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [],
+  island: 6,
+  delivery: {
+    alliage_tungstene: 500
+  },
   unlocks: {
     buildings: ['logic_wire', 'logic_jonction', 'capteur', 'actionneur']
   }
@@ -15121,12 +15237,16 @@ const TECH_NODES = [{
   id: 33,
   name: 'Batterie V2',
   prereq: 32,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'cable_supraconducteur',
     n: 1000
   }],
+  island: 6,
+  delivery: {
+    cable_supraconducteur: 1000
+  },
   unlocks: {
     buildings: ['accumulateur_v2']
   }
@@ -15154,12 +15274,16 @@ const TECH_NODES = [{
   id: 35,
   name: 'Trouver de l\'Hélium',
   prereq: 34,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'resourceTile',
     island: 7,
     n: 1
   }],
+  island: 7,
+  delivery: {
+    piece_precision: 500
+  },
   unlocks: {
     buildings: ['extracteur_souterrain', 'separateur_cryogenique']
   }
@@ -15168,12 +15292,16 @@ const TECH_NODES = [{
   id: 36,
   name: 'Ordinateur Quantique',
   prereq: 35,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'helium4',
     n: 100
   }],
+  island: 6,
+  delivery: {
+    helium4: 100
+  },
   unlocks: {
     buildings: ['centrale_gaz', 'data_center', 'fab_ordi_quantique']
   }
@@ -15182,12 +15310,16 @@ const TECH_NODES = [{
   id: 37,
   name: 'Data Center',
   prereq: 36,
-  mode: 'auto',
+  mode: 'delivery',
   reqs: [{
     t: 'produce',
     res: 'ordinateur_quantique',
     n: 1
   }],
+  island: 6,
+  delivery: {
+    ordinateur_quantique: 1
+  },
   // 14.36 — Le nœud 37 ne débloquait RIEN. Il accueille le Refroidisseur : juste après
   // l'Ordinateur Quantique, donc après l'obtention de l'He4 → les modes gaz sont utilisables
   // dès le déblocage.
@@ -15291,6 +15423,13 @@ const TECH_NODES = [{
     buildings: ['stabilisateur_quantique', 'antenne_v2', 'mine_fer_v4', 'mine_charbon_v4', 'mine_cuivre_v4', 'carriere_v4', 'mine_or_v4', 'mine_uranium_v4', 'mine_tungstene_v4']
   }
 }];
+// Application du facteur (cf. RESEARCH_DELIVERY_FACTOR) : les quantités de la table sont écrites
+// aux valeurs de BASE, la mise à l'échelle se fait ICI, une seule fois, au chargement du module.
+// `Math.round` protège d'un facteur fractionnaire ; à 1 c'est l'identité sur des entiers.
+for (const _rdn of TECH_NODES) {
+  if (_rdn.mode !== 'delivery' || _rdn.island == null || !_rdn.delivery) continue;
+  for (const _rdk in _rdn.delivery) _rdn.delivery[_rdk] = Math.round(_rdn.delivery[_rdk] * RESEARCH_DELIVERY_FACTOR);
+}
 const TECH_BY_ID = {};
 for (const n of TECH_NODES) TECH_BY_ID[n.id] = n;
 const BUILDING_NODE = {};
@@ -16200,7 +16339,16 @@ function techDeliver(game, id) {
   const def = TECH_BY_ID[id],
     node = game.techTree.nodes[id - 1];
   if (!def || !node || node.status !== 'condition_ok' || def.mode !== 'delivery' || !def.delivery) return false;
-  const pool = game.port[game.currentIsland] || {};
+  // 14.9x — LIVRAISON SUR SON ÎLE. Le champ `island` n'existe que sur les 29 nœuds du lot
+  // « Recherche par livraison » ; les 10 livraisons d'accès/réparation d'île antérieures n'en ont
+  // pas → `def.island == null` → aucune contrainte, comportement strictement inchangé pour elles.
+  if (def.island != null && def.island !== game.currentIsland) return false;
+  // ⚠ portPool, et SURTOUT PAS game.port[game.currentIsland] : l'île 7 (souterrain) n'a PAS de port
+  // propre — `game.port[7]` n'est JAMAIS créé (cf. portPool). L'ancien code y lisait donc `{}` et
+  // toute livraison depuis le souterrain échouait EN SILENCE, à jamais (nœud 35 infranchissable).
+  // portPool rend la RÉFÉRENCE VIVANTE du port de l'île 6 : indispensable ici, puisqu'on DÉBITE
+  // le stock juste en dessous — une copie rendrait la recherche gratuite sans le moindre symptôme.
+  const pool = portPool(game, game.currentIsland);
   for (const k in def.delivery) if ((pool[k] || 0) < def.delivery[k]) return false;
   for (const k in def.delivery) pool[k] -= def.delivery[k];
   node.status = 'confirmed';
@@ -16218,7 +16366,10 @@ function techDeliver(game, id) {
 function deliveryReady(game, def) {
   if (def.mode !== 'delivery') return true;
   if (!def.delivery) return false;
-  const pool = game.port[game.currentIsland] || {};
+  // 14.9x — MÊME condition d'île que techDeliver : sinon la pastille de notification s'allumerait
+  // pour une recherche qu'on ne peut pas valider ici (et le halo du guide pointerait dans le vide).
+  if (def.island != null && def.island !== game.currentIsland) return false;
+  const pool = portPool(game, game.currentIsland);
   for (const k in def.delivery) if ((pool[k] || 0) < def.delivery[k]) return false;
   return true;
 }
@@ -20342,7 +20493,9 @@ function ResearchPanel({
   onClose
 }) {
   const tt = game.techTree;
-  const port = game.port[currentIsland] || {};
+  // 14.9x — portPool, pas game.port[currentIsland] : l'île 7 n'a pas de port propre (cf. techDeliver).
+  // Même convention que le HUD, la barre d'outils et l'InfoPanel depuis 13.87.
+  const port = portPool(game, currentIsland);
   const META = {
     confirmed: {
       icon: '✓',
@@ -20387,8 +20540,14 @@ function ResearchPanel({
     const showReqs = (node.status === 'available' || node.status === 'condition_ok') && reqs.length > 0;
     const isDelivery = node.status === 'condition_ok' && def.mode === 'delivery' && def.delivery;
     const isManual = node.status === 'condition_ok' && (def.mode === 'manual' || def.mode === 'auto');
+    // 14.9x — Une livraison du lot se fait SUR SON ÎLE. Les pastilles de coût montrent alors le
+    // stock de l'ÎLE ATTENDUE (celui de l'île courante ne voudrait rien dire) : le joueur voit sa
+    // progression ET sait où aller. Le bouton, lui, suit EXACTEMENT la règle de techDeliver — il
+    // reste gris tant qu'on n'est pas sur place, avec le motif écrit à côté.
+    const wrongIsland = isDelivery && def.island != null && def.island !== currentIsland;
+    const dPort = isDelivery && def.island != null ? portPool(game, def.island) : port;
     let canDeliver = false;
-    if (isDelivery) {
+    if (isDelivery && !wrongIsland) {
       canDeliver = true;
       for (const k in def.delivery) if ((port[k] || 0) < def.delivery[k]) canDeliver = false;
     }
@@ -20419,14 +20578,17 @@ function ResearchPanel({
     }, React.createElement("div", {
       className: "rp-cost"
     }, Object.keys(def.delivery).map(k => React.createElement("span", {
-      className: 'rp-ci' + ((port[k] || 0) >= def.delivery[k] ? ' ok' : ' miss'),
+      className: 'rp-ci' + ((dPort[k] || 0) >= def.delivery[k] ? ' ok' : ' miss'),
       key: k
-    }, RES_SHORT[k] || k, " ", fmtInt(port[k] || 0), "/", fmtInt(def.delivery[k])))), React.createElement("button", {
+    }, RES_SHORT[k] || k, " ", fmtInt(dPort[k] || 0), "/", fmtInt(def.delivery[k]))), wrongIsland && React.createElement("span", {
+      className: "rp-island-note"
+    }, I18N.t("\xC0 livrer depuis l'"), islandLabel(def.island))), React.createElement("button", {
       className: "rp-btn",
       // Même ancre tuto que « Confirmer » : le 1er nœud validable (Accès Île 2) est en mode
       // delivery → le halo de l'étape 8 doit pouvoir pointer ce bouton-ci.
       'data-tut': "confirm",
       disabled: !canDeliver,
+      title: wrongIsland ? I18N.t("\xC0 livrer depuis l'") + islandLabel(def.island) : undefined,
       onClick: () => onDeliver(def.id)
     }, I18N.t("Livrer"))), isManual && React.createElement("div", {
       className: "rp-deliver"
