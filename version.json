@@ -1,8 +1,8 @@
 {
-  "build": 376,
-  "version": "Alpha 14.93",
+  "build": 377,
+  "version": "Alpha 14.94",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "L\\u2019\\u00e9cran de rattrapage hors-ligne annonce enfin combien de ticks il simule \\u00b7 En calcul simplifi\\u00e9 la barre montait \\u00e0 3 % puis sautait \\u00e0 100 % : elle se rapporte d\\u00e9sormais aux ticks r\\u00e9ellement simul\\u00e9s, et le reste est annonc\\u00e9 comme extrapol\\u00e9"
+  "notes": "Le foret de la foreuse orient\\u00e9e au NORD ne coupe plus la bande orange de son b\\u00e2ti \\u00b7 Correction de l\\u2019image seule : silhouette, dimensions et animation inchang\\u00e9es \\u00b7 Les orientations sud, est et ouest n\\u2019ont pas boug\\u00e9"
 }
