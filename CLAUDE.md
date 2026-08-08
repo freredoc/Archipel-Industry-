@@ -17,7 +17,83 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 374`, `GAME_VERSION = 'Alpha 14.91'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 375`, `GAME_VERSION = 'Alpha 14.92'`, `SAVE_VERSION = 31`.**
+  Changement 14.92 (brief `BRIEFlothalosantenne`, **lot « Halos d'antenne après déficit » — 2 ancres**) :
+  **après un déficit, les halos de l'antenne revenaient au bout de ~55 s ; ils reviennent en 3.**
+  `SAVE_VERSION` INCHANGÉ, **aucun champ persisté** (`antTicks`/`antNeed` sont transitoires comme
+  `antPowered` — la sérialisation des placements est une liste blanche). Base annoncée 372 ; base
+  RÉELLE **374** → 4 ancres du §2 re-vérifiées, toutes à `count == 1`. **Delta +3 191 o.**
+  (1) ⚠ **BRIEF FAUX SUR LE NOMBRE DE BLOCS `<script>` : il y en a 7, pas 11.** Une regex
+  `<script\b[^>]*>` lancée seule rend 11 correspondances, mais **4 ne sont pas des balises** : une
+  CHAÎNE du UMD React (`a.innerHTML="<script>\x3c/script>"`, ligne 1661) et 3 occurrences dans des
+  COMMENTAIRES (lignes 2206 et 2769). Une extraction **séquentielle** (repartir après chaque
+  `</script>`) ne peut pas les voir — elles sont dans des blocs déjà consommés. Même famille d'erreur
+  que le piège des apostrophes du lot 14.91. **7 blocs, 7 OK** au `node --check` (publique ET dev).
+  (2) **INVESTIGATION AVANT PATCH (§6), et elle a tranché : H1 seule.** Montage antenne V1 + éolienne,
+  réseau câble en `unlimited` (⚠ sans ça le débit V1 plafonne à 512 kW et l'antenne, qui tire 1 024 kW,
+  n'est JAMAIS servie — on mesurerait le plafond du réseau). Déficit franc vérifié (`pwrAvg` descendu
+  à **0,4644**, bien sous 0,90), puis plein service rétabli **sans changer d'île** : extinction en
+  **1 tick**, rallumage en **51 ticks**, et **les halos réapparaissent au MÊME tick** (51 et 51).
+  L'écart entre les deux nombres étant NUL, **H2 n'est pas confirmée** (`_animPlayed` n'ajoute aucun
+  délai) et n'est pas patchée ; H3 restait écartée par le fait 2c. Mesure **reproduite 2 fois**.
+  ⚠ **Le 51 est un PLANCHER, pas les 55 théoriques** : le déficit n'a duré que 6 s, `pwrAvg` n'est pas
+  retombé à 0. Le calcul du brief est juste, la mesure le confirme dans le bon sens.
+  (3) ⚠ **LE CORRECTIF DU §3, APPLIQUÉ TEL QUEL, ÉCHOUE AU TEST 7.4 — c'est le cœur du lot.**
+  « 3 ticks pour allumer, 1 pour éteindre » donne un **cycle de 4 ticks** : trace `1000100010001000…`,
+  **37 bascules / 75 s** contre **4 sur la base**. Il ne supprime pas la boucle décrite par le
+  commentaire d'origine (« couper la zone baisse la demande, ce qui rallume la zone »), il la
+  RALENTIT d'un facteur 2. Or le §3 exige de conserver cette intention.
+  **Livré : DEUX barèmes.** Le rapide (3 ticks) n'est accordé qu'à une antenne dont la zone a **TENU**
+  ≥ `ANT_POWER_HOLD` (20) ticks avant d'être coupée ; sinon barème **lent** (45). Ce qui sépare les
+  deux situations est **observable** : un déficit extérieur coupe une antenne dont la zone tournait
+  depuis longtemps, la boucle de clignotement la coupe **aussitôt** après l'allumage (c'est cette zone
+  qui remonte la demande). Résultat : **7.3 = 4 ticks** (contre 51) et **7.4 = 2 bascules / 75 s**,
+  soit **mieux que la base**. ⚠ `ANT_POWER_HOLD` doit rester nettement au-dessus de la durée de
+  maintien du cycle marginal (1 tick mesuré) et `ANT_POWER_SLOW` nettement en dessous.
+  ⚠ **Variante ÉCARTÉE, mesurée** : conditionner le barème rapide à une stabilité ABSOLUE (90 ticks
+  servis d'affilée) rend 7.3 à **46 ticks** — une antenne qui ne tourne que depuis 12 s n'y a pas
+  droit et le symptôme d'origine revient. Le seuil doit porter sur la **durée de maintien de la ZONE**,
+  pas sur une stabilité absolue.
+  (3 bis) ⚠ **LE TEST DE SERVICE PORTE SUR LE MOTIF ÉLECTRIQUE, PAS SUR `active` TOUT COURT — et
+  c'est le TEST 7.5 QUI L'A IMPOSÉ, contre ma première formulation.** J'avais écrit
+  `antServed = bl.active !== false`. Défaut SILENCIEUX : une antenne **ENDOMMAGÉE** (surchauffe) a
+  elle aussi `active === false` (motif **`'heat'`**), or la règle de la surchauffe veut que son
+  **debuff de PRODUCTIVITÉ PERSISTE 5 min** — c'est la pénalité, et le code le dit deux lignes plus
+  bas (`speedOn = … && !bl.damaged` mais `prodOn = antMode === 'prod'`, sans garde). Lue « non
+  servie », l'antenne sortait par le `continue` **AVANT** ce bloc → **la pénalité de surchauffe était
+  purement annulée**. Mesuré base ↔ patch : base `0/8` sur 10 ticks, 1ʳᵉ formulation `0/8` puis
+  **`0/0`**. L'ancien barème sur `pwrAvg` ne voyait pas ce cas (bâtiment endommagé sauté par la
+  boucle → `pwrAvg` **figé à 1**). Livré : **`!(bl.active === false && bl.discReason === 'power')`**
+  → reproduit la base sur TOUT motif d'arrêt non électrique (`heat`, `elevbusy`…) et ne réagit qu'à
+  la coupure de courant, seule visée par le lot. Après correction : **série identique base ↔ patch**.
+  (4) **`pwrAvg` N'EST PAS TOUCHÉ** (exclu explicitement par le §3 — il pilote le badge de déficit et
+  le régime affiché de TOUS les bâtiments) : ligne de calcul à `count == 1` avant ET après, `* 0.12`
+  à 3 avant ET après, et **`bl.pwrAvg` passe de 2 lectures à 0** — l'antenne ne le lit plus du tout.
+  **Test 7.7** : série `pwrAvg` d'un consommateur sur une île SANS antenne, tick par tick →
+  **0 écart sur 36 ticks** entre base et patch.
+  (5) **GAIN NON LISTÉ PAR LE BRIEF** : au chargement d'une partie, `pwrAvg` est `null` → l'ancien
+  barème mettait ~55 ticks à retrouver les halos **à chaque lancement**. Désormais **3** (test 7.6,
+  rechargement RÉEL ; `antTicks`/`antNeed`/`antPowered` **absents de la save**).
+  **Validé** : `node --check` 7/7 (publique ET dev) + les 9 tests du §7, dont **7.9 (contre-épreuve
+  sur la base 374 : 51 ticks, le test est falsifiable)** et **7.4 monté exprès** (2 Séparateurs d'Air
+  — 1 024 kW fixes, AUCUN intrant, sorties tuyau, seuls consommateurs à la fois éligibles au boost et
+  sans matière première — production calibrée ENTRE 3 072 et 3 482 kW, **antenne DERNIÈRE en priorité
+  énergie**). ⚠ **Sans ce dernier réglage le test passe à tort** : le déficit coupe un VOISIN, la
+  boucle n'existe pas, **0 coupure / 75** mesuré avec l'ordre par défaut. Le clignotement se cherche,
+  il ne s'observe pas par hasard.
+  ⚠ **PIÈGES DE HARNAIS** : (a) **7.5 et 7.8 ne se formulent PAS en absolu** — « zone de productivité
+  inchangée » et « aucun redessin supplémentaire » n'ont de sens qu'en **comparaison base ↔ patch**
+  (le canvas se redessine ~30 fois/s de toute façon, animations d'ambiance obligent : **594 base →
+  595 patch** sur 20 s). Formulés en absolu ils m'ont donné **3 faux KO** — et, pire, la comparaison
+  est ce qui a révélé la VRAIE régression du §3 bis, qu'un seuil absolu aurait laissée passer ;
+  (b) toute mesure de rallumage doit laisser l'antenne tourner **> ANT_POWER_HOLD** avant le déficit,
+  sinon on mesure le barème LENT et on croit le patch inerte ; (c) 7.5 se joue **dans les DEUX modes**
+  (vitesse : `8/0 → 0/0` ; productivité : `0/8` tenu) — en mode prod la zone de vitesse vaut 0 d'avance,
+  l'assertion « vitesse éteinte » y est donc VACUEUSE.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `pwrAvg` et son coefficient 0,12, `_animPlayed` et l'armement de
+  `g.dirty` (H2 non confirmée), `antSpeedMul`/`antElecBoost`/`antProdEffect`, le rayon d'influence,
+  le mode productivité, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 374`, `GAME_VERSION = 'Alpha 14.91'`, `SAVE_VERSION = 31`.**
   Changement 14.91 (brief `BRIEFlotrecherchelivraison`, **lot « Recherche par livraison »**) :
   **29 recherches ne se valident plus d'un clic — elles réclament une LIVRAISON au port, SUR LEUR ÎLE.**
   `SAVE_VERSION` INCHANGÉ, **aucun champ de partie** (les 2 champs ajoutés — `delivery`, `island` — sont
