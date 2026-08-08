@@ -17,7 +17,39 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 376`, `GAME_VERSION = 'Alpha 14.93'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 377`, `GAME_VERSION = 'Alpha 14.94'`, `SAVE_VERSION = 31`.**
+  Changement 14.94 (brief `ADDENDUMforeusenord1`, **chantier 1 du lot précédent, enfin livrable**) :
+  **le foret de la foreuse orientée NORD ne coupe plus la bande orange de son bâti.**
+  `SAVE_VERSION` INCHANGÉ, **AUCUNE ligne de JS modifiée** — remplacement de données d'image pur.
+  Base 376 (le chantier 2 avait avancé la base) ; **2 ancres à `count == 1`. Delta +824 o.**
+  (1) **Les 2 PNG sont arrivés INLINÉS EN BASE64 dans l'addendum**, pas en pièce jointe — c'est la
+  parade au fait que les pièces jointes du lot précédent ne sont jamais arrivées. À réclamer si le
+  cas se reproduit : **un brief autosuffisant transporte ses images**.
+  (2) ⚠ **LE ZIP JOINT CONTIENT L'ANCIEN ART, PAS LE CORRIGÉ — piège coûteux.** `foreusenord.zip`
+  livre `e14fea1a…` (274 o) et `db3839d5…` (370 o), c'est-à-dire **exactement les sprites défectueux
+  déjà en jeu** ; son propre `LISEZ-MOI` le dit (« **extrait de la base**. Base : Alpha 14.88 ·
+  GAME_BUILD = 371 ») — c'est l'export de diagnostic qui a servi à PRODUIRE le correctif. Les base64
+  de l'addendum (`61fa71ae…` 543 o / `a63da1ac…` 751 o) font foi. **Appliquer le zip aurait réécrit
+  le défaut sur lui-même en silence** ; seul le contrôle SHA-256 l'attrape.
+  (3) **Le trou de la bande faisait 11 px (x10..x20), pas 9 (x11..x19)** — l'addendum corrige le brief
+  d'origine et donne la raison : x11..x19 est l'étendue du FORET, le trou dans l'orange y ajoute les
+  **2 pixels de bordure `#161A22`** en x10 et x20. Deux grandeurs décrites comme une seule.
+  Contre-épreuve 1.10 sur la base : **x10..x20 = 11 px** sur y21 ET y22.
+  ⚠ **UNE FOREUSE À L'ARRÊT AFFICHE L'ANIMATION, PAS LE SPRITE STATIQUE** (préexistant, m'a donné
+  1 faux KO) : une foreuse posée a **`active === undefined`** — elle n'est jamais tickée inactive —
+  donc le rendu passe par `drawAnimFrame` et dessine la FEUILLE. Le test 1.7 ne doit donc PAS
+  asserter « quelle clé est dessinée » mais **re-décoder chaque image réellement passée à
+  `drawImage` et lire ses pixels** : 4 images contrôlées, orange `x5..x26`, **0 trou**. Assertion de
+  bout en bout qu'on ne peut pas satisfaire par accident.
+  **Validé** : `node --check` 7/7 (publique ET dev) + **17 assertions, 0 KO** — SHA-256 des 2 images
+  **re-décodées depuis le fichier patché** (conformes), 706 pixels opaques, **0 écart d'alpha sur
+  1536**, frame 0 == statique au pixel, orange continu sur le statique **et les 4 frames**, S/O/E
+  **byte-identiques** à la base, console propre.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `ANIM_META` (déjà correct, `{fw:32, fh:48, frames:4}` — l'ancre
+  `"bat_foreuse_n":` à `count == 2` est là, ne JAMAIS y ancrer), le placement au rendu (extension
+  d'une demi-case dans le sens de forage), l'alignement des caisses, les orientations S/O/E,
+  `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 376`, `GAME_VERSION = 'Alpha 14.93'`, `SAVE_VERSION = 31`.**
   Changement 14.93 (brief `BRIEFlotforeuseoffline`, **2 chantiers indépendants — 1 SEUL livré**) :
   **l'écran de rattrapage hors-ligne annonce les ticks qu'il simule, et sa barre cesse de mentir.**
   `SAVE_VERSION` INCHANGÉ, aucun champ de partie. Base EXACTE (375 / 14.92 / 3 319 817 o).
