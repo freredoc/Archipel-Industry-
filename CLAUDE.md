@@ -17,7 +17,73 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 372`, `GAME_VERSION = 'Alpha 14.89'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 373`, `GAME_VERSION = 'Alpha 14.90'`, `SAVE_VERSION = 31`.**
+  Changement 14.90 (brief `BRIEFlotgisements`, **lot « Gisements par exclusivité d'île » — 2 blocs**) :
+  **chaque gisement porte désormais la COULEUR de la ressource EXCLUSIVE de son île** (charbon noir
+  î1, cuivre î2, or î4, uranium vert î5, tungstène gris î6, hélium cyan î7). `SAVE_VERSION` INCHANGÉ,
+  **aucun champ de partie**. Base EXACTE (372 / 14.89 / 3 303 182 o) ; **4/4 ancres à `count == 1`**,
+  **round-trip 4/4 VERBATIM**, `node --check` 7/7 (éditions publique ET dev), **delta +7 551 o**.
+  (1) **6 sprites** `overlay_resource_i{1,2,4,5,6,7}` (554 o pièce) inlinés en **assignations
+  individuelles** avant l'ancre des spritesheets. ⚠ Encoder les OCTETS du PNG, jamais ré-encoder :
+  la transparence est en PALETTE (`tRNS`) et toute conversion l'aplatirait → l'overlay deviendrait un
+  carré opaque masquant la tuile de terrain (vérifié après insertion : `tRNS` présent sur les 6).
+  ⚠ **SILHOUETTE IDENTIQUE AU PIXEL** (claim du pack vérifiée sur les sprites re-décodés du fichier
+  patché) : **487 px opaques sur les 7**, **0 écart d'alpha sur 1024**, alpha binaire ; seuls **94 px**
+  (les 6 nodules) changent de couleur → aucun décalage visuel possible d'une île à l'autre.
+  (2) **Un SEUL site de rendu**, où `isl` est déjà en portée. Les 2 lignes (`const ov = …` et
+  `if (ov) drawSprite(…)`) sont CONSÉCUTIVES → traitées en **une seule ancre** (évite deux
+  remplacements dépendants). `const ov` devient `let ov`.
+  ⚠ **REPLI PAR PRÉSENCE DE CLÉ, JAMAIS PAR LISTE D'ÎLES EN DUR** : une liste serait une SECONDE
+  source de vérité à maintenir. Ce choix couvre gratuitement l'île 3 (aucune variante livrée), toute
+  île future et un pack partiellement livré — **test 6.8 dédié** : retirer `overlay_resource_i2` de
+  `SPRITE_DATA` fait repasser l'île 2 au générique, 0 tuile sans overlay.
+  ⚠ **`COAST_FEATURE_OVERLAY` reste INCHANGÉE** (indexée par TERRAIN, pas par île) : elle continue de
+  fournir le repli générique. `obstacle` et `oil` gardent leur overlay unique.
+  (3) **Sémantique** : une tuile `resource` **ne porte AUCUNE donnée de type** — elle naît du caractère
+  `M` de la grille (`charToTerrain`). Sur l'île N tout gisement accepte le fer **ET** la mine exclusive
+  de l'île N ; le nodule dit donc ce que l'île permet d'extraire. **`mine_fer` et `carriere` n'ont
+  aucun `exclusiveIsland`** → le fer est sous-entendu partout et n'est pas marqué.
+  ⚠ **ÎLE 7 — le cyan est justifié, mais PAS par la raison du `LISEZ-MOI`** (qui l'explique comme un
+  pis-aller de lisibilité contre le gris de l'extracteur). Vérifié : la grille de base de l'île 7 ne
+  contient **aucun** caractère `M` (0 tuile `resource` à la génération) et ses tuiles `resource` sont
+  créées **au runtime** par le creusement des foreuses → `terrain === 'resource'` y désigne
+  **EXCLUSIVEMENT une poche d'Hélium-3**. Le cyan est sémantiquement EXACT.
+  ⚠ **ÎLE 3 — arbitrage « A » (statu quo) livré** : ses tuiles `resource` gardent l'overlay générique.
+  Incohérence assumée (`puits_petrole` se pose sur `resource` ET `oil`), **fermable en déposant un
+  `overlay_resource_i3` dans `SPRITE_DATA`, sans toucher une ligne de code**.
+  ⚠ **LE TABLEAU DE COMPTAGE DU BRIEF DÉCRIT UN MODE QUE LE JOUEUR NE PEUT PLUS CRÉER.** Ses chiffres
+  (8/9/4/8/7/6/0) sont EXACTS mais viennent d'`ISLAND_TERRAINS_BASE` = **mode DIFFICILE** ; or depuis
+  le lot 3B (14.81) une partie neuve démarre DIRECTEMENT en **Normal** (`ModeModal` sans point
+  d'entrée — mesuré : 0 `.mode-card`). Les comptes RÉELS (`NORMAL_ISLANDS`) sont **16/19/5/10/12/4/0**
+  `resource`, et l'île 6 n'a **aucune** tuile `oil` en Normal (2 en Difficile). Les tests sont donc
+  formulés contre la VÉRITÉ de la partie en cours (compter les tuiles dans `game.islands`, puis
+  exiger autant de nodules et zéro autre clé), jamais contre une constante recopiée.
+  **Validé** : `node --check` (**7 blocs, 7 OK**, publique ET dev) + Chromium **12 assertions du lot,
+  0 KO**, + **6 contre-épreuves sur la BASE 372** (toutes les îles y rendent le générique, 0 variante)
+  + **46 assertions de NON-RÉGRESSION du lot Port (14.89) rejouées sur ce build, 0 KO** (dont les
+  3 du tutoriel). Boot des 2 éditions : canvas **100 %**, 0 `tickError`, **0 erreur console**.
+  Lisibilité contrôlée à la capture au rendu RÉEL (tuile 26 px) : les 6 teintes se distinguent du brun
+  du massif et entre elles, et ne se confondent pas avec les rochers d'`overlay_obstacle`
+  (`docs/captures-lot-gisements/`).
+  ⚠ **PIÈGES DE HARNAIS (coûteux)** : (a) **compter des POSITIONS DISTINCTES (`clé@x,y`), pas des
+  appels `drawImage`** — l'espion accumule sur toutes les frames de la fenêtre de capture et un
+  comptage d'appels rend des MULTIPLES (208 au lieu de 16, première passe entièrement fausse) ;
+  (b) un comptage d'île exige un **GRAND viewport** : au zoom 1 `fitTile` est borné à [26, 64], donc
+  sur 420 px l'île de 32 tuiles ne tient pas et le test ne verrait qu'une partie des tuiles — il
+  PASSERAIT en mesurant moins que la vérité ; (c) **il n'y a plus d'écran de choix de mode** → pour
+  vérifier les grilles Difficile, lire `ISLAND_TERRAINS_BASE` **comme donnée**, et ⚠ ne JAMAIS appeler
+  `applyGameMode` à la main (il repeuple les defs sans reconstruire les grilles → la boucle de rendu
+  lève à chaque frame, piège 14.35) ; (d) **`ISLAND_TERRAINS` est VIDE à la déclaration** → un
+  comptage qui le lit sort zéro sans erreur ; (e) le **barycentre** des tuiles `resource` tombe souvent
+  sur de l'herbe vide → pour cadrer une capture, viser la tuile ayant le plus de voisines `resource`.
+  ⚠ **PIÈGE DU BRIEF, respecté** : `awk 'length($0)<300'` sert à l'EXPLORATION, **jamais** à
+  l'extraction de blocs (il supprime des lignes de code légitimes longues comme
+  `ISLAND_TERRAINS_BASE`) — les 7 blocs `<script>` sont extraits du fichier NON filtré.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `COAST_FEATURE_OVERLAY`, `overlay_obstacle`, `overlay_petrole`,
+  la branche `else` de `SPRITES_ENABLED`, la conversion recherche → livraison (29 nœuds), les halos
+  d'antenne après déficit, l'arbitrage cargo du lot Port, le `notes` doublement échappé de
+  `version.json` (anomalie CI préexistante 14.76), `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 372`, `GAME_VERSION = 'Alpha 14.89'`, `SAVE_VERSION = 31`.**
   Changement 14.89 (brief `BRIEFlotuiport1`, **lot « UI & Port » — 7 chantiers, 27 blocs**) :
   **le PORT apparaît EN RUINE tant que la liaison maritime suivante n'est pas payée**, « Demander au
   port » disparaît avec une seule île, **3 en-têtes de fiche passent du carré de couleur au SPRITE**,
