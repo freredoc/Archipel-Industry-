@@ -1,8 +1,8 @@
 {
-  "build": 378,
-  "version": "Alpha 14.95",
+  "build": 379,
+  "version": "Alpha 14.96",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Antenne : nouveau curseur d\\u2019intensit\\u00e9 du boost (10 \\u2192 100 % par pas de 10) \\u2014 on garde le grand cadre de l\\u2019antenne V2 sans en payer le boost, la ZONE ne bouge pas d\\u2019un cran \\u00b7 Centrale \\u00e0 Gaz \\u00d74 (32 m\\u00e9thane + 256 oxyg\\u00e8ne \\u2192 8192 kW), gaz d\\u2019\\u00e9chappement \\u00d72 seulement : elle devient plus propre par unit\\u00e9 d\\u2019\\u00e9nergie \\u00b7 Centrale G\\u00e9othermique V2 (palier de densification, n\\u0153ud 43) avec son art d\\u00e9di\\u00e9 \\u00b7 La ligne \\u00ab \\u00c9lec. \\u00bb dispara\\u00eet des fiches des b\\u00e2timents qui ne consomment rien (\\u00e9oliennes, centrales, g\\u00e9othermie) au lieu d\\u2019afficher 0 kW"
+  "notes": "Le halo vert de guidage ne reste plus collé en permanence sur l’onglet « Améliorer » : la saturation d’un réseau est un état durable de milieu de partie, l’objectif restait donc allumé pendant des heures. La bannière « Un réseau est saturé » continue d’afficher l’information."
 }
