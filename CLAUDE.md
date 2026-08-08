@@ -17,7 +17,125 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 371`, `GAME_VERSION = 'Alpha 14.88'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 372`, `GAME_VERSION = 'Alpha 14.89'`, `SAVE_VERSION = 31`.**
+  Changement 14.89 (brief `BRIEFlotuiport1`, **lot « UI & Port » — 7 chantiers, 27 blocs**) :
+  **le PORT apparaît EN RUINE tant que la liaison maritime suivante n'est pas payée**, « Demander au
+  port » disparaît avec une seule île, **3 en-têtes de fiche passent du carré de couleur au SPRITE**,
+  le panneau Énergie **masque les lignes à 0 kW**, les Options et le Port cessent d'écraser leur
+  contenu, et le Collisionneur peut **relancer sa séquence tout seul**. `SAVE_VERSION` INCHANGÉ ;
+  seul champ ajouté `collider.autoLaunch` (**additif**, absent = `false`). Base EXACTE (371 / 14.88 /
+  3 289 188 o) ; **29/29 ancres à `count == 1` AVANT application**, **round-trip 29/29 VERBATIM**,
+  `node --check` 7/7 sur les éditions PUBLIQUE **et** DEV, **delta +13 994 o** (dont +13 259 pour les
+  27 blocs, le reste = `GAME_NOTES` et la note « cargo »).
+  (1) **§1 — PORT EN RUINE, état ENTIÈREMENT DÉRIVÉ, aucun drapeau.** ⚠ Le `LISEZ-MOI` du pack d'art
+  conclut qu'il faut « ajouter un drapeau de partie sur le modèle de `elevatorRepaired`, plus sa
+  sérialisation » : **ne pas le faire.** Le constat est juste (aucune mécanique de port cassé
+  n'existait) mais l'arbre techno est DÉJÀ persisté → nouveau `portCasse(game, isl)` =
+  `ISLAND_ACCESS_NODE[isl+1]` existe ET n'est pas confirmé. **Aucun champ, aucune migration, aucun
+  état à maintenir cohérent** (un port ne peut pas se désynchroniser de sa liaison, il n'a pas d'état
+  propre), et les saves existantes affichent le bon état dès le 1ᵉʳ rendu. **L'île 6 tombe juste SANS
+  cas particulier** (`ISLAND_ACCESS_NODE[7]` undefined → jamais cassée).
+  ⚠ **PUREMENT VISUEL** : le port reste raccordable route/tuyau et son stock utilisable — **le
+  tutoriel de l'île 1 exige de relier des bâtiments au port, le casser fonctionnellement le rendrait
+  INFAISABLE** (non-régression mesurée : tuto actif + port cassé → mine reliée, `tutCountConnected`
+  = 1, progression jusqu'à « Tuto 3/10 »).
+  ⚠ **La substitution ne peut PAS passer par `BLD_SPRITE_OVERRIDE`** : `buildingSpriteKey` est une
+  fonction GLOBALE PURE sans accès à `game` (depuis 14.32 l'override accepte une liste de candidats,
+  mais le choix s'y fait sur la PRÉSENCE du sprite, jamais sur un état de partie). Elle vit dans
+  `drawBuilding` (tuile terre) et `drawPortExtras` (tuile mer), qui ont `gameRef`.
+  ⚠ **`tile_port_mer` est ANIMÉ, `tile_port_mer_casse` est STATIQUE** → appeler `drawSprite`
+  DIRECTEMENT pour l'état cassé, sans passer par `drawAnimFrame`. Idem `tile_port_terre` : un espion
+  `drawImage` voit `ANIM:tile_port_terre` et **pas** la clé statique.
+  ⚠ **CARGO — LA PRÉMISSE DU BRIEF EST FAUSSE DÈS L'ÎLE 2, MESURÉ, NON CORRIGÉ.** Le brief pose
+  « port cassé ⇒ aucune liaison active ⇒ aucun cargo ». Vrai pour l'**île 1 seulement** (c'est le
+  MÊME nœud 2 qui casse son port et active la liaison 1-2). Dès l'île 2 : port cassé tant que le
+  nœud 8 n'est pas confirmé, alors que la liaison 1-2 est déjà active → **un cargo s'anime devant un
+  port en ruine, et c'est CORRECT** (l'île 2 commerce réellement). Masquer le cargo retirerait une
+  information VRAIE et contredirait « l'état cassé est purement visuel ». Constat consigné en
+  commentaire dans `drawPortExtras`, **à arbitrer**.
+  ⚠ **`tile_port_mer_casse` est une RECOLORATION, pas une destruction** (le brief a raison contre le
+  `LISEZ-MOI`) : mesuré au pixel sur les sprites re-décodés du fichier patché, **271 px opaques avant
+  ET après, silhouette identique sur 1024/1024**, luminance −33 %. La grue est debout. La tuile terre,
+  elle, perd ses accents vifs (1024 px, luminance 130,7 → 82,7, couleurs 30 → 17). **La ruine se lit
+  au zoom par défaut, mais c'est la PAIRE qui fait l'effet** — côté mer seul, ce serait ambigu. Une
+  vraie destruction côté mer serait un **remplacement d'art, pas un correctif de code**.
+  ⚠ `tile_port_mer_casse` porte sa transparence en **PALETTE** (colortype 3 + chunk `tRNS`) :
+  encoder les OCTETS du PNG, jamais ré-encoder l'image — sinon la grue apparaîtrait sur un carré
+  opaque au-dessus de l'eau (vérifié après insertion : `tRNS` présent, SHA-256 conformes).
+  (2) **§2 — « Demander au port » masqué avec une seule île** (`!islandUnlocked[2]`), neutralisé **en
+  amont au calcul de `askNeeded`** (point de décision unique, vérifié lu nulle part ailleurs dans les
+  2 composants). ⚠ Les 2 blocs InfoPanel/UpgradePanel sont **identiques sur 389 caractères sauf la
+  classe** (`ip-` vs `up-`).
+  (3) **§3 — 3 en-têtes passent au SPRITE** (UpgradePanel, Élévateur, élément logique), sur le motif
+  de référence de l'InfoPanel. ⚠ **Toujours tester `SPRITE_DATA[_sk]` avant substitution** :
+  `buildingSpriteKey` peut rendre une clé ABSENTE (branches `return ov` de `BLD_SPRITE_OVERRIDE`) →
+  `src=undefined`, image cassée au lieu du repli propre. ⚠ **Le test « SPRITES_ENABLED = false » n'est
+  PAS exécutable au runtime** (`const` de module, non réassignable, cf. 14.86) → contrôle sur la
+  SOURCE. ⚠ **La fiche « Élévateur cassé » n'est PAS le site patché** : le panneau au carré orange
+  n'est rendu que si `elevatorRepaired` est VRAI ; non réparé, le tap tombe sur le panneau de
+  RÉPARATION, qui affiche déjà `tile_i6_elevateur_casse` depuis 14.08 → **la branche `casse` du patch
+  est actuellement inatteignable** (conservée, défensive).
+  (4) **§4 — lignes à 0 kW masquées dans le panneau Énergie.** ⚠ **LE FILTRE VIT DANS LE RENDU,
+  EXCLUSIVEMENT** : `energyConsumerList` a un SECOND appelant (`moveEnergyPriority`) — y filtrer
+  retirerait les bâtiments de la GESTION de priorité, pas seulement de l'affichage. ⚠ **`i` portait
+  TROIS sémantiques** (rang, borne Monter, borne Descendre) : livré **rang = index d'ORIGINE**,
+  **bornes = position dans la liste VISIBLE**. ⚠ **ÉCART ASSUMÉ** : le brief demande l'index
+  d'origine « pour les bornes ET le rang », ce qui **contredit son propre test 4.3** (la dernière
+  ligne visible n'aurait pas son Descendre grisé). ⚠ `moveEnergyPriority` **saute les entrées
+  masquées** (échange avec le prochain consommateur non nul) — sinon « Descendre » échangerait avec
+  un invisible et **rien ne bougerait à l'écran** (reproduit sur la base 371). Seuil **0,0005 kW**,
+  pas `=== 0`. ⚠ **Aucun bâtiment n'a une puissance nominale nulle au niveau 0** (69 consommateurs
+  vérifiés) : le cas se construit en enveloppant `energyConsumerList` via `window`.
+  (5) **§5 — Options.** `.opt-lbl` portait `min-width:0` SANS `flex` ni plancher et était le SEUL
+  élément rétrécissable de la ligne (tous les contrôles ont `flex-shrink:0`) → il absorbait tout le
+  débordement d'un `<select>` large. **Le coupable est la largeur du CONTRÔLE, pas la description.**
+  Livré : plancher `flex:1 1 auto; min-width:148px`, `<select>` borné à 132 px, `flex-wrap` sur la
+  ligne. Contre-épreuve base 371 @360 px : « Grands nombres » titre sur **2 lignes**, description sur
+  **12 lignes pour 0 px de large** (un mot par ligne), `<select>` à 268 px qui **déborde** à 320 px.
+  (6) **§6 — colonnes du Port.** `1fr` vaut `minmax(auto,1fr)` dont le minimum est la largeur du
+  CONTENU : chaque ligne étant une grille INDÉPENDANTE, chacune débordait différemment. Livré
+  `minmax(0,1fr)` + `.pp-c-res{min-width:0;overflow-wrap:anywhere}`, et **dernière colonne 44 → 52 px**
+  (mesuré : 16 px d'icône + 6 de padding + 2 de bordure = 24 px/bouton, + 2 de gap = **50 px** pour
+  deux). Contre-épreuve base 371 sur 40 lignes : écart de colonnes **73 px @360** / 17 px @420 et
+  **26 / 80 boutons hors panneau @360** (dont la 2ᵉ flèche de « mot.quantique ») → **0 px, 0/80** après.
+  (7) **§7 — démarrage automatique du Collisionneur** (`colliderAutoAvailable` : dernier palier ET
+  dernier nœud puzzle confirmé ET seuil `COLLIDER_GOALS` atteint — composé depuis l'existant, rien en
+  dur). ⚠ **Passe par `launchCollider(silent)`, JAMAIS par `co.launched = true`** : `launchCollider`
+  contient l'unique point de décision `colliderLaunchBlock`, partagé avec l'état grisé du bouton ; le
+  contourner ferait démarrer la machine sans réseau logique ou palier bloqué (test dédié : réseau
+  logique retiré → `block === 'logic'`, pas de démarrage). ⚠ **Lancement SILENCIEUX** (ni toast ni
+  SFX) : après une pause ou une pénalité `launched` retombe à faux et le cycle se rejoue — mesuré
+  **5 cycles → 0 notification**. ⚠ **Le crochet est dans la BOUCLE DE TICK** (juste après `onTick`),
+  pas dans la frame rAF : `co.state` vient d'être recalculé par `processCollider`.
+  **Validé** : `node --check` (**7 blocs, 7 OK**, éditions publique ET dev) + Chromium **46 assertions
+  du lot, 0 KO, rejouées 2 fois sans flottement**, dont **3 assertions de non-régression du TUTORIEL**
+  et **4 contre-épreuves sur la BASE 371** (chantiers 4, 5 et 6 y échouent → les tests sont
+  falsifiables). Boot des 2 éditions : canvas **100 %**, horloge qui avance, **0 `tickError`,
+  0 erreur console**.
+  ⚠ **PIÈGES DE HARNAIS (coûteux, à ne pas redécouvrir)** : (a) **`window.__ui()` n'expose PAS
+  `centerOnTile`/`setInfo`/`setPortOpen`** (seulement `tryPlace`, `canPlace`, `switchIsland`,
+  `askPortFor`, `setLogicConfig`, `buyResearch`) → un `if (ui.centerOnTile) …` passe en SILENCE et
+  l'on croit centrer la caméra sans rien faire ; recaler `cam.x`/`cam.y` à la main (inverse de
+  `pointerToTile`) ; (b) **l'INVENTAIRE ouvert se pose EN SUPERPOSITION** sur le haut du canvas
+  (`elementFromPoint` → `inventory open`) : le replier avant tout tap ; (c) **tout panneau resté
+  ouvert avale le tap suivant** — le panneau Options d'une section précédente recouvrait le bouton
+  PORT : isoler les sections dans des fichiers de test distincts ; (d) **`addInitScript` REJOUE à
+  chaque navigation, RELOAD COMPRIS** → un `localStorage.clear()` nu fait repartir tout test de
+  rechargement sur une partie NEUVE (garder derrière un drapeau `sessionStorage`) ; (e) une save
+  forgée est **écrasée par le flush `pagehide`** → la réinjecter dans un `addInitScript` ;
+  (f) **`useGhostGuard` avale le 1ᵉʳ clic** d'un panneau : amorcer par un `pointerdown` dispatché
+  DANS le panneau puis réessayer ; (g) **la pastille ⚡ est MASQUÉE tant que l'île 2 est verrouillée**
+  (`islandTradeUnlocked`) → panneau Énergie inatteignable sans `islandUnlocked[2]` ; (h) **l'EnergyPanel
+  porte les classes `research-panel port-panel`**, comme le PortPanel ; (i) le panneau d'amélioration
+  n'apparaît que si **`g.ui.fastUpgrade` est FAUX** ; (j) **`co.powered` non booléen ⇒ tick BLANC**
+  (`processCollider` sort sans toucher `state`/`timer`) → poser un **getter** `powered → undefined`
+  rend l'état `'ready'` déterministe, sans monter tout un réseau électrique + hélium 3.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : le **lot « Gisements par exclusivité d'île »** (6 overlays
+  `overlay_resource_iN` livrés dans le même pack — le `LISEZ-MOI` impose « un brief par lot, jamais
+  groupés », et seul le brief du lot Port a été fourni) ; la conversion recherche → livraison
+  (29 nœuds) ; les halos d'antenne disparus après déficit ; `BLD_SPRITE_OVERRIDE`,
+  `buildingSpriteKey`, `energyConsumerList`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 371`, `GAME_VERSION = 'Alpha 14.88'`, `SAVE_VERSION = 31`.**
   Changement 14.88 (brief `BRIEFTUTOLOT7retours`, **LOT 7 — 8 sites A→H, quatre retours indépendants**) :
   **le toast d'échec nomme le bâtiment**, **le stock de départ passe de 20 à 30**, **l'étape 10 rend la
   main** (plus de halo, les astuces d'alerte se débloquent) et **le guide désigne le bouton Réparer**.
