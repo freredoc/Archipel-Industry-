@@ -1,8 +1,8 @@
 {
-  "build": 372,
-  "version": "Alpha 14.89",
+  "build": 373,
+  "version": "Alpha 14.90",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Le port appara\\u00eet EN RUINE tant que la liaison maritime vers l\\u2019\\u00eele suivante n\\u2019est pas pay\\u00e9e \\u00b7 \\u00ab Demander au port \\u00bb dispara\\u00eet quand une seule \\u00eele est d\\u00e9bloqu\\u00e9e \\u00b7 Les en-t\\u00eates de fiche montrent le SPRITE au lieu d\\u2019un carr\\u00e9 de couleur \\u00b7 Le panneau \\u00c9nergie masque les lignes \\u00e0 0 kW \\u00b7 Options et Port : descriptions et colonnes ne se chevauchent plus \\u00b7 Le Collisionneur peut relancer sa s\\u00e9quence tout seul"
+  "notes": "Les gisements portent d\\u00e9sormais la COULEUR de la ressource exclusive de leur \\u00eele : charbon noir sur l\\u2019\\u00eele 1, cuivre sur la 2, or sur la 4, uranium vert sur la 5, tungst\\u00e8ne gris sur la 6, et h\\u00e9lium cyan pour les poches du souterrain \\u00b7 On lit ce qu\\u2019une \\u00eele permet d\\u2019extraire sans ouvrir le menu"
 }
