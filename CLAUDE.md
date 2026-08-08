@@ -17,7 +17,63 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 369`, `GAME_VERSION = 'Alpha 14.86'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 370`, `GAME_VERSION = 'Alpha 14.87'`, `SAVE_VERSION = 31`.**
+  Changement 14.87 (brief `BRIEFTUTOLOT6halo`, **LOT 6 — 5 sites A→E, tous dans le dessin du halo**) :
+  **le halo de tuiles devient PERMANENT**, il reçoit **une palette dédiée** et **le sprite du bâtiment
+  attendu en fantôme**. `SAVE_VERSION` INCHANGÉ, aucun champ persisté. Base EXACTE (369 / 14.86) ;
+  **5/5 ancres uniques, 10/10 hachages conformes AVANT application**, `node --check` 7/7,
+  **delta +2 252 o EXACT**.
+  (1) **Le défaut fermé** : `drawTutorialHalo` lisait `targets[idx]`, la cible COURANTE de la
+  séquence. Tant que l'index pointait `.tab-build`, il n'y avait pas de `tiles` et la fonction
+  SORTAIT — **le joueur ne voyait où poser qu'APRÈS avoir ouvert le menu**, l'inverse du service
+  rendu. Le halo prend désormais la cible `tiles` de l'étape quel que soit l'index. Mesuré à
+  l'étape 1, **menu fermé et aucun outil armé** : la tuile de la mine est déjà haloée (7 rects
+  `#FF6E40`) alors que la cible courante est bien `.tab-build`.
+  ⚠ **Le halo DOM (boutons) n'est PAS touché** : il continue de suivre la séquence. Les deux halos
+  coexistent — vérifié, `.tut-halo` présent sur le bouton pendant que les tuiles sont désignées.
+  (2) **Palette `TUT_HALO_COLOR`, distincte de `BUILDINGS[id].color`** : les couleurs du jeu sont des
+  tons de terre (brun `#8B4513`, beige `#D2B48C`, gris `#777`) qui se noient dans le vert de la carte.
+  Les 6 nouvelles tranchent (`#FF6E40` fer, `#FFD54F` carrière, `#26C6DA` route, `#AB47BC` charbon,
+  `#FF1744` four, `#ECEFF1` cimenterie). **Elle ne sert QU'au halo** et ne remplace la palette du jeu
+  nulle part. Mesuré : 6/6 types couverts, 6 couleurs distinctes.
+  (3) **Fantôme = sprite propre du bâtiment, à opacité FIXE 0,62** (seuls le fond et le cadre
+  respirent — un sprite qui pulse clignote). Mesuré : 32 fantômes, **un seul alpha, 0,62**.
+  ⚠ **La clé est RÉSOLUE par `buildingSpriteKey(bid, 0)`, jamais écrite en dur** — elle dépend de la
+  table d'alias `BLD_SPRITE_OVERRIDE`, et un art renommé changerait une clé figée sans que rien ne le
+  signale. **Précision factuelle mesurée** : `buildingSpriteKey('mine_fer', 3)` rend `mine_fer_v1` —
+  **l'art ne dépend PAS de l'`upgrade`**, les paliers sont des bâtiments DISTINCTS (`mine_fer_v4` →
+  `mine_fer_v4`). Le risque du test 4 du brief est donc réel mais porte sur l'id du palier, pas sur
+  l'argument de niveau. Vérifié : le halo dessine `mine_fer_v1`/`carriere_v1`/`four_fer_v1`, jamais
+  `mine_fer_v4`.
+  (4) **Les réseaux n'ont PAS de fantôme** (`isNet` → `bid` nul) : leur art dépend des connexions
+  voisines (`route_v1_02_E`, `route_v1_05_NS`…) et une tuile isolée afficherait un tronçon orienté au
+  hasard. Ils restent des cases cyan, ce qui distingue d'emblée « ici un bâtiment » de « ici passe la
+  route ». Mesuré : **0 fantôme de route**, les seules clés fantômes sont des bâtiments.
+  (5) **Repli conservé** : `drawSprite` rend `false` si l'art manque ou n'est pas décodé → le halo
+  retombe sur le libellé (FER, PIER, CHAR, FOUR, CIM). Mesuré en neutralisant `drawSprite` : les
+  5 libellés reviennent et la case colorée reste.
+  (6) **`@upgradable` / `@disconnected` / `@saturated` inchangés** : `col`/`lab`/`bid` facultatifs →
+  halo vert d'origine, **0 libellé, 0 fantôme** (mesuré : 14 rects `rgba(76,175,80,…)`).
+  **Validé** : `node --check` (**7 blocs, 7 OK**) + Chromium **40 assertions du lot, 0 KO, rejouées
+  2 fois sans flottement** — dont **60 fps sur 2 s avec les 14 tuiles haloées de l'étape 6**, et
+  l'invariant du lot 4 (halo == verrou) toujours à **0 écart sur 49 152 combinaisons** avec en plus
+  une pose réelle sur une tuile haloée **menu fermé** — **+ 286 assertions en NON-RÉGRESSION des lots
+  3A (63), 3B (50), 3C (38), 3D (42), 3E (12), 4 (46) et 5 (35)**, page blanche DEV et PUBLIQUE
+  console vide.
+  ⚠ **3 assertions du lot 5 mises à jour, RENVERSEMENTS VOULUS** : la palette du halo passe de
+  `BUILDINGS[id].color` à `TUT_HALO_COLOR`, et le libellé cède la place au fantôme (il ne subsiste
+  qu'en repli).
+  ⚠ **PIÈGES DE HARNAIS** : (a) un espion `drawImage` capte **TOUT le rendu**, y compris les routes
+  réellement posées — ne juger les fantômes que sur `globalAlpha === 0.62`, sinon on croit à un
+  fantôme de route ; (b) **`SPRITES_ENABLED` est une `const` de module**, non réassignable : pour
+  tester le repli, neutraliser **`drawSprite`** (déclaration de fonction d'un script classique, donc
+  propriété de `window` — même famille qu'`activeEnergyAlerts` en 14.67) ; (c) `@upgradable` ne
+  désigne que des mines/carrières **de niveau 1** : sans bâtiment posé, le halo est vide et le test
+  mesure du néant.
+  ⚠ **Taille : 3 283 945 → 3 286 158 o** (+2 252 les 5 blocs EXACT, −39 le nouveau `GAME_NOTES`).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : le halo DOM, le plan de pose et le verrou (lot 4), les couleurs
+  de `BUILDINGS`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 369`, `GAME_VERSION = 'Alpha 14.86'`, `SAVE_VERSION = 31`.**
   Changement 14.86 (brief `BRIEFTUTOLOT5etape4halo`, **LOT 5 — 9 sites A→E, dont 4 tables i18n**) :
   **l'étape 4 n'enseigne plus Copier** (on pose au menu Bâtiment, comme partout ailleurs), **elle
   perd son popup**, et **le halo prend la couleur et le nom du bâtiment attendu**. `SAVE_VERSION`
