@@ -17,7 +17,108 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 377`, `GAME_VERSION = 'Alpha 14.94'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 378`, `GAME_VERSION = 'Alpha 14.95'`, `SAVE_VERSION = 31`.**
+  Changement 14.95 (brief `BRIEFlotantennegazgeo`, pack `geothermiev2`, **4 chantiers**) : **curseur
+  d'INTENSITÉ du boost d'antenne (10 → 100 %), Centrale à Gaz ×4, palier Géothermie V2, et la ligne
+  « Élec. » quitte les fiches des bâtiments qui ne consomment rien.** `SAVE_VERSION` INCHANGÉ ; seul
+  champ ajouté `antBoost` (**additif**, absent = 100 %). Base EXACTE (377 / 14.94 / 3 322 621 o) ;
+  **11 ancres à `count == 1`**, `node --check` 7/7 (publique ET dev), **delta +11 022 o**.
+  (1) **C1 — le critère est `isEnergyConsumer(id)`, et le mesurer n'est pas une politesse** : filtrer
+  sur `b.power === 0` seul aurait masqué **36 bâtiments qui consomment vraiment** par sigmoïde ou
+  `randomP` (Fab. Ordi Quantique, Usine Moteur Quantique, Presse UHP, les 4 fours à arc, les mines
+  V3/V4, Centrale d'Enrichissement…). 2 sites : `InfoPanel` (`info.id` en portée) et `UpgradePanel`
+  (`bld.id`) — **insertion pure dans une chaîne `&&`**, aucune parenthèse déplacée (un `)` manquant
+  sur ce chemin donne une page blanche, pas une erreur de compilation).
+  ⚠ **Effet non listé, assumé** : les **mines V1** perdent aussi la ligne — `meanPower` y vaut **0**,
+  même boostées par une antenne (le boost multiplie un nominal nul). C'était du bruit, pas une info.
+  (2) ⚠ **C2 — LE BRIEF SE TROMPE : LA CENTRALE À GAZ N'ÉMET AUCUNE CHALEUR.** Il annonçait
+  « quadrupler l'oxygène quadruple la chaleur émise ». **Mesuré : `heatEmit` nul, avant comme après.**
+  Deux causes indépendantes : elle n'a **pas de `heatCap`** (tout le bloc chaleur du tick est gaté
+  dessus) et elle n'est **pas dans la liste FERMÉE** des émetteurs indexés sur la conso
+  (`machine_outil`, `presse_uhp`, `usine_moteur_quantique`, `centrale_enrichissement_v2`,
+  `usine_moteur_nuc_v2`) ; sa conso est de toute façon nulle (`power: 0`, c'est un PRODUCTEUR).
+  Le ×4 ne change donc RIEN au refroidissement. Lui donner de la chaleur = chantier séparé.
+  ⚠ **`vent` à ×2 quand la recette est à ×4** (décision d'Ethan) : la centrale devient plus propre
+  PAR UNITÉ D'ÉNERGIE. **Ne pas « corriger » en réindexant `vent` sur l'oxygène** — les 2 commentaires
+  qui disaient « `gaz_echappement` = l'oxygène consommé » sont devenus FAUX et ont été réécrits.
+  ⚠ **Logistique chiffrée** : le Séparateur d'Air V1 sort **512 O₂/s dès son niveau de base** = 2
+  centrales par séparateur. **Mais il est `forbiddenIslands: [7]`** → une centrale souterraine fait
+  DESCENDRE son oxygène par l'élévateur : le vrai coût du ×4 est dans la cage, pas dans le séparateur.
+  (3) **C3 — Géothermie V2** : `TIER_NEXT.geothermie {next, cap: 9}` + `TIER_STEP.geothermie_v2
+  {entry: 10, forfait: {moteur_quantique: 10, element_moteur_nuc: 1000, cable_supraconducteur: 800}}`,
+  débloquée au **nœud 43, qui RESTE `auto` et GRATUIT** (aucun `delivery` ajouté — vérifié, modes
+  `{start:1, delivery:39, auto:3}` inchangés).
+  ⚠ **`entry: 10 / cap: 9`** parce que `geothermie` est un V1 **sans palier intermédiaire**, comme
+  `antenne` et `centrale_nucleaire` (toutes deux 10/9, toutes deux en fin d'arbre) ; `cap: 19`
+  supposerait une chaîne V1→V2→V3 inexistante.
+  ⚠ **SORTIE IDENTIQUE (512 kW) : c'est la CONVENTION des paliers de PRODUCTEURS, pas un oubli** —
+  `centrale_charbon_v2` (128→128) et `centrale_diesel_v2` (512→512) gardent leur `energie_kw`, comme
+  `antenne_v2` ses 1024 kW. Le palier LÈVE LE CAP : la V1 plafonne au Nv.10 (262 144 kW), la V2
+  reprend à u10 et double sans limite (Nv.11 = 524 288 = ×2 le plafond V1). La géothermie n'ayant
+  AUCUN intrant, l'allègement de recette qui fait les autres V2 n'existe pas : le déplafonnement EST
+  le palier.
+  ⚠ **Pack VÉRIFIÉ INDÉPENDAMMENT du LISEZ-MOI** (contrairement au zip du lot précédent, celui-ci
+  contient bien le correctif) : SHA-256 conformes, **587 px opaques de part et d'autre, 0 écart
+  d'alpha sur 1024**, **frame 0 == statique au pixel près**, transparence en **PALETTE (`tRNS`)** →
+  octets inlinés tels quels, jamais ré-encodés (une ré-écriture aplatirait la fumée en carré opaque).
+  ⚠ **PIÈGE 14.76 RETOMBÉ DESSUS** : `Object.assign(ANIM_META, …)` posé à côté de la data-URL se
+  retrouvait **AVANT `const ANIM_META`** → `ReferenceError` de zone morte temporelle au chargement →
+  **PAGE BLANCHE**, que **`node --check` NE VOIT PAS**. Seul un boot l'attrape. Déplacé après la
+  déclaration, avec l'avertissement en commentaire.
+  ⚠ **Sur l'île 7 une densification est ÉTALÉE** (`scheduleUnderWork`, 14.03) : le forfait est débité
+  TOUT DE SUITE, la transformation attend que la matière descende — et il faut un vrai lien **route
+  ET tuyau** port↔élévateur en surface, sinon elle n'aboutit jamais. Asserter la transformation
+  immédiate donne un faux KO.
+  (4) **C4 — le curseur `k` est appliqué à `const boost = antZoneFactor(bl)`**, dans la pré-passe
+  d'antenne, et non à la ligne `buffSet[bk] = boost` que proposait le brief : une ligne plus haut,
+  **`buffSet` ET `debuffSet`** en héritent (donc les DEUX modes) et il n'y a qu'un point à maintenir.
+  Tout l'aval voit la valeur effective sans modification : tick, fiche, overlay de halo, badge `×`,
+  bornes min→max du panneau Énergie, chaleur d'antenne.
+  ⚠ **LA ZONE EST PRÉSERVÉE PAR CONSTRUCTION** : le rayon est un champ STATIQUE de la def
+  (`antRadius`), `k` ne touche que l'intensité. Mesuré : **24 tuiles et 2 bâtiments à 100 % COMME à
+  10 %**, facteur 2048 → 204,8. C'est le cœur de la demande.
+  ⚠ **DÉCISION §4.6 — `k` s'applique AUX DEUX MODES.** Un curseur limité à la vitesse mentirait : la
+  facture élec. est la MÊME dans les deux modes (le tick applique `antElecBoost(fac)` sans regarder
+  le mode), donc basculer en productivité ramènerait la facture pleine sans le moindre signal.
+  ⚠ **LE PIÈGE DU PLANCHER (§4.4), traité en DEUX temps** : les 3 formules portent `(f > 1 ? f : 2)`
+  → sous f = 2 elles REMONTENT à 2 ; pire, tous les gardes `> 1` de l'aval liraient la case comme NON
+  boostée et **la zone disparaîtrait de l'écran**. Le plancher est donc **CONSERVÉ** (le retirer ne
+  suffirait pas, et il a 15 appelants) : (a) `antZoneFactor` borne le facteur effectif à **2** —
+  garde-fou indispensable, une antenne réglée bas puis **RÉTROGRADÉE** repasserait sinon dessous ;
+  (b) `antBoostMin(bld)` donne le premier cran RÉELLEMENT atteignable et l'interface **grise le
+  « − »** en dessous. Nv.10 → 10 crans ouverts ; Nv.2 → premier cran **60 %** ; Nv.1 → **aucun**, le
+  « − » est grisé d'emblée (une antenne Nv.1 est déjà au minimum). **Le curseur ne bouge jamais dans
+  le vide.**
+  ⚠ **PERSISTANCE — LISTE BLANCHE** : `bld.antBoost` inscrit des DEUX côtés (`pl.ab` / `p.ab`, modèle
+  `pl.dd`). Sans la jumelle au chargement le réglage repartirait à 100 % à chaque lancement, EN
+  SILENCE. Additif : absent = 100 %.
+  **Validé** : `node --check` 7/7 (publique ET dev) + **64 assertions du lot, 0 KO** (18 C1 · 8 C2 ·
+  17 C3 · 21 C4) + **4 contre-épreuves sur la BASE 377** (C1 y affiche « ÉLEC. 0 kW », les helpers de
+  graduation y sont `undefined` et ×103,4 est imposé, `geothermie_v2` n'existe pas, la centrale à gaz
+  est à 8/64/2048/64) + **103 assertions de NON-RÉGRESSION** des lots 14.89/14.90/14.91, 0 KO +
+  **save RÉELLE créée sur 377 rechargée en 378** (curseur à 100 %, f = 16 = 2^(3+1), stocks et niveaux
+  intacts, 0 `tickError`, 0 erreur console). Boot des 2 éditions : canvas **100 %**, 0 `tickError`,
+  **0 erreur console**.
+  ⚠ **PIÈGES DE HARNAIS** : (a) la **pré-passe d'antenne exige un CÂBLE adjacent ET une alimentation
+  réelle** — sans les deux `game.antennaBuff` reste vide et l'on mesure une zone éteinte en croyant
+  mesurer un curseur inerte ; monter la scène avec des **Séparateurs d'Air** (seuls consommateurs à la
+  fois éligibles au boost et SANS matière première) + accumulateurs rechargés en continu (à ×205 le
+  boost les vide en quelques ticks) ; (b) le **gate des halos (14.92) impose ANT_POWER_TICKS ticks
+  servis** avant d'ouvrir la zone → une sonde à 1,2 s (~1 tick) lit une zone pas encore allumée ;
+  (c) **`tryDensify` et `selectTool` ne sont PAS exposés par `__ui()`** (portée App) → passer par le
+  bouton « ✦ Densifier » de la fiche (2 temps) et par l'onglet `.tab-upg` ; (d) le bouton Densifier
+  verrouillé est **grisé mais CLIQUABLE par design** (il ouvre le popup « Recherche requise ») →
+  asserter `disabled === true` est un faux KO, le critère est « classe `locked` **et** 2 clics ne
+  densifient rien » ; (e) le `label` d'un bâtiment est **vidé au runtime** par `I18N.applyToData`.
+  ⚠ **ÉCART À LA CONVENTION, SIGNALÉ** : `geothermie_v2` n'est **PAS** dans `TOOLBAR_GROUPS` (le brief
+  dit « pas un bâtiment posable séparément », suivi à la lettre), alors que **15 des 16 paliers y
+  figurent** — la seule autre exception, `usine_moteur_nuc_v2`, est déjà signalée comme une anomalie
+  au mémo 14.46 (sa fiche détaillée devient inatteignable). Même conséquence ici. Une ligne dans le
+  groupe `energy` la fermerait — décision d'Ethan.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `antRadius` et tout le code de zone (prémisse du chantier 4), les
+  formules de la productivité hors la décision du §4.6, les coûts d'accès aux îles et les
+  confirmations 39/41/43, `pwrAvg` et son coefficient, `TOOLBAR_GROUPS`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 377`, `GAME_VERSION = 'Alpha 14.94'`, `SAVE_VERSION = 31`.**
   Changement 14.94 (brief `ADDENDUMforeusenord1`, **chantier 1 du lot précédent, enfin livrable**) :
   **le foret de la foreuse orientée NORD ne coupe plus la bande orange de son bâti.**
   `SAVE_VERSION` INCHANGÉ, **AUCUNE ligne de JS modifiée** — remplacement de données d'image pur.
