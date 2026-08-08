@@ -17,7 +17,81 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 380`, `GAME_VERSION = 'Alpha 14.97'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 381`, `GAME_VERSION = 'Alpha 14.98'`, `SAVE_VERSION = 31`.**
+  Changement 14.98 (brief `BRIEFlotBchapitreile2`, **lot B — 23 paires**) : **le tutoriel ne s'arrête
+  plus au bout de l'île 1** — un **chapitre de 4 étapes** (indices 10 à 13) enchaîne sur la réparation
+  de la liaison maritime, le passage sur l'île 2, la première demande d'import au port et
+  l'amélioration du transit. `SAVE_VERSION` INCHANGÉ. Base EXACTE (380 / 14.97) ; **23/23 ancres à
+  `count == 1`**, round-trip **23/23 VERBATIM**, `node --check` 7/7 (publique ET dev), **delta
+  +12 161 o** (code seul ; +12 879 avec bump et `GAME_NOTES`).
+  (1) **LE TUTORIEL DEVIENT MULTI-ÎLES** : nouveau champ **`island`** sur une étape (1, 1, 2, 1 pour
+  les 4 nouvelles) + helper **`tutStepIsland(step)`** (défaut 1). Il remplace le `!== 1` codé en dur
+  dans **5 sites** (`tutPlanRemaining`, `tutPlanAllows`, `drawTutorialHalo`, `tutorialRevealed`,
+  `tutStep`) — sans lui, le plan de pose, le verrou et le halo se seraient éteints dès qu'on quitte
+  l'île 1. ⚠ **`E1e-tutStep` lit le STATE React `tutorialStep`, pas la ref** (les onglets se rendent
+  depuis le state, cf. piège 14.83).
+  (2) ⚠ **LE MENU BÂTIMENT SE DÉBRIDE À L'ÉTAPE 9** (`game.tutorial.step < 9` dans `tutorialRevealed`)
+  — sinon il serait resté filtré aux 6 bâtiments révélés pendant tout le chapitre, alors que le joueur
+  doit pouvoir construire librement sur l'île 2. Mesuré en jeu : `mine_cuivre` bien présente.
+  (3) ⚠ **DEUX PIÈGES SILENCIEUX, TOUS DEUX RÉELS, VÉRIFIÉS AU FICHIER** : (a) **`NumField` avale
+  toute prop hors de sa destructuration** — elle ne listait que `{value, onCommit, title, className}`,
+  donc un `data-tut` posé à l'appel serait parti à la poubelle **sans erreur** ; `dataTut` ajouté ET
+  propagé sur l'`input`. (b) **TDZ** : `panelsRef.current.portOpen = portOpen;` (l. 23724) DOIT rester
+  APRÈS `const [portOpen, setPortOpen] = useState(false);` (l. 23720) — le remonter donne une **page
+  blanche que `node --check` NE VOIT PAS**. Seul un boot l'attrape.
+  (4) **`tut_transit`** (nouvelle astuce, `why` de l'étape 12) et les 4 goals du chapitre sont posés
+  **DANS L'IIFE D'AUGMENTATION** (`E8-TUT-*`) **ET** dans le miroir littéral (`E8bis-miroir-*`) →
+  une seule vérité. Un commentaire **« ⚠ MIROIR, PAS SOURCE »** est posé au-dessus de `var LOCALES` :
+  c'est la leçon du lot A′ rendue permanente dans le fichier.
+  (5) **« Cible ⇒ Réserve » démarre à OUI en NOUVELLE PARTIE** (`tradeLinkReserve: {1..7: true}` dans
+  `newGame`) — sans ça, ce que le joueur importe repart aussitôt et l'étape 12 n'enseigne rien.
+  ⚠ **Additif, AUCUNE migration** : une save antérieure garde son réglage (mesuré : `{}` reste `{}`,
+  et un `false` explicite est CONSERVÉ). Une save **terminée** ne rejoue pas le chapitre (mesuré) —
+  c'est le **guide dynamique** qui prend le relais, sa bannière partage la classe `.tuto-banner` :
+  **tester le CONTENU (`/Tuto \d+\//`), jamais la présence**.
+  **Validé** : `node --check` 7/7 (**publique ET dev**, l'édition dev re-extraite pour de vrai) +
+  **T1 runtime i18n 0 KO** (les 14 goals non-nuls ×4 langues, `tut_transit` 3 § traduits) avec
+  **contre-épreuve sur la base 380 : 20 KO** (16 goals `null` + 4 `tut_transit` ABSENT) → le test est
+  falsifiable + **T2 22 OK** (bornes exactes : 999 refusé / 1000 accepté ; `portSpeed[2]` ne valide
+  pas l'étape 13) + **T3 22 OK par de VRAIS gestes** (réparation réelle → île 2 débloquée → saisie
+  réelle de 1000 → amélioration réelle du transit → `step=14, active=false`) + **T4 7 OK** (4 saves)
+  + **non-régression : lot A 15 OK, halo tutoriel 8 OK** + **boot des 2 éditions** (canvas 100 %,
+  0 `tickError`, 0 erreur console). Suites **rejouées 2 fois sans flottement**.
+  ⚠ **ÉTAPES 0 À 9 : OCTET À OCTET IDENTIQUES** (délimitation de `TUTORIAL_STEPS` par comptage de
+  crochets **conscient des chaînes ET des commentaires**, puis découpe en spans d'objets — le fichier
+  contient des apostrophes françaises en commentaire, piège 14.91).
+  ⚠ **ÉCART DE HASH ASSUMÉ, MÊME CAUSE QU'AUX LOTS A ET A′** : le bloc 7 porte
+  `GAME_BUILD`/`GAME_VERSION`/`GAME_NOTES`, or le brief est pré-compilé AVANT le choix du numéro.
+  Contrôle fait sur la variante **patch SEUL** : bloc 6 `f6cdea55…`/232 100 **et** bloc 7
+  `8bf4fb5f…`/**1 578 266** — **conformes au caractère près**. Le fichier livré porte
+  `fe1c003e…`/1 578 961 (+695 = bump + 4 lignes de commentaire + `GAME_NOTES`).
+  ⚠ **PIÈGE DE HARNAIS LE PLUS COÛTEUX, ET IL ÉTAIT DANS MON OUTIL** : `extract.py` portait le chemin
+  du jeu **EN DUR** et ignorait `sys.argv` → tout `extract.py autre.html` relisait le dépôt **en
+  silence**. Mon premier « `node --check` édition dev » et le contre-test T1 « sur la base » étaient
+  donc **CREUX** (ils passaient des deux côtés). Corrigé. **Un outil de harnais qui prend un chemin
+  doit échouer bruyamment s'il ne l'utilise pas.**
+  ⚠ **2 AUTRES PIÈGES DE HARNAIS, DÉJÀ AU MÉMO, RETOMBÉS DESSUS (T4, 1ʳᵉ passe 3 OK / 3 KO, aucun
+  défaut produit)** : (a) `addInitScript` **REJOUE à chaque navigation, RELOAD COMPRIS** → un
+  `localStorage.clear()` nu efface la save forgée au rechargement et le test repart sur une partie
+  NEUVE (14.59) ; (b) rejouer une save exige les **TROIS** clés de slot (`archipel_slot_<id>`,
+  `archipel_slots`, `archipel_active`) — le seul slot ne suffit pas (14.52). Remède : capturer/
+  réinjecter tout le `localStorage` derrière un drapeau `sessionStorage`.
+  ⚠ **3ᵉ piège** : le clic final de T3 était **avalé par `useGhostGuard`** (13.50) — un `el.click()`
+  synthétique passe à la trappe tant qu'aucun `pointerdown` interne n'a eu lieu. Il faut un **vrai
+  clic Playwright** (`scrollIntoViewIfNeeded()` puis `.click()`).
+  ⚠ **2 assertions de la suite de non-régression MISES À JOUR — RENVERSEMENTS VOULUS** : elles
+  assertaient `Tuto 5/10` et `Tuto 6/10`, or la trame compte désormais **14** étapes. Le comportement
+  testé (halo sur `.tab-upg`) est inchangé et vert. Elles portent maintenant sur le **numéro** d'étape
+  et **jamais sur le total figé** — toute retouche de trame donnerait sinon un faux KO.
+  ⚠ **EFFET DE BORD FAVORABLE, l'anomalie CI 14.76 reste refermée** : `GAME_NOTES` réécrit en **UTF-8
+  LITTÉRAL** (0 `\u`, 0 guillemet droit — le `[^"]*` de la CI le tronquerait).
+  ⚠ **LE LOT A TIENT** : `sel: '.tab-upg'` = **2**, les DEUX dans `TUTORIAL_STEPS` (index 4 et 5),
+  **0 dans `GUIDE_OBJECTIVES`** (sa seule occurrence de `.tab-upg` y est le commentaire du lot A).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `GUIDE_OBJECTIVES`, les étapes 0 à 9, `applyToData`,
+  `checkTutorial`, `tabAllowed` (seul son commentaire est amendé), les sous-clés
+  `res`/`bld`/`tech`/`ui` des `LOCALES`, la mécanique de « Cible ⇒ Réserve » (seule sa **valeur par
+  défaut en nouvelle partie** change), `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 380`, `GAME_VERSION = 'Alpha 14.97'`, `SAVE_VERSION = 31`.**
   Changement 14.97 (brief `BRIEFlotAprimei18ntutoriel`, **lot A′ — 4 sites, bloc 6**) : **les 4 tables
   `LOCALES.<lang>.tutorial` du grand littéral passent de 7 à 10 entrées.** `SAVE_VERSION` INCHANGÉ.
   4 ancres à `count == 1`, `node --check` 7/7 (publique ET dev), **delta +775 o** (code seul).
