@@ -1,8 +1,8 @@
 {
-  "build": 368,
-  "version": "Alpha 14.85",
+  "build": 369,
+  "version": "Alpha 14.86",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Le tutoriel indique d\\u00e9sormais O\\u00d9 poser : seules les tuiles qui clignotent acceptent une pose, dans l\\u2019ordre que vous voulez \\u00b7 D\\u00e9molir se ferme pendant ces \\u00e9tapes, puisqu\\u2019une pose hors plan est refus\\u00e9e avant d\\u2019exister \\u00b7 \\u00c0 la derni\\u00e8re \\u00e9tape, toute la barre revient \\u00b7 Aucune sauvegarde touch\\u00e9e"
+  "notes": "L\\u2019\\u00e9tape 4 du tutoriel ne passe plus par Copier : on pose au menu B\\u00e2timent, comme partout ailleurs \\u00b7 Le bouton Copier revient \\u00e0 la derni\\u00e8re \\u00e9tape, son astuce reste consultable dans l\\u2019Aide \\u00b7 Les tuiles \\u00e0 poser prennent la couleur et le nom du b\\u00e2timent attendu \\u00b7 Aucune sauvegarde touch\\u00e9e"
 }
