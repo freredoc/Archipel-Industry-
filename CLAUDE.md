@@ -17,7 +17,68 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 378`, `GAME_VERSION = 'Alpha 14.95'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 379`, `GAME_VERSION = 'Alpha 14.96'`, `SAVE_VERSION = 31`.**
+  Changement 14.96 (brief `BRIEFlotAhalosature1`, **lot A — 1 SEUL site**) : **le halo vert pulsé ne
+  reste plus collé en permanence sur l'onglet « Améliorer ».** `SAVE_VERSION` INCHANGÉ, aucun champ
+  de partie. Base EXACTE (378 / 14.95 / SHA-256 `975836e7…`) ; **1 ancre à `count == 1`**,
+  `node --check` 7/7 (publique ET dev), **delta +1 000 o**.
+  (1) **Le défaut** : ce n'était pas un halo mort mais le guide dynamique, objectif **`fix_sature`**,
+  dont la 1ʳᵉ cible était `.tab-upg`. Il était LÉGITIMEMENT allumé — une route Nv.1 plafonne à
+  **128 u/s** et une île de fin de tutoriel dépasse largement ce débit — mais la saturation est un
+  état **CHRONIQUE** : l'objectif reste vrai des heures, et un halo de niveau tutoriel n'a pas à
+  vivre aussi longtemps sur un onglet permanent. La cible DOM est RETIRÉE ; la **bannière** porte
+  l'information. Les 2 occurrences restantes de `sel: '.tab-upg'` sont dans `TUTORIAL_STEPS`
+  (**étapes d'index 4 et 5**, vérifié par délimitation à comptage de crochets) — **0 dans
+  `GUIDE_OBJECTIVES`**.
+  (2) ⚠ **LA CIBLE `@saturated` QUI RESTE EST INERTE, ET CE N'EST PAS CE LOT QUI L'A RENDUE TELLE**
+  (bug PRÉEXISTANT, confirmé au fichier) : les **2 sites de `push`** (lignes 13068 et 13885)
+  empilent des objets **`{ type, level }`** dans `game.netSaturated[isl]`, alors que
+  `drawTutorialHalo` fait **`new Set(sat).has(tiles[r][c].networkId)`** — un identifiant de réseau
+  comparé à des références d'objets ne correspond JAMAIS. **Le halo de tuiles `@saturated` n'a
+  jamais rien marqué.** Conservée telle quelle (décision du brief) pour que sa réparation (pousser
+  le `nid`, en réglant au passage la comparaison chaîne/nombre) reste un choix EXPLICITE.
+  Conséquence assumée : `fix_sature` ne produit désormais **plus aucun halo**, seulement sa bannière.
+  ⚠ **ÉCART DE MÉTHODE SIGNALÉ** : le hash de bloc 7 du brief **ne peut pas décrire le fichier
+  livré** — le bloc 7 porte AUSSI `GAME_BUILD`/`GAME_VERSION`/`GAME_NOTES`, or le brief demande de
+  choisir le numéro « au moment de l'exécution ». Le contrôle a donc été fait sur la variante
+  **patch SEUL** appliquée à la base : `c5f8121a…`, **1 569 804 car. — conforme au caractère près**
+  (base 1 568 864). Le bloc livré fait 1 569 796 car. (**−8** : le nouveau `GAME_NOTES` est plus
+  court que celui de 14.95, ce qui compense les 4 lignes de commentaire de version).
+  **Validé** : `node --check` 7/7 (publique ET dev) + **15 assertions du lot, 0 KO** + **8 de
+  non-régression du TUTORIEL, 0 KO**, les 2 suites **rejouées 2 fois sans flottement** + **boot des
+  2 éditions** (canvas 100 %, horloge qui avance, 0 `tickError`, 0 erreur console).
+  **Test falsifiable, monté pour de vrai** : 5 mines de fer Nv.5 + 4 carrières Nv.5 (`upgradeMult`
+  = 2^4 = 16) sur une nappe de route laissée au Nv.1 → demande RELEVÉE **144,00 u/s** (= la valeur
+  annoncée), `netFactor = 0,889` (= 128/144) → bannière « Un réseau est saturé… » ET **0 halo** ;
+  Nv.2 (cap 1024) → bannière disparue ; **contre-test** retour Nv.1 → bannière revenue, toujours
+  0 halo. **CONTRE-ÉPREUVE SUR LA BASE 378 : 11 OK / 4 KO** — les 4 assertions de halo y échouent
+  (halo présent ET positionné sur `.tab-upg`, écart < 30 px) → le test est FALSIFIABLE.
+  ⚠ **PIÈGE DE HARNAIS, LE PLUS COÛTEUX DU LOT (1ʳᵉ passe entièrement creuse)** : le guide **OUVRE
+  LUI-MÊME** le tip `reseau_sature` (son champ `why`) au moment où `fix_sature` s'arme, et le halo
+  DOM est masqué tant qu'un popup est ouvert (`… && !activeTip`). **Sans purge des astuces APRÈS la
+  forge**, l'assertion « aucun halo » passe AUSSI sur la base non patchée → **15 OK des DEUX côtés**,
+  test sans valeur. Purger AVANT la forge ne suffit pas.
+  ⚠ **2ᵉ piège** : remplacer des tuiles de route **adjacentes au port** par des bâtiments coupe la
+  nappe du port (`connected: false`) → les 9 bâtiments sortent `disc: true` / `discReason: 'road'`,
+  `netDemand` reste VIDE et c'est `fix_deconnecte` qui s'arme (on mesure alors un tout autre
+  objectif). Poser en **VÉRIFIANT-ET-ANNULANT** : après chaque pose, tous les bâtiments déjà posés
+  doivent rester servis par un réseau `connected`, sinon remettre la route.
+  ⚠ **3ᵉ piège (non-régression)** : à l'étape 6 du tutoriel, le halo est légitimement sur
+  **`.tab-build`** tant que `tutCount < 5` — la machine à cibles s'arrête sur la PREMIÈRE `when`
+  vraie. Y attendre `.tab-upg` sans forger 5 mines + 5 carrières RELIÉES est un **faux KO**.
+  ⚠ **EFFET DE BORD FAVORABLE — L'ANOMALIE CI 14.76 SE REFERME.** `GAME_NOTES` devait être réécrit
+  pour ce lot ; il l'a été en **UTF-8 LITTÉRAL** au lieu des `\uXXXX` hérités de Babel. L'étape CI
+  fait `grep -oP "const GAME_NOTES = \"\K[^\"]*"` puis `jq --arg notes` : avec l'ancien style la
+  variable shell portait les caractères `\`,`u`,`0`,`0`,`e`,`9` et `jq` échappait le backslash →
+  `\\u00e9` dans `version.json` → le joueur lisait `Ã©` / `Â«` sous « Mise à jour disponible ».
+  Extraction simulée sur le fichier livré : chaîne rendue correctement accentuée. ⚠ Ne JAMAIS mettre
+  de `"` dans `GAME_NOTES` (le `[^\"]*` la tronquerait) — guillemets français `«` `»` uniquement.
+  `GAME_NOTES` n'est lu par AUCUN code du jeu : son seul consommateur est la CI (le panneau Options
+  affiche `version.json.notes`, récupéré par le réseau).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `tipAnyNetworkSaturated`, `drawTutorialHalo`, les 2 sites de
+  `push` de `netSaturated`, `TUTORIAL_STEPS`, les autres objectifs de `GUIDE_OBJECTIVES`, le tip
+  `reseau_sature`, `NETWORK_THROUGHPUT`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 378`, `GAME_VERSION = 'Alpha 14.95'`, `SAVE_VERSION = 31`.**
   Changement 14.95 (brief `BRIEFlotantennegazgeo`, pack `geothermiev2`, **4 chantiers**) : **curseur
   d'INTENSITÉ du boost d'antenne (10 → 100 %), Centrale à Gaz ×4, palier Géothermie V2, et la ligne
   « Élec. » quitte les fiches des bâtiments qui ne consomment rien.** `SAVE_VERSION` INCHANGÉ ; seul
