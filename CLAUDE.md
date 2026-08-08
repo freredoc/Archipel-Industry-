@@ -17,7 +17,96 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 373`, `GAME_VERSION = 'Alpha 14.90'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 374`, `GAME_VERSION = 'Alpha 14.91'`, `SAVE_VERSION = 31`.**
+  Changement 14.91 (brief `BRIEFlotrecherchelivraison`, **lot « Recherche par livraison »**) :
+  **29 recherches ne se valident plus d'un clic — elles réclament une LIVRAISON au port, SUR LEUR ÎLE.**
+  `SAVE_VERSION` INCHANGÉ, **aucun champ de partie** (les 2 champs ajoutés — `delivery`, `island` — sont
+  dans la TABLE `TECH_NODES`, pas dans la save). Base annoncée 372 ; base RÉELLE **373** (le lot
+  Gisements avait été mergé entre-temps) → **toutes les ancres re-vérifiées** : les comptages du brief
+  y sont retrouvés à l'identique (43 nœuds, `{start:1, delivery:10, auto:31, manual:1}`, `manual` = nœud
+  5, `const pool = game.port[…] || {}` à `count == 2`) — **aucune adaptation**. **6 ancres textuelles à
+  `count == 1`**, round-trip **verbatim**, `node --check` 7/7 (publique ET dev), **delta +5 893 o**.
+  (1) **La transformation de `TECH_NODES` est PROGRAMMATIQUE, jamais textuelle** : `mode: 'auto',`
+  apparaît **31 fois**, aucune ancre n'y est unique. Bloc délimité par **comptage de crochets** depuis
+  `const TECH_NODES = [{`, découpé en **43 spans** d'objets de profondeur 1, chirurgie DANS chaque span,
+  **assertions avant réécriture** (29 changés · 14 intouchés **octet à octet** · total 43 · tout
+  `delivery` non vide · toute clé dans `RES_TIER`).
+  ⚠ **PIÈGE DE SCANNER, coûteux** : un compteur d'accolades conscient des seules CHAÎNES **échoue sur
+  ce fichier** — les commentaires français contiennent des apostrophes (`n'est`, `d'accès`) qu'il prend
+  pour des ouvertures de chaîne. Première passe : bloc de **78 879 caractères / 41 objets** (le scan
+  courait jusqu'à `TRADE_LIQUIDS`), **sans la moindre erreur**. Rendre le scanner conscient des
+  commentaires `//` et `/* */` → **15 018 caractères / 43 objets**. À réutiliser tel quel.
+  (2) **Comptes finaux** : `{start:1, delivery:39, auto:3 (39/41/43), manual:0}`, total **43**. La
+  branche `manual` du CODE est **conservée** (aucun nœud ne l'utilise ; la retirer élargirait le lot).
+  Nœuds intouchés : 1 · les 10 livraisons antérieures (2, 8, 14, 21, 28, 31, 34, 38, 40, 42) · les
+  3 confirmations de palier du Collisionneur (39, 41, 43), qui suivent des réparations déjà payantes.
+  (3) ⚠ **BUG BLOQUANT FERMÉ — ET IL ÉTAIT DÉJÀ ATTEIGNABLE AVANT CE LOT.** `techDeliver` et
+  `deliveryReady` lisaient `game.port[game.currentIsland] || {}` : l'île 7 n'ayant **jamais** de
+  `game.port[7]`, toute livraison depuis le souterrain échouait **en silence, à jamais**. Les deux
+  passent par **`portPool(game, game.currentIsland)`**. **Contre-épreuve exécutée sur la base 373** :
+  le nœud **31** (« Réparation de l'Élévateur »), **déjà** en `delivery` avant ce lot, est
+  **impossible à livrer depuis l'île 7** — le défaut est donc PRÉEXISTANT, seulement latent (on livre
+  le 31 depuis l'île 6). Le correctif profite aussi aux 10 livraisons antérieures.
+  ⚠ **`portPool` rend une RÉFÉRENCE VIVANTE — vérifié au runtime, pas supposé** (sonde écrite dans
+  l'objet rendu et relue dans `game.port[1]` ; `portPool(g,7) === game.port[6]` sans jamais créer
+  `port[7]`). **C'est le piège le plus grave du lot** : une copie aurait rendu la recherche **GRATUITE
+  sans le moindre symptôme**. Le test de débit relit le stock par un chemin **indépendant de
+  `portPool`** (`game.port[6]` en direct), sinon il se mordrait la queue.
+  (4) **Contrainte d'île** : champ **`island` EN DUR** sur les 29 nœuds (jamais dérivé de la chaîne de
+  prérequis — ce serait une 2ᵉ source de vérité). `techDeliver` **ET** `deliveryReady` refusent si
+  `def.island != null && def.island !== game.currentIsland` — la même condition dans les DEUX, sinon la
+  pastille de notification s'allumerait pour une recherche non validable ici. Les 10 livraisons
+  antérieures n'ont pas de champ `island` → **aucune contrainte**, comportement strictement inchangé.
+  ⚠ **Île 7** : `island: 7` exige d'être **physiquement au souterrain** alors que le stock puisé est
+  celui de l'île 6 (pool partagé) — voulu, et mesuré dans les deux sens.
+  (5) **`RESEARCH_DELIVERY_FACTOR = 1`** en tête de `TECH_NODES` + boucle d'application **après** la
+  construction du bloc → la table reste écrite **aux valeurs de BASE**, aucune quantité multipliée en
+  dur. ⚠ **Il ne s'applique QU'AUX 29 nœuds du lot**, reconnus à la présence de leur champ `island` :
+  les 10 livraisons d'accès d'île sont hors périmètre (§1 et §9 du brief). Le champ `island` sert de
+  marqueur plutôt qu'un drapeau de plus — pas d'état neuf, et « nœud du lot ⇔ nœud contraint à une
+  île » reste vrai par construction. `Math.round` protège d'un facteur fractionnaire.
+  (6) ⚠ **LE §2 DU BRIEF EST FAUX SUR SA JUSTIFICATION, ET ÇA MÉRITAIT D'ÊTRE VÉRIFIÉ** : il affirme
+  que « livraison = condition `produce` » garantit la produisibilité sur l'île « puisque la condition a
+  été remplie sur place ». Or **`techProduced` est un compteur GLOBAL** (`game.techTree.produced`), pas
+  par île. La propriété a donc été **prouvée séparément**, deux fois : (a) pour chaque couple (nœud,
+  ressource), un producteur posable sur l'île visée OU une ressource transitable → **0 KO sur 35** ;
+  (b) **absence de circularité** — un producteur débloqué par un nœud **strictement ancêtre**, et l'île
+  ouverte par un ancêtre (île → nœud : `{1:1, 2:2, 3:8, 4:14, 5:21, 6:28, 7:31}`) → **0 KO**.
+  (7) **UI** : note **« À livrer depuis l'Île N »** (`.rp-island-note`) + même texte en `title` du
+  bouton grisé. ⚠ **Les pastilles de coût montrent le stock de l'ÎLE ATTENDUE**, pas celui de l'île
+  courante (qui ne voudrait rien dire) : le joueur voit sa progression ET sait où aller. `islandLabel`
+  → l'île 7 s'affiche « Île 6 S ». i18n en/es/de.
+  **Validé** : `node --check` (**7 blocs, 7 OK**, publique ET dev) + **79 assertions du lot, 0 KO,
+  rejouées 2 fois sans flottement** (15 statiques · 23 moteur · 17 UI réelle · 16 saves/facteur ·
+  5 pour le test 8.16 · 3 contre-épreuves runtime) **+ 56 assertions de NON-RÉGRESSION** (43 du lot
+  Port 14.89, 3 du TUTORIEL, 12 du lot Gisements 14.90) + boot des 2 éditions (canvas **100 %**,
+  0 `tickError`, **0 erreur console**).
+  **8.16, le test qui compte** : partie NEUVE, **arbre entier parcouru** — **39 livraisons franchies
+  pour de vrai** (dont le nœud 35 **depuis le souterrain**), 3 confirmations `auto`, **43/43 confirmés,
+  AUCUN nœud infranchissable**, chaque port retombé à zéro après sa livraison.
+  **Saves** : écrites par la **BASE 373** puis rechargées en 374 par le vrai chemin — **7a** 6 nœuds
+  confirmés le RESTENT, **aucun coût rétroactif**, déblocages conservés ; **7b** un `condition_ok`
+  devient payant (`techConfirm` refusé, livraison exigée) ; **7c** save tout-confirmé → **43/43**
+  intacts, 0 erreur de tick.
+  ⚠ **PIÈGES DE HARNAIS** : (a) **forcer `condition_ok` sans confirmer la chaîne d'ANCÊTRES produit un
+  état que le jeu ne crée jamais** → `researchPanelUnlocked` (14.81) grise le bouton et le panneau ne
+  s'ouvre pas : on croit à un défaut du patch (m'a donné 4 faux KO) ; (b) **le HUD ne se re-rend qu'au
+  bump du tick** → laisser passer ~600 ms avant de conclure qu'un bouton est désactivé ; (c) le bruit
+  console `404 / Failed to load resource` du serveur de test est **PRÉEXISTANT**, à filtrer.
+  ⚠ **CONSTATS SIGNALÉS, NON CORRIGÉS** : (a) **la notification de recherche se ré-arme au changement
+  d'île** (`evaluateTechTree` dé-arme `notified` dès que `deliveryReady` redevient faux) — comportement
+  **PRÉEXISTANT** des 10 livraisons antérieures, ici étendu à 29 nœuds ; correctif d'une ligne si ça
+  devient bruyant, mais c'est un changement de comportement ; (b) **le bouton Recherche peut être grisé
+  avant la 1ʳᵉ confirmation** — **pas une régression** : le 1ᵉʳ nœud validable est le 2, déjà une
+  livraison avant ce lot ; (c) **équilibrage non éprouvé** — `produce` compte du CUMULÉ, la livraison
+  exige du STOCK au même instant : nœuds 25 (1000 de chacun des 3 irradiés simultanément) et 33
+  (1000 `cable_supraconducteur` à 1/s) les plus exposés → c'est la raison d'être du facteur ;
+  (d) le champ `island` du NŒUD et le champ `island` d'un `req` (`resourceTile`, `port`) portent le même
+  nom dans deux portées distinctes (imposé par le brief, sans collision — le nœud 35 porte les deux).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : les halos d'antenne après déficit, les coûts d'accès aux îles
+  (nœuds 2, 8, 14, 21, 28), la branche `manual` du code, `techProduced` et les `reqs`, l'arbitrage cargo
+  du lot Port (toujours à trancher), le `notes` doublement échappé de `version.json`, `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 373`, `GAME_VERSION = 'Alpha 14.90'`, `SAVE_VERSION = 31`.**
   Changement 14.90 (brief `BRIEFlotgisements`, **lot « Gisements par exclusivité d'île » — 2 blocs**) :
   **chaque gisement porte désormais la COULEUR de la ressource EXCLUSIVE de son île** (charbon noir
   î1, cuivre î2, or î4, uranium vert î5, tungstène gris î6, hélium cyan î7). `SAVE_VERSION` INCHANGÉ,
