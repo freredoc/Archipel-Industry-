@@ -1,8 +1,8 @@
 {
-  "build": 374,
-  "version": "Alpha 14.91",
+  "build": 375,
+  "version": "Alpha 14.92",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Les recherches ne se valident plus d\\u2019un clic : 29 d\\u2019entre elles r\\u00e9clament d\\u00e9sormais une LIVRAISON au port \\u00b7 On livre ce que le n\\u0153ud vient de prouver qu\\u2019on sait produire, et SUR SON \\u00ceLE : le cuivre sur l\\u2019\\u00eele 2, le p\\u00e9trole sur la 3, l\\u2019uranium sur la 5 \\u00b7 Le panneau Recherche indique l\\u2019\\u00eele attendue \\u00b7 Correctif : la livraison \\u00e9tait impossible au souterrain, o\\u00f9 l\\u2019\\u00eele 7 n\\u2019a pas de port \\u00e0 elle"
+  "notes": "Les halos de l\\u2019antenne reviennent en 3 s apr\\u00e8s un d\\u00e9ficit, au lieu de pr\\u00e8s d\\u2019une minute \\u00b7 Ils n\\u2019attendent plus que la moyenne gliss\\u00e9e de puissance soit remont\\u00e9e \\u00e0 99,9 % \\u00b7 Sur un r\\u00e9seau juste \\u00e0 la limite, ils ne clignotent toujours pas \\u00b7 Les badges d\\u2019efficacit\\u00e9 des autres b\\u00e2timents ne changent pas"
 }
