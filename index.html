@@ -8386,8 +8386,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 369;
-const GAME_VERSION = 'Alpha 14.86';
+const GAME_BUILD = 370;
+const GAME_VERSION = 'Alpha 14.87';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8396,7 +8396,7 @@ const GAME_VERSION = 'Alpha 14.86';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "L\u2019\u00e9tape 4 du tutoriel ne passe plus par Copier : on pose au menu B\u00e2timent, comme partout ailleurs \u00b7 Le bouton Copier revient \u00e0 la derni\u00e8re \u00e9tape, son astuce reste consultable dans l\u2019Aide \u00b7 Les tuiles \u00e0 poser prennent la couleur et le nom du b\u00e2timent attendu \u00b7 Aucune sauvegarde touch\u00e9e";
+const GAME_NOTES = "Pendant le tutoriel, les tuiles o\u00f9 poser sont d\u00e9sormais visibles en permanence, sans avoir \u00e0 ouvrir le menu \u00b7 Chaque tuile porte le sprite du b\u00e2timent attendu et une couleur qui tranche sur la carte \u00b7 Les routes restent des cases color\u00e9es \u00b7 Aucune sauvegarde touch\u00e9e";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -13975,6 +13975,20 @@ const TUT_PLAN = {
 // Tuiles du plan de l'étape courante qui ne portent pas encore le bon bâtiment.
 // Sert AU HALO et AU VERROU : une seule source, donc le joueur ne peut jamais se voir
 // refuser une tuile qui clignote, ni en réussir une qui ne clignote pas.
+// Palette du HALO, distincte de `BUILDINGS[id].color`. Les couleurs du jeu sont des tons
+// de terre (brun, beige, gris) qui se noient dans le vert de la carte : sur un halo elles
+// ne se voyaient pas. Celles-ci sont choisies pour trancher sur le fond, PAS pour teinter
+// le bâtiment — elles ne servent qu'ici et ne remplacent la palette du jeu nulle part.
+// `mine_fer` (#FF6E40) et `four_fer` (#FF1744) sont les deux plus proches ; elles
+// n'apparaissent jamais dans la même étape (1/4/6 contre 8), donc aucune confusion possible.
+const TUT_HALO_COLOR = {
+  road: '#26C6DA',
+  mine_fer: '#FF6E40',
+  carriere: '#FFD54F',
+  mine_charbon: '#AB47BC',
+  four_fer: '#FF1744',
+  cimenterie: '#ECEFF1'
+};
 function tutPlanRemaining(game) {
   const t = game && game.tutorial;
   if (!t || !t.active || game.currentIsland !== 1) return [];
@@ -27200,7 +27214,15 @@ function App() {
     if (tutOn && g.currentIsland !== 1) return;
     const st = tutOn ? TUTORIAL_STEPS[g.tutorial.step] : guideObjRef.current;
     const idx = tutOn ? g.tutorial.targetIdx || 0 : guideTargetRef.current;
-    const tg = st && st.targets && st.targets[idx];
+    let tg = st && st.targets && st.targets[idx];
+    // Le halo de TUILES ne suit PAS la progression des cibles. Avant, `targets[idx]` pointait
+    // `.tab-build` tant que le menu était fermé : aucun `tiles`, donc AUCUNE tuile désignée —
+    // le joueur ne voyait où poser qu'après avoir ouvert le menu, ce qui est l'inverse du
+    // service rendu. On prend donc la cible `tiles` de l'étape, quel que soit l'index.
+    // Le `when` n'est pas évalué : le contenu affiché est de toute façon filtré par
+    // `tutPlanRemaining`, et les étapes à deux cibles `@plan` donnent le même ensemble.
+    // Le halo DOM (boutons), lui, continue de suivre la séquence — il n'est pas touché ici.
+    if (!tg || !tg.tiles) tg = st && st.targets && st.targets.find(t => t.tiles);
     if (!tg || !tg.tiles) return;
     const pulse = 0.45 + 0.35 * Math.sin(Date.now() / 190);
     const def = curDef(),
@@ -27211,7 +27233,7 @@ function App() {
     ctx.fillStyle = 'rgba(76,175,80,' + (pulse * 0.18).toFixed(3) + ')';
     // `col`/`lab` facultatifs : sans eux le marqueur reste le halo vert d'origine, ce qui
     // laisse '@upgradable', '@disconnected' et '@saturated' strictement inchangés.
-    const mark = (r, c, col, lab) => {
+    const mark = (r, c, col, lab, bid) => {
       const x = ox + c * tile,
         y = oy + r * tile;
       if (!col) {
@@ -27226,10 +27248,21 @@ function App() {
       ctx.fillRect(x + 2, y + 2, tile - 4, tile - 4);
       ctx.globalAlpha = pulse;
       ctx.strokeRect(x + 2, y + 2, tile - 4, tile - 4);
-      // Libellé du bâtiment attendu (FER, PIER, CHAR, FOUR, CIM). Les réseaux ont un
-      // `label` vide : ils restent des cases de couleur sans texte, ce qui suffit à les
-      // distinguer. Sauté sous 18 px de tuile, où le texte serait illisible.
-      if (lab && tile >= 18) {
+      // FANTÔME du bâtiment attendu : son propre sprite, en semi-transparent. La clé est
+      // RÉSOLUE par `buildingSpriteKey(id, 0)` — jamais écrite en dur : elle dépend du
+      // niveau et d'une table d'alias (`BLD_SPRITE_OVERRIDE`), et un art renommé changerait
+      // une clé figée sans que rien ne le signale.
+      // Opacité FIXE : seuls le fond et le cadre respirent. Un sprite qui pulse clignote.
+      // Les réseaux ne reçoivent pas d'`bid` : ils restent des cases colorées, ce qui
+      // distingue d'emblée « ici un bâtiment » de « ici passe la route » — et évite un
+      // tronçon de route orienté au hasard, l'art dépendant des connexions voisines.
+      let ghosted = false;
+      if (bid) {
+        ctx.globalAlpha = 0.62;
+        ghosted = drawSprite(ctx, buildingSpriteKey(bid, 0), x + 4, y + 4, tile - 8, tile - 8);
+      }
+      // Repli : sprites désactivés, image pas encore décodée, ou art absent du pack.
+      if (!ghosted && lab && tile >= 18) {
         ctx.globalAlpha = 1;
         ctx.font = 'bold ' + Math.max(7, Math.round(tile * 0.28)) + 'px sans-serif';
         ctx.textAlign = 'center';
@@ -27252,7 +27285,8 @@ function App() {
       // tout était vert et rien ne distinguait un type d'un autre.
       for (const e of tutPlanRemaining(g)) {
         const bd = BUILDINGS[e[2]];
-        mark(e[0], e[1], bd && bd.color || '#4CAF50', bd && bd.label || '');
+        const isNet = bd && bd.kind === 'infra';
+        mark(e[0], e[1], TUT_HALO_COLOR[e[2]] || '#4CAF50', bd && bd.label || '', isNet ? null : e[2]);
       }
       ctx.restore();
       return;

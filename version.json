@@ -1,8 +1,8 @@
 {
-  "build": 369,
-  "version": "Alpha 14.86",
+  "build": 370,
+  "version": "Alpha 14.87",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "L\\u2019\\u00e9tape 4 du tutoriel ne passe plus par Copier : on pose au menu B\\u00e2timent, comme partout ailleurs \\u00b7 Le bouton Copier revient \\u00e0 la derni\\u00e8re \\u00e9tape, son astuce reste consultable dans l\\u2019Aide \\u00b7 Les tuiles \\u00e0 poser prennent la couleur et le nom du b\\u00e2timent attendu \\u00b7 Aucune sauvegarde touch\\u00e9e"
+  "notes": "Pendant le tutoriel, les tuiles o\\u00f9 poser sont d\\u00e9sormais visibles en permanence, sans avoir \\u00e0 ouvrir le menu \\u00b7 Chaque tuile porte le sprite du b\\u00e2timent attendu et une couleur qui tranche sur la carte \\u00b7 Les routes restent des cases color\\u00e9es \\u00b7 Aucune sauvegarde touch\\u00e9e"
 }
