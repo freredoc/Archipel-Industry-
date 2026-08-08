@@ -1,8 +1,8 @@
 {
-  "build": 371,
-  "version": "Alpha 14.88",
+  "build": 372,
+  "version": "Alpha 14.89",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Un b\\u00e2timent trop cher annonce d\\u00e9sormais son propre nom au lieu d\\u2019\\u00ab Extension V1 \\u00bb \\u00b7 Stock de d\\u00e9part port\\u00e9 \\u00e0 30 pierre et 30 minerai de fer \\u00b7 La derni\\u00e8re \\u00e9tape du tutoriel ne d\\u00e9signe plus rien : \\u00e0 vous de conduire \\u00b7 Les alertes de saturation et de d\\u00e9ficit y reprennent la parole \\u00b7 Le bouton R\\u00e9parer est d\\u00e9sign\\u00e9 quand l\\u2019\\u00eele suivante est \\u00e0 port\\u00e9e"
+  "notes": "Le port appara\\u00eet EN RUINE tant que la liaison maritime vers l\\u2019\\u00eele suivante n\\u2019est pas pay\\u00e9e \\u00b7 \\u00ab Demander au port \\u00bb dispara\\u00eet quand une seule \\u00eele est d\\u00e9bloqu\\u00e9e \\u00b7 Les en-t\\u00eates de fiche montrent le SPRITE au lieu d\\u2019un carr\\u00e9 de couleur \\u00b7 Le panneau \\u00c9nergie masque les lignes \\u00e0 0 kW \\u00b7 Options et Port : descriptions et colonnes ne se chevauchent plus \\u00b7 Le Collisionneur peut relancer sa s\\u00e9quence tout seul"
 }

@@ -455,7 +455,14 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
 .pp-arch-head{font-family:'Bebas Neue',sans-serif;font-size:.92rem;letter-spacing:.04em;color:var(--ink);margin-bottom:4px;}
 .pp-arch-row{font-family:'Barlow Condensed',sans-serif;font-size:.82rem;color:var(--ink-dim);display:flex;align-items:center;gap:5px;padding:1px 0;}
 .pp-arch-rate{margin-left:auto;font-family:'DM Mono',monospace;font-size:.74rem;color:#7fd0ff;}
-.pp-cfg-head,.pp-cfg-row{display:grid;grid-template-columns:1fr 62px 62px 34px 44px;gap:6px;align-items:center;}
+/* 14.89 — colonnes de transit desalignees. `1fr` vaut `minmax(auto,1fr)`, dont le MINIMUM est la
+   largeur du CONTENU : un nom long (« Mot. Quantique », « Cable Supra ») elargissait la grille
+   au-dela du panneau. Chaque ligne etant une grille INDEPENDANTE, chacune debordait differemment
+   → colonnes desalignees entre lignes et contenu rogne. `minmax(0,1fr)` retire ce plancher.
+   La derniere colonne faisait 44 px pour DEUX boutons (16 px d'icone + 6 de padding + 2 de bordure
+   = 24 px chacun, plus 2 px de gap = 50 px) : la seconde fleche sortait du panneau. */
+.pp-cfg-head,.pp-cfg-row{display:grid;grid-template-columns:minmax(0,1fr) 62px 62px 34px 52px;gap:6px;align-items:center;}
+.pp-c-res{min-width:0;overflow-wrap:anywhere;}
 .pp-cfg-head{font-family:'Barlow Condensed',sans-serif;font-size:.6rem;text-transform:uppercase;letter-spacing:.04em;
   color:var(--ink-faint);padding:2px 0;}
 .pp-cfg-head .pp-c-num,.pp-cfg-head .pp-c-tog,.pp-cfg-head .pp-c-pri{text-align:center;}
@@ -789,9 +796,18 @@ body:not(.theme-inox) .inv-label-btn.open{border-image:var(--btn-active) 8 fill 
 .options-btn.has-update{border-color:var(--yellow);color:var(--ink);}
 .options-btn:hover{border-color:#3a3a6a;color:var(--ink);}
 .options-btn .gear{font-size:1rem;line-height:1;}
-.opt-row{display:flex;align-items:center;justify-content:space-between;gap:12px;
+/* 14.89 — descriptions ecrasees dans les Options. `.opt-row` est un flex dont TOUS les controles
+   (.opt-toggle, .opt-lang-sel, .opt-theme-sel, .opt-slider) portent `flex-shrink:0` ; `.opt-lbl`
+   portait `min-width:0` SANS `flex` ni plancher : il etait le SEUL element capable de retrecir et
+   absorbait donc tout le debordement. Seules les lignes a <select> LARGE (« Grands nombres »,
+   « Seuil de bascule ») etaient touchees — le coupable est la largeur du CONTROLE, pas la
+   description. Deux volets, les deux necessaires : un PLANCHER sur le label, et une largeur
+   BORNEE sur les <select>. `flex-wrap` fait passer le controle SOUS le label sur les ecrans tres
+   etroits, au lieu de l'ecraser. */
+.opt-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
   border:1px solid var(--line);border-radius:7px;padding:11px 12px;background:var(--panel-2);}
-.opt-lbl{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.opt-lbl{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-width:148px;}
+.opt-row .opt-lang-sel{max-width:132px;min-width:0;text-overflow:ellipsis;}
 .opt-name{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.95rem;color:var(--ink);}
 .opt-desc{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--ink-dim);}
 .opt-toggle{flex-shrink:0;width:46px;height:25px;border-radius:13px;border:1px solid var(--line);
@@ -3781,6 +3797,16 @@ window.__SPRITE_DATA__["ui_melange"]="data:image/png;base64,iVBORw0KGgoAAAANSUhE
 window.__SPRITE_DATA__["ui_dossier"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PzRjTO4eip6ThoeISjBE9L/AAAAAXRSTlMAQObYZgAAAElJREFUeF5jYEAA1tDQUDAdpKRkDGIFCgopGxsHgBiCwiAGqyAYmMIYrsQxjI2NTVxcXBkYgo2NXVxcAkAMEwiDNdjFxSUUYTsA9RoQiK1bDtcAAAAASUVORK5CYII=";
 window.__SPRITE_DATA__["ui_boussole"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+Pyoe+CWbshaQngeISjYLvaeAAAAAXRSTlMAQObYZgAAAFdJREFUeF5FzcENgDAMA8B8MkDEBAQ2cJgA91+1yv6roABS/fHJH4usaGa+PdxRGu5m6AvqvtuGq2AGNFE/eSMKJMAmepCIAgDwRxRk1sBeiA86SeZ6fwAPYRTLP1LzSwAAAABJRU5ErkJggg==";
 window.__SPRITE_DATA__["ui_colis"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PzRjTO4eip6ThoeISjBE9L/AAAAAXRSTlMAQObYZgAAAFZJREFUeF5VzdEJgDAMBND8ZIAYF2g3CKkbXP+rJfuvIlGkmJ97BwchWscR8eRVq6dOEREdC1y2oqZHwtS0E2e3/YccJ+yDuzegE013ACPRXvAEEOv7DSe1EW2poRvlAAAAAElFTkSuQmCC";
+// 14.89 — PORT EN RUINE (2 tuiles). Le port occupe `tile_port_terre` (dalle, conteneurs, hangar)
+// ET `tile_port_mer` (la grue, dessinee par drawPortExtras sur la tuile d'eau immediatement a
+// gauche) : il en faut donc DEUX, pas une.
+// Forme d'ASSIGNATION individuelle (et non le grand litteral) : SPRITE_DATA a deux formes de
+// declaration, une regex qui ne voit que l'une des deux sous-compte massivement.
+// ⚠ `tile_port_mer_casse` porte une transparence en PALETTE : les octets du PNG sont encodes tels
+// quels, jamais re-encodes — toute recompression l'aplatirait et la grue apparaitrait sur un carre
+// opaque au-dessus de l'eau.
+window.__SPRITE_DATA__["tile_port_terre_casse"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAM1BMVEVpfox4eH1tcXqcYkRpaW1UWGF6SjJUVFhHS1JMQjo/P0E4PEUjPFpfKCNOLyAqIx0NEBbLOcNGAAABQUlEQVR4XoVTC66DMAxr5y4Zg5p3/9M+OSnQfaSFiWngOa6dlOePKs8W5brV8a3f40EAANJIEkZdMIC6zBIgsNeJyfXRAwqQXCf1hTkAG2nGDjNDa+ttqgFQU+sGwJqvj6tuJwOMnSJqbb1fNTEwWsA8GTgYHD4YwE4DrL4z1ABIXw8HWhPDX9aDlenDde7UMACHBh0PJonAK8OthZMmo+Vt+jAzEALIemYC9qYhW4DQu8B4W+/7rMGPFqHA5MO+HAz78MGCIHjYqjSglFIW+TDiVi1jYKRB78uVRQ+RmyTgPQskQFYzeiTDlWa0iBS4KauPNBOgV1gMGffnPHTN67JhDMwXBui/GwHQXyfKzfOY+zWsX06RPnAsyjpXs3oAYpHqOe7Hpn0ZGB93D3xaPS3K2LJz084s6gR43bRn+bX+/y1iHFIM1yPtAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["tile_port_mer_casse"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAJFBMVEUAAABtcXqcYkRUWGF6SjJMQjo4PEVGNCBOLyAqIx0PEhgNEBZbmdH+AAAAAXRSTlMAQObYZgAAALRJREFUeNpjYMAFuBYgmKtAYGEWXGChmbGxsbFhGlwJ924Q2IgQYNi9ewM3wyYlZAEGBoZNLUgCG0ACLgiBZSAmki0MK0ACi9EFICog2rhAGKyCywphTmIWyL1Zq2DOL0tLKWrXqGjvQAhklLQrVbg3wQSUpmuUtHeUqGvABdw7StqbShBaKtRbStyVitThWsrLy8uLQATM2uWrlkbvjlq+ahVcIICrmoFhOVI4gp3NxTCEAABIfkRtH0NDvAAAAABJRU5ErkJggg==";
 // --- spritesheets (frame 0 == sprite statique, verifie pixel a pixel) ---
 window.__ANIM_DATA__["tile_i1_remblai_breeze"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAMAAADt/IAXAAAAvVBMVEVrjYJqjIFpi4Boin9niX5miH1lh3xjhXphg3hggndfgXZegHVef3Rdf3RdfnNcfnNcfXJbfXJbfHFae3BZem9YeW5XeW5XeG1Wd2xVd2xVdmtUdmtUdWpTdWpTdGlSdGlSc2hRc2hRcmdQcWZPcWZPcGVOb2RNb2RNbmNMbmNMbWJLbWJLbGFKbGFKa2BJal9Ial9IaV5HaV5HaF1GZ1xFZltEZVpDZFlCY1hBYldAYVY/YFU+X1Q9XlMgPDMyWUw/AAAFRElEQVR42oWXcXvUKBCH027XsVtr9Xrquq1xJRsO9ziQW2jYVuf7fyyfGSAhbVX+8vHd98cwJCk0mgas00BARADw3tO/ELTuZvwEEV/C2cil1trrIfPX7J8DKP/A/KrrtdatPqvzX3L+MvsNF4AJI9g0u/ee6gCt9Tbzv5l3xO+8Lfygk98nv2E/ei/vEw96zH9T8vUd5y9PTsmvCkAAaxF9LkApBcjUalz/lbhK3BTuiTuN61dtS7x75A+1v0y+jQPxrVIL9KUA5PJoQBVQKpjz74lbpdSLGR+Ok6/YX6LmJhRfJb7P+bcvsBQAvHwaWHZApQpoE+9wmbiwFu2ci9/5Ykn+wHxlrbT7J/kNYnrubB65h7wA/gXzSxA2Zj54Lz3e2prX/lGxfyB8O/HBWhuyTzz5Vw09KxDCGGCBSsgF0gwjvyN6ID54BHNQyinVPvLDc/5pCCATZ9/fE08VNBB4II5LAKq6+Ji4zTyM3Nb8R0DcW2X98Au/5Ie9xMXEncIm5B/Q/6b5nQOAkoDDjMeat8oqjMGGEPZ4WftngK01SqkN+arKF3V+p6oC6A3l7XI8oF6AJn6ReWS+Uipkvg/h+xP/SillrcLzcHwm/578lD8VQNsPkH2Xm4QhhCHYcE88JH4cecc8Bq0D2p78k/OkB+ZbV/yUf/U25cfKb0qH8wPgyuAmIYThPvyY8zjjMflXM7+7n/z0CMHdxFX224AwFmAfF+D4zwJWDfIT1zXnLQ78lgjcO2qRmvm29kPyu8IbrBtgEccS6OU1gM/yO+eG3/HotENoQALinrl/7Kf8U2w4AqdXELDMb2hA4fs/8NoPR3dEMMoYAQvm9JG2XeJ6qP2GI8oOQ4wREB11x+SReQx74qbwS7OveB/t8MjvpDGhMxHOU36we+L0dzpw/t5EY7qGIvJXgv0YAbhQNGMJxAfN3D04AFwtiXuzZX6G6HurYvZPAS8XZ8kfjDEy5WuLJz7nJ59HUxbBr3gaCFJKObbgz/wi8YsYH5hfSSlvF7/yLcLBjD4XgI6/6FgmoHyZK4yFr4gfmLdCWjl1iPkSAM0zfuKLi+fyOxOpgOnrh9UC5bgHIz+feEvc9+bOGF+4Tr5H2Eq5JX/LC5jlP9T5faQO4PhgO6gKHHs04w/cgFZK/4TryV/LtZQGovHEm+LfF95W+Q2CEOXlR5wakHuIE/cVFxWXmYdu4q2Um9o/up79MPcDlSeEEOCmJpUGSESk5QndCnA+cx9R7r2UcjNysRFAn5aeNsFGlGbuiyd+xZuG5hdYfX8BcwnUWy6vL/xI/AxRbtc1lwJdP/qnz/vHzg0uJt9UPBeA0/d3B4CJ85FvLz4w7wv/SnxbuLZC6OT32b+c/Evyx/yhzt/k/FRA2QOEHQ1qQjpUATLenGR+VnOn3AqFeLcRH4p/OvNDuMw+1P63Md+tMBeAaaT5d1RkPpGAqfnF593nT+93O3iBoFrm1KCRv73Z3Xwkf8nzK2VAPPF32VdKHdSq4RL5GgNQ5qeflCMZCvFB0HWKBsn/7HZfCrcacUP+iuj5ksyvu93nwr3FlP+y5H977DfpnJSvbjgWMJ4qKy7nfLulk+2z/scddmqzUcpn3q3b9Svi/9W+21iVjuX57riGJwVQbxbE31X8y//Eg1K9Sr275rvjet38yz34VHyhsMn579brbvQL7xU2092UllCmL+dmBN2PvF3j+0+7mxlfaDFyUfsHz7xJ/uvs8w7N/CZf7aoeppsM5vkTv76+FpnfMF/xzQBBD9l/U/tv4YqvRuz7jvj1PH/0fwJiJZhpwMfxTAAAAABJRU5ErkJggg==";
 window.__ANIM_DATA__["tile_i2_remblai_breeze"]="data:image/png;base64,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";
@@ -8389,8 +8415,8 @@ const SAVE_VERSION = 31;
 // ⚠ `GAME_VERSION` reste 'Alpha 14.61' À DESSEIN : le brief interdit explicitement de proposer une
 // nouvelle étiquette pour ce lot (§0 et §10). Seul `GAME_BUILD` est bumpé — c'est lui qui porte la
 // notification de mise à jour. Un build dont l'étiquette n'avance pas est donc NORMAL ici.
-const GAME_BUILD = 371;
-const GAME_VERSION = 'Alpha 14.88';
+const GAME_BUILD = 372;
+const GAME_VERSION = 'Alpha 14.89';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8399,7 +8425,7 @@ const GAME_VERSION = 'Alpha 14.88';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Un b\u00e2timent trop cher annonce d\u00e9sormais son propre nom au lieu d\u2019\u00ab Extension V1 \u00bb \u00b7 Stock de d\u00e9part port\u00e9 \u00e0 30 pierre et 30 minerai de fer \u00b7 La derni\u00e8re \u00e9tape du tutoriel ne d\u00e9signe plus rien : \u00e0 vous de conduire \u00b7 Les alertes de saturation et de d\u00e9ficit y reprennent la parole \u00b7 Le bouton R\u00e9parer est d\u00e9sign\u00e9 quand l\u2019\u00eele suivante est \u00e0 port\u00e9e";
+const GAME_NOTES = "Le port appara\u00eet EN RUINE tant que la liaison maritime vers l\u2019\u00eele suivante n\u2019est pas pay\u00e9e \u00b7 \u00ab Demander au port \u00bb dispara\u00eet quand une seule \u00eele est d\u00e9bloqu\u00e9e \u00b7 Les en-t\u00eates de fiche montrent le SPRITE au lieu d\u2019un carr\u00e9 de couleur \u00b7 Le panneau \u00c9nergie masque les lignes \u00e0 0 kW \u00b7 Options et Port : descriptions et colonnes ne se chevauchent plus \u00b7 Le Collisionneur peut relancer sa s\u00e9quence tout seul";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -11078,7 +11104,7 @@ function defaultColliderState() {
   // pénalité). Défaut allumé = comportement historique.
   // `launched` (14.08) : la SÉQUENCE doit être lancée à la main une fois le démarrage terminé
   // (bouton du panneau). Une pause ou une pénalité l'annule ET remet le compte à rebours à zéro.
-  return { state: 'off', timer: 0, cur: 0, from: 0, code: null, dcCode: null, dcAcc: 0, penalties: 0, stops: 0, enabled: true, launched: false, sigT: 0 };
+  return { state: 'off', timer: 0, cur: 0, from: 0, code: null, dcCode: null, dcAcc: 0, penalties: 0, stops: 0, enabled: true, launched: false, autoLaunch: false, sigT: 0 };
 }
 // Reconstruit les réseaux de la COUCHE LOGIQUE (câbles logiques dans t.logic) : flood-fill 4-dir,
 // un networkId par composante connexe, écrit dans `t.logic.netId`. Système SÉPARÉ des réseaux
@@ -12048,6 +12074,19 @@ function colliderGoalLocked(game) {
 // Raison pour laquelle le lancement est refusé (null = lançable). Source de vérité UNIQUE :
 // launchCollider ET l'état grisé du bouton du panneau s'y réfèrent, pour que le joueur voie le
 // blocage AVANT de cliquer au lieu de récolter un toast.
+// 14.89 — DEMARRAGE AUTOMATIQUE : la bascule n'est offerte qu'une fois la machine menee a son
+// terme — dernier palier atteint (seuil COLLIDER_GOALS de ce palier) ET dernier noeud PUZZLE
+// confirme. C'est une commodite de fin de partie, jamais un raccourci du puzzle.
+// Compose depuis l'existant (COLLIDER_GOALS, COLLIDER_PUZZLE_NODES, isNodeConfirmed,
+// colliderPalier) : la table des seuils et la liste des noeuds restent les seules sources de
+// verite, rien n'est code en dur.
+function colliderAutoAvailable(game) {
+  if (!game || !game.techTree) return false;
+  const last = COLLIDER_PUZZLE_NODES.length;
+  if (colliderPalier(game) < last) return false;
+  if (!isNodeConfirmed(game, COLLIDER_PUZZLE_NODES[last - 1])) return false;
+  return (game.techTree.colliderConfirms || 0) >= (COLLIDER_GOALS[last] || Infinity);
+}
 function colliderLaunchBlock(game) {
   const co = game && game.collider;
   if (!co || !colliderRepaired(game) || co.enabled === false) return 'off';
@@ -16285,6 +16324,24 @@ const ISLAND_ACCESS_NODE = {
   5: 21,
   6: 28
 };
+// 14.89 — PORT EN RUINE. Le port d'une ile est CASSE tant que la liaison maritime vers l'ile
+// SUIVANTE n'a pas ete payee, c'est-a-dire tant que son noeud d'acces n'est pas confirme.
+// ⚠ ETAT ENTIEREMENT DERIVE, PAS DE DRAPEAU. Le LISEZ-MOI du pack d'art conclut qu'il faut
+// « ajouter un drapeau de partie sur le modele de elevatorRepaired, plus sa serialisation ». Le
+// constat est juste (aucune mecanique de port casse n'existait) mais la solution serait plus
+// lourde que necessaire : l'arbre techno est DEJA serialise, donc aucun champ ajoute, aucune
+// migration, SAVE_VERSION inchange — et surtout aucun etat a maintenir coherent : un port ne peut
+// pas se desynchroniser de sa liaison puisqu'il n'a pas d'etat propre. Les saves existantes
+// affichent le bon etat des le premier rendu.
+// L'ile 6 tombe juste SANS cas particulier : ISLAND_ACCESS_NODE[7] est undefined → jamais cassee.
+// ⚠ PUREMENT VISUEL (cf. 1.3 du brief) : le port reste raccordable route/tuyau, son stock reste
+// lisible et utilisable. Le tutoriel de l'ile 1 exige de relier des batiments au port — le casser
+// fonctionnellement rendrait le tuto INFAISABLE. C'est l'infrastructure maritime qui est en ruine,
+// pas le raccordement terrestre.
+function portCasse(game, isl) {
+  const nd = ISLAND_ACCESS_NODE[(+isl) + 1];
+  return nd != null && !isNodeConfirmed(game, nd);
+}
 const tradeCfgFor = (game, islandId, res) => {
   const perIsland = game.tradeConfig[islandId] || (game.tradeConfig[islandId] = {});
   return perIsland[res] || (perIsland[res] = {
@@ -18186,6 +18243,7 @@ function InfoPanel({
   onToggleCollider,
   onBuyResearch,
   onLaunchCollider,
+  onToggleColliderAuto,
   onSetElevatorMode,
   onPromoteElevatorCategory,
   onAskPort
@@ -18267,7 +18325,14 @@ function InfoPanel({
       style: { left: pos.left, top: pos.top, opacity: pos.ready ? 1 : 0 },
       onPointerDownCapture: guard.onPointerDownCapture, onClickCapture: guard.onClickCapture
     }, React.createElement("div", { className: "ip-head" },
-      React.createElement("span", { className: "ip-swatch", style: { background: '#FF9628' } }),
+      // 14.89 — en-tete : SPRITE de la cage (cassee ou reparee) au lieu du carre de couleur, en
+      // suivant `elevatorRepaired` exactement comme le fait deja le rendu de la tuile.
+      (() => {
+        const _cands = game.elevatorRepaired ? ['tile_i6_elevateur', 'bat_elevateur'] : ['tile_i6_elevateur_casse', 'bat_elevateur_casse'];
+        const _sd = SPRITES_ENABLED && _cands.map(k => SPRITE_DATA[k]).find(Boolean);
+        return _sd ? React.createElement("img", { className: "ip-head-ico", src: _sd, alt: "", draggable: false })
+          : React.createElement("span", { className: "ip-swatch", style: { background: '#FF9628' } });
+      })(),
       React.createElement("span", { className: "ip-name" }, I18N.t('Élévateur') + ' — ' + I18N.t('Nv. ') + (lvl + 1)),
       React.createElement("button", { className: "ip-close", onClick: onClose, title: I18N.t("Fermer") }, "\xD7")
     ), React.createElement("div", { className: "ip-rows" },
@@ -18452,6 +18517,16 @@ function InfoPanel({
       }, iconLabel(launchBlock === 'logic' ? '🔒 ' + I18N.t('Réseau logique requis')
         : launchBlock === 'goal' ? '🔒 ' + I18N.t('Palier atteint — réparation requise')
         : '▶ ' + I18N.t('Lancer la séquence'))),
+      // 14.89 — DÉMARRAGE AUTOMATIQUE. ⚠ Le lancement passe par launchCollider() — le point de
+      // décision UNIQUE colliderLaunchBlock est donc respecté (réseau logique, palier, interrupteur)
+      // — et JAMAIS par un `co.launched = true` forcé, qui ferait démarrer la machine sans réseau
+      // logique ou palier bloqué.
+      repaired && colliderAutoAvailable(game) && React.createElement("button", {
+        className: 'ip-pause' + (co.autoLaunch ? ' resume' : ''),
+        style: { marginTop: '8px' },
+        onClick: () => onToggleColliderAuto && onToggleColliderAuto(),
+        title: I18N.t("Relance la séquence toute seule dès que le démarrage de 10 min est terminé (après une pause, une pénalité ou un rechargement). Le lancement automatique est SILENCIEUX : ni toast ni son, pour ne pas répéter la notification à chaque cycle.")
+      }, iconLabel((co.autoLaunch ? '✓ ' : '○ ') + I18N.t('Démarrage automatique de la séquence'))),
       repaired && colOn && co.state === 'running' && React.createElement("div", { className: "ip-row ip-theo" },
         React.createElement("span", { className: "lbl" }, I18N.t('Séquence')),
         React.createElement("span", { className: "val", style: { color: 'var(--green)' } }, I18N.t('lancée'))),
@@ -18672,7 +18747,14 @@ function InfoPanel({
       style: { left: pos.left, top: pos.top, opacity: pos.ready ? 1 : 0 },
       onPointerDownCapture: guard.onPointerDownCapture, onClickCapture: guard.onClickCapture
     }, React.createElement("div", { className: "ip-head" },
-      React.createElement("span", { className: "ip-swatch", style: { background: lb.color || '#00E5A0' } }),
+      // 14.89 — en-tete : SPRITE de l'element logique au lieu du carre de couleur. On prend la
+      // cle de BASE non orientee (`logic_porte_and`…) pour la vignette : buildingSpriteKey
+      // resoudrait une variante orientee/etat qui n'a pas de sens hors de la carte.
+      (() => {
+        const _sd = SPRITES_ENABLED && (SPRITE_DATA[lg.id] || SPRITE_DATA['bat_' + lg.id] || (BLD_SPRITE_OVERRIDE[lg.id] && SPRITE_DATA[[].concat(BLD_SPRITE_OVERRIDE[lg.id]).find(k => SPRITE_DATA[k])]));
+        return _sd ? React.createElement("img", { className: "ip-head-ico", src: _sd, alt: "", draggable: false })
+          : React.createElement("span", { className: "ip-swatch", style: { background: lb.color || '#00E5A0' } });
+      })(),
       React.createElement("span", { className: "ip-name" }, lb.name),
       React.createElement("button", { className: "ip-close", onClick: onClose, title: I18N.t("Fermer") }, "\xD7")
     ), React.createElement("div", { className: "ip-rows" }, React.createElement("div", { className: "ip-fluxpri" }, rows)));
@@ -18890,7 +18972,10 @@ function InfoPanel({
   // donc qu'après une tentative d'amélioration bloquée par un manque de ressources, au lieu de
   // s'afficher en permanence dans la fiche. `armed` est l'état partagé Monter/Densifier.
   const askCost = upgradable ? (atCap ? densCost : upCost) : null;
-  const askNeeded = armed && !!askCost && portAskNeeded(game, askCost, currentIsland);
+  // 14.89 — masque tant qu'une SEULE ile est debloquee : sans voisine, aucun transit n'est
+  // possible et « Demander au port » ne peut rien faire. Neutralise en AMONT, au calcul de
+  // `askNeeded` (point de decision unique, lu nulle part ailleurs dans le composant).
+  const askNeeded = armed && !!askCost && !!(game.islandUnlocked && game.islandUnlocked[2]) && portAskNeeded(game, askCost, currentIsland);
   // « Aligner tous » : monte tous les bâtiments du même type (sur cette île) qui sont
   // en-dessous du niveau de CE bâtiment, jusqu'à ce niveau. On calcule le nombre
   // concerné + le coût total cumulé pour l'afficher et tester si on peut payer.
@@ -20116,7 +20201,9 @@ function UpgradePanel({
   // 14.42 — « Demander au port » (même règle que l'InfoPanel : visible seulement si ça change
   // quelque chose). Au cap, c'est le coût de DENSIFICATION qui est couvert.
   const askCost = atCap ? densCost : cost;
-  const askNeeded = portAskNeeded(game, askCost, currentIsland);
+  // 14.89 — meme regle que l'InfoPanel : masque tant que l'ile 2 est verrouillee (aucun transit
+  // possible avec une seule ile → le bouton serait un leurre).
+  const askNeeded = !!(game.islandUnlocked && game.islandUnlocked[2]) && portAskNeeded(game, askCost, currentIsland);
   const statLine = (label, rec) => {
     if (!rec || Object.keys(rec).length === 0) return null;
     return React.createElement("div", {
@@ -20144,12 +20231,26 @@ function UpgradePanel({
     onClickCapture: guard.onClickCapture
   }, React.createElement("div", {
     className: "ip-head"
-  }, React.createElement("span", {
-    className: "ip-swatch",
-    style: {
-      background: b.color
-    }
-  }), React.createElement("span", {
+  }, (() => {
+    // 14.89 — en-tete : SPRITE du batiment au lieu du carre de COULEUR (que les joueurs lisent
+    // comme un « carre emoji »). Meme motif que la fiche batiment de l'InfoPanel, repli compris.
+    // ⚠ buildingSpriteKey peut renvoyer une cle ABSENTE de SPRITE_DATA (les branches `return ov`
+    // de BLD_SPRITE_OVERRIDE ne verifient pas la presence) : sans le test SPRITE_DATA[_sk],
+    // src vaudrait undefined → image CASSEE au lieu du repli propre.
+    const _sk = SPRITES_ENABLED ? buildingSpriteKey(bld.id, bld.upgrade || 0) : null;
+    const _sd = _sk && SPRITE_DATA[_sk];
+    return _sd ? React.createElement("img", {
+      className: "ip-sprite",
+      src: _sd,
+      alt: "",
+      draggable: false
+    }) : React.createElement("span", {
+      className: "ip-swatch",
+      style: {
+        background: b.color
+      }
+    });
+  })(), React.createElement("span", {
     className: "ip-name"
   }, b.name), React.createElement("button", {
     className: "ip-close",
@@ -20906,7 +21007,16 @@ function EnergyPanel({
   onClose
 }) {
   const mode = (game.energyMode && game.energyMode[currentIsland]) || 'priority';
-  const consumers = energyConsumerList(game, currentIsland);
+  // 14.89 — les lignes a 0 kW sont MASQUEES (elles n'ont aucun sens dans un ordre d'alimentation).
+  // ⚠ LE FILTRE VIT ICI, DANS LE RENDU, EXCLUSIVEMENT. energyConsumerList a un SECOND appelant
+  // (moveEnergyPriority, qui reconstruit l'ordre) : filtrer dans la fonction retirerait ces
+  // batiments de la GESTION de priorite, pas seulement de l'affichage.
+  // ⚠ L'INDEX D'ORIGINE est conserve (`idx`) : le RANG affiche porte sur l'ordre REEL de
+  // energyPriority, jamais sur une renumerotation 1..N de la liste filtree.
+  // Seuil 0,0005 et non === 0 : la puissance passe par meanPower x (1 + antElecBoost) et par des
+  // sigmoides, elle est donc flottante (le reste du fichier utilise deja 0.0005 pour les flux).
+  const consumersAll = energyConsumerList(game, currentIsland);
+  const consumers = consumersAll.map((cc, idx) => ({ cc, idx })).filter(o => (o.cc.power || 0) > 0.0005);
   const e = game.energy && game.energy[currentIsland] || {};
   const gross = e.gross || 0;
   const supply = e.produced || 0;
@@ -21005,12 +21115,12 @@ function EnergyPanel({
     className: "pp-section-label"
   }, I18N.t("Ordre de priorit\xE9 (haut = servi en premier)")), consumers.length === 0 && React.createElement("div", {
     className: "pp-empty"
-  }, I18N.t("Aucun consommateur d'\xE9nergie sur cette \xEEle.")), consumers.map((cc, i) => React.createElement("div", {
+  }, I18N.t("Aucun consommateur d'\xE9nergie sur cette \xEEle.")), consumers.map(({ cc, idx }, i) => React.createElement("div", {
     key: cc.key,
     className: "ep-row"
   }, React.createElement("span", {
     className: "ep-rank"
-  }, i + 1), React.createElement("span", {
+  }, idx + 1), React.createElement("span", {
     className: "ep-name"
   }, BUILDINGS[cc.id] ? BUILDINGS[cc.id].name : cc.id), React.createElement("span", {
     className: "ep-pos"
@@ -23451,7 +23561,11 @@ function App() {
         // Interrupteur joueur (14.07) — champ additif : absent d'une vieille save = allumé.
         enabled: g.collider.enabled !== false,
         // Séquence lancée à la main (14.08) — champ additif : absent = non lancée.
-        launched: !!g.collider.launched
+        launched: !!g.collider.launched,
+        // 14.89 — bascule « demarrage automatique » : champ ADDITIF, comme `stops`, `enabled` et
+        // `launched` → absent d'une save anterieure = false, aucune migration, SAVE_VERSION
+        // inchange.
+        autoLaunch: !!g.collider.autoLaunch
       } : null,
       he3Deposits: Array.isArray(g.he3Deposits) ? g.he3Deposits.map(d => ({ r: d.r, c: d.c })) : [],
       drillsCount: { ...g.drillsCount },
@@ -24314,6 +24428,8 @@ function App() {
       // Séquence : une save antérieure au 14.08 qui tournait déjà (state 'running') est considérée
       // comme LANCÉE (on ne retire pas au joueur un Collisionneur en service).
       g.collider.launched = !!dc.launched || g.collider.state === 'running';
+      // Champ additif (14.89) : absent d'une save anterieure → bascule inactive.
+      g.collider.autoLaunch = !!dc.autoLaunch;
     }
     if (Array.isArray(data.he3Deposits)) g.he3Deposits = data.he3Deposits.map(d => ({ r: d.r, c: d.c }));
     g.drillsCount = {};
@@ -26008,13 +26124,17 @@ function App() {
   // Lancement MANUEL de la séquence (14.08) : possible seulement quand le démarrage de 10 min est
   // terminé (state 'ready'). `launched` survit à un manque de courant, mais pas à une pause ni à
   // une pénalité (les deux remettent le compte à rebours à zéro).
-  function launchCollider() {
+  // 14.89 — `silent` : lancement AUTOMATIQUE, sans toast ni SFX. Apres une pause ou une penalite
+  // `co.launched` retombe a faux et le demarrage de 10 min repart de zero — repeter toast et son a
+  // chaque cycle noierait le joueur sous les notifications.
+  function launchCollider(silent) {
     const g = gameRef.current;
     const co = g.collider;
     // 14.24 — un SEUL point de décision (colliderLaunchBlock), partagé avec l'état grisé du bouton.
     const block = colliderLaunchBlock(g);
     if (block === 'off') return false;
     if (block) {
+      if (silent) return false;
       showToast(block === 'goal' ? I18N.t('❌ Palier atteint — validez la recherche et livrez la réparation suivante')
         : block === 'logic' ? I18N.t('❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)')
         : I18N.t('❌ Le démarrage n\'est pas terminé'), 'var(--red)');
@@ -26023,12 +26143,28 @@ function App() {
     }
     co.launched = true;
     co.state = 'running';
-    SFX.play('colliderLaunch');
-    showToast(I18N.t('▶ Séquence de collision lancée'), 'var(--green)');
+    if (!silent) {
+      SFX.play('colliderLaunch');
+      showToast(I18N.t('▶ Séquence de collision lancée'), 'var(--green)');
+    }
     bumpHud();
     markDirty();
     scheduleSave();
     return true;
+  }
+  // 14.89 — bascule « démarrage automatique » de la séquence (champ ADDITIF `autoLaunch`).
+  function toggleColliderAuto() {
+    const g = gameRef.current;
+    const co = g.collider;
+    if (!co || !colliderAutoAvailable(g)) return false;
+    co.autoLaunch = !co.autoLaunch;
+    SFX.play('click');
+    showToast(co.autoLaunch ? I18N.t('▶ Démarrage automatique de la séquence activé')
+      : I18N.t('Démarrage automatique de la séquence désactivé'),
+      co.autoLaunch ? 'var(--green)' : 'var(--ink-dim)');
+    bumpHud();
+    scheduleSave();
+    return co.autoLaunch;
   }
   // Mode de répartition du débit de l'élévateur (14.08) : prioritaire / équitable / proportionnel.
   function setElevatorMode(m) {
@@ -26856,10 +26992,16 @@ function App() {
   }
   function moveEnergyPriority(islandId, key, dir) {
     const g = gameRef.current;
-    const list = energyConsumerList(g, islandId).map(cc => cc.key);
-    const i = list.indexOf(key),
-      j = i + dir;
-    if (i < 0 || j < 0 || j >= list.length) return;
+    // 14.89 — les consommateurs a 0 kW sont MASQUES dans le panneau : echanger avec l'un d'eux
+    // ne deplacerait RIEN a l'ecran (le joueur clique, rien ne bouge). On saute donc les entrees
+    // masquees et on echange avec le prochain consommateur de puissance NON NULLE.
+    const cons = energyConsumerList(g, islandId);
+    const list = cons.map(cc => cc.key);
+    const i = list.indexOf(key);
+    if (i < 0) return;
+    let j = i + dir;
+    while (j >= 0 && j < list.length && !((cons[j].power || 0) > 0.0005)) j += dir;
+    if (j < 0 || j >= list.length) return;
     list.splice(i, 1);
     list.splice(j, 0, key);
     g.energyPriority[islandId] = list;
@@ -27171,7 +27313,17 @@ function App() {
     // Sprite path for actual buildings (not infra/junction; those are drawn in the
     // network pass with connection-aware tiles). Falls back to vector shapes below.
     if (SPRITES_ENABLED && b.kind !== 'infra' && b.kind !== 'junction') {
-      const sk = buildingSpriteKey(id, upg, drillDir);
+      let sk = buildingSpriteKey(id, upg, drillDir);
+      // 14.89 — PORT EN RUINE (tuile terre). ⚠ La substitution ne peut PAS passer par
+      // BLD_SPRITE_OVERRIDE : buildingSpriteKey est une fonction GLOBALE PURE, sans acces a
+      // `game` (depuis 14.32 l'override accepte une liste de candidats, mais le choix s'y fait sur
+      // la PRESENCE du sprite, jamais sur un etat de partie). drawBuilding, lui, a `gameRef`.
+      // ⚠ On teste la presence dans SPRITE_DATA avant de substituer : sinon drawSprite recevrait
+      // une cle absente et le port DISPARAITRAIT au lieu de retomber sur son art intact.
+      if (id === 'port' && SPRITE_DATA['tile_port_terre_casse']) {
+        const _pg = gameRef.current;
+        if (_pg && portCasse(_pg, _pg.currentIsland)) sk = 'tile_port_terre_casse';
+      }
       if (sk) {
         // Sprite TOUJOURS à pleine taille. Animé seulement si le bâtiment tourne à plein régime ;
         // figé (frame statique) à l'arrêt OU en déficit (évite le clignotement actif/arrêt).
@@ -28410,7 +28562,19 @@ function App() {
     const px = ox + pontonC * tile,
       py = oy + pp.r * tile;
     // Tuile portuaire « mer » (grue animée) : frame courante si la sheet est dispo, sinon statique.
-    if (!drawAnimFrame(ctx, 'tile_port_mer', px, py, tile, tile)) drawSprite(ctx, 'tile_port_mer', px, py, tile, tile);
+    // ⚠ CARGO — MESURE, PAS SUPPOSE. Le brief pose « quand le port est casse, aucune liaison n'est
+    // active, donc aucun cargo ». VRAI pour l'ile 1 SEULEMENT (son port est casse tant que le noeud 2
+    // n'est pas confirme, or c'est ce meme noeud qui active la liaison 1-2). FAUX des l'ile 2 : son
+    // port est casse tant que le noeud 8 n'est pas confirme, alors que la liaison 1-2 est deja
+    // active → un cargo s'anime bien devant un port en ruine, et c'est CORRECT : l'etat casse est
+    // purement visuel (§1.3) et l'ile 2 commerce reellement avec l'ile 1. Masquer le cargo
+    // retirerait une information VRAIE. Laisse tel quel, a arbitrer si le rendu choque.
+    // 14.89 — PORT EN RUINE (tuile mer). ⚠ `tile_port_mer` est ANIME (sheet 4 frames) alors que
+    // `tile_port_mer_casse` est STATIQUE : on appelle drawSprite DIRECTEMENT pour l'etat casse,
+    // sans passer par drawAnimFrame (qui chercherait une sheet inexistante a chaque frame).
+    if (portCasse(g, isl) && SPRITE_DATA['tile_port_mer_casse']) {
+      drawSprite(ctx, 'tile_port_mer_casse', px, py, tile, tile);
+    } else if (!drawAnimFrame(ctx, 'tile_port_mer', px, py, tile, tile)) drawSprite(ctx, 'tile_port_mer', px, py, tile, tile);
     const {
       prox,
       arriving
@@ -29070,6 +29234,13 @@ function App() {
             SFX.playThrottled('powerAlert', 8000);
           }
         }
+        // 14.89 — DÉMARRAGE AUTOMATIQUE du Collisionneur : dès que la machine est « prête », la
+        // séquence se lance sans clic. Passe par launchCollider(true) → colliderLaunchBlock est
+        // consulté (réseau logique absent, palier atteint, interrupteur coupé = pas de démarrage)
+        // et le lancement est SILENCIEUX.
+        if (g.collider && g.collider.autoLaunch && g.collider.state === 'ready') {
+          launchCollider(true);
+        }
         if (g.nucNotify && g.nucNotify.length) {
           const isl = g.nucNotify.shift();
           showToast(`☢️ Centrale ${islandLabel(isl)} en SÉCURITÉ — manque de refroidissement (redémarrage auto dans 5 min)`, 'var(--red)');
@@ -29620,6 +29791,7 @@ function App() {
     onToggleCollider: () => toggleCollider(),
     onBuyResearch: key => buyResearch(key),
     onLaunchCollider: () => launchCollider(),
+    onToggleColliderAuto: () => toggleColliderAuto(),
     onSetElevatorMode: m => setElevatorMode(m),
     onPromoteElevatorCategory: cat => promoteElevatorCategory(cat),
     onAskPort: cost => askPortFor(cost, game.currentIsland)
