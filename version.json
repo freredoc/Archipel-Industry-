@@ -1,8 +1,8 @@
 {
-  "build": 382,
-  "version": "Alpha 14.99",
+  "build": 383,
+  "version": "Alpha 15.0",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Les fiches de bâtiment affichent enfin la consommation électrique des machines à consommation variable (fourchette min – max), le panneau d'amélioration ne dit plus « 0 kW », le tableau Production ne déborde plus des petits écrans, et la Géothermie V2 comme l'Usine Moteur Nucléaire V2 rejoignent la barre d'outils."
+  "notes": "Les petites consommations s'affichent désormais en watts (fini le « 0 kW » des mines V3 et des fours à arc), un reliquat de ressource inutilisable (« ciment irr. ») est purgé des anciennes sauvegardes, et le moteur perd une poignée de champs morts — nettoyage interne, sans effet sur les parties."
 }

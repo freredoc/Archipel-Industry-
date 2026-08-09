@@ -3361,7 +3361,7 @@ const RES_TIER = {
 // l'inventaire du HUD l'afficherait sans sprite, sans nom court et sans tier.
 // `information_quantique` : produite par le Data Center, elle n'avait AUCUN consommateur dans
 // tout le jeu et s'accumulait sans usage. Le Data Center garde son rôle d'émetteur du puzzle.
-const REMOVED_RESOURCES = ['information_quantique'];
+const REMOVED_RESOURCES = ['information_quantique', 'ciment_irradie'];
 // Rang fixe d'affichage (ordre de déclaration de RES_TIER) : chaque ressource garde sa
 // place dans l'inventaire quel que soit l'ordre de déblocage.
 const RES_ORDER_RANK = {};
@@ -8519,8 +8519,15 @@ const SAVE_VERSION = 31;
 // « Élec. » du panneau d'amélioration (qui affichait « 0 kW ») ; `.prod-row` passe en minmax(0,1fr)
 // (fini le débordement de la colonne « Net /s » à 360-390 px) ; geothermie_v2 et usine_moteur_nuc_v2
 // entrent dans TOOLBAR_GROUPS (leur fiche détaillée redevient atteignable). SAVE_VERSION inchangé.
-const GAME_BUILD = 382;
-const GAME_VERSION = 'Alpha 14.99';
+// build 383 / 15.0 (lot 2 « nettoyage d'état », brief BRIEFLOT2ETAT382) — les 12 champs écrits-
+// jamais-lus de l'audit 381 sont RETIRÉS (tour : waterFrom/waterAvail/waterNeed/waterDrawn + le
+// calcul bestPool orphelin ; portes : gateInhCur/gateLive + liveDirs ; collisionneur : confirms/
+// goal/from/dcState/dcRate/wireNid — la fiche recalcule tout) ; les 4 commentaires qui les
+// décrivaient à tort sont réécrits. `fmtPower` gagne une branche W sous 1 kW (zéro exact reste
+// « 0 kW ») ; `ciment_irradie` rejoint REMOVED_RESOURCES (purge idempotente des vieux stocks).
+// SAVE_VERSION inchangé (31) — aucune lecture conditionnée, purge sur le modèle 14.16.
+const GAME_BUILD = 383;
+const GAME_VERSION = 'Alpha 15.0';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8529,7 +8536,7 @@ const GAME_VERSION = 'Alpha 14.99';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les fiches de bâtiment affichent enfin la consommation électrique des machines à consommation variable (fourchette min – max), le panneau d'amélioration ne dit plus « 0 kW », le tableau Production ne déborde plus des petits écrans, et la Géothermie V2 comme l'Usine Moteur Nucléaire V2 rejoignent la barre d'outils.";
+const GAME_NOTES = "Les petites consommations s'affichent désormais en watts (fini le « 0 kW » des mines V3 et des fours à arc), un reliquat de ressource inutilisable (« ciment irr. ») est purgé des anciennes sauvegardes, et le moteur perd une poignée de champs morts — nettoyage interne, sans effet sur les parties.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -9340,6 +9347,11 @@ function fmtPower(kw) {
   if (a >= 1e9) return fmtSig(kw / 1e9) + ' TW';
   if (a >= 1e6) return fmtSig(kw / 1e6) + ' GW';
   if (a >= 1e3) return fmtSig(kw / 1e3) + ' MW';
+  // 15.0 — Branche W : la chaine s'arretait au kilowatt, donc toute conso sous 1 kW
+  // (mines V3 a 0,25 kW, four a arc a 0,25 kW, mine_fer_v2 a 0,125 kW) s'imprimait
+  // « 0 kW ». Symetrique de `fmtHeat`, qui a deja sa branche kJ. Le zero EXACT reste
+  // en kW : un bilan net nul doit se lire « 0 kW », pas « 0 W ».
+  if (a > 0 && a < 1) return Math.round(kw * 1000) + ' W';
   return Math.round(kw) + ' kW';
 }
 // Chaleur (donnée en MJ) : MÊME échelle d'unités que l'électricité (fmtPower) — kJ < 1 MJ
@@ -10846,7 +10858,7 @@ function processHeat(game, isl) {
       up = Math.pow(2, bld.upgrade || 0);
     // ── 14.36 — REFROIDISSEUR : la boucle bâtiment a DÉJÀ payé l'élec + le fluide et posé `regime`.
     //    On ne prélève RIEN ici et on n'écrase AUCUN champ d'état (active / disc / inFac / pwrAvg /
-    //    regime / waterFrom…) : ils viennent de la boucle bâtiment et doivent rester intacts.
+    //    regime…) : ils viennent de la boucle bâtiment et doivent rester intacts.
     //    processHeat tourne APRÈS elle (et après le lissage de pwrAvg) → `regime` est à jour.
     if (BUILDINGS[bld.id] && BUILDINGS[bld.id].cooler) {
       to.absorb = coolerEffective(bld).absorb * up * Math.max(0, Math.min(1, bld.regime || 0));
@@ -10865,23 +10877,11 @@ function processHeat(game, isl) {
     let drawn = 0,
       pnid = null;
     for (const nid of pipeIds) if (nets[nid] && nets[nid].connected) { pnid = nid; break; }
-    // 14.18 — On MÉMORISE d'où la tour boit et ce qu'il y avait. Sans ça, une tour à sec affichait
-    // « Eau 0 % » sans dire OÙ chercher : sur la save du joueur, une tour à 0 % était branchée sur
-    // le tuyau RELIÉ AU PORT (donc elle lit le stock du PORT) pendant que toute l'eau de l'île
-    // s'entassait dans les CITERNES de tuyaux isolés — d'où « la tour bloque le tuyau ».
-    bld.waterFrom = pipeIds.length ? (pnid != null ? 'port' : 'pool') : null;
     if (pnid != null) {
       const avail = port['eau'] || 0;
-      bld.waterAvail = avail;
       drawn = Math.min(need, avail);
       port['eau'] = avail - drawn;
     } else {
-      let bestPool = 0;
-      for (const nid of pipeIds) {
-        const pl = nets[nid] && nets[nid].pool;
-        if (pl && (pl['eau'] || 0) > bestPool) bestPool = pl['eau'] || 0;
-      }
-      bld.waterAvail = bestPool;
       for (const nid of pipeIds) {
         const pl = nets[nid] && nets[nid].pool;
         if (pl && (pl['eau'] || 0) > 1e-9) {
@@ -10913,8 +10913,6 @@ function processHeat(game, isl) {
     const wf = need > 0 ? drawn / need : 0;
     to.absorb = absorbCap * wf;
     bld.regime = wf;
-    bld.waterNeed = need;   // fiche : « Eau X% · N eau/s »
-    bld.waterDrawn = drawn; // fiche : ce qu'elle a RÉELLEMENT pris ce tick
     // La tour fonctionne à l'EAU (pas d'électricité) : on renseigne inFac/pwrAvg pour que l'icône
     // de déficit affiche « intrants » (eau) et JAMAIS « courant » (sprite électrique trompeur).
     bld.inFac = wf;
@@ -11474,7 +11472,6 @@ function processLogic(game, isl) {
     // et non à l'évaluation — `inNets` est lu par l'UI, il ne doit jamais compter une face morte.
     const inh = gateInhibitedDirs(gt.bld, op);
     const inNets = [],
-      liveDirs = [],
       wiredInh = [];
     for (let d = 0; d < 4; d++) {
       if (d === dir) continue;
@@ -11484,13 +11481,12 @@ function processLogic(game, isl) {
         if (dirNet(gt.r, gt.c, d) != null) wiredInh.push(d);
         continue;
       }
-      liveDirs.push(d);
       const nn = dirNet(gt.r, gt.c, d);
       if (nn != null && inNets.indexOf(nn) === -1) inNets.push(nn);
     }
-    // Miroirs TRANSITOIRES pour l'UI (jamais persistés, recalculés à chaque tick).
-    gt.bld.gateInhCur = inh;
-    gt.bld.gateLive = liveDirs;
+    // Miroir TRANSITOIRE pour l'UI (jamais persisté, recalculé à chaque tick). Les deux autres
+    // miroirs de ce bloc (`gateInhCur`, `gateLive`) ont été retirés en 15.0 : personne ne les
+    // lisait, le panneau recalcule les faces vives par `gateLiveDirs()`.
     gt.bld.gateWiredInh = wiredInh;
     return { gt, outNet, inNets, op };
   });
@@ -11586,7 +11582,6 @@ function processLogic(game, isl) {
       if (!game.techTree) game.techTree = {};
       const gain = Math.max(1, Math.round(co.dcReward || 1));
       game.techTree.colliderConfirms = (game.techTree.colliderConfirms || 0) + gain;
-      co.confirms = game.techTree.colliderConfirms;
       co.lastVerdict = 'ok';
       qSfx(game, 'colliderMatch'); // ⚠ FILE : processLogic est appelée depuis tickIsland
     } else {
@@ -11870,7 +11865,6 @@ function processCollider(game, isl) {
   // valait au dernier tick actif, et une save faite sous l'ancienne règle de palier affichait
   // encore P3 après correctif. Recalculé à chaque tick → aucune migration de save nécessaire.
   co.palier = palier;
-  co.goal = COLLIDER_GOALS[palier] || 0;
   // Le Collisionneur ne tourne que s'il a été RÉPARÉ (nœud de recherche 35 confirmé).
   // Réparé = 1ʳᵉ « Réparation du Collisionneur » confirmée (COLLIDER_REPAIR_NODES[0]).
   const repaired = colliderRepaired(game);
@@ -11930,7 +11924,6 @@ function processCollider(game, isl) {
   if (co.state === 'off' && !co._haltPrev) {
     co.state = 'starting';
     co.timer = 0;
-    co.from = co.cur || 0;
     qSfx(game, 'colliderBoot'); // ⚠ FILE, pas SFX.play : on est dans du code de TICK (cf. qSfx)
   }
   // Conso OSCILLANTE sur 10 min (14.08) : le Collisionneur ne tire plus une puissance FIXE mais
@@ -11961,7 +11954,6 @@ function processCollider(game, isl) {
     co.cur = 0;
     co.he3Used = 0;
     co.palier = palier;
-    co.goal = COLLIDER_GOALS[palier] || 0;
     return;
   }
   const powerOut = co.powered === false;
@@ -12010,7 +12002,6 @@ function processCollider(game, isl) {
     co.want = osc;
     co.state = 'off';
     co.timer = 0;
-    co.from = co.cur || 0;
     co.cur = 0;
     co.code = null;
     co.dcCode = null;
@@ -12018,7 +12009,6 @@ function processCollider(game, isl) {
     co.launched = false;
     if (co.halt === 'fuel') co.enabled = false;
     co.palier = palier;
-    co.goal = COLLIDER_GOALS[palier] || 0;
     return;
   }
   if (co.state === 'starting') {
@@ -12044,7 +12034,6 @@ function processCollider(game, isl) {
   }
   co.want = co.cur; // en marche, demande = consommation réelle
   co.palier = palier;
-  co.goal = COLLIDER_GOALS[palier] || 0;
   // ── Émission des saveurs : uniquement une fois le démarrage terminé ──
   if (co.state === 'running') {
     // 14.16 — UNE MANCHE = un tirage SIMULTANÉ des deux émetteurs, à la CADENCE DU DATA CENTER.
@@ -12061,12 +12050,10 @@ function processCollider(game, isl) {
     // (question du joueur : « est-ce que mettre en pause le data center fait quelque chose ? »).
     const dcTile = findDataCenter(game, isl);
     const dcSt = dataCenterState(dcTile);
-    co.dcState = dcSt;
     if (dcSt === 'on') {
       const eff = dcEffective(dcTile.building);
       co.dcReward = eff.reward;
       co.dcAcc = (co.dcAcc || 0) + eff.rate;
-      co.dcRate = eff.rate; // cadence courante (manches/tick) — affichée dans la fiche
       // 1ʳᵉ manche IMMÉDIATE : sinon la machine reste muette jusqu'à 16 s au niveau 0 juste après
       // le lancement de la séquence, et le joueur compare à du vide.
       if (co.code == null || co.dcCode == null) co.dcAcc = Math.max(co.dcAcc, 1);
@@ -12092,7 +12079,6 @@ function processCollider(game, isl) {
       co.code = null;
       co.dcCode = null;
       co.dcReward = 1;
-      co.dcRate = 0;
     }
   } else {
     co.code = null;
@@ -12379,7 +12365,6 @@ function colliderPenalty(game) {
   if (!co) return;
   co.state = 'off';
   co.timer = 0;
-  co.from = co.cur || 0;
   co.cur = 0;
   co.code = null;
   // 14.15 — on repart d'une manche propre : le Data Center retirera un code au 1er tick de service.
@@ -13963,7 +13948,6 @@ function tickIsland(game, isl) {
     // 14.31 (option 2) — Il faut un CÂBLE. Sans réseau adjacent, aucune alimentation possible :
     // le Collisionneur n'est plus servi par le bilan global de l'île.
     const cwn = colliderWireNid(game, isl);
-    co.wireNid = cwn;
     co.wireOk = cwn != null;
     if (cwn == null) {
       co.powered = false;
@@ -20031,9 +20015,10 @@ function InfoPanel({
       },
       title: I18N.t("La tour doit toucher un CONDUIT (réseau cuivre, chaleur) ET un tuyau d'eau pour évacuer la chaleur d'une source. Sinon elle ne refroidit rien.")
     }, onC ? fmtHeat(absorb) + " / " + fmtHeat(capA) + I18N.t("/s évacués") : iconLabel(I18N.t("⚠ pas relié à un conduit")))),
-    // 14.36 — Ligne « Eau » MASQUÉE pour le Refroidisseur : elle lit `bld.waterNeed`/`waterDrawn`,
-    // jamais renseignés pour lui (il ne puise pas hors boucle). Son fluide apparaît déjà dans la
-    // ligne « Entrées » du rendu standard.
+    // 14.36 — Ligne « Eau » MASQUÉE pour le Refroidisseur : elle décrit le puisage hors boucle de
+    // la tour, que le Refroidisseur ne fait pas. Son fluide apparaît déjà dans la ligne « Entrées »
+    // du rendu standard. (15.0 : la ligne lit `bld.regime` et la demande théorique 256 × 2^niveau ;
+    // elle ne lit PAS `bld.waterNeed`/`waterDrawn`, retirés faute de lecteur.)
     !isCool && React.createElement("div", {
       className: "ip-row"
     }, React.createElement("span", {
