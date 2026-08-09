@@ -1,8 +1,8 @@
 {
-  "build": 381,
-  "version": "Alpha 14.98",
+  "build": 382,
+  "version": "Alpha 14.99",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Le tutoriel ne s'arrête plus au bout de l'île 1 : un chapitre de 4 étapes enchaîne sur la réparation de la liaison maritime, le passage sur l'île 2, la première demande d'import au port et l'amélioration du transit. « Cible ⇒ Réserve » démarre désormais sur OUI en nouvelle partie, pour que ce qu'on importe ne reparte pas aussitôt."
+  "notes": "Les fiches de bâtiment affichent enfin la consommation électrique des machines à consommation variable (fourchette min – max), le panneau d'amélioration ne dit plus « 0 kW », le tableau Production ne déborde plus des petits écrans, et la Géothermie V2 comme l'Usine Moteur Nucléaire V2 rejoignent la barre d'outils."
 }
