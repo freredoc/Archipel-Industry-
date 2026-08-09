@@ -1,8 +1,8 @@
 {
-  "build": 384,
-  "version": "Alpha 15.1",
+  "build": 385,
+  "version": "Alpha 15.2",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "L'interface s'adapte mieux aux petits écrans : la bande d'onglets d'îles ne pousse plus les boutons hors de l'écran (elle défile désormais si besoin), le bouton Recherche ne se fait plus rogner sur certains formats intermédiaires, et les boutons d'action ne s'étirent plus démesurément sur grand écran."
+  "notes": "Téléphone tourné, la carte respire enfin : l'interface se compacte en paysage et rend de 18 à 66 % de hauteur de jeu selon l'appareil (le titre et la deuxième ligne de barre du haut s'effacent, les barres se resserrent). Rien ne change en portrait, ni sur tablette et ordinateur."
 }
