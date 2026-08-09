@@ -1387,6 +1387,34 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   .tab-btn{padding:4px 6px;}
   .tab-btn .tb-name{font-size:.74rem;}
 }
+
+/* ── Lot C : paysage court (telephone tourne, petite fenetre) ──
+   PLACE EN FIN DE FEUILLE A DESSEIN : specificite identique aux regles de base,
+   c'est l'ORDRE qui arbitre. Deplacer ce bloc plus haut le rend inoperant.
+   Garde-fou `max-height` : sans lui, `orientation:landscape` viserait aussi les
+   ecrans de bureau, ou la hauteur n'est pas la ressource rare. */
+@media (orientation:landscape) and (max-height:520px){
+  /* La marque fait 265 px de large : au-dela de 760 px (ou `.hud-brand{display:none}`
+     s'arrete) elle force le HUD a wrapper, soit 42 px de HUD en plus. En paysage la
+     hauteur vaut davantage que l'identite de marque. */
+  .hud-brand{display:none;}
+  .hud{min-height:0;row-gap:3px;padding-bottom:3px;
+    padding-top:max(3px,env(safe-area-inset-top));}
+  /* La regle portrait `@media (max-width:760px)` force `.hud-side{width:100%}` pour figer
+     l'ordre des boutons sur DEUX lignes. En paysage la largeur abonde et la hauteur manque :
+     on annule, le bloc droit revient sur la meme ligne (667x375 : 99 -> 60 px de HUD). */
+  .hud-side{width:auto;margin-left:auto;flex-wrap:nowrap;}
+  .tuto-banner{padding:3px 10px;gap:7px;}
+  .toolbar .tool-group{padding:4px 8px;}
+  .tool-group-inner{gap:2px;}
+  .tool-group-label{display:none;}
+  .tabs-row .tab-btn{padding:4px 8px;}
+  .tabs-row .tab-btn .tb-sub{display:none;}
+  /* NB : aucun plafond sur `.inventory` ici. Le calque de 130 px couvrait la scene de
+     122 px ; il en laisse desormais ~72 visibles grace aux gains ci-dessus. Un plafond
+     en unites viewport a ete ECARTE : ni `vh` ni `dvh` ne se mesurent correctement en
+     paysage emule (30dvh calcule 234 px sur un viewport de 360 de haut). Reliquat. */
+}
 </style>
 </head>
 <body>
@@ -8568,8 +8596,41 @@ const SAVE_VERSION = 31;
 // de texte encore à 12.5px fixe partout (Lot B, `clamp()` sur la racine) ; plancher 26 px encore sous
 // les ~44 px recommandés (à rediscuter au Lot B).
 // SAVE_VERSION inchangé (31) — CSS pur, aucun champ de sauvegarde touché.
-const GAME_BUILD = 384;
-const GAME_VERSION = 'Alpha 15.1';
+// build 385 / 15.2 (LOT C « paysage mobile », brief BRIEFLOTC, patch PRÉ-COMPILÉ ET VÉRIFIÉ) :
+// CSS SEUL, **UN SEUL SITE** — un bloc `@media (orientation:landscape) and (max-height:520px)` ajouté
+// À LA TOUTE FIN du bloc `<style>`. Aucune règle existante modifiée ni supprimée, aucun JS touché.
+// Défaut mesuré : sur téléphone TOURNÉ, le chrome mangeait 60 à 66 % de la hauteur (scène à 122 px
+// sur 360 en S25 FE, 149 px sur 375 en SE). Deux causes précises, invisibles si l'on ne teste que le
+// portrait : (1) `.hud-brand` fait 265 px de large et n'est masquée qu'en `@media (max-width:760px)`
+// → entre 780 et 852 px de large, soit EXACTEMENT un téléphone en paysage, elle est VISIBLE et force
+// le HUD à wrapper (108 px au lieu de 66) ; (2) `.hud-side{width:100%}` de la même media query pousse
+// le bloc droit sur sa propre ligne — délibéré en PORTRAIT (ordre des boutons stable d'un téléphone à
+// l'autre), mais en paysage la largeur abonde et la hauteur manque : la ligne est payée pour rien.
+// Le bloc masque `.hud-brand`, rend `.hud-side` à une seule ligne, et compacte HUD / bannière tuto /
+// groupes d'outils / boutons d'action (label de groupe et `.tb-sub` masqués).
+// ⚠ **LA POSITION EN FIN DE FEUILLE EST LE MÉCANISME, PAS UN DÉTAIL DE RANGEMENT.** Les règles du
+// bloc ont la MÊME SPÉCIFICITÉ que celles de base (`.hud-brand`, `.hud`, `.tuto-banner`…) : c'est
+// l'ORDRE qui arbitre. Déplacer ce bloc plus haut — typiquement « à côté des autres media queries » —
+// le rendrait SILENCIEUSEMENT INOPÉRANT. Vérifié à l'insertion : 0 caractère et 0 `@media` après lui.
+// ⚠ **LE GARDE-FOU `max-height:520px` EST INDISPENSABLE** : `orientation:landscape` est vrai sur TOUT
+// écran de bureau ; sans la borne, le compactage frapperait 1366×768 et 1920×1080.
+// ⚠ **AUCUN PLAFOND SUR `.inventory`** : `vh`/`dvh` sont INUTILISABLES dans ce harnais en paysage
+// émulé (mesuré : `30dvh` calcule 234 px sur un viewport de 360 px de haut). Une contrainte écrite
+// puis RETIRÉE du lot faute d'être vérifiable — ne pas la réintroduire « parce que ça a l'air juste ».
+// Validé : `node --check` 7/7 (blocs 1-6 BYTE-IDENTIQUES au build 384 ; seul le bloc 7, qui porte
+// GAME_BUILD/VERSION/NOTES, change) + suite paysage 10 formats : scène 149→222 (SE), 122→202 (S25 FE),
+// 155→235 (iPhone 15), 216→254 (Pixel 8), soit +18 à +66 % ; HUD ramené à 60 px sur les 4 formats
+// paysage. Les 4 lignes desktop/tablette et les 2 portraits témoins : **inchangés au pixel près**
+// (preuve que la borne joue et que le bloc n'a pas fui hors de sa media query).
+// + non-régression du Lot A rejouée avec la suite INCHANGÉE : 10/10 PASS en état neuf ET à 12 îles.
+// ⚠ `env(safe-area-inset-top)` du HUD paysage NON TESTABLE en headless (toujours 0) — à confirmer sur
+// appareil réel à encoche. ⚠ HORS PÉRIMÈTRE : l'inventaire ouvert reste un calque de 130 px (il
+// couvrait TOUTE la scène avant le lot, il en laisse ~72 px visibles après — reliquat, pas ce lot) ;
+// corps de texte toujours à 12.5 px fixes (Lot B) ; plancher tactile des onglets à 26 px (Lot B) ;
+// la toolbar n'est PAS passée en barre latérale (le lot compacte, il ne réorganise pas).
+// SAVE_VERSION inchangé (31) — CSS pur, aucun champ de sauvegarde touché.
+const GAME_BUILD = 385;
+const GAME_VERSION = 'Alpha 15.2';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8578,7 +8639,7 @@ const GAME_VERSION = 'Alpha 15.1';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "L'interface s'adapte mieux aux petits écrans : la bande d'onglets d'îles ne pousse plus les boutons hors de l'écran (elle défile désormais si besoin), le bouton Recherche ne se fait plus rogner sur certains formats intermédiaires, et les boutons d'action ne s'étirent plus démesurément sur grand écran.";
+const GAME_NOTES = "Téléphone tourné, la carte respire enfin : l'interface se compacte en paysage et rend de 18 à 66 % de hauteur de jeu selon l'appareil (le titre et la deuxième ligne de barre du haut s'effacent, les barres se resserrent). Rien ne change en portrait, ni sur tablette et ordinateur.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
