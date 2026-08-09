@@ -288,11 +288,15 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   verrouillé est **grisé mais CLIQUABLE par design** (il ouvre le popup « Recherche requise ») →
   asserter `disabled === true` est un faux KO, le critère est « classe `locked` **et** 2 clics ne
   densifient rien » ; (e) le `label` d'un bâtiment est **vidé au runtime** par `I18N.applyToData`.
-  ⚠ **ÉCART À LA CONVENTION, SIGNALÉ** : `geothermie_v2` n'est **PAS** dans `TOOLBAR_GROUPS` (le brief
-  dit « pas un bâtiment posable séparément », suivi à la lettre), alors que **15 des 16 paliers y
-  figurent** — la seule autre exception, `usine_moteur_nuc_v2`, est déjà signalée comme une anomalie
-  au mémo 14.46 (sa fiche détaillée devient inatteignable). Même conséquence ici. Une ligne dans le
-  groupe `energy` la fermerait — décision d'Ethan.
+  ⚠ **ÉCART À LA CONVENTION SIGNALÉ ICI, PUIS FERMÉ AU LOT 14.99 (build 382) — Ethan a tranché :
+  « géothermie v2 + usine moteur nucléaire v2 ».** À la livraison 14.95, `geothermie_v2` n'était PAS
+  dans `TOOLBAR_GROUPS` (le brief disait « pas un bâtiment posable séparément », suivi à la lettre)
+  alors que 15 des 16 paliers y figuraient, la seule autre exception étant `usine_moteur_nuc_v2`
+  (anomalie du mémo 14.46). **Les DEUX y sont désormais** — `geothermie_v2` dans `energy`,
+  `usine_moteur_nuc_v2` dans `nuclear`. Vérifié sur la base 383 : **les 42 bâtiments de `TIER_STEP`
+  sont dans la barre d'outils, 0 manquant**, les 2 vignettes s'affichent au menu Bâtiment avec leur
+  coût de pose = `cumulativeInvested` du palier, et leur fiche détaillée (appui long) redevient
+  atteignable. Le paragraphe « à trancher » du mémo 14.46 est donc CADUC.
   ⚠ **HORS PÉRIMÈTRE, non touché** : `antRadius` et tout le code de zone (prémisse du chantier 4), les
   formules de la productivité hors la décision du §4.6, les coûts d'accès aux îles et les
   confirmations 39/41/43, `pwrAvg` et son coefficient, `TOOLBAR_GROUPS`, `SAVE_VERSION`.
@@ -3693,12 +3697,12 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   vraie clé). Liste corrigée en `['bat_usine_moteur_nuc_v2', 'bat_usine_moteur_nucleaire']` (repli V1
   conservé). Mesuré à l'espion `drawImage` : c'est bien **le sprite dédié qui est dessiné, jamais le
   repli**. Frame 0 == statique **au pixel près** (0 px d'écart) → aucun saut au démarrage de l'anim.
-  ⚠ **HORS PÉRIMÈTRE, À TRANCHER (le point le plus important du rapport)** : la MOT2 est le **SEUL**
-  des 16 bâtiments de `TIER_STEP` **absent de `TOOLBAR_GROUPS`** → elle ne s'obtient QUE par
-  densification, jamais par pose directe. Le brief ne demandait pas d'entrée de menu ; une ligne dans le
-  groupe `nuclear` suffirait (le coût de pose serait `cumulativeInvested`, mécanisme en place depuis
-  13.27). Conséquence annexe : sa fiche `BuildingDetailModal` (appui long au MENU) est **inatteignable**,
-  donc la ligne « Exclusif » du §B6 n'est pas observable sur elle.
+  ⚠ **POINT SIGNALÉ ICI, TRANCHÉ ET FERMÉ AU LOT 14.99 (build 382)** : la MOT2 était le SEUL des
+  bâtiments de `TIER_STEP` **absent de `TOOLBAR_GROUPS`** → elle ne s'obtenait QUE par densification,
+  jamais par pose directe, et sa fiche `BuildingDetailModal` (appui long au MENU) était inatteignable.
+  Elle est désormais dans le groupe `nuclear` (avec `geothermie_v2` dans `energy`, même décision) ;
+  le coût de pose est `cumulativeInvested`, mécanisme en place depuis 13.27. **Ne plus le reporter
+  comme une anomalie ouverte.**
   Validé : `node --check` (7 blocs) + Chromium **4 suites, 48 assertions, 0 KO, 0 erreur JS**, suites
   rejouées **2 fois intégralement sans flottement**, en viewport 420 px / DPR 3. **UI RÉELLE** :
   densification par tap canvas sur l'outil Améliorer → `usine_moteur_nuc_v2` Nv.11 et **forfait débité
