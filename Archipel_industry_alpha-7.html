@@ -201,11 +201,11 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   color:var(--ink-dim);padding:6px 0 10px;border-bottom:1px solid var(--line);margin-bottom:6px;}
 .prod-energy .pe-net.ok{color:#7fd98a;}.prod-energy .pe-net.bad{color:#ff8079;}
 .prod-table{display:flex;flex-direction:column;}
-.prod-row{display:grid;grid-template-columns:1fr 88px 88px 92px;align-items:center;gap:4px;
+.prod-row{display:grid;grid-template-columns:minmax(0,1fr) 88px 88px 92px;align-items:center;gap:4px;
   padding:3px 0;font-family:'DM Mono',monospace;font-size:.78rem;border-bottom:1px solid rgba(255,255,255,.05);}
 .prod-row.prod-head{color:var(--ink-dim);font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line);}
-.prod-row .pc-res{display:flex;align-items:center;gap:6px;color:var(--ink);}
-.prod-row .pc-res .inv-ico{width:16px;height:16px;}
+.prod-row .pc-res{display:flex;align-items:center;gap:6px;color:var(--ink);min-width:0;overflow:hidden;}
+.prod-row .pc-res .inv-ico{width:16px;height:16px;flex:0 0 auto;}
 .prod-row .pc-p{text-align:right;color:#9fd9a6;}
 .prod-row .pc-c{text-align:right;color:#e6b673;}
 .prod-row .pc-n{text-align:right;}
@@ -7473,7 +7473,7 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'energy',
   label: 'Énergie',
-  ids: ['eolienne', 'centrale_charbon', 'centrale_charbon_v2', 'centrale_diesel', 'centrale_diesel_v2', 'eolienne_offshore', 'centrale_gaz', 'geothermie', 'accumulateur', 'accumulateur_v2']
+  ids: ['eolienne', 'centrale_charbon', 'centrale_charbon_v2', 'centrale_diesel', 'centrale_diesel_v2', 'eolienne_offshore', 'centrale_gaz', 'geothermie', 'geothermie_v2', 'accumulateur', 'accumulateur_v2']
 }, {
   key: 'cement',
   label: 'Ciment & béton',
@@ -7497,7 +7497,7 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'nuclear',
   label: 'Nucléaire',
-  ids: ['broyeur_uranium', 'centrale_enrichissement', 'centrale_enrichissement_v2', 'centrale_nucleaire', 'centrale_nucleaire_v2', 'tour_aerorefrigerante', 'usine_moteur_nuc', 'antenne', 'antenne_v2']
+  ids: ['broyeur_uranium', 'centrale_enrichissement', 'centrale_enrichissement_v2', 'centrale_nucleaire', 'centrale_nucleaire_v2', 'tour_aerorefrigerante', 'usine_moteur_nuc', 'usine_moteur_nuc_v2', 'antenne', 'antenne_v2']
 }, {
   key: 'tungstene',
   label: 'Tungstène',
@@ -8512,8 +8512,15 @@ const SAVE_VERSION = 31;
 // (tutPlanRemaining, tutPlanAllows, drawTutorialHalo, tutorialRevealed, tutStep) passent par lui.
 // ⚠ PAS de réarmement : une partie dont les 10 premières étapes étaient franchies a
 // `tutorial.active === false` et ne verra jamais ce chapitre. Décision assumée du brief.
-const GAME_BUILD = 381;
-const GAME_VERSION = 'Alpha 14.98';
+// build 382 / 14.99 (lot 1 « panneaux UI », brief BRIEFLOT1UI381) — nouveau helper `basePowerRange`
+// (conso élec. nominale d'un TYPE au Nv.1 ; fourchette pour sigmoïde/aléatoire, et pour les fours à
+// arc via ARC_DEF — leur `randomP` déclaré n'est qu'un repli, l'afficher serait FAUX) branché sur la
+// fiche détaillée (appui long, qui n'affichait AUCUNE ligne élec. pour 36 bâtiments) et sur la ligne
+// « Élec. » du panneau d'amélioration (qui affichait « 0 kW ») ; `.prod-row` passe en minmax(0,1fr)
+// (fini le débordement de la colonne « Net /s » à 360-390 px) ; geothermie_v2 et usine_moteur_nuc_v2
+// entrent dans TOOLBAR_GROUPS (leur fiche détaillée redevient atteignable). SAVE_VERSION inchangé.
+const GAME_BUILD = 382;
+const GAME_VERSION = 'Alpha 14.99';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8522,7 +8529,7 @@ const GAME_VERSION = 'Alpha 14.98';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Le tutoriel ne s'arrête plus au bout de l'île 1 : un chapitre de 4 étapes enchaîne sur la réparation de la liaison maritime, le passage sur l'île 2, la première demande d'import au port et l'amélioration du transit. « Cible ⇒ Réserve » démarre désormais sur OUI en nouvelle partie, pour que ce qu'on importe ne reparte pas aussitôt.";
+const GAME_NOTES = "Les fiches de bâtiment affichent enfin la consommation électrique des machines à consommation variable (fourchette min – max), le panneau d'amélioration ne dit plus « 0 kW », le tableau Production ne déborde plus des petits écrans, et la Géothermie V2 comme l'Usine Moteur Nucléaire V2 rejoignent la barre d'outils.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -14549,6 +14556,32 @@ function maxEnergyBalance(game) {
   return m;
 }
 // A building is an energy consumer if it draws power (fixed, sigmoid, or random).
+// 14.99 — Conso elec. NOMINALE d'un TYPE de batiment (sans instance), au niveau 1.
+// `nominalPower`/`minPower` exigent un `bld` (upgrade, qStab, arcEffective) : inutilisables
+// par la fiche detaillee et par la ligne « Elec. » du panneau d'amelioration, qui decrivent
+// le TYPE. Sans cela ces deux sites lisent `b.power`, NUL pour tous les batiments a conso
+// sigmoidale ou aleatoire → ligne absente (fiche) ou « 0 kW » affiche (amelioration).
+// Fours a arc : la conso depend du MODE choisi (ARC_DEF.modes) et non de `b.randomP`,
+// simple repli — d'ou une fourchette bornee par l'ensemble des modes.
+// Retourne {min, max} au niveau 1 ; min === max ⇔ conso fixe.
+function basePowerRange(id) {
+  const b = BUILDINGS[id];
+  if (!b) return { min: 0, max: 0 };
+  const arc = ARC_DEF[id];
+  if (arc && arc.modes) {
+    let lo = Infinity, hi = 0;
+    for (const k in arc.modes) {
+      const m = arc.modes[k];
+      lo = Math.min(lo, m.powBase);
+      hi = Math.max(hi, m.powBase + m.powAmp);
+    }
+    if (hi > 0) return { min: lo, max: hi };
+  }
+  if (b.sigmoid) return { min: b.sigmoid.base, max: b.sigmoid.base + b.sigmoid.amp };
+  if (b.randomP) return { min: b.randomP.min, max: b.randomP.max };
+  const p = b.power || 0;
+  return { min: p, max: p };
+}
 function isEnergyConsumer(id) {
   const b = BUILDINGS[id];
   if (!b) return false;
@@ -18242,7 +18275,8 @@ function BuildingDetailModal({
   if (b.cooler) addRow(I18N.t('Fluides'), coolerModesAvailable(cryoOk).map(k => I18N.t(COOLER_DEF.modes[k].label)).join(' · '), true);
   else if (b.inputs && Object.keys(b.inputs).length) addRow(I18N.t('Entrées'), resChips(b.inputs, true).concat(I18N.t(' /s')), true);
   if (Object.keys(outMat).length) addRow(I18N.t('Sorties'), resChips(outMat, true).concat(I18N.t(' /s')), true);
-  if (b.power > 0) addRow(I18N.t('Conso. élec.'), fmtPower(b.power));
+  const pwR = basePowerRange(id);
+  if (pwR.max > 0) addRow(I18N.t('Conso. élec.'), pwR.min === pwR.max ? fmtPower(pwR.max) : fmtPower(pwR.min) + ' – ' + fmtPower(pwR.max));
   if (energyOut > 0) addRow(I18N.t('Prod. élec.'), fmtPower(energyOut), true);
   if (b.accumulator) addRow(I18N.t('Stockage'), I18N.t('batterie (élec.)'));
   // 14.31 — RÉSEAUX NÉCESSAIRES : rien n'indiquait quels réseaux amener au bâtiment ; le joueur
@@ -20731,11 +20765,11 @@ function UpgradePanel({
     className: "lbl"
   }, "\xC9lec."), React.createElement("span", {
     className: "cur"
-  }, fmtPower((b.power || 0) * mult)), React.createElement("span", {
+  }, fmtPower(basePowerRange(bld.id).max * mult)), React.createElement("span", {
     className: "arr"
   }, "\u2192"), React.createElement("span", {
     className: "nxt"
-  }, fmtPower((b.power || 0) * nextMult)))), React.createElement("div", {
+  }, fmtPower(basePowerRange(bld.id).max * nextMult)))), React.createElement("div", {
     className: "up-cost"
   }, React.createElement("span", {
     className: "lbl"
