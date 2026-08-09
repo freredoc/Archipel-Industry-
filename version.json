@@ -1,8 +1,8 @@
 {
-  "build": 383,
-  "version": "Alpha 15.0",
+  "build": 384,
+  "version": "Alpha 15.1",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Les petites consommations s'affichent désormais en watts (fini le « 0 kW » des mines V3 et des fours à arc), un reliquat de ressource inutilisable (« ciment irr. ») est purgé des anciennes sauvegardes, et le moteur perd une poignée de champs morts — nettoyage interne, sans effet sur les parties."
+  "notes": "L'interface s'adapte mieux aux petits écrans : la bande d'onglets d'îles ne pousse plus les boutons hors de l'écran (elle défile désormais si besoin), le bouton Recherche ne se fait plus rogner sur certains formats intermédiaires, et les boutons d'action ne s'étirent plus démesurément sur grand écran."
 }
