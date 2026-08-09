@@ -1,8 +1,8 @@
 {
-  "build": 385,
-  "version": "Alpha 15.2",
+  "build": 386,
+  "version": "Alpha 15.3",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Téléphone tourné, la carte respire enfin : l'interface se compacte en paysage et rend de 18 à 66 % de hauteur de jeu selon l'appareil (le titre et la deuxième ligne de barre du haut s'effacent, les barres se resserrent). Rien ne change en portrait, ni sur tablette et ordinateur."
+  "notes": "Sur grand écran, l'interface cesse d'être minuscule : elle passe à 150 % à partir de 1400×800 et à 200 % au-delà de 2400×1300 — texte, icônes et menus grossissent d'un seul tenant et restent nets (paliers entiers, pixel art oblige). Rien ne change sur téléphone, tablette ou petit écran."
 }
