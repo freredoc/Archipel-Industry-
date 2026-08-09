@@ -184,3 +184,27 @@ exactement aux valeurs annoncées par le brief — un patch réellement pré-com
 - **`index.html` / `version.json` / `sw.js`** : non modifiés dans cette branche (convention du
   projet : ils sont régénérés par la CI depuis `Archipel_industry_alpha-7.html` après un merge sur
   `main`, étapes « Sync PWA » / « Sync version.json »). Rien à faire de plus côté session.
+
+## 8. Livraison — issue effective
+
+| | |
+|---|---|
+| Branche | `claude/new-session-8itu4m` |
+| PR | **[#368](https://github.com/freredoc/Archipel-Industry-/pull/368) — MERGÉE** |
+| Commit du lot | `269579a` |
+| Merge sur `main` | `4327a00` |
+| État vérifié sur `main` | `GAME_BUILD = 384`, `GAME_VERSION = 'Alpha 15.1'` |
+
+Le §6.3 ci-dessus était rédigé au futur (« une PR sera ouverte ») : elle l'a été, puis mergée — le
+Lot A est donc **livré sur `main`**, patch et rapport compris.
+
+**Suite côté CI (aucune action requise) :** le workflow `android.yml` ne se déclenche que sur push
+vers `main` ou dispatch manuel — il n'a donc pas tourné sur la branche de PR, et c'est le merge qui
+l'amorce. Ses étapes à effet de bord (« Sync version.json » → push sur `main`, « Publish » → release
+`apk-latest`) sont gatées sur `refs/heads/main` : `version.json` et `sw.js` seront resynchronisés
+depuis `GAME_BUILD = 384` / `GAME_NOTES`, et les deux APK (publique + dev) republiés, sans
+intervention.
+
+⚠ **Note pour le lot suivant** : `RAPPORT-lotA.md` (le nom demandé par le brief) reste occupé par le
+rapport du build 379. Si un brief futur redemande ce nom, refaire le même arbitrage — vérifier
+l'existant avant d'écrire, ne jamais écraser un rapport suivi dans git.
