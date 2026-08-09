@@ -43,14 +43,24 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 
 /* ── HUD ── */
 .hud{display:flex;align-items:center;gap:10px;padding:6px 12px;background:var(--panel);
-  border-bottom:1px solid var(--line);flex-shrink:0;min-height:46px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;}
+  border-bottom:1px solid var(--line);flex-shrink:0;min-height:46px;flex-wrap:wrap;row-gap:6px;
+  overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--line) transparent;
+  padding-left:max(12px,env(safe-area-inset-left));
+  padding-right:max(12px,env(safe-area-inset-right));
+  padding-top:max(6px,env(safe-area-inset-top));}
 .hud::-webkit-scrollbar{height:5px;}
 .hud::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
 .hud-brand{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;letter-spacing:.06em;
   color:var(--ink);line-height:1;white-space:nowrap;}
 .hud-brand b{color:var(--yellow);}
 /* 5 onglets d'île côte à côte ; rétrécissent pour ne jamais déborder. */
-.island-tabs{display:flex;align-items:center;gap:3px;min-width:0;flex-shrink:1;}
+.island-tabs{display:flex;align-items:center;gap:3px;min-width:0;flex-shrink:1;
+  flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;touch-action:pan-x;}
+.island-tabs::-webkit-scrollbar{display:none;}
+/* Plancher tactile : les onglets ne se compriment plus (ils tombaient a 5 px a 12 iles),
+   c'est la bande qui defile. Specificite 0,2,0 : bat les @media 560/380 ou qu'elles soient. */
+.island-tabs .island-tab{flex:0 0 auto;width:26px;min-width:26px;}
 .island-tab{font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:.04em;
   background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
   min-width:0;flex:0 1 30px;width:30px;height:28px;padding:0;border-radius:4px;cursor:pointer;
@@ -304,7 +314,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 /* HUD groupé en deux blocs : gauche (Options/Aide/Île) et droite (Réparer/Port/Recherche/Énergie).
    Sur écran étroit le bloc droit passe à la ligne et comble le vide laissé par « Réparer ». */
 .hud-grp{display:flex;align-items:center;gap:8px;min-width:0;}
-.hud-main{flex-shrink:0;}
+.hud-main{flex-shrink:1;min-width:0;max-width:100%;}
 .hud-side{flex-wrap:wrap;gap:6px;margin-left:auto;}
 .hud-side .stocks{flex:0 0 auto;overflow:visible;}
 /* ── Bandeau tutoriel (sous le HUD) ── */
@@ -1103,7 +1113,9 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .toolbar{flex-shrink:0;background:var(--panel);border-top:1px solid var(--line);
   display:flex;align-items:stretch;gap:0;overflow-x:auto;scrollbar-width:thin;
   scrollbar-color:var(--line) transparent;}
-.toolbar-wrap{flex-shrink:0;display:flex;flex-direction:column;}
+.toolbar-wrap{flex-shrink:0;display:flex;flex-direction:column;
+  padding-bottom:env(safe-area-inset-bottom);
+  padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
 /* Bouton flottant surface ↔ souterrain (île 6 ⇄ 7). Sur le côté droit, au-dessus de la barre
    d'actions ; visible seulement quand l'île 7 est débloquée et qu'on est sur l'île 6 ou 7. */
 /* Bouton souterrain : en haut à droite, sous la barre d'inventaire / la zone d'alertes (13.90). */
@@ -1166,7 +1178,8 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 /* Barre d'onglets du bas : 5 onglets répartis sur toute la largeur, jamais coupés. */
 .tool-group.tabs{flex:1 1 auto;margin-left:0;border-left:none;}
 .tool-group.tabs .tool-group-inner{width:100%;}
-.tabs-row{display:flex;flex-wrap:nowrap;gap:4px;width:100%;}
+.tabs-row{display:flex;flex-wrap:nowrap;gap:4px;width:100%;justify-content:flex-start;}
+.tabs-row .tab-btn{max-width:200px;}
 .tabs-row .tab-btn{flex:1 1 0;min-width:0;align-items:center;text-align:center;padding:6px 4px;}
 .tabs-row .tab-btn .tb-top{flex-direction:column;justify-content:center;gap:2px;}
 .tabs-row .tab-btn .tab-ico{font-size:1rem;}
@@ -1326,7 +1339,7 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 /* ── Mobile: show everything (wrap, no horizontal scroll), drop the game title ── */
 @media (max-width:760px){
   .hud-brand{display:none;}
-  .hud{flex-wrap:wrap;overflow-x:visible;row-gap:6px;}
+  /* wrap desormais porte par la regle de base ; on garde le bloc pour l'override mobile. */
   /* 2ᵉ ligne fixe : énergie + Port + Recherche restent sur UNE seule ligne, dans le
      même ordre quel que soit le téléphone (pas de retour à la ligne aléatoire). */
   .hud-side{margin-left:0;width:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
@@ -8526,8 +8539,37 @@ const SAVE_VERSION = 31;
 // décrivaient à tort sont réécrits. `fmtPower` gagne une branche W sous 1 kW (zéro exact reste
 // « 0 kW ») ; `ciment_irradie` rejoint REMOVED_RESOURCES (purge idempotente des vieux stocks).
 // SAVE_VERSION inchangé (31) — aucune lecture conditionnée, purge sur le modèle 14.16.
-const GAME_BUILD = 383;
-const GAME_VERSION = 'Alpha 15.0';
+// build 384 / 15.1 (LOT A « dimensionnement UI », brief BRIEFLOTA, patch PRÉ-COMPILÉ ET VÉRIFIÉ) :
+// CSS SEUL, 6 sites dans le bloc `<style>` unique, AUCUN JS touché. Défaut mesuré (pas supposé) :
+// `.hud-main{flex-shrink:0}` empêchait le groupe gauche du HUD de se comprimer et `.island-tabs` ne
+// défilait pas → à 320-360 px la bande d'onglets poussait `.hud-grp` hors écran (jusqu'à 63 px), et
+// le wrap du HUD n'existait qu'en `@media (max-width:760px)` → entre 761 et ~820 px le bouton
+// RECHERCHE était rogné. Sur grand écran, les boutons d'action s'étiraient jusqu'à 373 px l'unité.
+// A1a/A1b — `.island-tabs` devient DÉFILANTE (`overflow-x:auto`, scrollbar masquée, `touch-action:
+// pan-x`) avec un PLANCHER tactile 26px/onglet (spécificité 0,2,0 — bat les `@media` 560/380 px quelle
+// que soit leur position, volontaire) ; `.hud-main` passe `flex-shrink:1`. Sans ce plancher, chaque
+// île débloquée compressait un peu plus tous les onglets (mesuré : 19 px à 6 îles, 5 px à 12 îles) —
+// défaut de SCALABILITÉ, réglé par anticipation de la « vraie île 7 ».
+// A2a/A2b — `.hud` wrappe par défaut dès que le contenu déborde (`flex-wrap:wrap`, ne se déclenche QUE
+// si nécessaire — 1024/1280/1366/1920 restent à 66 px de HUD, mesuré INCHANGÉ) + paddings en
+// `max(valeur, env(safe-area-inset-*))` haut/gauche/droite.
+// A3 — `.tabs-row .tab-btn{max-width:200px}` (le `flex:1 1 0` mobile est conservé, seul l'étirement
+// desktop est coupé). A4 — `.toolbar-wrap` reçoit `env(safe-area-inset-*)` bas/gauche/droite (delta
+// nul sans encoche, vérifié sur les 10 viewports).
+// ⚠ `env(safe-area-inset-*)` NON TESTABLE en headless (toujours 0) — posé pour les builds store, à
+// confirmer sur appareil réel à encoche (non validé ici).
+// Validé : `node --check` 7/7 (blocs 1-6 BYTE-IDENTIQUES avant/après le bump, seul le bloc 7 qui porte
+// GAME_BUILD/VERSION/NOTES change légitimement) + suite Playwright 10 viewports × 2 (état neuf, 12 îles
+// simulées par clonage d'onglets — AUCUN déblocage requis) : la suite INCHANGÉE passe de **5 KO→10/10**
+// (état neuf) et **7 KO→10/10** (12 îles). Non-régression : hauteur du HUD inchangée à 66 px (desktop)
+// et 108 px (mobile portrait) ; seul écart accepté 106→108 px en paysage/iPad P (le HUD wrappe au lieu
+// de rogner un bouton, scène 124→122 px).
+// ⚠ HORS PÉRIMÈTRE (assumé, lots suivants) : paysage mobile encore à ~122 px de scène (Lot C) ; corps
+// de texte encore à 12.5px fixe partout (Lot B, `clamp()` sur la racine) ; plancher 26 px encore sous
+// les ~44 px recommandés (à rediscuter au Lot B).
+// SAVE_VERSION inchangé (31) — CSS pur, aucun champ de sauvegarde touché.
+const GAME_BUILD = 384;
+const GAME_VERSION = 'Alpha 15.1';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8536,7 +8578,7 @@ const GAME_VERSION = 'Alpha 15.0';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les petites consommations s'affichent désormais en watts (fini le « 0 kW » des mines V3 et des fours à arc), un reliquat de ressource inutilisable (« ciment irr. ») est purgé des anciennes sauvegardes, et le moteur perd une poignée de champs morts — nettoyage interne, sans effet sur les parties.";
+const GAME_NOTES = "L'interface s'adapte mieux aux petits écrans : la bande d'onglets d'îles ne pousse plus les boutons hors de l'écran (elle défile désormais si besoin), le bouton Recherche ne se fait plus rogner sur certains formats intermédiaires, et les boutons d'action ne s'étirent plus démesurément sur grand écran.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
