@@ -1388,6 +1388,43 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   .tab-btn .tb-name{font-size:.74rem;}
 }
 
+/* ── Lot B : paliers entiers d'echelle de l'interface ──
+   INSERE AVANT LE BLOC LOT C A DESSEIN : le Lot C doit rester le DERNIER bloc de la
+   feuille (son arbitrage repose sur l'ordre ; cf. RAPPORT-lotC-paysage, controle
+   << 0 caractere / 0 @media apres le bloc >>). Le Lot B ne redeclare aucune propriete
+   du Lot C -- il n'ajoute que `--ui-scale` et `zoom` -- donc l'ordre entre eux est neutre.
+
+   POURQUOI `zoom` ET PAS UNE RACINE FLUIDE : le jeu est en pixel art. 33 regles portent
+   `image-rendering:pixelated`, dont 15 avec des dimensions figees (.ui-ico 16x16,
+   .tool-btn .tb-spr 22x22, .arch-ile 104x104...) et 26 cadres `border-image`. Faire varier
+   `html{font-size}` grossit le TEXTE (244 rem) mais laisse les sprites sur place : les
+   proportions derivent. `zoom` redimensionne la boite ENTIERE -- texte, sprites, bordures,
+   paddings en px -- d'un seul facteur, et RECALCULE le layout (contrairement a
+   `transform:scale`, qui deformerait sans reflow et ferait deborder).
+
+   PALIERS ENTIERS (x1 / x1.5 / x2) et non un `clamp()` continu : toutes les dimensions de
+   sprites du fichier sont PAIRES, donc x1.5 et x2 les laissent sur des entiers (16->24->32).
+   Un facteur continu (1.36...) placerait les sprites hors grille pixel.
+
+   ZOOM APPLIQUE AUX CONTENEURS DE CHROME, JAMAIS A `.app` NI A `.stage` :
+   mesure faite, `zoom` sur `.app` fait TOMBER LE BUFFER DU CANVAS de 1920 a 1280 sur un
+   ecran 1920 (le jeu dimensionne son canvas sur la largeur CSS, que le zoom divise) --
+   soit une PERTE DE RESOLUTION sur du pixel art. Ne pas << simplifier >> en zoomant `.app`.
+
+   SEUILS : calibres pour que la largeur INTERNE (largeur / facteur) reste au-dessus de
+   ~930 px, sinon le HUD wrappe et le gain de lisibilite est paye d'une ligne de chrome en
+   plus (mesure : a x1.5 sur 1351 px, HUD 99 -> 162 px). Le seuil x2 exige 2400x1300 : un
+   1920x1080 reste a x1.5, ou son HUD tient sur une ligne.
+
+   DEGRADATION : sans support de `zoom`, `--ui-scale` est ignore et l'interface reste a x1 --
+   exactement le rendu d'aujourd'hui. Aucun ecran ne casse. */
+:root{--ui-scale:1;}
+@media (min-width:1400px) and (min-height:800px){:root{--ui-scale:1.5;}}
+@media (min-width:2400px) and (min-height:1300px){:root{--ui-scale:2;}}
+.hud-stack,.tuto-banner,.toolbar-wrap,
+.alerts-panel,.res-pop,.mode-modal,.research-panel,.rd-popup,.tip-popup,
+.slot-panel,.catchup-overlay,.underground-btn,.logiclayer-btn{zoom:var(--ui-scale);}
+
 /* ── Lot C : paysage court (telephone tourne, petite fenetre) ──
    PLACE EN FIN DE FEUILLE A DESSEIN : specificite identique aux regles de base,
    c'est l'ORDRE qui arbitre. Deplacer ce bloc plus haut le rend inoperant.
@@ -8629,8 +8666,43 @@ const SAVE_VERSION = 31;
 // corps de texte toujours à 12.5 px fixes (Lot B) ; plancher tactile des onglets à 26 px (Lot B) ;
 // la toolbar n'est PAS passée en barre latérale (le lot compacte, il ne réorganise pas).
 // SAVE_VERSION inchangé (31) — CSS pur, aucun champ de sauvegarde touché.
-const GAME_BUILD = 385;
-const GAME_VERSION = 'Alpha 15.2';
+// build 386 / 15.3 (LOT B « paliers entiers d'échelle », brief BRIEFLOTB, patch PRÉ-COMPILÉ) : CSS
+// SEUL, **UN SEUL SITE** — un bloc `--ui-scale` + `zoom` inséré **immédiatement AVANT le bloc Lot C**
+// (qui DOIT rester le dernier de la feuille, son arbitrage repose sur l'ordre ; contrôle « 0 car. /
+// 0 @media après lui » REJOUÉ après insertion : toujours vrai). L'interface passe à ×1,5 dès
+// 1400×800 et à ×2 dès 2400×1300 ; téléphones, tablettes et paysage restent à ×1.
+// POURQUOI `zoom` ET PAS UNE RACINE FLUIDE : le jeu est en PIXEL ART — 33 règles
+// `image-rendering:pixelated` dont 15 à dimensions figées (.ui-ico 16×16, .tb-spr 22×22…) et
+// 26 cadres `border-image`. Faire varier `html{font-size}` grossirait le TEXTE (244 rem) en laissant
+// les sprites sur place ; `zoom` redimensionne la boîte ENTIÈRE et RECALCULE le layout (contrairement
+// à `transform:scale`, qui déformerait sans reflow). PALIERS ENTIERS ×1/×1,5/×2 : toutes les
+// dimensions de sprites du fichier sont PAIRES → 16→24→32, jamais hors grille pixel.
+// ⚠ **ZOOM SUR LES CONTENEURS DE CHROME, JAMAIS SUR `.app` NI `.stage`** : mesuré, `zoom` sur `.app`
+// fait TOMBER LE BUFFER DU CANVAS de 1920 à 1280 (le jeu dimensionne son canvas sur la largeur CSS,
+// que le zoom divise) — perte de résolution sur du pixel art. Les 13 sélecteurs couvrent le chrome
+// ET les overlays en `position:fixed`, qui sinon resteraient à ×1.
+// ⚠ **SEUILS CALIBRÉS, PAS CHOISIS** : la largeur INTERNE (largeur ÷ facteur) doit rester > ~930 px,
+// sinon le HUD wrappe et le gain se paie d'une ligne de chrome (mesuré : ×1,5 sur 1351 px → HUD
+// 99→162 px). C'est pourquoi ×2 exige 2400×1300 — un 1920×1080 reste à ×1,5. ⚠ Si un lot futur
+// ÉLARGIT le HUD, recalibrer les seuils (symptôme : saut de hauteur du HUD juste après une borne,
+// visible dans scaleverify.js). Dégradation : sans support de `zoom`, tout reste à ×1 — rendu actuel.
+// ⚠ **`verify2.js` REMPLACÉE PAR `verify3.js`, ET CE N'EST PAS UN RELÂCHEMENT** : elle assertait
+// « bouton ≤ 200 px » en PIXELS ÉCRAN ; sous zoom 1,5 un bouton conforme à `max-width:200px` en fait
+// légitimement 300 — c'est l'UNITÉ qui était fausse. verify3 divise par le zoom cumulé (diff d'UNE
+// ligne, vérifié). Pouvoir de détection PROUVÉ à l'identique : base 383 → 5 KO / 7 KO, base 385 →
+// 10/10, verdicts IDENTIQUES verify2/verify3 partout où le zoom vaut 1.
+// Validé : `node --check` 7/7 (blocs 1-6 byte-identiques, seul le bloc 7 bouge) + scaleverify.js
+// 12 viewports : base 5 KO → **12/12 PASS**, bornes testées de part et d'autre (1399→×1 / 1400→×1,5 /
+// 2399→×1,5 / 2400→×2), sprites 16→24→32 ENTIERS aux trois paliers, buffer canvas INTACT sur les 12
+// (aucune perte de résolution) + verify3 10/10 (état neuf ET 12 îles) + landv.js STRICTEMENT
+// identique au Lot C (les 4 paysages restent à ×1 — aucun palier ne fuit vers le paysage).
+// ⚠ LIMITES ASSUMÉES : ×1,5 sur du pixel art = pixels source inégaux (1 ou 2 px écran) de près —
+// compromis accepté, net à distance normale ; scène −11 % à ×1,5 (1920) et −18 % à ×2 (2400), prix de
+// la lisibilité ; tablettes/laptops courts (hauteur < 800) restent à ×1 ; ne PAS convertir les
+// sprites en rem ni poser de clamp() sur html{font-size} — voie écartée, sortirait de la grille.
+// SAVE_VERSION inchangé (31) — CSS pur, aucun champ de sauvegarde touché.
+const GAME_BUILD = 386;
+const GAME_VERSION = 'Alpha 15.3';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8639,7 +8711,7 @@ const GAME_VERSION = 'Alpha 15.2';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Téléphone tourné, la carte respire enfin : l'interface se compacte en paysage et rend de 18 à 66 % de hauteur de jeu selon l'appareil (le titre et la deuxième ligne de barre du haut s'effacent, les barres se resserrent). Rien ne change en portrait, ni sur tablette et ordinateur.";
+const GAME_NOTES = "Sur grand écran, l'interface cesse d'être minuscule : elle passe à 150 % à partir de 1400×800 et à 200 % au-delà de 2400×1300 — texte, icônes et menus grossissent d'un seul tenant et restent nets (paliers entiers, pixel art oblige). Rien ne change sur téléphone, tablette ou petit écran.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
