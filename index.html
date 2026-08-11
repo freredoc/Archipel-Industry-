@@ -8803,16 +8803,57 @@ const SAVE_VERSION = 31;
 // réparation, lue sur le MÊME compteur `dmgTimer` (aucun champ nouveau).
 // ⚠ DEMANDE JOUEUR, HORS BRIEF — LE BRIEF LAISSAIT CE POINT OUVERT et le signalait comme tel :
 // « l'arbitrage supprime l'avantage de TEMPS, pas celui de PRIX ». Il est fermé ici. Démolir un
-// bâtiment ENDOMMAGÉ ne rend plus que 80 % : la retenue vaut EXACTEMENT le prix de la réparation
-// (même constante, même arrondi supérieur), donc réparer et démolir-reposer coûtent enfin la même
-// chose et le choix redevient un choix. Sans cela, la réparation restait purement dominée.
+// bâtiment ENDOMMAGÉ ne rend plus que 80 % : même taux que la réparation, même arrondi supérieur.
+// La réparation n'est donc plus dominée, ce qui était le but.
+// ⚠ RECTIFICATION (15.x) : le même TAUX ne fait pas le même PRIX. La réparation facture 20 % de
+// `buildingTotalCost` (le bâtiment tel qu'il est), la démolition retient 20 % de
+// `cumulativeInvested` (TOUT l'investissement depuis la V1, chaîne de paliers comprise). Les deux
+// coïncident sur un bâtiment sans palier ; ils divergent fortement sinon — mesuré sur une partie
+// de fin : `centrale_enrichissement_v2` Nv.16, 3 312 069 acier perdus à la démolition contre 0
+// acier facturé à la réparation, l'acier ayant été dépensé sur la V1. L'écart est CONNU ET
+// ASSUMÉ (arbitrage Ethan) : il pousse vers la réparation sur les gros paliers. Ne pas le
+// « corriger » en croyant lire un bug.
 // ⚠ Le taux de 20 % était codé EN DUR à DEUX endroits (aperçu de la fiche et paiement de
 // `tryHeatRepair`) sans rien pour les tenir ensemble ; la démolition en aurait fait un TROISIÈME.
 // Nouvelle constante `HEAT_REPAIR_FRAC`, trois lecteurs, un seul chiffre. La retenue enveloppe
 // TOUTES les voies de remboursement (jonction comprise) : une jonction ne peut pas surchauffer
 // aujourd'hui, mais un helper limité à une branche rouvrirait la faille en silence demain.
-const GAME_BUILD = 389;
-const GAME_VERSION = 'Alpha 15.6';
+// 15.7 — LOT L6 (notifications), brief `BRIEFlotL6notifications` appliqué par patcheur pré-compilé :
+// 11 ancres à `count == 1`, SHA du fichier patché CONFORME au caractère près (`1fe5ec07…`).
+// SAVE_VERSION INCHANGÉ (31), aucune migration.
+// (1) ⚠ LA PASTILLE DE RECHERCHE APRÈS UNE ABSENCE — CE N'ÉTAIT PAS UN OUBLI D'AFFICHAGE.
+// `researchReady` est une file de notifications À USAGE UNIQUE : le tick y pousse un nœud une seule
+// fois, protégé par `node.notified`, et la boucle de frame la consomme. Or `finishCatchUp` VIDAIT
+// les deux files SANS RIEN RECALCULER, alors que le chemin de chargement, lui, les vide PUIS
+// rallume la pastille (`setResearchPending(hasPendingResearch(g))`). Un nœud devenu validable
+// PENDANT l'absence voyait donc sa notification créée par le tick puis DÉTRUITE — et `notified`
+// étant déjà vrai, il n'était PLUS JAMAIS réannoncé : prêt et muet pour toujours. Le correctif est
+// UNE ligne, strictement symétrique de celle qui existait déjà au chargement.
+// ⚠ Le cas est devenu COURANT depuis que `techTree.produced` est extrapolé (lot L4, build 387) :
+// toute absence longue peut franchir un seuil de recherche. C'est le point que ce lot-là laissait
+// explicitement ouvert.
+// (2) Confirmations du Collisionneur au récap hors-ligne : la donnée existait déjà (`cntSnap`
+// photographie les compteurs avant le premier tick), il ne restait qu'à faire la différence. Elles
+// ne figurent PAS dans la liste des ressources — ce n'est pas une ressource de port — alors qu'elles
+// sont le rendement principal d'une longue absence en fin de partie. Bornées à zéro.
+// (3) PORTES LOGIQUES MAL BRANCHÉES LOCALISABLES : l'avertissement du démarrage balayait DÉJÀ toutes
+// les îles pour les COMPTER, puis jetait `isl`/`r`/`c` à l'endroit même où il les tenait et renvoyait
+// le joueur à « leur fiche » sans dire laquelle. Le même balayage, extrait dans `activeLogicAlerts`,
+// rend maintenant les POSITIONS ; les portes rejoignent la liste d'alertes, qui reste CONSULTABLE là
+// où le toast disparaît en quelques secondes. ⚠ Le bouton « Y aller » ALLUME LE CALQUE LOGIQUE : ce
+// n'est pas décoratif, l'élément fautif vit dans la surcouche et sans lui le joueur arrive au bon
+// endroit sans rien voir. `alertCount` les intègre, sinon la liste s'enrichirait sans que le bouton
+// du HUD s'allume.
+// (4) ⚠ RECTIFICATION DU COMMENTAIRE DU BUILD 389 — le seul commentaire antérieur que ce lot touche,
+// et il corrige une AFFIRMATION FAUSSE que j'y avais écrite : « la retenue vaut exactement le prix
+// de la réparation ». LE MÊME TAUX NE FAIT PAS LE MÊME PRIX. La réparation facture 20 % de
+// `buildingTotalCost` (l'id COURANT et ses montées ; sur un bâtiment de palier, `b.cost` est vide),
+// la démolition retient 20 % de `cumulativeInvested` (TOUTE la chaîne depuis la V1, forfaits de
+// palier compris). Les deux coïncident sur un bâtiment SANS palier — c'est le cas que mon test du
+// build 389 mesurait, d'où la généralisation abusive — et divergent fortement sinon. AUCUN
+// changement de code : l'écart est connu et assumé, il pousse vers la réparation sur les gros paliers.
+const GAME_BUILD = 390;
+const GAME_VERSION = 'Alpha 15.7';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8821,7 +8862,7 @@ const GAME_VERSION = 'Alpha 15.6';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Refroidissement : les tours partagent enfin leur capacité entre toutes les machines du réseau, au prorata de leur remplissage. Avant, la première machine trouvée prenait tout et les petites, comme un cryostat à côté d'une antenne, montaient vers la casse sans jamais recevoir un joule. Le boost d'antenne se règle au pour cent près (boutons ±1 et ±10). Enfin, un bâtiment en surchauffe ne peut plus être démoli à chaud : il faut les mêmes 5 minutes de refroidissement qu'une réparation, et la démolition ne rend alors que 80 pour cent — soit exactement le prix d'une réparation. Réparer ou reconstruire coûtent désormais la même chose.";
+const GAME_NOTES = "La pastille de recherche ne reste plus éteinte après une absence : un nœud devenu validable pendant que le jeu était fermé était annoncé puis oublié, et ne se signalait plus jamais. Le récapitulatif hors-ligne indique aussi les confirmations gagnées par le Collisionneur, qui n'étaient visibles nulle part. Enfin, les portes logiques dont une face est câblée mais inhibée rejoignent la liste des alertes, avec un bouton qui bascule sur la bonne île, allume le calque logique et centre la vue sur la porte fautive — le message du démarrage disait qu'il y en avait, sans jamais dire où.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -17922,6 +17963,23 @@ function activeStockAlerts(game) {
 }
 // Alertes électriques : île DÉBLOQUÉE en déficit (demande > production) ET batterie vide
 // (0% de charge, ou aucune batterie) → ses bâtiments sont coupés faute d'énergie ET de réserve.
+// 15.x — PORTES LOGIQUES MAL BRANCHÉES. L'avertissement du démarrage balayait DÉJÀ toutes les
+// îles pour COMPTER ces portes, puis jetait `isl`, `r` et `c` à l'endroit même où il les tenait, et
+// renvoyait le joueur à « leur fiche » sans dire laquelle. Le même balayage rend maintenant les
+// POSITIONS, et les portes rejoignent la liste d'alertes — qui reste consultable, alors que le
+// toast disparaît au bout de quelques secondes : c'est la moitié du problème signalé.
+function activeLogicAlerts(game) {
+  const out = [];
+  for (const isl in game.islands) {
+    const tl = game.islands[isl];
+    if (!tl) continue;
+    for (let r = 0; r < tl.length; r++) for (let c = 0; c < tl[r].length; c++) {
+      const lg = tl[r][c] && tl[r][c].logic;
+      if (lg && lg.gateWiredInh && lg.gateWiredInh.length) out.push({ isl: +isl, r, c, faces: lg.gateWiredInh.length });
+    }
+  }
+  return out;
+}
 function activeEnergyAlerts(game) {
   const out = [];
   const en = game && game.energy;
@@ -18062,11 +18120,13 @@ function AlertsPanel({
   onGo,
   onGoEnergy,
   onGoIsland,
+  onGoTile,
   onClose
 }) {
   const eAlerts = activeEnergyAlerts(game);
   const alerts = activeStockAlerts(game);
-  const empty = eAlerts.length === 0 && alerts.length === 0;
+  const lAlerts = activeLogicAlerts(game);
+  const empty = eAlerts.length === 0 && alerts.length === 0 && lAlerts.length === 0;
   // Bouton « Y aller » : bascule sur l'île de l'alerte SANS ouvrir de panneau (voir la carte).
   // Le clic sur la ligne elle-même garde son comportement (île + panneau Énergie/Port).
   // Les lignes sont des <div> (pas des <button>) : un bouton imbriqué serait du HTML invalide.
@@ -18098,7 +18158,23 @@ function AlertsPanel({
     className: "alert-res"
   }, RES_SHORT[a.res] || a.res), React.createElement("span", {
     className: "alert-val"
-  }, fmtPort(a.stock) + " / " + fmtPort(a.thr)), goBtn(a.isl))));
+  }, fmtPort(a.stock) + " / " + fmtPort(a.thr)), goBtn(a.isl))), lAlerts.map(a => React.createElement("div", {
+    key: 'l-' + a.isl + '-' + a.r + '-' + a.c,
+    className: "alert-row",
+    onClick: () => onGoTile && onGoTile(a)
+  }, React.createElement("span", {
+    className: "alert-isl"
+  }, islandLabel(a.isl)), React.createElement("span", {
+    className: "alert-res"
+  }, iconLabel(I18N.t("🔌 Porte logique : face(s) câblée(s) mais inhibée(s)"))), React.createElement("span", {
+    className: "alert-val"
+  }, a.faces + "/2"), React.createElement("button", {
+    className: "alert-go",
+    // 15.x — Ce bouton centre sur LA TUILE, pas seulement sur l'île : c'est tout l'intérêt de
+    // l'alerte. Même geste que la liste des surchauffes (`onGoTile` du panneau Chaleur).
+    title: I18N.t("Aller à cette porte"),
+    onClick: e => { e.stopPropagation(); onGoTile && onGoTile(a); }
+  }, I18N.t("Y aller")))));
   return React.createElement("div", {
     className: "research-panel alerts-panel"
   }, React.createElement("div", {
@@ -23679,6 +23755,12 @@ function OfflineModal({
   report.capped && React.createElement("div", {
     className: "offline-note"
   }, I18N.t("\u23F3 Absence plafonn\xE9e : ") + report.creditedLabel + I18N.t(" cr\xE9dit\xE9es (maximum). Au-del\xE0, la production n'est plus compt\xE9e.")),
+  // 15.x — CONFIRMATIONS DU COLLISIONNEUR : la production récupérée se lit dans la liste des
+  // ressources, mais les confirmations n'y figurent pas — ce n'est pas une ressource de port.
+  // Elles sont pourtant le rendement principal d'une longue absence en fin de partie.
+  report.confirms > 0 && React.createElement("div", {
+    className: "offline-note"
+  }, I18N.t("🔬 Collisionneur : ") + fmtRateSci(report.confirms) + I18N.t(" confirmation(s) pendant l'absence.")),
   (report.approx || report.skipped) && React.createElement("div", {
     className: "offline-note"
   }, report.skipped ? I18N.t("⏭ Rattrapage interrompu (« Passer ») : la production restante a été abandonnée.")
@@ -25474,6 +25556,13 @@ function App() {
   function finishCatchUp(g, before, elapsedSec, how) {
     g.researchReady = [];
     g.researchNotify = [];
+    // 15.x — … ET ON RALLUME LA PASTILLE, exactement comme le fait le chargement d'une partie
+    // quelques lignes plus bas dans le code de montage. Sans cette ligne, un nœud devenu validable
+    // PENDANT l'absence voyait sa notification créée par le tick puis DÉTRUITE ici — et comme
+    // `node.notified` est déjà vrai, il n'était PLUS JAMAIS réannoncé : prêt et muet pour toujours.
+    // Le cas est devenu courant depuis que `techTree.produced` est extrapolé : toute absence longue
+    // peut franchir un seuil de recherche.
+    setResearchPending(hasPendingResearch(g));
     primeTipsSeen(g);
     g.lastSave = Date.now();
     g.lastActiveTs = Date.now();
@@ -25510,6 +25599,7 @@ function App() {
         approx: !!(how && how.approx),
         skipped: !!(how && how.skipped),
         capped: !!(how && how.capped),
+        confirms: how && how.confirms || 0,
         creditedLabel
       });
     }
@@ -25658,7 +25748,11 @@ function App() {
       // RÉELLEMENT simulés avant l'éventuelle extrapolation, et sur quelle fenêtre le débit a été
       // mesuré (désormais l'échauffon entier, donc sampleFrom = 0).
       g._catchUpStats = { ticks, warm: WARM, simulated: done, sampleFrom: 0, approx: approximated, skipped, capped };
-      finishCatchUp(g, before, elapsedSec, { approx: approximated, skipped, capped });
+      // 15.x — Le nombre de confirmations gagnées part au récap. La donnée existait déjà :
+      // `cntSnap` a photographié les compteurs AVANT le premier tick, il ne restait qu'à faire la
+      // différence. Borné à zéro : un compteur ne recule pas, mais un état hérité pourrait mentir.
+      const confirmsGained = Math.max(0, (g.techTree && g.techTree.colliderConfirms || 0) - (cntSnap.colliderConfirms || 0));
+      finishCatchUp(g, before, elapsedSec, { approx: approximated, skipped, capped, confirms: confirmsGained });
       onDone && onDone();
     };
     setTimeout(step, 0);
@@ -30644,7 +30738,7 @@ function App() {
     onOpenHelp: () => { SFX.play('panelOpen'); setHelpOpen(true); },
     onOpenProduction: () => { SFX.play('panelOpen'); setProdOpen(true); },
     onOpenCalc: () => { SFX.play('panelOpen'); setCalcOpen(true); },
-    alertCount: activeStockAlerts(game).length + activeEnergyAlerts(game).length,
+    alertCount: activeStockAlerts(game).length + activeEnergyAlerts(game).length + activeLogicAlerts(game).length,
     heatCount: activeHeatAlerts(game).length,
     onOpenHeat: () => { SFX.play('panelOpen'); setHeatOpen(true); },
     onOpenAlerts: () => { SFX.play('panelOpen'); setAlertsOpen(true); },
@@ -30684,6 +30778,17 @@ function App() {
       // « Y aller » : bascule sur l'île de l'alerte sans ouvrir de panneau (vue carte).
       switchIsland(isl);
       setAlertsOpen(false);
+    },
+    // 15.x — Alerte de porte logique : on va SUR la tuile (île + caméra centrée), calque logique
+    // allumé — sinon le joueur arrive au bon endroit sans voir l'élément fautif, qui vit dans la
+    // surcouche. Même enchaînement que la liste des surchauffes.
+    onGoTile: a => {
+      setAlertsOpen(false);
+      if (a.isl !== gameRef.current.currentIsland) switchIsland(a.isl);
+      gameRef.current.ui.logicLayer = true;
+      centerOnTile(a.r, a.c);
+      SFX.play('locate');
+      bumpHud();
     },
     onClose: () => { SFX.play('panelClose'); setAlertsOpen(false); }
   }), tutorialStep >= 0 && React.createElement(TutorialBanner, {
