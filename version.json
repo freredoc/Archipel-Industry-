@@ -1,8 +1,8 @@
 {
-  "build": 388,
-  "version": "Alpha 15.5",
+  "build": 389,
+  "version": "Alpha 15.6",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Souterrain : la foreuse affiche enfin sa mèche et vise le bon mur quand on la lance en tapant la roche, elle se pose sur un gisement d'Hélium 3, son sens se verrouille une fois le forage parti, et deux foreuses ne peuvent plus réserver le même bloc. Le souterrain a désormais une limite : au dixième cercle autour de l'élévateur, un socle rocheux infranchissable. Baisser le niveau d'un bâtiment pendant des travaux souterrains n'est plus possible — c'était une faille qui rendait la matière. Les décomptes de chantier ne se chevauchent plus, s'affichent à la seconde près (4min55) et montrent une icône quand rien ne descend. Hors-ligne : le rattrapage va maintenant jusqu'à 27 h d'absence au lieu de 8, le récapitulatif prévient quand ce plafond est atteint, et la production rattrapée est bien plus fidèle (les confirmations du Collisionneur et les compteurs de recherche avancent enfin). L'option « Calcul hors-ligne simplifié » disparaît : un seul régime pour tout le monde. Enfin, les très grands nombres cessent de déborder : chaleur, énergie stockée et débits sont écrits à la bonne échelle."
+  "notes": "Refroidissement : les tours partagent enfin leur capacité entre toutes les machines du réseau, au prorata de leur remplissage. Avant, la première machine trouvée prenait tout et les petites, comme un cryostat à côté d'une antenne, montaient vers la casse sans jamais recevoir un joule. Le boost d'antenne se règle au pour cent près (boutons ±1 et ±10). Enfin, un bâtiment en surchauffe ne peut plus être démoli à chaud : il faut les mêmes 5 minutes de refroidissement qu'une réparation, et la démolition ne rend alors que 80 pour cent — soit exactement le prix d'une réparation. Réparer ou reconstruire coûtent désormais la même chose."
 }

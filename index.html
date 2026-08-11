@@ -8778,8 +8778,41 @@ const SAVE_VERSION = 31;
 // `main` était encore en build 386 (lot L1+L4 non mergé), mais le fichier de la branche de travail
 // portait EXACTEMENT le SHA de base attendu (`7f615b11…`, vérifié) — la base est donc la bonne. Le
 // lot est empilé sur la même branche, en commit distinct, faute d'autorisation d'en ouvrir une autre.
-const GAME_BUILD = 388;
-const GAME_VERSION = 'Alpha 15.5';
+// 15.6 — LOT L3 (thermique), brief `BRIEFlotL3thermique` appliqué par patcheur pré-compilé :
+// 6 ancres à `count == 1`, SHA du fichier patché CONFORME au caractère près (`d72038bb…`).
+// SAVE_VERSION INCHANGÉ (31), aucune migration.
+// (1) ⚠ REFROIDISSEMENT AU PRORATA DU TAUX DE REMPLISSAGE — et le diagnostic change la nature du
+// bug : l'évacuation n'était pas « plate », la boucle servait les sources DANS L'ORDRE OÙ ELLES
+// AVAIENT ÉTÉ TROUVÉES, en prenant à chacune tout ce qu'elle pouvait avant de passer à la suivante.
+// Cette liste venant d'un balayage `for r … for c …`, LA PRIORITÉ DE REFROIDISSEMENT ÉTAIT
+// LITTÉRALEMENT LE COIN HAUT-GAUCHE, et le service était tout-ou-rien. Le plafond valant « émission
+// de pointe × 60 s », une antenne émet ~880 fois plus qu'un cryostat : elle vidait le budget des
+// tours à chaque tick et tout ce qui venait après ne recevait RIEN.
+// ⚠ Le poids est le TAUX DE REMPLISSAGE (`chaleur / plafond`), PAS la chaleur stockée : au prorata
+// du stock, l'antenne garderait l'essentiel puisqu'elle en stocke 880 fois plus.
+// ⚠ L'égalisation stricte des taux a été ÉCARTÉE VOLONTAIREMENT : sur un réseau structurellement
+// sous-refroidi, elle ferait arriver toutes les sources au seuil EN MÊME TEMPS — une victime unique
+// deviendrait une casse générale simultanée. Toutes les bornes existantes sont conservées (débit du
+// réseau, absorption de chaque tour, stock de chaque source) : SEUL LE PARTAGE change.
+// (2) `ANT_BOOST_STEP` 10 → 1. Le pas ne vit qu'à cet endroit (`antBoostPct` y arrondit,
+// `antBoostMin` y cherche le premier cran atteignable) : la finesse suit partout, et le plancher
+// devient EXACT au lieu d'être arrondi à la dizaine supérieure. Quatre boutons `−10 −1 +1 +10` au
+// lieu d'une paire à ±10 — 90 appuis pour aller de 100 % à 10 % serait injouable. Les réglages déjà
+// en sauvegarde sont des multiples de 10 : ils traversent l'arrondi fin sans bouger d'un point.
+// (3) Un bâtiment en surchauffe ne se démolit plus À CHAUD : la même attente de 5 min que la
+// réparation, lue sur le MÊME compteur `dmgTimer` (aucun champ nouveau).
+// ⚠ DEMANDE JOUEUR, HORS BRIEF — LE BRIEF LAISSAIT CE POINT OUVERT et le signalait comme tel :
+// « l'arbitrage supprime l'avantage de TEMPS, pas celui de PRIX ». Il est fermé ici. Démolir un
+// bâtiment ENDOMMAGÉ ne rend plus que 80 % : la retenue vaut EXACTEMENT le prix de la réparation
+// (même constante, même arrondi supérieur), donc réparer et démolir-reposer coûtent enfin la même
+// chose et le choix redevient un choix. Sans cela, la réparation restait purement dominée.
+// ⚠ Le taux de 20 % était codé EN DUR à DEUX endroits (aperçu de la fiche et paiement de
+// `tryHeatRepair`) sans rien pour les tenir ensemble ; la démolition en aurait fait un TROISIÈME.
+// Nouvelle constante `HEAT_REPAIR_FRAC`, trois lecteurs, un seul chiffre. La retenue enveloppe
+// TOUTES les voies de remboursement (jonction comprise) : une jonction ne peut pas surchauffer
+// aujourd'hui, mais un helper limité à une branche rouvrirait la faille en silence demain.
+const GAME_BUILD = 389;
+const GAME_VERSION = 'Alpha 15.6';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8788,7 +8821,7 @@ const GAME_VERSION = 'Alpha 15.5';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Souterrain : la foreuse affiche enfin sa mèche et vise le bon mur quand on la lance en tapant la roche, elle se pose sur un gisement d'Hélium 3, son sens se verrouille une fois le forage parti, et deux foreuses ne peuvent plus réserver le même bloc. Le souterrain a désormais une limite : au dixième cercle autour de l'élévateur, un socle rocheux infranchissable. Baisser le niveau d'un bâtiment pendant des travaux souterrains n'est plus possible — c'était une faille qui rendait la matière. Les décomptes de chantier ne se chevauchent plus, s'affichent à la seconde près (4min55) et montrent une icône quand rien ne descend. Hors-ligne : le rattrapage va maintenant jusqu'à 27 h d'absence au lieu de 8, le récapitulatif prévient quand ce plafond est atteint, et la production rattrapée est bien plus fidèle (les confirmations du Collisionneur et les compteurs de recherche avancent enfin). L'option « Calcul hors-ligne simplifié » disparaît : un seul régime pour tout le monde. Enfin, les très grands nombres cessent de déborder : chaleur, énergie stockée et débits sont écrits à la bonne échelle.";
+const GAME_NOTES = "Refroidissement : les tours partagent enfin leur capacité entre toutes les machines du réseau, au prorata de leur remplissage. Avant, la première machine trouvée prenait tout et les petites, comme un cryostat à côté d'une antenne, montaient vers la casse sans jamais recevoir un joule. Le boost d'antenne se règle au pour cent près (boutons ±1 et ±10). Enfin, un bâtiment en surchauffe ne peut plus être démoli à chaud : il faut les mêmes 5 minutes de refroidissement qu'une réparation, et la démolition ne rend alors que 80 pour cent — soit exactement le prix d'une réparation. Réparer ou reconstruire coûtent désormais la même chose.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -10994,6 +11027,12 @@ function heatEmitMaxOf(bld) {
 // bâtiment peut stocker jusqu'à 1 minute de sa chaleur de pointe avant la surchauffe (trip).
 // b.heatCap (def) ne sert plus que de FLAG « bâtiment à chaleur ».
 const HEAT_CAP_SECONDS = 60;
+// 15.x — PART DU COÛT TOTAL retenue après une surchauffe. Elle vaut pour les DEUX issues, et c'est
+// tout l'intérêt de la nommer : on la PAIE en réparant, on la PERD en démolissant (le remboursement
+// est amputé d'autant). Le taux était codé en dur à DEUX endroits — l'aperçu de la fiche et le
+// paiement de `tryHeatRepair` — sans rien pour les tenir ensemble ; la démolition en aurait fait un
+// TROISIÈME, promis à diverger au premier rééquilibrage. Un seul chiffre désormais, trois lecteurs.
+const HEAT_REPAIR_FRAC = 0.2;
 const heatCapOf = bld => {
   const b = bld && BUILDINGS[bld.id];
   if (!b || !b.heatCap) return 0;
@@ -11274,12 +11313,52 @@ function processHeat(game, isl) {
     // vers le tampon (bornée par l'espace libre du tampon).
     const outlets = cn.towers.slice();
     if (elevLinked && isl === 7) outlets.push({ elevator: true });
+    // 15.x — RÉPARTITION AU PRORATA DU TAUX DE REMPLISSAGE. L'ancienne boucle servait les sources
+    // DANS L'ORDRE OÙ ELLES AVAIENT ÉTÉ TROUVÉES, en prenant à chacune tout ce qu'elle pouvait avant
+    // de passer à la suivante — et cette liste vient d'un balayage `for r … for c …` : la priorité
+    // de refroidissement était littéralement LE COIN HAUT-GAUCHE. Une source à gros tampon vidait
+    // le budget entier de la tour à chaque tick et tout ce qui venait après ne recevait RIEN (cas
+    // remonté : un cryostat à 1 GJ qui surchauffe à côté d'une antenne à 2,5 TJ — le plafond valant
+    // « émission de pointe × 60 s », l'antenne émet ~2 500 fois plus et a toujours de quoi tout prendre).
+    // Le poids retenu est le TAUX DE REMPLISSAGE (`chaleur / plafond`), pas la chaleur stockée : au
+    // prorata du stock, l'antenne garderait l'essentiel puisqu'elle en stocke 2 500 fois plus.
+    // L'égalisation stricte des taux a été ÉCARTÉE volontairement : sur un réseau structurellement
+    // sous-refroidi elle ferait arriver TOUTES les sources au seuil en même temps, transformant une
+    // victime unique en casse générale simultanée.
+    // Les bornes existantes sont TOUTES conservées : débit du réseau, absorption de chaque tour,
+    // stock de chaque source. Seul le PARTAGE change. Les passes redistribuent le reliquat laissé
+    // par les sources saturées (une source ne peut pas céder plus que ce qu'elle stocke).
+    let demandTot = 0;
+    for (const to of outlets) demandTot += to.elevator ? Math.max(0, elevHeatCap - game.elevatorHeat) : to.absorb || 0;
+    let pool = Math.min(budget, demandTot);
+    const parts = srcs.map(sb => {
+      const av = sb.elevator ? game.elevatorHeat : sb.heat || 0;
+      const cp = sb.elevator ? elevHeatCap : heatCapOf(sb);
+      return { sb, av, w: av > 1e-9 ? cp > 0 ? Math.min(1, av / cp) : 1 : 0, q: 0 };
+    });
+    for (let pass = 0; pass < 6 && pool > 1e-9; pass++) {
+      let wsum = 0;
+      for (const it of parts) if (it.w > 0 && it.q < it.av - 1e-9) wsum += it.w;
+      if (wsum <= 0) break;
+      const share = pool;
+      let used = 0;
+      for (const it of parts) {
+        if (it.w <= 0 || it.q >= it.av - 1e-9) continue;
+        const addq = Math.min(it.av - it.q, share * it.w / wsum);
+        it.q += addq;
+        used += addq;
+      }
+      if (used <= 1e-9) break;
+      pool -= used;
+    }
+    const quota = new Map();
+    for (const it of parts) quota.set(it.sb, it.q);
     for (const to of outlets) {
       if (budget <= 1e-9) break;
       let want = to.elevator ? Math.min(Math.max(0, elevHeatCap - game.elevatorHeat), budget) : Math.min(to.absorb, budget);
       for (const sb of srcs) {
         if (want <= 1e-9) break;
-        const avail = sb.elevator ? game.elevatorHeat : sb.heat || 0;
+        const avail = Math.min(sb.elevator ? game.elevatorHeat : sb.heat || 0, quota.get(sb) || 0);
         const pull = Math.min(avail, want);
         if (pull > 0) {
           if (sb.elevator) game.elevatorHeat -= pull;else {
@@ -11287,6 +11366,7 @@ function processHeat(game, isl) {
             sb.heatCool = (sb.heatCool || 0) + pull;
           }
           if (to.elevator) game.elevatorHeat += pull;else to.bld.heatAbsorb = (to.bld.heatAbsorb || 0) + pull;
+          quota.set(sb, (quota.get(sb) || 0) - pull);
           want -= pull;
           budget -= pull;
           moved += pull;
@@ -12094,7 +12174,11 @@ function antSpeedMul(f) {
 function antElecBoost(f) {
   return 0.1 * (f > 1 ? f : 2);
 }
-// 14.95 — GRADUATION DU BOOST D'ANTENNE (curseur `k`, 10 → 100 % par pas de 10, défaut 100).
+// 14.95 — GRADUATION DU BOOST D'ANTENNE (curseur `k`, défaut 100).
+// 15.x — PAS RAMENÉ À 1 %. Le pas ne vit qu'ici : `antBoostPct` y arrondit et `antBoostMin` y
+// cherche le premier cran réellement atteignable, donc la finesse suit partout sans autre
+// retouche. Les réglages déjà en sauvegarde sont des multiples de 10 : ils traversent
+// l'arrondi plus fin sans bouger d'un point, aucune migration.
 // Intention : « on peut vouloir le grand cadre de l'antenne V2 sans le boost induit ». Le RAYON
 // (`antRadius`) est un champ STATIQUE de la def — `k` ne le touche pas : la zone est préservée
 // PAR CONSTRUCTION, c'est toute la raison pour laquelle ce réglage est propre.
@@ -12111,7 +12195,7 @@ function antElecBoost(f) {
 // valeur d'une antenne Nv.1 à 100 %, c'est-à-dire le boost minimal que le jeu sait représenter —
 // et l'interface REFUSE de descendre sous le premier cran réellement atteignable (antBoostMin),
 // au lieu de laisser le joueur régler dans le vide.
-const ANT_BOOST_STEP = 10;
+const ANT_BOOST_STEP = 1;
 function antBoostPct(bld) {
   const v = bld && bld.antBoost != null ? +bld.antBoost : 100;
   if (!isFinite(v)) return 100;
@@ -20216,7 +20300,7 @@ function InfoPanel({
     const repCost = buildingTotalCost(bld);
     const repPay = {};
     for (const k in repCost) {
-      const v = Math.ceil(repCost[k] * 0.2);
+      const v = Math.ceil(repCost[k] * HEAT_REPAIR_FRAC);
       if (v > 0) repPay[k] = v;
     }
     const afford = dev || Object.keys(repPay).every(k => (port[k] || 0) >= repPay[k]);
@@ -20369,19 +20453,25 @@ function InfoPanel({
     const nb = (2 * Math.max(1, b.antRadius || 1) + 1);
     return React.createElement("div", { className: "ip-nuc-pow" },
       React.createElement("div", { className: "ip-fluxpri-lbl" }, I18N.t("Intensité du boost")),
+      // 15.x — QUATRE CRANS (−10 −1 +1 +10) au lieu d'une paire à ±10. Le pas fin est demandé,
+      // mais 90 appuis pour aller de 100 % à 10 % serait injouable : le pas de 10 reste donc là
+      // pour le déplacement, celui de 1 pour l'ajustement. Le handler `setAntBoost` prend déjà un
+      // delta libre et borne à [antBoostMin, 100] — aucun changement de son côté.
       React.createElement("div", { className: "ip-nuc-pow-row" },
-        React.createElement("button", {
+        ...[-10, -1].map(d => React.createElement("button", {
+          key: 'ab' + d,
           className: "ip-nuc-pm", disabled: pct <= lo,
-          title: pct <= lo ? I18N.t("Cran minimal à ce niveau d'antenne : plus bas, l'effet serait identique") : I18N.t("Baisser de 10 %"),
-          onClick: () => onSetAntBoost && onSetAntBoost(info.r, info.c, -10)
-        }, "−"),
+          title: pct <= lo ? I18N.t("Cran minimal à ce niveau d'antenne : plus bas, l'effet serait identique") : I18N.t("Baisser de ") + -d + " %",
+          onClick: () => onSetAntBoost && onSetAntBoost(info.r, info.c, d)
+        }, d === -1 ? "−" : "−−")),
         React.createElement("div", { className: "ip-nuc-gauge" },
           React.createElement("div", { className: "ip-nuc-gauge-fill", style: { width: pct + '%' } }),
           React.createElement("span", { className: "ip-nuc-gauge-lbl" }, pct + " %")),
-        React.createElement("button", {
-          className: "ip-nuc-pm", disabled: pct >= 100, title: I18N.t("Monter de 10 %"),
-          onClick: () => onSetAntBoost && onSetAntBoost(info.r, info.c, 10)
-        }, "+")),
+        ...[1, 10].map(d => React.createElement("button", {
+          key: 'ab' + d,
+          className: "ip-nuc-pm", disabled: pct >= 100, title: I18N.t("Monter de ") + d + " %",
+          onClick: () => onSetAntBoost && onSetAntBoost(info.r, info.c, d)
+        }, d === 1 ? "+" : "++"))),
       React.createElement("div", { className: "ip-row" },
         React.createElement("span", { className: "lbl" }, I18N.t("Effet appliqué")),
         React.createElement("span", { className: "val", style: { color: 'var(--cyan, #26C6DA)' } },
@@ -26477,9 +26567,40 @@ function App() {
       if (verbose) showToast(`🔒 ${b.name} non démolissable`, 'var(--orange)');
       return false;
     }
+    // 15.x — UN BÂTIMENT EN SURCHAUFFE NE SE DÉMOLIT PAS À CHAUD. La réparation coûte 20 % du coût
+    // total ET impose 5 min de refroidissement (`dmgTimer`), tandis que démolir remboursait 100 %
+    // du cumul investi IMMÉDIATEMENT : reposer derrière revenait à zéro net et sans attente, ce qui
+    // rendait la réparation purement dominée — personne ne l'aurait plus jamais utilisée. La même
+    // attente s'applique désormais aux deux gestes. Le compteur est celui de la réparation, pas un
+    // nouveau champ : les deux voies lisent `dmgTimer` et le même seuil de 300 s.
+    if (t.building.damaged && (t.building.dmgTimer || 0) < 300) {
+      if (verbose) showToast(I18N.t('⏳ Surchauffe — démolition possible après 5 min de refroidissement'), 'var(--orange)');
+      return false;
+    }
     // 14.45 — Symétrique de la pose : démolir un bâtiment qui faisait PONT doit re-scinder les
     // réseaux immédiatement, sinon ils restaient fusionnés à tort jusqu'au prochain rebuild.
     const wasInfra = b.kind === 'infra' || b.kind === 'junction' || buildingBridgesNetworks(t.building.id);
+    // 15.x — DÉMOLIR UN BÂTIMENT ENDOMMAGÉ NE REND QUE 80 %. La garde ci-dessus supprimait
+    // l'avantage de TEMPS de la démolition sur la réparation ; celle-ci supprime l'avantage de
+    // PRIX, qui restait entier : après les 5 minutes, démolir rendait 100 % du cumul investi, donc
+    // reposer revenait à zéro net là où réparer coûtait 20 % — la réparation restait dominée et
+    // n'aurait jamais servi. La retenue vaut EXACTEMENT le prix de la réparation (`HEAT_REPAIR_FRAC`,
+    // même constante, même arrondi SUPÉRIEUR en défaveur du joueur) : les deux issues coûtent
+    // désormais la même chose, et le choix redevient un choix.
+    // ⚠ La retenue enveloppe TOUTES les voies de remboursement (jonction comprise) plutôt que la
+    // seule branche « bâtiment normal » : une jonction n'a pas de `heatCap` donc ne peut pas être
+    // endommagée aujourd'hui, mais un helper qui ne couvrirait qu'une branche rouvrirait la faille
+    // en silence le jour où une infra deviendrait sujette à la surchauffe.
+    const dmgCut = !!t.building.damaged;
+    const refundBld = obj => {
+      if (!dmgCut) return refund(obj);
+      const kept = {};
+      for (const k in obj) {
+        const v = obj[k] - Math.ceil(obj[k] * HEAT_REPAIR_FRAC);
+        if (v > 0) kept[k] = v;
+      }
+      return refund(kept);
+    };
     if (!gameRef.current.ui.dev) {
       if (b.kind === 'junction' && gameRef.current.mode === 'normal') {
         // Jonction en Normal : coût de la dernière posée + montées (logique inchangée).
@@ -26489,11 +26610,11 @@ function App() {
         const mult = Math.pow(2, n);
         const rc = {};
         for (const k in JUNCTION_BASE_COST) rc[k] = JUNCTION_BASE_COST[k] * mult;
-        refund(rc);
-        if (t.building.upgrade) refund(cumulativeUpgradeCost(b.cost, t.building.upgrade, t.building.id));
+        refundBld(rc);
+        if (t.building.upgrade) refundBld(cumulativeUpgradeCost(b.cost, t.building.upgrade, t.building.id));
       } else {
         // Bâtiment normal (paliers inclus) : remboursement du cumul investi total.
-        refund(cumulativeInvested(t.building.id, t.building.upgrade || 0));
+        refundBld(cumulativeInvested(t.building.id, t.building.upgrade || 0));
       }
     }
     // Clear the whole footprint (occupancy tiles) for multi-tile buildings.
@@ -26518,7 +26639,11 @@ function App() {
     markDirty();
     scheduleSave();
     SFX.play('demolish');
-    if (verbose) showToast(`♻ ${b.name} démoli — remboursé`, 'var(--green)');
+    // 15.x — La cause est NOMMÉE : sans ce libellé, un joueur qui démolit un bâtiment endommagé voit
+    // revenir moins de matière que d'habitude sans savoir pourquoi, et lit un bug là où il y a une règle.
+    if (verbose) showToast(dmgCut
+      ? `♻ ${b.name} démoli — remboursé à ${Math.round((1 - HEAT_REPAIR_FRAC) * 100)} % (surchauffe)`
+      : `♻ ${b.name} démoli — remboursé`, 'var(--green)');
     setInfo(prev => prev && prev.r === r && prev.c === c ? null : prev);
     setUpgrade(prev => prev && prev.r === r && prev.c === c ? null : prev);
     return true;
@@ -27588,7 +27713,7 @@ function App() {
     const repCost = buildingTotalCost(bld);
     const pay20 = {};
     for (const k in repCost) {
-      const v = Math.ceil(repCost[k] * 0.2);
+      const v = Math.ceil(repCost[k] * HEAT_REPAIR_FRAC);
       if (v > 0) pay20[k] = v;
     }
     if (!g.ui.dev) {
