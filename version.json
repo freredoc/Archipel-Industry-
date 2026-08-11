@@ -1,8 +1,8 @@
 {
-  "build": 390,
-  "version": "Alpha 15.7",
+  "build": 391,
+  "version": "Alpha 15.8",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "La pastille de recherche ne reste plus éteinte après une absence : un nœud devenu validable pendant que le jeu était fermé était annoncé puis oublié, et ne se signalait plus jamais. Le récapitulatif hors-ligne indique aussi les confirmations gagnées par le Collisionneur, qui n'étaient visibles nulle part. Enfin, les portes logiques dont une face est câblée mais inhibée rejoignent la liste des alertes, avec un bouton qui bascule sur la bonne île, allume le calque logique et centre la vue sur la porte fautive — le message du démarrage disait qu'il y en avait, sans jamais dire où."
+  "notes": "Correctif : après avoir cliqué sur « Y aller » depuis une alerte de porte logique, la barre d'outils restait en mode bâtiment alors que le jeu, lui, était déjà passé en mode logique. Démolir visait alors la couche logique alors que l'écran affichait autre chose — on pouvait effacer un élément logique en croyant toucher un bâtiment. Les deux sont désormais toujours d'accord."
 }
