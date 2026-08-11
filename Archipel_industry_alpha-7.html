@@ -8852,8 +8852,26 @@ const SAVE_VERSION = 31;
 // palier compris). Les deux coïncident sur un bâtiment SANS palier — c'est le cas que mon test du
 // build 389 mesurait, d'où la généralisation abusive — et divergent fortement sinon. AUCUN
 // changement de code : l'écart est connu et assumé, il pousse vers la réparation sur les gros paliers.
-const GAME_BUILD = 390;
-const GAME_VERSION = 'Alpha 15.7';
+// 15.8 — CORRECTIF L6b : « Y aller » depuis une alerte de porte logique laissait l'ÉCRAN ET LE
+// MOTEUR EN DÉSACCORD. Défaut introduit par le lot L6 (build 390) et confirmé sur `main`.
+// ⚠ CE N'EST PAS UN DÉFAUT D'AFFICHAGE. Le calque logique a DEUX représentations : le champ de
+// partie `g.ui.logicLayer` et un MIROIR d'état React (`setLogicLayer`, `useState`). La `Toolbar`
+// reçoit la VARIABLE REACT (elle rend alors les menus « Bloc logique » / « Câble logique » et
+// verrouille Améliorer), tandis que `tryDemolish` se fie AU CHAMP (`if (gL.ui.logicLayer)`, où la
+// démolition cible EXCLUSIVEMENT la surcouche `t.logic`). Le handler ne posait que le champ : la
+// barre restait donc en mode bâtiment pendant que la démolition, elle, visait la couche logique.
+// Le joueur cliquait une usine pour la raser et lisait « Rien à démolir dans la couche logique » —
+// ou pire, effaçait un élément logique en croyant toucher autre chose.
+// Le correctif passe par `toggleLogicLayer`, qui tient LES DEUX représentations (plus la
+// désélection d'outil et la fermeture des menus). ⚠ Appel SOUS CONDITION : c'est une BASCULE, pas
+// un setter — l'appeler inconditionnellement ÉTEINDRAIT le calque s'il était déjà allumé.
+// ⚠ LEÇON DE MÉTHODE, ET ELLE ÉTAIT DÉJÀ AU MÉMO (14.83, « la Toolbar lit le state REACT, pas la
+// ref ») : mon test du lot L6 assertait `g.ui.logicLayer === true`, c'est-à-dire LE CHAMP QUE LE
+// PATCH VENAIT D'ÉCRIRE. Il ne pouvait donc que passer, sans rien prouver de ce que voit le joueur.
+// RÈGLE : quand un patch écrit un champ de `g.ui`, chercher s'il existe un `useState` qui le
+// double, et asserter sur le RENDU (ici `.tab-logic`), jamais sur le champ écrit.
+const GAME_BUILD = 391;
+const GAME_VERSION = 'Alpha 15.8';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8862,7 +8880,7 @@ const GAME_VERSION = 'Alpha 15.7';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "La pastille de recherche ne reste plus éteinte après une absence : un nœud devenu validable pendant que le jeu était fermé était annoncé puis oublié, et ne se signalait plus jamais. Le récapitulatif hors-ligne indique aussi les confirmations gagnées par le Collisionneur, qui n'étaient visibles nulle part. Enfin, les portes logiques dont une face est câblée mais inhibée rejoignent la liste des alertes, avec un bouton qui bascule sur la bonne île, allume le calque logique et centre la vue sur la porte fautive — le message du démarrage disait qu'il y en avait, sans jamais dire où.";
+const GAME_NOTES = "Correctif : après avoir cliqué sur « Y aller » depuis une alerte de porte logique, la barre d'outils restait en mode bâtiment alors que le jeu, lui, était déjà passé en mode logique. Démolir visait alors la couche logique alors que l'écran affichait autre chose — on pouvait effacer un élément logique en croyant toucher un bâtiment. Les deux sont désormais toujours d'accord.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -30785,7 +30803,13 @@ function App() {
     onGoTile: a => {
       setAlertsOpen(false);
       if (a.isl !== gameRef.current.currentIsland) switchIsland(a.isl);
-      gameRef.current.ui.logicLayer = true;
+      // 15.x — CORRECTIF. Le calque logique a un MIROIR D'ÉTAT REACT (`setLogicLayer`) et la barre
+      // d'outils lit la VARIABLE REACT, pas le champ de jeu : poser le seul `g.ui.logicLayer`
+      // laissait la barre en mode bâtiment alors que `tryDemolish`, lui, se fie AU CHAMP — la
+      // démolition ciblait donc la surcouche logique pendant que l'écran affichait le mode normal.
+      // `toggleLogicLayer` tient les deux, plus la désélection et la fermeture des panneaux ; l'appel
+      // reste sous condition, la fonction étant une BASCULE et non un setter.
+      if (!gameRef.current.ui.logicLayer) toggleLogicLayer();
       centerOnTile(a.r, a.c);
       SFX.play('locate');
       bumpHud();
