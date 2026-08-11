@@ -1,8 +1,8 @@
 {
-  "build": 386,
-  "version": "Alpha 15.3",
+  "build": 388,
+  "version": "Alpha 15.5",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Sur grand écran, l'interface cesse d'être minuscule : elle passe à 150 % à partir de 1400×800 et à 200 % au-delà de 2400×1300 — texte, icônes et menus grossissent d'un seul tenant et restent nets (paliers entiers, pixel art oblige). Rien ne change sur téléphone, tablette ou petit écran."
+  "notes": "Souterrain : la foreuse affiche enfin sa mèche et vise le bon mur quand on la lance en tapant la roche, elle se pose sur un gisement d'Hélium 3, son sens se verrouille une fois le forage parti, et deux foreuses ne peuvent plus réserver le même bloc. Le souterrain a désormais une limite : au dixième cercle autour de l'élévateur, un socle rocheux infranchissable. Baisser le niveau d'un bâtiment pendant des travaux souterrains n'est plus possible — c'était une faille qui rendait la matière. Les décomptes de chantier ne se chevauchent plus, s'affichent à la seconde près (4min55) et montrent une icône quand rien ne descend. Hors-ligne : le rattrapage va maintenant jusqu'à 27 h d'absence au lieu de 8, le récapitulatif prévient quand ce plafond est atteint, et la production rattrapée est bien plus fidèle (les confirmations du Collisionneur et les compteurs de recherche avancent enfin). L'option « Calcul hors-ligne simplifié » disparaît : un seul régime pour tout le monde. Enfin, les très grands nombres cessent de déborder : chaleur, énergie stockée et débits sont écrits à la bonne échelle."
 }
