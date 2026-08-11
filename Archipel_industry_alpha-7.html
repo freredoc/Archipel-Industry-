@@ -8701,8 +8701,42 @@ const SAVE_VERSION = 31;
 // la lisibilité ; tablettes/laptops courts (hauteur < 800) restent à ×1 ; ne PAS convertir les
 // sprites en rem ni poser de clamp() sur html{font-size} — voie écartée, sortirait de la grille.
 // SAVE_VERSION inchangé (31) — CSS pur, aucun champ de sauvegarde touché.
-const GAME_BUILD = 386;
-const GAME_VERSION = 'Alpha 15.3';
+// 15.4 — LOT L1 (formatage des nombres) + L4 (rattrapage hors-ligne), brief `BRIEFlotL1L4formatshorsligne`
+// appliqué par patcheur pré-compilé : 41 ancres à `count == 1`, SHA du fichier patché CONFORME au
+// caractère près à l'attendu du brief (`bd38e7b7…`). SAVE_VERSION INCHANGÉ (31).
+// L4 : `OFFLINE_MAX_TICKS` 8 h → 100 000 s (27 h 46) ; le plafond est désormais ANNONCÉ au joueur
+// (`capped` + `creditedLabel` → ligne « ⏳ Absence plafonnée » du récap) — il lisait « Absence : 24 h »
+// en face d'une production qui n'en couvrait que 8 et concluait à un bug de production.
+// ⚠ RÉGIME UNIQUE : l'option « calcul simplifié », le budget de gel (8 s / 90 s) et la bascule
+// automatique qui en découlait SONT SUPPRIMÉS. Mesuré sur une partie de fin : 6,87 ms/tick, donc
+// simuler le plafond coûtait 198 s pour un budget de 90 s → le filet tombait TOUJOURS et l'option
+// « simplifié désactivé » n'était de fait JAMAIS honorée. `WARM_TICKS = 1000`, `WARM`/`simplify`
+// deviennent des CONSTANTES : le total affiché ne peut plus sauter en pleine barre de progression.
+// ⚠ Le débit se mesure désormais sur l'échauffon ENTIER (`sampleFrom = 0`) et non plus sur une
+// fenêtre glissante de 300 ticks : la conso du Collisionneur oscille sur 600 ticks, une fenêtre de
+// 300 tombait sur un creux ou un pic, puis le multipliait par des dizaines de milliers.
+// ⚠ L'extrapolation couvre enfin les COMPTEURS DE FLUX (`colliderConfirms`, `logicTriggered`,
+// `techTree.produced`), qui restaient FIGÉS à l'échauffon (~1 % d'une longue absence) : mesuré
+// +1 382 416 confirmations sur 24 h contre +14 144 en base 386, soit ×98. Autocohérent SANS garde :
+// un Data Center en pause donne un débit nul, donc aucun ajout. NE SONT PAS extrapolés
+// `repairsCount`/`extensionsCount`/`collider.penalties`/`stops` — gestes et événements, pas des flux.
+// L1 : `fmtHeat` gagne TJ/PJ, `fmtEnergyPair` gagne TWh/PWh (les échelles s'arrêtaient à G alors que
+// `fmtSig` ne bascule PAS en scientifique → « 5678 GWh »). `fmtN` de la fiche nucléaire ne formatait
+// RIEN (`String(r)`) → passe par `fmtRateSci`. Compteurs du tutoriel (« 431.87731904025 2/10000 ») et
+// `iconLabel` concaténé (« [object Object]S câblée(s) ») corrigés. `TIER_LABEL` retiré de l'en-tête
+// de fiche (il n'y parlait qu'au concepteur, et repliait en « t4 »/« t5 » bruts).
+// ⚠ ÉCART AU BRIEF, DEMANDE JOUEUR : `fmtDur` affiche les SECONDES entre 1 min et 1 h — « 4min55 »
+// et non « 4 min ». L'écriture passe COMPACTE et SANS ESPACES sur les 4 rangs (« 45s » / « 4min55 » /
+// « 4h50 » / « 3j08h ») : le texte est centré sur UNE tuile, et cette forme coûte 7 caractères au pire
+// (« 59min59 ») là où la forme espacée du brief en coûtait 8 (« 3 j 08 h ») — plus d'information pour
+// MOINS de place. MESURÉ au rendu réel (DM Mono, tuile 26 px) en largeurs de tuile : pire cas compact
+// « 59min59 » = 2,15 contre 2,46 pour « 3 j 08 h » et 2,77 pour la forme espacée « 59 min 59 » ;
+// « 3j08h » = 1,54 contre 2,46. Le décompte déborde donc MOINS qu'avant tout en disant les secondes.
+// ⚠ 3 SITES HORS BRIEF alignés sur `fmtDur` (même défaut, non traité par le lot) : les fiches de
+// chantier souterrain et de forage imprimaient encore des SECONDES BRUTES → « ~289290s » pour 3 j 08 h,
+// dans un panneau où la place n'est pourtant pas contrainte. Carte et fiche disent enfin la même chose.
+const GAME_BUILD = 387;
+const GAME_VERSION = 'Alpha 15.4';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8711,7 +8745,7 @@ const GAME_VERSION = 'Alpha 15.3';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Sur grand écran, l'interface cesse d'être minuscule : elle passe à 150 % à partir de 1400×800 et à 200 % au-delà de 2400×1300 — texte, icônes et menus grossissent d'un seul tenant et restent nets (paliers entiers, pixel art oblige). Rien ne change sur téléphone, tablette ou petit écran.";
+const GAME_NOTES = "Le rattrapage hors-ligne va maintenant jusqu'à 27 h d'absence au lieu de 8, et le récapitulatif prévient quand ce plafond est atteint. La production rattrapée est bien plus fidèle : les confirmations du Collisionneur et les compteurs de recherche avancent enfin pendant l'absence au lieu de rester quasi figés. L'option « Calcul hors-ligne simplifié » disparaît : il n'y a plus qu'un seul régime, identique pour tout le monde. Les décomptes de chantier souterrain s'affichent à la seconde près (4min55) et en durée lisible, sur la carte comme dans la fiche, au lieu de secondes brutes. Enfin, les très grands nombres cessent de déborder : chaleur, énergie stockée et débits des centrales sont écrits à la bonne échelle.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -9534,6 +9568,10 @@ function fmtPower(kw) {
 // Ex. « 512 kJ », « 1,02 MJ », « 2,05 MJ », « 1,5 GJ ».
 function fmtHeat(mj) {
   const a = Math.abs(mj);
+  // 15.x — L'échelle s'arrêtait au gigajoule : un tampon d'antenne de 2 500 GJ s'affichait
+  // « 2500 GJ » au lieu de « 2,5 TJ ». Mêmes rangs que fmtPower / fmtEnergy, qui montent déjà à P.
+  if (a >= 1e9) return fmtSig(mj / 1e9) + ' PJ';
+  if (a >= 1e6) return fmtSig(mj / 1e6) + ' TJ';
   if (a >= 1e3) return fmtSig(mj / 1e3) + ' GJ';
   if (a >= 1) return fmtSig(mj) + ' MJ';
   return Math.round(mj * 1000) + ' kJ';
@@ -9546,6 +9584,21 @@ function fmtPlaytime(ticks) {
   const sec = s % 60;
   const pad = n => String(n).padStart(2, '0');
   return `${pad(h)}:${pad(m)}:${pad(sec)}`;
+}
+// Durée COURTE pour les décomptes dessinés sur la carte (place très limitée : une tuile) et
+// repris dans les fiches de chantier. « 45s » / « 4min55 » / « 4h50 » / « 3j08h ». Le décompte
+// des travaux souterrains s'imprimait en secondes brutes : 289 290 s illisibles pour 3 j 08 h.
+// ⚠ ÉCRITURE COMPACTE, SANS ESPACES, et c'est la contrainte de PLACE qui la dicte : le texte est
+// centré sur UNE tuile (26 px au zoom mini) en DM Mono. La forme espacée « 3 j 08 h » coûte
+// 8 caractères ; celle-ci en coûte 7 au pire (« 59min59 ») tout en portant les SECONDES, que le
+// joueur réclamait (« 4min55 », pas « 4 min »). Un chantier souterrain se suit à la seconde près.
+function fmtDur(sec) {
+  const s = Math.max(0, Math.ceil(sec || 0));
+  const pad = n => (n < 10 ? '0' : '') + n;
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s / 60) + 'min' + pad(s % 60);
+  if (s < 86400) return Math.floor(s / 3600) + 'h' + pad(Math.floor(s % 3600 / 60));
+  return Math.floor(s / 86400) + 'j' + pad(Math.floor(s % 86400 / 3600)) + 'h';
 }
 // Énergie stockée (donnée en kWh) : kWh < 1000, MWh < 1e6, GWh au-delà.
 function fmtEnergy(kwh) {
@@ -9583,7 +9636,16 @@ function fmtEnergyPair(stored, cap) {
   const a = Math.abs(cap);
   let div = 1,
     u = 'kWh';
-  if (a >= 1e6) {
+  // 15.x — L'échelle s'arrêtait au GWh alors que fmtEnergy monte au PWh : les accumulateurs de
+  // fin de partie affichaient « 5678 GWh » (fmtSig ne bascule pas en scientifique) au lieu de
+  // « 5,68 TWh ». Rangs ajoutés dans le même ordre décroissant que les tests suivants.
+  if (a >= 1e12) {
+    div = 1e12;
+    u = 'PWh';
+  } else if (a >= 1e9) {
+    div = 1e9;
+    u = 'TWh';
+  } else if (a >= 1e6) {
     div = 1e6;
     u = 'GWh';
   } else if (a >= 1e3) {
@@ -18373,12 +18435,8 @@ function BuildingDetailModal({
   if (!b) return null;
   const skey = SPRITES_ENABLED ? buildingSpriteKey(id) : null;
   const sdata = skey && SPRITE_DATA[skey];
-  const TIER_LABEL = {
-    t0: I18N.t('Extraction'),
-    t1: I18N.t('Palier 1'),
-    t2: I18N.t('Palier 2'),
-    t3: I18N.t('Palier 3')
-  };
+  // 15.x — Le libellé de palier (« Palier 2 », et le repli brut « t4 » / « t5 » pour les rangs
+  // absents de la table) est retiré de l'en-tête de fiche : il ne parlait qu'au concepteur.
   const TERR_LABEL = {
     land: 'terre',
     coast: I18N.t('côte'),
@@ -18483,15 +18541,7 @@ function BuildingDetailModal({
     className: "ip-sprite",
     src: sdata,
     alt: ""
-  }), React.createElement("b", null, b.name), React.createElement("span", {
-    style: {
-      marginLeft: 'auto',
-      opacity: .55,
-      fontSize: '.66rem',
-      textTransform: 'uppercase',
-      letterSpacing: '.05em'
-    }
-  }, TIER_LABEL[b.tier] || b.tier || '')), React.createElement("div", {
+  }), React.createElement("b", null, b.name)), React.createElement("div", {
     className: "ip-rows",
     style: {
       padding: '12px 14px',
@@ -19237,7 +19287,7 @@ function InfoPanel({
           }, DIRN[d] + (gwired.indexOf(d) >= 0 ? ' ⚠' : '')))));
       }
       if (gwired.length) rows.push(React.createElement("div", { className: "ip-note", key: 'gwarn', style: { color: '#ffcf6b', fontSize: '11px', padding: '2px 0' } },
-        iconLabel(I18N.t("⚠ Face(s) ")) + gwired.map(d => DIRN[d]).join(' · ') + I18N.t(" câblée(s) mais INHIBÉE(S) : leur signal n'entre pas dans la porte. Déplacez le fil sur une face vive, ou inhibez une autre face.")));
+        iconLabel(I18N.t("⚠ Face(s) ") + gwired.map(d => DIRN[d]).join(' · ') + I18N.t(" câblée(s) mais INHIBÉE(S) : leur signal n'entre pas dans la porte. Déplacez le fil sur une face vive, ou inhibez une autre face."))));
       rows.push(React.createElement("div", { className: "ip-row", key: 'gsig' },
         React.createElement("span", { className: "lbl" }, I18N.t("Signal reçu")),
         React.createElement("span", { className: "val", style: { color: lg.logicIn ? '#00E5A0' : 'var(--ink-dim)', fontWeight: 700 } }, lg.logicIn ? '1' : '0')));
@@ -19737,7 +19787,7 @@ function InfoPanel({
     const qpos = cst.queue || 0;
     speedReason = qpos > 0
       ? I18N.t('en attente · ') + qpos + I18N.t(' chantier(s) devant')
-      : I18N.t('en construction') + ' · ' + pct + '%' + (secs != null ? ' · ~' + secs + 's' : ' · ' + I18N.t('en attente de l\'élévateur'));
+      : I18N.t('en construction') + ' · ' + pct + '%' + (secs != null ? ' · ~' + fmtDur(secs) : ' · ' + I18N.t('en attente de l\'élévateur'));
   } else if (bld.paused) {
     speedPct = 0;
     speedReason = I18N.t('en pause (par le joueur)');
@@ -19867,10 +19917,11 @@ function InfoPanel({
     const maxPw = NUC_POWER * upMult;
     const running = st === 'starting' || st === 'running';
     const realFrac = running && maxPw > 0 ? Math.max(0, Math.min(1, (bld.nucCur || 0) / maxPw)) : 0;
-    const fmtN = n => {
-      const r = Math.round(n * 100) / 100;
-      return Number.isInteger(r) ? String(r) : String(r);
-    };
+    // 15.x — `fmtN` ne formatait RIEN (`String(r)`) : ni séparateur de milliers, ni bascule
+    // scientifique. Sur une centrale V2 améliorée, le débit d'intrants sortait « 32768 » au lieu
+    // de « 3,28e4 ». C'est un DÉBIT (« … /s ») : fmtRateSci garde les décimales fines sous le
+    // seuil du joueur et bascule au-dessus, comme partout ailleurs.
+    const fmtN = n => fmtRateSci(n);
     let progress = '';
     if (st === 'starting') progress = ` ${Math.round(100 * (bld.nucTimer || 0) / NUC_START)}%`;else if (st === 'stopping') progress = ` ${bld.nucTimer || 0}/${NUC_STOP}s`;else if (st === 'safety') progress = ` ${Math.ceil((NUC_SAFETY - (bld.nucTimer || 0)) / 60)} min`;
     return React.createElement(React.Fragment, null, React.createElement("div", {
@@ -20347,7 +20398,7 @@ function InfoPanel({
     return React.createElement("div", { className: "ip-row", key: 'uw' },
       React.createElement("span", { className: "lbl" }, I18N.t("Travaux")),
       React.createElement("span", { className: "val", style: { color: '#B084F7', fontWeight: 700 } },iconLabel(
-        '🚧 ' + wname + ' · ' + wpct + '%' + (wsecs != null ? ' · ~' + wsecs + 's' : ' · ' + I18N.t("en attente de l'élévateur")))));
+        '🚧 ' + wname + ' · ' + wpct + '%' + (wsecs != null ? ' · ~' + fmtDur(wsecs) : ' · ' + I18N.t("en attente de l'élévateur")))));
   })(), (antBoost > 1 || antProd > 1) && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
@@ -20636,7 +20687,7 @@ function InfoPanel({
       React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Creusement")), React.createElement("span", { className: "val" }, Math.round(DRILL_TIME / 60) + I18N.t(" min · ") + fmtRateSci(drillStoneAt(layer)) + I18N.t(" pierre/s · 0 → ") + fmtPower(maxKw))),
       // Opération en cours : progression + secondes restantes au régime courant (élévateur inclus).
       work ? React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("En cours")), React.createElement("span", { className: "val", style: { color: 'var(--yellow)' } },
-        Math.round((1 - work.rem / (work.tot || DRILL_TIME)) * 100) + '% · ' + (bld.drillStall > 0 ? I18N.t('reprise dans ') + Math.ceil(bld.drillStall) + 's' : (work.rate || 0) > 1e-6 ? '~' + Math.ceil(work.rem / work.rate) + 's' : I18N.t('à l\'arrêt')))) : null,
+        Math.round((1 - work.rem / (work.tot || DRILL_TIME)) * 100) + '% · ' + (bld.drillStall > 0 ? I18N.t('reprise dans ') + fmtDur(bld.drillStall) : (work.rate || 0) > 1e-6 ? '~' + fmtDur(work.rem / work.rate) : I18N.t('à l\'arrêt')))) : null,
       work ? React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Fin de l'opération")), React.createElement("span", { className: "val" }, I18N.t("la foreuse disparaît · 10 % de poche d'Hélium 3"))) : null,
       React.createElement("button", {
         className: "ip-up densify-btn" + (ready ? '' : ' locked'),
@@ -23018,7 +23069,6 @@ function OptionsModal({
   showLevels,
   showDeficitPct,
   showDeficitSprite,
-  simplifyOffline,
   offlineEnabled,
   onToggleOffline,
   fastUpgrade,
@@ -23034,7 +23084,6 @@ function OptionsModal({
   onToggleLevels,
   onToggleDeficitPct,
   onToggleDeficitSprite,
-  onToggleSimplifyOffline,
   onToggleTips,
   guideEnabled,
   onToggleGuide,
@@ -23239,7 +23288,7 @@ function OptionsModal({
   }, I18N.available().map(code => React.createElement("option", {
     key: code,
     value: code
-  }, I18N.names[code])))), selRow(I18N.t("Grands nombres"), I18N.t("\xC9criture des valeurs au-dessus du seuil. En dessous, s\xE9parateur de milliers dans les deux cas."), numFormat === 'si' ? 'si' : 'sci', [['sci', I18N.t('Scientifique \u2014 2,35e6')], ['si', I18N.t('Pr\xE9fixe SI \u2014 2,35 M')]], onSetNumFormat), selRow(I18N.t("Seuil de bascule"), I18N.t("\xC0 partir de quelle valeur on quitte le s\xE9parateur de milliers. \xAB jamais \xBB donne 2 565 633 264 880 en entier."), numThreshold === Infinity ? 'inf' : String(numThreshold || 1e5), [['1000', '1 000'], ['10000', '10 000'], ['100000', '100 000'], ['1000000', '1 000 000'], ['1000000000', '1 000 000 000'], ['inf', I18N.t('jamais')]], onSetNumThreshold), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Production hors-ligne"), I18N.t("Rattrape la production pendant une absence. D\xE9sactiv\xE9 : le jeu ne progresse que lorsqu'il est ouvert."), offlineEnabled !== false, onToggleOffline), toggleRow(I18N.t("Calcul hors-ligne simplifi\xE9"), I18N.t("Au-del\xE0 d'1 h d'absence, approxime la production (rattrapage quasi instantan\xE9)"), simplifyOffline !== false, onToggleSimplifyOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Guide"), I18N.t("Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)"), guideEnabled !== false, onToggleGuide), DEV_BUILD && toggleRow(I18N.t("Enregistrer mes actions"), I18N.t("Journal de diagnostic : note chaque bouton touché et chaque tuile tapée. Sert à construire le tutoriel."), recOn, () => setRecOn(REC.toggle())), DEV_BUILD && recOn && React.createElement("button", {
+  }, I18N.names[code])))), selRow(I18N.t("Grands nombres"), I18N.t("\xC9criture des valeurs au-dessus du seuil. En dessous, s\xE9parateur de milliers dans les deux cas."), numFormat === 'si' ? 'si' : 'sci', [['sci', I18N.t('Scientifique \u2014 2,35e6')], ['si', I18N.t('Pr\xE9fixe SI \u2014 2,35 M')]], onSetNumFormat), selRow(I18N.t("Seuil de bascule"), I18N.t("\xC0 partir de quelle valeur on quitte le s\xE9parateur de milliers. \xAB jamais \xBB donne 2 565 633 264 880 en entier."), numThreshold === Infinity ? 'inf' : String(numThreshold || 1e5), [['1000', '1 000'], ['10000', '10 000'], ['100000', '100 000'], ['1000000', '1 000 000'], ['1000000000', '1 000 000 000'], ['inf', I18N.t('jamais')]], onSetNumThreshold), toggleRow(I18N.t("Afficher les niveaux"), I18N.t("Petit num\xE9ro de niveau en bas \xE0 gauche des b\xE2timents"), showLevels, onToggleLevels), toggleRow(I18N.t("Afficher l'efficacit\xE9 (%)"), I18N.t("Pourcentage d'efficacit\xE9 \xE0 gauche du niveau, en cas de d\xE9ficit"), showDeficitPct, onToggleDeficitPct), toggleRow(I18N.t("Afficher l'ic\xF4ne de d\xE9ficit"), I18N.t("Petite ic\xF4ne en haut \xE0 droite des b\xE2timents en d\xE9ficit / panne"), showDeficitSprite, onToggleDeficitSprite), sliderRow(I18N.t("Taille des badges"), I18N.t("% déficit, niveau et boost antenne (×N) — réglés ensemble"), badgeScale == null ? 1 : badgeScale, 0.5, 2, 0.1, v => onSetBadgeScale && onSetBadgeScale(v), v => Math.round(v * 100) + '%'), toggleRow(I18N.t("Production hors-ligne"), I18N.t("Rattrape la production pendant une absence. D\xE9sactiv\xE9 : le jeu ne progresse que lorsqu'il est ouvert."), offlineEnabled !== false, onToggleOffline), toggleRow(I18N.t("Am\xE9lioration imm\xE9diate"), I18N.t("En mode Am\xE9liorer, toucher un b\xE2timent le monte direct (sans confirmation)"), fastUpgrade, onToggleFastUpgrade), toggleRow(I18N.t("Astuces"), I18N.t("Afficher une explication \xE0 chaque nouvelle m\xE9canique"), tipsEnabled !== false, onToggleTips), toggleRow(I18N.t("Guide"), I18N.t("Objectif suggéré dans le bandeau après le tutoriel (correctifs et découvertes)"), guideEnabled !== false, onToggleGuide), DEV_BUILD && toggleRow(I18N.t("Enregistrer mes actions"), I18N.t("Journal de diagnostic : note chaque bouton touché et chaque tuile tapée. Sert à construire le tutoriel."), recOn, () => setRecOn(REC.toggle())), DEV_BUILD && recOn && React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: () => REC.exportNow()
   }, I18N.t("Exporter le journal")), toggleRow(I18N.t("Sons"), I18N.t("Effets sonores du jeu (pose, am\xE9lioration, alertes…)"), audioEnabled !== false, onToggleAudio), sliderRow(I18N.t("Volume"), I18N.t("Volume des effets sonores"), audioVolume == null ? 0.55 : audioVolume, 0, 1, 0.05, v => onSetAudioVolume && onSetAudioVolume(v), v => Math.round(v * 100) + '%'), React.createElement("button", {
@@ -23451,7 +23500,7 @@ function TutorialBanner({
   }, counters.map((c, i) => React.createElement("span", {
     key: i,
     className: 'tuto-count-item' + (c[1] >= c[2] ? ' done' : '')
-  }, I18N.t(c[0]), " ", Math.min(c[1], c[2]), "/", c[2])))), React.createElement("button", {
+  }, I18N.t(c[0]), " ", fmtRateSci(Math.min(c[1], c[2])), "/", fmtRateSci(c[2]))))), React.createElement("button", {
     className: "tuto-skip",
     onClick: onSkip,
     title: isGuide ? I18N.t("Désactiver le guide (réactivable dans les Options)") : I18N.t("Passer le tutoriel et tout débloquer")
@@ -23482,6 +23531,9 @@ function OfflineModal({
   }, I18N.t("Absence : "), React.createElement("b", null, report.timeLabel), gains.length ? " — production r\xE9cup\xE9r\xE9e :" : " — rien \xE0 produire."),
   // 14.17 — On nomme le mode de calcul quand il n'est PAS la simulation complète : extrapolation
   // (option « calcul simplifié » ou filet anti-gel) ou rattrapage interrompu par « Passer ».
+  report.capped && React.createElement("div", {
+    className: "offline-note"
+  }, I18N.t("\u23F3 Absence plafonn\xE9e : ") + report.creditedLabel + I18N.t(" cr\xE9dit\xE9es (maximum). Au-del\xE0, la production n'est plus compt\xE9e.")),
   (report.approx || report.skipped) && React.createElement("div", {
     className: "offline-note"
   }, report.skipped ? I18N.t("⏭ Rattrapage interrompu (« Passer ») : la production restante a été abandonnée.")
@@ -23768,7 +23820,6 @@ function App() {
         showDeficitSprite: true,
         showOffIsland: true,
         badgeScale: 1,
-        simplifyOffline: false,
         offlineEnabled: true,
         fastUpgrade: false,
         theme: 'bleu',
@@ -23857,7 +23908,6 @@ function App() {
   const [catchUp, setCatchUp] = useState(null);
   // Drapeau « Passer » du rattrapage hors-ligne : interrompt la simulation et entre dans le jeu.
   const catchUpSkipRef = useRef(false);
-  const [simplifyOffline, setSimplifyOffline] = useState(false);
   const [offlineEnabled, setOfflineEnabled] = useState(true);
   const [theme, setTheme] = useState('bleu');
   // 14.6x - Format des grands nombres. Le state ne sert qu'a REDESSINER : la source de verite lue
@@ -24324,7 +24374,6 @@ function App() {
         showDeficitPct: (g.ui && g.ui.showDeficitPct) !== false,
         showDeficitSprite: (g.ui && g.ui.showDeficitSprite) !== false,
         showOffIsland: (g.ui && g.ui.showOffIsland) !== false,
-        simplifyOffline: !!(g.ui && g.ui.simplifyOffline),
         offlineEnabled: (g.ui && g.ui.offlineEnabled) !== false,
         fastUpgrade: !!(g.ui && g.ui.fastUpgrade),
         theme: g.ui && g.ui.theme === 'inox' ? 'inox' : 'bleu',
@@ -25203,7 +25252,6 @@ function App() {
       showDeficitSprite: true,
       showOffIsland: true,
       badgeScale: 1,
-      simplifyOffline: false,
       offlineEnabled: true,
       fastUpgrade: false,
       theme: 'bleu',
@@ -25222,7 +25270,6 @@ function App() {
     // Champ ADDITIF : absent d'une save < 14.31 → défaut activé (pas de bump SAVE_VERSION).
     g.ui.showOffIsland = up.showOffIsland !== false;
     g.ui.badgeScale = Math.max(0.5, Math.min(2, up.badgeScale || 1));
-    g.ui.simplifyOffline = up.simplifyOffline === true;
     // Production hors-ligne (rétro-compat : champ absent = activée, comportement historique).
     g.ui.offlineEnabled = up.offlineEnabled !== false;
     g.ui.fastUpgrade = !!up.fastUpgrade;
@@ -25249,8 +25296,10 @@ function App() {
   // Rejoue la production manquée pendant une absence (production hors-ligne / idle).
   // Déclenché AU CHARGEMENT (temps depuis la dernière sauvegarde) ET AU RETOUR
   // D'ARRIÈRE-PLAN (onglet masqué / écran verrouillé — la boucle d'anim est gelée).
-  // Plafonné à 8 h et à un budget de calcul pour ne pas figer l'UI. 1 tick = 1 s.
-  const OFFLINE_MAX_TICKS = 8 * 3600;
+  // Plafonné à OFFLINE_MAX_TICKS. 1 tick = 1 s. 100 000 s = 27 h 46 min : au-delà, la
+  // production n'est plus comptée et le récap le DIT (le joueur voyait « Absence : 24 h »
+  // alors que 8 h seulement étaient créditées).
+  const OFFLINE_MAX_TICKS = 100000;
   const sumPortAll = g => {
     const acc = {};
     for (const isl in g.port) for (const k in g.port[isl]) acc[k] = (acc[k] || 0) + (g.port[isl][k] || 0);
@@ -25262,6 +25311,19 @@ function App() {
       ...g.port[isl]
     };
     return o;
+  };
+  // COMPTEURS DE FLUX extrapolables. Les stocks vivent dans g.port ; ces compteurs-là vivent
+  // ailleurs et restaient donc FIGÉS à l'échauffon (collisionneur bloqué à ~1 % d'une longue
+  // absence). On ne prend QUE des compteurs de flux : ni repairsCount / extensionsCount
+  // (gestes du joueur), ni collider.penalties / stops (événements — extrapoler un événement
+  // n'a pas de sens).
+  const snapshotCounters = g => {
+    const t = g.techTree || {};
+    return {
+      colliderConfirms: t.colliderConfirms || 0,
+      logicTriggered: t.logicTriggered || 0,
+      produced: { ...(t.produced || {}) }
+    };
   };
   // Termine le rattrapage : nettoyage, notification « Bon retour », sauvegarde.
   function finishCatchUp(g, before, elapsedSec, how) {
@@ -25281,8 +25343,13 @@ function App() {
         if (d > 0.5) gains.push([k, d]);
       }
       gains.sort((a, b) => b[1] - a[1]);
-      const mins = Math.max(1, Math.round(elapsedSec / 60));
-      const timeLabel = mins >= 60 ? Math.floor(mins / 60) + ' h ' + (mins % 60 < 10 ? '0' : '') + mins % 60 + ' min' : mins + ' min';
+      const labelOf = sec => {
+        const m = Math.max(1, Math.round(sec / 60));
+        return m >= 60 ? Math.floor(m / 60) + ' h ' + (m % 60 < 10 ? '0' : '') + m % 60 + ' min' : m + ' min';
+      };
+      const timeLabel = labelOf(elapsedSec);
+      // Durée RÉELLEMENT créditée quand le plafond mord (cf. OFFLINE_MAX_TICKS).
+      const creditedLabel = labelOf(Math.min(elapsedSec, OFFLINE_MAX_TICKS));
       setOfflineReport({
         timeLabel,
         // 14.17 — On ne coupe PLUS la liste à 12 entrées : le récap montre TOUTES les ressources
@@ -25296,7 +25363,9 @@ function App() {
         // le filet anti-gel a pris la main. Dans les deux cas on le DIT — l'ancienne bascule
         // silencieuse laissait croire que l'option n'était pas respectée.
         approx: !!(how && how.approx),
-        skipped: !!(how && how.skipped)
+        skipped: !!(how && how.skipped),
+        capped: !!(how && how.capped),
+        creditedLabel
       });
     }
     bumpHud();
@@ -25305,8 +25374,8 @@ function App() {
   }
   // Rattrapage hors-ligne en MORCEAUX (non bloquant) : on simule par tranches de ~80 ms en
   // rendant la main à l'UI entre chaque (→ une barre de progression s'affiche, pas d'écran noir).
-  // Au-delà d'1 h d'absence ET si l'option « calcul simplifié » est active, on ne simule qu'un
-  // échauffon puis on EXTRAPOLE le reste au débit moyen mesuré (rattrapage quasi instantané).
+  // Au-delà de WARM_TICKS ticks d'absence, on simule l'échauffon puis on EXTRAPOLE le reste au
+  // débit moyen mesuré sur cet échauffon (stocks des ports ET compteurs de flux).
   function runCatchUp(elapsedSec, onDone) {
     const g = gameRef.current;
     // Option « Production hors-ligne » désactivée : AUCUN rattrapage (ni production, ni
@@ -25320,6 +25389,9 @@ function App() {
       return;
     }
     const ticks = Math.min(Math.floor(elapsedSec), OFFLINE_MAX_TICKS);
+    // Plafond ATTEINT : le joueur doit le savoir, sinon il compare sa vraie absence à une
+    // production qui n'en couvre qu'une partie (et croit à un bug de production).
+    const capped = Math.floor(elapsedSec) > OFFLINE_MAX_TICKS;
     // Le temps de jeu avance aussi hors-ligne (crédité UNE fois ici : la boucle frame ne
     // tique pas pendant le rattrapage, et l'extrapolation simplifiée représente quand même
     // ce temps — pas de double comptage).
@@ -25341,36 +25413,20 @@ function App() {
     // l'option, MAIS aussi imposé automatiquement si la simulation complète s'avère trop longue
     // (voir plus bas) : pendant tout le rattrapage le jeu est GELÉ (ni tick, ni dessin, ni
     // interaction), donc une simulation de plusieurs minutes est indistinguable d'un plantage.
-    const wantSimplify = g.ui.simplifyOffline === true;
-    let simplify = wantSimplify && ticks > 3600;
-    const SAMPLE = 300;
-    // 14.22 — PLANCHER D'ÉCHAUFFON : on simule TOUJOURS au moins 15 min de jeu réel (900 ticks)
-    // avant d'extrapoler (demande joueur « simuler un minimum 15 min avant de faire la
-    // multiplication »). Le mode simplifié CHOISI le faisait déjà, mais la bascule AUTOMATIQUE
-    // (filet anti-gel) coupait où elle voulait et n'ajoutait que SAMPLE : un rattrapage de 8 h
-    // pouvait être extrapolé à partir de ~6 min de simulation, mesurées sur des machines encore
-    // en régime transitoire (stocks qui se remplissent, chantiers en cours) → débits faux, puis
-    // multipliés par des milliers de ticks. Le débit reste mesuré sur les SAMPLE derniers ticks
-    // de l'échauffon (fenêtre de RÉGIME ÉTABLI, après les transitoires du départ).
-    const MIN_WARM = 900;
-    let WARM = simplify ? Math.min(ticks, MIN_WARM) : ticks;
-    let sampleStart = Math.max(0, WARM - SAMPLE);
+    // 15.x — RATTRAPAGE À RÉGIME UNIQUE. Disparaissent : l'option « calcul simplifié », le
+    // budget de gel (8 s / 90 s) et la bascule automatique qui en découlait. Mesure du build 386
+    // sur une partie de fin : 6,87 ms/tick, donc simuler le plafond coûtait 198 s pour un budget
+    // de 90 s — le filet tombait TOUJOURS et l'option « simplifié désactivé » n'était de fait
+    // jamais honorée. On simule désormais WARM_TICKS ticks réels, puis on extrapole le reste au
+    // débit mesuré sur CET échauffon ENTIER (et non plus sur ses 300 derniers ticks : la conso du
+    // Collisionneur oscille sur 600 ticks, une fenêtre de 300 tombait sur un creux ou un pic).
+    const WARM_TICKS = 1000;
+    const WARM = Math.min(ticks, WARM_TICKS);
+    const simplify = ticks > WARM; // reste-t-il quelque chose à extrapoler ?
+    const portSnap = snapshotPort(g);
+    const cntSnap = snapshotCounters(g);
     let done = 0;
-    let baseSnap = null;
-    // Tick auquel `baseSnap` a été pris : le débit se mesure sur (WARM - sampleFrom) ticks RÉELS.
-    // (Avant : diviseur figé à SAMPLE, donc sous-estimation du débit quand la fenêtre de mesure
-    // se retrouvait plus courte — cas de la bascule automatique en cours d'échauffon.)
-    let sampleFrom = 0;
-    // Budget de gel ACCEPTABLE (ms) : au-delà, on bascule en extrapolation.
-    // 14.17 — Retour joueur : « des fois le calcul hors ligne est quasi instantané malgré l'option
-    // calcul rapide désactivée ». C'était CE filet qui se déclenchait, en silence : un budget de 8 s
-    // est vite dépassé sur une grosse partie, donc l'option « simplifié » désactivée n'était de fait
-    // presque jamais respectée. Elle l'est maintenant : quand le joueur a DEMANDÉ le calcul complet,
-    // on lui accorde 90 s de simulation (au lieu de 8) avant de renoncer — le filet ne sert plus que
-    // d'anti-plantage (au-delà, l'écran figé devient indistinguable d'un crash, cf. 14.13). Et quand
-    // il se déclenche quand même, ce n'est plus silencieux : le récap le dit (`approx`).
-    const CATCHUP_BUDGET_MS = wantSimplify ? 8000 : 90000;
-    let approximated = simplify;
+    const approximated = simplify;
     const startedAt = performance.now();
     g.catchingUp = true;
     g._catchUpTs = startedAt; // horodatage de la dernière tranche → chien de garde de `frame`
@@ -25382,13 +25438,9 @@ function App() {
     const OVERLAY_AFTER_MS = 180;
     let overlayShown = false;
     // 14.93 — LA PROGRESSION SE RAPPORTE A CE QUI EST REELLEMENT SIMULE (`WARM`), PAS a la duree
-    // totale de l'absence (`ticks`). En mode simplifie WARM vaut MIN_WARM (900) : sur une absence
-    // de 8 h (28 800 ticks) la barre montait a 900 / 28 800 = 3 %, puis sautait a 100 % — le
-    // joueur voyait une barre qui n'avance pas, puis se remplit d'un coup. Le reste n'est pas
-    // simule, il est EXTRAPOLE : on l'annonce a part au lieu de le compter dans la progression.
-    // ⚠ `WARM` et `simplify` sont des `let` de CETTE fermeture et changent en cours de route (la
-    // bascule anti-gel redefinit les deux pendant l'echauffon) : on les relit a CHAQUE appel,
-    // jamais une valeur capturee au demarrage — sinon le total affiche saute en pleine barre.
+    // totale de l'absence (`ticks`) : le reste n'est pas simule, il est EXTRAPOLE, donc annonce a
+    // part. `WARM` et `simplify` sont desormais des CONSTANTES : plus rien ne les redefinit en
+    // cours de route, le total affiche ne peut plus sauter en pleine barre.
     const showOverlay = () => {
       if (!overlayShown && performance.now() - startedAt < OVERLAY_AFTER_MS) return;
       overlayShown = true;
@@ -25406,7 +25458,6 @@ function App() {
       g._catchUpTs = t0;
       while (done < WARM && performance.now() - t0 < 80) {
         if (catchUpSkipRef.current) break;
-        if (simplify && done === sampleStart && baseSnap == null) { baseSnap = snapshotPort(g); sampleFrom = done; }
         // Une exception ici ne doit JAMAIS tuer la chaîne `setTimeout` : `catchingUp`
         // resterait vrai à vie et la boucle `frame` ne ferait plus ni tick, ni dessin, ni
         // interaction — c'est-à-dire un GEL DÉFINITIF du jeu, y compris après relance.
@@ -25419,53 +25470,50 @@ function App() {
         done++;
       }
       g._catchUpTs = performance.now();
-      // BASCULE AUTOMATIQUE : on mesure le débit réel ; si finir la simulation complète
-      // dépasserait le budget de gel, on repasse en mode « échauffon + extrapolation » (le
-      // joueur retrouve la main en ~1 s au lieu de plusieurs minutes d'écran figé).
-      if (!simplify && done > 0 && done < WARM) {
-        const msPerTick = (performance.now() - startedAt) / done;
-        if ((WARM - done) * msPerTick > CATCHUP_BUDGET_MS) {
-          simplify = true;
-          approximated = true;
-          // ⚠ Le plancher de 15 min s'applique AUSSI ici : on ne renonce jamais à simuler avant
-          // MIN_WARM ticks, même quand le filet anti-gel prend la main. Le joueur garde la main
-          // via le bouton « Passer » de l'overlay (le rattrapage reste découpé en tranches).
-          WARM = Math.min(ticks, Math.max(MIN_WARM, done + SAMPLE));
-          sampleStart = Math.max(0, WARM - SAMPLE);
-          if (baseSnap == null && done >= sampleStart) { baseSnap = snapshotPort(g); sampleFrom = done; }
-        }
-      }
       // « Passer » : on arrête la simulation et on entre dans le jeu avec ce qui est calculé
       // (production restante hors-ligne abandonnée — choix explicite du joueur).
       const skipped = catchUpSkipRef.current;
-      // `skipped` vient d'etre lu depuis `catchUpSkipRef`, que `showOverlay` relit lui-meme.
       showOverlay();
       if (!skipped && done < WARM) {
         setTimeout(step, 0);
         return;
       }
-      // Échauffon terminé → extrapolation du reste au débit moyen (mode simplifié).
-      if (!skipped && simplify && ticks > WARM) {
+      // Échauffon terminé → extrapolation du reste au débit moyen mesuré sur l'échauffon.
+      if (!skipped && simplify) {
         const remaining = ticks - WARM;
-        const sampleTicks = (baseSnap ? WARM - sampleFrom : WARM) || 1;
-        const base = baseSnap || before;
+        const sampleTicks = WARM || 1;
         for (const isl in g.port) {
           // Île apparue APRÈS le snapshot (débloquée pendant l'échauffon) : son port a reçu un
           // kickstart ponctuel, pas un débit → ne pas l'extrapoler (sinon stocks démesurés).
-          if (!base[isl]) continue;
+          if (!portSnap[isl]) continue;
           const p = g.port[isl];
-          const b0 = base[isl] || {};
+          const b0 = portSnap[isl] || {};
           for (const k in p) {
             const rate = ((p[k] || 0) - (b0[k] || 0)) / sampleTicks;
             if (rate > 0) p[k] = (p[k] || 0) + rate * remaining;else if (rate < 0) p[k] = Math.max(0, (p[k] || 0) + rate * remaining);
           }
         }
+        // COMPTEURS DE FLUX au même débit. Autocohérent SANS garde supplémentaire : un Data Center
+        // en pause ou un Collisionneur pénalisé pendant l'échauffon donne un débit nul, donc rien
+        // n'est ajouté — pas de repas gratuit. Troncature à l'entier : ce sont des compteurs
+        // entiers par nature, un « 682 103,4 confirmations » serait le défaut d'affichage qu'on
+        // corrige par ailleurs dans ce même lot.
+        const tt = g.techTree || (g.techTree = {});
+        const grow = (cur, was) => {
+          const rate = ((cur || 0) - (was || 0)) / sampleTicks;
+          return rate > 0 ? Math.floor(rate * remaining) : 0;
+        };
+        tt.colliderConfirms = (tt.colliderConfirms || 0) + grow(tt.colliderConfirms, cntSnap.colliderConfirms);
+        tt.logicTriggered = (tt.logicTriggered || 0) + grow(tt.logicTriggered, cntSnap.logicTriggered);
+        if (tt.produced) for (const k in tt.produced) {
+          tt.produced[k] = (tt.produced[k] || 0) + grow(tt.produced[k], cntSnap.produced[k]);
+        }
       }
       // Diagnostic du dernier rattrapage (transitoire, non sauvegardé) : combien de ticks ont été
       // RÉELLEMENT simulés avant l'éventuelle extrapolation, et sur quelle fenêtre le débit a été
-      // mesuré. Sert à vérifier le plancher de 15 min (et à instruire un futur retour joueur).
-      g._catchUpStats = { ticks, warm: WARM, simulated: done, sampleFrom, approx: approximated, skipped };
-      finishCatchUp(g, before, elapsedSec, { approx: approximated, skipped });
+      // mesuré (désormais l'échauffon entier, donc sampleFrom = 0).
+      g._catchUpStats = { ticks, warm: WARM, simulated: done, sampleFrom: 0, approx: approximated, skipped, capped };
+      finishCatchUp(g, before, elapsedSec, { approx: approximated, skipped, capped });
       onDone && onDone();
     };
     setTimeout(step, 0);
@@ -27779,12 +27827,6 @@ function App() {
     markDirty();
     scheduleSave();
   }
-  function toggleSimplifyOffline() {
-    const g = gameRef.current;
-    g.ui.simplifyOffline = g.ui.simplifyOffline === false;
-    setSimplifyOffline(g.ui.simplifyOffline);
-    scheduleSave();
-  }
   function toggleOffline() {
     const g = gameRef.current;
     g.ui.offlineEnabled = g.ui.offlineEnabled === false;
@@ -27976,7 +28018,7 @@ function App() {
     ctx.fillRect(bx, by, bw * Math.max(0, Math.min(1, prog)), bh);
     if (tile >= 18) {
       const secs = (work.rate || 0) > 1e-6 ? Math.ceil(work.rem / work.rate) : null;
-      const txt = secs != null ? secs + 's' : '⏸';
+      const txt = secs != null ? fmtDur(secs) : '⏸';
       ctx.font = 'bold ' + Math.round(tile * 0.32) + "px 'DM Mono', monospace";
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -29785,7 +29827,6 @@ function App() {
     // force OFF, sinon le joueur reste coincé en couche logique sans bouton pour en sortir.
     if (gameRef.current.ui.logicLayer && !isBuildingUnlocked(gameRef.current, 'logic_wire')) gameRef.current.ui.logicLayer = false;
     setLogicLayer(!!gameRef.current.ui.logicLayer);
-    setSimplifyOffline(gameRef.current.ui.simplifyOffline === true);
     setOfflineEnabled(gameRef.current.ui.offlineEnabled !== false);
     setFastUpgrade(!!gameRef.current.ui.fastUpgrade);
     setTheme(gameRef.current.ui.theme === 'inox' ? 'inox' : 'bleu');
@@ -30336,7 +30377,6 @@ function App() {
       setShowDeficitPct(g.ui.showDeficitPct !== false);
       setShowDeficitSprite(g.ui.showDeficitSprite !== false);
       setBadgeScale(g.ui.badgeScale || 1);
-      setSimplifyOffline(g.ui.simplifyOffline === true);
       setOfflineEnabled(g.ui.offlineEnabled !== false);
       setFastUpgrade(!!g.ui.fastUpgrade);
       setTheme(g.ui.theme === 'inox' ? 'inox' : 'bleu');
@@ -30675,7 +30715,6 @@ function App() {
     showLevels: showLevels,
     showDeficitPct: showDeficitPct,
     showDeficitSprite: showDeficitSprite,
-    simplifyOffline: simplifyOffline,
     offlineEnabled: offlineEnabled,
     onToggleOffline: toggleOffline,
     fastUpgrade: fastUpgrade,
@@ -30693,7 +30732,6 @@ function App() {
     onToggleDeficitSprite: toggleDeficitSprite,
     badgeScale: badgeScale,
     onSetBadgeScale: setBadgeScaleVal,
-    onToggleSimplifyOffline: toggleSimplifyOffline,
     onToggleTips: toggleTips,
     guideEnabled: guideEnabled,
     onToggleGuide: toggleGuide,
