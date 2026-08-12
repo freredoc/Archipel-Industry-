@@ -8870,8 +8870,32 @@ const SAVE_VERSION = 31;
 // PATCH VENAIT D'ÉCRIRE. Il ne pouvait donc que passer, sans rien prouver de ce que voit le joueur.
 // RÈGLE : quand un patch écrit un champ de `g.ui`, chercher s'il existe un `useState` qui le
 // double, et asserter sur le RENDU (ici `.tab-logic`), jamais sur le champ écrit.
-const GAME_BUILD = 391;
-const GAME_VERSION = 'Alpha 15.8';
+// 15.9 — LOT L5 : fiche Collisionneur à ONGLETS (État / Recherches / Surcadençage), recherches
+// EXPLIQUÉES, et SURCADENÇAGE P4/P5 — première mécanique de jeu ajoutée depuis plusieurs lots.
+// Les trois courbes CONTINUENT sans cas particulier : He3 ×4 par palier (1 → 4 → 16 → 64 → 256),
+// puissance ×16 (32 MW → 512 MW → 8,39 GW → 134 GW → 2,15 TW), coût ×4 depuis la Réparation III
+// (1 000 → 4 000 → 16 000 moteurs quantiques), seuils dans la courbe des paliers (…→ 1e5 → 1e6).
+// Payé AU PORT DE L'ÎLE 6, comme le forage. Confirmations ×2 en P4, ×4 en P5.
+// ⚠ ARCHITECTURE À NE PAS « SIMPLIFIER » : le palier de SURCADENÇAGE vit dans `colliderEffPal()`,
+// SÉPARÉ du palier de NŒUDS `colliderPalier()`. `palEff` ne nourrit QUE le plafond électrique et la
+// soif d'He3 ; les saveurs, les bits, les objectifs, le miroir `co.palier` et `colliderCompare`
+// restent au palier de nœuds (≤ 3). Pousser 4 ou 5 dans `co.palier` CASSERAIT l'émission de codes —
+// `COLLIDER_FLAVORS[4]` n'existe pas. C'est la preuve centrale du lot (V8 et V10 en miroir).
+// ⚠ IRRÉVERSIBLE PAR CONCEPTION, pas par oubli : aucun code, nulle part, ne baisse `co.overclock` ;
+// `activateOverclock` ne sait que monter d'EXACTEMENT un palier. Un mini-écran de confirmation
+// affiche AVANT le clic la nouvelle soif d'He3, la nouvelle conso, le boost, le coût et le seuil.
+// AUCUN garde-fou nouveau (arbitrage Ethan) : surcadencer sans les réserves ARRÊTE la machine et
+// reperd les 10 min de démarrage — la fiche le dit, elle ne l'empêche pas.
+// ⚠ `RESEARCH_DEFS.sep` N'A PAS DE CHAMP `base` (c'est `{ mult: 1.1 }`) : toute lecture de `d.base`
+// doit rester GARDÉE. Un `d.base.toFixed()` nu plante le rendu de l'onglet ENTIER, et `node --check`
+// ne le voit pas — c'est le défaut que la sentinelle V3 attrape, en cliquant sur l'onglet.
+// ⚠ Les deux `useState` (`colTab`, `ocAsk`) sont déclarés EN TÊTE de composant, inconditionnellement.
+// Les rapprocher de leur usage dans la branche `info.mode === 'collider'` violerait la règle des
+// hooks : l'ordre changerait selon la fiche ouverte, et React planterait.
+// ANCRE FUTURE : un P6 s'ajoute par une ligne dans `COLLIDER_POWER`, une dans `COLLIDER_HE3`, une
+// dans `COLLIDER_OVERCLOCK`, plus le plafond de la borne au chargement. Rien d'autre.
+const GAME_BUILD = 392;
+const GAME_VERSION = 'Alpha 15.9';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8880,7 +8904,7 @@ const GAME_VERSION = 'Alpha 15.8';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Correctif : après avoir cliqué sur « Y aller » depuis une alerte de porte logique, la barre d'outils restait en mode bâtiment alors que le jeu, lui, était déjà passé en mode logique. Démolir visait alors la couche logique alors que l'écran affichait autre chose — on pouvait effacer un élément logique en croyant toucher un bâtiment. Les deux sont désormais toujours d'accord.";
+const GAME_NOTES = "La fiche du Collisionneur se range en trois onglets une fois le dernier palier débloqué : État, Recherches, Surcadençage. L'onglet Recherches explique enfin ce que chaque recherche fait, montre le sens de son effet et affiche la progression vers le prochain point — une information qui n'existait nulle part. Nouveauté : le SURCADENÇAGE. Deux paliers au-delà du nominal font compter chaque manche double puis quadruple, au prix d'une soif d'hélium 3 et d'une consommation électrique bien plus lourdes. L'activation est définitive : un écran de confirmation montre tout ce que vous engagez avant le clic.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -11546,7 +11570,10 @@ const COLLIDER_EXCEPTIONS = { '000': 'electron', '111': 'positron' };
 const COLLIDER_START = 600;
 const COLLIDER_RAMP = 300;    // §4 : sigmoïde de puissance sur 5 min, MONTANTE ET DESCENDANTE
 // §4 Plafond de puissance par palier (kW) : P1 32 MW, ×16 → P2 512 MW, ×16 → P3 8192 MW.
-const COLLIDER_POWER = { 1: 32768, 2: 524288, 3: 8388608 };
+// 15.x — SURCADENÇAGE : les courbes CONTINUENT (×16 la puissance, ×4 l'hélium par palier).
+// P4 = 134 GW, P5 = 2,15 TW. ANCRE FUTURE : un P6 s'ajoute ici et dans COLLIDER_HE3 /
+// COLLIDER_OVERCLOCK — une ligne par table, rien d'autre à toucher.
+const COLLIDER_POWER = { 1: 32768, 2: 524288, 3: 8388608, 4: 134217728, 5: 2147483648 };
 const COLLIDER_POWER_MIN = 1024; // plancher de la sigmoïde (1 MW)
 // 14.17 — CARBURANT DU COLLISIONNEUR : hélium 3 (demande joueur « le Collisionneur ne consomme pas
 // d'hélium 3 »). C'était le chaînon manquant du souterrain : la foreuse révèle les poches d'He3, le
@@ -11561,8 +11588,29 @@ const COLLIDER_POWER_MIN = 1024; // plancher de la sigmoïde (1 MW)
 // sort toujours 0,01 He3/s de base (×2/niveau) → il faut ~Nv.7 pour couvrir P1, ~Nv.9 pour P2 et
 // ~Nv.11 pour P3. C'est exactement le genre de raideur que le 14.18 avait corrigé en descendant
 // de ×8 à ×2 : si le palier 3 devient injouable, c'est ici qu'il faut redescendre.
-const COLLIDER_HE3 = { 1: 1, 2: 4, 3: 16 };
+const COLLIDER_HE3 = { 1: 1, 2: 4, 3: 16, 4: 64, 5: 256 };
 const colliderHe3Need = palier => COLLIDER_HE3[palier] || COLLIDER_HE3[1];
+// 15.x — PALIERS 4/5 (surcadençage). Coût ×4 depuis la Réparation III (1 000 moteurs → 4 000
+// → 16 000), seuils de confirmations dans la courbe des paliers (100 → 1 000 → 10 000 → 1e5 →
+// 1e6), boost ×2 par cran. IRRÉVERSIBLE PAR CONCEPTION : aucun code, nulle part, ne baisse
+// `co.overclock` — c'est la règle, pas un oubli (arbitrage Ethan : « s'il passe, il passe »).
+const COLLIDER_OVERCLOCK = {
+  4: { cost: { moteur_quantique: 4000 },  conf: 100000,  boost: 2 },
+  5: { cost: { moteur_quantique: 16000 }, conf: 1000000, boost: 4 }
+};
+// Palier EFFECTIF : ne pilote QUE le plafond électrique et la soif d'He3. Les saveurs, les bits,
+// les objectifs et le puzzle restent au palier de NŒUDS (max 3) — pousser 4/5 dans co.palier ou
+// dans colliderCompare casserait l'émission de codes (COLLIDER_FLAVORS[4] n'existe pas).
+function colliderEffPal(game) {
+  const co = game && game.collider;
+  const oc = co && +co.overclock || 0;
+  return oc >= 4 ? Math.min(oc, 5) : colliderPalier(game);
+}
+function colliderBoost(game) {
+  const oc = game && game.collider && +game.collider.overclock || 0;
+  const d = COLLIDER_OVERCLOCK[oc];
+  return d ? d.boost : 1;
+}
 // §6 Confirmations requises par palier (valident les nœuds de recherche).
 const COLLIDER_GOALS = { 1: 100, 2: 1000, 3: 10000 };
 // §5 Data Center : débit de base 0,0625 particule/tick, ×2 par niveau ; au-delà de 4/s le niveau
@@ -12011,7 +12059,8 @@ function processLogic(game, isl) {
     co.roundDone = co.round; // manche consommée (14.16)
     if (cmp) {
       if (!game.techTree) game.techTree = {};
-      const gain = Math.max(1, Math.round(co.dcReward || 1));
+      // 15.x — Surcadençage : chaque manche confirmée compte ×colliderBoost (P4 ×2, P5 ×4).
+      const gain = Math.max(1, Math.round((co.dcReward || 1) * colliderBoost(game)));
       game.techTree.colliderConfirms = (game.techTree.colliderConfirms || 0) + gain;
       co.lastVerdict = 'ok';
       qSfx(game, 'colliderMatch'); // ⚠ FILE : processLogic est appelée depuis tickIsland
@@ -12294,7 +12343,10 @@ function processCollider(game, isl) {
   if (!game.collider) game.collider = defaultColliderState();
   const co = game.collider;
   const palier = colliderPalier(game);
-  const cap = COLLIDER_POWER[palier] || COLLIDER_POWER[1];
+  // 15.x — `palEff` ne nourrit QUE `cap` et `he3Need`. Le miroir `co.palier` et tout ce qui touche
+  // aux codes restent sur `palier` (≤ 3) — cf. commentaire de colliderEffPal.
+  const palEff = colliderEffPal(game);
+  const cap = COLLIDER_POWER[palEff] || COLLIDER_POWER[1];
   // 14.39 — Miroir d'affichage posé AVANT tout early-return. La fonction sortait sans toucher
   // `co.palier` quand la machine est éteinte ou non réparée : la valeur restait figée à ce qu'elle
   // valait au dernier tick actif, et une save faite sous l'ancienne règle de palier affichait
@@ -12367,7 +12419,7 @@ function processCollider(game, isl) {
   co.sigT = (co.sigT || 0) + 1;
   const osc = COLLIDER_POWER_MIN + (cap - COLLIDER_POWER_MIN) * (1 + Math.sin(2 * Math.PI * co.sigT / COLLIDER_START)) / 2;
   // ── 14.17 — CARBURANT : hélium 3, en tout ou rien (cf. colliderDrawHe3). ──
-  co.he3Need = colliderHe3Need(palier);
+  co.he3Need = colliderHe3Need(palEff);
   // ⚠ 14.24 — le manque de COURANT est évalué AVANT le plein. Jusqu'ici l'He3 était prélevé PUIS la
   // machine mise en pause dans le même tick : elle brûlait donc son carburant pendant toute une
   // panne électrique, exactement ce que le « tout ou rien » de 14.17 voulait éviter (« sinon l'He3
@@ -19138,6 +19190,7 @@ function InfoPanel({
   onUpgradeElevator,
   onToggleCollider,
   onBuyResearch,
+  onOverclock,
   onLaunchCollider,
   onToggleColliderAuto,
   onSetElevatorMode,
@@ -19145,6 +19198,12 @@ function InfoPanel({
   onAskPort
 }) {
   const ref = useRef(null);
+  // 15.x — Fiche Collisionneur à ONGLETS (État / Recherches / Surcadençage) une fois P3 débloqué.
+  // Hooks DÉCLARÉS ICI, inconditionnellement : les poser dans la branche `info.mode === 'collider'`
+  // violerait la règle des hooks (ordre variable selon la fiche ouverte) — plantage React garanti.
+  const [colTab, setColTab] = useState('etat');
+  // Mini-écran de confirmation du surcadençage (0 = fermé, sinon palier visé).
+  const [ocAsk, setOcAsk] = useState(0);
   // Le tap qui ouvre/déplace la fiche ne doit pas cliquer un bouton sous le doigt.
   const guard = useGhostGuard(info);
   const [pos, setPos] = useState({
@@ -19328,28 +19387,33 @@ function InfoPanel({
     // le bouton est grisé et la cause nommée, au lieu de laisser le joueur cliquer dans le vide.
     const launchBlock = colliderLaunchBlock(game);
     const logicLinked = repaired && colliderLogicLinked(game);
+    // 15.x — Onglets dès que P3 est débloqué (nœud 43). Avant : fiche d'une seule pièce, inchangée.
+    const tabbed = isNodeConfirmed(game, COLLIDER_PUZZLE_NODES[2]);
+    const palEffF = colliderEffPal(game);
     const rows = [];
     const row = (k, lbl, val, color) => rows.push(React.createElement("div", { className: "ip-row", key: k }, React.createElement("span", { className: "lbl" }, lbl), React.createElement("span", { className: "val", style: color ? { color, fontWeight: 700 } : null }, val)));
     row('st', I18N.t('État'), stLabel, stColor);
-    row('pal', I18N.t('Palier'), 'P' + pal + ' · ' + Object.keys(COLLIDER_FLAVORS[pal] || {}).length + ' ' + I18N.t('saveurs') + ' · ' + colliderBits(pal) + ' ' + I18N.t('bits'));
+    row('pal', I18N.t('Palier'), 'P' + palEffF + (palEffF > 3 ? ' (' + I18N.t('surcadencé') + ')' : '') + ' · ' + Object.keys(COLLIDER_FLAVORS[pal] || {}).length + ' ' + I18N.t('saveurs') + ' · ' + colliderBits(pal) + ' ' + I18N.t('bits'));
     if (repaired && co.state === 'starting') {
       const left = Math.max(0, colliderStartOf() - (co.timer || 0));
       row('rem', I18N.t('Démarrage restant'), fmtPlaytime(left).replace(/^00:/, ''), 'var(--orange)');
     }
     // La conso OSCILLE sur 10 min (14.08) : on montre la valeur courante ET la plage.
-    row('pw', I18N.t('Puissance'), fmtPower(co.cur || 0) + ' / ' + fmtPower(COLLIDER_POWER[pal] || 0), co.powered === false ? 'var(--red)' : null);
-    if (repaired && colOn) row('osc', I18N.t('Conso (oscillation 10 min)'), fmtPower(COLLIDER_POWER_MIN) + ' → ' + fmtPower(COLLIDER_POWER[pal] || 0));
+    row('pw', I18N.t('Puissance'), fmtPower(co.cur || 0) + ' / ' + fmtPower(COLLIDER_POWER[palEffF] || 0), co.powered === false ? 'var(--red)' : null);
+    if (repaired && colOn) row('osc', I18N.t('Conso (oscillation 10 min)'), fmtPower(COLLIDER_POWER_MIN) + ' → ' + fmtPower(COLLIDER_POWER[palEffF] || 0));
     // 14.17 — CARBURANT : l'hélium 3 alimente enfin quelque chose. Il arrive par TUYAU sur le
     // landmark (port si le réseau y est relié, citerne du réseau sinon), en tout ou rien.
     // 14.58 — Gate élargi à l'ARRÊT TOTAL He3 : la machine y est `enabled === false`, donc la ligne
     // aurait disparu au moment précis où elle est la plus utile (§3.3 du brief la met en périmètre).
-    if ((repaired && colOn) || (repaired && co.halt === 'fuel')) row('he3', I18N.t('Hélium 3'), fmtPort(colliderHe3Need(pal)) + ' /s' + (co.halt === 'fuel' ? ' · ' + I18N.t('MANQUANT (tuyau ?)') : ''), co.halt === 'fuel' ? 'var(--red)' : 'var(--green)');
+    if ((repaired && colOn) || (repaired && co.halt === 'fuel')) row('he3', I18N.t('Hélium 3'), fmtPort(colliderHe3Need(palEffF)) + ' /s' + (co.halt === 'fuel' ? ' · ' + I18N.t('MANQUANT (tuyau ?)') : ''), co.halt === 'fuel' ? 'var(--red)' : 'var(--green)');
     // 14.31 (option 2) — Le raccordement au CÂBLE est désormais une vraie condition : sans réseau
     // câble adjacent, la machine n'est plus alimentée du tout. On le dit AVANT que le joueur ne
     // cherche pourquoi son démarrage recule.
     if (repaired && colOn) row('wr', I18N.t('Câble'), co.wireOk ? I18N.t('relié au réseau ✓') : I18N.t('non relié — amenez un câble jusqu\'au Collisionneur'), co.wireOk ? 'var(--green)' : 'var(--red)');
     if (co.halt === 'power') row('nop', I18N.t('Électricité'), I18N.t('insuffisante — machine ARRÊTÉE, les 10 min de démarrage sont perdues'), 'var(--red)');
-    row('cf', I18N.t('Confirmations'), fmtPort(conf) + (goal ? ' / ' + fmtPort(goal) : ''), conf >= goal && goal ? 'var(--green)' : null);
+    // 15.x — Passé P3, « conf / 10 000 » était un non-sens (objectif dépassé par construction) :
+    // la progression vers le PROCHAIN POINT vit désormais dans l'onglet Recherches.
+    row('cf', I18N.t('Confirmations'), fmtPort(conf) + (goal && !tabbed ? ' / ' + fmtPort(goal) : ''), tabbed || (conf >= goal && goal) ? 'var(--green)' : null);
     // 14.24 — Les deux conditions de lancement, visibles en permanence : le joueur sait AVANT
     // d'atteindre l'état « prêt » ce qui lui manque (réseau logique câblé, recherche du palier).
     if (repaired && colOn) row('lk', I18N.t('Réseau logique'), logicLinked ? I18N.t('émetteur et vanne câblés ✓') : I18N.t('non relié — câblez l\'émetteur ET la vanne'), logicLinked ? 'var(--green)' : 'var(--orange)');
@@ -19397,7 +19461,14 @@ function InfoPanel({
       })(),
       React.createElement("span", { className: "ip-name" }, I18N.t('Collisionneur')),
       React.createElement("button", { className: "ip-close", onClick: onClose, title: I18N.t("Fermer") }, "\xD7")
-    ), React.createElement("div", { className: "ip-rows" }, rows,
+    ),tabbed && React.createElement("div", { className: "ip-nuc-mats", key: 'coltabs', style: { gridTemplateColumns: '1fr 1.2fr 1.5fr', margin: '8px 0 10px' } },
+      [['etat', I18N.t('État')], ['rech', I18N.t('Recherches')], ['sur', I18N.t('Surcadençage')]].map(t =>
+        React.createElement("button", {
+          key: 'ct' + t[0],
+          className: 'ip-nuc-mat' + (colTab === t[0] ? ' on' : ''),
+          onClick: () => { setColTab(t[0]); setOcAsk(0); }
+        }, t[1]))), React.createElement("div", { className: "ip-rows" },
+      (!tabbed || colTab === 'etat') && React.createElement(React.Fragment, { key: 'tab-etat' }, rows,
       // LANCEMENT DE LA SÉQUENCE (14.08) : après les 10 min de démarrage la machine est « prête »
       // mais n'émet aucun code tant que le joueur n'appuie pas ici. Une pause ou une pénalité
       // annule le lancement ET remet le démarrage à zéro.
@@ -19433,34 +19504,122 @@ function InfoPanel({
         style: { marginTop: '8px' },
         onClick: () => onToggleCollider && onToggleCollider(),
         title: colOn ? I18N.t("Éteindre le Collisionneur (il cesse de consommer ; ⚠ le démarrage de 10 min repartira de zéro)") : I18N.t("Rallumer le Collisionneur (le démarrage de 10 min repart de zéro)")
-      }, iconLabel(colOn ? '⏸ ' + I18N.t('Éteindre le Collisionneur') : '▶ ' + I18N.t('Allumer le Collisionneur'))),
-      // ── RECHERCHES INFINIES (nœud 43) — 14.61, lot 3B ────────────────────────────────────
-      // Section masquée tant que le nœud 43 n'est pas confirmé (J10) : avant, aucun point ne peut
-      // exister et une section vide éventerait la suite. ⚠ `var(--violet)` n'existe pas dans la
-      // palette CSS du jeu → littéral #B47CFF (signalé au rapport).
-      isNodeConfirmed(game, COLLIDER_PUZZLE_NODES[2]) && React.createElement("div", { className: "ip-row ip-theo", key: 'rhead', style: { marginTop: '10px' } },
-        React.createElement("span", { className: "lbl" }, I18N.t('Points de recherche')),
-        React.createElement("span", { className: "val", style: { color: '#B47CFF', fontWeight: 700 } },
-          fmtPort(researchPointsAvailable(game)) + ' / ' + fmtPort(researchPointsEarned(game)))),
-      isNodeConfirmed(game, COLLIDER_PUZZLE_NODES[2]) && RESEARCH_KEYS.map(k => {
-        const lvl = researchLvl(game, k);
-        const max = lvl >= RESEARCH_CAP;
-        const can = !max && researchPointsAvailable(game) >= 1;
-        const d = RESEARCH_DEFS[k];
-        const label = { upg: I18N.t("Coût d'amélioration"), transit: I18N.t('Coût de transit'), remblai: I18N.t('Coût de remblai'), sep: I18N.t('Rendement du séparateur'), boot: I18N.t('Démarrage du Collisionneur') }[k];
-        const eff = d.mult
-          ? '×' + (Math.pow(d.mult, lvl)).toFixed(2)
-          : (d.base - d.step * lvl).toFixed(2) + (k === 'boot' ? ' s' : '');
-        return React.createElement("button", {
-          key: 'r_' + k,
-          className: "ip-up" + (can ? ' armed' : ' locked'),
-          style: { marginTop: '6px' },
-          disabled: !can,
-          onClick: () => can && onBuyResearch && onBuyResearch(k),
-          title: max ? I18N.t('Recherche au maximum')
-            : I18N.t('⚠ Le point dépensé est DÉFINITIF et ne peut pas être récupéré.')
-        }, label + ' — Nv. ' + lvl + '/' + RESEARCH_CAP + ' · ' + eff + (max ? ' · ' + I18N.t('max') : can ? ' · −1 pt' : ''));
-      })));
+      }, iconLabel(colOn ? '⏸ ' + I18N.t('Éteindre le Collisionneur') : '▶ ' + I18N.t('Allumer le Collisionneur')))),
+      // ── ONGLET RECHERCHES ── confirmations, prochain point (doublement), achats expliqués.
+      // « Démarrage du Collisionneur » est RETIRÉ de l'affichage (arbitrage Ethan) : sa def reste
+      // (colliderStartOf lit toujours le niveau acquis, researchPointsSpent le compte toujours) —
+      // seuls les POINTS FUTURS ne peuvent plus y aller.
+      tabbed && colTab === 'rech' && (() => {
+        let nxt = RESEARCH_FIRST;
+        if (conf >= RESEARCH_FIRST) { let t = RESEARCH_FIRST; while (conf >= t * 2) t *= 2; nxt = t * 2; }
+        const pctN = Math.max(0, Math.min(100, Math.round(conf / nxt * 100)));
+        const two = (l, r, k, dim) => React.createElement("div", { key: k, style: { display: 'flex', justifyContent: 'space-between', gap: '8px', opacity: dim ? .62 : 1 } },
+          React.createElement("span", null, l), r != null ? React.createElement("span", null, r) : null);
+        return React.createElement(React.Fragment, { key: 'tab-rech' },
+          React.createElement("div", { className: "ip-row", key: 'rcf' },
+            React.createElement("span", { className: "lbl" }, I18N.t('Confirmations')),
+            React.createElement("span", { className: "val", style: { color: 'var(--green)' } }, fmtPort(conf))),
+          React.createElement("div", { className: "ip-row ip-theo", key: 'rpts', style: { marginTop: '6px' } },
+            React.createElement("span", { className: "lbl" }, I18N.t('Points de recherche')),
+            React.createElement("span", { className: "val", style: { color: '#B47CFF', fontWeight: 700 } },
+              fmtPort(researchPointsAvailable(game)) + ' / ' + fmtPort(researchPointsEarned(game)))),
+          React.createElement("div", { className: "ip-row", key: 'rnxt' },
+            React.createElement("span", { className: "lbl" }, I18N.t('Prochain point')),
+            React.createElement("span", { className: "val" }, fmtPort(conf) + ' / ' + fmtPort(nxt))),
+          React.createElement("div", { className: "ip-nuc-gauge", key: 'rg', style: { marginTop: '4px' } },
+            React.createElement("div", { className: "ip-nuc-gauge-fill", style: { width: pctN + '%' } }),
+            React.createElement("span", { className: "ip-nuc-gauge-lbl" }, pctN + ' %')),
+          RESEARCH_KEYS.filter(k => k !== 'boot').map(k => {
+            const lvl = researchLvl(game, k);
+            const max = lvl >= RESEARCH_CAP;
+            const can = !max && researchPointsAvailable(game) >= 1;
+            const d = RESEARCH_DEFS[k];
+            const label = { upg: I18N.t("Coût d'amélioration"), transit: I18N.t('Coût de transit'), remblai: I18N.t('Coût de remblai'), sep: I18N.t('Rendement du séparateur') }[k];
+            // ⚠ `sep` n'a PAS de `base` (c'est { mult: 1.1 }) : toute lecture de d.base doit être
+            // gardée. Un `d.base.toFixed()` non gardé plante le rendu de l'onglet entier.
+            const expl = {
+              upg: I18N.t('Chaque niveau d\'un bâtiment coûte ×') + (d.base != null ? d.base.toFixed(2) : '?') + I18N.t(' le précédent — la recherche abaisse ce facteur.'),
+              transit: I18N.t('Facteur de coût des envois : bateau entre îles ET élévateur du souterrain.'),
+              remblai: I18N.t('Facteur de coût du remblai d\'une tuile d\'eau (base ×') + (d.base != null ? d.base.toFixed(0) : '?') + ').',
+              sep: I18N.t('Sorties Hélium 3 ET Hélium 4 du Séparateur cryogénique, multiplicatives.')
+            }[k];
+            const effCur = d.mult ? '×' + Math.pow(d.mult, lvl).toFixed(2) : '×' + (d.base - d.step * lvl).toFixed(2);
+            const effNxt = d.mult ? '×' + Math.pow(d.mult, lvl + 1).toFixed(2) : '×' + (d.base - d.step * (lvl + 1)).toFixed(2);
+            return React.createElement("button", {
+              key: 'r_' + k,
+              className: "ip-up" + (can ? ' armed' : ' locked'),
+              style: { marginTop: '6px', display: 'block', width: '100%', textAlign: 'left', lineHeight: 1.9, padding: '7px 12px' },
+              disabled: !can,
+              onClick: () => can && onBuyResearch && onBuyResearch(k),
+              title: max ? I18N.t('Recherche au maximum')
+                : I18N.t('⚠ Le point dépensé est DÉFINITIF et ne peut pas être récupéré.')
+            }, two(label, 'Nv. ' + lvl + '/' + RESEARCH_CAP, 'l1'),
+              React.createElement("div", { key: 'l2', style: { opacity: .62, fontSize: '.92em' } }, expl),
+              two(max ? effCur + ' · ' + I18N.t('max') : effCur + ' → ' + effNxt, max ? '' : '−1 pt', 'l3'));
+          }));
+      })(),
+      // ── ONGLET SURCADENÇAGE ── P4/P5, activation IRRÉVERSIBLE via mini-écran de confirmation.
+      tabbed && colTab === 'sur' && (() => {
+        const two = (l, r, k, o) => React.createElement("div", { key: k, style: { display: 'flex', justifyContent: 'space-between', gap: '8px', opacity: o || 1 } },
+          React.createElement("span", null, l), React.createElement("span", null, r));
+        if (ocAsk) {
+          const d = COLLIDER_OVERCLOCK[ocAsk];
+          const okConf = conf >= d.conf;
+          const costTxt = Object.keys(d.cost).map(k => fmtPort(d.cost[k]) + ' ' + (RES_SHORT[k] || k)).join(' + ');
+          return React.createElement(React.Fragment, { key: 'tab-oc' },
+            React.createElement("div", { className: "ip-row ip-theo", key: 'ot' },
+              React.createElement("span", { className: "lbl" }, I18N.t('Passer au Palier ') + ocAsk),
+              React.createElement("span", { className: "val", style: { color: 'var(--orange)' } }, I18N.t('irréversible'))),
+            React.createElement("div", { className: "ip-fluxpri-lbl", key: 'ow', style: { whiteSpace: 'normal', lineHeight: 1.6, margin: '6px 0 8px' } },
+              I18N.t('Comme un point de recherche : une fois confirmé, AUCUN retour possible. La machine restera à ce palier même si vous ne pouvez pas le tenir — un déficit l\'ARRÊTE et les 10 min de démarrage sont reperdues.')),
+            React.createElement("div", { className: "ip-row", key: 'oh' }, React.createElement("span", { className: "lbl" }, I18N.t('Hélium 3')),
+              React.createElement("span", { className: "val", style: { color: 'var(--orange)' } }, fmtPort(colliderHe3Need(palEffF)) + ' → ' + fmtPort(colliderHe3Need(ocAsk)) + ' /s')),
+            React.createElement("div", { className: "ip-row", key: 'op' }, React.createElement("span", { className: "lbl" }, I18N.t('Électricité (pic)')),
+              React.createElement("span", { className: "val", style: { color: 'var(--orange)' } }, fmtPower(COLLIDER_POWER[palEffF] || 0) + ' → ' + fmtPower(COLLIDER_POWER[ocAsk] || 0))),
+            React.createElement("div", { className: "ip-row", key: 'ob' }, React.createElement("span", { className: "lbl" }, I18N.t('Confirmations')),
+              React.createElement("span", { className: "val", style: { color: 'var(--green)' } }, '×' + d.boost + ' ' + I18N.t('par manche'))),
+            React.createElement("div", { className: "ip-row", key: 'oc' }, React.createElement("span", { className: "lbl" }, I18N.t('Coût')),
+              React.createElement("span", { className: "val" }, costTxt)),
+            React.createElement("div", { className: "ip-row", key: 'oq' }, React.createElement("span", { className: "lbl" }, I18N.t('Requis')),
+              React.createElement("span", { className: "val", style: { color: okConf ? 'var(--green)' : 'var(--red)' } }, fmtPort(d.conf) + ' ' + I18N.t('confirmations') + (okConf ? ' ✓' : ' ✗'))),
+            React.createElement("button", {
+              key: 'ok', className: 'ip-up' + (okConf ? ' armed' : ' locked'), disabled: !okConf,
+              style: { marginTop: '12px', display: 'block', width: '100%' },
+              onClick: () => { if (onOverclock && onOverclock(ocAsk)) setOcAsk(0); }
+            }, '⚠ ' + I18N.t('Confirmer — pas de retour possible')),
+            React.createElement("button", { key: 'ko', className: 'ip-pause', style: { marginTop: '6px', display: 'block', width: '100%' }, onClick: () => setOcAsk(0) }, I18N.t('Annuler')));
+        }
+        const card = (lvl) => {
+          const d = COLLIDER_OVERCLOCK[lvl] || null;
+          const active = palEffF === lvl;
+          const acquired = palEffF >= lvl;
+          const isNext = lvl === palEffF + 1;
+          const okConf = d && conf >= d.conf;
+          const canOpen = d && isNext && repaired;
+          const right = acquired ? (active ? '✓ ' + I18N.t('actif') : I18N.t('acquis'))
+            : !isNext ? '🔒 ' + I18N.t('palier précédent requis')
+            : okConf ? I18N.t('activer…')
+            : '🔒 ' + fmtPort(d.conf) + ' ' + I18N.t('conf. requises');
+          return React.createElement("button", {
+            key: 'oc' + lvl,
+            className: 'ip-up' + (active ? ' armed' : canOpen && okConf ? ' armed' : ' locked'),
+            disabled: !canOpen,
+            style: { marginTop: '6px', display: 'block', width: '100%', textAlign: 'left', lineHeight: 1.9, padding: '7px 12px' },
+            onClick: () => canOpen && setOcAsk(lvl),
+            title: acquired ? I18N.t('Palier acquis') : canOpen ? I18N.t('Ouvre l\'écran de confirmation (l\'activation est définitive)') : ''
+          }, two('P' + lvl + (lvl === 3 ? ' — ' + I18N.t('nominal') : ''), right, 'c1'),
+            two(fmtPort(COLLIDER_HE3[lvl]) + ' He3/s · ' + fmtPower(COLLIDER_POWER[lvl] || 0), I18N.t('confirmations ×') + (d ? d.boost : 1), 'c2', .9));
+        };
+        return React.createElement(React.Fragment, { key: 'tab-sur' },
+          React.createElement("div", { className: "ip-row", key: 'sc' },
+            React.createElement("span", { className: "lbl" }, I18N.t('Palier actuel')),
+            React.createElement("span", { className: "val", style: { color: 'var(--green)' } }, 'P' + palEffF + (palEffF === 3 ? ' — ' + I18N.t('nominal') : ' — ' + I18N.t('surcadencé')))),
+          React.createElement("div", { className: "ip-fluxpri-lbl", key: 'si', style: { margin: '6px 0 2px' } },
+            I18N.t('Surcadencer : la machine boit et consomme davantage, chaque manche confirmée compte plus.')),
+          card(3), card(4), card(5),
+          React.createElement("div", { className: "ip-fluxpri-lbl", key: 'sw', style: { marginTop: '8px', whiteSpace: 'normal', lineHeight: 1.5 } },
+            I18N.t('⚠ Règles inchangées : un déficit d\'électricité ou d\'Hélium 3 ARRÊTE la machine et les 10 min de démarrage sont reperdues. Surcadencer sans les réserves, c\'est s\'arrêter.')));
+      })()));
   }
   // ===== COUCHE LOGIQUE : panneau de config d'un élément de la SURCOUCHE (t.logic) =====
   // Rotation LIBRE (4 dir) + §6 mode de capteur selon le SUPPORT + polarité de l'actionneur.
@@ -24539,7 +24698,10 @@ function App() {
         // 14.89 — bascule « demarrage automatique » : champ ADDITIF, comme `stops`, `enabled` et
         // `launched` → absent d'une save anterieure = false, aucune migration, SAVE_VERSION
         // inchange.
-        autoLaunch: !!g.collider.autoLaunch
+        autoLaunch: !!g.collider.autoLaunch,
+        // 15.x — Palier de surcadençage (0 = nominal, sinon 4/5). Champ ADDITIF : absent d'une
+        // vieille save = nominal → aucune migration, SAVE_VERSION inchangé. Aucun code ne le baisse.
+        overclock: +g.collider.overclock || 0
       } : null,
       he3Deposits: Array.isArray(g.he3Deposits) ? g.he3Deposits.map(d => ({ r: d.r, c: d.c })) : [],
       drillsCount: { ...g.drillsCount },
@@ -25404,6 +25566,11 @@ function App() {
       g.collider.launched = !!dc.launched || g.collider.state === 'running';
       // Champ additif (14.89) : absent d'une save anterieure → bascule inactive.
       g.collider.autoLaunch = !!dc.autoLaunch;
+      // 15.x — Surcadençage : borne [4,5] ou 0. Une valeur trafiquée (1..3, 7…) retombe au
+      // nominal plutôt que de nourrir les tables avec un index inexistant. Le plafond 5 suit
+      // COLLIDER_OVERCLOCK — le monter EN MÊME TEMPS qu'un futur P6 (ancre future, cf. tables).
+      const oc = Math.floor(+dc.overclock || 0);
+      g.collider.overclock = oc >= 4 && oc <= 5 ? oc : 0;
     }
     if (Array.isArray(data.he3Deposits)) g.he3Deposits = data.he3Deposits.map(d => ({ r: d.r, c: d.c }));
     g.drillsCount = {};
@@ -26203,6 +26370,37 @@ function App() {
   // décalerait le remboursement d'un cran, ce qui ne lève aucune erreur et ne se voit qu'aux
   // stocks. Aucune confirmation (J8) : le point est définitif, l'infobulle du bouton le dit.
   // ⚠ Pas de SFX : la banque n'a pas de son 'research' (le brief interdit d'en inventer un).
+  // 15.x — SURCADENÇAGE. Payé au PORT DE L'ÎLE 6 (comme le forage) ; la fiche du Collisionneur ne
+  // s'ouvre que depuis l'île 6, mais on fixe l'île explicitement pour ne pas dépendre du contexte.
+  // IRRÉVERSIBLE : la fonction ne sait que MONTER d'exactement un palier.
+  function activateOverclock(target) {
+    const g = gameRef.current;
+    if (!g || !g.collider) return false;
+    const def = COLLIDER_OVERCLOCK[target];
+    if (!def) return false;
+    if (!isNodeConfirmed(g, COLLIDER_PUZZLE_NODES[2]) || !colliderRepaired(g)) return false;
+    if (target !== colliderEffPal(g) + 1) return false;
+    const conf = g.techTree && g.techTree.colliderConfirms || 0;
+    if (conf < def.conf) {
+      showToast(I18N.t('❌ Il faut ') + fmtPort(def.conf) + I18N.t(' confirmations pour ce palier'), 'var(--red)');
+      return false;
+    }
+    if (!g.ui.dev) {
+      const miss = missingFor(def.cost, 6);
+      if (miss.length) {
+        showToast(I18N.t('❌ Manque au port de l\'île 6 : ') + miss.join(', '), 'var(--red)');
+        return false;
+      }
+      pay(def.cost, 6);
+    }
+    g.collider.overclock = target;
+    showToast(I18N.t('⚡ Palier ') + target + I18N.t(' activé — pas de retour possible'), 'var(--green)');
+    SFX.play('panelOpen');
+    bumpHud();
+    markDirty();
+    scheduleSave();
+    return true;
+  }
   function buyResearch(key) {
     const g = gameRef.current;
     if (!g || !RESEARCH_DEFS[key]) return;
@@ -30952,6 +31150,7 @@ function App() {
     onUpgradeElevator: () => tryUpgradeElevator(),
     onToggleCollider: () => toggleCollider(),
     onBuyResearch: key => buyResearch(key),
+    onOverclock: t => activateOverclock(t),
     onLaunchCollider: () => launchCollider(),
     onToggleColliderAuto: () => toggleColliderAuto(),
     onSetElevatorMode: m => setElevatorMode(m),
