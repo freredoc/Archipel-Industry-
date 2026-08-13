@@ -8910,8 +8910,33 @@ const SAVE_VERSION = 31;
 // Les 3 assets `bat_geothermie_v2` (sprite, sheet, méta) sont retirés : plus aucun site ne peut
 // demander ces clés. ⚠ Le commentaire du build 382 mentionne encore l'entrée de `geothermie_v2` dans
 // `TOOLBAR_GROUPS` — c'est un JOURNAL, exact pour son build : ne pas le réécrire.
-const GAME_BUILD = 393;
-const GAME_VERSION = 'Alpha 16.0';
+// 16.1 — DÉCOUVRABILITÉ DE LA LIBÉRATION D'ÎLE (lot L8, 5 ancres). `exclusiveUntilNode` et le badge
+// « NOUVEAU » (`seenBuildings`) s'IGNORAIENT : le badge se pose au DÉBLOCAGE par la recherche, or le
+// Four à Arc Tungstène et la Machine-Outil sont débloqués BIEN AVANT d'être LIBÉRÉS de l'île 6
+// (nœuds 39 et 41). Au moment où la restriction tombait : `seenBuildings[id]` était déjà vrai (aucun
+// badge), la ligne « Exclusif » DISPARAISSAIT de la fiche sans rien mettre à la place, et les nœuds
+// 39/41 n'annonçaient que leurs `unlocks.buildings` — qui ne contiennent NI l'un NI l'autre. Le
+// joueur avait appris « réservé à l'île 6 » et RIEN ne lui disait jamais le contraire. Le lot 16.0
+// venait d'ajouter un TROISIÈME cas (Séparateur Cryogénique au nœud 43) → correctif GÉNÉRIQUE,
+// jamais au cas par cas : `freedByNode(id)` dérive la liste depuis `exclusiveUntilNode`, donc tout
+// bâtiment futur qui porte ce champ est couvert sans une ligne de plus.
+// ⚠ `freedScopeLabel` N'ÉCRIT PAS « partout » PAR DÉFAUT : le Séparateur Cryogénique garde son
+// `forbiddenIslands: [1..5]`, il ne s'ouvre donc qu'à « Île 6 · Île 6 S ». Annoncer « toutes les
+// îles » serait FAUX et enverrait le joueur chercher en vain. Le libellé passe par `islandLabel`,
+// donc l'id interne 7 s'affiche « Île 6 S » et jamais « Île 7 ».
+// ⚠ LE RÉARMEMENT DU BADGE EST DANS `applyUnlocks`, PAS DANS `techConfirm` : `applyUnlocks` est le
+// SEUL site traversé par les DEUX voies de validation (manuelle/auto via `techConfirm`, livraison
+// via `techDeliver`). Le poser en amont aurait manqué la moitié des nœuds — mesuré : le nœud 43 est
+// une confirmation `auto`, le 39 aussi, mais les nœuds d'accès d'île passent par `techDeliver`.
+// ⚠ TROIS SIGNAUX, VOLONTAIREMENT REDONDANTS, parce qu'ils ne couvrent pas le même moment : le
+// badge « NOUVEAU » n'existe qu'à la confirmation (une partie où le nœud est DÉJÀ validé ne le verra
+// jamais — voulu, le signal accompagne l'événement) ; la ligne « 🔓 Libère » du popup est immédiate ;
+// la ligne « Constructible » de la fiche est la seule qui réponde ENCORE trois jours plus tard.
+// ⚠ La prop du composant `BuildingDetailModal` s'appelle **`id`**, pas `detailId`. Une version
+// antérieure de ce patch lisait `detailId` : `node --check` passait, le boot passait, et la FICHE
+// PLANTAIT à l'ouverture. Seul un appui long réel sur la vignette l'attrape (test V6).
+const GAME_BUILD = 394;
+const GAME_VERSION = 'Alpha 16.1';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8920,7 +8945,7 @@ const GAME_VERSION = 'Alpha 16.0';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "La Centrale Géothermique V2 est retirée : elle avait exactement la même courbe que la V1 et ne servait qu'à lever le plafond de niveau — une seule V2 pouvait produire plus que vingt V1 réunies. Vos centrales V2 deviennent des V1 au MÊME niveau et produisent rigoureusement autant ; rien n'est perdu. En échange, la Géothermie n'a plus de plafond du tout, mais son prix double à chaque niveau au-delà du dixième. La Centrale à Gaz se construit désormais sur n'importe quelle île, sans attendre le Data Center — pensez à produire l'oxygène sur place, il ne voyage pas en bateau. Enfin le Séparateur Cryogénique peut sortir du souterrain vers la surface de l'île 6 une fois le Collisionneur P3 validé.";
+const GAME_NOTES = "Le jeu vous dit enfin quand un bâtiment cesse d'être réservé à une île. Le Four à Arc Tungstène, la Machine-Outil et le Séparateur Cryogénique commencent leur vie réservés à l'île 6, et une recherche lève cette restriction plus tard — mais rien ne vous le signalait : vous aviez appris « réservé à l'île 6 » et vous le croyiez encore des heures après que ce soit devenu faux. Désormais la recherche qui libère un bâtiment l'annonce au moment de sa validation, la pastille « nouveau » revient sur sa vignette dans le menu, et sa fiche détaillée indique où il se construit au lieu de perdre sa ligne en silence. Attention : libéré ne veut pas toujours dire partout. Le Séparateur Cryogénique reste limité à l'île 6 et à son souterrain, et la fiche le nomme précisément plutôt que de vous envoyer chercher en vain.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -16267,6 +16292,12 @@ const ISLAND_KICKSTART = {
 };
 function applyUnlocks(game, def) {
   const u = def.unlocks || {};
+  // 15.x — RÉARMEMENT DU BADGE « NOUVEAU » pour les bâtiments que CE nœud libère. Posé ici et
+  // pas dans `techConfirm` : `applyUnlocks` est le SEUL site traversé par les DEUX voies de
+  // validation (manuelle/auto via techConfirm, et livraison via techDeliver) — le poser en amont
+  // aurait manqué la moitié des nœuds. Effacer la clé suffit : `isNew` teste `!seenBuildings[id]`
+  // et la première sélection la reposera, exactement comme pour un déblocage normal.
+  if (game.seenBuildings) for (const fid of freedByNode(def.id)) delete game.seenBuildings[fid];
   for (const isl of u.islands || []) if (typeof isl === 'number') {
     const wasUnlocked = game.islandUnlocked[isl];
     game.islandUnlocked[isl] = true;
@@ -16303,6 +16334,30 @@ function applyUnlocks(game, def) {
 // Ensemble des bâtiments dont le verrou d'île est LEVÉ (nœud de libération confirmé). Forme
 // « ensemble » destinée aux composants React, comme unlockedBuildingSet juste en dessous.
 // Seuls les bâtiments portant `exclusiveUntilNode` peuvent y entrer — la boucle est triviale.
+// 15.x — DÉCOUVRABILITÉ DE LA LIBÉRATION D'ÎLE. `exclusiveUntilNode` et le badge « NOUVEAU »
+// (`seenBuildings`) sont deux mécanismes qui S'IGNORENT : le badge se pose au DÉBLOCAGE par la
+// recherche, or le Four à Arc Tungstène et la Machine-Outil sont débloqués bien avant d'être
+// LIBÉRÉS de l'île 6. Au moment où la restriction tombait : `seenBuildings[id]` était déjà vrai
+// (aucun badge), la ligne « Exclusif » disparaîssait de la fiche sans rien mettre à la place, et
+// les nœuds 39/41 n'annonçaient que leurs `unlocks.buildings` — qui ne contiennent NI l'un NI
+// l'autre. Le joueur avait appris « réservé à l'île 6 » et rien ne lui disait jamais le contraire.
+// Liste les bâtiments qu'un nœud LIBÈRE (≠ débloque). Table parcourue une fois, au clic.
+function freedByNode(nodeId) {
+  const out = [];
+  for (const id in BUILDINGS) if (BUILDINGS[id].exclusiveUntilNode === nodeId) out.push(id);
+  return out;
+}
+// Où le bâtiment devient constructible une fois libéré. ⚠ PAS toujours « partout » : le
+// Séparateur Cryogénique garde `forbiddenIslands`, donc il ne s'ouvre qu'à l'île 6 et à son
+// souterrain. Annoncer « toutes les îles » serait faux et enverrait le joueur chercher en vain.
+function freedScopeLabel(id) {
+  const b = BUILDINGS[id];
+  const forb = b && b.forbiddenIslands;
+  if (!forb || !forb.length) return I18N.t('toutes les îles');
+  const ok = [];
+  for (let i = 1; i <= 7; i++) if (forb.indexOf(i) < 0) ok.push(islandLabel(i));
+  return ok.join(' · ');
+}
 function islandFreeSet(game) {
   const s = new Set();
   for (const id in BUILDINGS) {
@@ -18835,12 +18890,24 @@ function BuildingDetailModal({
   }
   // 14.31 — `islandLabel` rend « Île 6 S » pour l'id 7 (le souterrain) : la composition manuelle
   // 'île ' + id affichait « île 7 », un id qui n'existe pas côté joueur.
-  // 14.4x — Verrou d'île conditionnel : une fois le nœud de libération confirmé, la ligne
-  // « Exclusif » DISPARAÎT (le bâtiment se construit partout). Tant qu'il ne l'est pas, elle
+  // 14.4x — Verrou d'île conditionnel : tant que le nœud de libération n'est pas confirmé, la ligne
   // annonce l'île ET la libération à venir, pour que le joueur sache que c'est temporaire.
+  // ⚠ COMMENTAIRE RECTIFIÉ EN 16.1 : il disait qu'une fois le nœud confirmé la ligne « DISPARAÎT
+  // (le bâtiment se construit partout) ». Les DEUX moitiés sont devenues fausses — la ligne ne
+  // disparaît plus (voir la branche `else if` ci-dessous) et « partout » ne vaut pas pour le
+  // Séparateur Cryogénique, qui garde `forbiddenIslands`. Le texte d'origine décrivait bien le
+  // build 14.4x ; laissé tel quel il aurait menti sur le code écrit deux lignes plus bas.
   if (b.exclusiveIsland != null && !islandFreed) {
     const untilNode = b.exclusiveUntilNode != null && TECH_BY_ID[b.exclusiveUntilNode];
     addRow(I18N.t('Exclusif'), islandLabel(b.exclusiveIsland) + (untilNode ? I18N.t(' — libéré par « ') + untilNode.name + ' »' : ''));
+  }
+  // 15.x — … et une fois libéré, la ligne ne DISPARAÎT plus : elle devient POSITIVE. Un joueur
+  // qui a appris « réservé à l'île 6 » revient sur la fiche des jours plus tard ; le silence lui
+  // laissait croire que le verrou tenait toujours. `freedScopeLabel` nomme les îles réellement
+  // ouvertes — pas « partout », qui serait faux pour le Séparateur Cryogénique.
+  else if (b.exclusiveIsland != null && islandFreed) {
+    const byNode = b.exclusiveUntilNode != null && TECH_BY_ID[b.exclusiveUntilNode];
+    addRow(I18N.t('Constructible'), freedScopeLabel(id) + (byNode ? I18N.t(' — libéré par « ') + byNode.name + ' »' : ''));
   }
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "slot-backdrop",
@@ -23081,6 +23148,10 @@ function ResearchDonePopup({
   const blds = info.unlocks && info.unlocks.buildings || [];
   const isls = info.unlocks && info.unlocks.islands || [];
   const unlockNames = isls.map(i => islandLabel(i)).concat(blds.map(b => BUILDINGS[b] && BUILDINGS[b].name || b));
+  // 15.x — Ligne « Libère », distincte de « Débloque » : ces bâtiments étaient DÉJÀ disponibles,
+  // c'est leur restriction d'île qui tombe. Les confondre dans la même ligne ferait croire à une
+  // nouveauté et laisserait le joueur chercher un bâtiment qu'il connaît déjà.
+  const freed = freedByNode(info.id).map(id => (BUILDINGS[id] && BUILDINGS[id].name || id) + I18N.t(' → ') + freedScopeLabel(id));
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "research-backdrop",
     onClick: onClose
@@ -23094,7 +23165,9 @@ function ResearchDonePopup({
     className: "rd-name"
   }, info.name), unlockNames.length > 0 && React.createElement("div", {
     className: "rd-unlocks"
-  }, I18N.t("Débloque : "), unlockNames.join(' · ')), React.createElement("div", {
+  }, I18N.t("Débloque : "), unlockNames.join(' · ')), freed.length > 0 && React.createElement("div", {
+    className: "rd-unlocks"
+  }, iconLabel(I18N.t("🔓 Libère : ")), freed.join(' · ')), React.createElement("div", {
     className: "rd-actions"
   }, React.createElement("button", {
     className: "rd-btn-sec",

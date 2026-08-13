@@ -1,8 +1,8 @@
 {
-  "build": 393,
-  "version": "Alpha 16.0",
+  "build": 394,
+  "version": "Alpha 16.1",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "La Centrale Géothermique V2 est retirée : elle avait exactement la même courbe que la V1 et ne servait qu'à lever le plafond de niveau — une seule V2 pouvait produire plus que vingt V1 réunies. Vos centrales V2 deviennent des V1 au MÊME niveau et produisent rigoureusement autant ; rien n'est perdu. En échange, la Géothermie n'a plus de plafond du tout, mais son prix double à chaque niveau au-delà du dixième. La Centrale à Gaz se construit désormais sur n'importe quelle île, sans attendre le Data Center — pensez à produire l'oxygène sur place, il ne voyage pas en bateau. Enfin le Séparateur Cryogénique peut sortir du souterrain vers la surface de l'île 6 une fois le Collisionneur P3 validé."
+  "notes": "Le jeu vous dit enfin quand un bâtiment cesse d'être réservé à une île. Le Four à Arc Tungstène, la Machine-Outil et le Séparateur Cryogénique commencent leur vie réservés à l'île 6, et une recherche lève cette restriction plus tard — mais rien ne vous le signalait : vous aviez appris « réservé à l'île 6 » et vous le croyiez encore des heures après que ce soit devenu faux. Désormais la recherche qui libère un bâtiment l'annonce au moment de sa validation, la pastille « nouveau » revient sur sa vignette dans le menu, et sa fiche détaillée indique où il se construit au lieu de perdre sa ligne en silence. Attention : libéré ne veut pas toujours dire partout. Le Séparateur Cryogénique reste limité à l'île 6 et à son souterrain, et la fiche le nomme précisément plutôt que de vous envoyer chercher en vain."
 }
