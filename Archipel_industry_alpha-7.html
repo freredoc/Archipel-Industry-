@@ -458,6 +458,25 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
 .arch-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--ink);
   background:rgba(16,24,44,.85);border-radius:3px;padding:0 5px;margin-top:-6px;}
 .arch-lbl.locked{color:var(--ink-faint);}
+/* Lot 2 — PANNEAU CARTE. La carte quitte l'onglet « Transit archipel » du Port pour un
+   panneau à elle, ouvert depuis le HUD. Les liaisons ne sont plus des cibles : tous les
+   flux sont listés sous la carte, plus rien à sélectionner. */
+.arch-link{pointer-events:none;cursor:default;}
+/* Souterrain : accroché au nœud de l'île 6, JAMAIS un sommet du graphe — il n'a ni
+   position dans ARCHI_POS ni liaison, et n'entre pas dans le calcul des traits.
+   Décalage en % du cadre, donc il suit la carte quelle que soit sa taille. */
+.arch-sout{position:absolute;transform:translate(-50%,0);display:flex;flex-direction:column;
+  align-items:center;pointer-events:none;z-index:2;}
+.arch-sout img{width:76px;height:76px;image-rendering:pixelated;}
+.arch-sout .arch-lbl{color:#e2c48e;}
+/* Options en icône seule sur petit écran, pour rendre au sélecteur d'île la place que
+   prend le bouton Carte. Seuil MESURÉ : le libellé fait 127 px en fr/en mais 137 px en
+   es/de ; sans compaction la bande déborde jusqu'à 465 px (fr) et 475 px (es/de).
+   ⚠ `nth-child(2)` et non `last-child` : la pastille de mise à jour est le 3e enfant,
+   `last-child` la ferait disparaître avec le libellé. */
+@media (max-width:479px){
+  .hud-main .options-btn:not(.help-btn) > span:nth-child(2){display:none;}
+}
 /* Révélation de l'île 6 (14.4x) — jouée UNE FOIS, à la première ouverture de la carte
    après le déblocage. Séquence : la brume se lève (0 → 1,4 s), l'île émerge (0,5 → 1,5 s),
    la liaison 5–6 se trace (0,9 → 1,6 s). `clip-path` plutôt qu'une largeur animée : le
@@ -3189,6 +3208,7 @@ for(var code in G){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; va
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.36 */ var ADD={"en": {"Fluide de refroidissement": "Coolant", "aucun fluide": "no coolant", "/s absorbés": "/s absorbed", "Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.": "A nobler coolant absorbs more for a lower flow. With no coolant the cooler still runs — badly. Power draw is unchanged.", "Air (sec)": "Air (dry)", "Eau": "Water", "Azote": "Nitrogen", "Hélium": "Helium", "Hélium liquide": "Liquid helium"}, "es": {"Fluide de refroidissement": "Refrigerante", "aucun fluide": "sin refrigerante", "/s absorbés": "/s absorbidos", "Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.": "Un refrigerante más noble absorbe más con un caudal menor. Sin refrigerante el refrigerador funciona igualmente — mal. El consumo eléctrico no cambia.", "Air (sec)": "Aire (seco)", "Eau": "Agua", "Azote": "Nitrógeno", "Hélium": "Helio", "Hélium liquide": "Helio líquido"}, "de": {"Fluide de refroidissement": "Kühlmittel", "aucun fluide": "kein Kühlmittel", "/s absorbés": "/s aufgenommen", "Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.": "Ein edleres Kühlmittel nimmt bei geringerem Durchsatz mehr auf. Ohne Kühlmittel läuft der Kühler trotzdem — schlecht. Der Stromverbrauch bleibt gleich.", "Air (sec)": "Luft (trocken)", "Eau": "Wasser", "Azote": "Stickstoff", "Hélium": "Helium", "Hélium liquide": "Flüssiges Helium"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.39 */ var ADD={"en": {"ARRÊTÉ — palier atteint, réparation à livrer": "STOPPED — tier goal reached, repair to deliver", "machine coupée — validez la recherche du palier ET livrez la réparation suivante": "machine shut down — confirm the tier research AND deliver the next repair", "Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante": "The tier's confirmation goal is reached: the machine stays shut down until the research is confirmed AND the next repair is delivered", "Palier atteint — réparation requise": "Tier reached — repair required", "❌ Palier atteint — validez la recherche et livrez la réparation suivante": "❌ Tier goal reached — confirm the research and deliver the next repair"}, "es": {"ARRÊTÉ — palier atteint, réparation à livrer": "DETENIDO — nivel alcanzado, reparación por entregar", "machine coupée — validez la recherche du palier ET livrez la réparation suivante": "máquina detenida — confirma la investigación del nivel Y entrega la siguiente reparación", "Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante": "Se alcanzó el umbral de confirmaciones del nivel: la máquina queda detenida hasta confirmar la investigación Y entregar la siguiente reparación", "Palier atteint — réparation requise": "Nivel alcanzado — reparación requerida", "❌ Palier atteint — validez la recherche et livrez la réparation suivante": "❌ Nivel alcanzado — confirma la investigación y entrega la siguiente reparación"}, "de": {"ARRÊTÉ — palier atteint, réparation à livrer": "GESTOPPT — Stufenziel erreicht, Reparatur ausstehend", "machine coupée — validez la recherche du palier ET livrez la réparation suivante": "Maschine abgeschaltet — bestätige die Stufenforschung UND liefere die nächste Reparatur", "Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante": "Die Bestätigungsschwelle der Stufe ist erreicht: Die Maschine bleibt abgeschaltet, bis die Forschung bestätigt UND die nächste Reparatur geliefert ist", "Palier atteint — réparation requise": "Stufe erreicht — Reparatur erforderlich", "❌ Palier atteint — validez la recherche et livrez la réparation suivante": "❌ Stufenziel erreicht — bestätige die Forschung und liefere die nächste Reparatur"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.54 */ var ADD={"en": {"Soutenir le projet": "Support the project", "Archipel Industry est gratuit et le restera.": "Archipel Industry is free and will stay free."}, "es": {"Soutenir le projet": "Apoyar el proyecto", "Archipel Industry est gratuit et le restera.": "Archipel Industry es gratuito y seguir\xE1 si\xE9ndolo."}, "de": {"Soutenir le projet": "Das Projekt unterst\xFCtzen", "Archipel Industry est gratuit et le restera.": "Archipel Industry ist kostenlos und bleibt es."}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* 16.3 */ var ADD={"en": {"Carte de l'archipel": "Archipelago map", "Carte": "Map"}, "es": {"Carte de l'archipel": "Mapa del archipi\xE9lago", "Carte": "Mapa"}, "de": {"Carte de l'archipel": "Karte des Archipels", "Carte": "Karte"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.91 recherche par livraison */ var ADD={"en": {"\xC0 livrer depuis l'": "To deliver from "}, "es": {"\xC0 livrer depuis l'": "A entregar desde la "}, "de": {"\xC0 livrer depuis l'": "Zu liefern von "}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.93 ticks du rattrapage hors-ligne */ var ADD={"en": {"ticks": "ticks", "ticks simul\xE9s": "ticks simulated", "extrapol\xE9s": "extrapolated"}, "es": {"ticks": "ticks", "ticks simul\xE9s": "ticks simulados", "extrapol\xE9s": "extrapolados"}, "de": {"ticks": "Ticks", "ticks simul\xE9s": "Ticks simuliert", "extrapol\xE9s": "extrapoliert"}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
 </script>
@@ -8986,8 +9006,42 @@ const SAVE_VERSION = 31;
 // ⚠ SIGNALÉ, NON CORRIGÉ : `I18N.t(« Faire défiler »)` n'existe dans AUCUNE table `LOCALES` →
 // le libellé sort en français dans les 4 langues. Il ne porte que `title`/`aria-label` (aucun
 // texte à l'écran), il rejoint le lot i18n de l'audit 381.
-const GAME_BUILD = 395;
-const GAME_VERSION = 'Alpha 16.2';
+// 16.3 — PANNEAU CARTE (lot 2, 13 ancres). La carte de l'archipel quitte l'onglet « Transit
+// archipel » du Port pour un panneau à elle, ouvert depuis le HUD (bouton Carte, à droite d'Aide).
+// L'onglet `archipel` du Port disparaît ENTIÈREMENT, sans renvoi ; l'onglet `island` restant est
+// désormais le seul contenu du Port, donc sa barre d'onglets n'a plus lieu d'être et part avec.
+// (1) ⚠ LES LIAISONS NE SONT PLUS DES CIBLES TACTILES. À cinq liaisons au plus, sélectionner
+// n'ajoutait qu'un geste pour voir ce qui tient sous la carte : tous les flux sont listés d'office,
+// groupés par liaison. Le `<button>` de liaison devient un `<div>` et l'état `archSel` disparaît.
+// (2) ⚠ LE MARQUEUR DU SOUTERRAIN EST ACCROCHÉ AU NŒUD DE L'ÎLE 6, JAMAIS UN SOMMET DU GRAPHE :
+// aucune entrée dans `ARCHI_POS`, aucune liaison, aucune part dans le calcul des traits, et il
+// n'entre PAS dans `visible()` — sinon la boucle des liaisons chercherait une position inexistante.
+// Décalage en POURCENTAGE du cadre (`ARCHI_POS[6][1] + 12`), donc il suit la carte à toute taille.
+// Apparition sèche, gatée sur `elevatorRepaired` : pas de brume, celle-ci reste la révélation de
+// l'île 6 et d'elle seule.
+// (3) ⚠ `nth-child(2)` ET NON `last-child` pour compacter Options en icône seule : la règle d'Aide
+// utilise `last-child` parce qu'Aide n'a que DEUX enfants ; sur Options la pastille de mise à jour
+// est le TROISIÈME, et `last-child` la ferait disparaître avec le libellé — on effacerait une
+// information, pas un mot. Seuil MESURÉ et non choisi : le libellé fait 127 px en fr/en mais
+// 137 px en es/de ; sans compaction la bande d'onglets déborde jusqu'à 465 px (fr/en) et 475 px
+// (es/de). 479 couvre les quatre langues avec 4 px de marge.
+// ⚠ DEUX PIÈGES D'ANCRE, refermés à la pré-compilation, à ne pas « simplifier » : (a) la borne de
+// fin de `pp_tabs` est `I18N.t("Transit archipel"))), tab === 'island' ? ` et non `tab === 'island' ? `
+// seul — ce dernier apparaît D'ABORD à l'intérieur du premier bouton d'onglet et découperait
+// 137 caractères au milieu d'un bouton ; (b) `pp_else` se remplace par `)` et NON par le vide : la
+// parenthèse initiale ferme la branche `island`, la retirer laisse l'expression ouverte.
+// ⚠ `SAVE_VERSION` INCHANGÉ (31) : aucun champ ajouté ni retiré. `archiVu6` (révélation de l'île 6,
+// jouée UNE fois) change seulement de composant hôte — `PortPanel` → `MapPanel` —, et `game` y est
+// `gameRef.current` lui-même, donc poser le drapeau modifie bien la source de vérité sérialisée.
+// i18n : « Carte de l'archipel » et « Carte » ajoutés aux 3 tables (en/es/de). Ce sont du TEXTE
+// VISIBLE (titre de panneau, libellé de bouton), pas un `title` comme le « Faire défiler » du lot 1
+// laissé en français : l'arbitrage n'est pas le même. « Flux entre îles » et « Aucun flux de transit
+// en cours. » étaient DÉJÀ traduits (repris du Port), vérifié — 3 entrées chacun.
+// ⚠ HORS PÉRIMÈTRE, non anticipé : la navigation par clic sur les îles (lot 3) et la réparation
+// unifiée (lot 4). Le bouton 🛠 et `RepairModal` restent INTACTS — les fusionner maintenant rendrait
+// la réparation inaccessible pendant deux lots.
+const GAME_BUILD = 396;
+const GAME_VERSION = 'Alpha 16.3';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8996,7 +9050,7 @@ const GAME_VERSION = 'Alpha 16.2';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "La bande d'onglets d'île dit enfin qu'elle se fait glisser, et le souterrain y a sa propre vignette. Depuis qu'une septième île peut s'y ajouter, la bande défile — mais rien ne le disait : l'onglet du bord était coupé net, ce qui se lit comme un onglet mal cadré plutôt que comme une bande à faire glisser. Un voile et une flèche apparaissent désormais du côté où des onglets restent hors champ, et la flèche fait défiler d'un cran. Le souterrain, lui, n'avait aucune vignette : son onglet affichait le numéro interne « 7 » alors que le jeu l'appelle « Île 6 S » partout ailleurs. Il reçoit sa vignette, verrouillée comme déverrouillée, et s'annonce « S » si jamais l'image manque.";
+const GAME_NOTES = "La carte de l'archipel a désormais son propre bouton, à côté de l'aide. Elle était rangée dans un onglet du port, là où personne ne va pour regarder une carte : elle s'ouvre maintenant d'un geste, depuis n'importe quelle île. Plus besoin non plus de toucher chaque liaison une par une pour savoir ce qui circule — tous les flux sont listés sous la carte, groupés par liaison. Le souterrain y apparaît enfin, accroché à l'île 6, une fois l'élévateur réparé. Sur petit écran, le bouton Options se réduit à son icône pour rendre de la place aux onglets d'île : on en voit six entiers dès 390 pixels, contre cinq auparavant. Le port, lui, garde tout son contenu et perd simplement sa barre d'onglets devenue inutile.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -18537,6 +18591,7 @@ function Hud({
   repairInfo,
   onRepair,
   onShowRepair,
+  onOpenMap,
   alertCount,
   heatCount,
   onOpenHeat,
@@ -18608,7 +18663,13 @@ function Hud({
     title: I18N.t("Aide \u2014 astuces d\u00e9bloqu\u00e9es")
   }, React.createElement("span", {
     className: "gear"
-  }, uiIcon('info', "?")), React.createElement("span", null, I18N.t("Aide"))), React.createElement(IslandSelector, {
+  }, uiIcon('info', "?")), React.createElement("span", null, I18N.t("Aide"))), React.createElement("button", {
+    className: "options-btn help-btn",
+    onClick: onOpenMap,
+    title: I18N.t("Carte de l'archipel")
+  }, React.createElement("span", {
+    className: "gear"
+  }, uiIcon('carte', "\ud83d\uddfa")), React.createElement("span", null, I18N.t("Carte"))), React.createElement(IslandSelector, {
     current: currentIsland,
     onSelect: onSelectIsland,
     unlocked: islandUnlocked,
@@ -21808,7 +21869,7 @@ const ARCHI_POS = { 1: [20, 24], 2: [54.5, 24], 3: [35, 50], 4: [20, 75], 5: [53
 // grisées justement pour que le joueur voie où il va.
 const ARCHI_CACHEE = { 6: true };
 
-function ArchipelMap({ game, flows, sel, onPick, reveal }) {
+function ArchipelMap({ game, flows, reveal }) {
   const unlocked = game.islandUnlocked || {};
   const ouverte = id => id === 1 || !!unlocked[id];
   const visible = id => ouverte(id) || !ARCHI_CACHEE[id];
@@ -21831,15 +21892,14 @@ function ArchipelMap({ game, flows, sel, onPick, reveal }) {
     const ang = Math.atan2(dy, dx) * 180 / Math.PI;
     const rec = parLien[k] || { ab: 0, ba: 0 };
     const actif = ouverte(a) && ouverte(b) && (rec.ab || rec.ba);
-    return React.createElement("button", {
+    return React.createElement("div", {
       key: k,
-      className: 'arch-link' + (actif ? ' on' : '') + (sel === k ? ' sel' : '')
+      className: 'arch-link' + (actif ? ' on' : '')
         + (reveal && (a === reveal || b === reveal) ? ' reveal' : ''),
       style: {
         left: pa[0] + '%', top: pa[1] + '%', width: len + '%',
         transform: 'translateY(-50%) rotate(' + ang + 'deg)'
       },
-      onClick: () => onPick(sel === k ? null : k),
       title: islandLabel(a) + ' \u21C4 ' + islandLabel(b)
     }, React.createElement("span", {
       style: { transform: 'rotate(' + (-ang) + 'deg)' }
@@ -21866,7 +21926,87 @@ function ArchipelMap({ game, flows, sel, onPick, reveal }) {
   return React.createElement("div", {
     className: "arch-map",
     style: mer ? { backgroundImage: 'url(' + mer + ')' } : null
-  }, liens, iles);
+  }, liens, iles, game.elevatorRepaired && ARCHI_POS[6] && SPRITES_ENABLED && SPRITE_DATA['ile_7'] ? React.createElement("div", {
+    className: "arch-sout",
+    style: { left: ARCHI_POS[6][0] + '%', top: (ARCHI_POS[6][1] + 12) + '%' }
+  }, React.createElement("img", {
+    src: SPRITE_DATA['ile_7'], alt: ''
+  }), React.createElement("div", {
+    className: "arch-lbl"
+  }, islandLabel(7))) : null);
+}
+
+// Lot 2 \u2014 PANNEAU CARTE. Reprend la r\u00e9v\u00e9lation de l'\u00eele 6 (drapeau `archiVu6` persist\u00e9,
+// jou\u00e9e UNE FOIS) qui vivait dans PortPanel, et liste TOUS les flux group\u00e9s par liaison :
+// \u00e0 cinq liaisons au plus, une s\u00e9lection n'ajoutait qu'un geste.
+// \u26a0 `game` est `gameRef.current` lui-m\u00eame : poser `archiVu6` ici modifie bien la source
+// de v\u00e9rit\u00e9 qui sera s\u00e9rialis\u00e9e.
+function MapPanel({
+  game,
+  onClose
+}) {
+  const guard = useGhostGuard(1);
+  const [reveal, setReveal] = React.useState(() => game && game.islandUnlocked && game.islandUnlocked[6] && !game.archiVu6 ? 6 : null);
+  React.useEffect(() => {
+    if (!reveal) return;
+    if (game) game.archiVu6 = true;
+    SFX.play('reveal6');
+    const h = setTimeout(() => setReveal(null), 1800);
+    return () => clearTimeout(h);
+  }, [reveal, game]);
+  const flows = allTransitFlows(game);
+  const parLien = {};
+  for (const f of flows) {
+    const k = Math.min(f.src, f.dest) + '-' + Math.max(f.src, f.dest);
+    (parLien[k] || (parLien[k] = [])).push(f);
+  }
+  const keys = SHIP_LINKS.filter(k => parLien[k] && parLien[k].length);
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "research-backdrop",
+    onClick: onClose,
+    onPointerDownCapture: guard.onPointerDownCapture,
+    onClickCapture: guard.onClickCapture
+  }), React.createElement("div", {
+    className: "research-panel port-panel",
+    onPointerDownCapture: guard.onPointerDownCapture,
+    onClickCapture: guard.onClickCapture
+  }, React.createElement("div", {
+    className: "rp-head"
+  }, React.createElement("span", {
+    className: "rp-title"
+  }, uiIcon('carte', "\ud83d\uddfa"), " " + I18N.t("Carte de l'archipel")), React.createElement("button", {
+    className: "rp-close",
+    onClick: onClose,
+    title: I18N.t("Fermer")
+  }, "\xd7")), React.createElement("div", {
+    className: "rp-list"
+  }, React.createElement(ArchipelMap, {
+    game: game,
+    flows: flows,
+    reveal: reveal
+  }), React.createElement("div", {
+    className: "pp-section-label"
+  }, I18N.t("Flux entre \xeeles")), !keys.length ? React.createElement("div", {
+    className: "pp-empty"
+  }, I18N.t("Aucun flux de transit en cours.")) : keys.map(k => parLien[k].slice().sort((x, y) => x.src - y.src).map(f => React.createElement("div", {
+    className: "pp-arch-link",
+    key: f.src + '_' + f.dest
+  }, React.createElement("div", {
+    className: "pp-arch-head"
+  }, islandIcon(f.src), islandLabel(f.src) + " ", " \u2192 ", islandIcon(f.dest), " " + islandLabel(f.dest)), f.res.map(rr => {
+    const ik = SPRITES_ENABLED ? itemSpriteKey(rr.res) : null;
+    const idata = ik && SPRITE_DATA[ik];
+    return React.createElement("div", {
+      className: "pp-arch-row",
+      key: rr.res
+    }, idata ? React.createElement("img", {
+      className: "pp-cargo-ico",
+      src: idata,
+      alt: ""
+    }) : cargoSprite(), " ", RES_SHORT[rr.res] || rr.res, " ", React.createElement("span", {
+      className: "pp-arch-rate"
+    }, fmtPort(rr.rate) + "/s"));
+  })))))));
 }
 
 function PortPanel({
@@ -21887,24 +22027,6 @@ function PortPanel({
   const tradeMode = tradeModeFor(game, currentIsland);
   const linkReserve = !!(game.tradeLinkReserve && game.tradeLinkReserve[currentIsland]);
   const [openLink, setOpenLink] = React.useState(null);
-  // Onglet du panneau Port : 'island' (transit de l'île courante, défaut) | 'archipel' (tous les flux).
-  const [tab, setTab] = React.useState('island');
-  // Liaison choisie sur la carte de l'archipel ('4-5'…), null = aucune.
-  const [archSel, setArchSel] = React.useState(null);
-  // Révélation de l'île 6 : jouée UNE FOIS. `game.archiVu6` est persisté dans la sauvegarde ;
-  // on le pose au montage, l'animation ne se rejouera donc pas au prochain passage.
-  // `game` est gameRef.current lui-même (cf. `const game = gameRef.current` dans App) :
-  // poser le drapeau ici modifie bien la source de vérité, qui sera sérialisée.
-  const [archReveal, setArchReveal] = React.useState(() =>
-    game && game.islandUnlocked && game.islandUnlocked[6] && !game.archiVu6 ? 6 : null);
-  React.useEffect(() => {
-    if (!archReveal) return;
-    if (game) game.archiVu6 = true;
-    // Appel DIRECT (et non qSfx) : on est dans un useEffect React, jamais dans le tick.
-    SFX.play('reveal6');
-    const h = setTimeout(() => setArchReveal(null), 1800);
-    return () => clearTimeout(h);
-  }, [archReveal, game]);
   const links = SHIP_LINKS.filter(key => {
     const [a, b] = key.split('-').map(Number);
     return (a === currentIsland || b === currentIsland) && linkActive(game, key);
@@ -22044,16 +22166,6 @@ function PortPanel({
     onClick: onClose,
     title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
-    className: "pp-tabs"
-  }, React.createElement("button", {
-    className: 'pp-tab' + (tab === 'island' ? ' on' : ''),
-    onClick: () => { SFX.play('tabSwitch'); setTab('island'); }
-  }, I18N.t("Transit île")), React.createElement("button", {
-    className: 'pp-tab' + (tab === 'archipel' ? ' on' : ''),
-    // L'onglet archipel EST la carte depuis 14.41 → `mapOpen` (le son dormait dans le catalogue
-    // depuis l'origine). L'onglet île garde `tabSwitch`.
-    onClick: () => { SFX.play('mapOpen'); setTab('archipel'); }
-  }, I18N.t("Transit archipel"))), tab === 'island' ? React.createElement("div", {
     className: "rp-list"
   }, PORT_BASE_COST[currentIsland] && React.createElement("div", {
     className: "pp-section-label"
@@ -22291,42 +22403,7 @@ function PortPanel({
     }, uiIcon('baisser', "\u25BC"))));
   }), React.createElement("div", {
     className: "pp-note"
-  }, I18N.t("Cible = quantit\xE9 voulue ici (import). R\xE9serve = stock gard\xE9 localement (export du surplus uniquement). Priorit\xE9 = ordre de chargement au d\xE9part."))) : React.createElement("div", {
-    className: "rp-list"
-  }, React.createElement("div", {
-    className: "pp-section-label"
-  }, I18N.t("Flux entre \xEEles")), (() => {
-    const flows = allTransitFlows(game);
-    const key = archSel;
-    const lien = key ? key.split('-').map(Number) : null;
-    // Les deux sens de la liaison choisie, dans l'ordre A→B puis B→A.
-    const detail = lien ? flows.filter(f => Math.min(f.src, f.dest) === lien[0] && Math.max(f.src, f.dest) === lien[1])
-      .sort((x, y) => x.src - y.src) : [];
-    return [React.createElement(ArchipelMap, {
-      key: "map", game: game, flows: flows, sel: archSel, onPick: setArchSel,
-      reveal: archReveal
-    }), !key ? React.createElement("div", {
-      key: "hint", className: "arch-hint"
-    }, I18N.t("Touchez une liaison pour voir son transit.")) : null,
-    key && !detail.length ? React.createElement("div", {
-      key: "vide", className: "pp-empty"
-    }, I18N.t("Aucun flux de transit en cours.")) : null,
-    ...detail.map(f => React.createElement("div", {
-      className: "pp-arch-link", key: f.src + '_' + f.dest
-    }, React.createElement("div", {
-      className: "pp-arch-head"
-    }, islandIcon(f.src), islandLabel(f.src) + " ", " \u2192 ", islandIcon(f.dest), " " + islandLabel(f.dest)), f.res.map(rr => {
-      const ik = SPRITES_ENABLED ? itemSpriteKey(rr.res) : null;
-      const idata = ik && SPRITE_DATA[ik];
-      return React.createElement("div", {
-        className: "pp-arch-row", key: rr.res
-      }, idata ? React.createElement("img", {
-        className: "pp-cargo-ico", src: idata, alt: ""
-      }) : cargoSprite(), " ", RES_SHORT[rr.res] || rr.res, " ", React.createElement("span", {
-        className: "pp-arch-rate"
-      }, fmtPort(rr.rate) + "/s"));
-    })))];
-  })())));
+  }, I18N.t("Cible = quantit\xE9 voulue ici (import). R\xE9serve = stock gard\xE9 localement (export du surplus uniquement). Priorit\xE9 = ordre de chargement au d\xE9part.")))));
 }
 function EnergyPanel({
   game,
@@ -24582,6 +24659,7 @@ function App() {
   const [upgrade, setUpgrade] = useState(null);
   const [toast, setToast] = useState(null);
   const [researchOpen, setResearchOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
   panelsRef.current.upOpen = !!upgrade;
   panelsRef.current.researchOpen = researchOpen;
   const [portOpen, setPortOpen] = useState(false);
@@ -31117,6 +31195,7 @@ function App() {
     islandUnlocked: game.islandUnlocked,
     repairInfo: repairInfo,
     onRepair: repairIsland,
+    onOpenMap: () => { SFX.play('mapOpen'); setMapOpen(true); },
     onShowRepair: () => { SFX.play('panelOpen'); setRepairOpen(true); },
     onOpenPort: () => { SFX.play('panelOpen'); setPortOpen(true); },
     onEnergy: () => { SFX.play('panelOpen'); setEnergyOpen(true); },
@@ -31487,6 +31566,9 @@ function App() {
       setResearchOpen(false);
       setResearchPending(hasPendingResearch(gameRef.current));
     }
+  }), mapOpen && React.createElement(MapPanel, {
+    game: game,
+    onClose: () => { SFX.play('panelClose'); setMapOpen(false); }
   }), slotOpen && React.createElement(SlotPanel, {
     activeId: getActiveSlotId(),
     onClose: () => {
