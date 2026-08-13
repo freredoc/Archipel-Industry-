@@ -3,7 +3,8 @@
 Mémo pour les sessions Claude Code. À lire au début de chaque session.
 
 ## Le jeu
-- Jeu mobile **mono-fichier** : `Archipel_industry_alpha-7.html` (~8700 lignes, React via
+- Jeu mobile **mono-fichier** : `Archipel_industry_alpha-7.html` (**31 500 lignes / 3,4 Mo** au build 393 —
+  le « ~8700 lignes » d'un mémo ancien est très périmé ; React via
   `React.createElement` inline, **fonctionne hors-ligne**, aucune dépendance réseau).
 - `index.html` = simple redirection vers ce fichier.
 - Le commentaire « React via Babel standalone (JSX) » en tête est trompeur : le code est
@@ -11,13 +12,301 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   `<script>` du jeu et `node --check`.
 
 ## Version (à bumper à CHAQUE modif livrée)
-- En haut du fichier (~ligne 2820) :
+- En haut du fichier (**~ligne 8913** au build 393 ; ce repère glisse à chaque lot, le bloc de
+  commentaire cumulatif au-dessus grossissant — chercher `^const GAME_BUILD`, jamais un numéro de ligne) :
   - `const GAME_BUILD = N;`  (entier — sert à comparer avec la version en ligne)
   - `const GAME_VERSION = 'Alpha X.Y';`  (étiquette affichée)
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 381`, `GAME_VERSION = 'Alpha 14.98'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 393`, `GAME_VERSION = 'Alpha 16.0'`, `SAVE_VERSION = 31`.**
+  Changement 16.0 (brief `BRIEFlotL7energiesouterrain`, **lot L7 — 13 ancres**) : **la Géothermie V2 est
+  SUPPRIMÉE, la Géothermie passe sous soft cap, la Centrale à Gaz devient libre partout, et le
+  Séparateur Cryogénique sort du souterrain au nœud 43 — vers l'île 6 SEULEMENT.** `SAVE_VERSION`
+  INCHANGÉ. Base EXACTE (392 / 15.9 / `d5807a6f…`) ; **13/13 ancres à `count == 1`**, `node --check`
+  7/7, **delta du patch seul −379 o** (le lot retire plus qu'il n'ajoute ; +3 083 avec bump et
+  `GAME_NOTES`). ⚠ **DEUX blocs bougent** (5 = assets retirés, 7 = code) et les **7 étaient identiques
+  au brief avant le bump**.
+  (1) **Pourquoi le V2 partait** : les deux paliers avaient **EXACTEMENT la même courbe**
+  (512 kW × 2^niveau, du Nv.0 au Nv.20) et le V2 n'apportait **aucun bonus** — il ne faisait que
+  **lever le cap du Nv.9**. Sur la partie de référence, une seule V2 au Nv.13 sort **4,19 GW, soit
+  1,6 fois les vingt V1 réunies**. Sept sites retirés + sprite, sheet et `ANIM_META` (1 249 o
+  d'assets devenus inatteignables).
+  ⚠ **LA LIGNE LA PLUS IMPORTANTE DU LOT EST DANS `migratePlacement`** : `geothermie_v2 → geothermie`,
+  **TOUTES versions** (posée AVANT le `return` de version). `migratePlacement` est appelée l. 25206 et
+  le garde `if (!BUILDINGS[p.b]) continue` l. **25207**, juste après : sans le renommage la tuile est
+  **SAUTÉE** et le joueur perd la centrale ET tout ce qu'il y a investi. C'est le précédent exact du
+  Broyeur Uranium (14.29), dont le commentaire juste au-dessus porte le même avertissement.
+  **Le NIVEAU est CONSERVÉ** : une V2 Nv.13 devient une V1 Nv.13 qui produit rigoureusement autant.
+  (2) ⚠ **LES DEUX MOITIÉS DU BRIDAGE SONT INDISSOCIABLES** : sortir `geothermie` de `TIER_NEXT` lève
+  son cap **DUR** au Nv.9 ; sans l'entrée correspondante dans `COST_SOFTCAP_X2`, elle aurait une
+  croissance **ILLIMITÉE au tarif normal** (×2,7 pour ×2 de production). **Ne jamais appliquer l'un
+  sans l'autre.** Mesuré : ×2 au Nv.10, ×8 au Nv.11, ×64 au Nv.12, **×1 024 au Nv.13** contre le
+  barème normal ; **identique jusqu'au Nv.9 inclus** (7 625,6 des deux côtés).
+  (3) **Séparateur Cryogénique : l'ensemble voulu est { île 6, île 6 souterrain }**, obtenu par une
+  **PAIRE sans une ligne de code neuve** — `exclusiveIsland: 7` + `exclusiveUntilNode: 43` +
+  `forbiddenIslands: [1..5]`. ⚠ **`exclusiveUntilNode` SEUL libérerait PARTOUT** (c'est ce qu'il fait
+  pour le four à arc tungstène et la machine-outil) : `forbiddenIslands` borne l'autre côté. Avant le
+  nœud 43 l'exclusivité domine (souterrain seul) ; après, elle tombe et l'interdiction laisse passer
+  6 et 7.
+  ⚠ **FAIT DE SOURCE INDISPENSABLE POUR TESTER JUSTE, vérifié au fichier** : les deux mécanismes ne
+  sont **PAS gardés au même endroit**. `forbiddenIslands` est lu par **`canPlace` (l. 26534) ET
+  `tryPlace` (l. 26661)** ; `exclusiveIsland` ne l'est par **AUCUN des deux** — il est gardé par
+  **`selectTool` (l. 27669)**, `switchIsland` (l. 27761) et la voie Copier de `handleTap` (l. 30284).
+  **Un test qui n'interroge que `canPlace` conclut à tort** que le séparateur est posable sur l'île 6
+  avant le nœud 43. La vraie porte est `selectTool`.
+  (4) **Centrale à Gaz libre partout, INCONDITIONNELLEMENT** (`exclusiveIsland: 6` ET
+  `exclusiveUntilNode: 37` retirés ensemble). ⚠ **Logistique à dire au joueur, pas à corriger** : son
+  `oxygene` est porté par le TUYAU et **absent de `TRADE_LIQUIDS`** → **non expédiable par bateau**.
+  Une île 1-5 d'accueil devra produire le sien sur place (Séparateur d'Air local). **L'élévateur, lui,
+  n'est pas un bateau** : le souterrain puise directement dans le port de l'île 6.
+  **Validé** : `node --check` 7/7 + **9 assertions du lot, 0 KO** + **contre-épreuve 6/6 sur la BASE
+  392 avec la MÊME save** + **5 contrôles finaux**. **V4 est la preuve critique** : **23 géothermies ·
+  0 en V2 · niveau max 13 → 4 194 304 kW · 11 séparateurs · 0 bâtiment perdu**.
+  ⚠ **MONTAGE À REPRENDRE TEL QUEL POUR TOUTE SUPPRESSION DE BÂTIMENT** : la save est **forgée ET
+  SAUVEGARDÉE PAR LA BASE** (où l'id existe encore), puis rechargée par le build patché. Une forge in
+  vivo sur le build patché **ne peut pas** tester la migration — le bâtiment n'y existe plus.
+  ⚠ **PIÈGE DE BANC PAYÉ, coûteux** : **`switchIsland` REFUSE une île VERROUILLÉE.** Sans débloquer
+  les îles, la bascule n'a pas lieu, `curTiles()` reste sur la grille précédente et `canPlace(r, c)`
+  teste des coordonnées trouvées sur une **AUTRE** île — j'ai eu un faux KO sur les seules îles 3 et 5,
+  au hasard des coordonnées. **Remède : asserter `g.currentIsland === isl` après chaque bascule.**
+  ⚠ Deux autres : **`isBedrock(game, r, c)` prend 3 arguments** (pas 4) et n'est **pas** dans `__heat`
+  (nom nu) ; **l'île 6 souterrain n'a que 12 tuiles ouvertes au départ** — tout montage qui y pose plus
+  d'une dizaine de bâtiments doit d'abord ouvrir la roche hors socle (360 tuiles, cf. lot L2).
+  ⚠ **PARAGRAPHE DU 14.95 DEVENU CADUC** : il annonce `geothermie_v2` ajoutée à `TOOLBAR_GROUPS` au lot
+  14.99 — le bâtiment **n'existe plus**. `usine_moteur_nuc_v2`, elle, y reste. Le commentaire du build
+  382 dans le fichier n'est **PAS** réécrit : c'est un journal, exact pour son build.
+  ⚠ **HORS PÉRIMÈTRE, signalé non corrigé** : après le nœud 43, sur les îles 1-5, le séparateur est
+  **grisé SANS motif affiché** — le tooltip « Se construit sur X » est gardé par `exclusiveIsland !=
+  null`, devenu `null` (comportement déjà en place pour onze bâtiments du souterrain, « c'est voulu »
+  dit le code) ; l'équilibrage réel du soft cap ne se juge qu'en jeu (la Nv.13 garde ses 4,19 GW,
+  c'est le **cran suivant** qui devient prohibitif) ; `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 392`, `GAME_VERSION = 'Alpha 15.9'`, `SAVE_VERSION = 31`.**
+  Changement 15.9 (brief `BRIEFlotL5collisionneur`, **lot L5 — 12 ancres**) : **fiche Collisionneur à
+  ONGLETS (État / Recherches / Surcadençage), recherches EXPLIQUÉES, et SURCADENÇAGE P4/P5** —
+  première mécanique de jeu ajoutée depuis plusieurs lots. `SAVE_VERSION` INCHANGÉ (`overclock` est un
+  champ **additif**). Base EXACTE (391 / 15.8) ; **12/12 ancres**, **7/7 blocs identiques au brief
+  avant bump**, `node --check` 7/7, delta +16 499 o.
+  (1) **Les trois courbes CONTINUENT sans cas particulier** : He3 **×4** par palier (1 → 4 → 16 → 64 →
+  256), puissance **×16** (32 MW → 512 MW → 8,39 GW → **134 GW** → **2,15 TW**), coût **×4** depuis la
+  Réparation III (1 000 → 4 000 → 16 000 moteurs quantiques), seuils dans la courbe des paliers
+  (…→ 1e5 → 1e6). Payé **AU PORT DE L'ÎLE 6**, comme le forage. Confirmations **×2** en P4, **×4** en P5.
+  ⚠ **ANCRE FUTURE** : un P6 s'ajoute par **une ligne** dans `COLLIDER_POWER`, une dans `COLLIDER_HE3`,
+  une dans `COLLIDER_OVERCLOCK`, plus le plafond de la borne au chargement. Rien d'autre.
+  (2) ⚠ **POINT D'ARCHITECTURE À NE JAMAIS « SIMPLIFIER »** : le palier de SURCADENÇAGE vit dans
+  **`colliderEffPal()`**, SÉPARÉ du palier de NŒUDS `colliderPalier()`. `palEff` ne nourrit **QUE** le
+  plafond électrique et la soif d'He3 ; les saveurs, les bits, les objectifs, le miroir `co.palier` et
+  `colliderCompare` restent au palier de nœuds (**≤ 3**). Pousser 4 ou 5 dans `co.palier`
+  **CASSERAIT l'émission de codes** — `COLLIDER_FLAVORS[4]` n'existe pas. **V8 et V10 en miroir sont la
+  preuve centrale du lot** : l'un montre que le surcadençage prend effet partout où il doit, l'autre
+  qu'il n'a **PAS** contaminé le palier qui pilote les codes.
+  (3) ⚠ **IRRÉVERSIBLE PAR CONCEPTION, pas par oubli** : aucun code, nulle part, ne baisse
+  `co.overclock` ; `activateOverclock` ne sait que **monter d'exactement un palier**. Un mini-écran de
+  confirmation affiche AVANT le clic la nouvelle soif d'He3, la nouvelle conso, le boost, le coût et le
+  seuil. **AUCUN garde-fou nouveau** (arbitrage Ethan) : surcadencer sans les réserves ARRÊTE la
+  machine et reperd les 10 min de démarrage — la fiche le dit, elle ne l'empêche pas.
+  (4) ⚠ **`RESEARCH_DEFS.sep` N'A PAS DE CHAMP `base`** (c'est `{ mult: 1.1 }`) : toute lecture de
+  `d.base` doit rester **GARDÉE**. Un `d.base.toFixed()` nu plante le rendu de l'**onglet ENTIER**, et
+  **`node --check` ne le voit pas** — seul un clic sur l'onglet l'attrape (c'est la sentinelle V3).
+  (5) ⚠ **Les deux `useState` (`colTab`, `ocAsk`) sont déclarés EN TÊTE de composant**,
+  inconditionnellement. Les rapprocher de leur usage dans la branche `info.mode === 'collider'`
+  violerait la règle des hooks (ordre variable selon la fiche ouverte) → plantage React.
+  (6) **Onglet Recherches** : « Confirmations » seule (passé P3, le « / 10 000 » était un non-sens),
+  **« Prochain point »** avec jauge (information qui n'existait **nulle part**), chaque recherche
+  **expliquée**, effet montrant sa **direction** (« ×2,70 → ×2,69 »), et **« Démarrage du
+  Collisionneur » RETIRÉ de l'affichage** (arbitrage Ethan — sa def reste, seuls les points **futurs**
+  ne peuvent plus y aller).
+  **Validé** : `node --check` 7/7 + **14 assertions, 0 KO** + **contre-épreuve 9/9 sur la base 391
+  (neuf verdicts inversés)** + 4 contrôles finaux. Valeurs de référence retrouvées **au caractère
+  près** : « 6,69e5 / 1,28e6 » avec jauge à **52 %**, « 16 → 64 /s », « 8,39 GW → 134 GW »,
+  **exactement 4 000** moteurs débités (14 714 → 10 714). **Barre d'onglets mesurée à 420 px : aucun
+  débordement, aucun libellé tronqué.**
+  ⚠ **DÉFAUT VISUEL DU PATCH, MESURÉ, SIGNALÉ, NON CORRIGÉ** : l'onglet Surcadençage a **deux**
+  libellés `.ip-fluxpri-lbl` qui passent à la ligne ; **l'un pose `lineHeight: 1.5`, l'autre non**, et
+  la classe n'en définit aucun → interligne **9 px pour une police de 9 px**, les jambages mordent sur
+  la ligne suivante. Les deux usages historiques de cette classe sont des libellés **courts qui ne
+  passent jamais à la ligne** : le patch est le premier à la faire déborder. **Remède : un seul mot,
+  `lineHeight: 1.5`**, comme son frère deux lignes plus bas. Non appliqué pour préserver la conformité
+  de hash du patch — **à arbitrer.**
+  ⚠ **33 nouveaux libellés non traduits** (comptés par diff des chaînes `I18N.t`, pas estimés) → le
+  **plus gros apport de chaînes de tous les lots** ; rejoint le lot i18n de l'audit 381.
+  ⚠ **PIÈGES DE BANC** : (a) **`innerText` des fiches est en MAJUSCULES** (CSS `text-transform`,
+  déjà au mémo en 14.61) — six assertions ont échoué à tort alors que le contenu était juste ; **tout
+  motif de texte doit être insensible à la casse** ; (b) **`adjacentNetworksFootprint` est en 4
+  DIRECTIONS** : un tuyau posé en **diagonale** du bloc n'est pas vu, `colliderDrawHe3` échoue et la
+  machine tombe en arrêt total He3 — on croit le patch inerte alors que `he3Need` valait déjà 64 ;
+  (c) **`typeof` sur un symbole non déclaré rend `"undefined"` SANS lever** — une contre-épreuve qui
+  attend une `ReferenceError` échoue là où le symbole est bien absent ; (d) **normaliser les espaces
+  avec `\s`** (il couvre U+202F / U+00A0 / U+2009 en JS) : une classe de caractères écrite à la main
+  ne survit pas forcément à l'écriture du fichier de test ; (e) **forger l'état ouvre de NOUVELLES
+  astuces** dont le popup recouvre le panneau → purger **après** la forge, ou couper `tipsEnabled`.
+  ⚠ **HORS PÉRIMÈTRE** : P5 visible mais **hors de portée** sur l'état de référence (668 919 / 1e6 =
+  66,9 %) — calibrage voulu, mesuré ; les **pénalités ne sont pas multipliées** par le boost (une seule
+  ligne touchée, celle du `gain`) ; `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 391`, `GAME_VERSION = 'Alpha 15.8'`, `SAVE_VERSION = 31`.**
+  Changement 15.8 (`patch_L6b.py`, **correctif d'un défaut que MON lot L6 a introduit**, 1 ancre) :
+  **« Y aller » depuis une alerte de porte logique laissait l'ÉCRAN ET LE MOTEUR EN DÉSACCORD.**
+  `SAVE_VERSION` INCHANGÉ, delta +2 148 o.
+  ⚠ **CE N'EST PAS UN DÉFAUT D'AFFICHAGE.** Le calque logique a **DEUX représentations** : le champ de
+  partie **`g.ui.logicLayer`**, lu par **`tryDemolish`** (l. 26627), et un **MIROIR d'état React**
+  (`setLogicLayer`, `useState`), lu par la **`Toolbar`**. Le handler ne posait que le champ : la barre
+  restait en mode bâtiment pendant que la démolition ciblait **exclusivement** la surcouche `t.logic`.
+  Le joueur cliquait une usine pour la raser et lisait « Rien à démolir dans la couche logique » — ou
+  effaçait un élément logique en croyant toucher autre chose.
+  Le correctif passe par **`toggleLogicLayer`**, qui tient les DEUX (plus la désélection d'outil et la
+  fermeture des menus). ⚠ **Appel SOUS CONDITION** : c'est une **BASCULE**, pas un setter — l'appeler
+  inconditionnellement **ÉTEINDRAIT** le calque s'il était déjà allumé.
+  ⚠ **LEÇON DE MÉTHODE, ET ELLE ÉTAIT DÉJÀ AU MÉMO (14.83)** : mon test du lot L6 assertait
+  `g.ui.logicLayer === true`, **c'est-à-dire LE CHAMP QUE LE PATCH VENAIT D'ÉCRIRE**. Il ne pouvait donc
+  que passer, sans rien prouver de ce que voit le joueur. **RÈGLE : quand un patch écrit un champ de
+  `g.ui`, chercher s'il existe un `useState` qui le double, et ASSERTER SUR LE RENDU** (ici la présence
+  de `.tab-logic`), jamais sur le champ écrit. Corollaire : **faire rendre à l'écran** tout composant
+  qu'un patch touche, au lieu de se contenter du boot.
+  **Validé** : `node --check` 7/7 + **9/9 sur le patch, 7/9 sur la base 390** — V4 et V5 y échouent, et
+  elles seules. Le champ vaut `true` des DEUX côtés : **seul le rendu sépare les deux versions**
+  (`.tab-logic` absent sur la base, présent après). Test destructeur : la démolition efface l'élément
+  logique des deux côtés, mais la barre annonce **`batiment`** sur la base contre **`logique`** sur le
+  patch → c'est l'**accord** qui est restauré, pas la mécanique.
+  ⚠ **SIGNALÉ, NON CORRIGÉ** : le champ et le miroir restent **deux vérités**. `toggleLogicLayer` est
+  aujourd'hui le **seul** site qui écrit les deux (vérifié par grep : les autres occurrences de
+  `ui.logicLayer` sont des LECTURES). Un futur patch qui écrirait le champ seul rouvrirait exactement
+  ce défaut. Les unifier est un lot de refonte.
+  ⚠ **MA FAUTE DE MÉTHODE, réparée au lot suivant** : le `git add -A` de ce lot a embarqué
+  **`blk1.js` … `blk7.js`** — les 7 blocs `<script>` que l'outil d'extraction écrit dans le répertoire
+  courant, soit **3,1 Mo** commités puis mergés. **Écrire les extractions dans `/tmp`, stager par
+  chemins EXPLICITES, jamais `git add -A` après un banc.**
+- **État précédent : `GAME_BUILD = 390`, `GAME_VERSION = 'Alpha 15.7'`, `SAVE_VERSION = 31`.**
+  Changement 15.7 (brief `BRIEFlotL6notifications`, **11 ancres**) : **la pastille de recherche ne
+  reste plus éteinte après une absence, le récapitulatif hors-ligne annonce les confirmations gagnées
+  par le Collisionneur, et les portes logiques mal câblées deviennent LOCALISABLES.** `SAVE_VERSION`
+  INCHANGÉ, delta +7 758 o.
+  (1) **La pastille** : un nœud devenu validable pendant que le jeu était fermé était annoncé **puis
+  oublié**, et ne se signalait plus jamais.
+  (2) **Portes logiques** : `activeLogicAlerts` rend la **position exacte** de chaque porte dont une
+  face est câblée mais **inhibée** ; elles rejoignent la liste d'alertes, avec un bouton qui bascule
+  sur la bonne île, allume le calque logique et centre la vue — le message du démarrage disait qu'il y
+  en avait, **sans jamais dire où**.
+  (3) ⚠ **RECTIFICATION D'UNE AFFIRMATION QUE J'AVAIS ÉCRITE AU BUILD 389** (« la retenue vaut
+  exactement le prix de la réparation ») : **c'est FAUX**, et le brief avait raison.
+  `buildingTotalCost(bld)` = `b.cost` de l'**id COURANT** (vide sur un bâtiment de palier) + ses
+  montées ; `cumulativeInvested(id, upgrade)` = **toute la chaîne depuis la V1**, forfaits compris.
+  Les deux coïncident **uniquement** sur un bâtiment SANS palier — le cas exact que mon test du 389
+  mesurait (cimenterie de base à l'upgrade 0) : **il ne pouvait pas révéler la divergence, et j'ai
+  généralisé à tort une mesure juste mais non représentative.** Écart chiffré sur la partie de
+  référence : `centrale_enrichissement_v2` Nv.16, **3 312 069 acier** perdus à la démolition contre
+  **0** facturé à la réparation. **Aucun changement de code** : l'écart est assumé (il pousse vers la
+  réparation sur les gros paliers), seul le commentaire est rectifié.
+  **Validé** : `node --check` 7/7 + **19 assertions, 0 KO** + **contre-épreuve sur la base 389 : CINQ
+  verdicts opposés** pour un montage identique (fonction `activeLogicAlerts` absente, pastille éteinte,
+  bouton d'alerte absent, ligne des confirmations absente).
+  ⚠ **PIÈGE DE BANC** : **`processLogic` recalcule `gateWiredInh` à CHAQUE tick**, exactement comme
+  `logicOff` et `conduitLoad` — un état forgé à la main est effacé au tick suivant et le test lit alors
+  zéro alerte en croyant à un défaut du patch. **Ré-affirmer l'état en continu** (`setInterval` ~25 ms),
+  patron déjà documenté pour `co.powered` et `conduitLoad`.
+  ⚠ **SIGNALÉ, NON CORRIGÉ** : `activeLogicAlerts` **balaie toutes les îles à chaque calcul du HUD** —
+  aucune mémoïsation ajoutée **faute de profilage** (aucune dégradation observée) ; le toast du
+  démarrage subsiste à côté de la nouvelle ligne d'alerte et sa formulation « voir leur fiche » devient
+  redondante ; 4 libellés non traduits.
+- **État précédent : `GAME_BUILD = 389`, `GAME_VERSION = 'Alpha 15.6'`, `SAVE_VERSION = 31`.**
+  Changement 15.6 (brief `BRIEFlotL3thermique`) : **le refroidissement se partage AU PRORATA, le boost
+  d'antenne se règle au POUR CENT, et la démolition d'un bâtiment en surchauffe est rouverte —
+  remboursée à 80 %.** `SAVE_VERSION` INCHANGÉ.
+  (1) **Refroidissement au prorata** : sur un conduit sous-dimensionné, une seule source captait tout
+  le débit et les autres n'évacuaient **rien**. Mesuré base ↔ patch : la base donnait **10,240 MJ** à
+  l'antenne et **0,000** aux deux autres sources ; le patch rend **3,911 / 2,529 / 3,801** pour un
+  **total IDENTIQUE** — les bornes sont préservées, seul le partage change.
+  (2) **Antenne au pour cent** : les planchers passent de 60 → **51** et de 10 → **1**.
+  (3) ⚠ **ARBITRAGE D'ETHAN, appliqué** : « après 5 min le bâtiment devient démolissable, mais avec
+  20 % réduit ». Nouvelle constante **`HEAT_REPAIR_FRAC`** (remplaçant deux `0.2` codés en dur) ; la
+  retenue s'applique à **TOUS** les chemins de remboursement de `tryDemolish`, **branche jonction
+  comprise** — un helper `refundBld` les enveloppe tous, sinon un chemin oublié rendrait 100 %.
+  Toast adapté : « ♻ X démoli — remboursé à 80 % (surchauffe) ».
+  ⚠ **ÉCART DE CHIFFRE RAPPORTÉ HONNÊTEMENT** : le brief annonçait −0,2 % de coût pour la grande
+  source ; **mon montage donne −61,8 %** (une seule tour, taux de remplissage égaux). La propriété
+  testée (bornes préservées, partage équitable) est la bonne ; le chiffre du brief suppose une autre
+  configuration.
+  ⚠ **DEUX ASSERTIONS MAL CALIBRÉES DE MA SUITE, corrigées après mesure et non contournées** : V2
+  attendait des petites sources **entièrement** refroidies — impossible avec une seule tour (10,24 MJ
+  sur 10 ticks contre 61 MJ dans le cryostat) ; V8 attendait `antBoostMin = 7` alors que mon antenne
+  était **Nv.1**, où **100 est la bonne valeur**.
+- **État précédent : `GAME_BUILD = 388`, `GAME_VERSION = 'Alpha 15.5'`, `SAVE_VERSION = 31`.**
+  Changement 15.5 (brief `BRIEFlotL2souterrain`) : **le sprite de la foreuse est enfin orienté, un
+  SOCLE ROCHEUX borne le souterrain au 10ᵉ cercle, les chantiers deviennent lisibles et un exploit de
+  remboursement est fermé.** `SAVE_VERSION` INCHANGÉ.
+  (1) ⚠ **CAUSE RACINE DU SPRITE, trouvée en lisant les appelants** : seuls les **boutons N/E/S/O du
+  panneau** écrivaient `drillDir`, alors que **le geste normal est de taper le mur**. V4 fait basculer
+  la clé de sprite de `bat_foreuse` à **`bat_foreuse_o`** sans toucher au moteur de rendu.
+  (2) **Socle rocheux** (`BEDROCK_RING`, `isBedrock`) : borne définitive du souterrain au 10ᵉ cercle
+  autour de l'élévateur → **361 tuiles jouables** (cercles 0-9). ⚠ **`isBedrock(game, r, c)` prend
+  TROIS arguments** et n'est **pas** exposé par `__heat`.
+  (3) **Exploit fermé** : baisser le niveau d'un bâtiment **pendant un chantier** rendait le
+  remboursement sans annuler les travaux.
+  **Validé** : **30/30 assertions.**
+  ⚠ **PIÈGE DE BANC MAJEUR (page blanche que `node --check` NE VOIT PAS)** : poser les poignées de test
+  **dans le corps du composant sous forme d'OBJET** (`window.__H = { tryDrill, curTiles, … }`)
+  déclenche une **zone morte temporelle** — `ReferenceError: Cannot access 'curTiles' before
+  initialization`. C'est exactement pourquoi `window.__ui` est écrit comme une **FONCTION**
+  (`() => ({...})`) : une fléchée ne capture rien à la définition. **Tous les bancs suivants utilisent
+  cet exposeur paresseux.**
+  ⚠ **ÉQUILIBRAGE À REMONTER** : le socle laisse 361 tuiles ; la sauvegarde de référence en a déjà
+  ouvert **183**, soit plus de la moitié.
+- **État précédent : `GAME_BUILD = 387`, `GAME_VERSION = 'Alpha 15.4'`, `SAVE_VERSION = 31`.**
+  Changement 15.4 (brief `BRIEFlotL1L4formatshorsligne`, **lots L1 + L4, 41 ancres**) : **le plafond
+  de 27 h du rattrapage hors-ligne est ANNONCÉ, les compteurs sont extrapolés, et le décompte du
+  souterrain s'affiche à la seconde.** `SAVE_VERSION` INCHANGÉ.
+  (1) ⚠ **DEMANDE EXPLICITE D'ETHAN : « pour le temps souterrain afficher 4min55 plutôt que 4min ».**
+  `fmtDur` réécrit — forme **compacte** (`4min55`, `2h07`, `3j08h`), justifiée par une **mesure de
+  largeur** : le pire cas `59min59` fait **2,15 largeurs de tuile** contre 2,46 pour le `3 j 08 h` du
+  brief et 2,77 pour un `59 min 59` espacé. **Trois sites de plus** basculés sur `fmtDur` (ils
+  affichaient des secondes brutes, `~289290s`) : fantôme de construction souterraine, ligne
+  « 🚧 Travaux », creusement.
+  (2) **Le vrai défaut du hors-ligne** : la base **tronquait une absence de 24 h à 8 h EN SILENCE**
+  (`produced` 28 812 contre 86 413 après patch) et **n'extrapolait aucun compteur** (0 contre +512
+  confirmations).
+  ⚠ **Contre-épreuve : c'est exactement ce que la base 386 fait**, mesuré — le lot est falsifiable.
+- **État précédent : `GAME_BUILD = 386`, `GAME_VERSION = 'Alpha 15.3'`, `SAVE_VERSION = 31`.**
+  Changement 15.3 (brief `BRIEFLOTB`, **lot B « paliers entiers d'échelle »**, CSS pur) : **l'interface
+  passe à ×1,5 dès 1400×800 et ×2 dès 2400×1300.** `SAVE_VERSION` INCHANGÉ.
+  **Validé** : 12 viewports, base 5 KO → **12/12 PASS**, bornes testées de part et d'autre
+  (1399→×1 / 1400→×1,5 / 2399→×1,5 / 2400→×2), **sprites 16→24→32 ENTIERS** aux trois paliers, buffer
+  canvas **INTACT** sur les 12 (aucune perte de résolution), + les 4 paysages du lot C restent à ×1
+  (aucun palier ne fuit vers le paysage).
+  ⚠ **LIMITES ASSUMÉES** : ×1,5 sur du pixel art = pixels source inégaux (1 ou 2 px écran) **de près**
+  — compromis accepté, net à distance normale ; scène **−11 %** à ×1,5 et **−18 %** à ×2, prix de la
+  lisibilité ; tablettes/laptops **courts** (hauteur < 800) restent à ×1.
+  ⚠ **VOIE ÉCARTÉE, NE PAS Y REVENIR** : ne **PAS** convertir les sprites en `rem` ni poser un
+  `clamp()` sur `html{font-size}` — cela sortirait de la grille.
+- **État précédent : `GAME_BUILD = 385`, `GAME_VERSION = 'Alpha 15.2'`, `SAVE_VERSION = 31`.**
+  Changement 15.2 (brief `BRIEFLOTC`, **lot C « paysage mobile »**, CSS pur) : **la scène récupère
+  18 à 66 % de hauteur sur téléphone tourné.** `SAVE_VERSION` INCHANGÉ.
+- **État précédent : `GAME_BUILD = 384`, `GAME_VERSION = 'Alpha 15.1'`, `SAVE_VERSION = 31`.**
+  Changement 15.1 (brief `BRIEFLOTA`, **lot A « dimensionnement UI »**) : **fin des débordements et
+  des étirements du HUD** (anti-débordement / anti-étirement / safe-area). `SAVE_VERSION` INCHANGÉ.
+  ⚠ **CONVENTION DE NOMMAGE DES RAPPORTS** : le brief demandait `RAPPORT-lotA.md`, **déjà pris** par un
+  fichier suivi en git et sans rapport (le « Lot A » du build 379). Livré en
+  `RAPPORT-lotA-ui-dimensionnement.md` — **vérifier qu'un nom de rapport est libre avant d'écrire.**
+- **État précédent : `GAME_BUILD = 383`, `GAME_VERSION = 'Alpha 15.0'`, `SAVE_VERSION = 31`.**
+  Changement 15.0 (**lot 2 « nettoyage d'état »**, 22 paires) : **12 champs écrits-jamais-lus retirés**
+  (tour, portes, collisionneur), **branche W de `fmtPower`**, **purge de `ciment_irradie`**.
+  `SAVE_VERSION` INCHANGÉ (la purge suit le modèle 14.16, **idempotente**).
+  (1) **`fmtPower` gagne une marche « W »** : la série sort désormais `0 kW · 31 W · 125 W · 250 W ·
+  −250 W · 1 kW · 999 kW · 1 MW` — **le zéro exact reste en kW**. Corrige l'affichage « 0 kW » des
+  fours à arc (0,25 kW) et des mines V3 (0,031 kW), signalé au lot précédent.
+  (2) **Les miroirs retirés étaient bien morts** : fiches de porte et du Collisionneur **strictement
+  identiques** avant/après — tout est recalculé au rendu.
+- **État précédent : `GAME_BUILD = 382`, `GAME_VERSION = 'Alpha 14.99'`, `SAVE_VERSION = 31`.**
+  Changement 14.99 (**lot 1 « panneaux UI »**, 8 paires) : **`basePowerRange`**, **ligne Élec. du
+  panneau d'amélioration**, **`.prod-row` en `minmax`**, et **`geothermie_v2` / `usine_moteur_nuc_v2`
+  entrent dans la barre d'outils**. `SAVE_VERSION` INCHANGÉ.
+  ⚠ C'est ce lot qui ferme l'écart à la convention signalé en 14.95 (les 2 seuls bâtiments de
+  `TIER_STEP` hors `TOOLBAR_GROUPS`). **`geothermie_v2` en est ressortie au lot 16.0 — le bâtiment
+  n'existe plus** ; `usine_moteur_nuc_v2` y reste.
+  ⚠ **PIÈGE D'EXTRACTION DES BLOCS, à connaître** : un extracteur qui inclut le `\n` suivant
+  `<script …>` quand la balise n'a rien après le `>` sort les blocs 1/2/5/6/7 à **+1 caractère** avec
+  d'autres SHA, tandis que les blocs 3/4 (au `/**` collé à la balise) concordent « bruts ». **Le SHA du
+  fichier ENTIER, lui, concorde dès le premier coup** : la divergence est une convention d'extraction,
+  pas un octet de contenu.
+- **État précédent : `GAME_BUILD = 381`, `GAME_VERSION = 'Alpha 14.98'`, `SAVE_VERSION = 31`.**
   Changement 14.98 (brief `BRIEFlotBchapitreile2`, **lot B — 23 paires**) : **le tutoriel ne s'arrête
   plus au bout de l'île 1** — un **chapitre de 4 étapes** (indices 10 à 13) enchaîne sur la réparation
   de la liaison maritime, le passage sur l'île 2, la première demande d'import au port et
@@ -293,7 +582,10 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   dans `TOOLBAR_GROUPS` (le brief disait « pas un bâtiment posable séparément », suivi à la lettre)
   alors que 15 des 16 paliers y figuraient, la seule autre exception étant `usine_moteur_nuc_v2`
   (anomalie du mémo 14.46). **Les DEUX y sont désormais** — `geothermie_v2` dans `energy`,
-  `usine_moteur_nuc_v2` dans `nuclear`. Vérifié sur la base 383 : **les 42 bâtiments de `TIER_STEP`
+  `usine_moteur_nuc_v2` dans `nuclear`.
+  ⚠ **PARTIELLEMENT CADUC DEPUIS LE LOT 16.0 (build 393)** : `geothermie_v2` **n'existe plus** (le
+  palier est supprimé), elle est donc ressortie de `TOOLBAR_GROUPS`. `usine_moteur_nuc_v2` y reste.
+  Le paragraphe est conservé tel quel : il décrit exactement l'état du build 382. Vérifié sur la base 383 : **les 42 bâtiments de `TIER_STEP`
   sont dans la barre d'outils, 0 manquant**, les 2 vignettes s'affichent au menu Bâtiment avec leur
   coût de pose = `cumulativeInvested` du palier, et leur fiche détaillée (appui long) redevient
   atteignable. Le paragraphe « à trancher » du mémo 14.46 est donc CADUC.
@@ -9092,16 +9384,31 @@ Tout est dans le mono-fichier. Pour valider : extraire le `<script>` et `node --
   par-dessus sans désinstaller (même clé).
 
 ## Workflow de développement (préférences utilisateur)
-- Développer sur la branche **`claude/resource-access-question-5mftqw`**.
+- Développer sur **la branche désignée par la consigne de session** (elle change à chaque session ;
+  les derniers lots ont été livrés depuis `claude/temps-souterrain-display-uoonrz`). **Ne jamais
+  pousser sur une autre branche sans autorisation explicite.**
 - **Push direct sur `main` BLOQUÉ** par un garde-fou de l'environnement → toujours passer par
   une **Pull Request**.
-- Préférence : **Claude crée la PR, lance le build, ET merge lui-même** (via l'API GitHub —
-  le merge de PR est autorisé, contrairement au push direct sur `main`) une fois le build vert.
-- ⚠️ **Avant de merger, vérifier que la tête de la PR contient bien le dernier commit/bump**
-  (un merge sur une tête périmée laisse `version.json` en arrière — déjà arrivé).
+- ⚠️ **RÈGLE ACTUELLE, ELLE A CHANGÉ : OUVRIR LA PR, NE PAS MERGER.** Le merge sur `main`
+  **appartient à Ethan seul** — il déclenche `android.yml`, qui republie l'APK, `index.html` et
+  `version.json`. Consigne répétée dans **chaque brief** depuis la série des lots L. **Cette section
+  disait l'inverse jusqu'au build 393** (« Claude crée la PR et merge lui-même ») : c'était vrai à
+  une époque, ça ne l'est plus.
+- ⚠️ **La CI ne tourne PAS sur les PR de ce dépôt** (`android.yml` est gaté sur `main` +
+  `workflow_dispatch`) : une PR sans check n'est pas une PR en attente, c'est le fonctionnement normal.
+- ⚠️ Si un jour un merge est explicitement autorisé : **vérifier que la tête de la PR contient bien le
+  dernier commit/bump** (un merge sur une tête périmée laisse `version.json` en arrière — déjà arrivé).
 - Après le merge sur `main`, le build `main` resynchronise `version.json`.
 - Garder la branche de dev à jour avec `main` pour éviter la divergence.
 
 ## Environnement
 - Conteneur **éphémère** (cloud) : tout ce qui n'est pas commité est perdu entre sessions.
 - Outils GitHub via le serveur MCP (`mcp__github__*`), pas de `gh` CLI.
+- ⚠️ **JAMAIS `git add -A` après un banc de test.** Les outils d'extraction et les scripts de banc
+  déposent des fichiers dans le répertoire de travail ; un `git add -A` les a déjà embarqués dans une
+  PR mergée (**3,1 Mo** de `blk1.js`…`blk7.js`, build 391). **Écrire les extractions dans `/tmp`** et
+  **stager par chemins EXPLICITES**.
+- Navigateur de test : `/opt/pw-browsers/chromium-1194/chrome-linux/chrome` (ne JAMAIS lancer
+  `playwright install`, la révision attendue par le paquet n'est pas celle de l'image) ; le serveur
+  HTTP doit être lancé **depuis la racine du dépôt**, sinon la page rend 404 et l'on croit à une page
+  blanche.
