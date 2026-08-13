@@ -19,7 +19,81 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 393`, `GAME_VERSION = 'Alpha 16.0'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 400`, `GAME_VERSION = 'Alpha 16.7'`, `SAVE_VERSION = 31`.**
+  Changement 16.7 (brief `BRIEFlotCsortiechapitreile2`, **lot C — 20 paires — + 5 paires HORS BRIEF**) :
+  **sortie du chapitre île 2** — le halo s'éteint, l'objectif invite à développer l'île 2, le message
+  de fin renvoie vers l'arbre de recherche, 7 `afterToast` cessent de s'afficher en français hors-fr,
+  et le titre de l'Aide ne ment plus. Base EXACTE (399 / 16.6, SHA-256 `44a9b75f…` conforme au
+  caractère près) ; **20/20 ancres au `count` annoncé**, `node --check` 7/7 (publique ET dev),
+  **delta +4 856 car.** (brief) **+2 254** (renversement).
+  (1) ⚠ **RENVERSEMENT D'ETHAN, HORS BRIEF** : le brief laissait le halo REVENIR à la fermeture du
+  panneau Port et mettait le drapeau persisté « hors périmètre ». Ethan a tranché l'inverse →
+  **`tutorial.portSeen`** (additif, absent = false, **`SAVE_VERSION` INCHANGÉ**), posé par
+  `checkTutorial`, jamais remis à faux. ⚠ **DEUX gardes de pose indispensables** :
+  `currentIsland === 1` (ouvrir le port de l'île 2 ne prouve rien) **et** la DERNIÈRE étape — sans
+  elle, **l'étape 12 qui EXIGE d'ouvrir un port éteindrait par avance le guidage de l'étape 13**.
+  Écrit `TUTORIAL_STEPS.length - 1`, jamais `13` en dur.
+  ⚠ **La garde de LECTURE est sur les DEUX cibles, pas seulement `port`** : le goal dit désormais
+  « développe l'île 2 en attendant » — ne garder que `port` renverrait le joueur vers l'onglet île 1
+  au moment où il fait ce qu'on lui demande. Éteindre le bouton pour rallumer l'onglet, ce serait
+  déplacer le harcèlement. **À rouvrir si Ethan veut garder la flèche de retour** (retirer la garde
+  de la 1ʳᵉ cible suffit).
+  (2) ⚠ **RETIRER une cible n'ÉTEINT PAS un halo** : l'avancement fait
+  `while (idx < targets.length - 1 && !targets[idx].when(g, ui)) idx++` → la **DERNIÈRE** cible sert
+  TOUJOURS de repli, même `when` faux. Il faut une **SENTINELLE sans `sel`** — le rendu fait
+  `tg && tg.sel ? halo : null`.
+  (3) ⚠ **CHANGER UN `goal` INLINE NE CHANGE RIEN À L'ÉCRAN** — `applyToData` le réécrit **PAR
+  INDEX** depuis la table i18n. C'est le piège du lot A′ (miroir pris pour la source) **reproduit
+  huit lots plus tard**. D'où les **`count == 2`** de `C6` : l'IIFE `var TUT` **ET** le miroir
+  littéral portent le même texte, on remplace les deux.
+  (4) ⚠ **LE DERNIER `afterToast` N'EST JAMAIS LU** : `checkTutorial` l'affiche, puis franchit la fin
+  de trame et rappelle `showToast` dans la **MÊME passe synchrone** — et `showToast` **ÉCRASE**
+  (`setToast` + reset du timer), il n'empile pas. Supprimé : c'était du texte mort.
+  (5) ⚠ **DEUX MÉCANISMES i18n VOISINS, L'UN REMPLACE, L'AUTRE FUSIONNE** : dans l'IIFE `var TUT`,
+  `L.tutorial = m.tutorial` (**bloc**), `L.tips[t] = m.tips[t]` (clé à clé), mais `L.ui[k] = m.ui[k]`
+  **seulement `if (!L.ui[k])`** (fusion NON destructive). Les `goal` passent par `tutorial`, les
+  `afterToast` par `ui`. Se tromper de table n'émet aucune erreur.
+  (6) **4 des 7 `afterToast` muets sont ANTÉRIEURS au chapitre** : leur texte fr avait été réécrit
+  **sans toucher la clé** de traduction → la ligne retombait en français. Même cause, même correctif.
+  **Validé** : `node --check` 7/7 (publique ET dev) + **les 5 harnais du brief avec leurs 5
+  contre-épreuves, tous aux chiffres annoncés** (T1 13 toasts 0 muet vs **8 muets** · T2 0 vs **7 KO**
+  · T3 0 vs **4 KO** · T4 nouveau vs ancien texte ×4 langues · T5 0 vs **8 KO**) + **harnais dédié au
+  renversement 11 assertions, 0 KO vs 5 KO sur la base** + **T6 en jeu 33 OK / 0 KO** (chapitre joué
+  par de VRAIS gestes jusqu'à `active=false`, halo éteint après fermeture, après retour sur l'île 2 ET
+  **après rechargement**) + boot des 2 éditions. Suites **rejouées 2 fois sans flottement**.
+  ⚠ **HASHES DU BRIEF CONFORMES SUR LES DEUX BLOCS** (une première) : variante « brief seul »
+  → bloc 6 `e448f828…`/238 158 et bloc 7 `66162b86…`/1 677 669, **au caractère près**. Le brief ne
+  propose aucun numéro de version, donc son bloc 7 est haché sans bump. Livré : bloc 6 **identique**
+  (le renversement ne le touche pas), bloc 7 `dc51b562…`/1 681 008.
+  ⚠ **ROUND-TRIP EN DEUX COUCHES** : `D5` **réécrit** les 2 cibles que `C1` vient de poser → `C1.new`
+  n'est plus présent tel quel (`count == 0`), c'est ATTENDU. La sentinelle de `C1` et son commentaire
+  sur le hook orphelin survivent (vérifié).
+  ⚠ **LE JEU AVAIT AVANCÉ DE 18 BUILDS, ET UN HOOK A FAILLI TOMBER DANS LE VIDE** : le **lot 4b
+  (399) a SUPPRIMÉ le bouton Réparer**, fusionné dans le bouton **Carte**. L'étape 10 pointe
+  `data-tut="repair"` → le halo aurait désigné un bouton disparu **sans la moindre erreur JS**. Le
+  lot 4b a **migré le hook avec le bouton** (son commentaire le dit). **Audit fait : les 13 hooks
+  `data-tut` référencés par `TUTORIAL_STEPS` sont tous encore posés** — à REJOUER à chaque lot qui
+  touche le HUD.
+  ⚠ **CONSÉQUENCE POUR LES HARNAIS** : la réparation d'une liaison passe désormais par
+  **Carte → nœud d'île → « Réparer l'île N »** (lots 3 et 4b). Un harnais du lot B qui cherche un
+  bouton « Réparer » dans le HUD ne trouve plus rien.
+  ⚠ **PIÈGES DE HARNAIS (à ma charge)** : (a) fermer un panneau par un `.click()` DOM est **avalé par
+  `useGhostGuard`** (13.50) — vrai clic Playwright obligatoire ; (b) après validation d'un nœud, le
+  `.research-backdrop` du popup **« Recherche terminée » (`.rd-popup`)** intercepte le clic suivant —
+  une purge qui ne ferme que `.tip-popup` ne suffit pas ; (c) le bruit console (404 `sw.js`,
+  `ERR_CONNECTION_RESET` sur `version.json`) est **PRÉEXISTANT** — contre-épreuvé sur la base 399,
+  filtré explicitement et non ignoré en silence.
+  ⚠ **`data-tut="port-upgrade"` reste posé et n'est référencé par PERSONNE** — conservé à dessein
+  (hook prêt si l'on veut rallumer ce guidage), commentaire à la sentinelle. **Ne pas conclure à un
+  halo cassé en le trouvant orphelin.**
+  ⚠ **MÉNAGE** : `PR-body.md` (artefact de contournement commité au lot B quand l'accès GitHub était
+  coupé, puis mergé) est **RETIRÉ** du dépôt.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `data-tut="port-upgrade"`, les étapes 0 à 9, les autres
+  objectifs du guide, `applyToData`, `SAVE_VERSION`.
+  ⚠ **LE MÉMO NE COUVRE PAS LES BUILDS 394 À 399** (onglets d'île, panneau Carte, navigation depuis
+  la carte, qui paie une réparation, réparation par la carte) : leur historique est dans les
+  commentaires cumulatifs en tête de `GAME_BUILD` et dans les messages de commit.
+- **État précédent : `GAME_BUILD = 393`, `GAME_VERSION = 'Alpha 16.0'`, `SAVE_VERSION = 31`.**
   Changement 16.0 (brief `BRIEFlotL7energiesouterrain`, **lot L7 — 13 ancres**) : **la Géothermie V2 est
   SUPPRIMÉE, la Géothermie passe sous soft cap, la Centrale à Gaz devient libre partout, et le
   Séparateur Cryogénique sort du souterrain au nœud 43 — vers l'île 6 SEULEMENT.** `SAVE_VERSION`
