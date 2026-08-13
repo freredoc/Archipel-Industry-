@@ -9079,8 +9079,37 @@ const SAVE_VERSION = 31;
 // MÊME affordance. Laisser celle-ci en français jurerait avec son propre jumeau.
 // ⚠ HORS PÉRIMÈTRE, non anticipé : la réparation unifiée (lot 4). Le bouton 🛠 et `RepairModal`
 // restent INTACTS.
-const GAME_BUILD = 397;
-const GAME_VERSION = 'Alpha 16.4';
+// 16.5 — QUI PAIE UNE RÉPARATION DE PORT (lot 4a, 5 ancres, MOTEUR SEUL). Règle tranchée par
+// Ethan : les ressources d'une réparation viennent du port de l'île qui PRÉCÈDE celle qu'on ouvre
+// — le port de l'île 2 paie la liaison 2↔3. Avant, `techDeliver` débitait l'île COURANTE : les
+// 5 nœuds d'accès n'ayant pas de champ `island` racine, on pouvait financer l'ouverture de l'île 3
+// depuis le port de l'île 1.
+// (1) ⚠ LA SOURCE EST DÉRIVÉE DE `ISLAND_ACCESS_NODE`, JAMAIS DE `max(islandUnlocked)` : ce
+// maximum basculerait sur le souterrain dès l'élévateur réparé, puis sur toute île future.
+// (2) ⚠ AUCUNE TABLE INVERSE EN `const` : `deliveryIsland` relit la table au runtime (5 entrées,
+// coût nul). Une `const` dérivée placée près de `techDeliver` lirait `ISLAND_ACCESS_NODE`
+// **151 lignes avant sa déclaration** (mesuré : l. 17320 contre l. 17471) → zone morte temporelle,
+// page blanche que `node --check` NE VOIT PAS.
+// (3) ⚠ PORTÉE LIMITÉE AUX 5 NŒUDS DE LA TABLE. Les autres livraisons sans `island` — 31
+// élévateur, 34 forage profond, 38/40/42 collisionneur — gardent l'île COURANTE. Étendre la règle
+// à « tout nœud sans `island` » leur ferait changer de source le jour où une île arrive.
+// (4) ⚠ QUATRIÈME SITE TROUVÉ HORS DU MÉMO DE REPRISE, et c'est celui qui aurait fait diverger
+// l'écran du moteur : `ResearchPanel` calculait `canDeliver` sur `port` (île courante) alors que
+// `dPort` lisait déjà `portPool(game, def.island)` quand `def.island` existe. Pour les 5 nœuds
+// d'accès `def.island` est nul → pastilles ET bouton retombaient sur l'île courante. Sans lui,
+// l'écran serait resté vert pendant que `techDeliver` refusait, ou l'inverse.
+// (5) **La garde de PRÉSENCE ne bouge pas** : elle ne s'applique que si `def.island` existe. Un
+// nœud d'accès reste donc payable où que soit le joueur — arbitrage tranché, *c'est le port qui
+// paie, pas le joueur*. Mesuré : pastille de notification allumée depuis l'île 1 quand le port de
+// l'île 2 est garni.
+// ⚠ `RepairModal` lisait `game.port[game.currentIsland]` : corrigé en `portPool` dérivé du NŒUD.
+// Inoffensif aujourd'hui (`repairInfo` n'est construit que pour `currentIsland + 1`), mais le
+// souterrain n'a pas de port propre et le lot 4b ouvrira cette action depuis la carte.
+// ⚠ CONSÉQUENCE POUR LE JOUEUR, la seule visible : il faut désormais ACHEMINER par bateau les
+// ressources d'une réparation jusqu'au port de l'île précédente ; les avoir sous la main ne suffit
+// plus. `SAVE_VERSION` INCHANGÉ (31), aucun libellé nouveau — l'audit i18n 381 n'augmente pas.
+const GAME_BUILD = 398;
+const GAME_VERSION = 'Alpha 16.5';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9089,7 +9118,7 @@ const GAME_VERSION = 'Alpha 16.4';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "La carte de l'archipel sert enfin à se déplacer : touchez une île, vous y êtes. Jusqu'ici elle ne faisait que montrer ; il fallait la fermer, puis retrouver le bon onglet en haut de l'écran. Le souterrain se rejoint de la même façon, depuis son marqueur accroché à l'île 6, une fois l'élévateur réparé. L'île où vous vous trouvez est signalée en jaune et reste la seule case sur laquelle il n'y a rien à faire. La carte se referme toute seule à l'arrivée, pour vous laisser devant l'île plutôt que devant le plan. Les îles encore verrouillées restent grisées et inertes, comme avant.";
+const GAME_NOTES = "Les réparations de port se paient désormais depuis l'île précédente. Pour ouvrir la liaison vers une nouvelle île, les ressources doivent se trouver dans le port de l'île juste avant elle : c'est le port de l'île 2 qui finance la liaison vers l'île 3. Il faut donc les y acheminer par bateau, les avoir ailleurs ne suffit plus. En échange, vous n'avez plus besoin d'être sur place : dès que le bon port est garni, la pastille de recherche s'allume et la livraison se fait depuis n'importe quelle île. Les coûts affichés suivent ce même port, si bien que ce que vous lisez à l'écran est exactement ce qui sera débité.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -17317,6 +17346,22 @@ function techConfirm(game, id) {
   SFX.play('unlock');
   return true;
 }
+// 16.x - ILE QUI PAIE une livraison. Les 5 noeuds d'acces (ISLAND_ACCESS_NODE) n'ont PAS de champ
+// `island` racine : leur livraison est financee par le port de l'ile qui PRECEDE celle qu'ils
+// ouvrent - le port de l'ile 2 paie la liaison 2-3.
+// ⚠ Derive de la TABLE, jamais de max(islandUnlocked) : ce maximum bascule sur le souterrain des
+// l'elevateur repare, puis sur une future ile.
+// ⚠ Portee volontairement limitee aux 5 noeuds de la table. Les autres livraisons sans `island`
+// (31 elevateur, 34 forage profond, 38/40/42 collisionneur) gardent l'ile COURANTE, inchangees -
+// sinon elles changeraient de source le jour ou une nouvelle ile arrive.
+// ⚠ Aucune table inverse en const : la boucle lit ISLAND_ACCESS_NODE au runtime (5 entrees), donc
+// aucun ordre de declaration a respecter et aucune zone morte temporelle possible.
+function deliveryIsland(game, def) {
+  if (!def) return game.currentIsland;
+  if (def.island != null) return def.island;
+  for (const isl in ISLAND_ACCESS_NODE) if (ISLAND_ACCESS_NODE[isl] === def.id) return +isl - 1;
+  return game.currentIsland;
+}
 function techDeliver(game, id) {
   const def = TECH_BY_ID[id],
     node = game.techTree.nodes[id - 1];
@@ -17330,7 +17375,8 @@ function techDeliver(game, id) {
   // toute livraison depuis le souterrain échouait EN SILENCE, à jamais (nœud 35 infranchissable).
   // portPool rend la RÉFÉRENCE VIVANTE du port de l'île 6 : indispensable ici, puisqu'on DÉBITE
   // le stock juste en dessous — une copie rendrait la recherche gratuite sans le moindre symptôme.
-  const pool = portPool(game, game.currentIsland);
+  // 16.x - le port DEBITE est celui de l'ile qui paie (cf. deliveryIsland), pas l'ile courante.
+  const pool = portPool(game, deliveryIsland(game, def));
   for (const k in def.delivery) if ((pool[k] || 0) < def.delivery[k]) return false;
   for (const k in def.delivery) pool[k] -= def.delivery[k];
   node.status = 'confirmed';
@@ -17351,7 +17397,9 @@ function deliveryReady(game, def) {
   // 14.91 — MÊME condition d'île que techDeliver : sinon la pastille de notification s'allumerait
   // pour une recherche qu'on ne peut pas valider ici (et le halo du guide pointerait dans le vide).
   if (def.island != null && def.island !== game.currentIsland) return false;
-  const pool = portPool(game, game.currentIsland);
+  // 16.x - MEME source que techDeliver : la pastille suit le port qui paie, donc un noeud
+  // d'acces devient notifiable ou qu'on se trouve. C'est le port qui paie, pas le joueur.
+  const pool = portPool(game, deliveryIsland(game, def));
   for (const k in def.delivery) if ((pool[k] || 0) < def.delivery[k]) return false;
   return true;
 }
@@ -21785,11 +21833,16 @@ function ResearchPanel({
     // progression ET sait où aller. Le bouton, lui, suit EXACTEMENT la règle de techDeliver — il
     // reste gris tant qu'on n'est pas sur place, avec le motif écrit à côté.
     const wrongIsland = isDelivery && def.island != null && def.island !== currentIsland;
-    const dPort = isDelivery && def.island != null ? portPool(game, def.island) : port;
+    // 16.x - pastilles ET bouton lisent le port de l'ILE QUI PAIE. Pour un noeud d'acces c'est
+    // l'ile precedente, ou qu'on se trouve ; pour les 29 noeuds `island` le comportement est
+    // strictement inchange (deliveryIsland rend def.island).
+    // ⚠ canDeliver comparait `port` (ile courante) alors que techDeliver debite ailleurs :
+    // l'ecran et le moteur auraient diverge des le premier noeud d'acces.
+    const dPort = isDelivery ? portPool(game, deliveryIsland(game, def)) : port;
     let canDeliver = false;
     if (isDelivery && !wrongIsland) {
       canDeliver = true;
-      for (const k in def.delivery) if ((port[k] || 0) < def.delivery[k]) canDeliver = false;
+      for (const k in def.delivery) if ((dPort[k] || 0) < def.delivery[k]) canDeliver = false;
     }
     const blds = def.unlocks && def.unlocks.buildings || [];
     const isls = def.unlocks && def.unlocks.islands || [];
@@ -31734,7 +31787,10 @@ function App() {
     onUpgradePort: upgradePort
   }), repairOpen && repairInfo && React.createElement(RepairModal, {
     repairInfo: repairInfo,
-    resources: game.port[game.currentIsland] || {},
+    // 16.x - jamais game.port[...] : le souterrain n'a pas de port propre (portPool). L'ile
+    // payeuse est derivee du noeud, pas de l'ile courante, pour rester juste si la carte (4b)
+    // ouvre cette modale depuis ailleurs.
+    resources: portPool(game, deliveryIsland(game, TECH_BY_ID[repairInfo.node])) || {},
     onRepair: node => {
       repairIsland(node);
       setRepairOpen(false);
