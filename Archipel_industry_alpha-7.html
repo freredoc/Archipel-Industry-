@@ -508,6 +508,25 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
   .arch-brume{display:none;}}
 .arch-hint{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;
   color:var(--ink-faint);padding:2px 0 6px;}
+/* Lot 4b — LA REPARATION PASSE SUR LA CARTE. L'ile a ouvrir devient l'action : on la touche,
+   RepairModal s'ouvre PAR-DESSUS la carte (App rend MapPanel puis RepairModal, tous deux en
+   .research-panel z-index:121 → la modale passe devant par simple ordre du DOM).
+   ⚠ NE TOUCHER A AUCUN z-index : l'empilement vient de l'ordre de rendu, pas du CSS. */
+.arch-link.repairable{background:repeating-linear-gradient(90deg,#6a5a2e 0 10px,transparent 10px 20px);
+  opacity:.95;}
+.arch-flag{position:absolute;top:0;font-size:1rem;filter:drop-shadow(0 1px 2px #000);}
+.arch-node.target .arch-ile{filter:grayscale(1) brightness(.72);outline:2px dashed var(--yellow);
+  outline-offset:-4px;border-radius:6px;}
+.arch-node.target{pointer-events:auto;cursor:pointer;}
+/* Ligne « qui paie » de la modale : repond au point laisse ouvert par le lot 4a, ou rien a
+   l'ecran ne disait que c'est le port de l'ile PRECEDENTE qui finance. */
+.arch-repair-src{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--yellow);
+  padding:0 0 5px;}
+/* Badge 🛠 du bouton Carte : le 🛠 de la barre d'inventaire y est fusionne. La pastille
+   .notif-dot n'a besoin d'AUCUN CSS neuf — elle est deja position:static;margin-left:2px,
+   exactement comme celle du bouton Options, qui est le precedent direct. */
+.map-repair-flag{margin-left:3px;display:inline-flex;align-items:center;}
+.options-btn.has-repair{border-color:var(--yellow);}
 /* Vue « Transit archipel » : flux groupés par direction src→dest. */
 .pp-arch-link{border:1px solid var(--line);border-radius:7px;padding:7px 9px;margin-bottom:6px;background:var(--panel-2);}
 .pp-arch-head{font-family:'Bebas Neue',sans-serif;font-size:.92rem;letter-spacing:.04em;color:var(--ink);margin-bottom:4px;}
@@ -3223,6 +3242,7 @@ for(var code in G){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; va
 (function(){ if(!window.I18N||!I18N.locales) return; /* 16.4 */ var ADD={"en": {"Aller \xE0 ": "Go to ", "Descendre \xE0 ": "Go down to "}, "es": {"Aller \xE0 ": "Ir a ", "Descendre \xE0 ": "Bajar a "}, "de": {"Aller \xE0 ": "Gehe zu ", "Descendre \xE0 ": "Hinunter zu "}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.91 recherche par livraison */ var ADD={"en": {"\xC0 livrer depuis l'": "To deliver from "}, "es": {"\xC0 livrer depuis l'": "A entregar desde la "}, "de": {"\xC0 livrer depuis l'": "Zu liefern von "}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.93 ticks du rattrapage hors-ligne */ var ADD={"en": {"ticks": "ticks", "ticks simul\xE9s": "ticks simulated", "extrapol\xE9s": "extrapolated"}, "es": {"ticks": "ticks", "ticks simul\xE9s": "ticks simulados", "extrapol\xE9s": "extrapolados"}, "de": {"ticks": "Ticks", "ticks simul\xE9s": "Ticks simuliert", "extrapol\xE9s": "extrapoliert"}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* 16.6 lot 4b */ var ADD={"en": {"Voir sur la carte": "See on the map", "Pay\xE9 par le port de ": "Paid from the port of ", "R\xE9paration \xCEle ": "Repair Island ", " \u2014 recherche d'acc\xE8s non atteinte": " \u2014 access research not reached", "Ouvre la Carte : touche l'\xEEle \xE0 ouvrir pour voir ce qu'il faut livrer.": "Open the Map: tap the island to open to see what must be delivered."}, "es": {"Voir sur la carte": "Ver en el mapa", "Pay\xE9 par le port de ": "Pagado por el puerto de ", "R\xE9paration \xCEle ": "Reparaci\xF3n Isla ", " \u2014 recherche d'acc\xE8s non atteinte": " \u2014 investigaci\xF3n de acceso no alcanzada", "Ouvre la Carte : touche l'\xEEle \xE0 ouvrir pour voir ce qu'il faut livrer.": "Abre el Mapa: toca la isla a abrir para ver qu\xE9 hay que entregar."}, "de": {"Voir sur la carte": "Auf der Karte ansehen", "Pay\xE9 par le port de ": "Bezahlt vom Hafen von ", "R\xE9paration \xCEle ": "Reparatur Insel ", " \u2014 recherche d'acc\xE8s non atteinte": " \u2014 Zugangsforschung nicht erreicht", "Ouvre la Carte : touche l'\xEEle \xE0 ouvrir pour voir ce qu'il faut livrer.": "\xD6ffne die Karte: tippe die zu \xF6ffnende Insel an, um zu sehen, was zu liefern ist."}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) if (!I18N.locales[lg].ui[k]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
 </script>
 <script>
 const {
@@ -9108,8 +9128,45 @@ const SAVE_VERSION = 31;
 // ⚠ CONSÉQUENCE POUR LE JOUEUR, la seule visible : il faut désormais ACHEMINER par bateau les
 // ressources d'une réparation jusqu'au port de l'île précédente ; les avoir sous la main ne suffit
 // plus. `SAVE_VERSION` INCHANGÉ (31), aucun libellé nouveau — l'audit i18n 381 n'augmente pas.
-const GAME_BUILD = 398;
-const GAME_VERSION = 'Alpha 16.5';
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// 16.6 (build 399) — LOT 4b : LA RÉPARATION D'UNE LIAISON PASSE SUR LA CARTE (variante A).
+// On touche l'île à ouvrir ; `RepairModal` s'ouvre PAR-DESSUS la carte, qui reste montée
+// derrière (aucun `setMapOpen(false)`, aucun `z-index` touché : App rend `MapPanel` PUIS
+// `RepairModal`, l'ordre du DOM suffit). Le bouton 🛠 de la barre d'inventaire disparaît ;
+// son badge, sa pastille et ses deux titres sont absorbés par le bouton Carte.
+// ⚠ LE PIÈGE DU LOT : `data-tut="repair"` est lu à DEUX endroits — l'étape « répare la
+// liaison » du tutoriel de l'île 1 ET l'objectif de guide `go_reparer`. Il a MIGRÉ sur le
+// bouton Carte dans le même patch. S'il avait disparu, les deux halos auraient pointé dans
+// le vide SANS la moindre erreur JS : ni `node --check` ni un boot ne l'auraient vu. Vérifié
+// par `elementFromPoint` (T4a/T4b), pas à l'œil.
+// ⚠ DÉFAUT BLOQUANT TROUVÉ AU BANC, ABSENT DU BRIEF, CORRIGÉ ICI : `ARCHI_CACHEE = {6:true}`
+// masque ENTIÈREMENT l'île 6 tant qu'elle est verrouillée (c'est la surprise du jeu). Or
+// l'action vit désormais sur la carte : mesuré sur l'île 5, nœud 28 prêt, port garni, le
+// bouton Carte annonçait « Réparer le port pour débloquer l'île 6 » avec sa pastille allumée
+// et la carte ne dessinait NI cible NI liaison 5-6 → l'île 6 devenait INOUVRABLE, blocage dur
+// de progression. `visible()` laisse donc toujours passer la cible de réparation, et celle-ci
+// est rendue SANS son sprite d'île tant qu'elle est cachée (repérage pointillé + badge 🛠 +
+// libellé). Le sprite, `arch-emerge` ET LA BRUME ne se jouent qu'à l'ouverture : rien n'est
+// défloré, la surprise tient.
+// (1) L'île à ouvrir devient l'ACTION : elle est cliquable MÊME verrouillée — et elle seule ;
+// les autres verrouillées restent des `div` inertes (T6). `repairInfo.locked` la MONTRE sans
+// la rendre cliquable, exactement comme le bouton 🛠 qu'elle remplace (T3).
+// (2) « Livrer » devient « Voir sur la carte » pour les 5 NŒUDS D'ACCÈS SEULEMENT — critère
+// repris de `deliveryIsland` (lot 4a) : `def.island == null` ET `def.id` dans
+// `ISLAND_ACCESS_NODE`. Les 29 autres livrent comme avant (T5, nœud 35 vérifié). Les nœuds
+// restent dans l'arbre : ils débloquent aussi un bâtiment et +1 bateau. `data-tut="confirm"`
+// est CONSERVÉ sur le renvoi — `go_recherche` le cible, et son `done` est un ÉTAT.
+// (3) Révélation à CHAQUE réparation, plus seulement pour l'île 6. ⚠ `game` étant muté EN
+// PLACE, un `useEffect` sur `[game]` ne se redéclenche pas : la détection compare
+// `islandUnlocked` à un instantané gardé dans une ref. La BRUME reste réservée à l'île 6.
+// (4) i18n : 4 libellés n'avaient AUCUNE traduction (dont 2 neufs). ⚠ Un premier audit
+// `"clef":"` les a TOUS ratés, y compris ceux qui SONT traduits — les tables écrivent
+// `"clef": "trad"` AVEC une espace. Auditer avec une regex tolérante.
+// (5) ⚠ LE LIBELLÉ DU GUIDE `go_reparer` DISAIT « Ouvre Réparer » — un bouton que ce lot
+// supprime. Le halo pointait juste, la phrase envoyait chercher un bouton disparu : réécrite.
+// `SAVE_VERSION` INCHANGÉ (31), aucun champ ajouté.
+const GAME_BUILD = 399;
+const GAME_VERSION = 'Alpha 16.6';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9118,7 +9175,7 @@ const GAME_VERSION = 'Alpha 16.5';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les réparations de port se paient désormais depuis l'île précédente. Pour ouvrir la liaison vers une nouvelle île, les ressources doivent se trouver dans le port de l'île juste avant elle : c'est le port de l'île 2 qui finance la liaison vers l'île 3. Il faut donc les y acheminer par bateau, les avoir ailleurs ne suffit plus. En échange, vous n'avez plus besoin d'être sur place : dès que le bon port est garni, la pastille de recherche s'allume et la livraison se fait depuis n'importe quelle île. Les coûts affichés suivent ce même port, si bien que ce que vous lisez à l'écran est exactement ce qui sera débité.";
+const GAME_NOTES = "Une liaison se répare maintenant depuis la carte de l'archipel. Ouvrez la Carte, touchez l'île à ouvrir : elle est signalée par un repère et la liaison qui y mène apparaît en pointillé. La fenêtre de réparation s'ouvre par-dessus la carte, qui reste derrière : dès que vous validez, elle se referme et l'île se dévoile sur place. Le bouton Réparer disparaît de la barre d'inventaire, le bouton Carte reprend son repère et sa pastille. Dans la Recherche, les cinq accès d'île renvoient vers la carte au lieu de livrer sur place. La fenêtre de réparation dit aussi quel port paie.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -16767,11 +16824,13 @@ const GUIDE_OBJECTIVES = [
 }, {
   // ── DÉCOUVERTES ───────────────────────────────────────────────────────────
   // Après le tutoriel : le joueur a la cadence, il lui manque de savoir OÙ elle sert.
-  // Le bouton Réparer affiche les montants exigés par l'accès à l'île suivante — c'est
-  // le seul endroit du jeu qui les montre. Objectif de découverte : une seule fois.
+  // Lot 4b — LE BOUTON RÉPARER N'EXISTE PLUS : l'action est passée sur la carte, en
+  // touchant l'île à ouvrir. Le halo, lui, n'a pas bougé (`data-tut="repair"` a migré
+  // sur le bouton Carte) — seule la PHRASE devait suivre, sans quoi le guide envoyait
+  // chercher un bouton disparu. Objectif de découverte : une seule fois.
   id: 'go_reparer',
   kind: 'discover',
-  goal: 'Ouvre Réparer : il indique ce qu\'il faut livrer pour ouvrir l\'île suivante.',
+  goal: 'Ouvre la Carte : touche l\'île à ouvrir pour voir ce qu\'il faut livrer.',
   // ⚠ `repairInfo` est une variable LOCALE au rendu, pas un champ de `game` : le prédicat
   // le recalcule depuis la source, `ISLAND_ACCESS_NODE` + le statut du nœud d'accès —
   // exactement ce que fait le composant. `condition_ok` = le bouton est déverrouillé.
@@ -18751,12 +18810,27 @@ function Hud({
   }, React.createElement("span", {
     className: "gear"
   }, uiIcon('info', "?")), React.createElement("span", null, I18N.t("Aide"))), React.createElement("button", {
-    className: "options-btn help-btn",
+    className: "options-btn help-btn" + (repairInfo ? ' has-repair' : ''),
     onClick: onOpenMap,
-    title: I18N.t("Carte de l'archipel")
+    // Lot 4b — LE 🛠 EST FUSIONNE ICI. ⚠ `data-tut="repair"` MIGRE avec lui : il est lu par
+    // l'etape « repare la liaison » du tutoriel de l'ile 1 ET par l'objectif de guide
+    // `go_reparer`. S'il disparaissait, LES DEUX HALOS POINTERAIENT DANS LE VIDE, sans la
+    // moindre erreur JS — ni `node --check` ni un boot ne le verraient.
+    'data-tut': "repair",
+    title: repairInfo
+      ? (repairInfo.locked
+          ? I18N.t("R\xE9paration \xCEle ") + repairInfo.island + I18N.t(" — recherche d'acc\xE8s non atteinte")
+          : I18N.t("R\xE9parer le port pour d\xE9bloquer l'\xEEle ") + repairInfo.island)
+      : I18N.t("Carte de l'archipel")
   }, React.createElement("span", {
     className: "gear"
-  }, uiIcon('carte', "\ud83d\uddfa")), React.createElement("span", null, I18N.t("Carte"))), React.createElement(IslandSelector, {
+  }, uiIcon('carte', "\ud83d\uddfa")), React.createElement("span", null, I18N.t("Carte")),
+    repairInfo ? React.createElement("span", {
+      className: "map-repair-flag"
+    }, uiIcon('reparation', "\ud83d\udee0")) : null,
+    canRepair ? React.createElement("span", {
+      className: "notif-dot"
+    }) : null), React.createElement(IslandSelector, {
     current: currentIsland,
     onSelect: onSelectIsland,
     unlocked: islandUnlocked,
@@ -18817,15 +18891,11 @@ function Hud({
     // qu'une île suivante existe. Atténué (locked) tant que la recherche d'accès n'est pas
     // atteinte (non cliquable) ; actif sinon (ouvre les infos de réparation). Une pastille de
     // notification (notif-dot) apparaît quand la réparation devient possible (ressources livrées).
-    const repairBtn = repairInfo && React.createElement("button", {
-      className: "inv-repair-ico" + (repairInfo.locked ? ' locked' : '') + (canRepair ? ' ready' : ''),
-      'data-tut': "repair",
-      onClick: repairInfo.locked ? undefined : onShowRepair,
-      disabled: !!repairInfo.locked,
-      title: repairInfo.locked ? I18N.t("R\xE9paration \xCEle ") + repairInfo.island + I18N.t(" — recherche d'acc\xE8s non atteinte") : I18N.t("R\xE9parer le port pour d\xE9bloquer l'\xEEle ") + repairInfo.island
-    }, uiIcon('reparation', "🛠"), canRepair && React.createElement("span", {
-      className: "notif-dot"
-    }));
+    // Lot 4b — LE BOUTON 🛠 A ETE FUSIONNE DANS LE BOUTON CARTE (badge + pastille + `data-tut`).
+    // La constante est conservee a `null` : elle est consommee a DEUX endroits (etats replie et
+    // ouvert de la barre d'inventaire) et un null n'y rend rien, ce qui garde le diff minimal et
+    // reversible. La reparation se fait desormais en touchant l'ile a ouvrir sur la carte.
+    const repairBtn = null;
     // Bouton Production (à droite d'INVENTAIRE) : ouvre le tableau prod/conso/net + transit
     // de toutes les îles.
     const prodBtn = React.createElement("button", {
@@ -18926,6 +18996,8 @@ function RepairModal({
   onClose
 }) {
   const cost = repairInfo.cost || {};
+  // Lot 4b : l'ile qui PAIE, derivee du nœud comme dans techDeliver (lot 4a).
+  const payeur = deliveryIsland({ currentIsland: repairInfo.island }, TECH_BY_ID[repairInfo.node]);
   let canRepair = Object.keys(cost).length > 0;
   for (const k in cost) if ((resources[k] || 0) < cost[k]) canRepair = false;
   return React.createElement(React.Fragment, null, React.createElement("div", {
@@ -18946,6 +19018,11 @@ function RepairModal({
   }, React.createElement("div", {
     className: "repair-modal-desc"
   }, I18N.t("Livrez les ressources requises au port pour r\xE9parer la liaison et d\xE9bloquer l'\xEEle "), repairInfo.island, "."), React.createElement("div", {
+    // Lot 4b — repond au point laisse ouvert par le lot 4a : depuis 4a c'est le port de l'ile
+    // PRECEDENTE qui finance, et RIEN a l'ecran ne le disait. Le libelle est derive de
+    // `deliveryIsland`, jamais recalcule, pour ne pas creer une seconde verite.
+    className: "arch-repair-src"
+  }, I18N.t("Pay\xE9 par le port de ") + islandLabel(payeur)), React.createElement("div", {
     className: "pp-port-cost"
   }, Object.keys(cost).map(k => React.createElement("span", {
     className: 'rp-ci' + ((resources[k] || 0) >= cost[k] ? ' ok' : ' miss'),
@@ -21775,6 +21852,7 @@ function techNodesOrdered(game) {
 }
 function ResearchPanel({
   game,
+  onGoMap,
   currentIsland,
   onDeliver,
   onConfirm,
@@ -21839,6 +21917,12 @@ function ResearchPanel({
     // ⚠ canDeliver comparait `port` (ile courante) alors que techDeliver debite ailleurs :
     // l'ecran et le moteur auraient diverge des le premier noeud d'acces.
     const dPort = isDelivery ? portPool(game, deliveryIsland(game, def)) : port;
+    // Lot 4b — un « nœud d'acces » au sens du lot 4a : aucun champ `island` racine ET id present
+    // dans ISLAND_ACCESS_NODE. Meme critere que `deliveryIsland`, jamais une liste en dur.
+    let isAccessNode = false;
+    if (isDelivery && def.island == null) {
+      for (const isl in ISLAND_ACCESS_NODE) if (ISLAND_ACCESS_NODE[isl] === def.id) isAccessNode = true;
+    }
     let canDeliver = false;
     if (isDelivery && !wrongIsland) {
       canDeliver = true;
@@ -21879,11 +21963,20 @@ function ResearchPanel({
       className: "rp-btn",
       // Même ancre tuto que « Confirmer » : le 1er nœud validable (Accès Île 2) est en mode
       // delivery → le halo de l'étape 8 doit pouvoir pointer ce bouton-ci.
+      // ⚠ Lot 4b : `data-tut="confirm"` RESTE, y compris sur le renvoi. `go_recherche` le cible
+      // et son `done` est `!hasPendingResearch(g)` — un ETAT : le guide continue donc de designer
+      // un bouton qui mene a l'action, et se clot quand la recherche est validee, par quelque
+      // chemin que ce soit.
       'data-tut': "confirm",
-      disabled: !canDeliver,
+      // Lot 4b — POUR LES 5 NŒUDS D'ACCES SEULEMENT, le bouton devient un RENVOI vers la carte :
+      // c'est la qu'on repare desormais. Critere identique a `deliveryIsland` (lot 4a) : pas de
+      // champ `island` racine ET id present dans ISLAND_ACCESS_NODE. Les 29 autres livraisons
+      // gardent `onDeliver` STRICTEMENT inchange.
+      // ⚠ Ces nœuds ne sont PAS retires de l'arbre : ils debloquent aussi un batiment et +1 bateau.
+      disabled: isAccessNode ? false : !canDeliver,
       title: wrongIsland ? I18N.t("\xC0 livrer depuis l'") + islandLabel(def.island) : undefined,
-      onClick: () => onDeliver(def.id)
-    }, I18N.t("Livrer"))), isManual && React.createElement("div", {
+      onClick: isAccessNode ? () => onGoMap() : () => onDeliver(def.id)
+    }, isAccessNode ? I18N.t("Voir sur la carte") : I18N.t("Livrer"))), isManual && React.createElement("div", {
       className: "rp-deliver"
     }, React.createElement("span", {
       className: "rp-ready-note"
@@ -21961,10 +22054,15 @@ const ARCHI_POS = { 1: [20, 24], 2: [54.5, 24], 3: [35, 50], 4: [20, 75], 5: [53
 // grisées justement pour que le joueur voie où il va.
 const ARCHI_CACHEE = { 6: true };
 
-function ArchipelMap({ game, flows, reveal, onGo }) {
+function ArchipelMap({ game, flows, reveal, onGo, repairInfo, onRepair }) {
   const unlocked = game.islandUnlocked || {};
   const ouverte = id => id === 1 || !!unlocked[id];
-  const visible = id => ouverte(id) || !ARCHI_CACHEE[id];
+  // Lot 4b — ⚠ SANS CETTE CLAUSE L'ILE 6 EST INOUVRABLE. `ARCHI_CACHEE` la masque
+  // entierement tant qu'elle est verrouillee (c'est la surprise du jeu), or la reparation
+  // se fait DESORMAIS en touchant l'ile a ouvrir : la cible doit exister sur la carte.
+  // Elle y est rendue SANS son sprite (voir `mystere` plus bas), donc rien n'est devoile.
+  const visible = id => ouverte(id) || !ARCHI_CACHEE[id]
+    || (!!repairInfo && id === repairInfo.island);
   // Nombre de ressources par SENS, agrégé par liaison : `allTransitFlows` renvoie une
   // entrée par direction (3→4 et 4→3 sont deux entrées), la carte les réunit sur un trait.
   const parLien = {};
@@ -21986,7 +22084,10 @@ function ArchipelMap({ game, flows, reveal, onGo }) {
     const actif = ouverte(a) && ouverte(b) && (rec.ab || rec.ba);
     return React.createElement("div", {
       key: k,
+      // Lot 4b : la liaison vers l'ile a ouvrir passe en pointille. Elle n'est PAS `on` —
+      // `actif` exige les deux iles ouvertes, ce qui reste faux par definition.
       className: 'arch-link' + (actif ? ' on' : '')
+        + (repairInfo && b === repairInfo.island && a === repairInfo.island - 1 ? ' repairable' : '')
         + (reveal && (a === reveal || b === reveal) ? ' reveal' : ''),
       style: {
         left: pa[0] + '%', top: pa[1] + '%', width: len + '%',
@@ -21998,23 +22099,46 @@ function ArchipelMap({ game, flows, reveal, onGo }) {
     }, actif ? rec.ab + '\u2192 \u00B7 ' + rec.ba + '\u2190' : ''));
   });
   const iles = Object.keys(ARCHI_POS).map(Number).filter(visible).map(id => {
-    const data = SPRITES_ENABLED && SPRITE_DATA['carte_ile_' + id];
     const p = ARCHI_POS[id];
     const off = !ouverte(id);
+    // Lot 4b — CIBLE « MYSTERE » : une ile normalement CACHEE (ARCHI_CACHEE) qu'on ne montre
+    // que parce qu'elle est la cible de reparation est dessinee SANS son sprite — pointille
+    // + badge 🛠 + libelle seuls. La silhouette, `arch-emerge` et la brume restent pour
+    // l'ouverture : le joueur sait OU agir sans qu'on lui devoile ce qui l'attend.
+    const mystere = !!repairInfo && id === repairInfo.island && !!ARCHI_CACHEE[id] && off;
+    const data = SPRITES_ENABLED && !mystere && SPRITE_DATA['carte_ile_' + id];
     // `reveal` n'est vrai que pour l'île dont c'est la toute première apparition.
     const rev = reveal === id;
-    const brume = rev && SPRITES_ENABLED && SPRITE_DATA['carte_brume'];
+    // Lot 4b — ⚠ LA BRUME RESTE RESERVEE A L'ILE 6 (arbitrage tranche). `rev` vaut desormais
+    // vrai pour TOUTE ile fraichement ouverte : sans ce `id === 6`, la brume de la revelation
+    // de l'ile 6 se rejouerait a chaque reparation.
+    const brume = rev && id === 6 && SPRITES_ENABLED && SPRITE_DATA['carte_brume'];
     // Lot 3 : une \u00eele OUVERTE et diff\u00e9rente de l'\u00eele courante devient un bouton. Les
     // verrouill\u00e9es restent inertes (elles sont d\u00e9j\u00e0 gris\u00e9es) et l'\u00eele courante aussi,
     // marqu\u00e9e `cur` \u2014 y \u00ab aller \u00bb n'a pas de sens, `switchIsland` sort d\u00e8s la premi\u00e8re ligne.
     const cur = id === game.currentIsland;
+    // Lot 4b — L'ILE A OUVRIR DEVIENT L'ACTION. Elle est `off` (verrouillee), donc rendue en div
+    // inerte depuis le lot 3 : on la rouvre au clic, ET ELLE SEULE. Les autres verrouillees
+    // restent inertes, sinon la carte proposerait des gestes sans effet.
+    // ⚠ `repairInfo.locked` (recherche d'acces non atteinte) MONTRE la cible sans la rendre
+    // cliquable — meme regle que le bouton 🛠 qu'elle remplace, pas une invention de ce lot.
+    const tgt = !!repairInfo && id === repairInfo.island;
+    const rep = tgt && !!onRepair && !repairInfo.locked;
     const go = !!onGo && !off && !cur;
-    return React.createElement(go ? "button" : "div", {
-      key: id, className: 'arch-node' + (rev ? ' reveal' : '') + (go ? ' go' : '') + (cur ? ' cur' : ''),
+    const act = go || rep;
+    return React.createElement(act ? "button" : "div", {
+      key: id, className: 'arch-node' + (rev ? ' reveal' : '') + (go ? ' go' : '') + (cur ? ' cur' : '')
+        + (tgt ? ' target' : ''),
       style: { left: p[0] + '%', top: p[1] + '%' },
-      onClick: go ? () => onGo(id) : undefined,
-      title: go ? I18N.t("Aller \xE0 ") + islandLabel(id) : undefined
-    }, data ? React.createElement("img", {
+      onClick: rep ? () => onRepair() : go ? () => onGo(id) : undefined,
+      title: tgt
+        ? (repairInfo.locked
+            ? I18N.t("R\xE9paration \xCEle ") + id + I18N.t(" — recherche d'acc\xE8s non atteinte")
+            : I18N.t("R\xE9parer le port pour d\xE9bloquer l'\xEEle ") + id)
+        : go ? I18N.t("Aller \xE0 ") + islandLabel(id) : undefined
+    }, tgt ? React.createElement("div", {
+      className: "arch-flag"
+    }, uiIcon('reparation', "\ud83d\udee0")) : null, data ? React.createElement("img", {
       className: 'arch-ile' + (off ? ' locked' : ''), src: data, alt: ''
     }) : null, React.createElement("div", {
       className: 'arch-lbl' + (off ? ' locked' : '')
@@ -22045,17 +22169,42 @@ function ArchipelMap({ game, flows, reveal, onGo }) {
 function MapPanel({
   game,
   onClose,
-  onGo
+  onGo,
+  repairInfo,
+  onRepair
 }) {
   const guard = useGhostGuard(1);
   const [reveal, setReveal] = React.useState(() => game && game.islandUnlocked && game.islandUnlocked[6] && !game.archiVu6 ? 6 : null);
   React.useEffect(() => {
     if (!reveal) return;
-    if (game) game.archiVu6 = true;
-    SFX.play('reveal6');
+    // ⚠ `archiVu6` et le son de revelation ne concernent QUE l'ile 6 : les autres iles
+    // apparaissent sechement (arbitrage tranche), et leur ouverture joue deja `islandUnlock`
+    // via applyUnlocks.
+    if (reveal === 6) {
+      if (game) game.archiVu6 = true;
+      SFX.play('reveal6');
+    }
     const h = setTimeout(() => setReveal(null), 1800);
     return () => clearTimeout(h);
   }, [reveal, game]);
+  // Lot 4b — REVELATION A CHAQUE REPARATION. L'ordre est : livraison acceptee →
+  // setRepairOpen(false) → revelation sur la carte restee ouverte.
+  // ⚠ AUCUN TABLEAU DE DEPENDANCES, ET C'EST VOULU : `game.islandUnlocked` est MUTE EN PLACE
+  // (game est gameRef.current), donc aucune reference ne change et un effet a dependances ne se
+  // redeclencherait JAMAIS. On compare a un instantane, a chaque rendu — MapPanel se re-rend au
+  // bump du HUD, donc au tick qui suit la reparation.
+  // ⚠ Garde sur ARCHI_POS : le souterrain n'a pas de sommet sur la carte, le reveler serait un
+  // no-op de 1,8 s qui bloquerait la revelation suivante.
+  const vuRef = React.useRef(null);
+  React.useEffect(() => {
+    const u = game && game.islandUnlocked || {};
+    const now = Object.keys(u).filter(k => u[k]).map(Number);
+    if (vuRef.current == null) { vuRef.current = now; return; }
+    const neuf = now.filter(i => vuRef.current.indexOf(i) < 0);
+    vuRef.current = now;
+    const cible = neuf.filter(i => ARCHI_POS[i])[0];
+    if (cible != null) setReveal(cible);
+  });
   const flows = allTransitFlows(game);
   const parLien = {};
   for (const f of flows) {
@@ -22086,7 +22235,9 @@ function MapPanel({
     game: game,
     flows: flows,
     reveal: reveal,
-    onGo: onGo
+    onGo: onGo,
+    repairInfo: repairInfo,
+    onRepair: onRepair
   }), React.createElement("div", {
     className: "pp-section-label"
   }, I18N.t("Flux entre \xeeles")), !keys.length ? React.createElement("div", {
@@ -31662,6 +31813,8 @@ function App() {
     className: "ug-label"
   }, game.currentIsland === 6 ? I18N.t("Souterrain") : I18N.t("Surface"))), researchOpen && React.createElement(ResearchPanel, {
     game: game,
+    // Lot 4b : le renvoi des 5 nœuds d'acces ferme Recherche et ouvre la Carte.
+    onGoMap: () => { SFX.play('mapOpen'); setResearchOpen(false); setMapOpen(true); },
     currentIsland: game.currentIsland,
     onDeliver: doDeliver,
     onConfirm: doConfirm,
@@ -31673,6 +31826,10 @@ function App() {
   }), mapOpen && React.createElement(MapPanel, {
     game: game,
     onGo: switchIsland,
+    repairInfo: repairInfo,
+    // ⚠ NE PAS appeler setMapOpen(false) : toute la valeur de la variante A tient a ce que la
+    // carte reste montee DERRIERE la modale, pour que la revelation y joue a la fermeture.
+    onRepair: () => { SFX.play('panelOpen'); setRepairOpen(true); },
     onClose: () => { SFX.play('panelClose'); setMapOpen(false); }
   }), slotOpen && React.createElement(SlotPanel, {
     activeId: getActiveSlotId(),
