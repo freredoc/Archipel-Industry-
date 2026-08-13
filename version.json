@@ -1,8 +1,8 @@
 {
-  "build": 396,
-  "version": "Alpha 16.3",
+  "build": 397,
+  "version": "Alpha 16.4",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "La carte de l'archipel a désormais son propre bouton, à côté de l'aide. Elle était rangée dans un onglet du port, là où personne ne va pour regarder une carte : elle s'ouvre maintenant d'un geste, depuis n'importe quelle île. Plus besoin non plus de toucher chaque liaison une par une pour savoir ce qui circule — tous les flux sont listés sous la carte, groupés par liaison. Le souterrain y apparaît enfin, accroché à l'île 6, une fois l'élévateur réparé. Sur petit écran, le bouton Options se réduit à son icône pour rendre de la place aux onglets d'île : on en voit six entiers dès 390 pixels, contre cinq auparavant. Le port, lui, garde tout son contenu et perd simplement sa barre d'onglets devenue inutile."
+  "notes": "La carte de l'archipel sert enfin à se déplacer : touchez une île, vous y êtes. Jusqu'ici elle ne faisait que montrer ; il fallait la fermer, puis retrouver le bon onglet en haut de l'écran. Le souterrain se rejoint de la même façon, depuis son marqueur accroché à l'île 6, une fois l'élévateur réparé. L'île où vous vous trouvez est signalée en jaune et reste la seule case sur laquelle il n'y a rien à faire. La carte se referme toute seule à l'arrivée, pour vous laisser devant l'île plutôt que devant le plan. Les îles encore verrouillées restent grisées et inertes, comme avant."
 }

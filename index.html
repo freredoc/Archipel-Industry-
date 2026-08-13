@@ -469,6 +469,17 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
   align-items:center;pointer-events:none;z-index:2;}
 .arch-sout img{width:76px;height:76px;image-rendering:pixelated;}
 .arch-sout .arch-lbl{color:#e2c48e;}
+/* Lot 3 — NAVIGATION. Le nœud d'île devient un bouton : toucher une île y emmène.
+   Possible parce que le lot 2 a rendu les liaisons inertes ; sans cela l'île, large de
+   104 px, aurait mangé les traits, dont il ne restait que 8 à 40 px libres à 390 px. */
+.arch-node.go{pointer-events:auto;cursor:pointer;background:none;border:0;padding:0;
+  font:inherit;color:inherit;}
+.arch-node.go:hover .arch-ile,.arch-sout.go:hover img{filter:brightness(1.12);}
+.arch-node.go:active .arch-ile,.arch-sout.go:active img{transform:translateY(1px);}
+.arch-node.cur .arch-lbl{color:var(--yellow);box-shadow:0 0 0 1px var(--yellow);}
+.arch-sout.go{pointer-events:auto;cursor:pointer;background:none;border:0;padding:0;
+  font:inherit;color:inherit;}
+.arch-sout.cur .arch-lbl{color:var(--yellow);box-shadow:0 0 0 1px var(--yellow);}
 /* Options en icône seule sur petit écran, pour rendre au sélecteur d'île la place que
    prend le bouton Carte. Seuil MESURÉ : le libellé fait 127 px en fr/en mais 137 px en
    es/de ; sans compaction la bande déborde jusqu'à 465 px (fr) et 475 px (es/de).
@@ -3209,6 +3220,7 @@ for(var code in G){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; va
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.39 */ var ADD={"en": {"ARRÊTÉ — palier atteint, réparation à livrer": "STOPPED — tier goal reached, repair to deliver", "machine coupée — validez la recherche du palier ET livrez la réparation suivante": "machine shut down — confirm the tier research AND deliver the next repair", "Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante": "The tier's confirmation goal is reached: the machine stays shut down until the research is confirmed AND the next repair is delivered", "Palier atteint — réparation requise": "Tier reached — repair required", "❌ Palier atteint — validez la recherche et livrez la réparation suivante": "❌ Tier goal reached — confirm the research and deliver the next repair"}, "es": {"ARRÊTÉ — palier atteint, réparation à livrer": "DETENIDO — nivel alcanzado, reparación por entregar", "machine coupée — validez la recherche du palier ET livrez la réparation suivante": "máquina detenida — confirma la investigación del nivel Y entrega la siguiente reparación", "Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante": "Se alcanzó el umbral de confirmaciones del nivel: la máquina queda detenida hasta confirmar la investigación Y entregar la siguiente reparación", "Palier atteint — réparation requise": "Nivel alcanzado — reparación requerida", "❌ Palier atteint — validez la recherche et livrez la réparation suivante": "❌ Nivel alcanzado — confirma la investigación y entrega la siguiente reparación"}, "de": {"ARRÊTÉ — palier atteint, réparation à livrer": "GESTOPPT — Stufenziel erreicht, Reparatur ausstehend", "machine coupée — validez la recherche du palier ET livrez la réparation suivante": "Maschine abgeschaltet — bestätige die Stufenforschung UND liefere die nächste Reparatur", "Le seuil de confirmations du palier est atteint : la machine est coupée jusqu'à la validation de la recherche ET la livraison de la réparation suivante": "Die Bestätigungsschwelle der Stufe ist erreicht: Die Maschine bleibt abgeschaltet, bis die Forschung bestätigt UND die nächste Reparatur geliefert ist", "Palier atteint — réparation requise": "Stufe erreicht — Reparatur erforderlich", "❌ Palier atteint — validez la recherche et livrez la réparation suivante": "❌ Stufenziel erreicht — bestätige die Forschung und liefere die nächste Reparatur"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.54 */ var ADD={"en": {"Soutenir le projet": "Support the project", "Archipel Industry est gratuit et le restera.": "Archipel Industry is free and will stay free."}, "es": {"Soutenir le projet": "Apoyar el proyecto", "Archipel Industry est gratuit et le restera.": "Archipel Industry es gratuito y seguir\xE1 si\xE9ndolo."}, "de": {"Soutenir le projet": "Das Projekt unterst\xFCtzen", "Archipel Industry est gratuit et le restera.": "Archipel Industry ist kostenlos und bleibt es."}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 16.3 */ var ADD={"en": {"Carte de l'archipel": "Archipelago map", "Carte": "Map"}, "es": {"Carte de l'archipel": "Mapa del archipi\xE9lago", "Carte": "Mapa"}, "de": {"Carte de l'archipel": "Karte des Archipels", "Carte": "Karte"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* 16.4 */ var ADD={"en": {"Aller \xE0 ": "Go to ", "Descendre \xE0 ": "Go down to "}, "es": {"Aller \xE0 ": "Ir a ", "Descendre \xE0 ": "Bajar a "}, "de": {"Aller \xE0 ": "Gehe zu ", "Descendre \xE0 ": "Hinunter zu "}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.91 recherche par livraison */ var ADD={"en": {"\xC0 livrer depuis l'": "To deliver from "}, "es": {"\xC0 livrer depuis l'": "A entregar desde la "}, "de": {"\xC0 livrer depuis l'": "Zu liefern von "}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.93 ticks du rattrapage hors-ligne */ var ADD={"en": {"ticks": "ticks", "ticks simul\xE9s": "ticks simulated", "extrapol\xE9s": "extrapolated"}, "es": {"ticks": "ticks", "ticks simul\xE9s": "ticks simulados", "extrapol\xE9s": "extrapolados"}, "de": {"ticks": "Ticks", "ticks simul\xE9s": "Ticks simuliert", "extrapol\xE9s": "extrapoliert"}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
 </script>
@@ -9040,8 +9052,35 @@ const SAVE_VERSION = 31;
 // ⚠ HORS PÉRIMÈTRE, non anticipé : la navigation par clic sur les îles (lot 3) et la réparation
 // unifiée (lot 4). Le bouton 🛠 et `RepairModal` restent INTACTS — les fusionner maintenant rendrait
 // la réparation inaccessible pendant deux lots.
-const GAME_BUILD = 396;
-const GAME_VERSION = 'Alpha 16.3';
+// 16.4 — NAVIGATION DEPUIS LA CARTE (lot 3, 8 ancres). Toucher une île sur la carte y emmène,
+// et le marqueur du souterrain y descend. Le nœud d'île devient un `<button>`, la carte cesse
+// d'être une illustration pour devenir le sélecteur d'île le plus lisible du jeu.
+// (1) ⚠ CE LOT N'EST POSSIBLE QUE PARCE QUE LE LOT 2 A RENDU LES LIAISONS INERTES. Un nœud
+// d'île fait 104 px de large ; les traits n'ont que 8 à 40 px libres entre deux îles à 390 px.
+// Deux familles de cibles tactiles sur la même carte, et l'île mangeait le trait. Restaurer un
+// `onClick` sur les liaisons SANS retirer celui des îles rouvrirait exactement ce conflit.
+// (2) **Le garde est DOUBLE, et c'est voulu** : `go = onGo && !off && !cur` côté rendu (une île
+// verrouillée ou courante n'est même pas un bouton), et `switchIsland` refuse DÉJÀ de son côté
+// l'île courante (`return` première ligne) et l'île verrouillée (toast + `SFX.invalid`). Le
+// moteur reste la vérité ; le rendu ne fait qu'éviter de proposer un geste sans effet.
+// (3) **`switchIsland` FERME désormais la carte** (`setMapOpen(false)`, posé auprès des
+// `setInfo`/`setUpgrade`/`setPortOpen` existants) : sans cela le panneau resterait ouvert
+// PAR-DESSUS l'île qu'on vient de rejoindre, et il faudrait un second geste pour voir où l'on a
+// atterri. ⚠ Vaut pour TOUS les appelants de `switchIsland`, pas seulement la carte — c'est
+// justement ce qu'on veut, un changement d'île referme la carte quelle qu'en soit l'origine.
+// (4) **L'île courante est MARQUÉE `cur`** (libellé jaune cerclé) : sans repère, une carte où
+// tout est cliquable sauf une case ne dit pas POURQUOI cette case ne l'est pas.
+// (5) **Le marqueur du souterrain suit la même règle** mais sur `currentIsland !== 7`, et son
+// libellé dit « Descendre à » et non « Aller à » — on y descend par la cage, pas en bateau.
+// ⚠ Il reste accroché au nœud de l'île 6 et hors du graphe (invariant du lot 2, non touché).
+// i18n : « Aller à » et « Descendre à » ajoutés aux 3 tables. Ce sont des `title`, donc l'inverse
+// du « Faire défiler » du lot 1 laissé en français — la raison est un PRÉCÉDENT DIRECT vérifié :
+// « Aller à cette île » et « Y aller » du panneau d'alertes (13.41) sont traduits, or c'est la
+// MÊME affordance. Laisser celle-ci en français jurerait avec son propre jumeau.
+// ⚠ HORS PÉRIMÈTRE, non anticipé : la réparation unifiée (lot 4). Le bouton 🛠 et `RepairModal`
+// restent INTACTS.
+const GAME_BUILD = 397;
+const GAME_VERSION = 'Alpha 16.4';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9050,7 +9089,7 @@ const GAME_VERSION = 'Alpha 16.3';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "La carte de l'archipel a désormais son propre bouton, à côté de l'aide. Elle était rangée dans un onglet du port, là où personne ne va pour regarder une carte : elle s'ouvre maintenant d'un geste, depuis n'importe quelle île. Plus besoin non plus de toucher chaque liaison une par une pour savoir ce qui circule — tous les flux sont listés sous la carte, groupés par liaison. Le souterrain y apparaît enfin, accroché à l'île 6, une fois l'élévateur réparé. Sur petit écran, le bouton Options se réduit à son icône pour rendre de la place aux onglets d'île : on en voit six entiers dès 390 pixels, contre cinq auparavant. Le port, lui, garde tout son contenu et perd simplement sa barre d'onglets devenue inutile.";
+const GAME_NOTES = "La carte de l'archipel sert enfin à se déplacer : touchez une île, vous y êtes. Jusqu'ici elle ne faisait que montrer ; il fallait la fermer, puis retrouver le bon onglet en haut de l'écran. Le souterrain se rejoint de la même façon, depuis son marqueur accroché à l'île 6, une fois l'élévateur réparé. L'île où vous vous trouvez est signalée en jaune et reste la seule case sur laquelle il n'y a rien à faire. La carte se referme toute seule à l'arrivée, pour vous laisser devant l'île plutôt que devant le plan. Les îles encore verrouillées restent grisées et inertes, comme avant.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -21869,7 +21908,7 @@ const ARCHI_POS = { 1: [20, 24], 2: [54.5, 24], 3: [35, 50], 4: [20, 75], 5: [53
 // grisées justement pour que le joueur voie où il va.
 const ARCHI_CACHEE = { 6: true };
 
-function ArchipelMap({ game, flows, reveal }) {
+function ArchipelMap({ game, flows, reveal, onGo }) {
   const unlocked = game.islandUnlocked || {};
   const ouverte = id => id === 1 || !!unlocked[id];
   const visible = id => ouverte(id) || !ARCHI_CACHEE[id];
@@ -21912,9 +21951,16 @@ function ArchipelMap({ game, flows, reveal }) {
     // `reveal` n'est vrai que pour l'île dont c'est la toute première apparition.
     const rev = reveal === id;
     const brume = rev && SPRITES_ENABLED && SPRITE_DATA['carte_brume'];
-    return React.createElement("div", {
-      key: id, className: 'arch-node' + (rev ? ' reveal' : ''),
-      style: { left: p[0] + '%', top: p[1] + '%' }
+    // Lot 3 : une \u00eele OUVERTE et diff\u00e9rente de l'\u00eele courante devient un bouton. Les
+    // verrouill\u00e9es restent inertes (elles sont d\u00e9j\u00e0 gris\u00e9es) et l'\u00eele courante aussi,
+    // marqu\u00e9e `cur` \u2014 y \u00ab aller \u00bb n'a pas de sens, `switchIsland` sort d\u00e8s la premi\u00e8re ligne.
+    const cur = id === game.currentIsland;
+    const go = !!onGo && !off && !cur;
+    return React.createElement(go ? "button" : "div", {
+      key: id, className: 'arch-node' + (rev ? ' reveal' : '') + (go ? ' go' : '') + (cur ? ' cur' : ''),
+      style: { left: p[0] + '%', top: p[1] + '%' },
+      onClick: go ? () => onGo(id) : undefined,
+      title: go ? I18N.t("Aller \xE0 ") + islandLabel(id) : undefined
     }, data ? React.createElement("img", {
       className: 'arch-ile' + (off ? ' locked' : ''), src: data, alt: ''
     }) : null, React.createElement("div", {
@@ -21926,9 +21972,11 @@ function ArchipelMap({ game, flows, reveal }) {
   return React.createElement("div", {
     className: "arch-map",
     style: mer ? { backgroundImage: 'url(' + mer + ')' } : null
-  }, liens, iles, game.elevatorRepaired && ARCHI_POS[6] && SPRITES_ENABLED && SPRITE_DATA['ile_7'] ? React.createElement("div", {
-    className: "arch-sout",
-    style: { left: ARCHI_POS[6][0] + '%', top: (ARCHI_POS[6][1] + 12) + '%' }
+  }, liens, iles, game.elevatorRepaired && ARCHI_POS[6] && SPRITES_ENABLED && SPRITE_DATA['ile_7'] ? React.createElement(onGo && game.currentIsland !== 7 ? "button" : "div", {
+    className: "arch-sout" + (onGo && game.currentIsland !== 7 ? ' go' : '') + (game.currentIsland === 7 ? ' cur' : ''),
+    style: { left: ARCHI_POS[6][0] + '%', top: (ARCHI_POS[6][1] + 12) + '%' },
+    onClick: onGo && game.currentIsland !== 7 ? () => onGo(7) : undefined,
+    title: onGo && game.currentIsland !== 7 ? I18N.t("Descendre \xE0 ") + islandLabel(7) : undefined
   }, React.createElement("img", {
     src: SPRITE_DATA['ile_7'], alt: ''
   }), React.createElement("div", {
@@ -21943,7 +21991,8 @@ function ArchipelMap({ game, flows, reveal }) {
 // de v\u00e9rit\u00e9 qui sera s\u00e9rialis\u00e9e.
 function MapPanel({
   game,
-  onClose
+  onClose,
+  onGo
 }) {
   const guard = useGhostGuard(1);
   const [reveal, setReveal] = React.useState(() => game && game.islandUnlocked && game.islandUnlocked[6] && !game.archiVu6 ? 6 : null);
@@ -21983,7 +22032,8 @@ function MapPanel({
   }, React.createElement(ArchipelMap, {
     game: game,
     flows: flows,
-    reveal: reveal
+    reveal: reveal,
+    onGo: onGo
   }), React.createElement("div", {
     className: "pp-section-label"
   }, I18N.t("Flux entre \xeeles")), !keys.length ? React.createElement("div", {
@@ -28072,6 +28122,7 @@ function App() {
     setInfo(null);
     setUpgrade(null);
     setPortOpen(false);
+    setMapOpen(false);
     bumpHud();
     markDirty();
     flushSave();
@@ -31568,6 +31619,7 @@ function App() {
     }
   }), mapOpen && React.createElement(MapPanel, {
     game: game,
+    onGo: switchIsland,
     onClose: () => { SFX.play('panelClose'); setMapOpen(false); }
   }), slotOpen && React.createElement(SlotPanel, {
     activeId: getActiveSlotId(),
