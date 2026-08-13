@@ -441,7 +441,13 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
    liaisons en JS sans mesurer le DOM. Ne pas y toucher sans corriger ARCHI_RATIO. */
 .arch-map{position:relative;width:100%;aspect-ratio:100/132;background-repeat:repeat;
   background-size:64px 64px;image-rendering:pixelated;border:1px solid var(--line);
-  border-radius:8px;overflow:hidden;margin-bottom:8px;}
+  border-radius:8px;overflow:hidden;margin-bottom:8px;
+  /* ⚠ `flex-shrink:0` OBLIGATOIRE : `.rp-list` est un flex en COLONNE et tous les enfants
+     de la carte sont en `position:absolute`, donc sa hauteur min-content vaut ZERO. Sans
+     ce mot, une liste de flux un peu longue (fin de partie, 7 iles) ecrase la carte a
+     2 px et le joueur ne voit plus que la liste. `aspect-ratio` ne protege PAS : il fixe
+     une taille PREFEREE, que le flex a le droit de reduire. */
+  flex-shrink:0;}
 /* La LIAISON est la cible tactile : 26px de haut ≈ 78px physiques en DPR 3, au-dessus
    des 70px des onglets du jeu. Pas de pastille séparée — c'est le trait qu'on touche. */
 .arch-link{position:absolute;height:26px;transform-origin:0 50%;border:0;padding:0;
@@ -9201,8 +9207,28 @@ const SAVE_VERSION = 31;
 // (5) 7 `afterToast` sur 14 s'affichaient en français hors-fr — dont 4 d'AVANT ce chapitre,
 // dont le texte fr avait été réécrit sans toucher la clé de traduction.
 // `SAVE_VERSION` INCHANGÉ (31) : `portSeen` est additif, absent = false.
-const GAME_BUILD = 400;
-const GAME_VERSION = 'Alpha 16.7';
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// 16.8 (build 401) — CORRECTIF : LA CARTE ÉTAIT ÉCRASÉE À 2 PX EN FIN DE PARTIE.
+// Signalé par le joueur, capture à l'appui : le panneau Carte n'affichait que « Flux entre
+// îles » et sa liste — la carte avait disparu.
+// CAUSE, mesurée sur SA sauvegarde (7 îles, 10 cartes de flux) : `.rp-list` est un conteneur
+// `display:flex; flex-direction:column`, et `.arch-map` gardait le `flex-shrink:1` par défaut.
+// Or TOUS les enfants de la carte sont en `position:absolute` → sa hauteur MIN-CONTENT vaut
+// ZÉRO. Le flex l'écrase donc entièrement avant de laisser le conteneur défiler : scrollHeight
+// 2 005 px pour 626 px disponibles → `.arch-map` mesurée à **2 px**.
+// ⚠ `aspect-ratio` NE PROTÈGE PAS : il fixe une taille PRÉFÉRÉE, que `flex-shrink` réduit.
+// Un seul mot corrige (`flex-shrink:0`) ; re-mesuré sur la même sauvegarde : **486 px**, les
+// 6 vignettes visibles, le panneau défile normalement.
+// ⚠ POURQUOI LA SUITE DU LOT 4b NE L'A PAS VU — la leçon du correctif : ses 71 assertions
+// testaient la PRÉSENCE de `.arch-map` dans le DOM, jamais sa HAUTEUR. Un conteneur écrasé à
+// 2 px est toujours présent, ses nœuds absolus sont toujours là, `elementFromPoint` les trouve
+// encore : faux vert complet. Et sur une partie NEUVE la liste est courte, donc aucune
+// pression sur le flex — le défaut n'apparaît qu'en fin de partie, jamais au banc.
+// RÈGLE : tout bloc à `aspect-ratio` placé DANS un flex doit être asserté par
+// `getBoundingClientRect`, jamais par sa seule existence. Test T8 ajouté, avec contre-épreuve
+// qui remet `flex-shrink:1` et reproduit les 2 px — sans elle l'assertion ne prouverait rien.
+const GAME_BUILD = 401;
+const GAME_VERSION = 'Alpha 16.8';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9211,7 +9237,7 @@ const GAME_VERSION = 'Alpha 16.7';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Le guidage de fin de tutoriel s'éteint pour de bon une fois le port de l'île 1 ouvert, au lieu de revenir à chaque fermeture du panneau. L'objectif invite à développer l'île 2 pendant l'attente, le message de fin renvoie vers l'arbre de recherche, et sept messages d'étape qui restaient en français s'affichent enfin dans la langue du joueur.";
+const GAME_NOTES = "Correctif d'affichage : la carte de l'archipel avait disparu du panneau Carte en fin de partie. Passé un certain nombre de liaisons actives, la liste des flux prenait toute la place et la carte se retrouvait écrasée à deux pixels de haut, si bien qu'on ne voyait plus que la liste. Elle reprend sa taille normale et le panneau défile comme avant. Rien d'autre ne change.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
