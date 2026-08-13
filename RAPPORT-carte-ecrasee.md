@@ -1,6 +1,13 @@
 # RAPPORT — Correctif : la carte de l'archipel était écrasée à 2 px
 
-**Livré : `GAME_BUILD = 400`, `GAME_VERSION = 'Alpha 16.7'`, `SAVE_VERSION = 31` (INCHANGÉ).**
+**Livré : `GAME_BUILD = 401`, `GAME_VERSION = 'Alpha 16.8'`, `SAVE_VERSION = 31` (INCHANGÉ).**
+
+⚠ **Renuméroté de 400 / 16.7 vers 401 / 16.8 après coup** : pendant que cette PR attendait, une
+autre session a mergé le **lot C** (PR #383) qui avait pris le **même** numéro 400 / 16.7, déjà
+publié par la CI. Deux livraisons sous un même `GAME_BUILD` empêchent la notification de mise à
+jour de partir (incident déjà survenu aux builds 298/299). `main` a donc été fusionné dans cette
+branche, le conflit résolu — **les deux blocs de commentaire cumulatif sont conservés**, celui du
+lot C d'abord — et la suite complète rejouée sur le fichier fusionné.
 
 Base : build **399 / Alpha 16.6** (`44a9b75f…`, 3 464 701 o), la version qui vient d'être publiée.
 **Delta : +2 184 o**, dont **+441 o de correctif** — le reste est le commentaire cumulatif et
