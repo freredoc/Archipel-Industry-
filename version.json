@@ -1,8 +1,8 @@
 {
-  "build": 398,
-  "version": "Alpha 16.5",
+  "build": 399,
+  "version": "Alpha 16.6",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Les réparations de port se paient désormais depuis l'île précédente. Pour ouvrir la liaison vers une nouvelle île, les ressources doivent se trouver dans le port de l'île juste avant elle : c'est le port de l'île 2 qui finance la liaison vers l'île 3. Il faut donc les y acheminer par bateau, les avoir ailleurs ne suffit plus. En échange, vous n'avez plus besoin d'être sur place : dès que le bon port est garni, la pastille de recherche s'allume et la livraison se fait depuis n'importe quelle île. Les coûts affichés suivent ce même port, si bien que ce que vous lisez à l'écran est exactement ce qui sera débité."
+  "notes": "Une liaison se répare maintenant depuis la carte de l'archipel. Ouvrez la Carte, touchez l'île à ouvrir : elle est signalée par un repère et la liaison qui y mène apparaît en pointillé. La fenêtre de réparation s'ouvre par-dessus la carte, qui reste derrière : dès que vous validez, elle se referme et l'île se dévoile sur place. Le bouton Réparer disparaît de la barre d'inventaire, le bouton Carte reprend son repère et sa pastille. Dans la Recherche, les cinq accès d'île renvoient vers la carte au lieu de livrer sur place. La fenêtre de réparation dit aussi quel port paie."
 }
