@@ -71,6 +71,24 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .island-tab.locked{opacity:.4;cursor:not-allowed;}
 .island-tab .lock{font-size:.72rem;}
 .island-tab-ico{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;display:block;pointer-events:none;}
+/* Lot 1 — AFFORDANCE de défilement. La bande défile depuis le build 384, mais rien ne le
+   disait : scrollbar masquée, onglet de bord coupé net qu'on lit comme un onglet mal cadré.
+   Le dégradé SEUL ne suffit pas (--panel #15152a contre --panel-2 #1c1c36 : 7 points d'écart
+   par canal), d'où le chevron par-dessus.
+   ⚠ Les voiles sont posés sur le WRAPPER, jamais sur .island-tabs : un enfant en position
+   absolue dans un conteneur overflow-x:auto DÉFILE avec le contenu et sortirait du cadre. */
+.island-tabs-wrap{position:relative;display:flex;align-items:center;min-width:0;flex-shrink:1;}
+.island-tabs-wrap>.island-tabs{min-width:0;}
+.island-fade{position:absolute;top:0;bottom:0;width:20px;pointer-events:none;z-index:2;}
+.island-fade.l{left:0;background:linear-gradient(to right,var(--panel),transparent);}
+.island-fade.r{right:0;background:linear-gradient(to left,var(--panel),transparent);}
+.island-chev{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:14px;
+  height:26px;padding:0;border:0;background:none;color:var(--ink);font-size:.8rem;line-height:1;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  text-shadow:0 0 3px var(--panel),0 0 3px var(--panel);}
+.island-chev.l{left:0;}
+.island-chev.r{right:0;}
+.island-chev:hover{color:var(--yellow);}
 .island-mini-ico{width:16px;height:16px;object-fit:contain;image-rendering:pixelated;vertical-align:middle;margin-right:3px;pointer-events:none;}
 @media (max-width:560px){.island-tab{flex:0 1 26px;width:26px;height:26px;font-size:.78rem;}.island-tabs{gap:2px;}}
 @media (max-width:380px){.island-tab{flex:1 1 0;width:auto;}}
@@ -2742,6 +2760,8 @@ window.__SPRITE_DATA__["logic_sortie_collisionneur_o"]="data:image/png;base64,iV
 // tranche 3×2 d'un anneau métallique endommagé).
 window.__SPRITE_DATA__["ile_6"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADN0lEQVR4nO1bPW9TMRQ9RQwvnoMgqEOkTCwdujDwf7JFyk+p1K3/h4GFgYWpUoeKFhE1CMRLNhiQXx3jr/vse+2KHMlD07xnn/N8z7u+doAjjjjif8YJ9YKPd5vfHAPROJ9NyWPKwTPKl7nJS/VhIlltPbCLyyu+0QBYr5YA5GZCUicm+c8f3uPFy1dsA5rOF6IiRDswyW9urtH3PeuAlFKiIjwP/dMXj2evZyyD+fTlzjkGThG8AkjFvA+63/VqySqC86b2tDfR9z3rDFBKHXzGHQ7/3DAW81zkNeww4PaEoAdocJP29SXhCaRESBIP2+8Hf19cXg2+UDJZalIAm/zm5npopUVoTgCT/Olkgr7vD1ppEZI8QAr2kwf+iqBxu9sV77OZGeAiL4EmBKhFHmhAgJrkgcoC1CYPVBSgBfJAJQFaIQ9UEKAl8oCwAK2RBwQFaJE8kJgJmquyMSvDHPIc2Z8J9oJILnnuAon3Bq6SmC6QpAqQO+21ANP5YvisdGEkeBNztWVWiFIEKBHzpgCaOFC2KhT0gPPZ9MS15Ix5AmfMly6JkTdGYp7QeszbyNoas0PiKcS8DdJNQ57wVGLeBqkilOIJZgUnBdIxb4OcCeoBrVdLTOcLKKWglMKvnz+glCIlLvqJm81++twYrW7IE1JnQSjmTXDOgqwb+zwhRwAbTZmgC7GttJAYrteejWZegyHE8oSYCCFQfYEqUpHlsG2MuqXgdDJxNrXfjxoLdbOk6JTK9QSNh+0WANB3XdQjbFDDpXhM5XgC8EgeeBSAAqpnsDjrWE8wyQ/f7zpS39TzBCwlsTGe4CIPAGq/T24uxDyBNc1M9QQfeSpcnhGbCaxFUV+nt7vd0EqRN0E5TyByGjPmCWNfeS7YnhHzBJGyeE6eQEXME2yI7QuYIkiu9mIQ3RnyeULfdUOThvjeoK+eoJu0CFV2hyU9IYZq5wNa8YSqJ0Q4PIF6rejvc3wolSe4Fk+xdUETAgDhGiNVAEoq3IwAgH/tMEaA1H2Fpk6K+vYdcl6NseVwUzNAI+QJIXz7eo83b9/VL4iUwNif7FQviZXE2NPglMpw9aOyIYzZB6Be8wdQn5gCmYVvtQAAAABJRU5ErkJggg==";
 window.__SPRITE_DATA__["ile_6_gris"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADAklEQVR4nO2bTYrjMBCFX5sBgVcBQy6QO+QWPq1vkTvkAgZDFiHBG/csBgVFrb+SVSU1kw+0aNKxVC+ql3LJAT58+PA/80V9w+Vy+eZYiOZ8PpPXtIeO8s/cwUvNYZKstl7YNE18qwEwjiMAuZ2QNIkZ/PV6xeFwYFvQMAyiIkQnMINflgXrurIuSCklKsKf0Iu+fDwejyyLmefZuQZOEbwXduW83gGcAugdoOHeCc6L2tveREIAE+50+HHBWM5zBa+x04DbE4IeoOEO2jeXhCeQCiFJ7vf729/TNL38qGSx1KQAdvDLsrxGaRGaE8AMvu97rOv6NkqLkOQBUtifPPBPBM3j8Sg+ZzM7wBW8BE0IUCt4oAEBagYPVBagdvBARQFaCB6oJEArwQMVBGgpeEBYgNaCBwQFaDF4ILESNO/Kcu4M9wTPUf2ZsDdE9gbP3SBhbYnt3fZaAM4WWfAi5t2W2SFKEaBEzpsC6MCBsl2hoAn6Jprn+TVc7N32elDWlAv5YCTmCa3nvM2uozE7JX5DztuQLhryhN+S8zakQijkCaG8DSGd8zbkSlAvaBxHDMMApRSUUng+n1BKkUTQn7g57E+fm2x1Q55g9vFChHLepMrZYAo+T9gjgE1TJugidpQWEsP1tWfTzNdgiFidEBMhBNUXqCIVuR22jVGPFPq+d45t27LWQj0sKbql9nqCRtcUXddFPcKGmi7Fc2qPJwDv1aQWgALVM1icNdcTXNVk19GylPo8AUtLLMcTfKX0tm3Jw0XME1jLzFRPKNUvdHlGbCewNkV9k5r1P0ezlPI8gcjTmDFPyP3Kc2F7RswTRNrie+oEKjFPsBE7FzBFkLzbiyF6MuQ1oq57DWnEZ/T1E/SQFqHK6bCkJ8So9nxAK55Q9QkRDk+gvlf09zk+StUJrpun2H1BEwIA4R4jVQBKKdyMAID/3iFHgNRzheqPyZmkeEJoUK6paWoHaEKeEOJ2u+F0OtVviJQg92d61VtiJcl9GpzSGW7KA2xyzgGo7/kLF8anrS0Xt1QAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["ile_7"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADNUlEQVR4nO1bwW4TMRAdEJco6nZ7WSnqoVLEITd+hG/gJxCCTwAhTvwB39A/4Au49YAqcUCVcmGbaNVjOAQHx7HHHntm1mnzLlbSJN55+2berO0CnPC08WzMyZvmYuO+t1r9Ub2mF9IT+II06NqJ7+2NJgmiEzXNxSYQJIpl/6CmBHEFYFjMZ3uvb27vot8JKSqXMDUC3GABANqzKZw3U7hfDdCvh72/hQJFFJWVOqoKuLrs4H417IK2R4AtSTe3d1iQ7BAjwM7/xXyGBu8jIYSctMGgpoBY8C4JIWBpkwM1AlKCt0lI+RwHAc+LfyERqcFTRg6oEcAdvFFKKZJTwNhSrt9qKCCntU4iwOnogq0tBikFJFgn2h+QiyDVo1MtkIOEHIi6gHTwmHWmEkImAPNoFxrB+6yTYo9ZCrCbkRpHCgFZNlhDkFz9QRYBNQQZGvv1sMv/lHWFR6cAKqIE5DzVHYv8kwhwUUOQ2NieTXdO1bUTdE0SIMMFOC7yzStzp+Ljtx+yLkAmgEumrz/9jM51/f6leBqMogBzh9+9/RCc5/OXj1nzibuAdqEa3QVcaFuVtAuw1IB+/b//7tdD1CpL5+MqgAARAtwewARoBwvgf/LCl8C33zN5jqEaBVCet81nQyQAbCt8CkZVQCqW/cPe666doCR8/V5PJ4gS8M9CoktgttW4nZdUx6emgNJdWs3gcxQgviyurQAqxAmoXQHiW2MaQdvWTIU4AZLBYn1IKo5KAfaDDheORgFY8G4fYpDiYFkWl3Lyi3P5zH3EzQk0BLICUk5+ca8dugWO8wQZuw1KLJxeXXakdT4KimqAb5tMatVYCsVFUGubjOM4jA+kFHDXBzT3CKXSoKgG1N7mpqCIAM3gzxueM0EuimpASTC/fi8BAPZyewwFFBFQErzb1S3ms4Me3x0loK4AX/AA5Udec6GqADt43zriGFBVgAunpSXZGlc7nPwjXOcEqHt30si2wZqsrATkk6KhHSJbEcbiAA7TpDaQa0CsWtsS91lbbSDVAAC+al1D/gMQFGBdbPSfmYzFjWVtFJBTALlrG89nDsjq2kk1d38UcK7mnHBCOf4CC+g3lrKg8AAAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["ile_7_gris"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADAUlEQVR4nO1bO3LCMBBdMuk0at34BlzAh6HlWLQcxkPPDdzQelSTIiMiFH12Je1aJLyZjBMwyO/xtE+sHIA3/jd2Ww4+TdPdf2yeZ9FrYh8sRNJCa/3rsXVdRUVgHWiapnuIZA6SInxKDBLDOI5Pfy/Lkn1NzFGlgokJ4JMFAFBKgVIKjDFgjHl6LkY05qhpmu4lIog6YBgGMMY8SLtHgG+RlmWJkuQAmwDu/B/HMUk+JEIMJdMmBTEH5Mj7IsSQmjYlEBMAQ94VAXt+LT6q3wEJLHnKsQXEBGhN3jqlFugpYGOpNG8lHFCytEaRcSv6uq44xvCT2dgUKDkaY5JJkFtVkosgNaM5yWOjMwXWFOAmn4pOrCBkAVIZ7UOCfCg6KQlR5AB3MdLrEYuiGNyaXMv1QZEAPZDEpAKmr/DnHEBFVoCSb3WvYn+UAD56IJk6KqUeSaW1TvYkAQpSoMVF7vd79HjX65XVCWQBWtn0dDplxzoej+zTYBMHWBwOh+g45/O5aDz2FJAuVJungA/pqOJOgSY1wP7Y53NRWTueWA3w1wD2glyyAOFvXrkWOMDPPE+hGwdQvm/bc2MiAHxXeAy6S4EQ/C6R1jopwuVyYVsMUZEUYJ7nXW4lZc+zv/vnc5AUdUDtLm3P5AEE2uLSDqCCXYDeHcC+NSZB2o1mKtgF4CSbWodg8VIOMCa9CVKCl3FAinxstwqTYEURh7nzq2X7zCUfIlsT1WQHYO784ugdumh5B1nzGOQgPwwDqc9HQVUNCG2TcXWNuVBdBJWS2ybjAGkK+P0BSfJc06CqBvS+zMWgSgBJ8kq1uSfIR1UNqCFzu90AAJ4+2S0cUCVADXl/VTeO44Nk7MgBcQeEyAPU3/JaClEHuORDfcQtIOoAH6leYg6tlsPoN2l1n4AxtL07bhTHYE9RVgPUFMDsELmOsBEH8Hua9AZyDchVa9fioWjrDaQaANCuWvcw/wEIDrAXi/lnJhtxW0UbBc0+AVeYlFha624+/U3Qspvzxhv1+AKyqTzKOhqTrAAAAABJRU5ErkJggg==";
 window.__SPRITE_DATA__["i6_falaise_U_s"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABGElEQVR4nO2UsU7DMBRFL9hCjXgV2dowIqaqKytC3ViYmPmafgsf0C9gyIJYEWPG0tEhTm0BKUyMzy+kIC9+67n2PbKsd7C4vP5CxNFFUbDQGIM8z4MXSBmJa2MMC+u6Dpb3yUj8UGz459HWWhZu3RZKqeAFUkbimohY2HUdQrxPRuLxX6CxDQvblpfrm5F4/E/ovWOhUgoh3icjcT2dFMiyDD9/obENvHdYPT3IS+AXc3NxdTIaZRjTGABARHDOQXMHPne7j7W1r39RfkrErltWAADevK/W1rZ7lh8PFgCAamMe9xI4p0WIiwI5Hb2/VJvnIeWzs+lcyogCAHB/d1sOEViWpSgQfQ8kgSSQBJJAEkgCSSC6wDdsX3xXQuLybgAAAABJRU5ErkJggg==";
 window.__SPRITE_DATA__["i6_falaise_coin_ne"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAfUlEQVR4nGO48eHd6w13bm1oOXIkg2EAANNAWDqoHMDgZOf5fyCjYcBDYNQBg8MBxeEpIhoiItY6EmIe9E6IgyMERh0wKByQ7h0xIAlx8ITAqANGHcDAMDA5YXCFwKgDBoUDouy96ZoQB18IjDpgUDggyNyJbglxcIYAPQEAMbAr1WGZgXIAAAAASUVORK5CYII=";
 window.__SPRITE_DATA__["i6_falaise_coin_nw"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAjUlEQVR4nGNkGADQcuRIho6EmIeGiIg100A4ABkMuAPoDlqOHMnYcOfWhhsf3r12svP8P+AhMOqAkeUA5PxfHJ4iQncHYAOjDhg5DkBOgOneESJ0dwAuMOqAUQfQxQG4cgDdHIAPjDpg+DsAOQFG2XuLoMsP/xAYdcCAOgA5AQaZO2EkQJo7gBgw4A4AAOOOJkwadW0MAAAAAElFTkSuQmCC";
@@ -8935,8 +8955,39 @@ const SAVE_VERSION = 31;
 // ⚠ La prop du composant `BuildingDetailModal` s'appelle **`id`**, pas `detailId`. Une version
 // antérieure de ce patch lisait `detailId` : `node --check` passait, le boot passait, et la FICHE
 // PLANTAIT à l'ouverture. Seul un appui long réel sur la vignette l'attrape (test V6).
-const GAME_BUILD = 394;
-const GAME_VERSION = 'Alpha 16.1';
+// 16.2 — BANDE D'ONGLETS D'ÎLE (lot 1, 4 ancres) : le souterrain a enfin son sprite, et la
+// bande dit qu'elle défile. Trois défauts d'un seul tenant, tous dans `IslandSelector`.
+// (1) ⚠ LE REPLI FUITAIT LE NUMÉRO INTERNE AU JOUEUR. La clé de sprite est composée en
+// `'ile_' + id` et n'existait pas pour l'île 7 → le repli `: id` affichait « 7 » sur l'onglet,
+// en contradiction FRONTALE avec `islandLabel(7)` qui rend « Île 6 S » partout ailleurs depuis
+// le build 14.24. Corrigé en `id === 7 ? 'S' : id` — le repli est traité EN PLUS du sprite,
+// pas contourné par lui : sprites désactivés ou décodage en échec, l'onglet dit « S ».
+// ⚠ LES CLÉS, ELLES, GARDENT LE NUMÉRO INTERNE (`ile_7`, `ile_7_gris`) : elles sont IMPOSÉES
+// par `'ile_' + id`. C'est correct dans le code ; seul l'AFFICHAGE devait changer.
+// (2) ⚠ LES VOILES ET CHEVRONS SONT PORTÉS PAR UN WRAPPER, JAMAIS PAR `.island-tabs`. C'est LE
+// piège du lot et il ne se voit PAS à la relecture du diff : un enfant `position:absolute` d'un
+// conteneur `overflow-x:auto` DÉFILE AVEC LE CONTENU — posés sur la bande, les voiles seraient
+// sortis du cadre au premier glissement. D'où `.island-tabs-wrap`, non défilant. Mesuré :
+// bord droit voile/bande 370/370 au repos, bord gauche 217/217 à `scrollLeft = scrollWidth`.
+// (3) ⚠ LE DÉGRADÉ SEUL NE SUFFIT PAS, et le chevron n'est pas une redondance : `--panel`
+// (#15152a) et `--panel-2` (#1c1c36) sont à SEPT points d'écart par canal — le voile est quasi
+// invisible sur cette palette. Le chevron porte la lecture, le voile lui sert de fond pour qu'il
+// ne se pose pas sur un onglet. Les deux suivent `--panel` : le thème inox la redéfinit, donc
+// AUCUNE couleur en dur à introduire ici.
+// ⚠ MARGE DE 1 px DANS `syncOvf`, délibérée : les largeurs sont fractionnaires (zoom, DPR) et
+// un test strict laisse un chevron allumé en bout de course. `ResizeObserver` + dépendance
+// `ids.length` : un déblocage d'île peut faire déborder une bande qui tenait.
+// ⚠ LE CSS S'INSÈRE APRÈS `.island-tab-ico`, AU MILIEU DE LA FEUILLE — pas en fin : le bloc du
+// lot C doit rester le DERNIER (contrainte des builds 384-386).
+// Largeurs mesurées, elles se CALCULENT (6 onglets à 26 px, gap 2 px sous 560 et 3 px au-delà) :
+// 6×26+5×2 = 166 → relevé 166 ; 6×26+5×3 = 171 → relevé 171 ; avec le souterrain
+// 7×26+6×2 = 194 → relevé 194. Un écart sur ces trois nombres signifierait que le plancher
+// tactile de 26 px a sauté, pas que le test est mal réglé.
+// ⚠ SIGNALÉ, NON CORRIGÉ : `I18N.t(« Faire défiler »)` n'existe dans AUCUNE table `LOCALES` →
+// le libellé sort en français dans les 4 langues. Il ne porte que `title`/`aria-label` (aucun
+// texte à l'écran), il rejoint le lot i18n de l'audit 381.
+const GAME_BUILD = 395;
+const GAME_VERSION = 'Alpha 16.2';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8945,7 +8996,7 @@ const GAME_VERSION = 'Alpha 16.1';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Le jeu vous dit enfin quand un bâtiment cesse d'être réservé à une île. Le Four à Arc Tungstène, la Machine-Outil et le Séparateur Cryogénique commencent leur vie réservés à l'île 6, et une recherche lève cette restriction plus tard — mais rien ne vous le signalait : vous aviez appris « réservé à l'île 6 » et vous le croyiez encore des heures après que ce soit devenu faux. Désormais la recherche qui libère un bâtiment l'annonce au moment de sa validation, la pastille « nouveau » revient sur sa vignette dans le menu, et sa fiche détaillée indique où il se construit au lieu de perdre sa ligne en silence. Attention : libéré ne veut pas toujours dire partout. Le Séparateur Cryogénique reste limité à l'île 6 et à son souterrain, et la fiche le nomme précisément plutôt que de vous envoyer chercher en vain.";
+const GAME_NOTES = "La bande d'onglets d'île dit enfin qu'elle se fait glisser, et le souterrain y a sa propre vignette. Depuis qu'une septième île peut s'y ajouter, la bande défile — mais rien ne le disait : l'onglet du bord était coupé net, ce qui se lit comme un onglet mal cadré plutôt que comme une bande à faire glisser. Un voile et une flèche apparaissent désormais du côté où des onglets restent hors champ, et la flèche fait défiler d'un cran. Le souterrain, lui, n'avait aucune vignette : son onglet affichait le numéro interne « 7 » alors que le jeu l'appelle « Île 6 S » partout ailleurs. Il reçoit sa vignette, verrouillée comme déverrouillée, et s'annonce « S » si jamais l'image manque.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -17713,8 +17764,59 @@ function IslandSelector({
   // pos\u00E9 par tryRepairElevator) \u2014 ou sous le flag dev. Sinon on y descend par l'\u00E9l\u00E9vateur.
   const ids = ISLAND_TERRAINS.map(d => d.id).filter(id => id !== 7 || (unlocked && unlocked[7]) || dev);
   const isUnlocked = id => (!unlocked || unlocked[id]) || (id === 7 && dev);
+  // Lot 1 \u2014 \u00C9TAT DE D\u00C9FILEMENT. Voiles et chevrons ne s'affichent que du c\u00F4t\u00E9 o\u00F9 il
+  // reste des onglets hors champ. Recalcul au scroll, au redimensionnement du conteneur ET
+  // quand le nombre d'onglets change (un d\u00E9blocage d'\u00EEle peut faire d\u00E9border une bande qui
+  // tenait). Les refs sont assign\u00E9es APR\u00C8S leur d\u00E9claration : pas de TDZ.
+  const barRef = React.useRef(null);
+  const [ovf, setOvf] = React.useState({
+    l: false,
+    r: false
+  });
+  const syncOvf = React.useCallback(() => {
+    const el = barRef.current;
+    if (!el) return;
+    // Marge de 1 px : les largeurs sont fractionnaires (zoom navigateur, DPR) et un test
+    // strict laisserait un chevron allum\u00E9 en bout de course.
+    const l = el.scrollLeft > 1;
+    const r = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+    setOvf(p => p.l === l && p.r === r ? p : {
+      l: l,
+      r: r
+    });
+  }, []);
+  React.useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    syncOvf();
+    el.addEventListener('scroll', syncOvf, {
+      passive: true
+    });
+    let ro = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(syncOvf);
+      ro.observe(el);
+    } else {
+      window.addEventListener('resize', syncOvf);
+    }
+    return () => {
+      el.removeEventListener('scroll', syncOvf);
+      if (ro) ro.disconnect();else window.removeEventListener('resize', syncOvf);
+    };
+  }, [syncOvf, ids.length]);
+  const nudge = dir => {
+    const el = barRef.current;
+    if (!el) return;
+    el.scrollBy({
+      left: dir * 84,
+      behavior: 'smooth'
+    });
+  };
   return React.createElement("div", {
-    className: "island-tabs"
+    className: "island-tabs-wrap"
+  }, React.createElement("div", {
+    className: "island-tabs",
+    ref: barRef
   }, ids.map(id => {
     const locked = !isUnlocked(id);
     // Sprite d'\u00EEle : `ile_N` quand d\u00E9verrouill\u00E9e, `ile_N_gris` quand verrouill\u00E9e (repli
@@ -17728,7 +17830,7 @@ function IslandSelector({
       draggable: false
     }) : locked ? React.createElement("span", {
       className: "lock"
-    }, "\uD83D\uDD12") : id;
+    }, "\uD83D\uDD12") : id === 7 ? 'S' : id;
     return React.createElement("button", {
       key: id,
       className: 'island-tab' + (id === current ? ' active' : '') + (locked ? ' locked' : ''),
@@ -17739,7 +17841,21 @@ function IslandSelector({
         if (!locked && id !== current) onSelect(id);
       }
     }, label);
-  }));
+  })), ovf.l && React.createElement("div", {
+    className: "island-fade l"
+  }), ovf.r && React.createElement("div", {
+    className: "island-fade r"
+  }), ovf.l && React.createElement("button", {
+    className: "island-chev l",
+    onClick: () => nudge(-1),
+    title: I18N.t("Faire d\xE9filer"),
+    'aria-label': I18N.t("Faire d\xE9filer")
+  }, "\u25C0"), ovf.r && React.createElement("button", {
+    className: "island-chev r",
+    onClick: () => nudge(1),
+    title: I18N.t("Faire d\xE9filer"),
+    'aria-label': I18N.t("Faire d\xE9filer")
+  }, "\u25B6"));
 }
 // 14.24 — Îles qui PARTAGENT le même port : leurs flux doivent être agrégés ENSEMBLE. L'île 6 et
 // le souterrain (île 7, affiché « Île 6 S ») puisent dans UN SEUL stock (portPool(7) → port[6], cf.
