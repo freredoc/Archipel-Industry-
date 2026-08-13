@@ -9,10 +9,10 @@ jour de partir (incident déjà survenu aux builds 298/299). `main` a donc été
 branche, le conflit résolu — **les deux blocs de commentaire cumulatif sont conservés**, celui du
 lot C d'abord — et la suite complète rejouée sur le fichier fusionné.
 
-Base : build **399 / Alpha 16.6** (`44a9b75f…`, 3 464 701 o), la version qui vient d'être publiée.
-**Delta : +2 184 o**, dont **+441 o de correctif** — le reste est le commentaire cumulatif et
-`GAME_NOTES`. Fichier final `68e74a2099db53e10ec95ba9c48f28f704a6541211542d7a8049e8c15d25fc9a`,
-3 466 885 o.
+Base d'écriture : build **399 / Alpha 16.6** (`44a9b75f…`) ; base de livraison après fusion :
+**400 / Alpha 16.7** (`main`, 3 473 237 o). Le correctif lui-même pèse **+441 o** ; le reste du
+delta est le commentaire cumulatif et `GAME_NOTES`. Fichier final
+`543a45fd17d867a9fe07462eefc0f6d169b63ee83eaa5e81a7515264de305690`, **3 475 670 o**.
 
 ---
 
@@ -80,11 +80,13 @@ toujours courte : la pression sur le flex n'existait pas au banc.
 | **T8b** | **PASS** | Sa sauvegarde : 7 îles chargées, la liste **déborde** (`scrollHeight` 2 005 > 626), `flex-shrink` = **0**, **carte à 486 px**, **6 vignettes visibles** |
 | **T8c** | **PASS** | **Contre-épreuve** : `flex-shrink:1` réinjecté en CSS → la carte **retombe à 2 px**. Sans elle, T8b ne prouverait rien |
 
-**Non-régression** : les suites du lot 4b rejouées entières après le bump — **T1+T2 tout passe**,
-**T3-T7 tout passe**, **i18n 0 libellé non traduit** (4 langues). `node --check` **7/7**.
-**0 `pageerror`**, console propre hors le 404 préexistant du serveur de test.
+**Non-régression** : les suites du lot 4b rejouées entières **sur le fichier fusionné avec le lot
+C** — **T1+T2 tout passe**, **T3-T7 tout passe**, **i18n 0 libellé non traduit** (4 langues).
+`node --check` **7/7**, accolades CSS **932 / 932**. **0 `pageerror`**, console propre hors le 404
+préexistant du serveur de test. Cohabitation des deux lots vérifiée : le `flex-shrink:0` est là,
+et le lot C aussi (**11 occurrences de `portSeen`**).
 
-### SHA-256 des 7 blocs, re-extraits APRÈS le bump
+### SHA-256 des 7 blocs, re-extraits APRÈS la fusion et le bump
 
 | bloc | SHA-256 (16 car.) | taille |
 |---|---|---|
@@ -93,10 +95,12 @@ toujours courte : la pression sur le flex n'existait pas au banc.
 | blk3 | `d949f1c3687aedad` | 10 751 |
 | blk4 | `35f4f974f4b2bcd4` | 131 835 |
 | blk5 | `1be53ce44e7be14f` | 1 113 969 |
-| blk6 | `4529778de067622d` | 242 166 |
-| blk7 | `218ea7b7bec64629` | 1 704 843 |
+| blk6 | `e448f8280258b643` | 246 101 |
+| blk7 | `22c46e137ea22539` | 1 709 693 |
 
-`GAME_NOTES` : **375 caractères** extraits par la regex de la CI, accents littéraux, **0 séquence
+(Les blocs 6 et 7 portent aussi le lot C, arrivé par la fusion.)
+
+`GAME_NOTES` : **370 caractères** extraits par la regex de la CI, accents littéraux, **0 séquence
 `\u`**, aucun guillemet droit.
 
 ---
