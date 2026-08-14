@@ -368,7 +368,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   border-radius:5px;padding:4px 11px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.78rem;}
 .tuto-skip:hover{border-color:var(--red);color:#ff8079;}
 @media (max-width:480px){.tuto-banner{padding:6px 9px;gap:7px;}.tuto-goal{font-size:.82rem;white-space:normal;}
-  .tuto-count{gap:5px;padding-left:5px;}.tuto-count-item{font-size:.72rem;padding:1px 5px;}
+  /* ⚠ Les compteurs passent EN COLONNE sous 480 px (retour Ethan, capture à l'appui) :
+     cote a cote, « Ciments au port 5 275,96/10 000 » + « Lingots au port … » depassait la
+     largeur et le SECOND etait coupe en plein milieu. `flex-shrink:0` les empeche de
+     retrecir (a dessein : ils doivent survivre a l'ellipse du goal), donc la seule issue
+     est de les empiler. `margin-left:auto` est neutralise, sinon la colonne serait collee
+     a droite alors que la ligne wrappee commence a gauche. */
+  .tuto-count{gap:3px;padding-left:0;flex-direction:column;align-items:flex-start;margin-left:0;}
+  .tuto-count-item{font-size:.72rem;padding:1px 5px;}
   /* Deux compteurs larges (« Reliées 10/10 · Au niveau 2 6/10 ») ne TIENNENT pas sur la
      ligne d'un 360 px : le compteur etant flex-shrink:0 (il doit survivre a l'ellipse du
      goal), il debordait du viewport. On laisse la ligne WRAPPER : le compteur passe
@@ -3087,6 +3094,7 @@ var TUT={
 "fr":{
  tutorial:{"0":"Pose une mine de fer sur un gisement de fer.","1":"Relie la mine au port avec une route.","2":"Pose une carrière et relie-la au port.","3":"Deux mines de fer et deux carrières de plus, toutes reliées au port.","4":"Passe tous tes bâtiments au niveau 2.","5":"2 mines et 2 carrières de plus, reliées et au niveau 2.","6":"Pose une mine de charbon et relie-la au port.","7":"Pose un four à fer et relie-le au port.","8":"Pose une cimenterie et relie-la au port.","9":"Produis 10 lingots de fer et 10 ciments par seconde.","10":"Réunis 10 000 lingots de fer et 10 000 ciments, puis répare la liaison.","11":"Rejoins l’île 2.","12":"Ouvre le port et demande 1 000 charbons à l’île 1.","13":"Retourne sur l’île 1 et améliore le transit de son port — développe l’île 2 en attendant."},
  tips:{
+  "tut_fin":{"title":"À toi de jouer","body":["Tu tiens la boucle complète : <b>extraire</b>, <b>acheminer</b>, <b>transformer</b>, puis <b>monter en cadence</b>. Le reste du jeu n’est que cette boucle, en plus grand.", "La suite se choisit dans l’<b>arbre de recherche</b> : chaque nœud ouvre un bâtiment, une île ou une mécanique. Rien ne presse — une recherche se paie en <b>production</b>, pas en temps d’attente.", "Un <b>objectif</b> continuera de s’afficher quand le jeu détecte un blocage : un réseau saturé, une usine sans courant, une île qui t’attend. Tu peux le couper dans les Options."]},
   "tut_transit":{"title":"Le transit se paie","body":["Aucune île n’a tout. Le <b>port</b> comble le manque : tu fixes une <b>cible d’import</b>, et la liaison achèmine la ressource depuis l’île voisine, en continu.","Le <b>débit</b> est partagé entre toutes les ressources d’une même liaison, et il démarre à <b>1 unité par seconde</b>. Améliorer le port de <b>l’une des deux îles</b> le double — c’est le niveau le plus élevé des deux qui compte.","Le bouton <b>Cible ⇒ Réserve</b> garde ce que tu importes : la réserve suit la cible, et la ressource ne repart pas par la liaison au tick suivant."]},
   "tut_mine":{"title":"Le sol, la source de tout","body":["Tout part du sol. Une <b>mine de fer</b> ne peut se poser QUE sur un <b>gisement de fer</b> — les tuiles qui clignotent en vert.","Elle extrait du minerai en continu, sans intrant et sans électricité. C'est ton point de départ."]},
   "tut_route":{"title":"Rien ne circule tout seul","body":["Ta mine extrait… mais le minerai <b>reste sur place</b>. Il faut une <b>route</b> pour l'acheminer.","Le <b>port</b> est l'entrepôt de l'île : <b>tout y arrive et tout en repart</b>. Un bâtiment non relié au port ne reçoit rien et ne livre rien.","Relie la mine au port, puis regarde ton stock monter."]},
@@ -3102,6 +3110,7 @@ var TUT={
 "en":{
  tutorial:{"0":"Place an iron mine on an iron deposit.","1":"Connect the mine to the port with a road.","2":"Place a quarry and connect it to the port.","3":"Two more iron mines and two more quarries, all connected to the port.","4":"Upgrade all your buildings to level 2.","5":"2 more mines and 2 more quarries, connected and at level 2.","6":"Place a coal mine and connect it to the port.","7":"Place an iron furnace and connect it to the port.","8":"Place a cement plant and connect it to the port.","9":"Produce 10 iron ingots and 10 cement per second.","10":"Gather 10,000 iron ingots and 10,000 cement, then repair the shipping link.","11":"Head over to island 2.","12":"Open the port and request 1,000 coal from island 1.","13":"Go back to island 1 and upgrade its port’s transit — build up island 2 while you wait."},
  tips:{
+  "tut_fin":{"title":"Over to you","body":["You have the full loop: <b>extract</b>, <b>route</b>, <b>process</b>, then <b>raise the pace</b>. The rest of the game is that same loop, larger.", "What comes next is yours to pick in the <b>research tree</b>: every node opens a building, an island or a mechanic. No rush — research is paid in <b>production</b>, not in waiting.", "An <b>objective</b> will keep showing up whenever the game spots a snag: a saturated network, a factory without power, an island waiting for you. You can switch it off in the Options."]},
   "tut_transit":{"title":"Transit has a price","body":["No island has everything. The <b>port</b> fills the gap: set an <b>import target</b> and the link ships the resource from the neighbouring island, continuously.","That <b>throughput</b> is shared by every resource on the same link, and it starts at <b>1 unit per second</b>. Upgrading the port on <b>either</b> of the two islands doubles it — the higher of the two levels is what counts.","The <b>Target ⇒ Reserve</b> switch keeps what you import: the reserve follows the target, so the resource does not ship straight back out on the next tick."]},
   "tut_mine":{"title":"The ground, the source of everything","body":["Everything starts from the ground. An <b>iron mine</b> can ONLY be placed on an <b>iron deposit</b> — the tiles pulsing in green.","It extracts ore continuously, with no inputs and no electricity. It's your starting point."]},
   "tut_route":{"title":"Nothing moves on its own","body":["Your mine is extracting… but the ore <b>stays put</b>. You need a <b>road</b> to move it.","The <b>port</b> is the island's warehouse: <b>everything arrives there and everything leaves from there</b>. A building not connected to the port receives nothing and delivers nothing.","Connect the mine to the port, then watch your stock grow."]},
@@ -3133,6 +3142,7 @@ var TUT={
 "es":{
  tutorial:{"0":"Coloca una mina de hierro sobre un yacimiento de hierro.","1":"Conecta la mina al puerto con una carretera.","2":"Coloca una cantera y conéctala al puerto.","3":"Dos minas de hierro y dos canteras más, todas conectadas al puerto.","4":"Sube todos tus edificios al nivel 2.","5":"2 minas y 2 canteras más, conectadas y al nivel 2.","6":"Coloca una mina de carbón y conéctala al puerto.","7":"Coloca un horno de hierro y conéctalo al puerto.","8":"Coloca una cementera y conéctala al puerto.","9":"Produce 10 lingotes de hierro y 10 cementos por segundo.","10":"Reúne 10 000 lingotes de hierro y 10 000 cementos, luego repara el enlace.","11":"Ve a la isla 2.","12":"Abre el puerto y pide 1000 carbones a la isla 1.","13":"Vuelve a la isla 1 y mejora el tránsito de su puerto: mientras tanto, desarrolla la isla 2."},
  tips:{
+  "tut_fin":{"title":"Te toca a ti","body":["Ya dominas el ciclo completo: <b>extraer</b>, <b>transportar</b>, <b>transformar</b> y luego <b>subir el ritmo</b>. El resto del juego es ese mismo ciclo, a lo grande.", "Lo que sigue se elige en el <b>árbol de investigación</b>: cada nodo abre un edificio, una isla o una mecánica. Sin prisa: una investigación se paga con <b>producción</b>, no con espera.", "Un <b>objetivo</b> seguirá apareciendo cuando el juego detecte un atasco: una red saturada, una fábrica sin corriente, una isla que te espera. Puedes desactivarlo en las Opciones."]},
   "tut_transit":{"title":"El tránsito se paga","body":["Ninguna isla lo tiene todo. El <b>puerto</b> cubre la falta: fijas un <b>objetivo de importación</b> y el enlace trae el recurso desde la isla vecina, de forma continua.","El <b>caudal</b> se reparte entre todos los recursos de un mismo enlace y empieza en <b>1 unidad por segundo</b>. Mejorar el puerto de <b>cualquiera</b> de las dos islas lo duplica: cuenta el nivel más alto de los dos.","El botón <b>Objetivo ⇒ Reserva</b> conserva lo que importas: la reserva sigue al objetivo y el recurso no vuelve a salir por el enlace en el siguiente tick."]},
   "tut_mine":{"title":"El suelo, la fuente de todo","body":["Todo parte del suelo. Una <b>mina de hierro</b> SOLO puede colocarse sobre un <b>yacimiento de hierro</b> — las casillas que parpadean en verde.","Extrae mineral de forma continua, sin insumos y sin electricidad. Es tu punto de partida."]},
   "tut_route":{"title":"Nada circula por sí solo","body":["Tu mina extrae… pero el mineral <b>se queda en el sitio</b>. Hace falta una <b>carretera</b> para transportarlo.","El <b>puerto</b> es el almacén de la isla: <b>todo llega allí y todo sale de allí</b>. Un edificio no conectado al puerto no recibe ni entrega nada.","Conecta la mina al puerto y mira cómo sube tu stock."]},
@@ -3164,6 +3174,7 @@ var TUT={
 "de":{
  tutorial:{"0":"Platziere eine Eisenmine auf einem Eisenvorkommen.","1":"Verbinde die Mine mit einer Straße zum Hafen.","2":"Platziere einen Steinbruch und verbinde ihn mit dem Hafen.","3":"Zwei weitere Eisenminen und zwei weitere Steinbrüche, alle mit dem Hafen verbunden.","4":"Verbessere alle deine Gebäude auf Stufe 2.","5":"2 weitere Minen und 2 weitere Steinbrüche, verbunden und auf Stufe 2.","6":"Platziere eine Kohlemine und verbinde sie mit dem Hafen.","7":"Platziere einen Eisenofen und verbinde ihn mit dem Hafen.","8":"Platziere ein Zementwerk und verbinde es mit dem Hafen.","9":"Produziere 10 Eisenbarren und 10 Zement pro Sekunde.","10":"Sammle 10.000 Eisenbarren und 10.000 Zement, dann repariere die Verbindung.","11":"Reise zur Insel 2.","12":"Öffne den Hafen und fordere 1.000 Kohle von Insel 1 an.","13":"Kehre zur Insel 1 zurück und verbessere den Transit ihres Hafens — baue derweil Insel 2 aus."},
  tips:{
+  "tut_fin":{"title":"Jetzt bist du dran","body":["Du beherrschst den ganzen Kreislauf: <b>fördern</b>, <b>transportieren</b>, <b>verarbeiten</b>, dann <b>Tempo steigern</b>. Der Rest des Spiels ist derselbe Kreislauf, nur größer.", "Wie es weitergeht, wählst du im <b>Forschungsbaum</b>: Jeder Knoten öffnet ein Gebäude, eine Insel oder eine Mechanik. Keine Eile — Forschung wird mit <b>Produktion</b> bezahlt, nicht mit Warten.", "Ein <b>Ziel</b> erscheint weiterhin, sobald das Spiel eine Stockung erkennt: ein überlastetes Netz, eine Fabrik ohne Strom, eine wartende Insel. In den Optionen lässt es sich abschalten."]},
   "tut_transit":{"title":"Transit kostet","body":["Keine Insel hat alles. Der <b>Hafen</b> gleicht das aus: Du legst ein <b>Importziel</b> fest, und die Verbindung liefert den Rohstoff von der Nachbarinsel, fortlaufend.","Der <b>Durchsatz</b> wird von allen Rohstoffen derselben Verbindung geteilt und beginnt bei <b>1 Einheit pro Sekunde</b>. Den Hafen <b>einer der beiden</b> Inseln zu verbessern verdoppelt ihn — es zählt die höhere der beiden Stufen.","Die Schaltfläche <b>Ziel ⇒ Reserve</b> hält, was du importierst: Die Reserve folgt dem Ziel, und der Rohstoff verlässt die Insel nicht gleich im nächsten Tick wieder."]},
   "tut_mine":{"title":"Der Boden, die Quelle von allem","body":["Alles beginnt im Boden. Eine <b>Eisenmine</b> kann NUR auf einem <b>Eisenvorkommen</b> stehen — die grün pulsierenden Felder.","Sie fördert ununterbrochen Erz, ohne Eingänge und ohne Strom. Das ist dein Ausgangspunkt."]},
   "tut_route":{"title":"Nichts bewegt sich von allein","body":["Deine Mine fördert… aber das Erz <b>bleibt liegen</b>. Du brauchst eine <b>Straße</b>, um es zu transportieren.","Der <b>Hafen</b> ist das Lager der Insel: <b>alles kommt dort an und alles geht von dort ab</b>. Ein Gebäude ohne Verbindung zum Hafen erhält nichts und liefert nichts.","Verbinde die Mine mit dem Hafen und sieh zu, wie dein Bestand wächst."]},
@@ -9227,8 +9238,20 @@ const SAVE_VERSION = 31;
 // RÈGLE : tout bloc à `aspect-ratio` placé DANS un flex doit être asserté par
 // `getBoundingClientRect`, jamais par sa seule existence. Test T8 ajouté, avec contre-épreuve
 // qui remet `flex-shrink:1` et reproduit les 2 px — sans elle l'assertion ne prouverait rien.
-const GAME_BUILD = 401;
-const GAME_VERSION = 'Alpha 16.8';
+// 16.9 — RETOURS D'ETHAN SUR LA SORTIE DU TUTORIEL (3 correctifs). (1) ⚠ `go_ile2` du
+// GUIDE s'armait A LA FIN DU TUTORIEL en disant « Va visiter l'île 2 » a un joueur qui en
+// revenait : son `done` lit `guide.seenIsland2`, or la pose de ce drapeau etait DERRIERE le
+// `return` de la garde « tutoriel actif » de `checkGuide`. Le chapitre ile 2 fait justement
+// passer le joueur sur l'ile 2 — le drapeau ne pouvait donc JAMAIS etre pose pendant le
+// tutoriel. La ligne remonte AVANT la garde : c'est un constat d'etat, pas un objectif.
+// (2) Le toast de fin (1,8 s) partait en meme temps que la banniere : plus rien a l'ecran.
+// Nouvelle astuce `tut_fin`, ouverte par `showTip` — canal qui ATTEND un « Compris » et se
+// met en file derriere le « pourquoi » de la derniere etape au lieu de l'ecraser.
+// (3) Sous 480 px les 2 compteurs de la banniere debordaient et le second etait coupe en
+// plein milieu : ils passent EN COLONNE (ils sont `flex-shrink:0`, les empiler est la seule
+// issue). `SAVE_VERSION` INCHANGE (31).
+const GAME_BUILD = 402;
+const GAME_VERSION = 'Alpha 16.9';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9237,7 +9260,7 @@ const GAME_VERSION = 'Alpha 16.8';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Correctif d'affichage : la carte de l'archipel avait disparu du panneau Carte en fin de partie. Passé un certain nombre de liaisons actives, la liste des flux prenait toute la place et la carte se retrouvait écrasée à deux pixels de haut, si bien qu'on ne voyait plus que la liste. Elle reprend sa taille normale et le panneau défile comme avant. Rien d'autre ne change.";
+const GAME_NOTES = "Le tutoriel ne se termine plus sur un objectif absurde : il ne demande plus d'aller visiter l'île 2 à un joueur qui en revient. Un message de fin s'affiche désormais dans une astuce, qui attend d'être lue au lieu de disparaître en deux secondes. Sur petit écran, les deux compteurs de la bannière s'empilent au lieu d'être coupés.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -17048,6 +17071,21 @@ const GAME_TIPS = [{
   // JAMAIS ouvert par nextPendingTip (`when: () => false`) — uniquement par showTip(step.why)
   // au franchissement d'étape. ⚠ 3 paragraphes : `applyToData` fusionne les `body` PAR INDEX,
   // les 4 langues doivent en avoir exactement 3 sous peine de paragraphes restés en français.
+  // ⚠ Ouverte par `checkTutorial` a la toute fin (`showTip('tut_fin')`), pas par son `when`.
+  // Le toast de fin dure 1,8 s et la banniere disparait au meme instant : sans ce popup, le
+  // joueur n'a plus rien a l'ecran. Comme les autres `tut_*`, `when` rend faux — elle n'entre
+  // dans l'Aide qu'une fois VUE (`tipsSeen`), marquee a la FERMETURE (13.80).
+  // ⚠ 3 paragraphes : les 3 autres langues doivent en avoir exactement 3, sinon un paragraphe
+  // reste en francais (fusion PAR INDEX de `applyToData`).
+  id: 'tut_fin',
+  short: 'Le tutoriel est fini. La suite se choisit dans l\'arbre de recherche.',
+  icon: '🎓',
+  title: 'À toi de jouer',
+  body: ['Tu tiens la boucle complète : <b>extraire</b>, <b>acheminer</b>, <b>transformer</b>, puis <b>monter en cadence</b>. Le reste du jeu n\'est que cette boucle, en plus grand.',
+    'La suite se choisit dans l\'<b>arbre de recherche</b> : chaque nœud ouvre un bâtiment, une île ou une mécanique. Rien ne presse — une recherche se paie en <b>production</b>, pas en temps d\'attente.',
+    'Un <b>objectif</b> continuera de s\'afficher quand le jeu détecte un blocage : un réseau saturé, une usine sans courant, une île qui t\'attend. Tu peux le couper dans les Options.'],
+  when: () => false
+}, {
   id: 'tut_transit',
   short: 'Entre deux îles, rien ne circule tout seul. Le port achèmine un flux limité — et ce débit s\'améliore.',
   icon: '🚢',
@@ -24530,7 +24568,14 @@ function TutorialBanner({
   }, counters.map((c, i) => React.createElement("span", {
     key: i,
     className: 'tuto-count-item' + (c[1] >= c[2] ? ' done' : '')
-  }, I18N.t(c[0]), " ", fmtRateSci(Math.min(c[1], c[2])), "/", fmtRateSci(c[2]))))), React.createElement("button", {
+  // ⚠ `Math.floor` À L'AFFICHAGE (retour Ethan) : un stock est fractionnaire, le compteur
+  // montrait « 5275,96/10 000 ». ARRONDI VERS LE BAS, jamais au plus proche — afficher
+  // « 10 000/10 000 » alors que l'étape refuse encore serait un mensonge ; c'est la même
+  // convention que `tutFlowOf` (13.80). Effet de bord voulu : `fmtRate` ne pose le
+  // séparateur de milliers QUE sur un entier — « 5 275 » s'aligne enfin sur « 10 000 ».
+  // Le test `done` (c[1] >= c[2]) reste sur les valeurs BRUTES : le vert suit l'étape,
+  // pas l'arrondi.
+  }, I18N.t(c[0]), " ", fmtRateSci(Math.floor(Math.min(c[1], c[2]))), "/", fmtRateSci(Math.floor(c[2])))))), React.createElement("button", {
     className: "tuto-skip",
     onClick: onSkip,
     title: isGuide ? I18N.t("Désactiver le guide (réactivable dans les Options)") : I18N.t("Passer le tutoriel et tout débloquer")
@@ -26622,6 +26667,13 @@ function App() {
     if (g.tutorial.step >= TUTORIAL_STEPS.length) {
       g.tutorial.active = false;
       showToast(I18N.t('🎓 Tutoriel terminé — la suite est dans l\'arbre de recherche.'), 'var(--green)');
+      // ⚠ Le toast NE SUFFIT PAS (retour Ethan : « apres plus rien »). Il vit 1,8 s puis
+      // disparait, et la banniere du tutoriel s'efface au meme instant : le joueur perd
+      // d'un coup son fil conducteur sans rien pour prendre le relais. Le POPUP, lui,
+      // attend un « Compris » — c'est le meme canal que le « pourquoi » de chaque etape,
+      // le joueur le connait deja. `showTip` MET EN FILE si un popup est ouvert (13.80),
+      // donc il ne peut pas ecraser le « pourquoi » de la derniere etape.
+      if (g.tipsEnabled !== false) showTip('tut_fin');
     }
     // Avancement du halo À L'INTÉRIEUR de l'étape courante : on s'arrête sur la première
     // cible dont `when(g, ui)` est vrai (les cibles déjà « faites » sont sautées).
@@ -26707,6 +26759,17 @@ function App() {
   function checkGuide() {
     const g = gameRef.current;
     if (!g.guide) g.guide = { enabled: true, done: {}, seenIsland2: false };
+    // ⚠ POSE AVANT LA GARDE DU TUTORIEL, et c'est tout l'objet du correctif. Ce drapeau
+    // n'est qu'un CONSTAT (« le joueur a vu l'île 2 »), pas un objectif : le gater sur le
+    // tutoriel le rendait faux au pire moment. Le chapitre île 2 fait justement PASSER le
+    // joueur sur l'île 2 (c'est la condition de franchissement de l'étape 12) — mais le
+    // guide etant inerte pendant le tutoriel, le `return` ci-dessous sautait cette ligne.
+    // Resultat mesure : a la fin du tutoriel, `go_ile2` s'armait et disait « Une deuxieme
+    // ile est accessible. Va la visiter. » a un joueur qui en revenait.
+    if (g.currentIsland === 2 && !g.guide.seenIsland2) {
+      g.guide.seenIsland2 = true;
+      scheduleSave();
+    }
     if (g.tutorial && g.tutorial.active) {
       if (guideIdRef.current !== null) {
         guideIdRef.current = null;
@@ -26714,10 +26777,6 @@ function App() {
         setGuideId(null);
       }
       return;
-    }
-    if (g.currentIsland === 2 && !g.guide.seenIsland2) {
-      g.guide.seenIsland2 = true;
-      scheduleSave();
     }
     let changed = false;
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();

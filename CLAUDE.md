@@ -19,7 +19,46 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 400`, `GAME_VERSION = 'Alpha 16.7'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 402`, `GAME_VERSION = 'Alpha 16.9'`, `SAVE_VERSION = 31`.**
+  Changement 16.9 (**4 retours d'Ethan, pas de brief — 9 paires**) : **la sortie du tutoriel ne ment
+  plus.** `SAVE_VERSION` INCHANGÉ, base 401 / 16.8, `node --check` 7/7 (publique ET dev), round-trip
+  9/9, delta +7 584 car.
+  (1) ⚠ **`go_ile2` DISAIT « Va visiter l'île 2 » À UN JOUEUR QUI EN REVENAIT.** Son `done` lit
+  `guide.seenIsland2`, or la POSE de ce drapeau était **DERRIÈRE le `return`** de la garde « tutoriel
+  actif » de `checkGuide` — et le chapitre île 2 fait justement PASSER le joueur sur l'île 2 (c'est
+  la condition de l'étape 12). Le drapeau ne pouvait donc JAMAIS être posé pendant le tutoriel.
+  **La ligne remonte AVANT la garde** : c'est un CONSTAT d'état, pas un objectif. **Règle générale :
+  un drapeau qui enregistre ce que le joueur A FAIT n'a rien à faire derrière une garde de mode.**
+  (2) **Le message de fin était un TOAST (1,8 s) et la bannière s'effaçait au même instant** → « après
+  plus rien ». Nouvelle astuce **`tut_fin`** ouverte par `showTip` : canal qui **ATTEND un
+  « Compris »**, et qui **MET EN FILE** derrière le « pourquoi » de la dernière étape au lieu de
+  l'écraser (c'est le piège qui avait rendu muet le dernier `afterToast` au lot C). Le toast est
+  CONSERVÉ à côté. ⚠ **3 paragraphes dans les 4 langues** — `applyToData` fusionne PAR INDEX, une
+  langue à 2 § en laisserait un en français (vérifié au runtime : 0 § resté en fr).
+  (3) **Compteurs de la bannière EN COLONNE sous 480 px** : ils sont `flex-shrink:0` **à dessein**
+  (ils doivent survivre à l'ellipse du goal), donc les empiler est la SEULE issue — côte à côte, le
+  second était coupé en plein milieu. ⚠ Neutraliser aussi `margin-left:auto`, sinon la colonne reste
+  collée à droite d'une ligne wrappée qui commence à gauche.
+  (4) **`Math.floor` à l'affichage des compteurs** (« 5275,96/10 000 » → « 5 275/10 000 »). ⚠ **Vers
+  le BAS, jamais au plus proche** : afficher « 10 000/10 000 » pendant que l'étape refuse serait un
+  mensonge (convention `tutFlowOf`, 13.80). Effet de bord VOULU : `fmtRate` ne pose le séparateur de
+  milliers **que sur un entier** → la valeur s'aligne enfin sur le max. Le test `done` (`c[1] >= c[2]`,
+  qui met au vert) reste sur les valeurs BRUTES.
+  **Validé** : **T7 en jeu 42 OK / 0 KO** (chapitre joué par de VRAIS gestes puis les 4 retours
+  mesurés) + **contre-épreuve sur la base 401 : 9 KO**, un par symptôme, dont la bannière
+  « Une deuxième île est accessible » reproduite au mot près + non-régression du lot C (portSeen 0 KO,
+  T1 13 toasts/0 muet, T2/T3/T5 0 KO) + boot des 2 éditions. Suites rejouées 2 fois.
+  ⚠ **MON ERREUR, RATTRAPÉE PAR LE ROUND-TRIP** : mon 1ᵉʳ script n'a posé que l'astuce et ses
+  traductions — **les 3 correctifs principaux n'étaient PAS dans le fichier**, alors que
+  `node --check` passait ET que l'i18n de la nouvelle astuce était juste. Seul le round-trip l'a vu
+  (3 remplacements à `count == 0`). **Un `node --check` vert ne prouve pas qu'un patch a été
+  appliqué.**
+  ⚠ **COLLISION DE NUMÉRO DE BUILD — CONTRÔLE À FAIRE AVANT CHAQUE LIVRAISON** (Ethan l'a rappelé ;
+  elle s'est produite au build 400 entre deux sessions parallèles) : relever `GAME_BUILD` sur
+  **TOUTES les branches distantes**, pas seulement sur `main`
+  (`for b in $(git branch -r …); do git show "$b:…html" | grep -m1 GAME_BUILD; done | sort -rn`).
+  Ici : max = 401 (`main` et `claude/carte-archipel-wmyxbs`) → 402 libre, re-vérifié juste avant le push.
+- **État précédent : `GAME_BUILD = 400`, `GAME_VERSION = 'Alpha 16.7'`, `SAVE_VERSION = 31`.**
   Changement 16.7 (brief `BRIEFlotCsortiechapitreile2`, **lot C — 20 paires — + 5 paires HORS BRIEF**) :
   **sortie du chapitre île 2** — le halo s'éteint, l'objectif invite à développer l'île 2, le message
   de fin renvoie vers l'arbre de recherche, 7 `afterToast` cessent de s'afficher en français hors-fr,
