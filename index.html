@@ -9346,8 +9346,34 @@ const SAVE_VERSION = 31;
 // sœur sans la corriger. Idem « Data Center », laissé tel quel en es/de parce que la couche `ui`
 // le traite déjà comme un nom propre (« Data Center PAUSIERT ») : le traduire ici aggraverait
 // l'incohérence au lieu de la réduire.
-const GAME_BUILD = 405;
-const GAME_VERSION = 'Alpha 17.2';
+// 17.3 — LOT I3 (chantier i18n, 3ᵉ des 6 lots). **74 littéraux français écrits EN DUR dans des
+// fonctions de RENDU** — donc intraduisibles quoi qu'on ajoute aux tables — sont enveloppés dans
+// `I18N.t(...)`. **AUCUNE traduction ajoutée** : ce lot n'enveloppe pas pour traduire, il rend
+// traduisible. Critère unique, et c'est ce qui le rend jugeable : **l'écran affiche-t-il
+// EXACTEMENT la même chose en français ?**
+// Répartition : `App` 26 · `InfoPanel` 11 · `PortPanel` 11 · `NetworkPanel` 5 · `reqValue` et
+// `ResearchPanel` 4 · `Hud`/`UpgradePanel`/`EnergyPanel`/`OptionsModal`/`OfflineModal` 2 ·
+// `onTick`/`RepairModal`/`SlotPanel` 1. **40 d'entre eux ont DÉJÀ leur clé en table** → ils gagnent
+// leur traduction dès ce lot ; les **34 autres** attendent la leur (lot I5).
+// ⚠ **LES 19 CHAÎNES DE `App` NE SONT PAS DES `Literal`** : les toasts sont écrits en GABARITS
+// (backticks), leurs fragments sont des `TemplateElement`. La méthode « `"x"` → `I18N.t("x")` » ne
+// les atteint PAS. Elles deviennent `` `…${I18N.t(" fragment ")}…` `` : la structure du gabarit et
+// les espaces sont préservés, aucune concaténation n'est fusionnée en clé unique (hors périmètre).
+// ⚠ **LES FRAGMENTS GARDENT LEURS ESPACES** (`' démoli — remboursé à '`) : les sortir de l'appel
+// changerait la clé.
+// ⚠ **NE JAMAIS ENVELOPPER UNE CHAÎNE QUI SERT DE COMPARAISON, DE CLÉ OU DE CLASSE CSS** : la
+// comparaison casserait dès qu'une autre langue est active, et le symptôme n'apparaîtrait JAMAIS
+// en français. Le patch travaille donc par OFFSETS AST avec le RÔLE SYNTAXIQUE de chaque site
+// (argument de rendu / valeur de prop / opérande de `===` / clé d'objet…), et un balayage vérifie
+// qu'aucune des 74 chaînes ne figure ailleurs en `===`, `switch` ou indexation : **aucune**.
+// Un scan large trouve 134 autres littéraux français dans ces mêmes fonctions : ils sont
+// VOLONTAIREMENT écartés — ce sont des emoji, des ids de porteur (`'port'`), des classes CSS
+// (`'theme-inox'`) et des valeurs COMPARÉES (`'bleu'`, valeur de thème). Les envelopper casserait.
+// ⚠ SEUL VRAI OUBLI REPÉRÉ ET **NON CORRIGÉ** (hors inventaire, donc hors périmètre) :
+// `InfoPanel` L17633, `starting: 'Calibrage…'` — ses trois sœurs du même objet (`off`, `running`,
+// `stopping`) SONT enveloppées. À prendre au lot I5.
+const GAME_BUILD = 406;
+const GAME_VERSION = 'Alpha 17.3';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9356,7 +9382,7 @@ const GAME_VERSION = 'Alpha 17.2';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Traductions : 61 batiments et 16 ressources restaient en francais en anglais, espagnol et allemand - presque tout le milieu et la fin de partie (paliers V2 a V4, couche logique, souterrain, quantique, fours a arc). Ils sont desormais traduits, tout comme les petits compteurs du bandeau du tutoriel et quatre messages d'etat du Data Center. Au passage, un defaut est repare : le code court dessine sur la tuile de ces batiments avait disparu, y compris en francais ; il est de retour.";
+const GAME_NOTES = "Traductions, suite : 74 textes de l'interface etaient ecrits en dur dans le code et ne pouvaient donc pas etre traduits, quelle que soit la langue choisie - messages de demolition, de copie et d'alerte, panneaux Port, Reseau, Recherche, Energie, Options et le recapitulatif hors-ligne. Quarante d'entre eux s'affichent des maintenant dans votre langue ; les autres suivront au prochain lot. En francais, rien ne change : l'affichage est identique, mot pour mot.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -14979,7 +15005,7 @@ function onTick(game) {
         game.tickErrors[def.id] = msg;
         game.tickErrorNotify = { isl: def.id, msg };
         try {
-          if (typeof console !== 'undefined') console.error('Archipel tick error (île ' + def.id + ') :', err);
+          if (typeof console !== 'undefined') console.error(I18N.t('Archipel tick error (île ') + def.id + ') :', err);
         } catch (_) {}
       }
       res = { resChanged: false, activeChanged: false, energyChanged: false };
@@ -15743,7 +15769,7 @@ function reqValue(game, req) {
         return {
           cur,
           target: req.n,
-          label: 'unités irradiées',
+          label: I18N.t('unités irradiées'),
           ok: cur >= req.n
         };
       }
@@ -15763,7 +15789,7 @@ function reqValue(game, req) {
         return {
           cur: ok ? 1 : 0,
           target: 1,
-          label: 'nœud ' + req.id + I18N.t(' confirmé'),
+          label: I18N.t('nœud ') + req.id + I18N.t(' confirmé'),
           ok
         };
       }
@@ -15799,7 +15825,7 @@ function reqValue(game, req) {
         return {
           cur: n,
           target: 1,
-          label: 'port île ' + req.island,
+          label: I18N.t('port île ') + req.island,
           ok: n >= 1
         };
       }
@@ -15811,7 +15837,7 @@ function reqValue(game, req) {
         return {
           cur: Math.round(s),
           target: req.n,
-          label: 'kWh stockés',
+          label: I18N.t('kWh stockés'),
           ok: s >= req.n
         };
       }
@@ -19086,7 +19112,7 @@ function Hud({
     className: "stocks stocks-inv"
   }, React.createElement("div", {
     className: 'stock energy' + (deficit ? ' deficit' : ' ok'),
-    title: "Bilan \xE9nergie de l'\xEEle \u2014 cliquer pour g\xE9rer le d\xE9ficit",
+    title: I18N.t("Bilan \xE9nergie de l'\xEEle \u2014 cliquer pour g\xE9rer le d\xE9ficit"),
     onClick: onEnergy
   }, React.createElement("span", {
     className: "k"
@@ -19094,7 +19120,7 @@ function Hud({
     className: "v"
   }, net >= 0 ? '+' : '', fmtPower(net))), accPct != null && React.createElement("div", {
     className: "stock battery" + (accPct <= 15 ? ' deficit' : ' ok'),
-    title: "Charge des accumulateurs de l'\xEEle \u2014 cliquer pour g\xE9rer l'\xE9nergie",
+    title: I18N.t("Charge des accumulateurs de l'\xEEle \u2014 cliquer pour g\xE9rer l'\xE9nergie"),
     onClick: onEnergy
   }, React.createElement("span", {
     className: "k"
@@ -19225,7 +19251,7 @@ function RepairModal({
     className: "rp-head"
   }, React.createElement("span", {
     className: "rp-title"
-  }, uiIcon('reparation', "\ud83d\udee0"), " R\xE9parer \u2014 \xCEle ", repairInfo.island), React.createElement("button", {
+  }, uiIcon('reparation', "\ud83d\udee0"), I18N.t(" R\xE9parer \u2014 \xCEle "), repairInfo.island), React.createElement("button", {
     className: "rp-close",
     onClick: onClose,
     title: I18N.t("Fermer")
@@ -20839,7 +20865,7 @@ function InfoPanel({
     speedReason = I18N.t('en pause (par le joueur)');
   } else if (netDisc) {
     speedPct = 0;
-    speedReason = DISC_LABELS[bld.discReason] || (bld.disc ? I18N.t('déconnecté') : 'à l\'arrêt');
+    speedReason = DISC_LABELS[bld.discReason] || (bld.disc ? I18N.t('déconnecté') : I18N.t('à l\'arrêt'));
   } else {
     speedPct = Math.max(0, Math.min(100, Math.round(regime * speedF * 100)));
     const lackInput = inFac < 0.995;
@@ -20859,7 +20885,7 @@ function InfoPanel({
         else if (wi2.cap !== Infinity && wi2.demand > wi2.cap + 1e-6) cause += I18N.t(' — câble saturé : débit ') + fmtPower(wi2.cap) + ' / ' + fmtPower(wi2.demand) + I18N.t(' demandés');
       }
     }
-    if (speedPct <= 0) speedReason = 'à l\'arrêt · ' + (cause || I18N.t('aucun intrant'));else speedReason = (speedPct < 100 ? I18N.t('au ralenti') : I18N.t('plein régime')) + (cause ? ' · ' + cause : '');
+    if (speedPct <= 0) speedReason = I18N.t('à l\'arrêt · ') + (cause || I18N.t('aucun intrant'));else speedReason = (speedPct < 100 ? I18N.t('au ralenti') : I18N.t('plein régime')) + (cause ? ' · ' + cause : '');
   }
   const speedColor = speedPct >= 100 ? 'var(--green)' : speedPct > 0 ? 'var(--orange)' : '#ff8079';
   // Statut affiché dès que le bâtiment « fait » quelque chose (réseau, élec, ou en panne).
@@ -20940,7 +20966,7 @@ function InfoPanel({
       starting: 'Calibrage…',
       running: I18N.t('En marche'),
       stopping: I18N.t('Arrêt…'),
-      safety: '⚠ Sécurité'
+      safety: I18N.t('⚠ Sécurité')
     };
     const stColors = {
       off: 'var(--ink-dim)',
@@ -20991,7 +21017,7 @@ function InfoPanel({
       onClick: () => onSetNucPower && onSetNucPower(currentIsland, lvl - 1)
     }, "−"), React.createElement("div", {
       className: "ip-nuc-gauge",
-      title: "Recalibrage 5 min à chaque changement"
+      title: I18N.t("Recalibrage 5 min à chaque changement")
     }, React.createElement("div", {
       className: "ip-nuc-gauge-fill",
       style: {
@@ -21039,7 +21065,7 @@ function InfoPanel({
       className: "ip-nuc-irr"
     }, React.createElement("div", {
       className: "ip-nuc-irr-hd"
-    }, "Production nucléaire (optionnel) : irradiés / plutonium"),
+    }, I18N.t("Production nucléaire (optionnel) : irradiés / plutonium")),
     // Choix du mode (3 boutons à suivre) : une seule ressource / mix manuel / équilibrage auto.
     React.createElement("div", {
       className: "ip-nuc-mats"
@@ -21136,10 +21162,10 @@ function InfoPanel({
     }, mix.plutoCap > 0 ? fmtPort(Math.floor((game.port[currentIsland] || {}).plutonium || 0)) + " / " + fmtPort(mix.plutoCap) : I18N.t("illimité"))),
     mix.mode === 'auto' && React.createElement("div", {
       className: "ip-nuc-irr-note"
-    }, "Équilibrage automatique : on produit davantage du matériau irradié dont le stock est le plus bas."),
+    }, I18N.t("Équilibrage automatique : on produit davantage du matériau irradié dont le stock est le plus bas.")),
     React.createElement("div", {
       className: "ip-nuc-irr-note"
-    }, "Irradiés : produits seulement si le matériau de base (acier/béton/câble) est au port. Plutonium : produit sans matériau de base (combustible du moteur nucléaire).")));
+    }, I18N.t("Irradiés : produits seulement si le matériau de base (acier/béton/câble) est au port. Plutonium : produit sans matériau de base (combustible du moteur nucléaire)."))));
   })(), ENR_TUNABLE[bld.id] && (() => {
     // ── 14.32 — Mélange uranium / plutonium (réglage PAR BÂTIMENT, mécanique sœur du four à arc).
     // ⚠ `u` n'est PAS une fraction massique : c'est un curseur de COMPROMIS. Le tooltip le dit.
@@ -21472,7 +21498,7 @@ function InfoPanel({
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
-  }, "R\xE9el ⚠"), React.createElement("span", {
+  }, I18N.t("R\xE9el ⚠")), React.createElement("span", {
     className: "val",
     title: I18N.t("Consommation r\xE9elle ce tick (brid\xE9e : ") + speedReason + ")"
   }, recipeChips(bIn, upgradeMult(upg) * antInMul * speedPct / 100).concat(I18N.t(' /s')))), bOut && React.createElement("div", {
@@ -21496,7 +21522,7 @@ function InfoPanel({
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
-  }, "R\xE9el \u26A0"), React.createElement("span", {
+  }, I18N.t("R\xE9el \u26A0")), React.createElement("span", {
     className: "val io",
     title: I18N.t("Production r\xE9elle ce tick (brid\xE9e : ") + speedReason + ")"
   }, recipeChips(solidOut, upgradeMult(upg) * antOutMul * speedPct / 100).concat(I18N.t(' /s')))), b.accumulator && React.createElement("div", {
@@ -21535,7 +21561,7 @@ function InfoPanel({
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "\xC9lec."), React.createElement("span", {
+  }, I18N.t("\xC9lec.")), React.createElement("span", {
     className: "val"
   }, (() => {
     const mult = upgradeMult(upg);
@@ -21830,7 +21856,7 @@ function InfoPanel({
       }
       onUpgrade(info.r, info.c);
     },
-    title: armed ? I18N.t('Confirmer · Coût : ') + (formatCost(upCost) || 'gratuit') : 'Voir l\'amélioration (Nv.' + (upg + 2) + ')'
+    title: armed ? I18N.t('Confirmer · Coût : ') + (formatCost(upCost) || 'gratuit') : I18N.t('Voir l\'amélioration (Nv.') + (upg + 2) + ')'
   }, uiIcon('monter', "\u2B06"), armed ? I18N.t(" Confirmer ") : I18N.t(" Monter "), React.createElement("span", {
     className: "ip-sub"
   }, "Nv.", upg + 2)), React.createElement("button", {
@@ -22026,7 +22052,7 @@ function UpgradePanel({
     className: "up-row"
   }, React.createElement("span", {
     className: "lbl"
-  }, "\xC9lec."), React.createElement("span", {
+  }, I18N.t("\xC9lec.")), React.createElement("span", {
     className: "cur"
   }, fmtPower(basePowerRange(bld.id).max * mult)), React.createElement("span", {
     className: "arr"
@@ -22049,7 +22075,7 @@ function UpgradePanel({
     'data-tut': "upgrade",
     disabled: !canAfford,
     onClick: () => onUpgrade(up.r, up.c)
-  }, "\u2B06 Am\xE9liorer (\xD7", nextMult, ")"), askNeeded && React.createElement("button", {
+  }, I18N.t("\u2B06 Am\xE9liorer (\xD7"), nextMult, ")"), askNeeded && React.createElement("button", {
     className: "up-port-ask",
     onClick: () => onAskPort && onAskPort(askCost),
     title: I18N.t("Relève les cibles d'import du port pour les ressources manquantes (l'ordre de priorité du transit n'est pas modifié)")
@@ -22081,12 +22107,12 @@ function ResearchPanel({
   const META = {
     confirmed: {
       icon: '✓',
-      label: 'Débloqué',
+      label: I18N.t('Débloqué'),
       cls: 'st-confirmed'
     },
     condition_ok: {
       icon: '◆',
-      label: 'Prêt',
+      label: I18N.t('Prêt'),
       cls: 'st-ready'
     },
     available: {
@@ -22096,7 +22122,7 @@ function ResearchPanel({
     },
     locked: {
       icon: '🔒',
-      label: 'Verrouillé',
+      label: I18N.t('Verrouillé'),
       cls: 'st-locked'
     }
   };
@@ -22202,7 +22228,7 @@ function ResearchPanel({
       onClick: () => onConfirm(def.id)
     }, I18N.t("Confirmer"))), node.status === 'condition_ok' && def.mode === 'delivery' && !def.delivery && React.createElement("div", {
       className: "rp-lockhint"
-    }, "Livraison \xE0 calibrer \u2014 non activable"), node.status !== 'locked' && node.status !== 'confirmed' && (blds.length > 0 || isls.length > 0) && React.createElement("div", {
+    }, I18N.t("Livraison \xE0 calibrer \u2014 non activable")), node.status !== 'locked' && node.status !== 'confirmed' && (blds.length > 0 || isls.length > 0) && React.createElement("div", {
       className: "rp-unlocks"
     }, "\u2192 ", isls.map(i => islandLabel(i)).concat(blds.map(b => BUILDINGS[b] && BUILDINGS[b].name || b)).join(' · ')), node.status === 'locked' && def.prereq != null && React.createElement("div", {
       className: "rp-lockhint"
@@ -22664,8 +22690,8 @@ function PortPanel({
       className: "pp-port-row"
     }, React.createElement("span", {
       className: "pp-port-lvl",
-      title: "Débit max de transit par liaison et par seconde (partagé entre les ressources expédiées)"
-    }, "Débit max ", fmtPort(ratePerSec), " u/s ", React.createElement("span", {
+      title: I18N.t("Débit max de transit par liaison et par seconde (partagé entre les ressources expédiées)")
+    }, I18N.t("Débit max "), fmtPort(ratePerSec), " u/s ", React.createElement("span", {
       className: "pp-port-mult"
     }, "· lots ×" + portSpeedMult(lvl))), React.createElement("span", {
       className: "pp-port-next"
@@ -22676,7 +22702,7 @@ function PortPanel({
       key: k
     }, RES_SHORT[k] || k, " ", fmtPort(islandPort[k] || 0), "/", fmtPort(cost[k])))), links.length === 0 && React.createElement("div", {
       className: "pp-port-locked"
-    }, "🔒 R\xE9parez l'\xEEle voisine pour activer une liaison avant d'am\xE9liorer le transit."), links.length > 0 && nextLocked && React.createElement("div", {
+    }, I18N.t("🔒 R\xE9parez l'\xEEle voisine pour activer une liaison avant d'am\xE9liorer le transit.")), links.length > 0 && nextLocked && React.createElement("div", {
       className: "pp-port-locked"
     }, I18N.t("🔒 Débloquez l'île ") + nextIslId + I18N.t(" pour améliorer le transit.")), React.createElement("button", {
       className: "rp-btn",
@@ -22719,13 +22745,13 @@ function PortPanel({
       className: "pp-link-top"
     }, React.createElement("span", {
       className: "pp-link-name"
-    }, I18N.t("\xCEle "), a, " \u2194 \xCEle ", b), React.createElement("span", {
+    }, I18N.t("\xCEle "), a, I18N.t(" \u2194 \xCEle "), b), React.createElement("span", {
       className: "pp-link-state"
     }, I18N.t("↔ transit continu"))), React.createElement("button", {
       className: 'pp-block-btn' + (nBlocked > 0 ? ' on' : '') + (isOpen ? ' open' : ''),
       onClick: () => setOpenLink(isOpen ? null : other),
       title: I18N.t("R\xE9gler l'export par ressource vers l'\xEEle ") + other
-    }, (isOpen ? "▾ " : "▸ ") + "Export → \xCEle " + other + (nBlocked > 0 ? " — " + nBlocked + " interdite" + (nBlocked > 1 ? "s" : "") : " — tout autoris\xE9")), isOpen && React.createElement("div", {
+    }, (isOpen ? "▾ " : "▸ ") + I18N.t("Export → \xCEle ") + other + (nBlocked > 0 ? " — " + nBlocked + " interdite" + (nBlocked > 1 ? "s" : "") : I18N.t(" — tout autoris\xE9"))), isOpen && React.createElement("div", {
       className: "pp-block-grid"
     }, visiblePriority.map(res => {
       const off = !!blockedRes[res];
@@ -22749,12 +22775,12 @@ function PortPanel({
       return React.createElement("span", {
         className: "pp-cargo-item pp-cargo-out",
         key: res,
-        title: I18N.t("Transit : ") + fmtPort(rate) + I18N.t("/s de ") + (RES_SHORT[res] || res) + " \u2192 \u00cele " + other
+        title: I18N.t("Transit : ") + fmtPort(rate) + I18N.t("/s de ") + (RES_SHORT[res] || res) + I18N.t(" \u2192 \u00cele ") + other
       }, idata ? React.createElement("img", {
         className: "pp-cargo-ico",
         src: idata,
         alt: ""
-      }) : cargoSprite(), " ", RES_SHORT[res] || res, " ", fmtPort(rate), "/s \u2192 \xCEle ", other);
+      }) : cargoSprite(), " ", RES_SHORT[res] || res, " ", fmtPort(rate), I18N.t("/s \u2192 \xCEle "), other);
     })), inFlow.length > 0 && React.createElement("div", {
       className: "pp-cargo"
     }, inFlow.map(res => {
@@ -22764,12 +22790,12 @@ function PortPanel({
       return React.createElement("span", {
         className: "pp-cargo-item pp-cargo-in",
         key: 'in-' + res,
-        title: "Re\xe7u : " + fmtPort(rate) + I18N.t("/s de ") + (RES_SHORT[res] || res) + " \u2190 \xCEle " + other
+        title: I18N.t("Re\xe7u : ") + fmtPort(rate) + I18N.t("/s de ") + (RES_SHORT[res] || res) + I18N.t(" \u2190 \xCEle ") + other
       }, idata ? React.createElement("img", {
         className: "pp-cargo-ico",
         src: idata,
         alt: ""
-      }) : cargoSprite(), " ", RES_SHORT[res] || res, " ", fmtPort(rate), "/s \u2190 \xCEle ", other);
+      }) : cargoSprite(), " ", RES_SHORT[res] || res, " ", fmtPort(rate), I18N.t("/s \u2190 \xCEle "), other);
     })));
   }), React.createElement("div", {
     className: "pp-section-label"
@@ -22945,7 +22971,7 @@ function EnergyPanel({
     className: "rp-head"
   }, React.createElement("span", {
     className: "rp-title"
-  }, "\u26A1 \xC9nergie \u2014 \xCEle ", currentIsland), React.createElement("button", {
+  }, I18N.t("\u26A1 \xC9nergie \u2014 \xCEle "), currentIsland), React.createElement("button", {
     className: "rp-close",
     onClick: onClose,
     title: I18N.t("Fermer")
@@ -22953,7 +22979,7 @@ function EnergyPanel({
     className: "rp-list"
   }, React.createElement("div", {
     className: "pp-note"
-  }, "⚡ L'\xE9lectricit\xE9 circule par r\xE9seau de c\xE2bles : chaque r\xE9seau c\xE2ble est un sous-r\xE9seau \xE9lectrique distinct (les g\xE9n\xE9rateurs, consommateurs et accumulateurs qu'il relie se partagent l'\xE9nergie). Le d\xE9bit du c\xE2ble (V1, V2…) borne la puissance transmissible : montez-le si un r\xE9seau sature. Les totaux ci-dessous additionnent tous les r\xE9seaux de l'\xEEle."), React.createElement("div", {
+  }, I18N.t("⚡ L'\xE9lectricit\xE9 circule par r\xE9seau de c\xE2bles : chaque r\xE9seau c\xE2ble est un sous-r\xE9seau \xE9lectrique distinct (les g\xE9n\xE9rateurs, consommateurs et accumulateurs qu'il relie se partagent l'\xE9nergie). Le d\xE9bit du c\xE2ble (V1, V2…) borne la puissance transmissible : montez-le si un r\xE9seau sature. Les totaux ci-dessous additionnent tous les r\xE9seaux de l'\xEEle.")), React.createElement("div", {
     className: "ep-stats"
   }, statRow(I18N.t("Production (g\xE9n\xE9rateurs)"), fmtPower(gross)), battery > 0.5 && statRow(I18N.t("Batterie (d\xE9charge)"), "+" + fmtPower(battery), "var(--green)"), statRow(I18N.t("Demande totale"), fmtPower(dem)), showRange && statRow(I18N.t("Consommation min → max"), fmtPower(demMin) + " → " + fmtPower(demMax), '#8fd0ff'), showSpread && statRow(I18N.t("Amplitude (sigmo\xEFdes)"), fmtPower(demSpread), '#8fd0ff'), cut > 0.5 && statRow(I18N.t("Demande non servie"), "-" + fmtPower(cut), '#ff8079'), statRow(I18N.t("Bilan r\xE9el"), (netE >= 0 ? '+' : '') + fmtPower(netE), netE < -1e-6 ? '#ff8079' : 'var(--green)'), showSpread && (() => {
     // 14.6x - DIMENSIONNEMENT, trois etats. Le vert/rouge d'avant ne montrait qu'une borne :
@@ -23378,7 +23404,7 @@ function NetworkPanel({
     className: "ip-row capped"
   }, React.createElement("span", {
     className: "lbl"
-  }, "Satur\xE9 ⚠"), React.createElement("span", {
+  }, I18N.t("Satur\xE9 ⚠")), React.createElement("span", {
     className: "val io",
     style: {
       color: '#ff8079'
@@ -23413,14 +23439,14 @@ function NetworkPanel({
       fontSize: '11px',
       padding: '2px 0'
     }
-  }, "⚡ Production suffisante mais c\xE2ble satur\xE9 : am\xE9liorez le d\xE9bit pour tout transmettre."), isWire && prodDeficit && React.createElement("div", {
+  }, I18N.t("⚡ Production suffisante mais c\xE2ble satur\xE9 : am\xE9liorez le d\xE9bit pour tout transmettre.")), isWire && prodDeficit && React.createElement("div", {
     className: "ip-note",
     style: {
       color: '#ff8079',
       fontSize: '11px',
       padding: '2px 0'
     }
-  },iconLabel( "⚡ Production insuffisante sur ce r\xE9seau c\xE2ble.")), prodEntries.length > 0 && React.createElement("div", {
+  },iconLabel( I18N.t("⚡ Production insuffisante sur ce r\xE9seau c\xE2ble."))), prodEntries.length > 0 && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -23438,14 +23464,14 @@ function NetworkPanel({
     className: "lbl"
   }, I18N.t("R\xE9serve")), React.createElement("span", {
     className: "val io",
-    title: "Stock liquide accumul\xE9 dans la citerne du r\xE9seau tuyau (p\xE9trole, eau, acide…). N'appara\xEEt pas dans l'inventaire du port."
+    title: I18N.t("Stock liquide accumul\xE9 dans la citerne du r\xE9seau tuyau (p\xE9trole, eau, acide…). N'appara\xEEt pas dans l'inventaire du port.")
   }, fmtPool(poolEntries))), !isWire && !isConduit && !prodEntries.length && !consEntries.length && !poolEntries.length && React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
   }, I18N.t("Transit")), React.createElement("span", {
     className: "val"
-  }, "aucun")), React.createElement("div", {
+  }, I18N.t("aucun"))), React.createElement("div", {
     className: "ip-row"
   }, React.createElement("span", {
     className: "lbl"
@@ -24067,7 +24093,7 @@ function SlotPanel({
       color: 'var(--ink-dim)',
       marginBottom: '8px'
     }
-  },iconLabel( copied ? "✓ Copi\xE9 dans le presse-papier. Conserve-le pour le r\xE9importer." : I18N.t("S\xE9lectionne et copie ce texte, garde-le en lieu s\xFBr."))), React.createElement("textarea", {
+  },iconLabel( copied ? I18N.t("✓ Copi\xE9 dans le presse-papier. Conserve-le pour le r\xE9importer.") : I18N.t("S\xE9lectionne et copie ce texte, garde-le en lieu s\xFBr."))), React.createElement("textarea", {
     readOnly: true,
     value: exportText,
     onFocus: e => e.target.select(),
@@ -24423,9 +24449,9 @@ function OptionsModal({
     className: "opt-lbl"
   }, React.createElement("span", {
     className: "opt-name"
-  }, "Fond des panneaux"), React.createElement("span", {
+  }, I18N.t("Fond des panneaux")), React.createElement("span", {
     className: "opt-desc"
-  }, "Bleu (par d\xE9faut) ou inox (m\xE9tal / t\xF4le larm\xE9e)")), React.createElement("div", {
+  }, I18N.t("Bleu (par d\xE9faut) ou inox (m\xE9tal / t\xF4le larm\xE9e)"))), React.createElement("div", {
     className: "opt-theme-sel"
   }, React.createElement("button", {
     className: 'opt-theme-btn' + (theme !== 'inox' ? ' on' : ''),
@@ -24699,7 +24725,7 @@ function OfflineModal({
     className: "offline-body"
   }, React.createElement("div", {
     className: "offline-sub"
-  }, I18N.t("Absence : "), React.createElement("b", null, report.timeLabel), gains.length ? " — production r\xE9cup\xE9r\xE9e :" : " — rien \xE0 produire."),
+  }, I18N.t("Absence : "), React.createElement("b", null, report.timeLabel), gains.length ? I18N.t(" — production r\xE9cup\xE9r\xE9e :") : I18N.t(" — rien \xE0 produire.")),
   // 14.17 — On nomme le mode de calcul quand il n'est PAS la simulation complète : extrapolation
   // (option « calcul simplifié » ou filet anti-gel) ou rattrapage interrompu par « Passer ».
   report.capped && React.createElement("div", {
@@ -27015,7 +27041,7 @@ function App() {
     const v = Math.max(0, Math.floor(value || 0));
     if (v > 0) m[res] = v;else delete m[res];
     if (g.stockAlertState && g.stockAlertState[islandId]) delete g.stockAlertState[islandId][res];
-    if (v > 0) showToast(`⚠️ Alerte réglée : ${islandLabel(islandId)} ${RES_SHORT[res] || res} < ${fmtInt(v)}`, 'var(--ink-dim)');else showToast(`Alerte retirée : ${RES_SHORT[res] || res}`, 'var(--ink-dim)');
+    if (v > 0) showToast(`${I18N.t("⚠️ Alerte réglée : ")}${islandLabel(islandId)} ${RES_SHORT[res] || res} < ${fmtInt(v)}`, 'var(--ink-dim)');else showToast(`${I18N.t("Alerte retirée : ")}${RES_SHORT[res] || res}`, 'var(--ink-dim)');
     bumpHud();
     scheduleSave();
   }
@@ -27484,11 +27510,11 @@ function App() {
     const multi = h > 1 || w > 1;
     if (multi) {
       if (!footprintFree(r, c, id)) {
-        if (verbose) { showToast(`❌ ${b.name} : besoin de ${h}×${w} tuiles libres (même terrain)`, 'var(--red)'); SFX.play('invalid'); }
+        if (verbose) { showToast(`❌ ${b.name} : besoin de ${h}×${w}${I18N.t(" tuiles libres (même terrain)")}`, 'var(--red)'); SFX.play('invalid'); }
         return false;
       }
     } else if (!b.terrains.includes(t.terrain)) {
-      if (verbose) { showToast(`❌ ${b.name} : terrain non autorisé`, 'var(--red)'); SFX.play('invalid'); }
+      if (verbose) { showToast(`❌ ${b.name}${I18N.t(" : terrain non autorisé")}`, 'var(--red)'); SFX.play('invalid'); }
       return false;
     }
     // Pose autorisée sans route adjacente (cf. canPlace) : le bâtiment se posera
@@ -27503,7 +27529,7 @@ function App() {
       let famCount = 0;
       for (const fid of tierFamily(id)) famCount += countBuildingsOnIsland(g, g.currentIsland, fid);
       if (famCount >= b.maxPerIsland) {
-        if (verbose) { showToast(`❌ ${b.name} : une seule par île`, 'var(--red)'); SFX.play('invalid'); }
+        if (verbose) { showToast(`❌ ${b.name}${I18N.t(" : une seule par île")}`, 'var(--red)'); SFX.play('invalid'); }
         return false;
       }
     }
@@ -27684,7 +27710,7 @@ function App() {
     }
     const b = BUILDINGS[t.building.id];
     if (b.fixed || t.building.fixed) {
-      if (verbose) showToast(`🔒 ${b.name} non démolissable`, 'var(--orange)');
+      if (verbose) showToast(`🔒 ${b.name}${I18N.t(" non démolissable")}`, 'var(--orange)');
       return false;
     }
     // 15.x — UN BÂTIMENT EN SURCHAUFFE NE SE DÉMOLIT PAS À CHAUD. La réparation coûte 20 % du coût
@@ -27762,8 +27788,8 @@ function App() {
     // 15.x — La cause est NOMMÉE : sans ce libellé, un joueur qui démolit un bâtiment endommagé voit
     // revenir moins de matière que d'habitude sans savoir pourquoi, et lit un bug là où il y a une règle.
     if (verbose) showToast(dmgCut
-      ? `♻ ${b.name} démoli — remboursé à ${Math.round((1 - HEAT_REPAIR_FRAC) * 100)} % (surchauffe)`
-      : `♻ ${b.name} démoli — remboursé`, 'var(--green)');
+      ? `♻ ${b.name}${I18N.t(" démoli — remboursé à ")}${Math.round((1 - HEAT_REPAIR_FRAC) * 100)} % (surchauffe)`
+      : `♻ ${b.name}${I18N.t(" démoli — remboursé")}`, 'var(--green)');
     setInfo(prev => prev && prev.r === r && prev.c === c ? null : prev);
     setUpgrade(prev => prev && prev.r === r && prev.c === c ? null : prev);
     return true;
@@ -27931,7 +27957,7 @@ function App() {
       targets.push(tiles[rr][cc]);
     }
     if (!targets.length) {
-      showToast(`Tous les ${b.name} sont déjà au Nv.${target + 1}`, 'var(--ink-dim)');
+      showToast(`${I18N.t("Tous les ")}${b.name}${I18N.t(" sont déjà au Nv.")}${target + 1}`, 'var(--ink-dim)');
       return false;
     }
     if (!gameRef.current.ui.dev) {
@@ -27959,7 +27985,7 @@ function App() {
     markDirty();
     scheduleSave();
     SFX.play('upgrade');
-    showToast(staged ? `🚧 ${targets.length} × ${b.name} → Nv.${target + 1} — ${I18N.t("la matière descend par l'élévateur")}` : `⬆ ${targets.length} × ${b.name} alignés au Nv.${target + 1}`, staged ? 'var(--orange)' : 'var(--green)');
+    showToast(staged ? `🚧 ${targets.length} × ${b.name} → Nv.${target + 1} — ${I18N.t("la matière descend par l'élévateur")}` : `⬆ ${targets.length} × ${b.name}${I18N.t(" alignés au Nv.")}${target + 1}`, staged ? 'var(--orange)' : 'var(--green)');
     return true;
   }
   function tryDowngrade(r, c) {
@@ -28642,7 +28668,7 @@ function App() {
       return (a === islandId || b === islandId) && linkActive(g, key);
     });
     if (!hasLink) {
-      showToast('🔒 Aucune liaison active — réparez d\'abord l\'île voisine', 'var(--orange)');
+      showToast(I18N.t('🔒 Aucune liaison active — réparez d\'abord l\'île voisine'), 'var(--orange)');
       return;
     }
     // 13.72 : l'amélioration du port de l'île N exige que la PROCHAINE île (N+1) soit
@@ -31103,7 +31129,7 @@ function App() {
         } else {
           gameRef.current.ui.tool = cid;
           setToolState(cid);
-          showToast(`📋 Copié : ${cb.name} — touchez pour placer`, 'var(--green)');
+          showToast(`${I18N.t("📋 Copié : ")}${cb.name}${I18N.t(" — touchez pour placer")}`, 'var(--green)');
         }
       } else {
         showToast(I18N.t('Ce bâtiment ne peut pas être copié'), 'var(--orange)');
@@ -31365,7 +31391,7 @@ function App() {
           const id = g.researchReady.shift();
           const def = TECH_BY_ID[id];
           if (def) {
-            showToast(`🔬 Recherche prête : ${def.name} — à valider`, 'var(--yellow)');
+            showToast(`${I18N.t("🔬 Recherche prête : ")}${def.name}${I18N.t(" — à valider")}`, 'var(--yellow)');
             setResearchPending(true);
           }
         }
@@ -31397,7 +31423,7 @@ function App() {
         }
         if (g.nucNotify && g.nucNotify.length) {
           const isl = g.nucNotify.shift();
-          showToast(`☢️ Centrale ${islandLabel(isl)} en SÉCURITÉ — manque de refroidissement (redémarrage auto dans 5 min)`, 'var(--red)');
+          showToast(`☢️ Centrale ${islandLabel(isl)}${I18N.t(" en SÉCURITÉ — manque de refroidissement (redémarrage auto dans 5 min)")}`, 'var(--red)');
           g.nucNotify.length = 0;
           SFX.playThrottled('nucSafety', 8000);
         }
@@ -31457,7 +31483,7 @@ function App() {
         if (g.heatTrip && g.heatTrip.length) {
           const ev = g.heatTrip.shift();
           const nm = BUILDINGS[ev.id] && BUILDINGS[ev.id].name || ev.id;
-          showToast(`🔥 ${nm} (${islandLabel(ev.isl)}) en SURCHAUFFE — arrêt 5 min`, 'var(--red)');
+          showToast(`🔥 ${nm} (${islandLabel(ev.isl)}${I18N.t(") en SURCHAUFFE — arrêt 5 min")}`, 'var(--red)');
           SFX.playThrottled('heatTrip', 4000);
         }
         // Accumulation de chaleur : refroidissement insuffisant → alerte AVANT la panne
@@ -31465,14 +31491,14 @@ function App() {
         if (g.heatWarn && g.heatWarn.length) {
           const ev = g.heatWarn.shift();
           const nm = BUILDINGS[ev.id] && BUILDINGS[ev.id].name || ev.id;
-          showToast(`🔥 ${nm} (${islandLabel(ev.isl)}) accumule de la chaleur — surchauffe dans ~${ev.secs} s si rien ne change`, 'var(--orange)');
+          showToast(`🔥 ${nm} (${islandLabel(ev.isl)}${I18N.t(") accumule de la chaleur — surchauffe dans ~")}${ev.secs} s si rien ne change`, 'var(--orange)');
           SFX.playThrottled('heatWarn', 8000);
         }
         // Réparation possible : 20 % du coût total cumulé.
         if (g.heatRepairReady && g.heatRepairReady.length) {
           const ev = g.heatRepairReady.shift();
           const nm = BUILDINGS[ev.id] && BUILDINGS[ev.id].name || ev.id;
-          showToast(`🔧 ${nm} (${islandLabel(ev.isl)}) réparable : 20 % du coût total`, 'var(--orange)');
+          showToast(`🔧 ${nm} (${islandLabel(ev.isl)}${I18N.t(") réparable : 20 % du coût total")}`, 'var(--orange)');
         }
         g.playTicks = (g.playTicks || 0) + 1;
         g.tickAcc -= 1;
@@ -31653,13 +31679,13 @@ function App() {
       if (netOpen) return I18N.t('Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer');
       return I18N.t('Mode sélection — glissez pour naviguer, touchez un bâtiment pour ses infos');
     }
-    if (tool === DEMOLISH) return React.createElement("span", null, React.createElement("b", null, I18N.t("D\xE9molir")), " \u2014 touchez un b\xE2timent (remb. 100%, un par clic) \xB7 glissez pour naviguer");
-    if (tool === UPGRADE) return React.createElement("span", null, React.createElement("b", null, I18N.t("Am\xE9liorer")), " \u2014 touchez un b\xE2timent de production");
-    if (tool === COPY) return React.createElement("span", null, React.createElement("b", null, I18N.t("Copier")), " \u2014 touchez un b\xE2timent pour le s\xE9lectionner");
+    if (tool === DEMOLISH) return React.createElement("span", null, React.createElement("b", null, I18N.t("D\xE9molir")), I18N.t(" \u2014 touchez un b\xE2timent (remb. 100%, un par clic) \xB7 glissez pour naviguer"));
+    if (tool === UPGRADE) return React.createElement("span", null, React.createElement("b", null, I18N.t("Am\xE9liorer")), I18N.t(" \u2014 touchez un b\xE2timent de production"));
+    if (tool === COPY) return React.createElement("span", null, React.createElement("b", null, I18N.t("Copier")), I18N.t(" \u2014 touchez un b\xE2timent pour le s\xE9lectionner"));
     const b = BUILDINGS[tool];
-    if (b.kind === 'infra') return React.createElement("span", null, React.createElement("b", null, b.name), " \u2014 glissez pour tracer");
-    if (b.kind === 'junction') return React.createElement("span", null, React.createElement("b", null, b.name), " \u2014 touchez entre les deux réseaux (niveaux indépendants)");
-    return React.createElement("span", null, React.createElement("b", null, b.name), " \u2014 touchez une tuile valide");
+    if (b.kind === 'infra') return React.createElement("span", null, React.createElement("b", null, b.name), I18N.t(" \u2014 glissez pour tracer"));
+    if (b.kind === 'junction') return React.createElement("span", null, React.createElement("b", null, b.name), I18N.t(" \u2014 touchez entre les deux réseaux (niveaux indépendants)"));
+    return React.createElement("span", null, React.createElement("b", null, b.name), I18N.t(" \u2014 touchez une tuile valide"));
   }
   function saturationLabel() {
     const TYPE_NAME = {

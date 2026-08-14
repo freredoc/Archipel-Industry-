@@ -1,8 +1,8 @@
 {
-  "build": 405,
-  "version": "Alpha 17.2",
+  "build": 406,
+  "version": "Alpha 17.3",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Traductions : 61 batiments et 16 ressources restaient en francais en anglais, espagnol et allemand - presque tout le milieu et la fin de partie (paliers V2 a V4, couche logique, souterrain, quantique, fours a arc). Ils sont desormais traduits, tout comme les petits compteurs du bandeau du tutoriel et quatre messages d'etat du Data Center. Au passage, un defaut est repare : le code court dessine sur la tuile de ces batiments avait disparu, y compris en francais ; il est de retour."
+  "notes": "Traductions, suite : 74 textes de l'interface etaient ecrits en dur dans le code et ne pouvaient donc pas etre traduits, quelle que soit la langue choisie - messages de demolition, de copie et d'alerte, panneaux Port, Reseau, Recherche, Energie, Options et le recapitulatif hors-ligne. Quarante d'entre eux s'affichent des maintenant dans votre langue ; les autres suivront au prochain lot. En francais, rien ne change : l'affichage est identique, mot pour mot."
 }
