@@ -1,8 +1,8 @@
 {
-  "build": 401,
-  "version": "Alpha 16.8",
+  "build": 402,
+  "version": "Alpha 16.9",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Correctif d'affichage : la carte de l'archipel avait disparu du panneau Carte en fin de partie. Passé un certain nombre de liaisons actives, la liste des flux prenait toute la place et la carte se retrouvait écrasée à deux pixels de haut, si bien qu'on ne voyait plus que la liste. Elle reprend sa taille normale et le panneau défile comme avant. Rien d'autre ne change."
+  "notes": "Le tutoriel ne se termine plus sur un objectif absurde : il ne demande plus d'aller visiter l'île 2 à un joueur qui en revient. Un message de fin s'affiche désormais dans une astuce, qui attend d'être lue au lieu de disparaître en deux secondes. Sur petit écran, les deux compteurs de la bannière s'empilent au lieu d'être coupés."
 }
