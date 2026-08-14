@@ -3298,6 +3298,10 @@ for(var code in G){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; va
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.91 recherche par livraison */ var ADD={"en": {"\xC0 livrer depuis l'": "To deliver from "}, "es": {"\xC0 livrer depuis l'": "A entregar desde la "}, "de": {"\xC0 livrer depuis l'": "Zu liefern von "}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.93 ticks du rattrapage hors-ligne */ var ADD={"en": {"ticks": "ticks", "ticks simul\xE9s": "ticks simulated", "extrapol\xE9s": "extrapolated"}, "es": {"ticks": "ticks", "ticks simul\xE9s": "ticks simulados", "extrapol\xE9s": "extrapolados"}, "de": {"ticks": "Ticks", "ticks simul\xE9s": "Ticks simuliert", "extrapol\xE9s": "extrapoliert"}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 16.6 lot 4b */ var ADD={"en": {"Voir sur la carte": "See on the map", "Pay\xE9 par le port de ": "Paid from the port of ", "R\xE9paration \xCEle ": "Repair Island ", " \u2014 recherche d'acc\xE8s non atteinte": " \u2014 access research not reached", "Ouvre la Carte : touche l'\xEEle \xE0 ouvrir pour voir ce qu'il faut livrer.": "Open the Map: tap the island to open to see what must be delivered."}, "es": {"Voir sur la carte": "Ver en el mapa", "Pay\xE9 par le port de ": "Pagado por el puerto de ", "R\xE9paration \xCEle ": "Reparaci\xF3n Isla ", " \u2014 recherche d'acc\xE8s non atteinte": " \u2014 investigaci\xF3n de acceso no alcanzada", "Ouvre la Carte : touche l'\xEEle \xE0 ouvrir pour voir ce qu'il faut livrer.": "Abre el Mapa: toca la isla a abrir para ver qu\xE9 hay que entregar."}, "de": {"Voir sur la carte": "Auf der Karte ansehen", "Pay\xE9 par le port de ": "Bezahlt vom Hafen von ", "R\xE9paration \xCEle ": "Reparatur Insel ", " \u2014 recherche d'acc\xE8s non atteinte": " \u2014 Zugangsforschung nicht erreicht", "Ouvre la Carte : touche l'\xEEle \xE0 ouvrir pour voir ce qu'il faut livrer.": "\xD6ffne die Karte: tippe die zu \xF6ffnende Insel an, um zu sehen, was zu liefern ist."}}; for (var lg in ADD) { if (!I18N.locales[lg]) continue; if (!I18N.locales[lg].ui) I18N.locales[lg].ui = {}; for (var k in ADD[lg]) if (!I18N.locales[lg].ui[k]) I18N.locales[lg].ui[k] = ADD[lg][k]; } })();
+
+(function(){ if(!window.I18N||!I18N.locales) return; /* 16.10 lot I1 (chaine sentinelle d'idempotence de patch_lotI1.py, NE PAS LA REECRIRE ; le lot est
+   LIVRE en Alpha 17.1 / build 404 : la base avait avance de 402 a 403 entre la redaction du brief et
+   l'execution) : puces de progression du bandeau tutoriel + etats du Data Center non couverts */ var ADD={"en": {"Mines":"Mines","Reli\u00E9e":"Connected","Carri\u00E8res reli\u00E9es":"Quarries connected","Carri\u00E8res":"Quarries","Au niveau 2":"At level 2","Reli\u00E9es":"Connected","Pos\u00E9e":"Placed","Pos\u00E9":"Placed","Reli\u00E9":"Connected","Lingots/s":"Ingots/s","Ciments/s":"Cement/s","Lingots au port":"Ingots at port","Ciments au port":"Cement at port","Cible charbon":"Coal target","Data Center EN PAUSE":"Data Center PAUSED","Data Center coup\u00E9 par un actionneur":"Data Center switched off by an actuator","Data Center endommag\u00E9":"Data Center damaged","Data Center \u00E0 l'arr\u00EAt (intrants ou courant)":"Data Center stopped (inputs or power)"},"es": {"Mines":"Minas","Reli\u00E9e":"Conectada","Carri\u00E8res reli\u00E9es":"Canteras conectadas","Carri\u00E8res":"Canteras","Au niveau 2":"En nivel 2","Reli\u00E9es":"Conectadas","Pos\u00E9e":"Colocada","Pos\u00E9":"Colocado","Reli\u00E9":"Conectado","Lingots/s":"Lingotes/s","Ciments/s":"Cemento/s","Lingots au port":"Lingotes en el puerto","Ciments au port":"Cemento en el puerto","Cible charbon":"Objetivo carb\u00F3n","Data Center EN PAUSE":"Data Center EN PAUSA","Data Center coup\u00E9 par un actionneur":"Data Center apagado por un actuador","Data Center endommag\u00E9":"Data Center da\u00F1ado","Data Center \u00E0 l'arr\u00EAt (intrants ou courant)":"Data Center detenido (entradas o corriente)"},"de": {"Mines":"Minen","Reli\u00E9e":"Verbunden","Carri\u00E8res reli\u00E9es":"Steinbr\u00FCche verbunden","Carri\u00E8res":"Steinbr\u00FCche","Au niveau 2":"Auf Stufe 2","Reli\u00E9es":"Verbunden","Pos\u00E9e":"Platziert","Pos\u00E9":"Platziert","Reli\u00E9":"Verbunden","Lingots/s":"Barren/s","Ciments/s":"Zement/s","Lingots au port":"Barren im Hafen","Ciments au port":"Zement im Hafen","Cible charbon":"Kohle-Ziel","Data Center EN PAUSE":"Data Center PAUSIERT","Data Center coup\u00E9 par un actionneur":"Data Center durch Aktor abgeschaltet","Data Center endommag\u00E9":"Data Center besch\u00E4digt","Data Center \u00E0 l'arr\u00EAt (intrants ou courant)":"Data Center gestoppt (Eing\u00E4nge oder Strom)"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 </script>
 <script>
 const {
@@ -9291,8 +9295,28 @@ const SAVE_VERSION = 31;
 // comportement. `help-btn` était un NOM DE RÔLE, pas un jeu de paddings.
 // Test T9 ajouté : 7 états × 4 langues × écran étroit et large, plus une CONTRE-ÉPREUVE jouée
 // sur le build non patché, qui rend bien les trois largeurs 50 / 106,3 / 130,3.
-const GAME_BUILD = 403;
-const GAME_VERSION = 'Alpha 17.0';
+// 17.1 — LOT I1 (chantier i18n, 1er des 6 lots). 18 clés `ui` × 3 langues, AUCUNE ligne de rendu
+// touchée : les deux sites enveloppaient déjà correctement (`TutorialBanner` fait `I18N.t(c[0])`,
+// les 2 sites du Data Center font `I18N.t(DC_STATE_LABEL[st] || st)`) — seules les CLÉS manquaient.
+// (1) Les **14 libellés de puces** du bandeau tutoriel (Mines, Reliée, Lingots au port, Cible
+// charbon…) : un joueur non francophone lisait l'objectif dans sa langue et le compteur en
+// français, une ligne plus bas. (2) **4 états sur 8 de `DC_STATE_LABEL`** (EN PAUSE, coupé par un
+// actionneur, endommagé, à l'arrêt) — la table a été traduite au 14.24, ces états sont arrivés après.
+// ⚠ LE COMPTE SE FAIT AU RUNTIME, PAS À LA REGEX : `step.progress(game)` sur les 14 étapes rend
+// **14** libellés distincts ; une regex n'en trouve que 11, et un AST des tableaux littéraux en
+// rend 15 (`mine_fer`, argument de `tutCount`, est un faux positif que le runtime ne produit jamais).
+// ⚠ NE JAMAIS ASSERTER `t(k) !== k` POUR JUGER QU'UNE CLÉ EST TRADUITE : « Mines » se traduit
+// « Mines » en anglais. On asserte la PRÉSENCE de la clé (`hasOwnProperty`).
+// ⚠ Une ancre TEXTUELLE n'est pas une VALEUR : `starved` s'écrit `'…à l\'arrêt…'` dans la source,
+// donc introuvable au grep, alors que la clé existe bel et bien. Extraire du runtime.
+// ⚠ `fr` n'est PAS écrite : la clé EST le texte source, `I18N.t` y retombe par repli.
+// HORS PÉRIMÈTRE, signalé non tranché : la terminologie « Data Center » était DÉJÀ incohérente
+// avant ce lot (3 formes en es, 2 en de) ; I1 s'aligne sur la sœur la plus proche sans réécrire
+// l'existant. Et le tutoriel reste indexé PAR POSITION (`applyToData` écrit `TUTORIAL_STEPS[i].goal`
+// depuis `tutorial[String(i)]`) : toute étape insérée AU MILIEU décalerait silencieusement les
+// 4 langues — parade procédurale en attendant, revérifier les goals × 4 langues après tout ajout.
+const GAME_BUILD = 404;
+const GAME_VERSION = 'Alpha 17.1';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9301,7 +9325,7 @@ const GAME_VERSION = 'Alpha 17.0';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Correctif d'affichage : le bouton Carte changeait de taille tout seul, en particulier pendant le tutoriel, selon qu'une reparation etait payable ou non. Il garde desormais la meme largeur en toutes circonstances. Au passage, son petit repere de reparation est maintenant visible des qu'une liaison est a ouvrir, alors qu'il n'apparaissait qu'une fois les ressources reunies, et le mot Carte ne disparait plus sur la derniere ile.";
+const GAME_NOTES = "Traductions : les petits compteurs du bandeau du tutoriel restaient en francais dans les trois autres langues, juste sous un objectif deja traduit. Les 14 libelles concernes (Mines, Reliee, Lingots au port, Cible charbon...) sont desormais traduits en anglais, espagnol et allemand, ainsi que quatre messages d'etat du Data Center qui etaient restes en francais.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
