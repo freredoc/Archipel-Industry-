@@ -497,9 +497,14 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
    prend le bouton Carte. Seuil MESURÉ : le libellé fait 127 px en fr/en mais 137 px en
    es/de ; sans compaction la bande déborde jusqu'à 465 px (fr) et 475 px (es/de).
    ⚠ `nth-child(2)` et non `last-child` : la pastille de mise à jour est le 3e enfant,
-   `last-child` la ferait disparaître avec le libellé. */
+   `last-child` la ferait disparaître avec le libellé.
+   ⚠ `.map-btn` EST EXEMPTÉ, au même titre que `.help-btn` : cette compaction existe
+   justement POUR laisser la place au bouton Carte — lui retirer son libellé retournerait
+   la règle contre son propre but. Il l'était déjà de fait, mais par accident : il portait
+   `help-btn`, ce qui l'exemptait ici et lui faisait perdre son DERNIER span ailleurs
+   (libellé ou badge selon l'état) — d'où les trois largeurs mesurées 50/106,3/130,3 px. */
 @media (max-width:479px){
-  .hud-main .options-btn:not(.help-btn) > span:nth-child(2){display:none;}
+  .hud-main .options-btn:not(.help-btn):not(.map-btn) > span:nth-child(2){display:none;}
 }
 /* Révélation de l'île 6 (14.4x) — jouée UNE FOIS, à la première ouverture de la carte
    après le déblocage. Séquence : la brume se lève (0 → 1,4 s), l'île émerge (0,5 → 1,5 s),
@@ -539,6 +544,18 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
    .notif-dot n'a besoin d'AUCUN CSS neuf — elle est deja position:static;margin-left:2px,
    exactement comme celle du bouton Options, qui est le precedent direct. */
 .map-repair-flag{margin-left:3px;display:inline-flex;align-items:center;}
+/* ⚠ EMPLACEMENT TOUJOURS RESERVE. Le badge est rendu meme quand il n'y a rien a reparer,
+   simplement masque : sans cela le bouton CHANGE DE LARGEUR a chaque fois que la reparation
+   devient payable ou cesse de l'etre — pendant le tutoriel, le stock franchit le seuil sans
+   arret et le bouton bat entre deux tailles. Un `min-width` en px ne suffirait pas : le
+   libelle fait « Carte » / « Map » / « Mapa » / « Karte », de largeurs differentes. */
+.map-repair-flag.off{visibility:hidden;}
+/* ⚠ CLASSE DEDIEE, SURTOUT PAS `help-btn`. `.help-btn` ne signifie pas « meme geometrie »
+   mais « ICONE SEULE » : sa regle `.help-btn > span:last-child{display:none}` masque le
+   DERNIER span. Sur le bouton Carte, lequel c'est depend de l'etat — le libelle, le badge,
+   ou rien — d'ou trois largeurs mesurees (50 / 106,3 / 130,3 px). */
+.map-btn{margin-left:4px;padding:5px 9px;}
+.map-btn .gear{font-weight:800;font-size:1.05rem;}
 .options-btn.has-repair{border-color:var(--yellow);}
 /* Vue « Transit archipel » : flux groupés par direction src→dest. */
 .pp-arch-link{border:1px solid var(--line);border-radius:7px;padding:7px 9px;margin-bottom:6px;background:var(--panel-2);}
@@ -9250,8 +9267,32 @@ const SAVE_VERSION = 31;
 // (3) Sous 480 px les 2 compteurs de la banniere debordaient et le second etait coupe en
 // plein milieu : ils passent EN COLONNE (ils sont `flex-shrink:0`, les empiler est la seule
 // issue). `SAVE_VERSION` INCHANGE (31).
-const GAME_BUILD = 402;
-const GAME_VERSION = 'Alpha 16.9';
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// 17.0 (build 403) — CORRECTIF : LE BOUTON CARTE CHANGEAIT DE LARGEUR PENDANT LE TUTORIEL.
+// Signalé par le joueur (Galaxy S25 FE) : « il se contracte ou redevient normal ».
+// CAUSE RACINE — le bouton portait la classe **`help-btn`**, reprise du bouton Aide au lot 2
+// pour sa géométrie. Or `help-btn` ne veut pas dire « même padding », il veut dire ICÔNE
+// SEULE : `.help-btn > span:last-child{display:none}` masque le DERNIER span. Sur le bouton
+// Carte, lequel c'est DÉPEND DE L'ÉTAT DE JEU :
+//   · aucune île suivante        → le dernier span est le LIBELLÉ  → « Carte » disparaît, 50 px
+//   · réparation non payable     → le dernier span est le BADGE 🛠 → badge invisible, 106,3 px
+//   · réparation payable         → le dernier est la pastille (absolute) → badge rendu, 130,3 px
+// Mesuré à 411 px CSS (S25 FE) : **50 / 106,3 / 130,3**. Pendant le tutoriel le stock franchit
+// sans cesse les 10 000 lingots + 10 000 ciments : `canRepair` bascule, le bouton bat.
+// ⚠ DEUX DÉFAUTS QUE CELUI-CI CACHAIT : le badge 🛠 fusionné au lot 4b n'était visible QUE
+// lorsque la réparation était déjà payable — invisible le reste du temps ; et sur la dernière
+// île le bouton perdait purement son libellé.
+// CORRECTIF : (1) classe dédiée **`.map-btn`** (même géométrie, sans la règle « icône seule ») ;
+// (2) l'emplacement du badge est TOUJOURS rendu, `visibility:hidden` quand il n'y a rien à
+// réparer — un `min-width` en px ne tiendrait pas, le libellé fait Carte/Map/Mapa/Karte ;
+// (3) `.map-btn` est exempté de la compaction `max-width:479px` au même titre que `.help-btn`,
+// puisque cette compaction existe JUSTEMENT pour laisser la place au bouton Carte.
+// ⚠ LEÇON, la même qu'au build 401 : une classe reprise « pour le style » emporte AUSSI son
+// comportement. `help-btn` était un NOM DE RÔLE, pas un jeu de paddings.
+// Test T9 ajouté : 7 états × 4 langues × écran étroit et large, plus une CONTRE-ÉPREUVE jouée
+// sur le build non patché, qui rend bien les trois largeurs 50 / 106,3 / 130,3.
+const GAME_BUILD = 403;
+const GAME_VERSION = 'Alpha 17.0';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9260,7 +9301,7 @@ const GAME_VERSION = 'Alpha 16.9';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Le tutoriel ne se termine plus sur un objectif absurde : il ne demande plus d'aller visiter l'île 2 à un joueur qui en revient. Un message de fin s'affiche désormais dans une astuce, qui attend d'être lue au lieu de disparaître en deux secondes. Sur petit écran, les deux compteurs de la bannière s'empilent au lieu d'être coupés.";
+const GAME_NOTES = "Correctif d'affichage : le bouton Carte changeait de taille tout seul, en particulier pendant le tutoriel, selon qu'une reparation etait payable ou non. Il garde desormais la meme largeur en toutes circonstances. Au passage, son petit repere de reparation est maintenant visible des qu'une liaison est a ouvrir, alors qu'il n'apparaissait qu'une fois les ressources reunies, et le mot Carte ne disparait plus sur la derniere ile.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -18930,7 +18971,7 @@ function Hud({
   }, React.createElement("span", {
     className: "gear"
   }, uiIcon('info', "?")), React.createElement("span", null, I18N.t("Aide"))), React.createElement("button", {
-    className: "options-btn help-btn" + (repairInfo ? ' has-repair' : ''),
+    className: "options-btn map-btn" + (repairInfo ? ' has-repair' : ''),
     onClick: onOpenMap,
     // Lot 4b — LE 🛠 EST FUSIONNE ICI. ⚠ `data-tut="repair"` MIGRE avec lui : il est lu par
     // l'etape « repare la liaison » du tutoriel de l'ile 1 ET par l'objectif de guide
@@ -18945,9 +18986,9 @@ function Hud({
   }, React.createElement("span", {
     className: "gear"
   }, uiIcon('carte', "\ud83d\uddfa")), React.createElement("span", null, I18N.t("Carte")),
-    repairInfo ? React.createElement("span", {
-      className: "map-repair-flag"
-    }, uiIcon('reparation', "\ud83d\udee0")) : null,
+    React.createElement("span", {
+      className: "map-repair-flag" + (repairInfo ? '' : ' off')
+    }, uiIcon('reparation', "\ud83d\udee0")),
     canRepair ? React.createElement("span", {
       className: "notif-dot"
     }) : null), React.createElement(IslandSelector, {
