@@ -1,8 +1,8 @@
 {
-  "build": 414,
-  "version": "Alpha 18.1",
+  "build": 416,
+  "version": "Alpha 18.3",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Traductions : la phrase affichee en tete de chaque astuce passe en anglais, espagnol et allemand. Les 52 astuces du jeu sont desormais entierement traduites, titre, phrase et texte long. En francais, rien ne change."
+  "notes": "Cinq derniers textes traduits : le mode « Surchauffe » d'un capteur, le titre du panneau d'aide, la mention « vide » de l'inventaire, un objectif de recherche et le bandeau du mode developpeur. Ils restaient en francais dans les trois autres langues. Rien ne change en francais."
 }
