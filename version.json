@@ -1,8 +1,8 @@
 {
-  "build": 416,
-  "version": "Alpha 18.3",
+  "build": 417,
+  "version": "Alpha 18.4",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Cinq derniers textes traduits : le mode « Surchauffe » d'un capteur, le titre du panneau d'aide, la mention « vide » de l'inventaire, un objectif de recherche et le bandeau du mode developpeur. Ils restaient en francais dans les trois autres langues. Rien ne change en francais."
+  "notes": "Une section « Soutenir le projet » facultative apparait desormais en bas des Options, juste au-dessus de la ligne Version. C'est un simple lien externe, sans aucune contrepartie en jeu : rien ne change dans la partie."
 }
