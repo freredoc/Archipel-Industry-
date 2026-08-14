@@ -19,7 +19,68 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 402`, `GAME_VERSION = 'Alpha 16.9'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 417`, `GAME_VERSION = 'Alpha 18.4'`, `SAVE_VERSION = 31`.**
+  Changement 18.4 (brief `BRIEFsupportselfupdate` + patcheur fourni **déjà exécuté**, 5 ancres) :
+  **`SUPPORT_URL` est renseigné (Ko-fi) et l'auto-updater passe derrière une garde de build
+  `SELF_UPDATE`** — préparation des paquets magasin. `SAVE_VERSION` INCHANGÉ, aucun champ persisté.
+  Base EXACTE (416 / 18.3 / `7ba46cf4…` / 3 682 587 o) ; **5/5 ancres à `count == 1`**, patcheur
+  **idempotent vérifié** (rejeu sur le fichier livré → « Déjà patché », SHA identique).
+  (1) ⚠ **LA SOURCE VERSIONNÉE EST L'ÉDITION HORS MAGASIN, LES PAQUETS MAGASIN EN SONT DES
+  DÉRIVÉS** — l'inverse serait plus coûteux : c'est elle qui alimente `index.html` (web/PWA) ET
+  les deux APK sideloadées. Le lien de soutien doit être **ABSENT** de l'artefact magasin, pas
+  masqué → la CI **VIDE** la ligne (`sed` sur la ligne EXACTE, motif `DEV_BUILD`).
+  ⚠ **Le nouveau commentaire de `SUPPORT_URL` n'écrit PAS le domaine en clair** : sinon la garde de
+  sortie `grep -c "ko-fi" == 0` serait satisfaite par un faux positif de commentaire. Mesuré :
+  **1 occurrence hors magasin, 0 en magasin.**
+  (2) ⚠ **L'UPDATER N'EST PAS SUPPRIMÉ, IL EST GARDÉ** : il vit sur 7 sites (HUD, état racine, pont
+  natif, Options) — une ablation chirurgicale créerait une **seconde variante HTML à maintenir**.
+  `const SELF_UPDATE = true;` posé juste après `VERSION_URL`, **4 occurrences du jeton** (1 décl. +
+  3 gardes), toutes dans le bloc 7 et **après** la déclaration (zone morte temporelle contrôlée).
+  ⚠ **Le verrou porte D'ABORD sur le `fetch` de lancement** (`if (!SELF_UPDATE) return;` en tête du
+  `useEffect`) : `updateInfo` reste nul, donc la **pastille du bouton Options** et le titre « Mise à
+  jour disponible » deviennent inatteignables **sans être touchés**. Seuls les 2 sites appelés à la
+  main (bouton « Vérifier les mises à jour », bloc `updStatus`) reçoivent un `SELF_UPDATE && ` — en
+  position d'ARGUMENT de `React.createElement`, donc `false` ne rend rien (pas de trou de mise en
+  page : mesuré, `.opt-version-row` 39 px hors magasin → **32 px** en magasin, jamais 0).
+  (3) **Les 4 libellés i18n « Soutenir le projet » / « Archipel Industry est gratuit et le
+  restera. » RESTENT dans les 4 langues, variante magasin comprise** (décision verrouillée) : les
+  retirer imposerait de toucher 3 tables à chaque build, et **une chaîne inerte dans une table de
+  traduction n'est pas un motif de rejet** — seuls le rendu et l'URL le sont.
+  (4) **CI branchée** (`android.yml`, étape « Prepare game files » renommée `… + magasin`) : la
+  variante `game-store.html` est dérivée de `game-public.html` par les 2 `sed`, avec **grep de garde
+  À L'ENTRÉE ET À LA SORTIE** + **contre-garde** vérifiant que la publique CONSERVE lien et updater.
+  Téléversée dans un artefact **dédié** `ArchipelIndustry-STORE-html`. ⚠ **Elle n'alimente AUCUN
+  APK** : un paquet magasin exige une coquille native distincte (sans `REQUEST_INSTALL_PACKAGES` ni
+  pont `ArchipelNative.update`), qui **n'existe pas encore**. Étape de CI **simulée en local** : elle
+  reproduit le fichier testé **au SHA près**.
+  **Validé** : `node --check` **7/7 sur les DEUX variantes** + **12 assertions Chromium, 0 KO,
+  rejouées 2 fois sans flottement**, dont les **contre-mesures** qui rendent les tests falsifiables :
+  T1 lit `href` (`https://ko-fi.com/freredoc`) et non la seule présence du nœud (un lien VIDE
+  passerait un simple comptage) ; T2 compte `.opt-upd-btn` **sur les deux fichiers** (1 vs 0 — un 0
+  des deux côtés ne prouverait que la fausseté du sélecteur) ; **T4 mesure les requêtes
+  `version.json` sur 5 s : 0 en magasin ET ≥ 1 hors magasin** (sans cette contre-mesure, un harnais
+  hors réseau rendrait un vert à vide). Captures des 2 panneaux Options contrôlées.
+  ⚠ **PIÈGE DE HARNAIS, il ANNULE une consigne du brief** : le brief impose « `useGhostGuard(1)`
+  avale le premier clic → cliquer deux fois ». **FAUX pour le bouton Options** : il ouvre au 1ᵉʳ
+  clic et le 2ᵉ le REFERME (clic hors panneau) → panneau jamais ouvert, et **les 3 assertions
+  « magasin » passaient à VIDE**. La règle des 2 clics vaut pour les boutons INTERNES d'un panneau,
+  pas pour un bouton du HUD qui ouvre ce panneau. Remède : cliquer **une fois** puis **asserter
+  l'état atteint** (`.slot-list` présent), et boucler.
+  ⚠ **2ᵉ piège** : le tutoriel ouvre des astuces **en continu** pendant les 5 s d'observation de T4 →
+  purger `.tip-ok` **après** l'attente, cliquer « Passer », puis re-purger avant d'ouvrir les Options.
+  ⚠ **3ᵉ piège (m'a donné 1 faux KO)** : `offsetTop` est relatif à l'`offsetParent`, qui est
+  `.slot-panel` et non `.slot-list` → « dernier enfant atteignable » sortait 1497 > 1460 (écart
+  CONSTANT de 37 px = l'en-tête), des deux côtés. Mesurer par `getBoundingClientRect` **après avoir
+  mis le défilement en butée**, et asserter `last.bottom <= list.bottom`.
+  ⚠ **HORS PÉRIMÈTRE, signalé non traité** : la **coquille native magasin** (c'est elle qui est
+  réellement jugée par Play — `REQUEST_INSTALL_PACKAGES` + pont `ArchipelNative.update` ; la garde
+  `SELF_UPDATE` n'est que la **2ᵉ ligne de défense**) ; **`targetSdk` doit atteindre 36, échéance
+  d'août 2026 donc ÉCHUE** — à traiter en priorité ; App Store (risque 4.2 « fonctionnalité
+  minimale » pour un jeu en WebView, et purge possible de `localStorage` en WKWebView = sauvegardes
+  perdues). `SAVE_VERSION`, i18n, `NATIVE_UPDATER`, `startNativeUpdate`, `window.__archipelUpdate`.
+  ⚠ **LE MÉMO NE COUVRE PAS LES BUILDS 403 À 416** (chantier i18n, lots I1 à I8) : leur historique
+  est dans les commentaires cumulatifs en tête de `GAME_BUILD` et dans les `RAPPORT-lotI*.md`.
+- **État précédent : `GAME_BUILD = 402`, `GAME_VERSION = 'Alpha 16.9'`, `SAVE_VERSION = 31`.**
   Changement 16.9 (**4 retours d'Ethan, pas de brief — 9 paires**) : **la sortie du tutoriel ne ment
   plus.** `SAVE_VERSION` INCHANGÉ, base 401 / 16.8, `node --check` 7/7 (publique ET dev), round-trip
   9/9, delta +7 584 car.
