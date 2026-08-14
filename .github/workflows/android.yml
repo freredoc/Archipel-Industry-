@@ -61,7 +61,7 @@ jobs:
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Prepare game files (public + dev)
+      - name: Prepare game files (public + dev + magasin)
         run: |
           mkdir -p android/app/src/main/assets
           # Le fichier versionné EST l'édition publique (DEV_BUILD = false).
@@ -74,6 +74,35 @@ jobs:
             || { echo "::error::DEV_BUILD non basculé — vérifier la ligne const dans le HTML"; exit 1; }
           grep -q "^const DEV_BUILD = false;$" game-public.html \
             || { echo "::error::game-public.html n'est pas l'édition publique"; exit 1; }
+          # --- Variante MAGASIN (Play / App Store) -------------------------------------
+          # Dérivée de l'édition PUBLIQUE. Deux substitutions, même motif que DEV_BUILD
+          # (ligne EXACTE, avec grep de garde À L'ENTRÉE et À LA SORTIE) :
+          #   - SELF_UPDATE = false : plus de fetch de version.json au lancement, plus de
+          #     bouton « Vérifier les mises à jour », plus de bloc updStatus. Installer un
+          #     binaire téléchargé est interdit par la politique Google (et Apple 2.5.2).
+          #   - SUPPORT_URL = ''   : le lien de soutien doit être ABSENT de l'artefact, pas
+          #     masqué (Apple 3.1.1 exclut dons/pourboires de l'entitlement de lien externe).
+          # ⚠ Cette variante n'alimente AUCUN APK de ce workflow : les paquets magasin
+          # exigent une coquille native distincte (sans REQUEST_INSTALL_PACKAGES ni pont
+          # ArchipelNative.update) qui n'existe pas encore. Elle est produite et téléversée
+          # en artefact pour être empaquetée à part. NE PAS la brancher sur game-public.html :
+          # la PWA et l'APK sideloadée sont HORS magasin et gardent lien + auto-updater.
+          cp game-public.html game-store.html
+          grep -q "^const SELF_UPDATE = true;$" game-store.html \
+            || { echo "::error::SELF_UPDATE introuvable — ligne const renommée/reformatée ?"; exit 1; }
+          grep -q "^const SUPPORT_URL = 'https://ko-fi.com/freredoc';$" game-store.html \
+            || { echo "::error::SUPPORT_URL introuvable — ligne const renommée/reformatée ?"; exit 1; }
+          sed -i "s|^const SELF_UPDATE = true;$|const SELF_UPDATE = false;|" game-store.html
+          sed -i "s|^const SUPPORT_URL = 'https://ko-fi.com/freredoc';$|const SUPPORT_URL = '';|" game-store.html
+          [ "$(grep -c 'ko-fi' game-store.html)" = "0" ] \
+            || { echo "::error::le lien de soutien subsiste dans la variante magasin"; exit 1; }
+          [ "$(grep -c 'const SELF_UPDATE = true;' game-store.html)" = "0" ] \
+            || { echo "::error::SELF_UPDATE non basculé dans la variante magasin"; exit 1; }
+          # Contre-garde : la publique (PWA + APK sideloadée) DOIT, elle, conserver les deux.
+          grep -q "^const SELF_UPDATE = true;$" game-public.html \
+            || { echo "::error::l'edition publique a perdu son auto-updater"; exit 1; }
+          [ "$(grep -c 'ko-fi' game-public.html)" = "1" ] \
+            || { echo "::error::l'edition publique a perdu son lien de soutien"; exit 1; }
 
       - name: Decode signing keystore (if secret is set)
         env:
@@ -170,6 +199,15 @@ jobs:
           path: |
             ArchipelIndustry.apk
             ArchipelIndustryDev.apk
+          if-no-files-found: error
+
+      # HTML magasin : téléversé à part (ce n'est pas un APK) pour être empaqueté dans la
+      # coquille native magasin, qui reste à faire. Aucune étape de ce workflow ne le consomme.
+      - name: Upload store HTML artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArchipelIndustry-STORE-html
+          path: game-store.html
           if-no-files-found: error
 
       - name: Sync PWA (index.html + sw.js cache)

@@ -9492,8 +9492,31 @@ const SAVE_VERSION = 31;
 // deja route par `I18N.t(m.label)` mais absent des 3 tables : c'etait le SEUL trou de tout le
 // routage dynamique. Apres ce lot, seules 6 cles typographiques restent sans traduction
 // (`Nv. `, `max`, ` min . `, ` kWh / kW`, ` -> `, `oo `) — c'est l'etat de CLOTURE du chantier.
-const GAME_BUILD = 416;
-const GAME_VERSION = 'Alpha 18.3';
+// 18.4 — SOUTIEN (Ko-fi) + GARDE `SELF_UPDATE` (preparation des magasins). `SUPPORT_URL` est
+// enfin RENSEIGNE dans la source versionnee : la section « Soutenir le projet » apparait en bas
+// des Options, juste avant la ligne Version, SANS aucune contrepartie en jeu. C'est la source
+// versionnee qui alimente `index.html` (web / PWA) et les APK hors magasin ; ce sont les paquets
+// MAGASIN qui en sont des DERIVES, produits par `sed` de CI qui VIDE la ligne (le lien doit etre
+// ABSENT de l'artefact publie, pas seulement masque — garde de sortie : 0 occurrence du domaine).
+// + nouvelle constante de build `SELF_UPDATE`, meme motif que `DEV_BUILD` (ligne EXACTE
+// substituee par la CI, avec grep de garde). Elle gate 3 sites : le `fetch` de `version.json` au
+// lancement, le bouton « Verifier les mises a jour » de la ligne Version, et le bloc `updStatus`.
+// ⚠ Le verrou porte D'ABORD sur le fetch : `updateInfo` reste nul, donc la pastille du bouton
+// Options et le titre « Mise a jour disponible » deviennent inatteignables SANS etre touches —
+// seuls les 2 sites appeles a la main demandent une garde explicite. L'updater n'est PAS
+// supprime : il vit sur 7 sites (HUD, etat racine, pont natif, Options), une ablation
+// chirurgicale creerait une SECONDE variante HTML a maintenir.
+// ⚠ DEUXIEME LIGNE DE DEFENSE SEULEMENT : cote Play, ce qui est juge est la permission
+// REQUEST_INSTALL_PACKAGES du manifeste et le pont `ArchipelNative.update` de la coquille
+// native — la coquille magasin ne doit exposer ni l'une ni l'autre. HORS PERIMETRE de ce lot.
+// ⚠ Les libelles i18n « Soutenir le projet » et « Archipel Industry est gratuit et le restera. »
+// RESTENT dans les 4 langues, variante magasin comprise : les retirer imposerait de toucher
+// 3 tables a chaque build, et une chaine INERTE dans une table de traduction n'est pas un motif
+// de rejet — seuls le rendu et l'URL le sont.
+// ⚠ Le commentaire « 14.54 » qui mentionne `SUPPORT_URL` plus bas n'est PAS reecrit : il decrit
+// ce qu'a fait le build 14.54, il etait juste alors. `SAVE_VERSION` INCHANGE (31).
+const GAME_BUILD = 417;
+const GAME_VERSION = 'Alpha 18.4';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9502,7 +9525,7 @@ const GAME_VERSION = 'Alpha 18.3';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Cinq derniers textes traduits : le mode « Surchauffe » d'un capteur, le titre du panneau d'aide, la mention « vide » de l'inventaire, un objectif de recherche et le bandeau du mode developpeur. Ils restaient en francais dans les trois autres langues. Rien ne change en francais.";
+const GAME_NOTES = "Une section « Soutenir le projet » facultative apparait desormais en bas des Options, juste au-dessus de la ligne Version. C'est un simple lien externe, sans aucune contrepartie en jeu : rien ne change dans la partie.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -9520,9 +9543,28 @@ const GAME_NOTES = "Cinq derniers textes traduits : le mode « Surchauffe » d'u
 // alimente `index.html` (PWA / navigateur, seul canal des utilisateurs Apple).
 const DEV_BUILD = false;
 const VERSION_URL = 'https://raw.githubusercontent.com/freredoc/Archipel-Industry-/main/version.json';
-// Lien de soutien (Options → « Soutenir le projet »). PLACEHOLDER : à renseigner avant publication.
-// Chaîne vide = section entièrement masquée. AUCUNE contrepartie en jeu — simple lien externe.
-const SUPPORT_URL = '';
+
+// Auto-mise à jour in-app : vérification du build en ligne au lancement, puis téléchargement et
+// installation de l'APK via la coquille native. `true` = éditions HORS MAGASIN. La CI substitue
+// ce flag à `false` (`sed` sur la ligne EXACTE ci-dessous, avec grep de garde) pour les paquets
+// Play et App Store, où l'installation d'un binaire téléchargé est interdite (politique Google ;
+// Apple 2.5.2 : pas de code exécutable téléchargé).
+// ⚠ Le verrou porte D'ABORD sur le `fetch` de lancement : `updateInfo` reste nul, donc la
+// pastille du bouton Options, le titre « Mise à jour disponible » et tout le bloc `updStatus`
+// deviennent inatteignables sans être touchés. Seul le bouton « Vérifier les mises à jour » de
+// la ligne Version, qui appelle `checkUpdate` à la main, demande une garde explicite.
+// ⚠ DEUXIÈME LIGNE DE DÉFENSE SEULEMENT : côté Play, ce qui est jugé est la permission
+// REQUEST_INSTALL_PACKAGES du manifeste et le pont `ArchipelNative.update` de la coquille
+// native — la coquille magasin ne doit exposer ni l'une ni l'autre.
+const SELF_UPDATE = true;
+// Lien de soutien (Options -> section « Soutenir le projet », juste avant la ligne Version).
+// RENSEIGNÉ dans les éditions HORS MAGASIN (web, PWA, APK sideloadée). Chaîne vide = section
+// entièrement masquée : la CI VIDE cette ligne (`sed` sur la ligne EXACTE ci-dessous, avec grep
+// de garde) pour les paquets Play et App Store — Apple 3.1.1 exclut pourboires et dons de
+// l'entitlement de lien externe, Google encadre les liens de paiement sortants.
+// Garde de sortie du build magasin : ZÉRO occurrence de la chaîne du domaine dans l'artefact.
+// AUCUNE contrepartie en jeu — simple lien externe. `SAVE_VERSION` non concerné.
+const SUPPORT_URL = 'https://ko-fi.com/freredoc';
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
    Synthèse procédurale Web Audio. Aucun fichier, aucun CDN, offline-first.
@@ -24629,11 +24671,11 @@ function OptionsModal({
     className: "opt-name"
   }, I18N.t("Version")), React.createElement("span", {
     className: "opt-desc"
-  }, GAME_VERSION, I18N.t(" · build "), GAME_BUILD, DEV_BUILD ? " · dev" : "")), React.createElement("button", {
+  }, GAME_VERSION, I18N.t(" · build "), GAME_BUILD, DEV_BUILD ? " · dev" : "")), SELF_UPDATE && React.createElement("button", {
     className: "opt-upd-btn",
     onClick: checkUpdate,
     disabled: upd.state === 'checking'
-  }, I18N.t("Vérifier les mises à jour"))), updStatus())));
+  }, I18N.t("Vérifier les mises à jour"))), SELF_UPDATE && updStatus())));
 }
 function HelpPanel({
   game,
@@ -25356,6 +25398,7 @@ function App() {
   // à GAME_BUILD. Si une version plus récente existe → pastille sur Options + une notif.
   // Échoue en silence hors-ligne (le jeu reste 100 % jouable sans réseau).
   useEffect(() => {
+    if (!SELF_UPDATE) return;
     let cancelled = false;
     fetch(VERSION_URL + '?t=' + Date.now(), {
       cache: 'no-store'
