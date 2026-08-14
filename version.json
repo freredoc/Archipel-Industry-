@@ -1,8 +1,8 @@
 {
-  "build": 403,
-  "version": "Alpha 17.0",
+  "build": 405,
+  "version": "Alpha 17.2",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Correctif d'affichage : le bouton Carte changeait de taille tout seul, en particulier pendant le tutoriel, selon qu'une reparation etait payable ou non. Il garde desormais la meme largeur en toutes circonstances. Au passage, son petit repere de reparation est maintenant visible des qu'une liaison est a ouvrir, alors qu'il n'apparaissait qu'une fois les ressources reunies, et le mot Carte ne disparait plus sur la derniere ile."
+  "notes": "Traductions : 61 batiments et 16 ressources restaient en francais en anglais, espagnol et allemand - presque tout le milieu et la fin de partie (paliers V2 a V4, couche logique, souterrain, quantique, fours a arc). Ils sont desormais traduits, tout comme les petits compteurs du bandeau du tutoriel et quatre messages d'etat du Data Center. Au passage, un defaut est repare : le code court dessine sur la tuile de ces batiments avait disparu, y compris en francais ; il est de retour."
 }
