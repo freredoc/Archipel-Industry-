@@ -1,8 +1,8 @@
 {
-  "build": 406,
-  "version": "Alpha 17.3",
+  "build": 412,
+  "version": "Alpha 17.9",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Traductions, suite : 74 textes de l'interface etaient ecrits en dur dans le code et ne pouvaient donc pas etre traduits, quelle que soit la langue choisie - messages de demolition, de copie et d'alerte, panneaux Port, Reseau, Recherche, Energie, Options et le recapitulatif hors-ligne. Quarante d'entre eux s'affichent des maintenant dans votre langue ; les autres suivront au prochain lot. En francais, rien ne change : l'affichage est identique, mot pour mot."
+  "notes": "Traductions, fin du chantier : les 246 derniers textes de l'interface passent en anglais, espagnol et allemand - options, calculateur de production, dimensionnement electrique, panneaux de reseau et d'elevateur, et une grande partie des messages courts. Les 389 textes recenses sont desormais tous traduits. En francais, rien ne change : l'affichage est identique, mot pour mot."
 }
