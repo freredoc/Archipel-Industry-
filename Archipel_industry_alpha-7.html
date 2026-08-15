@@ -122,7 +122,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
    ⚠ COÛT MESURÉ : la bordure passe de 1 à 6 px, soit +10 px de hauteur — 35 → 45 px repliée
    et 129 → 139 px déployée. Le calque déployé n'a toujours aucun plafond (reliquat connu du
    chantier dimensionnement), d'où l'amincissement à 3 px dans le bloc Lot C. */
-.inventory{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:4px 12px;
+.inventory{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:4px 12px;margin-top:4px;
   background:var(--tex-bleu) repeat;border:6px solid transparent;
   border-image:var(--cadre-metal) 8 / 6px stretch;border-radius:0;image-rendering:pixelated;
   overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;}
@@ -284,7 +284,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .tab-ico .ui-ico,.tab-ico.ui-ico{width:18px;height:18px;}
 /* Empilement HUD + barre d'inventaire : contexte de positionnement pour l'inventaire OUVERT
    (qui doit RECOUVRIR la carte en superposition au lieu de POUSSER la scène vers le bas). */
-.hud-stack{position:relative;flex-shrink:0;z-index:20;}
+.hud-stack{position:relative;flex-shrink:0;z-index:20;background:rgba(126,138,162,.26);}
 .inventory.open{flex-wrap:wrap;align-items:center;
   /* Superposition : ancré juste sous le HUD (top:100% = hauteur du HUD, la barre repliée
      n'étant pas rendue quand ouvert), au-dessus de la scène, sans occuper de hauteur de layout. */
@@ -1229,10 +1229,17 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .toolbar-wrap{flex-shrink:0;display:flex;flex-direction:column;
   padding-bottom:env(safe-area-inset-bottom);
   padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
+/* Ancre des 2 boutons flottants : SOUS le chrome (HUD + inventaire + bandeau tuto), et non a
+   un `top` fige. `--hud-h` est publiee par Hud (hauteur MESUREE du .hud-stack), `--tuto-h` par
+   TutorialBanner ; les deux en `offsetHeight`, donc NON zoomees — c'est l'unite qu'il faut, les
+   boutons portant eux-memes `zoom:var(--ui-scale)`. Les replis reproduisent l'ancienne geometrie.
+   ⚠ Le `top:150px` fige avait deja ete retouche une fois (92 -> 150) et venait de repasser en
+   CHEVAUCHEMENT (-3 px, mesure) quand la barre d'inventaire a gagne son cadre au build 418. */
+:root{--float-top:calc(var(--hud-h, 143px) + var(--tuto-h, 0px) + 10px);}
 /* Bouton flottant surface ↔ souterrain (île 6 ⇄ 7). Sur le côté droit, au-dessus de la barre
    d'actions ; visible seulement quand l'île 7 est débloquée et qu'on est sur l'île 6 ou 7. */
 /* Bouton souterrain : en haut à droite, sous la barre d'inventaire / la zone d'alertes (13.90). */
-.underground-btn{position:fixed;right:8px;top:150px;z-index:45;
+.underground-btn{position:fixed;right:8px;top:var(--float-top);z-index:45;
   display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 7px;
   background:var(--panel-2);border:1px solid var(--line);border-radius:9px;color:var(--ink);
   font-size:19px;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.45);user-select:none;}
@@ -1242,7 +1249,7 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .underground-btn .ug-label{font-size:.52rem;letter-spacing:.04em;opacity:.85;
   font-family:'Bebas Neue',sans-serif;}
 /* Bouton couche logique : en haut à gauche, sous la barre d'inventaire (13.91). */
-.logiclayer-btn{position:fixed;left:8px;top:150px;z-index:45;
+.logiclayer-btn{position:fixed;left:8px;top:var(--float-top);z-index:45;
   display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 7px;
   background:var(--panel-2);border:1px solid var(--line);border-radius:9px;color:var(--ink);
   line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.45);user-select:none;}
@@ -9539,6 +9546,31 @@ const SAVE_VERSION = 31;
 // de rejet — seuls le rendu et l'URL le sont.
 // ⚠ Le commentaire « 14.54 » qui mentionne `SUPPORT_URL` plus bas n'est PAS reecrit : il decrit
 // ce qu'a fait le build 14.54, il etait juste alors. `SAVE_VERSION` INCHANGE (31).
+// 18.6 — BOUTONS FLOTTANTS ANCRES + JOINT ENTRE LE HUD ET LA BARRE D'INVENTAIRE (retour joueur).
+// (1) `.logiclayer-btn` et `.underground-btn` etaient en `position:fixed; top:150px` — une CONSTANTE
+// qui ne suit pas la hauteur reelle du chrome. Ce `top` avait deja du etre retouche une fois
+// (92 -> 150 au build 13.90) et venait de repasser en CHEVAUCHEMENT quand la barre d'inventaire a
+// gagne son cadre au build 418 : mesure, les boutons mordaient de 3 px sur la barre en portrait
+// (chrome 153 px pour un top de 150). Pire, `top` etant multiplie par `zoom:var(--ui-scale)`,
+// l'ecart derivait a +58 px a x1,5 et +78 px a x2 — les boutons flottaient loin du chrome sur
+// grand ecran, et passaient PAR-DESSUS le bandeau tutoriel partout.
+// Ils s'ancrent desormais SOUS le chrome : `--float-top = --hud-h + --tuto-h + 10px`. `--hud-h` est
+// publiee par `Hud` (hauteur MESUREE du `.hud-stack`, `useLayoutEffect` + `ResizeObserver`), sur le
+// modele exact de `--tuto-h` publiee par `TutorialBanner` depuis 13.85. Mesure : les boutons sont
+// desormais a 10 px CSS sous le haut de la scene sur les 5 formats testes, x1 / x1,5 / x2 compris.
+// ⚠ `offsetHeight` et NON `getBoundingClientRect()` : il rend la hauteur NON zoomee (111 a x1,5 la
+// ou le rect rend 167), et c'est l'unite qu'attend un `top` sur un bouton lui-meme zoome. Les deux
+// replis (`--hud-h, 143px`) reproduisent l'ancienne geometrie si le JS ne publiait rien.
+// (2) Les cadres 9-slice du HUD et de la barre d'inventaire se TOUCHAIENT depuis le build 418 :
+// deux bordures accolees, coins jaunes contre coins jaunes, lues comme une double bordure
+// accidentelle. `.inventory` recoit `margin-top:4px` et le fond du PARENT (`.hud-stack`) est peint
+// d'un gris translucide : la gouttiere devient un JOINT clair et deliberé au lieu d'un trou noir.
+// 4 px et pas davantage — variantes de 6 et 8 px essayees et ecartees a la capture, elles lisent
+// comme de l'espace mort. Le joint marche aussi en theme inox et en paysage court (bordure 3 px).
+// ⚠ Cout : +4 px de chrome, donc la scene passe de 546 a 542 px barre REPLIEE (390x844). Aucun cout
+// barre DEPLOYEE : le calque est en superposition, il ne pousse rien.
+// ⚠ CE LOT N'EST PAS CSS PUR : le bloc <script> qui porte `Hud` change (publication de `--hud-h`).
+// Les blocs 1 a 6 restent identiques a la base. `SAVE_VERSION` INCHANGE (31).
 // 18.5 — CADRE 9-SLICE DE LA BARRE D'INVENTAIRE (CSS PUR, 3 ancres, aucun bloc <script> touche).
 // `.inventory` ne figurait dans AUCUNE des deux listes de theme — ni celle du theme bleu
 // (`body:not(.theme-inox) .hud, .research-panel, .slot-panel, .toolbar`), ni celle des panneaux
@@ -9563,8 +9595,8 @@ const SAVE_VERSION = 31;
 // ⚠ Dans ce bloc Lot C, `border-image` est REDECLARE AVEC SON SLICE et pas seulement
 // `border-width` : changer la seule largeur laisserait le sprite etire sur 6 px de rendu pour
 // 3 px de boite. `SAVE_VERSION` INCHANGE (31) — CSS pur, aucune sauvegarde touchee.
-const GAME_BUILD = 418;
-const GAME_VERSION = 'Alpha 18.5';
+const GAME_BUILD = 419;
+const GAME_VERSION = 'Alpha 18.6';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9573,7 +9605,7 @@ const GAME_VERSION = 'Alpha 18.5';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "La barre d'inventaire reçoit enfin le même habillage que le reste de l'interface : texture métal et cadre à rivets, au lieu du bandeau plat qu'elle était seule à garder. Habillage uniquement — rien ne change dans la partie.";
+const GAME_NOTES = "Les deux boutons flottants (Logique et Surface/Souterrain) ne mordent plus sur la barre d'inventaire : ils se placent désormais juste sous elle, quelle que soit la taille de l'écran. Et un fin joint sépare enfin la barre d'inventaire du bandeau du haut, dont les cadres se touchaient.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -19239,8 +19271,24 @@ function Hud({
     canRepair = true;
     for (const k in repairInfo.cost) if ((resources[k] || 0) < repairInfo.cost[k]) canRepair = false;
   }
+  // Publie la HAUTEUR du bloc HUD + inventaire dans `--hud-h`, sur le modele de `--tuto-h`
+  // (TutorialBanner) : les 2 boutons flottants s'y ancrent au lieu d'un `top` fige, qui derivait
+  // a chaque changement de chrome. MESUREE, pas figee — le HUD wrappe selon la largeur, la barre
+  // d'inventaire change de hauteur avec son cadre, et les deux suivent `--ui-scale`.
+  // `offsetHeight` rend la hauteur NON zoomee (mesure : 111 a x1.5 la ou le rect rend 167), ce
+  // qui est exactement l'unite attendue par un bouton lui-meme zoome.
+  const stackRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = stackRef.current;
+    const set = () => document.documentElement.style.setProperty('--hud-h', ((el && el.offsetHeight) || 0) + 'px');
+    set();
+    const ro = typeof ResizeObserver !== 'undefined' && el ? new ResizeObserver(set) : null;
+    if (ro) ro.observe(el);
+    return () => { if (ro) ro.disconnect(); };
+  }, []);
   return React.createElement("div", {
-    className: "hud-stack"
+    className: "hud-stack",
+    ref: stackRef
   }, React.createElement("div", {
     className: "hud"
   }, React.createElement("div", {
