@@ -7,6 +7,15 @@ plugins {
 // on retombe sur la signature debug par défaut.
 def ksFile = file('keystore.jks')
 
+// Variante MAGASIN (Play / App Store), activée par `-PstoreBuild=true`. UNE bascule, pas de
+// `flavor` : les tâches existantes (`assembleDebug` ×2) ne changent ni de nom ni de comportement,
+// et le workflow actuel n'a pas à bouger.
+// ⚠ ÉCART VOULU au brief, qui proposait `project.hasProperty('storeBuild')` seul : cette forme est
+// vraie même pour `-PstoreBuild=false`, ce qui produirait une variante magasin en croyant l'avoir
+// désactivée. On lit donc la VALEUR.
+def storeBuild = project.hasProperty('storeBuild') &&
+        project.property('storeBuild').toString().toBoolean()
+
 android {
     namespace 'fr.archipel.industry'
     // API 36 (Android 16). Exigé par Play : `targetSdk` doit atteindre 36 au 31/08/2026, et un
@@ -40,6 +49,31 @@ android {
         versionCode = (project.findProperty('vcode') ?: '1').toString().toInteger()
         versionName = (project.findProperty('vname') ?: '1.0').toString()
         manifestPlaceholders = [appLabel: (project.findProperty('appLabel') ?: 'Archipel Industry')]
+
+        // Verrou natif de l'auto-mise à jour, pendant du `SELF_UPDATE` du HTML. Lu par
+        // MainActivity : le pont `ArchipelNative.update()` sort immédiatement et le récepteur
+        // d'installation n'est pas enregistré.
+        // ⚠ Le code de PackageInstaller RESTE dans le binaire, simplement inatteignable — même
+        // arbitrage que côté HTML : un verrou plutôt qu'une ablation, donc un seul chemin de code.
+        // Ce que Play évalue réellement, c'est la permission REQUEST_INSTALL_PACKAGES, et elle,
+        // elle disparaît (AndroidManifest-store.xml).
+        buildConfigField 'boolean', 'SELF_UPDATE', (storeBuild ? 'false' : 'true')
+    }
+
+    // `buildConfig` est désactivé par défaut depuis AGP 8 : sans ça, la classe BuildConfig n'est
+    // pas générée et MainActivity ne compile plus.
+    buildFeatures {
+        buildConfig true
+    }
+
+    sourceSets {
+        main {
+            // Le manifeste magasin ne déclare AUCUNE permission (ni REQUEST_INSTALL_PACKAGES,
+            // ni INTERNET). Les deux fichiers ne diffèrent QUE par ces lignes.
+            manifest.srcFile storeBuild
+                    ? 'src/main/AndroidManifest-store.xml'
+                    : 'src/main/AndroidManifest.xml'
+        }
     }
 
     signingConfigs {

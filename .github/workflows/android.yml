@@ -160,6 +160,80 @@ jobs:
             -PappLabel="Archipel Ind. Dev"
           cp app/build/outputs/apk/debug/app-debug.apk ../ArchipelIndustryDev.apk
 
+      # Paquet MAGASIN (Play). Ajouté APRÈS les deux APK, sans toucher aux étapes existantes.
+      # `-PstoreBuild=true` sélectionne AndroidManifest-store.xml (zéro permission) et met
+      # BuildConfig.SELF_UPDATE à false. On produit DEUX artefacts du même jeu de sources :
+      #  - le .aab, format de dépôt Play (non installable) ;
+      #  - l'APK équivalent, qui SERT DE BANC : `aapt2 dump badging` ne lit pas un .aab, alors
+      #    qu'il donne sur l'APK le paquet, le targetSdk, les permissions et l'état debuggable.
+      # ⚠ appId `fr.archipel.industry.store` : Play App Signing donnera au paquet magasin une clé
+      # DIFFÉRENTE de celle des APK GitHub. Deux distributions au même appId avec deux signatures
+      # ne peuvent ni coexister ni se remplacer — un identifiant neuf n'orpheline personne.
+      - name: Build STORE bundle + APK de contrôle (Play)
+        working-directory: android
+        run: |
+          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
+          VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
+          cp ../game-store.html app/src/main/assets/index.html
+          # ⚠ ASSERTIONS BLOQUANTES sur l'asset RÉELLEMENT embarqué, symétriques de celles de la
+          # publique et de la dev : c'est le seul contrôle qui attrape une inversion de `cp`.
+          grep -q "^const SELF_UPDATE = false;$" app/src/main/assets/index.html \
+            || { echo "::error::l'asset du paquet magasin n'a pas la garde SELF_UPDATE"; exit 1; }
+          [ "$(grep -c 'ko-fi' app/src/main/assets/index.html)" = "0" ] \
+            || { echo "::error::le lien de soutien subsiste dans l'asset du paquet magasin"; exit 1; }
+          grep -q "^const DEV_BUILD = false;$" app/src/main/assets/index.html \
+            || { echo "::error::l'asset du paquet magasin n'est pas l'edition publique"; exit 1; }
+          ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace \
+            -PstoreBuild=true \
+            -Pvcode="${BUILD:-1}" -Pvname="${VERSION:-1.0}" \
+            -PappId="fr.archipel.industry.store" \
+            -PappLabel="Archipel Industry"
+          cp app/build/outputs/bundle/release/app-release.aab ../ArchipelIndustry.aab
+          # Un build release SANS keystore sort en `app-release-unsigned.apk` : on prend ce qui existe.
+          APK=$(ls app/build/outputs/apk/release/app-release*.apk | head -1)
+          cp "$APK" ../ArchipelIndustryStore.apk
+          # L'asset embarqué DANS le bundle (un .aab est un ZIP) — et non le fichier intermédiaire.
+          unzip -p ../ArchipelIndustry.aab base/assets/index.html > /tmp/aab-asset.html
+          grep -q "^const SELF_UPDATE = false;$" /tmp/aab-asset.html \
+            || { echo "::error::l'asset EXTRAIT du bundle n'a pas la garde SELF_UPDATE"; exit 1; }
+          [ "$(grep -c 'ko-fi' /tmp/aab-asset.html)" = "0" ] \
+            || { echo "::error::le lien de soutien subsiste dans l'asset EXTRAIT du bundle"; exit 1; }
+          # CONTRE-MESURE : les mêmes greps sur l'asset de l'APK PUBLIQUE doivent donner l'INVERSE.
+          # Sans elle, un extracteur qui rendrait une chaîne vide passerait au vert.
+          unzip -p ../ArchipelIndustry.apk assets/index.html > /tmp/pub-asset.html
+          grep -q "^const SELF_UPDATE = true;$" /tmp/pub-asset.html \
+            || { echo "::error::contre-mesure KO : l'APK publique devrait garder l'auto-updater"; exit 1; }
+          [ "$(grep -c 'ko-fi' /tmp/pub-asset.html)" = "1" ] \
+            || { echo "::error::contre-mesure KO : l'APK publique devrait garder le lien de soutien"; exit 1; }
+          echo "asset magasin et contre-mesure publique : conformes"
+
+      - name: Assert store package (paquet, targetSdk, permissions, debuggable)
+        run: |
+          # `aapt2 dump badging` ne lit pas un .aab : on interroge l'APK construit avec le MÊME
+          # manifeste et les MÊMES propriétés, ce qui vaut contrôle du manifeste du bundle.
+          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1)
+          [ -n "$AAPT" ] || { echo "::error::aapt2 introuvable"; exit 1; }
+          BADGE=$("$AAPT" dump badging ArchipelIndustryStore.apk)
+          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" Archipel_industry_alpha-7.html | head -1)
+          echo "$BADGE" | grep -E "^package:|^sdkVersion:|^targetSdkVersion:|^uses-permission:|^application-debuggable"
+          echo "$BADGE" | grep -q "package: name='fr.archipel.industry.store'" \
+            || { echo "::error::appId magasin inattendu"; exit 1; }
+          echo "$BADGE" | grep -q "versionCode='${BUILD}'" \
+            || { echo "::error::versionCode != GAME_BUILD ($BUILD)"; exit 1; }
+          echo "$BADGE" | grep -q "targetSdkVersion:'36'" \
+            || { echo "::error::targetSdkVersion != 36 — Play refuserait le depot"; exit 1; }
+          echo "$BADGE" | grep -q "sdkVersion:'26'" \
+            || { echo "::error::minSdk != 26"; exit 1; }
+          [ "$(echo "$BADGE" | grep -c '^uses-permission:')" = "0" ] \
+            || { echo "::error::le paquet magasin declare des permissions"; exit 1; }
+          echo "$BADGE" | grep -q "^application-debuggable" \
+            && { echo "::error::le paquet magasin est debuggable"; exit 1; }
+          # CONTRE-MESURE : l'APK publique, elle, DOIT déclarer ses 2 permissions — sinon c'est le
+          # compteur qui est faux, pas le paquet magasin qui est propre.
+          [ "$("$AAPT" dump badging ArchipelIndustry.apk | grep -c '^uses-permission:')" = "2" ] \
+            || { echo "::error::contre-mesure KO : l'APK publique devrait declarer 2 permissions"; exit 1; }
+          echo "paquet magasin : 0 permission, targetSdk 36, non debuggable — contre-mesure OK"
+
       - name: Assert appIds (les 2 éditions doivent être installables côte à côte)
         run: |
           # ⚠ Ce garde-fou est le SEUL rempart contre deux APK au même appId (l'un écraserait
@@ -183,7 +257,12 @@ jobs:
       - name: Show signing certificate (vérifie la clé stable)
         run: |
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
-          for APK in ArchipelIndustry.apk ArchipelIndustryDev.apk; do
+          # Le bundle magasin est signé en JAR (META-INF) : apksigner ne le lit pas, jarsigner si.
+          # C'est la clé stable qui doit apparaître ici — Play App Signing re-signera par-dessus.
+          echo "=== Certificat de signature : ArchipelIndustry.aab ==="
+          jarsigner -verify -verbose:summary -certs ArchipelIndustry.aab 2>&1 \
+            | grep -Ei "jar verified|CN=|SHA-256|non signé|not signed" | head -5 || true
+          for APK in ArchipelIndustry.apk ArchipelIndustryDev.apk ArchipelIndustryStore.apk; do
             echo "=== Certificat de signature : $APK ==="
             if [ -n "$APKSIGNER" ]; then
               "$APKSIGNER" verify --print-certs "$APK" | grep -Ei "certificate DN|SHA-256" || true
@@ -207,13 +286,18 @@ jobs:
             ArchipelIndustryDev.apk
           if-no-files-found: error
 
-      # HTML magasin : téléversé à part (ce n'est pas un APK) pour être empaqueté dans la
-      # coquille native magasin, qui reste à faire. Aucune étape de ce workflow ne le consomme.
-      - name: Upload store HTML artifact
+      # Paquet magasin : téléversé en ARTEFACT UNIQUEMENT. Il n'entre PAS dans la Release
+      # publique — un .aab n'est pas installable et n'a rien à faire dans une release destinée
+      # au sideload. Le dépôt sur la Play Console appartient à Ethan.
+      # L'APK magasin l'accompagne : c'est lui qui s'installe sur un appareil pour le test T4.
+      - name: Upload store artifacts (.aab + APK de contrôle + HTML)
         uses: actions/upload-artifact@v4
         with:
-          name: ArchipelIndustry-STORE-html
-          path: game-store.html
+          name: ArchipelIndustry-STORE
+          path: |
+            ArchipelIndustry.aab
+            ArchipelIndustryStore.apk
+            game-store.html
           if-no-files-found: error
 
       - name: Sync PWA (index.html + sw.js cache)

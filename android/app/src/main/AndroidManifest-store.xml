@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  MANIFESTE DE LA VARIANTE MAGASIN (Play / App Store).
+
+  Sélectionné par `sourceSets` quand le build passe `-PstoreBuild=true` ; sinon c'est
+  AndroidManifest.xml qui sert. Il n'existe donc PAS de second MainActivity : un seul jeu de
+  sources, une bascule. Deux copies crédibles du code finiraient par diverger.
+
+  Identique au manifeste hors magasin, à DEUX permissions près, toutes deux RETIRÉES :
+
+  - REQUEST_INSTALL_PACKAGES : installer un binaire téléchargé est interdit par la politique
+    Google (et Apple 2.5.2). C'est la permission DÉCLARÉE que Play évalue — c'est donc ici que se
+    joue l'essentiel, la garde `SELF_UPDATE` (HTML et BuildConfig) n'étant que la seconde ligne
+    de défense.
+
+  - INTERNET : vérifié sur `game-store.html`, il ne reste aucun appel réseau atteignable. Les
+    deux `fetch(VERSION_URL…)` sont derrière `SELF_UPDATE`, à `false` dans cette variante ; les
+    `fetch` du service worker relèvent du chemin PWA, inerte en WebView (pas de service worker
+    sur un asset `file://`, et l'enregistrement est enveloppé d'un try/catch). Le jeu est
+    entièrement hors-ligne : tout — React, logique, sprites, sons — est inline dans l'asset.
+    Zéro permission déclarée simplifie aussi la déclaration « Sécurité des données » de la fiche.
+    ⚠ À confirmer par un boot réel : c'est l'objet du test T4.
+
+  ⚠ Toute modification du manifeste hors magasin doit être répercutée ICI. Les deux fichiers ne
+  diffèrent QUE par les lignes `uses-permission`.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ⚠ `android:appCategory="game"` n'est PAS une métadonnée décorative : en targetSdk 36,
+         orientation, redimensionnement et ratio cessent d'être respectés sur les écrans
+         >= sw600dp — SAUF pour les applications déclarées comme JEUX. C'est la seule exception
+         PÉRENNE (la propriété PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY, elle, est temporaire
+         et tombera en API 37). `screenOrientation="portrait"` continue donc de tenir sur tablette. -->
+    <application
+        android:allowBackup="true"
+        android:fullBackupContent="true"
+        android:label="${appLabel}"
+        android:appCategory="game"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.Archipel"
+        android:hardwareAccelerated="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|screenSize|smallestScreenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

@@ -113,7 +113,10 @@ public class MainActivity extends Activity {
         // Pont natif : réservé à l'asset local de confiance (les URLs externes ne sont JAMAIS
         // chargées dans la WebView, elles partent vers le navigateur système).
         web.addJavascriptInterface(new WebBridge(), "ArchipelNative");
-        registerInstallReceiver();
+        // Variante MAGASIN (-PstoreBuild=true) : pas d'auto-mise à jour, donc aucun récepteur
+        // d'installation à enregistrer. Le reste du pont (export de sauvegarde, sélecteur de
+        // fichier, ouverture des liens externes) est INCHANGÉ.
+        if (BuildConfig.SELF_UPDATE) registerInstallReceiver();
 
         setContentView(web);
         applyInsetPadding();
@@ -199,6 +202,12 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void update(final String url) {
+            // Variante MAGASIN : l'installation d'un binaire téléchargé est interdite par la
+            // politique Google (et Apple 2.5.2). Le manifeste magasin ne déclare de toute façon
+            // pas REQUEST_INSTALL_PACKAGES — c'est la seconde ligne de défense, côté code.
+            // Le HTML magasin n'appelle jamais ce pont (`SELF_UPDATE = false` y masque déjà les
+            // deux points d'entrée) : cette garde couvre le cas d'un asset mal apparié.
+            if (!BuildConfig.SELF_UPDATE) return;
             if (url == null || url.isEmpty()) return;
             // Android 8+ : l'installation d'APK requiert l'autorisation « applis inconnues »
             // accordée à NOTRE app. Si absente, on ouvre l'écran de réglage et on réessaiera.
