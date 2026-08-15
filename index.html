@@ -110,9 +110,21 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .dev-btn:hover{border-color:#3a3a6a;color:var(--ink);}
 .dev-btn:active{transform:translateY(1px);}
 .dev-btn.on{background:rgba(255,59,48,.18);border-color:var(--red);color:#ff7a72;}
-/* Inventaire complet de l'île (sous la barre HUD) */
+/* Inventaire complet de l'île (sous la barre HUD) — MÊME MATIÈRE que le HUD, CADRE À PART.
+   Avant ce lot, `.inventory` ne figurait dans AUCUNE des deux listes de thème : ni celle du
+   thème bleu (`body:not(.theme-inox) .hud, .toolbar…`), ni celle des panneaux. Elle restait
+   donc en aplat `var(--panel-2)` bordé de deux filets d'1 px, seul élément plat de l'écran.
+   Cadre `--cadre-metal` et NON `--cadre-rivets` : la barre doit se lire comme une zone
+   DISTINCTE du HUD et de la barre d'outils, qui portent les rivets. Les deux sprites étaient
+   déjà dans le fichier et ORPHELINS — `--cadre-metal` et `--cadre-inox` totalisaient 0 usage,
+   comme `ui_pause` avant le lot L2. Rien de neuf n'a été importé.
+   SANS `fill`, comme le HUD : le sprite ne peint pas son fond, la texture reste visible.
+   ⚠ COÛT MESURÉ : la bordure passe de 1 à 6 px, soit +10 px de hauteur — 35 → 45 px repliée
+   et 129 → 139 px déployée. Le calque déployé n'a toujours aucun plafond (reliquat connu du
+   chantier dimensionnement), d'où l'amincissement à 3 px dans le bloc Lot C. */
 .inventory{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:4px 12px;
-  background:var(--panel-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:var(--tex-bleu) repeat;border:6px solid transparent;
+  border-image:var(--cadre-metal) 8 / 6px stretch;border-radius:0;image-rendering:pixelated;
   overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;}
 .inventory::-webkit-scrollbar{height:5px;}
 .inventory::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
@@ -839,7 +851,11 @@ body.theme-inox .island-tab:hover:not(.locked){background:none;border-color:tran
 /* Barre du haut en PLAQUE INOX : l'inventaire (bande sous les pastilles) passe sur tôle larmée
    légère, et toutes les pastilles internes (Options / ? / kW / batterie / PORT / RECH / INVENTAIRE
    / Production / chips de ressources) passent du bleu (var(--panel)/--panel-2) au gunmetal. */
-body.theme-inox .inventory{background:var(--tex-inox-leger) repeat;border-top-color:#3a3d47;border-bottom-color:#3a3d47;image-rendering:pixelated;}
+/* Pendant inox : meme geometrie, cadre `--cadre-inox` (l'autre orphelin) pour que la barre
+   reste distincte de `--inox-panneau`, qui habille le HUD et les panneaux. Les
+   `border-*-color` d'avant ne servaient qu'aux deux filets d'1 px, disparus avec eux. */
+body.theme-inox .inventory{background:var(--tex-inox-leger) repeat;
+  border-image:var(--cadre-inox) 8 / 6px stretch;image-rendering:pixelated;}
 /* Pastilles de VALEUR (kW/batterie + chips d'inventaire) : fond gunmetal plat. */
 body.theme-inox .stock,body.theme-inox .inv-item,body.theme-inox .inv-count{background:#2c2f38;border-color:#4a4f5a;color:#ebeef5;}
 body.theme-inox .inv-item.clickable:hover{background:#363a44;}
@@ -1542,6 +1558,14 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   .toolbar .tool-group{padding:4px 8px;}
   .tool-group-inner{gap:2px;}
   .tool-group-label{display:none;}
+  /* Cadre d'inventaire aminci : 6 px de bordure coutent 10 px de hauteur, et le calque
+     deploye n'a aucun plafond ici — 139 px sur une scene qui en fait ~200. A 3 px il en
+     rend 6. Le cadre reste lisible, ses equerres tenant dans le slice de 8 px source.
+     ⚠ Redeclarer `border-image` avec le meme slice : changer la seule `border-width`
+     laisserait le sprite etire sur 6 px de rendu pour 3 px de boite. */
+  .inventory{border:3px solid transparent;
+    border-image:var(--cadre-metal) 8 / 3px stretch;}
+  body.theme-inox .inventory{border-image:var(--cadre-inox) 8 / 3px stretch;}
   .tabs-row .tab-btn{padding:4px 8px;}
   .tabs-row .tab-btn .tb-sub{display:none;}
   /* NB : aucun plafond sur `.inventory` ici. Le calque de 130 px couvrait la scene de
@@ -9515,8 +9539,32 @@ const SAVE_VERSION = 31;
 // de rejet — seuls le rendu et l'URL le sont.
 // ⚠ Le commentaire « 14.54 » qui mentionne `SUPPORT_URL` plus bas n'est PAS reecrit : il decrit
 // ce qu'a fait le build 14.54, il etait juste alors. `SAVE_VERSION` INCHANGE (31).
-const GAME_BUILD = 417;
-const GAME_VERSION = 'Alpha 18.4';
+// 18.5 — CADRE 9-SLICE DE LA BARRE D'INVENTAIRE (CSS PUR, 3 ancres, aucun bloc <script> touche).
+// `.inventory` ne figurait dans AUCUNE des deux listes de theme — ni celle du theme bleu
+// (`body:not(.theme-inox) .hud, .research-panel, .slot-panel, .toolbar`), ni celle des panneaux
+// (`.tip-popup, .mode-modal, .info-panel, .build-panel`). Elle restait donc en aplat
+// `var(--panel-2)` borde de deux filets d'1 px : le SEUL element plat de l'ecran, entre un HUD et
+// une barre d'outils en texture metal et cadre 9-slice. Elle recoit la MEME MATIERE que le HUD
+// (`--tex-bleu` / `--tex-inox-leger`) mais un CADRE A PART — `--cadre-metal` en bleu,
+// `--cadre-inox` en inox — pour se lire comme une zone DISTINCTE du HUD et de la barre d'outils,
+// qui portent les rivets. Cadres poses SANS `fill`, comme le HUD : le sprite ne peint pas son
+// fond, la texture reste visible dessous. `.inventory.open` est le MEME element (passe en
+// position absolue sous le HUD) : le cadre suit l'ouverture sans une ligne de code.
+// ⚠ AUCUN SPRITE IMPORTE : `--cadre-metal` et `--cadre-inox` etaient DEJA dans le fichier et
+// ORPHELINS (0 usage chacun avant ce lot, comme `ui_pause` entre 13.95 et le lot L2). Le lot ne
+// fait que brancher deux assets deja payes en octets. ⚠ `--cadre-bouton` reste orphelin — a
+// garder en tete avant d'importer un nouveau sprite de cadre.
+// ⚠ COUT MESURE, ASSUME : la bordure passe de 1 a 6 px, soit +10 px de hauteur (35 -> 45 px
+// repliee, 129 -> 139 px deployee). La SCENE ne perd ces 10 px que barre REPLIEE : le calque
+// deploye est en superposition, il ne pousse rien. En PAYSAGE COURT le bloc Lot C ramene la
+// bordure a 3 px (surcout 10 -> 4 px), la ou la scene ne fait que ~200 px et ou le calque
+// deploye n'a TOUJOURS AUCUN PLAFOND (reliquat connu du chantier dimensionnement, non traite
+// ici : `vh`/`dvh` sont inutilisables dans le harnais en paysage emule).
+// ⚠ Dans ce bloc Lot C, `border-image` est REDECLARE AVEC SON SLICE et pas seulement
+// `border-width` : changer la seule largeur laisserait le sprite etire sur 6 px de rendu pour
+// 3 px de boite. `SAVE_VERSION` INCHANGE (31) — CSS pur, aucune sauvegarde touchee.
+const GAME_BUILD = 418;
+const GAME_VERSION = 'Alpha 18.5';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9525,7 +9573,7 @@ const GAME_VERSION = 'Alpha 18.4';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Une section « Soutenir le projet » facultative apparait desormais en bas des Options, juste au-dessus de la ligne Version. C'est un simple lien externe, sans aucune contrepartie en jeu : rien ne change dans la partie.";
+const GAME_NOTES = "La barre d'inventaire reçoit enfin le même habillage que le reste de l'interface : texture métal et cadre à rivets, au lieu du bandeau plat qu'elle était seule à garder. Habillage uniquement — rien ne change dans la partie.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde

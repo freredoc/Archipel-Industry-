@@ -1,8 +1,8 @@
 {
-  "build": 417,
-  "version": "Alpha 18.4",
+  "build": 418,
+  "version": "Alpha 18.5",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Une section « Soutenir le projet » facultative apparait desormais en bas des Options, juste au-dessus de la ligne Version. C'est un simple lien externe, sans aucune contrepartie en jeu : rien ne change dans la partie."
+  "notes": "La barre d'inventaire reçoit enfin le même habillage que le reste de l'interface : texture métal et cadre à rivets, au lieu du bandeau plat qu'elle était seule à garder. Habillage uniquement — rien ne change dans la partie."
 }
