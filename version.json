@@ -1,8 +1,8 @@
 {
-  "build": 418,
-  "version": "Alpha 18.5",
+  "build": 419,
+  "version": "Alpha 18.6",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "La barre d'inventaire reçoit enfin le même habillage que le reste de l'interface : texture métal et cadre à rivets, au lieu du bandeau plat qu'elle était seule à garder. Habillage uniquement — rien ne change dans la partie."
+  "notes": "Les deux boutons flottants (Logique et Surface/Souterrain) ne mordent plus sur la barre d'inventaire : ils se placent désormais juste sous elle, quelle que soit la taille de l'écran. Et un fin joint sépare enfin la barre d'inventaire du bandeau du haut, dont les cadres se touchaient."
 }
