@@ -16,17 +16,6 @@ def ksFile = file('keystore.jks')
 def storeBuild = project.hasProperty('storeBuild') &&
         project.property('storeBuild').toString().toBoolean()
 
-// --- P4 : relevé d'insets à l'écran ------------------------------------------------------------
-// ⚠ La bascule `-PinsetMode` du lot P3 a DISPARU : la variante B (aucun rembourrage natif, le CSS
-// fait tout) a été retenue sur appareil, la variante A est supprimée. Un seul chemin de
-// rembourrage, sur les trois paquets comme sur le web et la PWA.
-// Relevé d'insets à l'écran (le développement n'a pas d'appareil : c'est le seul moyen de
-// MESURER ce que le gestionnaire reçoit réellement, sans imposer un aller-retour de plus au
-// testeur). Faux par défaut → les trois paquets normaux (publique, dev, magasin) n'embarquent
-// aucun afficheur. ⚠ TEMPORAIRE, comme la bascule ci-dessus.
-def insetDiag = project.hasProperty('insetDiag') &&
-        project.property('insetDiag').toString().toBoolean()
-
 android {
     namespace 'fr.archipel.industry'
     // API 36 (Android 16). Exigé par Play : `targetSdk` doit atteindre 36 au 31/08/2026, et un
@@ -70,8 +59,6 @@ android {
         // elle disparaît (AndroidManifest-store.xml).
         buildConfigField 'boolean', 'SELF_UPDATE', (storeBuild ? 'false' : 'true')
 
-        // P4 — afficheur de diagnostic d'insets (cf. le bloc de tête).
-        buildConfigField 'boolean', 'INSET_DIAG', (insetDiag ? 'true' : 'false')
     }
 
     // `buildConfig` est désactivé par défaut depuis AGP 8 : sans ça, la classe BuildConfig n'est

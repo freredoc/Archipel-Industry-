@@ -9,18 +9,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInstaller;
 import android.content.res.Configuration;
-import android.graphics.Insets;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.Settings;
-import android.util.Log;
-import android.util.TypedValue;
-import android.view.Gravity;
-import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
@@ -31,8 +25,6 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.FrameLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -56,24 +48,7 @@ public class MainActivity extends Activity {
 
     private static final String INSTALL_ACTION = "fr.archipel.industry.INSTALL_STATUS";
     private static final int FILE_CHOOSER_REQUEST = 0xF11E;
-    /** Étiquette de journal du diagnostic d'insets (`adb logcat -s ArchipelInsets`). */
-    private static final String TAG = "ArchipelInsets";
-
     private WebView web;
-    /**
-     * Vue racine que NOUS contrôlons, insérée entre `android.R.id.content` et la WebView.
-     * C'est le point le plus haut de la hiérarchie qu'une application peut se donner sans
-     * détourner le DecorView : le gestionnaire d'insets y est posé, de sorte qu'aucune vue
-     * intermédiaire ne puisse les avoir consommés avant lui.
-     */
-    private FrameLayout root;
-    /** Afficheur de diagnostic P4, présent UNIQUEMENT dans les builds `-PinsetDiag=true`. */
-    private TextView diag;
-    private final StringBuilder diagInsets = new StringBuilder();
-    private final StringBuilder diagPadding = new StringBuilder();
-    private final StringBuilder diagLate = new StringBuilder();
-    private final StringBuilder diagCss = new StringBuilder();
-    private int insetPass = 0;
     private BroadcastReceiver installReceiver;
     // Import de sauvegarde : callback du <input type="file"> en attente du fichier choisi.
     private ValueCallback<Uri[]> filePathCallback;
@@ -103,19 +78,6 @@ public class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return openExternally(Uri.parse(url));
-            }
-
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                // Le relevé CSS ne peut être pris qu'une fois la page chargée ET mise en page.
-                // 1,2 s de marge : l'asset fait ~3,7 Mo et le premier layout n'est pas immédiat.
-                if (BuildConfig.INSET_DIAG) view.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        probeCssInsets();
-                    }
-                }, 1200);
             }
         });
         web.setBackgroundColor(0xFF0E1726);           // fond sombre pendant le chargement
@@ -154,21 +116,14 @@ public class MainActivity extends Activity {
         // fichier, ouverture des liens externes) est INCHANGÉ.
         if (BuildConfig.SELF_UPDATE) registerInstallReceiver();
 
-        // ⚠ P3 — la WebView n'est PLUS la vue de contenu directe : elle est enveloppée dans une
-        // racine que nous contrôlons. Voir setUpInsets() : le gestionnaire d'insets doit être posé
-        // le plus haut possible, sinon une vue intermédiaire peut les avoir déjà consommés.
-        root = new FrameLayout(this);
-        root.addView(web, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        if (BuildConfig.INSET_DIAG) addDiagOverlay();
-
-        setContentView(root);
+        setContentView(web);
         setUpInsets();
         web.loadUrl("file:///android_asset/index.html");
     }
 
     /**
-     * P4 — LE REMBOURRAGE VIENT DU CSS, ET DE LUI SEUL. Il n'y a plus de rembourrage natif.
+     * P4 — LE REMBOURRAGE VIENT DU CSS, ET DE LUI SEUL. Il n'y a plus une ligne de rembourrage
+     * natif, et il ne doit pas en revenir.
      *
      * Contexte : targetSdk 36 impose l'edge-to-edge (`windowOptOutEdgeToEdgeEnforcement` est
      * déprécié ET désactivé sur Android 16), la fenêtre est donc dessinée SOUS les barres système.
@@ -184,55 +139,26 @@ public class MainActivity extends Activity {
      *
      * B dégage la barre sans qu'aucun pixel natif ne soit rembourré : **une WebView Android
      * renseigne donc bien `safe-area-inset-bottom` pour la barre de NAVIGATION**, et pas seulement
-     * pour l'encoche comme on le craignait. C'est le CSS `env(safe-area-inset-*)` du lot A qui
-     * opère, seul.
+     * pour l'encoche comme on le craignait. C'est le CSS `env(safe-area-inset-*)` du jeu qui opère,
+     * seul — `.hud` pour le haut, `.toolbar-wrap` pour le bas et les côtés.
      *
      * **B est retenue (décision d'Ethan)** : un seul mécanisme de rembourrage pour l'APK, le web et
      * la PWA. Avec A, deux chemins produisaient le même résultat sur deux canaux, et toute retouche
      * du HUD aurait dû être vérifiée sur les deux. Cette dette est annulée.
      *
-     * ⚠ IL N'Y A DONC PLUS RIEN À FAIRE ICI QUE DEUX CHOSES, et surtout PAS de `setPadding` :
-     *  1. `setDecorFitsSystemWindows(false)` — PRÉREQUIS INDISPENSABLE de B : sans lui la WebView
-     *     n'est pas disposée sous les barres, elle reçoit des insets nuls et le CSS ne réserve
-     *     rien. Le retirer casserait le rembourrage sur les trois paquets.
+     * ⚠ IL NE RESTE DONC QUE DEUX GESTES ICI, et surtout AUCUN `setPadding` :
+     *  1. `setDecorFitsSystemWindows(false)` — PRÉREQUIS INDISPENSABLE : sans lui la WebView n'est
+     *     pas disposée sous les barres, elle reçoit des insets nuls, `env(safe-area-inset-*)` y vaut
+     *     0 et plus RIEN n'est rembourré, sur les trois paquets à la fois. Ne pas le retirer en
+     *     croyant simplifier.
      *  2. `requestApplyInsets()` à chaque changement de configuration (onConfigurationChanged),
      *     l'activité déclarant `configChanges` donc n'étant pas recréée.
-     *
-     * Le gestionnaire ci-dessous n'applique RIEN et ne consomme RIEN : il ne sert qu'au relevé de
-     * diagnostic, et il rend les insets intacts pour que
-     * `ViewGroup.dispatchApplyWindowInsets` les transmette à la WebView. Il disparaît avec le
-     * relevé.
      */
     private void setUpInsets() {
-        // PRÉREQUIS DE B — ne pas retirer : sans lui la WebView n'est pas sous les barres et
+        // PRÉREQUIS — ne pas retirer : sans lui la WebView n'est pas sous les barres et
         // `env(safe-area-inset-*)` y vaut 0, donc plus aucun rembourrage nulle part.
         if (Build.VERSION.SDK_INT >= 30) {
             getWindow().setDecorFitsSystemWindows(false);
-        }
-
-        root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
-            @Override
-            public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
-                // OBSERVATION SEULE. Aucun padding, aucune consommation : les insets descendent
-                // intacts jusqu'à la WebView, qui renseigne env(safe-area-inset-*).
-                insetPass++;
-                recordInsets(insets);
-                recordPadding(v);
-                return insets;
-            }
-        });
-        root.requestApplyInsets();
-
-        // Relevé TARDIF : si le rembourrage a été écrasé par une passe de layout ultérieure
-        // (4e cause envisagée), c'est ici que ça se voit — le padding relu 2,5 s après le
-        // chargement ne correspondra plus à celui qu'on vient d'appliquer.
-        if (BuildConfig.INSET_DIAG) {
-            root.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    recordLate();
-                }
-            }, 2500);
         }
     }
 
@@ -240,139 +166,9 @@ public class MainActivity extends Activity {
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         // L'activité déclare configChanges (orientation|screenSize|…) : elle n'est PAS recréée,
-        // donc rien ne redemanderait les insets sans cet appel.
-        if (root != null) root.requestApplyInsets();
-    }
-
-    // ------------------------------------------------------------------------------------------
-    // Diagnostic P3 — présent uniquement dans les builds de test (-PinsetDiag=true).
-    // Il n'y a pas d'appareil côté développement : c'est le seul moyen de relever CE QUE LE
-    // GESTIONNAIRE REÇOIT RÉELLEMENT sans imposer un aller-retour supplémentaire au testeur.
-    // Les mêmes valeurs partent aussi dans le journal (adb logcat -s ArchipelInsets).
-    // ------------------------------------------------------------------------------------------
-
-    private void addDiagOverlay() {
-        diag = new TextView(this);
-        diag.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9);
-        diag.setTextColor(0xFFFFF176);
-        diag.setBackgroundColor(0xCC000000);
-        diag.setPadding(6, 4, 6, 4);
-        diag.setTypeface(android.graphics.Typeface.MONOSPACE);
-        diag.setText("P4 — en attente d'insets…");
-        // Le relevé recouvre le haut du HUD : un appui le fait disparaître pour laisser
-        // inspecter la barre ACTIONS du bas sans gêne.
-        diag.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                v.setVisibility(View.GONE);
-            }
-        });
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.gravity = Gravity.TOP | Gravity.START;
-        root.addView(diag, lp);
-    }
-
-    private static String insetLine(String name, Insets i) {
-        return name + " t" + i.top + " b" + i.bottom + " l" + i.left + " r" + i.right + "\n";
-    }
-
-    private void recordInsets(WindowInsets insets) {
-        diagInsets.setLength(0);
-        diagInsets.append("P4 pass=").append(insetPass)
-                .append(" api=").append(Build.VERSION.SDK_INT)
-                // isConsumed() vrai ici = un parent a consommé avant nous (2e/3e cause).
-                .append(" consumed=").append(insets.isConsumed()).append('\n');
-        if (Build.VERSION.SDK_INT >= 30) {
-            diagInsets.append(insetLine("sys", insets.getInsets(WindowInsets.Type.systemBars())));
-            diagInsets.append(insetLine("nav",
-                    insets.getInsets(WindowInsets.Type.navigationBars())));
-            diagInsets.append(insetLine("cut",
-                    insets.getInsets(WindowInsets.Type.displayCutout())));
-        }
-        diagInsets.append("old t").append(insets.getSystemWindowInsetTop())
-                .append(" b").append(insets.getSystemWindowInsetBottom())
-                .append(" l").append(insets.getSystemWindowInsetLeft())
-                .append(" r").append(insets.getSystemWindowInsetRight()).append('\n');
-        pushDiag();
-    }
-
-    private void recordPadding(View v) {
-        diagPadding.setLength(0);
-        diagPadding.append("pad t").append(v.getPaddingTop())
-                .append(" b").append(v.getPaddingBottom())
-                .append(" l").append(v.getPaddingLeft())
-                .append(" r").append(v.getPaddingRight()).append('\n');
-        pushDiag();
-    }
-
-    private void recordLate() {
-        if (root == null) return;
-        diagLate.setLength(0);
-        diagLate.append("+2.5s pad b").append(root.getPaddingBottom())
-                .append(" root ").append(root.getHeight())
-                .append(" web ").append(web != null ? web.getHeight() : -1)
-                .append(" dpi ").append(getResources().getDisplayMetrics().densityDpi).append('\n');
-        pushDiag();
-    }
-
-    /**
-     * Relève `env(safe-area-inset-*)` TEL QUE LA WEBVIEW LE CALCULE — c'est la seule mesure qui
-     * dise vraiment ce que le CSS du jeu réserve. Le relevé natif (`sys`/`nav`/`cut`) donne ce que
-     * la fenêtre reçoit ; il ne dit pas ce que la page en fait.
-     *
-     * ⚠ DEUX UNITÉS, NE PAS LES CONFONDRE : `env()` rend des **px CSS**, les insets natifs des
-     * **px physiques**. Sur un écran à `devicePixelRatio = 3`, un inset natif de 82 px se lit
-     * ~27,3 px CSS. Le relevé publie donc les deux (`css` puis `phy`, = css × dpr) pour que la
-     * comparaison avec `sys`/`cut` ait un sens.
-     */
-    private void probeCssInsets() {
-        if (web == null) return;
-        final String js =
-                "(function(){try{var d=document.createElement('div');"
-                + "d.style.cssText='position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;"
-                + "padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);"
-                + "padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);';"
-                + "document.documentElement.appendChild(d);var s=getComputedStyle(d);"
-                + "var r=[s.paddingTop,s.paddingBottom,s.paddingLeft,s.paddingRight]"
-                + ".map(function(v){return parseFloat(v)||0;});"
-                + "d.parentNode.removeChild(d);"
-                + "return r.join(',')+','+(window.devicePixelRatio||1);}catch(e){return 'err';}})()";
-        web.evaluateJavascript(js, new ValueCallback<String>() {
-            @Override
-            public void onReceiveValue(String value) {
-                diagCss.setLength(0);
-                String v = value == null ? "" : value.replace("\"", "");
-                String[] p = v.split(",");
-                if (p.length >= 5) {
-                    float dpr = parseF(p[4], 1f);
-                    diagCss.append("sa css t").append(p[0]).append(" b").append(p[1])
-                            .append(" l").append(p[2]).append(" r").append(p[3])
-                            .append(" dpr").append(p[4]).append('\n')
-                            .append("sa phy t").append(Math.round(parseF(p[0], 0f) * dpr))
-                            .append(" b").append(Math.round(parseF(p[1], 0f) * dpr))
-                            .append(" l").append(Math.round(parseF(p[2], 0f) * dpr))
-                            .append(" r").append(Math.round(parseF(p[3], 0f) * dpr)).append('\n');
-                } else {
-                    diagCss.append("sa ?").append(v).append('\n');
-                }
-                pushDiag();
-            }
-        });
-    }
-
-    private static float parseF(String s, float def) {
-        try {
-            return Float.parseFloat(s.trim());
-        } catch (Exception e) {
-            return def;
-        }
-    }
-
-    private void pushDiag() {
-        String txt = diagInsets.toString() + diagPadding + diagLate + diagCss;
-        Log.i(TAG, txt.replace('\n', '|'));
-        if (diag != null) diag.setText(txt.trim());
+        // donc rien ne redemanderait les insets sans cet appel — et sans nouveaux insets la
+        // WebView garderait un `env(safe-area-inset-*)` périmé.
+        if (web != null) web.requestApplyInsets();
     }
 
     /** Ouvre les URLs http/https dans le navigateur système ; garde le reste dans la WebView. */
