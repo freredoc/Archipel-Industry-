@@ -215,15 +215,20 @@ jobs:
           [ -n "$AAPT" ] || { echo "::error::aapt2 introuvable"; exit 1; }
           BADGE=$("$AAPT" dump badging ArchipelIndustryStore.apk)
           BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" Archipel_industry_alpha-7.html | head -1)
-          echo "$BADGE" | grep -E "^package:|^sdkVersion:|^targetSdkVersion:|^uses-permission:|^application-debuggable"
+          # Trace intégrale de l'en-tête : c'est elle qui a montré qu'aapt2 36 n'émet plus la
+          # ligne `sdkVersion:` sous ce nom. On garde le dump, il sert au prochain qui doute.
+          echo "$BADGE" | head -12
           echo "$BADGE" | grep -q "package: name='fr.archipel.industry.store'" \
             || { echo "::error::appId magasin inattendu"; exit 1; }
           echo "$BADGE" | grep -q "versionCode='${BUILD}'" \
             || { echo "::error::versionCode != GAME_BUILD ($BUILD)"; exit 1; }
           echo "$BADGE" | grep -q "targetSdkVersion:'36'" \
             || { echo "::error::targetSdkVersion != 36 — Play refuserait le depot"; exit 1; }
-          echo "$BADGE" | grep -q "sdkVersion:'26'" \
-            || { echo "::error::minSdk != 26"; exit 1; }
+          # ⚠ `aapt2` étiquette le minSdk `sdkVersion:` (build-tools 34) ou `minSdkVersion:`
+          # (build-tools 36) selon la version — on accepte les DEUX, mais on échoue si AUCUNE
+          # n'est trouvée : un garde qui se désarme tout seul ne garde rien.
+          echo "$BADGE" | grep -Eq "^(sdkVersion|minSdkVersion):'26'" \
+            || { echo "::error::minSdk != 26 (ou etiquette aapt2 inconnue — voir le dump ci-dessus)"; exit 1; }
           [ "$(echo "$BADGE" | grep -c '^uses-permission:')" = "0" ] \
             || { echo "::error::le paquet magasin declare des permissions"; exit 1; }
           echo "$BADGE" | grep -q "^application-debuggable" \

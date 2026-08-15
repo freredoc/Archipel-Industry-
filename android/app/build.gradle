@@ -70,9 +70,11 @@ android {
         main {
             // Le manifeste magasin ne déclare AUCUNE permission (ni REQUEST_INSTALL_PACKAGES,
             // ni INTERNET). Les deux fichiers ne diffèrent QUE par ces lignes.
-            manifest.srcFile storeBuild
+            // ⚠ Parenthèses OBLIGATOIRES : `manifest.srcFile a ? b : c` (command expression sans
+            // parenthèses suivie d'un ternaire) est ambigu en Groovy et se lit `srcFile(a) ? b : c`.
+            manifest.srcFile(storeBuild
                     ? 'src/main/AndroidManifest-store.xml'
-                    : 'src/main/AndroidManifest.xml'
+                    : 'src/main/AndroidManifest.xml')
         }
     }
 
