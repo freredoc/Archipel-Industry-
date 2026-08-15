@@ -9775,6 +9775,19 @@ const SAVE_VERSION = 31;
 // ⚠ CE QUI RESTE, ET QU'IL NE FAUT PAS RETIRER : `setDecorFitsSystemWindows(false)` est le
 // PREREQUIS de B — sans lui la WebView n'est pas disposee sous les barres, elle recoit des insets
 // nuls et le CSS ne reserve plus rien, sur les TROIS paquets a la fois.
+// (2) LA BARRE D'ETAT DEVIENT VISIBLE EN JEU (heure, batterie, notifications). Le jeu tournait en
+// plein ecran depuis toujours — `sys t0` du releve P3 le confirme. On ne masque plus la barre de
+// statut, et on force ses icones CLAIRES (le fond du jeu est sombre ; certains constructeurs
+// posent le drapeau « fond clair » par defaut, ce qui donnerait des icones noires illisibles).
+// ⚠ AUCUN rembourrage natif n'est retabli pour autant : la fenetre reste edge-to-edge, la barre
+// se dessine PAR-DESSUS le fond, et c'est toujours le CSS qui reserve la bande haute — `.hud`
+// porte deja `padding-top:max(6px, env(safe-area-inset-top))` et suit l'inset tout seul. AUCUNE
+// ligne de HTML/CSS n'a eu a changer : verifie, pas suppose.
+// ⚠ RISQUE A TESTER, il peut faire annuler ce changement : sortir du plein ecran reactive le volet
+// de notifications au balayage depuis le haut. Sur une carte qui se navigue au glissement, un geste
+// parti trop haut pourrait derouler le volet au lieu de deplacer la vue. Aucune API ne permet a une
+// application ordinaire de bloquer ce geste — seul le test sur appareil tranche, et le changement
+// se retire alors par un `revert` du seul commit 2.
 // `SAVE_VERSION` INCHANGE (31).
 const GAME_BUILD = 425;
 const GAME_VERSION = 'Alpha 19.2';

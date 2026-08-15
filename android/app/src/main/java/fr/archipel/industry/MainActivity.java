@@ -640,29 +640,48 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) hideSystemBars();
+        if (hasFocus) showStatusBar();
     }
 
-    private void hideSystemBars() {
-        // On masque seulement la barre de statut (en haut) — c'est le plein écran voulu, et
-        // l'absence de barre d'état en jeu est un comportement confirmé, pas un défaut. La barre
-        // de navigation (les 3 boutons Android, en bas) reste visible ; réserver son espace est
-        // le travail de `setUpInsets()` (variante A) ou du CSS de la page (variante B).
-        // ⚠ `setSystemUiVisibility` est déprécié depuis l'API 30 et n'est plus fiable une fois
-        // l'edge-to-edge imposé : au-delà, on passe par WindowInsetsController. Masquer la barre
-        // de statut met son inset à 0, donc le rembourrage du haut retombe à l'encoche seule.
+    /**
+     * P4 — LA BARRE D'ÉTAT EST VISIBLE EN JEU (heure, batterie, notifications). Demande d'Ethan.
+     *
+     * Le jeu tournait en plein écran depuis toujours : la barre de statut était masquée à chaque
+     * reprise du focus, ce que le relevé du lot P3 confirme (`sys t0` — zéro inset haut). Elle est
+     * désormais AFFICHÉE.
+     *
+     * ⚠ AUCUN REMBOURRAGE NATIF N'EST RÉTABLI POUR AUTANT. La fenêtre reste edge-to-edge
+     * (`setDecorFitsSystemWindows(false)`), la barre d'état se dessine PAR-DESSUS le fond, et c'est
+     * toujours le CSS qui réserve la bande haute : `.hud` porte
+     * `padding-top:max(6px, env(safe-area-inset-top))` et suit donc l'inset tout seul. Le jeu ne
+     * connaît qu'un seul mécanisme de rembourrage, ici comme en web et en PWA.
+     *
+     * Conséquence attendue, À MESURER et non à supposer : en plein écran le CSS réservait déjà
+     * `cut t82` (le trou de caméra selfie du S25 FE). La barre d'état occupe approximativement la
+     * même bande, donc `safe-area-inset-top` devrait rester du même ordre — le vide noir contournant
+     * l'objectif devient une barre d'état utile. Si l'inset augmente sensiblement, c'est de la
+     * hauteur de jeu perdue, et cela doit remonter au RAPPORT.
+     *
+     * ⚠ RISQUE CONNU, c'est le test qui peut faire annuler ce commit : sortir du plein écran
+     * réactive le volet de notifications au balayage depuis le haut. Sur une carte qui se navigue au
+     * glissement, un geste parti trop haut pourrait dérouler le volet au lieu de déplacer la vue.
+     * Rien ne permet à une application ordinaire de bloquer ce geste — seul le test sur appareil
+     * tranche. Le bas n'est pas touché.
+     *
+     * `setSystemUiVisibility` (API < 30) est déprécié et n'est de toute façon plus fiable une fois
+     * l'edge-to-edge imposé : sur ce chemin on ne fait donc RIEN, la barre d'état y est visible par
+     * défaut puisqu'on ne la masque plus.
+     */
+    private void showStatusBar() {
         if (Build.VERSION.SDK_INT >= 30) {
             WindowInsetsController c = getWindow().getInsetsController();
             if (c != null) {
-                c.hide(WindowInsets.Type.statusBars());
-                c.setSystemBarsBehavior(
-                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                c.show(WindowInsets.Type.statusBars());
+                // Le jeu est sombre (#0E1726) sous la barre : on force les icônes CLAIRES en
+                // effaçant le drapeau « fond clair ». Certains constructeurs le posent par défaut,
+                // ce qui donnerait des icônes noires illisibles sur ce fond.
+                c.setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
             }
-        } else {
-            View d = getWindow().getDecorView();
-            d.setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_FULLSCREEN);
         }
     }
 
