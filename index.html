@@ -527,24 +527,29 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
    ⚠ `nth-child(2)` et non `last-child` : la pastille de mise à jour est le 3e enfant,
    `last-child` la ferait disparaître avec le libellé. */
 @media (max-width:479px){
-  .hud-main .map-btn > span:nth-child(2){display:none;}
+  /* Les TROIS boutons passent en pastille : Options rejoint Aide et Carte. Le palier 2 a
+     383 px disparait — il n'avait de sens que tant qu'Options gardait son libelle. */
+  .hud-main .options-btn > span:nth-child(2){display:none;}
   /* Bascule 16 → 32 px. Les deux images sont dans le DOM, le CSS seul choisit : pas de
      `matchMedia` ni d'état React à tenir synchronisé. Un downscale du 32 aurait été du
      demi-pixel sur du pixel art, d'où deux sprites distincts et non un seul redimensionné. */
-  .hud-main .map-btn .ico-lg,
-  .hud-main .help-btn .ico-lg{display:inline-block;}
-  .hud-main .map-btn .ico-sm,
-  .hud-main .help-btn .ico-sm{display:none;}
+  .hud-main .options-btn .ico-lg{display:inline-block;}
+  .hud-main .options-btn .ico-sm{display:none;}
   /* Le 🛠 hors flux : le bouton ne bat plus quand la réparation devient payable ou cesse
      de l'être — sa largeur ne dépend plus du tout du badge, ce que `visibility:hidden`
      assurait déjà mais au prix des 24 px d'emplacement réservé. */
+  /* PASTILLE COMPACTE. Le cadre 9-slice par defaut (bordure 6 px + padding 5/11) donnait
+     66 x 54 px pour un sprite de 32 : 34 px de chrome horizontal, et surtout un bouton
+     Options a 38 px de haut a cote de pastilles a 54 — la rangee n'etait pas alignee.
+     ⚠ SPECIFICITE : la regle de theme est `body:not(.theme-inox) .options-btn` = (0,2,1).
+     Il faut donc (0,3,0) — `.hud .hud-main` — pour la battre : (0,2,0) serait ignoree, et la
+     regle de theme est PLUS BAS dans la feuille, donc l'egalite ne suffirait pas non plus.
+     ⚠ On ne touche QUE `border-width` et `border-image-width` : redeclarer `border-image`
+     imposerait de repeter la source POUR CHAQUE theme ET CHAQUE etat (normal/hover/actif).
+     La largeur de rendu du slice suffit, la source et le slice restent ceux du theme. */
+  .hud .hud-main .options-btn{border-width:4px;border-image-width:4px;padding:4px;}
   .hud-main .map-btn{position:relative;}
   .hud-main .map-btn .map-repair-flag{position:absolute;right:2px;bottom:1px;margin:0;}
-}
-@media (max-width:383px){
-  .hud-main .options-btn:not(.help-btn):not(.map-btn) > span:nth-child(2){display:none;}
-  .hud-main .options-btn .ico-lg{display:inline-block;}
-  .hud-main .options-btn .ico-sm{display:none;}
 }
 /* Révélation de l'île 6 (14.4x) — jouée UNE FOIS, à la première ouverture de la carte
    après le déblocage. Séquence : la brume se lève (0 → 1,4 s), l'île émerge (0,5 → 1,5 s),
@@ -1616,6 +1621,13 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   .hud-main .help-btn .ico-sm,
   .hud-main .map-btn .ico-sm{display:inline-block;}
   .hud-main .map-btn .map-repair-flag{position:static;margin-left:3px;}
+  /* Le paysage court REND aussi le cadre plein et le libelle d'Options : il refuse deja les
+     pastilles, donc le bouton reprend sa geometrie normale. Sans ces deux lignes, un telephone
+     en paysage sous 480 px aurait des boutons de 32 px (sous le plancher tactile) et perdrait
+     le mot « Options » alors que la largeur y est abondante. Meme specificite (0,3,0) que la
+     regle de compaction, et ce bloc est PLUS BAS dans la feuille : c'est l'ordre qui arbitre. */
+  .hud .hud-main .options-btn{border-width:6px;border-image-width:6px;padding:5px 11px;}
+  .hud-main .options-btn:not(.help-btn):not(.map-btn) > span:nth-child(2){display:inline;}
   /* NB : aucun plafond sur `.inventory` ici. Le calque de 130 px couvrait la scene de
      122 px ; il en laisse desormais ~72 visibles grace aux gains ci-dessus. Un plafond
      en unites viewport a ete ECARTE : ni `vh` ni `dvh` ne se mesurent correctement en
@@ -9667,8 +9679,31 @@ const SAVE_VERSION = 31;
 // de 732 px opaques — et non 4 x 193 = 772 : le disque est retrace nativement, pas upscale.
 // `ui_carte` 16 est REMPLACE (meme masque au pixel, 73 pixels de couleur changes) pour
 // s'accorder au 32. `SAVE_VERSION` INCHANGE (31) — ni donnees de partie ni `BUILDINGS`.
-const GAME_BUILD = 420;
-const GAME_VERSION = 'Alpha 18.7';
+// 18.8 — PASTILLES COMPACTES + OPTIONS EN PASTILLE (retour d'Ethan sur capture : « reduit la
+// taille des bords... c'est vraiment grossier »). Deux defauts MESURES sur le 420 : (a) une
+// pastille faisait 66 x 54 px pour un sprite de 32, soit 34 px de chrome horizontal (padding
+// 5/11 + bordure 6) ; (b) surtout, le bouton Options titre ne faisait que 38 px de HAUT contre
+// 54 pour les pastilles — la rangee n'etait pas alignee, et c'est ca qui se lisait « grossier ».
+// Les TROIS boutons passent donc en pastille sous 480 px, a 48 x 48 (bordure 4, padding 4).
+// ⚠ LE PALIER 2 A 383 px EST SUPPRIME : il n'existait que pour garder « Options » ECRIT a
+// 384 px. Ce calibrage tombe avec le retour d'Ethan. Effet mesure a 384 px : le selecteur
+// d'ile passe de 53 a 168 px (x3,2), le HUD de 124 a 118.
+// ⚠ SPECIFICITE — la regle de compaction DOIT etre en (0,3,0) (`.hud .hud-main .options-btn`) :
+// la regle de theme est `body:not(.theme-inox) .options-btn` = (0,2,1), et elle est PLUS BAS
+// dans la feuille, donc ni (0,2,0) ni une egalite ne suffiraient.
+// ⚠ On ne touche QUE `border-width` et `border-image-width`, jamais `border-image` : redeclarer
+// la shorthand imposerait de repeter la source pour CHAQUE theme ET CHAQUE etat
+// (normal/hover/actif). La largeur de rendu du slice suffit.
+// ⚠ LE BLOC LOT C (paysage court) REND LE CADRE PLEIN ET LE LIBELLE : il refuse deja les
+// pastilles, donc le bouton y reprend sa geometrie normale. Sans ces 2 lignes un telephone en
+// paysage sous 480 px aurait des boutons de 32 px — sous le plancher tactile — et perdrait le
+// mot « Options » la ou la largeur est abondante.
+// ⚠ PIEGE PAYE : supprimer le palier 2 retire aussi la bascule 16 -> 32 d'Options, qui n'etait
+// declaree QUE la (le palier 1 ne visait que map + help). Sans l'etendre aux trois, Options
+// sortait a 32 x 32 — libelle masque mais icone restee en 16. Mesure, pas devine.
+// `SAVE_VERSION` INCHANGE (31) — CSS pur, aucune sauvegarde touchee.
+const GAME_BUILD = 421;
+const GAME_VERSION = 'Alpha 18.8';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9677,7 +9712,7 @@ const GAME_VERSION = 'Alpha 18.7';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Sur téléphone, le bouton Carte passe en pastille et rend sa place au sélecteur d'île, tandis que le bouton Options garde son libellé — l'inverse d'avant. Les icônes du bandeau du haut y passent de 16 à 32 pixels, bien plus lisibles au doigt. En paysage court, où la hauteur est rare, elles restent en 16.";
+const GAME_NOTES = "Les boutons du bandeau du haut étaient trop massifs sur petit écran : ils se resserrent autour de leur icône, et le bouton Options rejoint les deux autres en pastille. Le sélecteur d'île y gagne beaucoup de place — trois fois plus à 384 pixels de large.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde

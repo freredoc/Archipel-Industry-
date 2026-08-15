@@ -1,8 +1,8 @@
 {
-  "build": 420,
-  "version": "Alpha 18.7",
+  "build": 421,
+  "version": "Alpha 18.8",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Sur téléphone, le bouton Carte passe en pastille et rend sa place au sélecteur d'île, tandis que le bouton Options garde son libellé — l'inverse d'avant. Les icônes du bandeau du haut y passent de 16 à 32 pixels, bien plus lisibles au doigt. En paysage court, où la hauteur est rare, elles restent en 16."
+  "notes": "Les boutons du bandeau du haut étaient trop massifs sur petit écran : ils se resserrent autour de leur icône, et le bouton Options rejoint les deux autres en pastille. Le sélecteur d'île y gagne beaucoup de place — trois fois plus à 384 pixels de large."
 }
