@@ -19,7 +19,73 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 424`, `GAME_VERSION = 'Alpha 19.1'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 425`, `GAME_VERSION = 'Alpha 19.2'`, `SAVE_VERSION = 31`.**
+  Changement 19.2 (brief `BRIEFp4statusbar`, **lot P4, 3 commits**) : **la variante B est RETENUE, la
+  variante A SUPPRIMÉE, et la BARRE D'ÉTAT devient VISIBLE en jeu.** `SAVE_VERSION` INCHANGÉ,
+  **aucun changement de jeu** — seuls `android/` et la CI bougent. Base 424 / 19.1.
+  (1) ⚠ **LA QUESTION OUVERTE DU LOT P3 EST TRANCHÉE, MESURÉE PAR ETHAN** (S25 FE, 3 boutons,
+  `sys t0 b135` et `cut t82` des deux côtés) : **A** → `pad t0 b135`, racine 2340, WebView **2205** ;
+  **B** → `pad t0 b0`, racine 2340, WebView **2340**. En B la WebView occupe TOUT l'écran, **aucun
+  pixel natif n'est rembourré**, et la barre ACTIONS est pourtant dégagée ⇒ **une WebView Android
+  renseigne bien `safe-area-inset-bottom` pour la BARRE DE NAVIGATION**, pas seulement pour
+  l'encoche. C'est le CSS `env(safe-area-inset-*)` du lot A qui opère, SEUL. **Décision d'Ethan : B**
+  (un seul mécanisme pour APK + web + PWA ; la dette « 2 chemins » est ANNULÉE).
+  (2) **Le rembourrage natif est retiré ENTIÈREMENT** — pas de drapeau, pas de branche morte, pas de
+  code commenté ; `-PinsetMode`, `INSET_MODE`, le listener, la racine `FrameLayout` et l'afficheur de
+  diagnostic disparaissent. La WebView redevient la vue de contenu directe.
+  ⚠ **CE QUI RESTE ET QU'IL NE FAUT JAMAIS RETIRER EN CROYANT SIMPLIFIER** :
+  **`setDecorFitsSystemWindows(false)`** est le **PRÉREQUIS** — sans lui la WebView n'est pas
+  disposée sous les barres, elle reçoit des insets nuls, `env(safe-area-inset-*)` y vaut 0 et **plus
+  RIEN n'est rembourré, sur les 3 paquets à la fois**. Avertissement écrit en tête de `setUpInsets()`.
+  ⚠ `onConfigurationChanged` demande les insets **à la WebView** (l'activité déclare `configChanges`,
+  elle n'est pas recréée → sans cet appel, `env(...)` reste périmé).
+  (3) **BARRE D'ÉTAT VISIBLE** : `hide(statusBars())`, `BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE` et le
+  chemin `setSystemUiVisibility` sont supprimés ; **icônes forcées CLAIRES**
+  (`setSystemBarsAppearance(0, APPEARANCE_LIGHT_STATUS_BARS)` — le fond du jeu est sombre et certains
+  constructeurs posent le drapeau « fond clair » par défaut → icônes noires illisibles).
+  ⚠ **AUCUN rembourrage natif rétabli** : la fenêtre reste edge-to-edge, la barre se dessine
+  PAR-DESSUS, et **c'est le CSS qui réserve la bande haute**. **AUCUNE ligne de HTML/CSS n'a eu à
+  changer — VÉRIFIÉ au fichier, pas supposé** : `.hud` porte déjà
+  `padding-top:max(6px,env(safe-area-inset-top))` (l. 50, + l. 1592 en paysage court) et
+  `.toolbar-wrap` `padding-bottom:env(safe-area-inset-bottom)` (l. 1263) — c'est CETTE règle-là qui
+  dégage la barre ACTIONS. `viewport-fit=cover` est en place l. 5.
+  (4) ⚠ **`safe-area-inset-top` AVANT/APRÈS — ÉCART AU BRIEF, il exige la valeur MESURÉE.**
+  **Avant = 82 px physiques**, mais **DÉDUIT** (le relevé P3 donne `cut t82` + `sys t0`, l'encoche est
+  la seule composante haute) ; **après = NON MESURABLE ICI** (pas d'appareil, insets à 0 en headless).
+  Livré à la place : le relevé de diagnostic est **ÉTENDU** d'une sonde qui lit
+  `env(safe-area-inset-*)` **tel que la WebView le calcule** → la valeur revient **dans le même
+  aller-retour** que T4-T6. Attendu : du **même ordre** (la barre d'état occupe ≈ la bande de
+  l'encoche) ; **si `sa phy t` dépasse nettement 82, c'est de la hauteur de jeu perdue**, à arbitrer.
+  ⚠ **DEUX UNITÉS À NE PAS CONFONDRE** : `env()` rend des **px CSS**, les insets natifs des **px
+  PHYSIQUES** (dpr 3 → 82 physiques = ~27,3 CSS). Le relevé publie les deux (`sa css` / `sa phy`).
+  (5) **CI** : l'étape d'APK de test produit **`ArchipelIndustryDev-P4.apk`** (libellé « Archipel P4 »,
+  appId DEV → remplace l'app dev, **sauvegarde conservée**), puis **DISPARAÎT au commit 3** avec
+  l'afficheur. ⚠ **L'APK de test vient donc du run 552 (commits 1+2)**, pas du head : le commit 3
+  retire précisément le relevé dont Ethan a besoin. Les 2 builds ne diffèrent que par ça.
+  ⚠ **L'AFFICHEUR MASQUE LE HAUT DU HUD**, donc la zone même que T5 juge → **il s'efface d'un appui** :
+  lire, capturer, puis le faire disparaître avant de juger T5/T6.
+  ⚠ **NON EXÉCUTABLES SANS APPAREIL, ne jamais porter au vert** : **T4** (barre ACTIONS dégagée,
+  non-régression P3), **T5** (barre d'état visible, HUD ni recouvert par elle ni par le trou de
+  caméra), **T6** — *celui qui peut faire ANNULER le commit 2* : sortir du plein écran réactive le
+  volet de notifications au balayage depuis le haut ; **partir des ~100 premiers px de la ZONE DE JEU**,
+  glisser vers le bas **10 fois**, PASS si le volet ne s'ouvre jamais. **Un geste parti du MILIEU
+  validerait à vide.** Aucune API ne permet à une app ordinaire de bloquer ce geste. + **contre-mesure
+  gestuelle sur T4** (inset bas quasi nul en gestuelle → une variante cassée y paraît saine).
+  **Si T6 échoue, le commit 2 se retire seul par `revert`** — c'est la raison de la séparation.
+  **Validé — runs CI 552 (commits 1+2) et 553 (commit 3), `workflow_dispatch` sur la BRANCHE :
+  succès complets.** 552 a produit l'APK de test (`Build P4 inset test APK` + `Assert P4 test APK`
+  verts) ; 553 construit les 3 paquets propres, **T2 vert** (assertions P2 non retouchées : asset du
+  `.aab`, contre-mesures publiques, 0 permission magasin vs 2 publique, `Assert appIds`). **Les 2
+  étapes à effet de bord SAUTÉES dans les deux runs — rien de publié.** **T3 : 0 occurrence** de
+  `setOnApplyWindowInsetsListener`, `onApplyWindowInsets`, `setPadding`, `WindowInsets.CONSUMED`,
+  `Type.systemBars`/`navigationBars`/`displayCutout`, `android.graphics.Insets`, `INSET_MODE`,
+  `INSET_DIAG` — ⚠ le seul `Type.statusBars()` restant est le **`show()`** du commit 2, PAS un chemin
+  de rembourrage. Contrôles locaux : `node --check` 7/7, accolades équilibrées, **0 import inutilisé**.
+  ⚠ **UN APK QUI COMPILE PEUT MAL SE COMPORTER À L'ÉCRAN** — le run 550 l'a prouvé. Seuls T4-T6 tranchent.
+  ⚠ **PR #398** : ce lot y est **ajouté** (même branche). Elle portait le défaut d'inset ; l'y
+  corriger le retire au lieu d'ouvrir une 2ᵉ PR qui répare la 1ʳᵉ. P1→P2→P3→P4 = une seule chaîne de
+  dépendances (P4 ne se merge pas sans P1, et P1 ne devrait pas se merger sans P4).
+- **État précédent : `GAME_BUILD = 424`, `GAME_VERSION = 'Alpha 19.1'`, `SAVE_VERSION = 31`.**
   Changement 19.1 (brief `BRIEFp3insets`, **lot P3, 2 commits — un par variante**) : **la barre
   ACTIONS passait SOUS la barre de navigation système ; deux correctifs concurrents partent en test
   sur appareil.** `SAVE_VERSION` INCHANGÉ, **aucun changement de jeu** — seuls `android/` et la CI
