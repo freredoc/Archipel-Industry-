@@ -9,7 +9,13 @@ def ksFile = file('keystore.jks')
 
 android {
     namespace 'fr.archipel.industry'
-    compileSdk 34
+    // API 36 (Android 16). Exigé par Play : `targetSdk` doit atteindre 36 au 31/08/2026, et un
+    // paquet en 34 serait refusé au dépôt. Demande AGP >= 8.9.0-rc01 (ici 8.13.0).
+    compileSdk 36
+    // ⚠ ÉPINGLÉ. Sans cette ligne, AGP 8.13 prend SA valeur par défaut (35.0.0) et la CI, qui
+    // n'installe que `build-tools;36.0.0`, tenterait un téléchargement implicite. On force donc
+    // la version réellement installée par le workflow — les deux doivent bouger ensemble.
+    buildToolsVersion '36.0.0'
 
     defaultConfig {
         // applicationId / libellé surchargeables (-PappId / -PappLabel) : la CI produit
@@ -22,7 +28,13 @@ android {
         // Un build local sans -PappId produit donc l'édition dev-appId.
         applicationId (project.findProperty('appId') ?: 'fr.archipel.industry')
         minSdk 26
-        targetSdk 34
+        // ⚠ targetSdk 36 change DEUX comportements en plus des API disponibles :
+        //  - l'edge-to-edge devient non contournable (la WebView dessine sous les barres
+        //    système ; `statusBarColor`/`navigationBarColor` du thème sont ignorés) — traité
+        //    par le gestionnaire d'insets de MainActivity ;
+        //  - `screenOrientation="portrait"` cesse d'être respecté sur les écrans >= 600dp,
+        //    donc le bloc paysage de la feuille de style devient un chemin normal sur tablette.
+        targetSdk 36
         // versionCode/versionName injectés par la CI (-Pvcode/-Pvname) depuis
         // GAME_BUILD / GAME_VERSION ; valeurs par défaut pour un build local.
         versionCode = (project.findProperty('vcode') ?: '1').toString().toInteger()

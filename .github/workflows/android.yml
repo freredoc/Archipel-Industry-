@@ -59,7 +59,13 @@ jobs:
       - name: Install SDK packages
         run: |
           yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          # API 36 (Android 16) : `compileSdk 36` exige la plateforme 36, et `buildToolsVersion`
+          # est ÉPINGLÉ à 36.0.0 dans app/build.gradle — les deux doivent bouger ensemble.
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          # ⚠ L'étape « Assert appIds » cherche aapt2 dans $ANDROID_HOME/build-tools/*/ et ÉCHOUE
+          # si elle n'en trouve aucun : on vérifie ici, tôt, que la nouvelle version est bien là.
+          ls "$ANDROID_HOME"/build-tools/36.0.0/aapt2 \
+            || { echo "::error::build-tools;36.0.0 absent — aapt2 introuvable pour Assert appIds"; exit 1; }
 
       - name: Prepare game files (public + dev + magasin)
         run: |

@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInstaller;
+import android.graphics.Insets;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -16,6 +17,8 @@ import android.provider.MediaStore;
 import android.provider.Settings;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -113,7 +116,50 @@ public class MainActivity extends Activity {
         registerInstallReceiver();
 
         setContentView(web);
+        applyInsetPadding();
         web.loadUrl("file:///android_asset/index.html");
+    }
+
+    /**
+     * targetSdk 36 : l'edge-to-edge est IMPOSÉ et ne se refuse plus (windowOptOutEdgeToEdgeEnforcement
+     * est désactivé sur Android 16). La WebView est donc dessinée SOUS les barres système : sans ce
+     * gestionnaire, la barre d'outils du bas passerait derrière la barre de navigation (les 3 boutons)
+     * et cesserait d'être cliquable — exactement ce que le test sur appareil doit vérifier.
+     *
+     * On rembourse par l'UNION barres système + encoche, puis on CONSOMME : le contenu reste dans la
+     * zone sûre quel que soit le mode d'encoche retenu par la version d'Android, sans avoir à en
+     * dépendre. C'est la réserve d'espace que le framework faisait lui-même avant targetSdk 36 :
+     * l'apparence ne change donc pas.
+     *
+     * ⚠ CONSÉQUENCE À CONNAÎTRE : la WebView ne débordant plus sous les barres, `env(safe-area-inset-*)`
+     * y vaut 0 et le rembourrage CSS du jeu devient inerte DANS L'APK. Il reste actif en web/PWA, où
+     * c'est le navigateur qui gère la zone sûre. Les deux chemins ne se cumulent donc jamais.
+     *
+     * ⚠ Sur Android <= 15, le framework applique encore lui-même les insets au contenu : ce
+     * gestionnaire reçoit alors des valeurs nulles et ne rembourre rien — pas de double marge.
+     */
+    private void applyInsetPadding() {
+        web.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+            @Override
+            public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
+                int l, t, r, b;
+                if (Build.VERSION.SDK_INT >= 30) {
+                    Insets safe = insets.getInsets(
+                            WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                    l = safe.left; t = safe.top; r = safe.right; b = safe.bottom;
+                } else {
+                    l = insets.getSystemWindowInsetLeft();
+                    t = insets.getSystemWindowInsetTop();
+                    r = insets.getSystemWindowInsetRight();
+                    b = insets.getSystemWindowInsetBottom();
+                }
+                v.setPadding(l, t, r, b);
+                return Build.VERSION.SDK_INT >= 29
+                        ? WindowInsets.CONSUMED
+                        : insets.consumeSystemWindowInsets();
+            }
+        });
+        web.requestApplyInsets();
     }
 
     /** Ouvre les URLs http/https dans le navigateur système ; garde le reste dans la WebView. */
@@ -379,13 +425,26 @@ public class MainActivity extends Activity {
     }
 
     private void hideSystemBars() {
-        View d = getWindow().getDecorView();
         // On masque seulement la barre de statut (en haut). La barre de navigation
-        // (les 3 boutons Android, en bas) reste visible et son espace est réservé :
-        // le jeu se place AU-DESSUS, donc les boutons ne recouvrent plus l'UI du bas.
-        d.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
+        // (les 3 boutons Android, en bas) reste visible et son espace est réservé par
+        // `applyInsetPadding()` : le jeu se place AU-DESSUS, donc les boutons ne
+        // recouvrent plus l'UI du bas.
+        // ⚠ `setSystemUiVisibility` est déprécié depuis l'API 30 et n'est plus fiable une fois
+        // l'edge-to-edge imposé : au-delà, on passe par WindowInsetsController. Masquer la barre
+        // de statut met son inset à 0, donc le rembourrage du haut retombe à l'encoche seule.
+        if (Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController c = getWindow().getInsetsController();
+            if (c != null) {
+                c.hide(WindowInsets.Type.statusBars());
+                c.setSystemBarsBehavior(
+                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+        } else {
+            View d = getWindow().getDecorView();
+            d.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN);
+        }
     }
 
     @Override

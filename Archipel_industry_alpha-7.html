@@ -9721,8 +9721,27 @@ const SAVE_VERSION = 31;
 // un mecanisme neuf : le HUD se replie deja selon la largeur de son contenu, et l'ile 7 ajoute
 // un onglet de la meme facon. Signale, pas corrige.
 // `SAVE_VERSION` INCHANGE (31) — aucune donnee de partie touchee, seul un filtre d'affichage.
-const GAME_BUILD = 422;
-const GAME_VERSION = 'Alpha 18.9';
+// 19.0 — CHAINE DE BUILD ANDROID 16 (lot P1, preparation Play). AUCUN changement de jeu : ce
+// lot ne touche que `android/` et la CI. AGP 8.5.2 -> 8.13.0, wrapper Gradle 8.7 -> 8.13,
+// `compileSdk`/`targetSdk` 34 -> 36, SDK de CI `android-36` + `build-tools;36.0.0`.
+// Motif : Play exige deja un targetSdk > 34 pour toute NOUVELLE application et imposera 36 au
+// 31/08/2026 — un paquet en 34 serait refuse au depot. AGP 8.13 est le DERNIER 8.x et supporte
+// l'API 36 : on evite ainsi la migration de majeure vers AGP 9.x (qui exigerait Gradle 9.5).
+// ⚠ targetSdk 36 change DEUX comportements que ce lot doit neutraliser :
+// (1) EDGE-TO-EDGE IMPOSE — `windowOptOutEdgeToEdgeEnforcement` est DESACTIVE sur Android 16, la
+//     WebView dessine sous les barres systeme et la reserve d'espace que le framework faisait
+//     disparait : sans rien, la barre d'outils du bas passerait DERRIERE les 3 boutons de
+//     navigation et cesserait d'etre cliquable. `MainActivity.applyInsetPadding()` rembourse par
+//     l'union barres systeme + encoche puis CONSOMME → l'apparence d'avant est preservee.
+//     ⚠ Consequence : `env(safe-area-inset-*)` vaut 0 DANS L'APK (le rembourrage CSS y devient
+//     inerte) et reste actif en web/PWA. Les deux chemins ne se cumulent jamais.
+// (2) VERROU D'ORIENTATION LEVE sur les ecrans >= sw600dp — `screenOrientation` y est ignore.
+//     Ferme par `android:appCategory="game"` : les JEUX sont l'exception PERENNE documentee (la
+//     propriete PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY, elle, tombera en API 37).
+// ⚠ Ces deux chemins sont INTESTABLES en headless (les insets y valent toujours 0) : ils ne se
+// levent que sur un appareil reel. `SAVE_VERSION` INCHANGE (31).
+const GAME_BUILD = 423;
+const GAME_VERSION = 'Alpha 19.0';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9731,7 +9750,7 @@ const GAME_VERSION = 'Alpha 18.9';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "L'île 6 n'apparaît plus dans le sélecteur d'île tant qu'elle est verrouillée : sa découverte reste une surprise, comme sur la carte de l'archipel. Son onglet revient dès que la liaison est réparée.";
+const GAME_NOTES = "Mise a jour technique : le jeu passe sur la chaine de compilation Android 16, une etape obligatoire pour deposer l'application sur les magasins. Rien ne change dans la partie.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
