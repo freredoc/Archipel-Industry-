@@ -9740,8 +9740,27 @@ const SAVE_VERSION = 31;
 //     propriete PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY, elle, tombera en API 37).
 // ⚠ Ces deux chemins sont INTESTABLES en headless (les insets y valent toujours 0) : ils ne se
 // levent que sur un appareil reel. `SAVE_VERSION` INCHANGE (31).
-const GAME_BUILD = 423;
-const GAME_VERSION = 'Alpha 19.0';
+// 19.1 — LA BARRE ACTIONS PASSAIT SOUS LA BARRE DE NAVIGATION (lot P3). AUCUN changement de jeu :
+// ce lot ne touche que `android/` et la CI. Le rembourrage d'insets du 19.0 est INOPERANT sur
+// appareil : mesure d'Ethan sur Galaxy S25 FE en navigation a 3 boutons, APK dev ET magasin du
+// run 550 — les libelles « Ouvrir / Copier / Demolir / Ameliorer » sont recouverts par les 3
+// boutons systeme. Symptome identique sur les deux paquets → le defaut est dans la coquille
+// native, ni dans le HTML ni dans la variante magasin.
+// ⚠ LE HAUT EST HORS PERIMETRE, confirme par Ethan : la barre d'etat n'est pas visible en jeu et
+// ne l'a jamais ete, c'est le plein ecran voulu. SEUL l'inset BAS est a traiter. Le verrou
+// d'orientation par `appCategory="game"` est CONSERVE (pas de paysage).
+// ⚠ INDICE QUI ORIENTE LE DIAGNOSTIC : le gestionnaire du 19.0 rembourre AUSSI le haut depuis
+// `displayCutout()`. Sur un ecran a perforation, il aurait donc produit une bande en haut. Ethan
+// n'en voit aucune, et le bas n'est pas rembourre non plus : NI L'UN NI L'AUTRE ne bouge, donc le
+// gestionnaire ne recoit vraisemblablement que des zeros (insets consommes par un parent) plutot
+// qu'il n'applique un mauvais cote. La MESURE tranche — d'ou l'afficheur de diagnostic.
+// Livre : deux variantes CONCURRENTES a departager sur appareil, `-PinsetMode=A|B`, plus un
+// afficheur d'insets (`-PinsetDiag=true`) embarque dans les deux APK de test.
+// ⚠ La perdante sera SUPPRIMEE, pas laissee derriere un drapeau : deux chemins de rembourrage
+// qui cohabitent, c'est exactement la dette qu'on cherche a ne pas contracter.
+// `SAVE_VERSION` INCHANGE (31).
+const GAME_BUILD = 424;
+const GAME_VERSION = 'Alpha 19.1';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9750,7 +9769,7 @@ const GAME_VERSION = 'Alpha 19.0';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Mise a jour technique : le jeu passe sur la chaine de compilation Android 16, une etape obligatoire pour deposer l'application sur les magasins. Rien ne change dans la partie.";
+const GAME_NOTES = "Correctif Android : la barre d'actions du bas passait sous les boutons de navigation du telephone. Rien ne change dans la partie.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde

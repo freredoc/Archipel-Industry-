@@ -19,7 +19,80 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 423`, `GAME_VERSION = 'Alpha 19.0'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 424`, `GAME_VERSION = 'Alpha 19.1'`, `SAVE_VERSION = 31`.**
+  Changement 19.1 (brief `BRIEFp3insets`, **lot P3, 2 commits — un par variante**) : **la barre
+  ACTIONS passait SOUS la barre de navigation système ; deux correctifs concurrents partent en test
+  sur appareil.** `SAVE_VERSION` INCHANGÉ, **aucun changement de jeu** — seuls `android/` et la CI
+  bougent, le HTML ne change que par son bump. Base 423 / 19.0.
+  ⚠ **V3 DU LOT P2 EST KO, MESURÉ PAR ETHAN** (Galaxy S25 FE, **navigation à 3 boutons**, APK dev
+  **ET** magasin du run 550) : « Ouvrir / Copier / Démolir / Améliorer » sont recouverts par les
+  3 boutons système. Symptôme identique sur les deux paquets → **le défaut est dans la coquille
+  native**, ni dans le HTML ni dans la variante magasin. Rien à reprocher au lot P2 côté HTML.
+  ⚠ **LE HAUT EST HORS PÉRIMÈTRE** (confirmé par Ethan) : la barre d'état n'est pas visible en jeu
+  et ne l'a jamais été, c'est le plein écran VOULU. **Seul l'inset BAS est à traiter.** Le verrou
+  d'orientation `appCategory="game"` est **CONSERVÉ** (pas de paysage) — ne pas y revenir.
+  (1) ⚠ **AUCUNE VALEUR D'INSET N'A PU ÊTRE RELEVÉE ICI — ÉCART AU BRIEF ASSUMÉ.** Le brief exige
+  de MESURER avant de corriger (« un correctif sans ces chiffres n'est pas recevable ») ; il n'y a
+  ni appareil ni émulateur côté développement, et **les insets valent toujours 0 en headless**.
+  Livré à la place : **le relevé est EMBARQUÉ dans les APK de test** (`-PinsetDiag=true`) —
+  afficheur à l'écran + journal `ArchipelInsets`, donnant à chaque passe `consumed=`, les insets
+  `systemBars`/`navigationBars`/`displayCutout` et le **rembourrage réellement appliqué**, en px,
+  **plus un relevé à +2,5 s** (seul moyen de voir un padding écrasé par une passe de layout
+  ultérieure = 4ᵉ cause du brief). Posé en HAUT à gauche (la barre sous test est en bas) et
+  **effacé d'un appui**. Absent des 3 paquets normaux.
+  (2) **CAUSE DÉDUITE : 2/3 du brief — les insets sont CONSOMMÉS avant nous**, à confirmer par le
+  relevé. Le raisonnement tient en une observation d'Ethan : le gestionnaire du P2 rembourre AUSSI
+  le haut depuis `displayCutout()`, or sur un écran à **perforation** cela aurait produit une
+  **bande noire en haut** — il n'en voit aucune, **et** le bas n'est pas rembourré non plus.
+  **Ni l'un ni l'autre ne bouge ⇒ rien n'est appliqué**, ce n'est donc pas « le mauvais côté »
+  (cause 1). Cohérent avec 2 faits du code P2 : `setDecorFitsSystemWindows(false)` **n'était jamais
+  appelé** (le DecorView rend alors les insets CONSOMMÉS à ses enfants) et le gestionnaire était
+  posé sur la **WebView**, tout en bas de la hiérarchie.
+  (3) **3 changements de structure COMMUNS aux deux variantes** (c'est là qu'est le correctif
+  probable) : `setDecorFitsSystemWindows(false)` **explicite** ; gestionnaire posé sur une
+  **racine `FrameLayout` qu'on contrôle**, insérée entre `android.R.id.content` et la WebView
+  (aucune vue intermédiaire ne peut consommer avant) ; `onConfigurationChanged` →
+  `requestApplyInsets()`. ⚠ `setDecorFitsSystemWindows(false)` est **AUSSI le prérequis de la
+  variante B** : sans lui la WebView n'est pas sous les barres et renseigne 0 → **B échouerait par
+  construction**.
+  (4) **A** (`-PinsetMode=A`, défaut) = rembourrage NATIF sur la racine puis **CONSOMMATION** →
+  `env(safe-area-inset-*)` vaut **0 dans l'APK**, le CSS y devient inerte (actif en web/PWA) ;
+  **les deux chemins ne se cumulent jamais**. **B** = **rien de natif**, le gestionnaire OBSERVE
+  seulement et rend les insets intacts → `ViewGroup.dispatchApplyWindowInsets` les transmet à la
+  WebView, et le CSS du lot A fait le travail. ⚠ **B est PRÉFÉRABLE si elle tient** (un seul
+  mécanisme pour APK + web + PWA ; avec A, retoucher le HUD en CSS ne suffira plus, l'APK ne
+  suivra pas) **mais INCERTAINE** : rien ne garantit qu'une WebView renseigne
+  `safe-area-inset-bottom` pour la **barre de navigation** (le cas documenté est l'**encoche**).
+  **Ne pas préjuger, ne pas livrer B seule.**
+  ⚠ **ÉCART VOULU AU BRIEF, SUR LE HAUT UNIQUEMENT** : il demande les 4 côtés depuis
+  `systemBars() | displayCutout()` ; à la lettre, le haut prendrait la perforation et ferait
+  apparaître **la bande noire que le brief cherche justement à éviter** (il déclare le plein écran
+  voulu). Le haut vient donc de **`systemBars()` seul** (= 0 barre de statut masquée) ; gauche,
+  droite et bas prennent bien l'union. **Réversible en un mot** : `t = safe.top`.
+  (5) **CI** : nouvelle étape produisant **`ArchipelIndustryDev-A.apk` + `ArchipelIndustryDev-B.apk`**
+  (artefact **`ArchipelIndustry-P3-INSETS`**) — un SEUL aller-retour pour Ethan. ⚠ **Les deux
+  gardent l'appId DEV** : elles remplacent l'app dev installée (**sauvegarde conservée**) et **se
+  remplacent l'une l'autre** — pas d'installation côte à côte. C'est le **libellé** qui dit
+  laquelle est en place (« Archipel P3-A » / « P3-B »), et une assertion CI vérifie que les 2 APK
+  ont des libellés DIFFÉRENTS (2 builds successifs dans le MÊME répertoire de sortie : une erreur
+  de copie donnerait deux fois la même variante et **le test ne prouverait rien**), avec
+  contre-mesure « les paquets normaux n'ont pas de libellé P3 ».
+  ⚠ **NON EXÉCUTABLES SANS APPAREIL, ne jamais porter au vert** : **T-A / T-B** et leur
+  **contre-mesure gestuelle OBLIGATOIRE** — en gestuelle l'inset bas est quasi nul, donc **une
+  variante cassée y paraît saine** ; **un PASS obtenu uniquement en gestuelle est un résultat
+  nul**, c'est le mode **3 boutons** qui fait foi. **T4** (lot P2) reste lui aussi non exécuté.
+  ⚠ **ÉTAPE 4, À FAIRE APRÈS LE VERDICT** : la gagnante est portée sur les **3 paquets**, la
+  perdante **SUPPRIMÉE — pas laissée derrière un drapeau** (avec elle disparaissent `-PinsetMode`,
+  `-PinsetDiag`, les 2 `buildConfigField`, l'afficheur et l'étape de CI de test). Si **B** gagne :
+  retirer le gestionnaire natif et noter la dette « 2 mécanismes » **annulée**. Si **A** gagne :
+  écrire dans le commentaire que le rembourrage de l'APK **ne vient PAS du CSS** et que toute
+  retouche du HUD se vérifie **sur les deux chemins**.
+  ⚠ **RIEN DE CE LOT N'A ÉTÉ COMPILÉ** (aucun SDK Android) : contrôles faits = `node --check` 7/7,
+  équilibrage des accolades de `MainActivity.java`, 0 résidu d'`applyInsetPadding`, YAML analysable
+  (20 étapes, les 2 étapes à effet de bord toujours gatées `main`), regex CI de
+  `GAME_BUILD`/`GAME_VERSION`/`GAME_NOTES`, et **les 4 gardes du lot 18.4 toujours à 1**. Le banc
+  d'essai reste le `workflow_dispatch` depuis la branche.
+- **État précédent : `GAME_BUILD = 423`, `GAME_VERSION = 'Alpha 19.0'`, `SAVE_VERSION = 31`.**
   Changement 19.0 (brief `BRIEFplayaab`, **lots P1 + P2, 2 commits séparés**) : **la chaîne de build
   passe en API 36 et la CI produit un `.aab` magasin.** `SAVE_VERSION` INCHANGÉ, **aucun changement de
   jeu** — le HTML ne bouge que par son bump. Base 422 / 18.9.

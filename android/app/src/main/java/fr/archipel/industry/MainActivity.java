@@ -160,10 +160,19 @@ public class MainActivity extends Activity {
      * barre de navigation (les 3 boutons) et cesse d'être cliquable. Constaté sur appareil
      * (Galaxy S25 FE, navigation à 3 boutons) sur les APK dev ET magasin du run 550.
      *
-     * VARIANTE A — rembourrage NATIF : on pose le padding sur la racine puis on CONSOMME. La
-     * WebView est alors entièrement dans la zone sûre, et `env(safe-area-inset-*)` y vaut 0 : le
-     * rembourrage CSS du jeu devient inerte DANS L'APK (il reste actif en web/PWA). Les deux
-     * chemins ne se cumulent donc jamais.
+     * DEUX VARIANTES CONCURRENTES, choisies à la compilation par `-PinsetMode=A|B`
+     * (BuildConfig.INSET_MODE). Elles seront départagées sur appareil ; la perdante disparaît —
+     * on ne laisse pas deux chemins de rembourrage cohabiter.
+     *
+     *  A (défaut) — rembourrage NATIF : on pose le padding sur la racine puis on CONSOMME. La
+     *    WebView est alors entièrement dans la zone sûre, et `env(safe-area-inset-*)` y vaut 0 :
+     *    le rembourrage CSS du jeu devient inerte DANS L'APK (il reste actif en web/PWA). Les deux
+     *    chemins ne se cumulent donc jamais.
+     *  B — rien de natif : on n'applique aucun padding et on ne consomme rien, les insets
+     *    descendent intacts jusqu'à la WebView, qui doit alors renseigner `env(safe-area-inset-*)`
+     *    et laisser le CSS du lot A faire le travail. Un seul mécanisme pour l'APK, le web et la
+     *    PWA — préférable SI la WebView renseigne réellement l'inset bas de la barre de navigation
+     *    (le cas documenté est l'encoche, pas la barre : c'est précisément l'inconnue du test).
      *
      * ⚠ CE QUI CHANGE PAR RAPPORT AU LOT P2, ET QUI EST LE CORRECTIF PROBABLE :
      *  1. `setDecorFitsSystemWindows(false)` est désormais demandé EXPLICITEMENT. Sans lui, le
@@ -199,6 +208,14 @@ public class MainActivity extends Activity {
             public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
                 insetPass++;
                 recordInsets(insets);
+
+                if ("B".equals(BuildConfig.INSET_MODE)) {
+                    // Variante B : on OBSERVE, on ne touche à rien. Aucun padding, aucune
+                    // consommation — ViewGroup.dispatchApplyWindowInsets transmet donc les insets
+                    // intacts à la WebView, qui peut renseigner env(safe-area-inset-*).
+                    recordPadding(v);
+                    return insets;
+                }
 
                 int l, t, r, b;
                 if (Build.VERSION.SDK_INT >= 30) {
@@ -257,7 +274,7 @@ public class MainActivity extends Activity {
         diag.setBackgroundColor(0xCC000000);
         diag.setPadding(6, 4, 6, 4);
         diag.setTypeface(android.graphics.Typeface.MONOSPACE);
-        diag.setText("P3 — en attente d'insets…");
+        diag.setText("P3 " + BuildConfig.INSET_MODE + " — en attente d'insets…");
         // Le relevé recouvre le haut du HUD : un appui le fait disparaître pour laisser
         // inspecter la barre ACTIONS du bas sans gêne.
         diag.setOnClickListener(new View.OnClickListener() {
@@ -278,7 +295,8 @@ public class MainActivity extends Activity {
 
     private void recordInsets(WindowInsets insets) {
         diagInsets.setLength(0);
-        diagInsets.append("P3 pass=").append(insetPass)
+        diagInsets.append("P3 ").append(BuildConfig.INSET_MODE)
+                .append(" pass=").append(insetPass)
                 .append(" api=").append(Build.VERSION.SDK_INT)
                 // isConsumed() vrai ici = un parent a consommé avant nous (2e/3e cause).
                 .append(" consumed=").append(insets.isConsumed()).append('\n');
