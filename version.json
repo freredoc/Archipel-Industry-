@@ -1,8 +1,8 @@
 {
-  "build": 422,
-  "version": "Alpha 18.9",
+  "build": 425,
+  "version": "Alpha 19.2",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "L'île 6 n'apparaît plus dans le sélecteur d'île tant qu'elle est verrouillée : sa découverte reste une surprise, comme sur la carte de l'archipel. Son onglet revient dès que la liaison est réparée."
+  "notes": "Correctif Android : la barre d'actions du bas ne passe plus sous les boutons de navigation du telephone. Rien ne change dans la partie."
 }
