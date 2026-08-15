@@ -1,8 +1,8 @@
 {
-  "build": 419,
-  "version": "Alpha 18.6",
+  "build": 420,
+  "version": "Alpha 18.7",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Les deux boutons flottants (Logique et Surface/Souterrain) ne mordent plus sur la barre d'inventaire : ils se placent désormais juste sous elle, quelle que soit la taille de l'écran. Et un fin joint sépare enfin la barre d'inventaire du bandeau du haut, dont les cadres se touchaient."
+  "notes": "Sur téléphone, le bouton Carte passe en pastille et rend sa place au sélecteur d'île, tandis que le bouton Options garde son libellé — l'inverse d'avant. Les icônes du bandeau du haut y passent de 16 à 32 pixels, bien plus lisibles au doigt. En paysage court, où la hauteur est rare, elles restent en 16."
 }
