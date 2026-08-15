@@ -9702,8 +9702,27 @@ const SAVE_VERSION = 31;
 // declaree QUE la (le palier 1 ne visait que map + help). Sans l'etendre aux trois, Options
 // sortait a 32 x 32 — libelle masque mais icone restee en 16. Mesure, pas devine.
 // `SAVE_VERSION` INCHANGE (31) — CSS pur, aucune sauvegarde touchee.
-const GAME_BUILD = 421;
-const GAME_VERSION = 'Alpha 18.8';
+// 18.9 — L'ILE 6 N'A PLUS D'ONGLET TANT QU'ELLE EST VERROUILLEE (retour d'Ethan : « on voit
+// l'ile 6 dans le slide, alors qu'elle doit apparaitre seulement lorsque l'on fait la reparation
+// du port ile 5 »). La regle EXISTAIT deja — `ARCHI_CACHEE = {6:true}`, build 14.42, « une
+// silhouette grisee annoncerait son existence » — mais n'etait appliquee qu'a `ArchipelMap` :
+// les ONGLETS la rendaient des la partie neuve, ce qui CONTREDISAIT la carte.
+// ⚠ DEFAUT PREEXISTANT, PAS UNE REGRESSION DU 18.8 : mesure, l'onglet etait dans le DOM depuis
+// toujours (6 onglets en partie neuve sur le 420 COMME sur le 421). A 384 px la bande faisait
+// 53 px pour 166 px de contenu — les iles 3 a 6 etaient hors champ mais ATTEIGNABLES en faisant
+// defiler. Le 18.8, en rendant sa largeur au selecteur, l'a REVELE sans le creer.
+// ⚠ AUCUN VERROUILLAGE POSSIBLE : des que le noeud 28 pose `islandUnlocked[6]`, l'onglet
+// reparait (teste). Et l'ile 6 s'ouvre en touchant sa cible SUR LA CARTE, jamais par cet onglet.
+// ⚠ `ARCHI_CACHEE` est declaree PLUS BAS dans le meme bloc : pas de TDZ, la lecture ayant lieu
+// au RENDU et non a l'evaluation du module (verifie au boot, 0 erreur).
+// ⚠ EFFET DE BORD MESURE, FAVORABLE MAIS DEPENDANT DE LA LANGUE : retirer un onglet fait parfois
+// basculer le HUD de DEUX rangees a UNE sur tablette — 1024x768 et 1024x600 en EN (108 -> 66 px,
+// +42 de scene), 768x1024 en FR (130 -> 88). Le HUD remonte quand l'ile 6 s'ouvre. Ce n'est pas
+// un mecanisme neuf : le HUD se replie deja selon la largeur de son contenu, et l'ile 7 ajoute
+// un onglet de la meme facon. Signale, pas corrige.
+// `SAVE_VERSION` INCHANGE (31) — aucune donnee de partie touchee, seul un filtre d'affichage.
+const GAME_BUILD = 422;
+const GAME_VERSION = 'Alpha 18.9';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9712,7 +9731,7 @@ const GAME_VERSION = 'Alpha 18.8';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les boutons du bandeau du haut étaient trop massifs sur petit écran : ils se resserrent autour de leur icône, et le bouton Options rejoint les deux autres en pastille. Le sélecteur d'île y gagne beaucoup de place — trois fois plus à 384 pixels de large.";
+const GAME_NOTES = "L'île 6 n'apparaît plus dans le sélecteur d'île tant qu'elle est verrouillée : sa découverte reste une surprise, comme sur la carte de l'archipel. Son onglet revient dès que la liaison est réparée.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -18553,7 +18572,20 @@ function IslandSelector({
   // pour ne jamais d\u00E9border (CSS .island-tabs / .island-tab, flex + min-width 0).
   // L'\u00EEle 7 (souterrain) appara\u00EEt comme onglet une fois l'\u00E9l\u00E9vateur r\u00E9par\u00E9 (islandUnlocked[7]
   // pos\u00E9 par tryRepairElevator) \u2014 ou sous le flag dev. Sinon on y descend par l'\u00E9l\u00E9vateur.
-  const ids = ISLAND_TERRAINS.map(d => d.id).filter(id => id !== 7 || (unlocked && unlocked[7]) || dev);
+  // 18.9 — ⚠ L'ÎLE 6 EST MASQUÉE TANT QU'ELLE EST VERROUILLÉE, comme sur la carte de
+  // l'archipel. La règle EXISTAIT déjà (`ARCHI_CACHEE`, build 14.42 : « une silhouette grisée
+  // annoncerait son existence ») mais n'était appliquée qu'à `ArchipelMap` — les ONGLETS la
+  // rendaient dès la partie neuve, ce qui contredisait la carte. Défaut PRÉEXISTANT : l'onglet
+  // était dans le DOM depuis toujours, simplement hors champ dans une bande trop étroite
+  // (53 px pour 166 px de contenu à 384 px) — le lot 18.8, qui a rendu sa largeur au sélecteur,
+  // l'a révélé sans le créer. Il restait atteignable en faisant défiler la bande.
+  // ⚠ AUCUN VERROUILLAGE POSSIBLE : dès que le nœud 28 pose `islandUnlocked[6]`, l'onglet
+  // reparaît. Et l'île 6 s'ouvre en touchant sa cible SUR LA CARTE, pas par cet onglet.
+  // ⚠ `ARCHI_CACHEE` est déclarée PLUS BAS dans le même bloc : sans TDZ, la lecture ayant
+  // lieu au rendu et non à l'évaluation du module.
+  const ids = ISLAND_TERRAINS.map(d => d.id).filter(id =>
+    (id !== 7 || (unlocked && unlocked[7]) || dev)
+    && (!ARCHI_CACHEE[id] || (unlocked && unlocked[id]) || dev));
   const isUnlocked = id => (!unlocked || unlocked[id]) || (id === 7 && dev);
   // Lot 1 \u2014 \u00C9TAT DE D\u00C9FILEMENT. Voiles et chevrons ne s'affichent que du c\u00F4t\u00E9 o\u00F9 il
   // reste des onglets hors champ. Recalcul au scroll, au redimensionnement du conteneur ET
