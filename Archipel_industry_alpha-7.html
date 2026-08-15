@@ -281,6 +281,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .inv-item.clickable:hover{border-color:var(--yellow);}
 .inv-ico{width:14px;height:14px;image-rendering:pixelated;flex-shrink:0;vertical-align:middle;}
 .ui-ico{width:16px;height:16px;image-rendering:pixelated;flex-shrink:0;vertical-align:middle;display:inline-block;}
+/* Pastilles 32 px du HUD compact. MASQUEES PAR DEFAUT : au-dessus de 479 px, seule la 16
+   est visible. ×2 exactement, jamais 24 px (×1,5 = demi-pixel sur du pixel art). */
+.ui-ico.ico-lg{width:32px;height:32px;display:none;}
 .tab-ico .ui-ico,.tab-ico.ui-ico{width:18px;height:18px;}
 /* Empilement HUD + barre d'inventaire : contexte de positionnement pour l'inventaire OUVERT
    (qui doit RECOUVRIR la carte en superposition au lieu de POUSSER la scène vers le bas). */
@@ -505,18 +508,43 @@ body.theme-inox .pp-tab.on{background:#2f3a44;color:#e7ecf3;border-color:var(--y
 .arch-sout.go{pointer-events:auto;cursor:pointer;background:none;border:0;padding:0;
   font:inherit;color:inherit;}
 .arch-sout.cur .arch-lbl{color:var(--yellow);box-shadow:0 0 0 1px var(--yellow);}
-/* Options en icône seule sur petit écran, pour rendre au sélecteur d'île la place que
-   prend le bouton Carte. Seuil MESURÉ : le libellé fait 127 px en fr/en mais 137 px en
-   es/de ; sans compaction la bande déborde jusqu'à 465 px (fr) et 475 px (es/de).
+/* Compaction du HUD sur petit écran — DEUX PALIERS, et c'est le bouton CARTE qui se
+   compacte, plus Options : l'inverse de la règle d'origine. Seuils MESURÉS au banc
+   (Chromium, ×1, balayage au pixel de 300 à 500 px, fr/en/es/de). Critère retenu : le
+   sélecteur d'île doit conserver 40 px, soit un onglet (26) plus un chevron (14).
+   Palier 1, 380–479 px : Carte en pastille, Options garde son libellé.
+   Palier 2, ≤ 383 px  : Options rejoint les deux autres en pastille.
+   ⚠ L'INVERSION NE TIENT QUE PARCE QUE LE 🛠 SORT DU FLUX (règle plus bas). Dans le flux,
+   le bouton Carte compact mesure 74 px et non 50, son emplacement de badge restant réservé ;
+   le sélecteur tombait alors sous 40 px dès 363 px (fr) à 373 px (es/de), soit 20 à 41 px
+   de RÉGRESSION sur la règle d'origine. Avec le badge hors flux : ≥ 40 px dès 310 px dans
+   les quatre langues, contre 322 à 343 px avant ce lot.
+   ⚠ Le palier 2 n'est pas décoratif : sans lui, sous 381 px le sélecteur passerait sous
+   40 px en es/de, où « Optionen » / « Opciones » coûtent 137 px contre 126,8 px en fr/en.
+   Sa borne est 383 et non 379 : 384 px est la plus petite largeur où les QUATRE langues
+   tiennent le critère (43 px en de, 53,3 en fr), et c'est aussi la largeur CSS des
+   téléphones visés. Entre 380 et 383 px l'allemand tombait à 39 px — bande supprimée.
    ⚠ `nth-child(2)` et non `last-child` : la pastille de mise à jour est le 3e enfant,
-   `last-child` la ferait disparaître avec le libellé.
-   ⚠ `.map-btn` EST EXEMPTÉ, au même titre que `.help-btn` : cette compaction existe
-   justement POUR laisser la place au bouton Carte — lui retirer son libellé retournerait
-   la règle contre son propre but. Il l'était déjà de fait, mais par accident : il portait
-   `help-btn`, ce qui l'exemptait ici et lui faisait perdre son DERNIER span ailleurs
-   (libellé ou badge selon l'état) — d'où les trois largeurs mesurées 50/106,3/130,3 px. */
+   `last-child` la ferait disparaître avec le libellé. */
 @media (max-width:479px){
+  .hud-main .map-btn > span:nth-child(2){display:none;}
+  /* Bascule 16 → 32 px. Les deux images sont dans le DOM, le CSS seul choisit : pas de
+     `matchMedia` ni d'état React à tenir synchronisé. Un downscale du 32 aurait été du
+     demi-pixel sur du pixel art, d'où deux sprites distincts et non un seul redimensionné. */
+  .hud-main .map-btn .ico-lg,
+  .hud-main .help-btn .ico-lg{display:inline-block;}
+  .hud-main .map-btn .ico-sm,
+  .hud-main .help-btn .ico-sm{display:none;}
+  /* Le 🛠 hors flux : le bouton ne bat plus quand la réparation devient payable ou cesse
+     de l'être — sa largeur ne dépend plus du tout du badge, ce que `visibility:hidden`
+     assurait déjà mais au prix des 24 px d'emplacement réservé. */
+  .hud-main .map-btn{position:relative;}
+  .hud-main .map-btn .map-repair-flag{position:absolute;right:2px;bottom:1px;margin:0;}
+}
+@media (max-width:383px){
   .hud-main .options-btn:not(.help-btn):not(.map-btn) > span:nth-child(2){display:none;}
+  .hud-main .options-btn .ico-lg{display:inline-block;}
+  .hud-main .options-btn .ico-sm{display:none;}
 }
 /* Révélation de l'île 6 (14.4x) — jouée UNE FOIS, à la première ouverture de la carte
    après le déblocage. Séquence : la brume se lève (0 → 1,4 s), l'île émerge (0,5 → 1,5 s),
@@ -1575,6 +1603,19 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
   body.theme-inox .inventory{border-image:var(--cadre-inox) 8 / 3px stretch;}
   .tabs-row .tab-btn{padding:4px 8px;}
   .tabs-row .tab-btn .tb-sub{display:none;}
+  /* Les pastilles 32 px coûtent 16 px de HUD (bouton 38 → 54 px, mesuré) : en paysage
+     court c'est la ressource rare, on revient aux icônes 16 et au badge dans le flux.
+     Ne mord en pratique que sur les fenêtres à la fois < 480 px de large et < 520 de haut.
+     ⚠ Sélecteurs alignés sur ceux des paliers (0,3,0) : à spécificité INFÉRIEURE ce bloc
+     serait ignoré malgré sa position en fin de feuille — l'ordre n'arbitre qu'à
+     spécificité égale. */
+  .hud-main .options-btn .ico-lg,
+  .hud-main .help-btn .ico-lg,
+  .hud-main .map-btn .ico-lg{display:none;}
+  .hud-main .options-btn .ico-sm,
+  .hud-main .help-btn .ico-sm,
+  .hud-main .map-btn .ico-sm{display:inline-block;}
+  .hud-main .map-btn .map-repair-flag{position:static;margin-left:3px;}
   /* NB : aucun plafond sur `.inventory` ici. Le calque de 130 px couvrait la scene de
      122 px ; il en laisse desormais ~72 visibles grace aux gains ci-dessus. Un plafond
      en unites viewport a ete ECARTE : ni `vh` ni `dvh` ne se mesurent correctement en
@@ -4105,7 +4146,10 @@ window.__SPRITE_DATA__["ui_reprendre"]="data:image/png;base64,iVBORw0KGgoAAAANSU
 window.__SPRITE_DATA__["ui_traverser"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PxOqPxGluE7f78eISjHhvu0AAAAAXRSTlMAQObYZgAAAF5JREFUeF5NjcENgzAQBPdzBVwCBeSoIBrTwflvGbn/VpBBUZjX7H5G+mNjjLmsRzCthzs0qX9e3zdNFr7h7LIIgCqLDbxUmU+Wn/j6eIDiWaUDMrNNKbfYkZl39aqfck0R1bwkqeQAAAAASUVORK5CYII=";
 window.__SPRITE_DATA__["ui_bateau"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PxOqPxGluE7f78eISjHhvu0AAAAAXRSTlMAQObYZgAAAFNJREFUeF5NzbERwCAMA0A3HsDHBDgjiGwgehLO+6/CmRREjb7RSeREI2L3647UY5lxoDW73KKeQBf1alZaAgDYRS8ALbFH9oNMgORItA86ScZ5Xx7cESGsWbJwAAAAAElFTkSuQmCC";
 window.__SPRITE_DATA__["ui_petrole"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PzRjTO4eip6ThoeISjBE9L/AAAAAXRSTlMAQObYZgAAAFBJREFUeF5NzcENwCAMA8B8MoBXgBFMNwh/WpT9V6lMW1F/fJIfNtvxzFx9ApAuAOAQCgUvqAQPQVN/0RZIRDevH6jpD5tkRAyhPfAZEbnfb0U4EblSpfnTAAAAAElFTkSuQmCC";
-window.__SPRITE_DATA__["ui_carte"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PxZs75QoKpEiJAeISiK26dmAAAAAXRSTlMAQObYZgAAAE5JREFUeF5NzbERwCAMQ1E3HkArwAgiG4iehPP+q+QMlyO/0etkdvKIWPuUwtSNbBw4SiVxJQCim6N+ILmx+oNkk7rZJCWNRNvwKSnO+wsd2xFBVjzM0gAAAABJRU5ErkJggg==";
+window.__SPRITE_DATA__["ui_carte"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAApElEQVR42mNgoBAwYhOUU9T4j0vDo/s3UPSwYNNoPWkahsbvb99AGI11/5ENYkTWjE0jimYkcK6xjuHR/RuMLIT8OMfVDoUfvWIdCp8Jn+3YbIYBtfQMBjlFjf8spNgGA19ePEN1ASkAWTNZBqADig1gIRRg0SvWYTibJBfg04yRkIzqm4jWfGvmDIZH928wMpFrM9bMBMsLaukZeG3GmhfIzY0A965NMn2LNjEAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["ui_carte_32"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABPElEQVR42mNgGGDASIpiOUWN/8Soe3T/BtHmspBisfWkacSZmpf1n1iHMFLVYiTw/e0bhnONdQRDhBGf5eRYDLMcGZxrrMPpCCZaW87AwMBgVN+EM/0w0dpyQo5gJNXyo3lZBB1iVN+EUw49OljI8en161dwymlq6pBkFhM1gp4UgB4VLOQGMz4Ay37YgFp6BmZBhM33uIJ51oYdOA2ftWEHUdGjlp7BwDBzxv9H928wMg10XTDqgFEHjDpg1AFMsBYLrPjFV6VSC9yaOQNeI7IQW5/DQFqAB94aLy3AgyTHsKC0ZBvr/uOry9FrtS8vnmH4jBTfU5QG0C2nWr+A2LY/erVKbAigN04ZcTVKcUUFuT5HD3q8UfDo/g1GbI0KaltOdMcEW4Ij1mKyOybYHIIt3sm1eNB0TgccAAC8zK6jqL3TrQAAAABJRU5ErkJggg==";
+window.__SPRITE_DATA__["ui_info_32"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABRklEQVR42mNgGGDASIpiOUWN/8Soe3T/BtHmspBisUH7FeJMrdT5T6xDGKlqMRL48e4pw41ud4IhwojPcnIshlmODG50u+N0BBOtLWdgYGDQKN2JM/0wkmr58gBMscgNuC0nFBJMtPQ5MSHBRI28TIzluAATNXxPCkAPBRZSDYDFN7k+//ryHmYIkON7SiyXjZsODwWiQwAz9UvDWYHznpLsc6omQnItJ8kBkRuI8ykplpPkAGokOLIdQCvLiXIALS0n6ABaW47XAfSwHKcD6GU53AGP7t9gvFCpQzfLHy/KhFfLLMT6fH2SNE65XZW2DAwMDAxu7YfJj4JH928wwtpwtATIviepLkAvBcmNc7yJkNhQINdydN9jzQWEHEFNy3FmQ1yOoLblRHdMNEp3kmX540WZ5HdMsDlENm461SweNJ3TAQcAEcTfgVGXeCYAAAAASUVORK5CYII=";
+window.__SPRITE_DATA__["ui_configurer_32"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABq0lEQVR42s2XoW7DMBCGz1EfY6pU1khVUZ+hGpxGxqqq0vBwSUFJQNFwpYGykWmwKi4sqiI5LFI00JGCgdIMXeQ49vkcZckORbKj77f/O/sM0HEIn8n9wTDHbynj0lgYjorvLE1EowIQPI32AADw+nBnnPfy+QUAAIflPVtIzwfMjWm0h9v1AsfNPHcJCSi4lHFlqzlxu14Km6SMS9axBCAcw7blFHy7mICaLzYRwgVvMsJwVLEjaAtu24ng35wD/cEwd5WZXm6q57rvpnh+OwEAwHEzL6wIXAAuXAVQ8J/vrFoF6urrrJwrAuHj2brIBXYOcOCUCH3lpRxwZb8PXA0qJ7AkA9PF4jpkmipJLwuahHufA3XgNs9rCfgreCFAbSbagiOzZzt81NNwu5iQ9W2Cvy8fS2NP0QffApPnrmOWgjstyNJEYBtFJZxNhC/8vFuZ7wJTM+ESwYXbxkSb/YCpKem8HygJyNJENFmSnJZMcJpS/T63+amWmj7HBLdaoO+ErZmgQhVjg5M5gCJQiA9cBVNw58sIf8QXzni2ZoHPuxX7adb547Tz+AUXMBa1SXJufAAAAABJRU5ErkJggg==";
 window.__SPRITE_DATA__["ui_montagne"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PyGj5x4gIxmbHceISh9gfUlAAAAAXRSTlMAQObYZgAAAFhJREFUeF5VzcENgDAMA8B8MoBBDNB2AuSyQfhXrbL/KigUqcIfn/yxyIq6+9s9Z4Z62grZRDrAgCZgJy5RADhxTOCHQrLaLUqS9qEGZMRgLVAndJiZr/cHWxwSOpGgZrkAAAAASUVORK5CYII=";
 window.__SPRITE_DATA__["ui_ile"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+PxOqPxGluE7f78eISjHhvu0AAAAAXRSTlMAQObYZgAAAFZJREFUeF5NzcENgDAMA8B8MoAFC7SM4LJB8q9aZf9VUIpQ8ccnfyyyoxGxegBMjQqQPVGOhNaFW7QCAF20JE4XxYqLXiSb/ZcPMkkz64n2QqeZxX5/AD6MESQxw3UkAAAAAElFTkSuQmCC";
 window.__SPRITE_DATA__["ui_melange"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD1+Pyoe+CWbshaQngeISjYLvaeAAAAAXRSTlMAQObYZgAAAFVJREFUeF5FzbENgEAMQ9E0GcAjECZA/9gg9MDp9l8FBZDOjZ/c2GzGxxhv3xGULkninPCIFdjNFwk4frTDPADyW9QKm6QsAK1gHTLzLLQP3jNzzPcHuAYTbqb8gDkAAAAASUVORK5CYII=";
@@ -9595,8 +9639,36 @@ const SAVE_VERSION = 31;
 // ⚠ Dans ce bloc Lot C, `border-image` est REDECLARE AVEC SON SLICE et pas seulement
 // `border-width` : changer la seule largeur laisserait le sprite etire sur 6 px de rendu pour
 // 3 px de boite. `SAVE_VERSION` INCHANGE (31) — CSS pur, aucune sauvegarde touchee.
-const GAME_BUILD = 419;
-const GAME_VERSION = 'Alpha 18.6';
+// 18.7 — INVERSION DE LA COMPACTION HUD + PASTILLES 32 px. Sous 480 px c'est desormais le
+// bouton CARTE qui perd son libelle, plus Options : l'inverse de la regle d'origine. Deux
+// paliers — 384-479 px Carte en pastille, <= 383 px Options la rejoint — et les icones du
+// bandeau passent de 16 a 32 px.
+// ⚠ L'INVERSION NE TIENT QUE PARCE QUE LE 🛠 SORT DU FLUX. Dans le flux, le bouton Carte
+// compact mesure 74 px et non 50 (son emplacement de badge reste reserve) : le selecteur d'ile
+// tombait alors sous 40 px des 363 px (fr) a 373 px (es/de), soit une REGRESSION de 20 a 41 px
+// sur la regle d'origine. Badge hors flux, le critere tient des 310 px dans les 4 langues,
+// contre 322 a 343 px avant ce lot. Ne jamais remettre `.map-repair-flag` dans le flux sans
+// re-mesurer le selecteur.
+// ⚠ Le palier 2 (383 px) n'est PAS decoratif : « Optionen » / « Opciones » coutent 137 px
+// contre 126,8 px pour « Options », et sans lui l'allemand passait sous 40 px entre 380 et
+// 383 px. La borne est 383 et non 379 pour que 384 px — la largeur CSS des telephones vises —
+// tombe dans le palier ou « Options » reste ECRIT.
+// ⚠ LE BLOC LOT C (paysage court) REFUSE LES PASTILLES et revient au 16 : elles coutent 16 px
+// de HUD (bouton 38 -> 54), or la hauteur y est la ressource rare. Ses selecteurs sont ecrits
+// en (0,3,0) pour BATTRE ceux des paliers : a specificite inferieure le bloc serait ignore
+// MALGRE sa position en fin de feuille — l'ordre n'arbitre qu'a specificite egale.
+// ⚠ MODE DE DEFAILLANCE SILENCIEUX, MESURE : `uiIcon` retombe sur son repli quand une cle
+// manque, et ce repli est ici la CHAINE VIDE — le `.ico-lg` n'est meme pas cree dans le DOM,
+// pendant que le CSS masque le 16. Un seul des trois `_32` absent donnerait donc un bouton
+// VIDE de 34 px, sans la moindre erreur : ni `node --check` ni un boot ne le verraient.
+// Mesure faite avant livraison : code sans art -> Aide et Carte a 0 icone visible.
+// ⚠ 32 px et JAMAIS 24 : x1,5 sur du 16x16 en `image-rendering:pixelated` donne du demi-pixel.
+// Deux sprites distincts plutot qu'un seul redimensionne, et les trois 32 partagent un masque
+// de 732 px opaques — et non 4 x 193 = 772 : le disque est retrace nativement, pas upscale.
+// `ui_carte` 16 est REMPLACE (meme masque au pixel, 73 pixels de couleur changes) pour
+// s'accorder au 32. `SAVE_VERSION` INCHANGE (31) — ni donnees de partie ni `BUILDINGS`.
+const GAME_BUILD = 420;
+const GAME_VERSION = 'Alpha 18.7';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9605,7 +9677,7 @@ const GAME_VERSION = 'Alpha 18.6';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les deux boutons flottants (Logique et Surface/Souterrain) ne mordent plus sur la barre d'inventaire : ils se placent désormais juste sous elle, quelle que soit la taille de l'écran. Et un fin joint sépare enfin la barre d'inventaire du bandeau du haut, dont les cadres se touchaient.";
+const GAME_NOTES = "Sur téléphone, le bouton Carte passe en pastille et rend sa place au sélecteur d'île, tandis que le bouton Options garde son libellé — l'inverse d'avant. Les icônes du bandeau du haut y passent de 16 à 32 pixels, bien plus lisibles au doigt. En paysage court, où la hauteur est rare, elles restent en 16.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -19301,7 +19373,7 @@ function Hud({
     title: updateInfo ? I18N.t("Mise à jour disponible : ") + updateInfo.label : "Options"
   }, React.createElement("span", {
     className: "gear"
-  }, uiIcon('configurer', "⚙")), React.createElement("span", null, I18N.t("Options")), updateInfo && React.createElement("span", {
+  }, uiIcon('configurer', "⚙", 'ico-sm'), uiIcon('configurer_32', "", 'ico-lg')), React.createElement("span", null, I18N.t("Options")), updateInfo && React.createElement("span", {
     className: "notif-dot"
   })), React.createElement("button", {
     className: "options-btn help-btn",
@@ -19309,7 +19381,7 @@ function Hud({
     title: I18N.t("Aide \u2014 astuces d\u00e9bloqu\u00e9es")
   }, React.createElement("span", {
     className: "gear"
-  }, uiIcon('info', "?")), React.createElement("span", null, I18N.t("Aide"))), React.createElement("button", {
+  }, uiIcon('info', "?", 'ico-sm'), uiIcon('info_32', "", 'ico-lg')), React.createElement("span", null, I18N.t("Aide"))), React.createElement("button", {
     className: "options-btn map-btn" + (repairInfo ? ' has-repair' : ''),
     onClick: onOpenMap,
     // Lot 4b — LE 🛠 EST FUSIONNE ICI. ⚠ `data-tut="repair"` MIGRE avec lui : il est lu par
@@ -19324,7 +19396,7 @@ function Hud({
       : I18N.t("Carte de l'archipel")
   }, React.createElement("span", {
     className: "gear"
-  }, uiIcon('carte', "\ud83d\uddfa")), React.createElement("span", null, I18N.t("Carte")),
+  }, uiIcon('carte', "\ud83d\uddfa", 'ico-sm'), uiIcon('carte_32', "", 'ico-lg')), React.createElement("span", null, I18N.t("Carte")),
     React.createElement("span", {
       className: "map-repair-flag" + (repairInfo ? '' : ' off')
     }, uiIcon('reparation', "\ud83d\udee0")),
