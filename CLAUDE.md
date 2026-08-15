@@ -19,7 +19,107 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 417`, `GAME_VERSION = 'Alpha 18.4'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 423`, `GAME_VERSION = 'Alpha 19.0'`, `SAVE_VERSION = 31`.**
+  Changement 19.0 (brief `BRIEFplayaab`, **lots P1 + P2, 2 commits séparés**) : **la chaîne de build
+  passe en API 36 et la CI produit un `.aab` magasin.** `SAVE_VERSION` INCHANGÉ, **aucun changement de
+  jeu** — le HTML ne bouge que par son bump. Base 422 / 18.9.
+  ⚠ **LE BRIEF N'EST PAS PRÉ-COMPILÉ** (pas de SDK/Gradle côté rédaction) : ni SHA, ni sortie de
+  compilation à comparer, et **ses versions d'outils sont explicitement à re-vérifier**. Le banc
+  d'essai est le **`workflow_dispatch` depuis la branche** (les étapes à effet de bord sont gatées
+  sur `main` → construit et téléverse **sans rien publier**).
+  (1) **P1 — versions RETENUES après consultation de la table officielle** (et non recopiées du
+  brief, qui disait « ≥ 8.9 de mémoire ») : **AGP 8.13.0** + **wrapper Gradle 8.13** +
+  `platforms;android-36` + `build-tools;36.0.0`, `compileSdk`/`targetSdk` **36**, `minSdk 26`
+  inchangé. Sources : « Set up the Android 16 SDK » (plancher **AGP 8.9.0-rc01** pour `compileSdk 36`)
+  et les notes de version AGP 8.13 (**Gradle minimum 8.13**, **max API 36.1**, JDK 17).
+  ⚠ **AGP 8.13 = DERNIER 8.x, choix délibéré** : il couvre l'API 36 sans imposer la migration de
+  MAJEURE vers AGP 9.x, qui exigerait **Gradle 9.5** et ses ruptures de DSL. AGP 9.3 (juillet 2026)
+  monte à l'API 37 — inutile ici, et c'est du risque pur.
+  ⚠ **`buildToolsVersion '36.0.0'` ÉPINGLÉ** : sans cette ligne AGP 8.13 prend SA valeur par défaut
+  (**35.0.0**) alors que la CI n'installe que 36.0.0 → téléchargement implicite. Les deux lignes
+  doivent bouger ensemble. Contrôle `ls .../build-tools/36.0.0/aapt2` ajouté tôt dans la CI, parce que
+  l'étape « Assert appIds » **échoue volontairement** si elle ne trouve pas d'aapt2.
+  (2) ⚠ **DEUX COMPORTEMENTS D'ANDROID 16 NEUTRALISÉS — HORS de la liste de travail du brief, qui les
+  classait en « risques à valider sur appareil ». Les livrer non traités aurait fait échouer V3 PAR
+  CONSTRUCTION** (le critère d'acceptation EST « la barre d'outils du bas reste cliquable »).
+  **(a) EDGE-TO-EDGE IMPOSÉ** : vérifié sur la page officielle des changements de comportement —
+  « for apps targeting Android 16, `windowOptOutEdgeToEdgeEnforcement` is deprecated and disabled ».
+  La WebView dessine donc sous les barres, et la réserve d'espace que le framework faisait disparaît
+  → **la barre d'outils passerait derrière les 3 boutons de navigation**. Nouveau
+  `MainActivity.applyInsetPadding()` : rembourrage par l'**UNION `systemBars() | displayCutout()`**
+  puis **CONSOMMATION** → l'apparence d'avant est reproduite, quel que soit le mode d'encoche retenu
+  par la version d'Android. ⚠ **CONSÉQUENCE À CONNAÎTRE** : la WebView ne débordant plus,
+  **`env(safe-area-inset-*)` vaut 0 DANS L'APK** — le rembourrage CSS du lot A y devient **inerte**,
+  et reste actif en web/PWA. Les deux chemins ne se cumulent donc **jamais**. ⚠ Sur Android ≤ 15 le
+  framework applique encore les insets lui-même : le gestionnaire reçoit des valeurs **nulles** et ne
+  rembourre rien — **pas de double marge**, la propriété est auto-correctrice.
+  **(b) VERROU D'ORIENTATION LEVÉ ≥ sw600dp** : `screenOrientation` y est ignoré… **SAUF pour les
+  applications déclarées comme JEUX**. Fermé par **`android:appCategory="game"`** (une ligne, et c'est
+  factuellement vrai). ⚠ **C'est l'exception PÉRENNE** : la propriété
+  `PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` que documente Google est **temporaire et tombera en
+  API 37** — ne pas la préférer.
+  ⚠ `hideSystemBars()` passe par **`WindowInsetsController`** sur API 30+ (`setSystemUiVisibility` est
+  déprécié et n'est plus fiable une fois l'edge-to-edge imposé). Masquer la barre de statut met son
+  inset à 0 → le rembourrage du haut retombe à l'encoche seule.
+  (3) **P2 — UNE bascule `-PstoreBuild=true`, pas de `flavor`, pas de second `MainActivity`** (deux
+  copies crédibles finissent par diverger). `AndroidManifest-store.xml` = le manifeste hors magasin
+  **SANS `REQUEST_INSTALL_PACKAGES` ni `INTERNET`** ; `sourceSets` choisit le fichier ;
+  `buildFeatures { buildConfig true }` (désactivé par défaut en AGP 8) + `buildConfigField
+  SELF_UPDATE` ; `MainActivity` sort en tête de `WebBridge.update()` et n'enregistre pas le récepteur
+  d'installation. **`saveText`, le sélecteur de fichier et l'ouverture des liens externes : INTACTS.**
+  ⚠ **ÉCART VOULU** : le brief proposait `project.hasProperty('storeBuild')` **seul** — vrai même pour
+  `-PstoreBuild=false`, donc on produirait une variante magasin en croyant l'avoir désactivée. On lit
+  la **VALEUR**.
+  ⚠ **PIÈGE GROOVY** : `manifest.srcFile a ? b : c` (command expression **sans parenthèses** suivie
+  d'un ternaire) est ambigu et se lit `srcFile(a) ? b : c`. **Parenthèses obligatoires.**
+  ⚠ **ASSUMÉ** : le code de `PackageInstaller` **RESTE dans le binaire**, simplement inatteignable —
+  même arbitrage que `SELF_UPDATE` côté HTML (verrou plutôt qu'ablation, un seul chemin de code). Ce
+  que Play évalue réellement est la **permission déclarée**, et elle disparaît.
+  ⚠ **Retrait d'`INTERNET` justifié sur `game-store.html`** : les 2 `fetch(VERSION_URL…)` sont derrière
+  `SELF_UPDATE` (à `false`), et les `fetch` du service worker relèvent du chemin PWA, **inerte en
+  WebView** (pas de SW sur un asset `file://`, enregistrement enveloppé d'un try/catch). **À confirmer
+  par un boot réel (T4).**
+  (4) **CI** : nouvelle étape `bundleRelease` **+ `assembleRelease`** en `-PstoreBuild=true`, appId
+  **`fr.archipel.industry.store`** (décision verrouillée d'Ethan : Play App Signing donnera une clé
+  DIFFÉRENTE, deux distributions au même appId avec deux signatures ne peuvent ni coexister ni se
+  remplacer). **Artefact SEULEMENT, jamais la Release** — un `.aab` n'est pas installable.
+  ⚠ **L'APK est construit EXPRÈS en plus du bundle** : `aapt2 dump badging` **ne lit pas un `.aab`**,
+  alors qu'il donne sur l'APK le paquet, le `targetSdk`, les permissions et l'état debuggable — donc
+  **T1 est automatisé en CI sans dépendre de `bundletool`**. C'est aussi l'APK qu'Ethan installe pour
+  T4. La signature du bundle, elle, se lit avec **`jarsigner`** (signature JAR), pas `apksigner`.
+  ⚠ **L'étape « Assert appIds » n'est PAS touchée** (elle compare 2 APK ; `aapt2` ne lirait pas le
+  bundle). Le paquet magasin a ses assertions propres, dans une étape dédiée.
+  **Contre-mesures CI, sans lesquelles les tests verdiraient à vide** : l'asset **extrait du bundle**
+  est comparé à celui de **l'APK publique**, qui doit donner l'**inverse** (`SELF_UPDATE = true`,
+  1 occurrence de `ko-fi`) ; et le compteur de permissions du magasin (**0**) est doublé d'un contrôle
+  sur la publique (**2**) — sinon c'est le compteur qui est faux, pas le paquet qui est propre.
+  **Validé — run CI 550 (`workflow_dispatch` sur la BRANCHE) : succès complet.** V1 (les 2 APK
+  construits, `Assert appIds` OK, empreinte stable `a259f777…3962a3` sur les **3** APK) · V2
+  (`package: name='fr.archipel.industry.store' versionCode='423' targetSdkVersion:'36'
+  compileSdkVersion='36'`) · **T1** (0 `uses-permission`, non debuggable, contre-mesure : la publique
+  en déclare bien **2**) · **T2** (asset EXTRAIT DU BUNDLE : `SELF_UPDATE = false`, `ko-fi` = 0 ;
+  **contre-mesure exécutée** sur l'asset de l'APK publique → `true` et 1 occurrence) · **T3**
+  (`jarsigner` sur le `.aab` : `jar verified.`, CN=Archipel Industry — clé stable, pas la clé debug).
+  **Les 2 étapes à effet de bord ont bien été SAUTÉES** (gate `refs/heads/main`) : rien de publié.
+  ⚠ **CE QUI A CASSÉ AU RUN 549 ÉTAIT MON CONTRÔLE, PAS LE PAQUET** : la chaîne construisait déjà
+  intégralement (`BUILD SUCCESSFUL`, bundle signé) ; seule mon assertion `sdkVersion:'26'` échouait —
+  **l'`aapt2` de build-tools 36 n'émet plus le minSdk sous ce nom**. Corrigée pour accepter
+  `sdkVersion:` **ou** `minSdkVersion:`, **en échouant si aucune n'est trouvée** (un garde qui se
+  désarme tout seul ne garde rien), + dump de l'en-tête badging conservé. `minSdk` ne faisait pas
+  partie des critères du brief : c'était un ajout de ma part.
+  ⚠ **NON EXÉCUTABLES SANS APPAREIL, ne jamais porter au vert** : **V3** (edge-to-edge et orientation
+  en portrait/paysage) et **T4** (boot du paquet magasin sans permission, absence de la section de
+  soutien et du bouton de MAJ, `logcat` sans `SecurityException`). Le RAPPORT doit nommer le **modèle
+  d'appareil et le mode de navigation (gestes ou 3 boutons)** — un appareil sans encoche à navigation
+  gestuelle a des insets quasi nuls et validerait à vide.
+  ⚠ **CONTRAINTE PLAY À CONNAÎTRE** : le `versionCode` d'un dépôt accepté n'est **jamais réutilisable**
+  ; comme il dérive de `GAME_BUILD`, **chaque dépôt sur la console consomme définitivement un numéro
+  de build**, même un dépôt retiré.
+  ⚠ **HORS PÉRIMÈTRE, non traité** : dépôt sur la Play Console, choix de Play App Signing, piste de
+  test fermé, fiche magasin ; `version.json` et `index.html` (la PWA reste l'édition publique, hors
+  magasin) ; App Store (risque 4.2 « fonctionnalité minimale » en WebView, purge possible de
+  `localStorage` en WKWebView = sauvegardes perdues).
+- **État précédent : `GAME_BUILD = 417`, `GAME_VERSION = 'Alpha 18.4'`, `SAVE_VERSION = 31`.**
   Changement 18.4 (brief `BRIEFsupportselfupdate` + patcheur fourni **déjà exécuté**, 5 ancres) :
   **`SUPPORT_URL` est renseigné (Ko-fi) et l'auto-updater passe derrière une garde de build
   `SELF_UPDATE`** — préparation des paquets magasin. `SAVE_VERSION` INCHANGÉ, aucun champ persisté.
