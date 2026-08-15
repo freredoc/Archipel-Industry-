@@ -259,6 +259,55 @@ jobs:
           [ "$PUB" != "$DEV" ] \
             || { echo "::error::les 2 APK partagent le même appId — installation côte à côte impossible"; exit 1; }
 
+      # --- P3 : APK de TEST, à valider sur appareil -----------------------------------------
+      # La barre ACTIONS du jeu passe sous la barre de navigation système (constaté sur Galaxy
+      # S25 FE en navigation à 3 boutons, APK dev ET magasin du run 550). Cet APK embarque le
+      # gestionnaire d'insets corrigé ET l'afficheur de diagnostic (-PinsetDiag=true) : c'est lui
+      # qui donne les valeurs d'insets RÉELLEMENT reçues, impossibles à mesurer sans appareil.
+      # ⚠ Il garde l'appId DEV : il remplace l'app dev installée (sauvegarde conservée). Le
+      # libellé (« Archipel P3-A ») dit laquelle est en place.
+      # ⚠ TEMPORAIRE : cette étape disparaît une fois le correctif validé.
+      - name: Build P3 inset test APK (A)
+        working-directory: android
+        run: |
+          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
+          VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
+          cp ../game-dev.html app/src/main/assets/index.html
+          # L'étape magasin a laissé SON asset en place : sans ce contrôle, l'APK de test
+          # partirait avec l'édition magasin et le diagnostic porterait sur le mauvais jeu.
+          grep -q "^const DEV_BUILD = true;$" app/src/main/assets/index.html \
+            || { echo "::error::l'asset de l'APK de test P3 n'est pas l'edition dev"; exit 1; }
+          ./gradlew assembleDebug --no-daemon --stacktrace \
+            -Pvcode="${BUILD:-1}" -Pvname="${VERSION:-1.0}" \
+            -PappLabel="Archipel P3-A" \
+            -PinsetDiag=true
+          cp app/build/outputs/apk/debug/app-debug.apk ../ArchipelIndustryDev-A.apk
+
+      - name: Assert P3 test APK
+        run: |
+          AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1)
+          [ -n "$AAPT" ] || { echo "::error::aapt2 introuvable"; exit 1; }
+          lbl() { "$AAPT" dump badging "$1" | sed -n "s/^application-label:'\([^']*\)'.*/\1/p" | head -1; }
+          A=$(lbl ArchipelIndustryDev-A.apk)
+          echo "A = $A"
+          [ "$A" = "Archipel P3-A" ] || { echo "::error::libelle A inattendu : '$A'"; exit 1; }
+          # Contre-mesure : les APK NORMAUX ne doivent PAS embarquer l'afficheur de diagnostic,
+          # donc pas porter un libellé P3 — sinon c'est le build de test qui a écrasé les vrais.
+          for APK in ArchipelIndustry.apk ArchipelIndustryDev.apk; do
+            case "$(lbl "$APK")" in
+              *P3-*) echo "::error::$APK a ete ecrase par un build de test P3"; exit 1 ;;
+            esac
+          done
+          echo "APK de test P3 present, paquets normaux intacts"
+
+      - name: Upload P3 inset test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArchipelIndustry-P3-INSETS
+          path: |
+            ArchipelIndustryDev-A.apk
+          if-no-files-found: error
+
       - name: Show signing certificate (vérifie la clé stable)
         run: |
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)

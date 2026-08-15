@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInstaller;
+import android.content.res.Configuration;
 import android.graphics.Insets;
 import android.net.Uri;
 import android.os.Build;
@@ -15,7 +16,11 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
@@ -26,6 +31,8 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -49,8 +56,23 @@ public class MainActivity extends Activity {
 
     private static final String INSTALL_ACTION = "fr.archipel.industry.INSTALL_STATUS";
     private static final int FILE_CHOOSER_REQUEST = 0xF11E;
+    /** Étiquette de journal du lot P3 (`adb logcat -s ArchipelInsets`). */
+    private static final String TAG = "ArchipelInsets";
 
     private WebView web;
+    /**
+     * Vue racine que NOUS contrôlons, insérée entre `android.R.id.content` et la WebView.
+     * C'est le point le plus haut de la hiérarchie qu'une application peut se donner sans
+     * détourner le DecorView : le gestionnaire d'insets y est posé, de sorte qu'aucune vue
+     * intermédiaire ne puisse les avoir consommés avant lui.
+     */
+    private FrameLayout root;
+    /** Afficheur de diagnostic P3, présent UNIQUEMENT dans les builds `-PinsetDiag=true`. */
+    private TextView diag;
+    private final StringBuilder diagInsets = new StringBuilder();
+    private final StringBuilder diagPadding = new StringBuilder();
+    private final StringBuilder diagLate = new StringBuilder();
+    private int insetPass = 0;
     private BroadcastReceiver installReceiver;
     // Import de sauvegarde : callback du <input type="file"> en attente du fichier choisi.
     private ValueCallback<Uri[]> filePathCallback;
@@ -118,38 +140,73 @@ public class MainActivity extends Activity {
         // fichier, ouverture des liens externes) est INCHANGÉ.
         if (BuildConfig.SELF_UPDATE) registerInstallReceiver();
 
-        setContentView(web);
-        applyInsetPadding();
+        // ⚠ P3 — la WebView n'est PLUS la vue de contenu directe : elle est enveloppée dans une
+        // racine que nous contrôlons. Voir setUpInsets() : le gestionnaire d'insets doit être posé
+        // le plus haut possible, sinon une vue intermédiaire peut les avoir déjà consommés.
+        root = new FrameLayout(this);
+        root.addView(web, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        if (BuildConfig.INSET_DIAG) addDiagOverlay();
+
+        setContentView(root);
+        setUpInsets();
         web.loadUrl("file:///android_asset/index.html");
     }
 
     /**
-     * targetSdk 36 : l'edge-to-edge est IMPOSÉ et ne se refuse plus (windowOptOutEdgeToEdgeEnforcement
-     * est désactivé sur Android 16). La WebView est donc dessinée SOUS les barres système : sans ce
-     * gestionnaire, la barre d'outils du bas passerait derrière la barre de navigation (les 3 boutons)
-     * et cesserait d'être cliquable — exactement ce que le test sur appareil doit vérifier.
+     * P3 — gestion des insets système. targetSdk 36 impose l'edge-to-edge
+     * (`windowOptOutEdgeToEdgeEnforcement` est déprécié ET désactivé sur Android 16) : la fenêtre
+     * est dessinée SOUS les barres système, donc la barre d'outils du bas du jeu passe derrière la
+     * barre de navigation (les 3 boutons) et cesse d'être cliquable. Constaté sur appareil
+     * (Galaxy S25 FE, navigation à 3 boutons) sur les APK dev ET magasin du run 550.
      *
-     * On rembourse par l'UNION barres système + encoche, puis on CONSOMME : le contenu reste dans la
-     * zone sûre quel que soit le mode d'encoche retenu par la version d'Android, sans avoir à en
-     * dépendre. C'est la réserve d'espace que le framework faisait lui-même avant targetSdk 36 :
-     * l'apparence ne change donc pas.
+     * VARIANTE A — rembourrage NATIF : on pose le padding sur la racine puis on CONSOMME. La
+     * WebView est alors entièrement dans la zone sûre, et `env(safe-area-inset-*)` y vaut 0 : le
+     * rembourrage CSS du jeu devient inerte DANS L'APK (il reste actif en web/PWA). Les deux
+     * chemins ne se cumulent donc jamais.
      *
-     * ⚠ CONSÉQUENCE À CONNAÎTRE : la WebView ne débordant plus sous les barres, `env(safe-area-inset-*)`
-     * y vaut 0 et le rembourrage CSS du jeu devient inerte DANS L'APK. Il reste actif en web/PWA, où
-     * c'est le navigateur qui gère la zone sûre. Les deux chemins ne se cumulent donc jamais.
+     * ⚠ CE QUI CHANGE PAR RAPPORT AU LOT P2, ET QUI EST LE CORRECTIF PROBABLE :
+     *  1. `setDecorFitsSystemWindows(false)` est désormais demandé EXPLICITEMENT. Sans lui, le
+     *     DecorView traite les insets « à l'ancienne » et les rend CONSOMMÉS à ses enfants — le
+     *     gestionnaire du lot P2, posé plus bas dans la hiérarchie, recevait alors des valeurs
+     *     nulles et ne rembourrait rien, en silence. C'est aussi le prérequis de la variante B
+     *     (sans lui la WebView n'est pas sous les barres et renseigne 0).
+     *  2. Le gestionnaire est posé sur la RACINE, pas sur la WebView : aucune vue intermédiaire
+     *     ne peut consommer avant lui.
+     *  3. Il est réappliqué à chaque changement de configuration (onConfigurationChanged).
      *
-     * ⚠ Sur Android <= 15, le framework applique encore lui-même les insets au contenu : ce
-     * gestionnaire reçoit alors des valeurs nulles et ne rembourre rien — pas de double marge.
+     * ⚠ ÉCART VOULU AU BRIEF, sur le HAUT UNIQUEMENT. Le brief demande les quatre côtés depuis
+     * `systemBars() | displayCutout()`. Appliqué à la lettre, le côté HAUT prendrait l'encoche
+     * (perforation du S25 FE) et ferait apparaître une bande noire là où le jeu s'affiche
+     * aujourd'hui en plein écran — or Ethan a explicitement mis le haut HORS PÉRIMÈTRE et déclaré
+     * le comportement actuel voulu. Le haut vient donc de `systemBars()` seul (= 0 tant que la
+     * barre de statut est masquée) ; gauche, droite et bas prennent bien l'union avec l'encoche.
+     * Revenir au texte du brief tient en un mot : `t = safe.top` au lieu de `t = bars.top`.
+     *
+     * ⚠ Sur Android <= 29, le chemin hérité est CONSERVÉ tel quel : le framework y applique encore
+     * les insets lui-même, ce gestionnaire reçoit des valeurs nulles et ne rembourre rien — pas de
+     * double marge.
      */
-    private void applyInsetPadding() {
-        web.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+    private void setUpInsets() {
+        // Prérequis COMMUN aux deux variantes : la fenêtre doit être réellement edge-to-edge et
+        // les insets doivent descendre jusqu'à nous sans avoir été « ajustés » par le DecorView.
+        if (Build.VERSION.SDK_INT >= 30) {
+            getWindow().setDecorFitsSystemWindows(false);
+        }
+
+        root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
             @Override
             public WindowInsets onApplyWindowInsets(View v, WindowInsets insets) {
+                insetPass++;
+                recordInsets(insets);
+
                 int l, t, r, b;
                 if (Build.VERSION.SDK_INT >= 30) {
                     Insets safe = insets.getInsets(
                             WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
-                    l = safe.left; t = safe.top; r = safe.right; b = safe.bottom;
+                    Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                    l = safe.left; r = safe.right; b = safe.bottom;
+                    t = bars.top;                 // ⚠ écart voulu : voir le commentaire ci-dessus
                 } else {
                     l = insets.getSystemWindowInsetLeft();
                     t = insets.getSystemWindowInsetTop();
@@ -157,12 +214,111 @@ public class MainActivity extends Activity {
                     b = insets.getSystemWindowInsetBottom();
                 }
                 v.setPadding(l, t, r, b);
+                recordPadding(v);
                 return Build.VERSION.SDK_INT >= 29
                         ? WindowInsets.CONSUMED
                         : insets.consumeSystemWindowInsets();
             }
         });
-        web.requestApplyInsets();
+        root.requestApplyInsets();
+
+        // Relevé TARDIF : si le rembourrage a été écrasé par une passe de layout ultérieure
+        // (4e cause envisagée), c'est ici que ça se voit — le padding relu 2,5 s après le
+        // chargement ne correspondra plus à celui qu'on vient d'appliquer.
+        if (BuildConfig.INSET_DIAG) {
+            root.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    recordLate();
+                }
+            }, 2500);
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // L'activité déclare configChanges (orientation|screenSize|…) : elle n'est PAS recréée,
+        // donc rien ne redemanderait les insets sans cet appel.
+        if (root != null) root.requestApplyInsets();
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // Diagnostic P3 — présent uniquement dans les builds de test (-PinsetDiag=true).
+    // Il n'y a pas d'appareil côté développement : c'est le seul moyen de relever CE QUE LE
+    // GESTIONNAIRE REÇOIT RÉELLEMENT sans imposer un aller-retour supplémentaire au testeur.
+    // Les mêmes valeurs partent aussi dans le journal (adb logcat -s ArchipelInsets).
+    // ------------------------------------------------------------------------------------------
+
+    private void addDiagOverlay() {
+        diag = new TextView(this);
+        diag.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9);
+        diag.setTextColor(0xFFFFF176);
+        diag.setBackgroundColor(0xCC000000);
+        diag.setPadding(6, 4, 6, 4);
+        diag.setTypeface(android.graphics.Typeface.MONOSPACE);
+        diag.setText("P3 — en attente d'insets…");
+        // Le relevé recouvre le haut du HUD : un appui le fait disparaître pour laisser
+        // inspecter la barre ACTIONS du bas sans gêne.
+        diag.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                v.setVisibility(View.GONE);
+            }
+        });
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.gravity = Gravity.TOP | Gravity.START;
+        root.addView(diag, lp);
+    }
+
+    private static String insetLine(String name, Insets i) {
+        return name + " t" + i.top + " b" + i.bottom + " l" + i.left + " r" + i.right + "\n";
+    }
+
+    private void recordInsets(WindowInsets insets) {
+        diagInsets.setLength(0);
+        diagInsets.append("P3 pass=").append(insetPass)
+                .append(" api=").append(Build.VERSION.SDK_INT)
+                // isConsumed() vrai ici = un parent a consommé avant nous (2e/3e cause).
+                .append(" consumed=").append(insets.isConsumed()).append('\n');
+        if (Build.VERSION.SDK_INT >= 30) {
+            diagInsets.append(insetLine("sys", insets.getInsets(WindowInsets.Type.systemBars())));
+            diagInsets.append(insetLine("nav",
+                    insets.getInsets(WindowInsets.Type.navigationBars())));
+            diagInsets.append(insetLine("cut",
+                    insets.getInsets(WindowInsets.Type.displayCutout())));
+        }
+        diagInsets.append("old t").append(insets.getSystemWindowInsetTop())
+                .append(" b").append(insets.getSystemWindowInsetBottom())
+                .append(" l").append(insets.getSystemWindowInsetLeft())
+                .append(" r").append(insets.getSystemWindowInsetRight()).append('\n');
+        pushDiag();
+    }
+
+    private void recordPadding(View v) {
+        diagPadding.setLength(0);
+        diagPadding.append("pad t").append(v.getPaddingTop())
+                .append(" b").append(v.getPaddingBottom())
+                .append(" l").append(v.getPaddingLeft())
+                .append(" r").append(v.getPaddingRight()).append('\n');
+        pushDiag();
+    }
+
+    private void recordLate() {
+        if (root == null) return;
+        diagLate.setLength(0);
+        diagLate.append("+2.5s pad b").append(root.getPaddingBottom())
+                .append(" root ").append(root.getHeight())
+                .append(" web ").append(web != null ? web.getHeight() : -1)
+                .append(" dpi ").append(getResources().getDisplayMetrics().densityDpi).append('\n');
+        pushDiag();
+    }
+
+    private void pushDiag() {
+        String txt = diagInsets.toString() + diagPadding + diagLate;
+        Log.i(TAG, txt.replace('\n', '|'));
+        if (diag != null) diag.setText(txt.trim());
     }
 
     /** Ouvre les URLs http/https dans le navigateur système ; garde le reste dans la WebView. */
@@ -434,10 +590,10 @@ public class MainActivity extends Activity {
     }
 
     private void hideSystemBars() {
-        // On masque seulement la barre de statut (en haut). La barre de navigation
-        // (les 3 boutons Android, en bas) reste visible et son espace est réservé par
-        // `applyInsetPadding()` : le jeu se place AU-DESSUS, donc les boutons ne
-        // recouvrent plus l'UI du bas.
+        // On masque seulement la barre de statut (en haut) — c'est le plein écran voulu, et
+        // l'absence de barre d'état en jeu est un comportement confirmé, pas un défaut. La barre
+        // de navigation (les 3 boutons Android, en bas) reste visible ; réserver son espace est
+        // le travail de `setUpInsets()` (variante A) ou du CSS de la page (variante B).
         // ⚠ `setSystemUiVisibility` est déprécié depuis l'API 30 et n'est plus fiable une fois
         // l'edge-to-edge imposé : au-delà, on passe par WindowInsetsController. Masquer la barre
         // de statut met son inset à 0, donc le rembourrage du haut retombe à l'encoche seule.
