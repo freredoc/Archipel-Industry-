@@ -9721,8 +9721,76 @@ const SAVE_VERSION = 31;
 // un mecanisme neuf : le HUD se replie deja selon la largeur de son contenu, et l'ile 7 ajoute
 // un onglet de la meme facon. Signale, pas corrige.
 // `SAVE_VERSION` INCHANGE (31) — aucune donnee de partie touchee, seul un filtre d'affichage.
-const GAME_BUILD = 422;
-const GAME_VERSION = 'Alpha 18.9';
+// 19.0 — CHAINE DE BUILD ANDROID 16 (lot P1, preparation Play). AUCUN changement de jeu : ce
+// lot ne touche que `android/` et la CI. AGP 8.5.2 -> 8.13.0, wrapper Gradle 8.7 -> 8.13,
+// `compileSdk`/`targetSdk` 34 -> 36, SDK de CI `android-36` + `build-tools;36.0.0`.
+// Motif : Play exige deja un targetSdk > 34 pour toute NOUVELLE application et imposera 36 au
+// 31/08/2026 — un paquet en 34 serait refuse au depot. AGP 8.13 est le DERNIER 8.x et supporte
+// l'API 36 : on evite ainsi la migration de majeure vers AGP 9.x (qui exigerait Gradle 9.5).
+// ⚠ targetSdk 36 change DEUX comportements que ce lot doit neutraliser :
+// (1) EDGE-TO-EDGE IMPOSE — `windowOptOutEdgeToEdgeEnforcement` est DESACTIVE sur Android 16, la
+//     WebView dessine sous les barres systeme et la reserve d'espace que le framework faisait
+//     disparait : sans rien, la barre d'outils du bas passerait DERRIERE les 3 boutons de
+//     navigation et cesserait d'etre cliquable. `MainActivity.applyInsetPadding()` rembourse par
+//     l'union barres systeme + encoche puis CONSOMME → l'apparence d'avant est preservee.
+//     ⚠ Consequence : `env(safe-area-inset-*)` vaut 0 DANS L'APK (le rembourrage CSS y devient
+//     inerte) et reste actif en web/PWA. Les deux chemins ne se cumulent jamais.
+// (2) VERROU D'ORIENTATION LEVE sur les ecrans >= sw600dp — `screenOrientation` y est ignore.
+//     Ferme par `android:appCategory="game"` : les JEUX sont l'exception PERENNE documentee (la
+//     propriete PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY, elle, tombera en API 37).
+// ⚠ Ces deux chemins sont INTESTABLES en headless (les insets y valent toujours 0) : ils ne se
+// levent que sur un appareil reel. `SAVE_VERSION` INCHANGE (31).
+// 19.1 — LA BARRE ACTIONS PASSAIT SOUS LA BARRE DE NAVIGATION (lot P3). AUCUN changement de jeu :
+// ce lot ne touche que `android/` et la CI. Le rembourrage d'insets du 19.0 est INOPERANT sur
+// appareil : mesure d'Ethan sur Galaxy S25 FE en navigation a 3 boutons, APK dev ET magasin du
+// run 550 — les libelles « Ouvrir / Copier / Demolir / Ameliorer » sont recouverts par les 3
+// boutons systeme. Symptome identique sur les deux paquets → le defaut est dans la coquille
+// native, ni dans le HTML ni dans la variante magasin.
+// ⚠ LE HAUT EST HORS PERIMETRE, confirme par Ethan : la barre d'etat n'est pas visible en jeu et
+// ne l'a jamais ete, c'est le plein ecran voulu. SEUL l'inset BAS est a traiter. Le verrou
+// d'orientation par `appCategory="game"` est CONSERVE (pas de paysage).
+// ⚠ INDICE QUI ORIENTE LE DIAGNOSTIC : le gestionnaire du 19.0 rembourre AUSSI le haut depuis
+// `displayCutout()`. Sur un ecran a perforation, il aurait donc produit une bande en haut. Ethan
+// n'en voit aucune, et le bas n'est pas rembourre non plus : NI L'UN NI L'AUTRE ne bouge, donc le
+// gestionnaire ne recoit vraisemblablement que des zeros (insets consommes par un parent) plutot
+// qu'il n'applique un mauvais cote. La MESURE tranche — d'ou l'afficheur de diagnostic.
+// Livre : deux variantes CONCURRENTES a departager sur appareil, `-PinsetMode=A|B`, plus un
+// afficheur d'insets (`-PinsetDiag=true`) embarque dans les deux APK de test.
+// ⚠ La perdante sera SUPPRIMEE, pas laissee derriere un drapeau : deux chemins de rembourrage
+// qui cohabitent, c'est exactement la dette qu'on cherche a ne pas contracter.
+// `SAVE_VERSION` INCHANGE (31).
+// 19.2 — VARIANTE B RETENUE, VARIANTE A SUPPRIMEE (lot P4). AUCUN changement de jeu : ce lot ne
+// touche que `android/` et la CI. Verdict mesure par Ethan sur Galaxy S25 FE, navigation a
+// 3 boutons, avec `sys t0 b135` et `cut t82` des deux cotes :
+//   A (rembourrage natif) : `pad t0 b135`, racine 2340, WebView 2205 — la WebView est retrecie.
+//   B (aucun natif)       : `pad t0 b0`,   racine 2340, WebView 2340 — la WebView occupe TOUT
+//                           l'ecran, ET la barre ACTIONS est degagee.
+// ⚠ RESULTAT QUI TRANCHE LA QUESTION OUVERTE DU LOT P3 : une WebView Android renseigne bien
+// `safe-area-inset-bottom` pour la BARRE DE NAVIGATION, et pas seulement pour l'encoche. En B
+// aucun pixel natif n'est rembourre et la barre est pourtant degagee : c'est le CSS
+// `env(safe-area-inset-*)` du lot A qui opere, SEUL.
+// Decision d'Ethan : B. Motif — un seul mecanisme de rembourrage pour l'APK, le web et la PWA.
+// Avec A, deux chemins produisaient le meme resultat sur deux canaux et toute retouche du HUD
+// aurait du etre verifiee sur les deux. Cette dette est ANNULEE.
+// ⚠ CE QUI RESTE, ET QU'IL NE FAUT PAS RETIRER : `setDecorFitsSystemWindows(false)` est le
+// PREREQUIS de B — sans lui la WebView n'est pas disposee sous les barres, elle recoit des insets
+// nuls et le CSS ne reserve plus rien, sur les TROIS paquets a la fois.
+// (2) LA BARRE D'ETAT DEVIENT VISIBLE EN JEU (heure, batterie, notifications). Le jeu tournait en
+// plein ecran depuis toujours — `sys t0` du releve P3 le confirme. On ne masque plus la barre de
+// statut, et on force ses icones CLAIRES (le fond du jeu est sombre ; certains constructeurs
+// posent le drapeau « fond clair » par defaut, ce qui donnerait des icones noires illisibles).
+// ⚠ AUCUN rembourrage natif n'est retabli pour autant : la fenetre reste edge-to-edge, la barre
+// se dessine PAR-DESSUS le fond, et c'est toujours le CSS qui reserve la bande haute — `.hud`
+// porte deja `padding-top:max(6px, env(safe-area-inset-top))` et suit l'inset tout seul. AUCUNE
+// ligne de HTML/CSS n'a eu a changer : verifie, pas suppose.
+// ⚠ RISQUE A TESTER, il peut faire annuler ce changement : sortir du plein ecran reactive le volet
+// de notifications au balayage depuis le haut. Sur une carte qui se navigue au glissement, un geste
+// parti trop haut pourrait derouler le volet au lieu de deplacer la vue. Aucune API ne permet a une
+// application ordinaire de bloquer ce geste — seul le test sur appareil tranche, et le changement
+// se retire alors par un `revert` du seul commit 2.
+// `SAVE_VERSION` INCHANGE (31).
+const GAME_BUILD = 425;
+const GAME_VERSION = 'Alpha 19.2';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9731,7 +9799,7 @@ const GAME_VERSION = 'Alpha 18.9';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "L'île 6 n'apparaît plus dans le sélecteur d'île tant qu'elle est verrouillée : sa découverte reste une surprise, comme sur la carte de l'archipel. Son onglet revient dès que la liaison est réparée.";
+const GAME_NOTES = "Correctif Android : la barre d'actions du bas ne passe plus sous les boutons de navigation du telephone. Rien ne change dans la partie.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde

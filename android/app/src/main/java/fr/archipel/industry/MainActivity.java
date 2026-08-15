@@ -8,14 +8,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInstaller;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.Settings;
-import android.view.View;
 import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -46,7 +48,6 @@ public class MainActivity extends Activity {
 
     private static final String INSTALL_ACTION = "fr.archipel.industry.INSTALL_STATUS";
     private static final int FILE_CHOOSER_REQUEST = 0xF11E;
-
     private WebView web;
     private BroadcastReceiver installReceiver;
     // Import de sauvegarde : callback du <input type="file"> en attente du fichier choisi.
@@ -110,10 +111,64 @@ public class MainActivity extends Activity {
         // Pont natif : réservé à l'asset local de confiance (les URLs externes ne sont JAMAIS
         // chargées dans la WebView, elles partent vers le navigateur système).
         web.addJavascriptInterface(new WebBridge(), "ArchipelNative");
-        registerInstallReceiver();
+        // Variante MAGASIN (-PstoreBuild=true) : pas d'auto-mise à jour, donc aucun récepteur
+        // d'installation à enregistrer. Le reste du pont (export de sauvegarde, sélecteur de
+        // fichier, ouverture des liens externes) est INCHANGÉ.
+        if (BuildConfig.SELF_UPDATE) registerInstallReceiver();
 
         setContentView(web);
+        setUpInsets();
         web.loadUrl("file:///android_asset/index.html");
+    }
+
+    /**
+     * P4 — LE REMBOURRAGE VIENT DU CSS, ET DE LUI SEUL. Il n'y a plus une ligne de rembourrage
+     * natif, et il ne doit pas en revenir.
+     *
+     * Contexte : targetSdk 36 impose l'edge-to-edge (`windowOptOutEdgeToEdgeEnforcement` est
+     * déprécié ET désactivé sur Android 16), la fenêtre est donc dessinée SOUS les barres système.
+     * Le lot P2 avait répondu par un rembourrage natif ; il ne s'appliquait pas (les insets étaient
+     * consommés avant lui) et la barre d'outils du bas passait sous les 3 boutons de navigation.
+     *
+     * Le lot P3 a mis DEUX corrections en concurrence sur appareil. **Mesuré par Ethan sur Galaxy
+     * S25 FE, navigation à 3 boutons**, avec `sys t0 b135` et `cut t82` des deux côtés :
+     *
+     *   A — rembourrage natif : `pad t0 b135`, racine 2340, WebView 2205 → la WebView est rétrécie.
+     *   B — aucun natif       : `pad t0 b0`,   racine 2340, WebView 2340 → la WebView occupe tout
+     *                           l'écran, ET la barre ACTIONS est dégagée.
+     *
+     * B dégage la barre sans qu'aucun pixel natif ne soit rembourré : **une WebView Android
+     * renseigne donc bien `safe-area-inset-bottom` pour la barre de NAVIGATION**, et pas seulement
+     * pour l'encoche comme on le craignait. C'est le CSS `env(safe-area-inset-*)` du jeu qui opère,
+     * seul — `.hud` pour le haut, `.toolbar-wrap` pour le bas et les côtés.
+     *
+     * **B est retenue (décision d'Ethan)** : un seul mécanisme de rembourrage pour l'APK, le web et
+     * la PWA. Avec A, deux chemins produisaient le même résultat sur deux canaux, et toute retouche
+     * du HUD aurait dû être vérifiée sur les deux. Cette dette est annulée.
+     *
+     * ⚠ IL NE RESTE DONC QUE DEUX GESTES ICI, et surtout AUCUN `setPadding` :
+     *  1. `setDecorFitsSystemWindows(false)` — PRÉREQUIS INDISPENSABLE : sans lui la WebView n'est
+     *     pas disposée sous les barres, elle reçoit des insets nuls, `env(safe-area-inset-*)` y vaut
+     *     0 et plus RIEN n'est rembourré, sur les trois paquets à la fois. Ne pas le retirer en
+     *     croyant simplifier.
+     *  2. `requestApplyInsets()` à chaque changement de configuration (onConfigurationChanged),
+     *     l'activité déclarant `configChanges` donc n'étant pas recréée.
+     */
+    private void setUpInsets() {
+        // PRÉREQUIS — ne pas retirer : sans lui la WebView n'est pas sous les barres et
+        // `env(safe-area-inset-*)` y vaut 0, donc plus aucun rembourrage nulle part.
+        if (Build.VERSION.SDK_INT >= 30) {
+            getWindow().setDecorFitsSystemWindows(false);
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // L'activité déclare configChanges (orientation|screenSize|…) : elle n'est PAS recréée,
+        // donc rien ne redemanderait les insets sans cet appel — et sans nouveaux insets la
+        // WebView garderait un `env(safe-area-inset-*)` périmé.
+        if (web != null) web.requestApplyInsets();
     }
 
     /** Ouvre les URLs http/https dans le navigateur système ; garde le reste dans la WebView. */
@@ -153,6 +208,12 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void update(final String url) {
+            // Variante MAGASIN : l'installation d'un binaire téléchargé est interdite par la
+            // politique Google (et Apple 2.5.2). Le manifeste magasin ne déclare de toute façon
+            // pas REQUEST_INSTALL_PACKAGES — c'est la seconde ligne de défense, côté code.
+            // Le HTML magasin n'appelle jamais ce pont (`SELF_UPDATE = false` y masque déjà les
+            // deux points d'entrée) : cette garde couvre le cas d'un asset mal apparié.
+            if (!BuildConfig.SELF_UPDATE) return;
             if (url == null || url.isEmpty()) return;
             // Android 8+ : l'installation d'APK requiert l'autorisation « applis inconnues »
             // accordée à NOTRE app. Si absente, on ouvre l'écran de réglage et on réessaiera.
@@ -375,17 +436,49 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) hideSystemBars();
+        if (hasFocus) showStatusBar();
     }
 
-    private void hideSystemBars() {
-        View d = getWindow().getDecorView();
-        // On masque seulement la barre de statut (en haut). La barre de navigation
-        // (les 3 boutons Android, en bas) reste visible et son espace est réservé :
-        // le jeu se place AU-DESSUS, donc les boutons ne recouvrent plus l'UI du bas.
-        d.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
+    /**
+     * P4 — LA BARRE D'ÉTAT EST VISIBLE EN JEU (heure, batterie, notifications). Demande d'Ethan.
+     *
+     * Le jeu tournait en plein écran depuis toujours : la barre de statut était masquée à chaque
+     * reprise du focus, ce que le relevé du lot P3 confirme (`sys t0` — zéro inset haut). Elle est
+     * désormais AFFICHÉE.
+     *
+     * ⚠ AUCUN REMBOURRAGE NATIF N'EST RÉTABLI POUR AUTANT. La fenêtre reste edge-to-edge
+     * (`setDecorFitsSystemWindows(false)`), la barre d'état se dessine PAR-DESSUS le fond, et c'est
+     * toujours le CSS qui réserve la bande haute : `.hud` porte
+     * `padding-top:max(6px, env(safe-area-inset-top))` et suit donc l'inset tout seul. Le jeu ne
+     * connaît qu'un seul mécanisme de rembourrage, ici comme en web et en PWA.
+     *
+     * Conséquence attendue, À MESURER et non à supposer : en plein écran le CSS réservait déjà
+     * `cut t82` (le trou de caméra selfie du S25 FE). La barre d'état occupe approximativement la
+     * même bande, donc `safe-area-inset-top` devrait rester du même ordre — le vide noir contournant
+     * l'objectif devient une barre d'état utile. Si l'inset augmente sensiblement, c'est de la
+     * hauteur de jeu perdue, et cela doit remonter au RAPPORT.
+     *
+     * ⚠ RISQUE CONNU, c'est le test qui peut faire annuler ce commit : sortir du plein écran
+     * réactive le volet de notifications au balayage depuis le haut. Sur une carte qui se navigue au
+     * glissement, un geste parti trop haut pourrait dérouler le volet au lieu de déplacer la vue.
+     * Rien ne permet à une application ordinaire de bloquer ce geste — seul le test sur appareil
+     * tranche. Le bas n'est pas touché.
+     *
+     * `setSystemUiVisibility` (API < 30) est déprécié et n'est de toute façon plus fiable une fois
+     * l'edge-to-edge imposé : sur ce chemin on ne fait donc RIEN, la barre d'état y est visible par
+     * défaut puisqu'on ne la masque plus.
+     */
+    private void showStatusBar() {
+        if (Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController c = getWindow().getInsetsController();
+            if (c != null) {
+                c.show(WindowInsets.Type.statusBars());
+                // Le jeu est sombre (#0E1726) sous la barre : on force les icônes CLAIRES en
+                // effaçant le drapeau « fond clair ». Certains constructeurs le posent par défaut,
+                // ce qui donnerait des icônes noires illisibles sur ce fond.
+                c.setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+            }
+        }
     }
 
     @Override

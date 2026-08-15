@@ -7,9 +7,24 @@ plugins {
 // on retombe sur la signature debug par défaut.
 def ksFile = file('keystore.jks')
 
+// Variante MAGASIN (Play / App Store), activée par `-PstoreBuild=true`. UNE bascule, pas de
+// `flavor` : les tâches existantes (`assembleDebug` ×2) ne changent ni de nom ni de comportement,
+// et le workflow actuel n'a pas à bouger.
+// ⚠ ÉCART VOULU au brief, qui proposait `project.hasProperty('storeBuild')` seul : cette forme est
+// vraie même pour `-PstoreBuild=false`, ce qui produirait une variante magasin en croyant l'avoir
+// désactivée. On lit donc la VALEUR.
+def storeBuild = project.hasProperty('storeBuild') &&
+        project.property('storeBuild').toString().toBoolean()
+
 android {
     namespace 'fr.archipel.industry'
-    compileSdk 34
+    // API 36 (Android 16). Exigé par Play : `targetSdk` doit atteindre 36 au 31/08/2026, et un
+    // paquet en 34 serait refusé au dépôt. Demande AGP >= 8.9.0-rc01 (ici 8.13.0).
+    compileSdk 36
+    // ⚠ ÉPINGLÉ. Sans cette ligne, AGP 8.13 prend SA valeur par défaut (35.0.0) et la CI, qui
+    // n'installe que `build-tools;36.0.0`, tenterait un téléchargement implicite. On force donc
+    // la version réellement installée par le workflow — les deux doivent bouger ensemble.
+    buildToolsVersion '36.0.0'
 
     defaultConfig {
         // applicationId / libellé surchargeables (-PappId / -PappLabel) : la CI produit
@@ -22,12 +37,46 @@ android {
         // Un build local sans -PappId produit donc l'édition dev-appId.
         applicationId (project.findProperty('appId') ?: 'fr.archipel.industry')
         minSdk 26
-        targetSdk 34
+        // ⚠ targetSdk 36 change DEUX comportements en plus des API disponibles :
+        //  - l'edge-to-edge devient non contournable (la WebView dessine sous les barres
+        //    système ; `statusBarColor`/`navigationBarColor` du thème sont ignorés) — traité
+        //    par le gestionnaire d'insets de MainActivity ;
+        //  - `screenOrientation="portrait"` cesse d'être respecté sur les écrans >= 600dp,
+        //    donc le bloc paysage de la feuille de style devient un chemin normal sur tablette.
+        targetSdk 36
         // versionCode/versionName injectés par la CI (-Pvcode/-Pvname) depuis
         // GAME_BUILD / GAME_VERSION ; valeurs par défaut pour un build local.
         versionCode = (project.findProperty('vcode') ?: '1').toString().toInteger()
         versionName = (project.findProperty('vname') ?: '1.0').toString()
         manifestPlaceholders = [appLabel: (project.findProperty('appLabel') ?: 'Archipel Industry')]
+
+        // Verrou natif de l'auto-mise à jour, pendant du `SELF_UPDATE` du HTML. Lu par
+        // MainActivity : le pont `ArchipelNative.update()` sort immédiatement et le récepteur
+        // d'installation n'est pas enregistré.
+        // ⚠ Le code de PackageInstaller RESTE dans le binaire, simplement inatteignable — même
+        // arbitrage que côté HTML : un verrou plutôt qu'une ablation, donc un seul chemin de code.
+        // Ce que Play évalue réellement, c'est la permission REQUEST_INSTALL_PACKAGES, et elle,
+        // elle disparaît (AndroidManifest-store.xml).
+        buildConfigField 'boolean', 'SELF_UPDATE', (storeBuild ? 'false' : 'true')
+
+    }
+
+    // `buildConfig` est désactivé par défaut depuis AGP 8 : sans ça, la classe BuildConfig n'est
+    // pas générée et MainActivity ne compile plus.
+    buildFeatures {
+        buildConfig true
+    }
+
+    sourceSets {
+        main {
+            // Le manifeste magasin ne déclare AUCUNE permission (ni REQUEST_INSTALL_PACKAGES,
+            // ni INTERNET). Les deux fichiers ne diffèrent QUE par ces lignes.
+            // ⚠ Parenthèses OBLIGATOIRES : `manifest.srcFile a ? b : c` (command expression sans
+            // parenthèses suivie d'un ternaire) est ambigu en Groovy et se lit `srcFile(a) ? b : c`.
+            manifest.srcFile(storeBuild
+                    ? 'src/main/AndroidManifest-store.xml'
+                    : 'src/main/AndroidManifest.xml')
+        }
     }
 
     signingConfigs {

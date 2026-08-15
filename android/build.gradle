@@ -1,4 +1,13 @@
 // Plugin Android Gradle déclaré ici, appliqué dans app/build.gradle.
+//
+// ⚠ AGP 8.13.0 est le DERNIER de la ligne 8.x, et le choix est délibéré : il supporte
+// l'API 36 (« maximum API level that AGP 8.13 supports is API level 36.1 ») sans imposer la
+// migration de MAJEURE vers AGP 9.x, qui exigerait Gradle 9.5 et ses ruptures de DSL. Le
+// plancher réel pour `compileSdk 36` est AGP 8.9.0-rc01 (page « Set up the Android 16 SDK ») ;
+// on prend le dernier 8.x plutôt que ce plancher pour ne pas rester sur une version déjà
+// dépassée au moment où Play imposera 36.
+// Gradle minimum exigé par AGP 8.13 : 8.13 — c'est la valeur posée dans gradle-wrapper.properties.
+// Une AGP récente avec un wrapper trop ancien échoue au configure, avec un message explicite.
 plugins {
-    id 'com.android.application' version '8.5.2' apply false
+    id 'com.android.application' version '8.13.0' apply false
 }

@@ -7,10 +7,16 @@
     <!-- Mise à jour in-app : installer l'APK téléchargé via l'installeur système. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- ⚠ `android:appCategory="game"` n'est PAS une métadonnée décorative : en targetSdk 36,
+         orientation, redimensionnement et ratio cessent d'être respectés sur les écrans
+         >= sw600dp — SAUF pour les applications déclarées comme JEUX. C'est la seule exception
+         PÉRENNE (la propriété PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY, elle, est temporaire
+         et tombera en API 37). `screenOrientation="portrait"` continue donc de tenir sur tablette. -->
     <application
         android:allowBackup="true"
         android:fullBackupContent="true"
         android:label="${appLabel}"
+        android:appCategory="game"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/Theme.Archipel"
