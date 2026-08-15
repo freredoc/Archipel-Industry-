@@ -259,64 +259,54 @@ jobs:
           [ "$PUB" != "$DEV" ] \
             || { echo "::error::les 2 APK partagent le même appId — installation côte à côte impossible"; exit 1; }
 
-      # --- P3 : deux APK de TEST, à départager sur appareil ---------------------------------
-      # La barre ACTIONS du jeu passe sous la barre de navigation système (constaté sur Galaxy
-      # S25 FE en navigation à 3 boutons, APK dev ET magasin du run 550). Deux corrections
-      # concurrentes sont construites d'un coup pour qu'Ethan ne fasse QU'UN aller-retour :
-      #   A — rembourrage natif sur la racine, puis consommation ;
-      #   B — aucun natif, la WebView reçoit les insets et le CSS env(safe-area-inset-*) opère.
-      # Les deux embarquent l'afficheur de diagnostic (-PinsetDiag=true) : c'est lui qui donne les
-      # valeurs d'insets RÉELLEMENT reçues, impossibles à mesurer sans appareil.
-      # ⚠ Elles gardent l'appId DEV : elles remplacent l'app dev installée (sauvegarde conservée)
-      # et se remplacent l'une l'autre. Le libellé (« Archipel P3-A » / « P3-B ») dit laquelle est
-      # en place. ⚠ TEMPORAIRE : cette étape disparaît avec la variante perdante.
-      - name: Build P3 inset test APKs (A + B)
+      # --- P4 : APK de TEST portant le relevé d'insets --------------------------------------
+      # La variante B (aucun rembourrage natif, le CSS fait tout) a été retenue sur appareil ; la
+      # variante A est supprimée, il n'y a plus de bascule. Cet APK est la MÊME coquille que les
+      # trois paquets, avec en plus l'afficheur de diagnostic (-PinsetDiag=true) — c'est lui qui
+      # donne les valeurs d'insets natives ET le `env(safe-area-inset-*)` calculé par la WebView,
+      # impossibles à mesurer sans appareil.
+      # ⚠ Il garde l'appId DEV : il remplace l'app dev installée (sauvegarde conservée). Le libellé
+      # « Archipel P4 » dit qu'il s'agit du build de test.
+      # ⚠ TEMPORAIRE : cette étape disparaît avec l'afficheur.
+      - name: Build P4 inset test APK
         working-directory: android
         run: |
           BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
           VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
           cp ../game-dev.html app/src/main/assets/index.html
-          # L'étape magasin a laissé SON asset en place : sans ce contrôle, les APK de test
-          # partiraient avec l'édition magasin et le diagnostic porterait sur le mauvais jeu.
+          # L'étape magasin a laissé SON asset en place : sans ce contrôle, l'APK de test
+          # partirait avec l'édition magasin et le diagnostic porterait sur le mauvais jeu.
           grep -q "^const DEV_BUILD = true;$" app/src/main/assets/index.html \
-            || { echo "::error::l'asset des APK de test P3 n'est pas l'edition dev"; exit 1; }
-          for MODE in A B; do
-            ./gradlew assembleDebug --no-daemon --stacktrace \
-              -Pvcode="${BUILD:-1}" -Pvname="${VERSION:-1.0}" \
-              -PappLabel="Archipel P3-$MODE" \
-              -PinsetMode="$MODE" -PinsetDiag=true
-            cp app/build/outputs/apk/debug/app-debug.apk "../ArchipelIndustryDev-$MODE.apk"
-          done
+            || { echo "::error::l'asset de l'APK de test P4 n'est pas l'edition dev"; exit 1; }
+          ./gradlew assembleDebug --no-daemon --stacktrace \
+            -Pvcode="${BUILD:-1}" -Pvname="${VERSION:-1.0}" \
+            -PappLabel="Archipel P4" \
+            -PinsetDiag=true
+          cp app/build/outputs/apk/debug/app-debug.apk ../ArchipelIndustryDev-P4.apk
 
-      - name: Assert P3 test APKs (variantes réellement distinctes)
+      - name: Assert P4 test APK
         run: |
-          # Deux builds successifs dans le MÊME répertoire de sortie : une erreur de copie
-          # donnerait deux fois la même variante, et le test d'Ethan ne prouverait rien. Le
-          # libellé porte le mode, donc `aapt2` sait les distinguer.
           AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1)
           [ -n "$AAPT" ] || { echo "::error::aapt2 introuvable"; exit 1; }
           lbl() { "$AAPT" dump badging "$1" | sed -n "s/^application-label:'\([^']*\)'.*/\1/p" | head -1; }
-          A=$(lbl ArchipelIndustryDev-A.apk); B=$(lbl ArchipelIndustryDev-B.apk)
-          echo "A = $A"; echo "B = $B"
-          [ "$A" = "Archipel P3-A" ] || { echo "::error::libelle A inattendu : '$A'"; exit 1; }
-          [ "$B" = "Archipel P3-B" ] || { echo "::error::libelle B inattendu : '$B'"; exit 1; }
-          [ "$A" != "$B" ] || { echo "::error::les deux APK de test sont identiques"; exit 1; }
+          P4=$(lbl ArchipelIndustryDev-P4.apk)
+          echo "P4 = $P4"
+          [ "$P4" = "Archipel P4" ] || { echo "::error::libelle P4 inattendu : '$P4'"; exit 1; }
           # Contre-mesure : les APK NORMAUX ne doivent PAS embarquer l'afficheur de diagnostic,
-          # donc pas porter un libellé P3 — sinon c'est la boucle qui a écrasé les vrais paquets.
+          # donc pas porter le libellé de test — sinon c'est le build de test qui les a écrasés.
           for APK in ArchipelIndustry.apk ArchipelIndustryDev.apk; do
             case "$(lbl "$APK")" in
-              *P3-*) echo "::error::$APK a ete ecrase par un build de test P3"; exit 1 ;;
+              *P4*) echo "::error::$APK a ete ecrase par le build de test P4"; exit 1 ;;
             esac
           done
-          echo "APK de test P3 distincts, paquets normaux intacts"
+          echo "APK de test P4 present, paquets normaux intacts"
 
-      - name: Upload P3 inset test APKs
+      - name: Upload P4 inset test APK
         uses: actions/upload-artifact@v4
         with:
-          name: ArchipelIndustry-P3-INSETS
+          name: ArchipelIndustry-P4-DIAG
           path: |
-            ArchipelIndustryDev-A.apk
-            ArchipelIndustryDev-B.apk
+            ArchipelIndustryDev-P4.apk
           if-no-files-found: error
 
       - name: Show signing certificate (vérifie la clé stable)

@@ -16,17 +16,10 @@ def ksFile = file('keystore.jks')
 def storeBuild = project.hasProperty('storeBuild') &&
         project.property('storeBuild').toString().toBoolean()
 
-// --- P3 : deux variantes CONCURRENTES de gestion des insets système -------------------------
-// `-PinsetMode=A` (défaut) = rembourrage natif appliqué puis consommé ;
-// `-PinsetMode=B` = aucun natif, les insets descendent à la WebView et le CSS
-// `env(safe-area-inset-*)` fait le travail.
-// ⚠ TEMPORAIRE : dès qu'Ethan a tranché sur appareil, la perdante est SUPPRIMÉE et cette
-// bascule disparaît avec elle. On ne garde pas deux chemins de rembourrage derrière un drapeau,
-// c'est précisément la dette qu'on cherche à ne pas contracter.
-def insetMode = (project.findProperty('insetMode') ?: 'A').toString().toUpperCase()
-if (insetMode != 'A' && insetMode != 'B') {
-    throw new GradleException("-PinsetMode doit valoir A ou B (reçu : '${insetMode}')")
-}
+// --- P4 : relevé d'insets à l'écran ------------------------------------------------------------
+// ⚠ La bascule `-PinsetMode` du lot P3 a DISPARU : la variante B (aucun rembourrage natif, le CSS
+// fait tout) a été retenue sur appareil, la variante A est supprimée. Un seul chemin de
+// rembourrage, sur les trois paquets comme sur le web et la PWA.
 // Relevé d'insets à l'écran (le développement n'a pas d'appareil : c'est le seul moyen de
 // MESURER ce que le gestionnaire reçoit réellement, sans imposer un aller-retour de plus au
 // testeur). Faux par défaut → les trois paquets normaux (publique, dev, magasin) n'embarquent
@@ -77,8 +70,7 @@ android {
         // elle disparaît (AndroidManifest-store.xml).
         buildConfigField 'boolean', 'SELF_UPDATE', (storeBuild ? 'false' : 'true')
 
-        // P3 — variante d'insets et afficheur de diagnostic (cf. le bloc de tête).
-        buildConfigField 'String', 'INSET_MODE', "\"${insetMode}\""
+        // P4 — afficheur de diagnostic d'insets (cf. le bloc de tête).
         buildConfigField 'boolean', 'INSET_DIAG', (insetDiag ? 'true' : 'false')
     }
 

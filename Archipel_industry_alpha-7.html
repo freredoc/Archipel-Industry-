@@ -9759,8 +9759,25 @@ const SAVE_VERSION = 31;
 // ⚠ La perdante sera SUPPRIMEE, pas laissee derriere un drapeau : deux chemins de rembourrage
 // qui cohabitent, c'est exactement la dette qu'on cherche a ne pas contracter.
 // `SAVE_VERSION` INCHANGE (31).
-const GAME_BUILD = 424;
-const GAME_VERSION = 'Alpha 19.1';
+// 19.2 — VARIANTE B RETENUE, VARIANTE A SUPPRIMEE (lot P4). AUCUN changement de jeu : ce lot ne
+// touche que `android/` et la CI. Verdict mesure par Ethan sur Galaxy S25 FE, navigation a
+// 3 boutons, avec `sys t0 b135` et `cut t82` des deux cotes :
+//   A (rembourrage natif) : `pad t0 b135`, racine 2340, WebView 2205 — la WebView est retrecie.
+//   B (aucun natif)       : `pad t0 b0`,   racine 2340, WebView 2340 — la WebView occupe TOUT
+//                           l'ecran, ET la barre ACTIONS est degagee.
+// ⚠ RESULTAT QUI TRANCHE LA QUESTION OUVERTE DU LOT P3 : une WebView Android renseigne bien
+// `safe-area-inset-bottom` pour la BARRE DE NAVIGATION, et pas seulement pour l'encoche. En B
+// aucun pixel natif n'est rembourre et la barre est pourtant degagee : c'est le CSS
+// `env(safe-area-inset-*)` du lot A qui opere, SEUL.
+// Decision d'Ethan : B. Motif — un seul mecanisme de rembourrage pour l'APK, le web et la PWA.
+// Avec A, deux chemins produisaient le meme resultat sur deux canaux et toute retouche du HUD
+// aurait du etre verifiee sur les deux. Cette dette est ANNULEE.
+// ⚠ CE QUI RESTE, ET QU'IL NE FAUT PAS RETIRER : `setDecorFitsSystemWindows(false)` est le
+// PREREQUIS de B — sans lui la WebView n'est pas disposee sous les barres, elle recoit des insets
+// nuls et le CSS ne reserve plus rien, sur les TROIS paquets a la fois.
+// `SAVE_VERSION` INCHANGE (31).
+const GAME_BUILD = 425;
+const GAME_VERSION = 'Alpha 19.2';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9769,7 +9786,7 @@ const GAME_VERSION = 'Alpha 19.1';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Correctif Android : la barre d'actions du bas passait sous les boutons de navigation du telephone. Rien ne change dans la partie.";
+const GAME_NOTES = "Correctif Android : la barre d'actions du bas ne passe plus sous les boutons de navigation du telephone. Rien ne change dans la partie.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
