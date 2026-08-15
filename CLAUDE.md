@@ -87,11 +87,18 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   retirer le gestionnaire natif et noter la dette « 2 mécanismes » **annulée**. Si **A** gagne :
   écrire dans le commentaire que le rembourrage de l'APK **ne vient PAS du CSS** et que toute
   retouche du HUD se vérifie **sur les deux chemins**.
-  ⚠ **RIEN DE CE LOT N'A ÉTÉ COMPILÉ** (aucun SDK Android) : contrôles faits = `node --check` 7/7,
-  équilibrage des accolades de `MainActivity.java`, 0 résidu d'`applyInsetPadding`, YAML analysable
-  (20 étapes, les 2 étapes à effet de bord toujours gatées `main`), regex CI de
-  `GAME_BUILD`/`GAME_VERSION`/`GAME_NOTES`, et **les 4 gardes du lot 18.4 toujours à 1**. Le banc
-  d'essai reste le `workflow_dispatch` depuis la branche.
+  **Validé — run CI 551 (`workflow_dispatch` sur la BRANCHE) : succès complet.** L'étape
+  `Build P3 inset test APKs (A + B)` passe → **le Java compile dans les DEUX variantes** (c'est le
+  seul risque levable sans appareil, et il est levé) ; `Assert P3 test APKs` confirme des libellés
+  **différents** (donc la bascule `-PinsetMode` agit réellement) + contre-mesure « les paquets
+  normaux n'ont pas de libellé P3 » ; **P1/P2 rejoués sans régression** (V1, V2, T1, T2, T3) ;
+  `PWA build=424` ; **les 2 étapes à effet de bord SAUTÉES** — rien de publié. Contrôles locaux :
+  `node --check` 7/7, équilibrage des accolades de `MainActivity.java`, 0 résidu
+  d'`applyInsetPadding`, YAML analysable (20 étapes), regex CI de
+  `GAME_BUILD`/`GAME_VERSION`/`GAME_NOTES`, **les 4 gardes du lot 18.4 toujours à 1**.
+  ⚠ **RIEN DE TOUT CELA NE PROUVE QUE LE CORRECTIF FONCTIONNE** : un APK qui compile, s'assemble,
+  se signe et porte le bon libellé peut laisser la barre sous les boutons système — c'est
+  exactement ce qu'a fait le run 550. **Seuls T-A / T-B sur appareil tranchent.**
 - **État précédent : `GAME_BUILD = 423`, `GAME_VERSION = 'Alpha 19.0'`, `SAVE_VERSION = 31`.**
   Changement 19.0 (brief `BRIEFplayaab`, **lots P1 + P2, 2 commits séparés**) : **la chaîne de build
   passe en API 36 et la CI produit un `.aab` magasin.** `SAVE_VERSION` INCHANGÉ, **aucun changement de

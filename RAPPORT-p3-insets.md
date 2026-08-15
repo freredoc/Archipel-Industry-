@@ -192,10 +192,24 @@ Les commits sont **séparés par variante** : la perdante se retire d'un `revert
 
 ---
 
-## 6. Ce qui a été vérifié ici, et comment
+## 6. Ce qui a été vérifié, et comment
 
-Aucun SDK Android côté développement : **rien de ce lot n'a été compilé ni exécuté**. Le banc
-d'essai est le `workflow_dispatch` depuis la branche.
+### Banc d'essai : run CI **551** (`workflow_dispatch` depuis la branche) — **succès complet**
+
+Aucun SDK Android côté développement : le seul moyen de compiler est la CI. Elle l'a fait, et
+c'est le seul risque que je pouvais lever sans appareil.
+
+| Étape | Verdict | Ce que ça prouve |
+|---|---|---|
+| `Build P3 inset test APKs (A + B)` | **PASS** | **le Java compile, dans les DEUX variantes** — le gestionnaire réécrit, la vue racine, l'afficheur de diagnostic, `setDecorFitsSystemWindows`, `onConfigurationChanged`, et les deux `buildConfigField` |
+| `Assert P3 test APKs` | **PASS** | les deux APK portent des libellés **différents** (« Archipel P3-A » / « P3-B ») — la bascule `-PinsetMode` agit réellement, et deux builds successifs dans le même répertoire n'ont pas donné deux fois la même variante |
+| contre-mesure de la même étape | **PASS** | les paquets **normaux** ne portent pas de libellé P3 : le build de test ne les a pas écrasés |
+| `Upload P3 inset test APK` | **PASS** | artefact **`ArchipelIndustry-P3-INSETS`** disponible |
+| P1 + P2 rejoués (V1, V2, T1, T2, T3) | **PASS** | aucune régression : `Assert store package`, `Assert appIds` et `jarsigner` toujours verts |
+| `Publish` + `Sync version.json` | **SAUTÉES** | gate `refs/heads/main` — **rien n'a été publié** |
+| `Sync PWA` | `PWA build=424`, `archipel-424` | le bump est bien lu par la CI |
+
+### Contrôles locaux
 
 | Contrôle | Résultat |
 |---|---|
@@ -208,9 +222,10 @@ d'essai est le `workflow_dispatch` depuis la branche.
 | `GAME_NOTES` sans guillemet droit ni séquence `\u` | **conforme** |
 | `GAME_BUILD` libre relevé sur **toutes** les branches distantes (max = 423) | **424 libre** |
 
-⚠ **Ce que ces contrôles ne prouvent pas** : ni que le Java compile (aucun SDK), ni que le
-correctif fonctionne. Le premier point tombe au `workflow_dispatch`, le second sur l'appareil
-d'Ethan. **Ne pas lire le tableau ci-dessus comme une validation de V3.**
+⚠ **CE QUE RIEN DE TOUT CELA NE PROUVE : que le correctif FONCTIONNE.** Un APK qui compile,
+s'assemble, se signe et porte le bon libellé peut parfaitement laisser la barre `ACTIONS` sous les
+boutons système — c'est exactement ce qu'a fait le run 550. **Ne pas lire les tableaux ci-dessus
+comme une validation de V3.** Seuls T-A / T-B sur appareil tranchent.
 
 ---
 
