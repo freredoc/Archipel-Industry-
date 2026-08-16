@@ -89,6 +89,28 @@ Et sur les **trois variantes que la CI dérive** (simulation locale des `sed`/`g
 Invariants CI préservés : `ko-fi` = **1** en publique / **0** en magasin, `SELF_UPDATE = true`
 présent en publique et absent en magasin, gardes d'entrée et contre-gardes comprises.
 
+### Vérification RÉELLE en CI — run 557
+
+La simulation locale a été confirmée par un **`workflow_dispatch` sur la branche** (run **557**, sha
+`a9a5408`) : **succès complet**, 1 min 54.
+
+| Étape | Conclusion |
+|---|---|
+| 6 · `Prepare game files (public + dev + magasin)` | **success** — gardes d'entrée/sortie et compteurs `ko-fi` passent pour de vrai |
+| 8-10 · builds PUBLIC / DEV / STORE (`.aab` + APK de contrôle) | success |
+| 11 · `Assert store package` (paquet, targetSdk, permissions, debuggable) | success |
+| 12 · `Assert appIds` · 13 · `Show signing certificate` | success |
+| 17 · `Publish to "apk-latest" release` | **SKIPPED** |
+| 18 · `Sync version.json from the game's GAME_BUILD` | **SKIPPED** |
+
+**Les deux étapes à effet de bord ont bien été sautées** (gate `refs/heads/main`) : `main` est resté
+sur `37890a6`, `GAME_BUILD = 426`, `version.json` en build 426 — **rien n'a été publié**, vérifié
+après coup.
+
+⚠ Ce run prouve que la chaîne construit, assemble et signe les trois paquets avec ce HTML. **Il ne
+prouve rien du rendu à l'écran** — le mode capture n'est de toute façon atteignable que sous
+`DEV_BUILD = true`, donc dans aucun des trois paquets produits par la CI.
+
 ⚠ `shotMode` apparaît 14 fois dans `game-store.html` : le code **existe** dans la variante magasin
 mais y est **inatteignable** (`DEV_BUILD = false` → `toggleShotMode` sort tôt et la ligne d'option
 n'est pas rendue). Même arbitrage que `SELF_UPDATE` : un verrou plutôt qu'une ablation, un seul
