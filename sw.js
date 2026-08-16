@@ -23,7 +23,8 @@ var PRECACHE = [
   './index.html',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './icon-512-maskable.png'
 ];
 
 // ── Install : précache le shell, puis prend la main immédiatement ──

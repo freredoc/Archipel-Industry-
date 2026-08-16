@@ -19,7 +19,65 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 427`, `GAME_VERSION = 'Alpha 19.4'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 428`, `GAME_VERSION = 'Alpha 19.5'`, `SAVE_VERSION = 31`.**
+  Changement 19.5 (brief `BRIEFloticonessplash`, **lot ICON-1**, patcheur + 4 PNG fournis) : **les
+  icônes PWA et le logo de chargement reprennent l'ART ANDROID** (`ic_launcher_foreground.png`, l'île
+  avec bâtiments/routes/jetée), qui n'alimentait AUCUN canal web. `SAVE_VERSION` INCHANGÉ, **aucun
+  champ de partie**. **2 ancres HTML + 1 ancre `sw.js` à `count == 1`**, `node --check` 7/7 sur les
+  3 variantes CI, aller-retour identique à l'octet, idempotence vérifiée, **delta +3 942 o EXACT**.
+  (1) ⚠ **LE BUMP EST FONCTIONNEL ICI, PAS SEULEMENT CONVENTIONNEL** : la CI réécrit
+  `var CACHE = 'archipel-<GAME_BUILD>'` dans `sw.js` → **sans bump, un joueur déjà installé garde
+  l'ancien cache**, donc les anciennes icônes ET l'ancien splash, indéfiniment. Simulation du `sed`
+  de la CI faite : cache réécrit en `archipel-428`.
+  (2) ⚠ **LE SPLASH EST INLINE EN DATA URI, ET C'EST UNE CONTRAINTE, PAS UN RAFFINEMENT** (vérifié
+  dans `android.yml`) : **seul `index.html` entre dans `app/src/main/assets/`, aucun PNG** → un
+  `src="./icon-192.png"` afficherait une **image cassée sur l'écran de chargement de l'APK**. D'où les
+  3 276 caractères de base64 (source 128×128 affichée à 64 px = ×2 pour les écrans denses).
+  ⚠ **`image-rendering:pixelated` est INDISPENSABLE** : sans lui le navigateur lisse le pixel art et
+  l'île devient floue.
+  (3) **LES 4 PNG ÉTAIENT DÉJÀ SUR `main`** (poussés par Ethan, commit `0238ec2`) : comparés
+  **octet à octet** au pack avant toute action → **identiques** (2 812 / 2 892 / 4 903 / 3 399 o).
+  **Rien n'a été écrasé** ; l'étape 3 du brief était déjà faite. Réflexe à garder : comparer avant
+  d'écraser un binaire qu'on croit livrer.
+  (4) **La maskable est CALCULÉE, pas choisie** : Android recadre en cercle/squircle, la zone sûre est
+  le **disque central de 66 % du côté** = rayon **169 px sur 512**. Mesuré sur l'art d'origine : le
+  contenu non-mer atteint **200,9 px** et l'île est décentrée. Recentrage −15/−18 px puis réduction à
+  84 % (169 ÷ 200) → **149,2 px ≤ 169**. Reproduit à l'identique ici.
+  ⚠ **PIÈGE DE MESURE PAYÉ DEUX FOIS** : classer « mer » par la couleur du pixel (0,0), puis par la
+  palette de l'anneau extérieur, donne **rmax 256/282 px** — parce que **la mer porte une texture de
+  vagues** comptée comme du contenu. Le bon critère est **le bleu franchement dominant**
+  (`B>R+18 && B>G+18`).
+  ⚠ **PIL EST ABSENT de cet environnement** (contrairement à celui du rédacteur) → les PNG sont
+  mesurés **dans Chromium** (décodage sur canvas + lecture des pixels), pas avec Pillow.
+  (5) ⚠ **MON PROPRE COMMENTAIRE CUMULATIF CONTENAIT UN 🏭** → le compte montait à 6 et rendait
+  malhonnête le contrôle « 5 usages restants » du brief. Emoji remplacé par le mot « usine » → **5**.
+  **Leçon : un contrôle de comptage doit être fait APRÈS avoir écrit ses propres commentaires.**
+  ⚠ **`makeIcon` EST DU CODE MORT, SIGNALÉ NON TRAITÉ** : `index.html` porte
+  `<link rel="manifest">` en ligne 7 et l'injection du manifeste blob est gardée par
+  `if (!document.querySelector('link[rel="manifest"]'))` → garde **toujours fausse**, le générateur
+  canvas ne s'exécute JAMAIS. À retirer dans un lot dédié — sans quoi le prochain qui régénère des
+  icônes repartira de ce générateur.
+  **Validé** : `node --check` 7/7 après le bump sur `game-public`/`game-dev`/`game-store` ; `sw.js`
+  compile, `manifest.json` JSON valide ; invariants CI rejoués (`ko-fi` 1 publique / 0 magasin) ;
+  **banc 6/7 PASS**, **contre-test 3/7 sur la base non patchée** (I1/I2/I3 s'inversent — ce sont les
+  assertions du lot ; I6/I7 passent des deux côtés à dessein, ce sont des gardes de non-régression) ;
+  les 4 PNG servis en HTTP **200 + décodés** aux bonnes dimensions, les 3 `src` du manifeste en 200,
+  splash inline décodé **128×128**.
+  ⚠ **I4 ÉCHOUE, ET C'EST DU BRUIT PRÉEXISTANT** : il compte les requêtes en échec, or le jeu tente
+  un `fetch` sortant vers `raw.githubusercontent.com/.../version.json`, bloqué en bac à sable.
+  **Contre-testé sur la base NON patchée : échec identique.** Laissé rouge plutôt que filtré en
+  silence ; ce que I4 devait couvrir a été vérifié positivement à côté (4/4 PNG + 3/3 `src`).
+  ⚠ **ÉCART DE BASE** : le brief visait **426**, la base réelle était **427** (le lot SHOT-1 avait été
+  fusionné entre-temps) → **les 2 SHA-256 du brief ne peuvent pas correspondre**. Vérifié à la place :
+  **les 3 ancres sortent à 1 sur la base réelle** et **le delta est celui annoncé, à l'octet**.
+  ⚠ **`oxipng` INDISPONIBLE ICI AUSSI** (comme chez le rédacteur) : les 4 PNG gardent l'optimisation
+  PIL, en mode palette. Un `oxipng -o 6` reste souhaitable, gain attendu faible.
+  ⚠ **NON COUVERT** : aucun rendu sur appareil (recadrage réel de la maskable par One UI, rendu du
+  splash) ; **iOS non testé** (Safari ignore les maskable et prend `apple-touch-icon` →
+  `icon-180.png`, fourni mais non vérifié sur appareil Apple).
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `android/` (son icône était déjà la bonne), `makeIcon` et le
+  manifeste blob, `SAVE_VERSION`, la CI.
+- **État précédent : `GAME_BUILD = 427`, `GAME_VERSION = 'Alpha 19.4'`, `SAVE_VERSION = 31`.**
   Changement 19.4 (brief `BRIEFshot1modecapture`, **lot SHOT-1**, patcheur fourni pré-exécuté) :
   **MODE CAPTURE, build dev uniquement** — masque le chrono `playclock`, le bandeau `.status`, le
   bandeau `.dev-banner` et les 2 pastilles flottantes (Logique, Souterrain) pour produire les

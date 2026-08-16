@@ -1044,7 +1044,14 @@ body:not(.theme-inox) .inv-label-btn.open{border-image:var(--btn-active) 8 fill 
 #splash{position:fixed;inset:0;z-index:250;background:#0d0d1a;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:16px;transition:opacity .45s ease;}
 #splash.hide{opacity:0;pointer-events:none;}
-#splash .sp-logo{font-size:56px;line-height:1;animation:sp-pulse 1.6s ease-in-out infinite;}
+/* Le logo n'est plus un emoji mais une IMAGE INLINE (data URI). L'emoji dependait de la
+   police systeme : rendu different sur chaque appareil, et surtout sans rapport avec
+   l'identite du jeu. `image-rendering:pixelated` est indispensable — sans lui le
+   navigateur lisse le pixel art a l'affichage et l'ile devient floue.
+   ⚠ INLINE ET NON `./icon-192.png` : seul `index.html` entre dans les assets de l'APK
+   (android.yml ligne 134), aucun PNG. Une source externe afficherait une image cassee
+   sur l'ecran de chargement de l'application Android. */
+#splash .sp-logo{width:64px;height:64px;display:block;image-rendering:pixelated;animation:sp-pulse 1.6s ease-in-out infinite;}
 @keyframes sp-pulse{0%,100%{transform:scale(1);opacity:.9;}50%{transform:scale(1.08);opacity:1;}}
 #splash .sp-title{font-family:'Bebas Neue','Arial Narrow',sans-serif;font-size:1.5rem;letter-spacing:.14em;
   color:#cfe3ff;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.5);}
@@ -1667,7 +1674,8 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 <div id="root"></div>
 <!-- Splash de chargement : visible immédiatement (HTML statique), masqué au 1er rendu du jeu. -->
 <div id="splash">
-  <div class="sp-logo">🏭</div>
+  <img class="sp-logo sp-logo-img" width="64" height="64" alt=""
+       src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAMAAAD04JH5AAAAwFBMVEXh3NLxyVHnxljQtFi0sKiWqm6Cvm5goFCWnKiWlpyMkJhQiM1IgDxGgr54eIBucnpGeLTkYFSWbkRgZnIpYaEoYaEoYKEoYKAoX58oX54oXp4oXp0nXp0nXpwnXZwnXZsnXJonXJkmXJkmW5kmW5gmW5cmWpcmWpYlWZUlWZTRWE2+UEaqRj5uUDAlWJQlWJMlWJIlV5IkV5IkV5EkVpAkVo8kVY8kVY4jVY4jVY0jVI0jVIwjU4sjU4ojUooiUooVUgUkAAAIlElEQVR42u2bXa+jNhCGN00cNtkcnB6QVtmLSHBBpZMURUJFldBu/v+/qr/GnrENJhuqtmp8cSTs4HkAe+b12OdT+w+XTy+AF8AL4AXwAngB/MsAurD0onSiqalNUT/r+6C+ERd9bxugPujwcQBj5qyKMqS5VF+1acBkpkHXPw2gbrD2RY9NY34o6xtXr16BbYD6pwFa+5RfZVGW7M9lw+mkqw0ZNJyh4XmARj/+twBAPz5UIwDSsACAe34KgOq/YYCGNDwPgLrTD9qGdtwYoA3flhgDrrsTDHbfzmjDIoMQzQA71N0n8OdG693QLDALkA9wc53MQc2lnQNtaNplAGptXpkhTvAcNLR23lin9bwjkj2qlyyMDLpoS7Wpdw3IP+v6hQAaasYaMg2ufui167Q3PB8LUKuyc7/fLYAp2n7YoCPGUgC9NHPXBb6BM4/qO8K7TDDyAIYbt6XyAbr27wHosB3ObOHdCIAZMEtEQ/qhhyLPGSp5zu0A8EfAwwDA0JvR05KRrof6jTO/3L4Hc8MCoJ5mSDI815xTcR5Q1mubWZZtVdEEyDc0SKANYU/NJID2XcbXddYJnp2v47m2DvZFyTL5HQp8Q9Rr1mcSs8YBWv3WSLgx/d0qeHwPQA5GpBAhaoc9JQFQuIuEwSpmPlMEHAlBRwCaDtVPAiBZQYWIeXUV2AcCcyE/Am886Uh7OkHDXIAmAZBh++odjCukM25IjYEGdGUN1K47MQAPh8wvB10nvgIox6/6huPbWxlKxxmDMArQAsDBt24Bck6lY1mWla8pE4MQK2sAQEpUAxzGABhTlrzZNjYyRjyhdIOesoM5LQfAgQAcoMAwYDlVaF2LV0nB40cAuhDAdgcA2QQAKysrHQOA4PFDgN64b7zsBZc23Jg/BIh9g3ByN0R6IgInAuDFFBcFVBSyc5BTAH2x5zyXcZJT6agWd401PwxzAIYepKAOqzoKFhYg5/4IFHV7KU9kpKiqahii4VH1NAngdFUfCEHGPi6m5O+Xj4vnDRyAKEagUIGgH+Q+DwArMaN3RL+Xi2V4d6ZNWFYAPDMiJdc99a4nkHQPAnQgeDXArwCQTQKI4gPYN5kCGIjipQCfoGw2vn0LcHw7uvJ26oJPOQ0wePZhQN+VEIsBbD0ALsw6hqr1HiUxBujaBgFoHRwB2PoAWXb88gXs02WVnhjTAE6JWdchRdXQS4DtKICdBQIA/4pVpiuzsExOw9HUm5aCm9gYINPQB8gL3BMsnyfWBX7wALeqpeDjADo6mTBk48zkuqDGcdjok8JIYQzgCZMDjwNIkTASh6IADdJPDoCzFMBhFIDlxwcAgpScBVBmxgBkRIgB7A5MyxSsEGcD2NsqtBbJIkWHpDiACtE0uzkX4ESkMItKkJkAZVU/BkCWFlSLR+xPARiZwhs0x6YHIVqMaeiuk1Mgy00xWYkcF1O1Ny37DRTDrTRKa9OOyVngp96k/Ww/o2gMVKxQ43gjIeUHGpRiU95bDsHtionOV+Jh1ythxl4xebVey6v13l2pH7AVU55arhtJDi8NoIKHEYJ/qCCwFf5EeGNpUnTN7VWurphSQrm7Mj+wACqHMhB5MuWKSUbmpuxv+c8UlMEQPSGxOQOgg5RYsQxAROtNArjMVwjgjX5SSWt+AiDMCRqAQALG62I/QwoxMgpHAFxS9oa8EO46WWXrBAG/BVpz3A94WekIgOySpQFsBkMAqK7+nOEHggybBSD+95c1Lr+sw2wFLgYA9lPTAGYVJ5Vg3+tA4C9ChVUJgZOVvNhlkUChE1gDStZN54hQSk6n+BRAEILYerUSAJ9RyYvNPgag4Ix9pbbSABC8OwiFYQg0ykRYtfKwKOKRWtzfOa2XSlIFeZQGAaB+2VwA8QZyTrXeQwBNfbIA2c8A6Awm2c2dBeDGZBkkhoJPoCW7AfA/f4609teZAHUMIEsB8DgAfxDg5OdYSxbxRBEAsQZiwehnrApzdalZAErMfLmqNPlx4u0JAK+qSsiAdbCPIRpuJr4hsTknV9zhAxJ6VULDDROKT4hOOfk/70pxg5Duax0QIUMiStWG27+pVC32QcZ11PodBPFO1AkAm5ODLQ5FQM+69J3dL0lnSu0yfrD3VZVJPZH0PNvtdgJAaM/j8civVyFHjzLYVbLgLR4/V5dK1aLdWbtnxccBxF8B8H65vO92vMf5CC9ZaBsSmVJ/C7B8ezuK3lhYdkHh/qblEOyytolMKQFQ4FVZluJplNx1w1tKrimAzuW2KEAqVevs35F+0t0hAFlfTgL4+8noCVNJqnsUmzwOzqL+bgoVfP6nxGDJNzAY/dZ1QYYNjU0gcwD9zI3+NIDZ7AzT1bHs87spYD9y0qF3HaUBYNvWeiGyTKRZPNUAbyC4QUzO34B3/n4BOo6nAxicEfHO6bnlMwCAmTPcINOk5MQdkCW275HnPJMMW3hER3VovkCBvX2DD/U0/v7vrIVJDZud5PCWd35OEcAbgPNz3t6Ufl2mYcaeEb3PS9V4h7Q8AHPeTgMUlesHHYNKu+LICYqRY3IAAJ+ANqyYtf/0EQ4H0DTl8Vh6APAGYJdVSrqi+BCDQo+XBQBQhk1uBnv72T6ABHu/irIYABo4VtqjkUE+gaovrroU6oZ6mVM0wTk9UM5dYYprKK4fm82HAaiXAMBHde1GQoMbyDbv96uUiwpANDQLnCv2T8kF3pmckOmK63qtPoGKAc8f5wuP6eHt3AjAj+vHkgA4Drpkc9f78dG5cjsIdf3zAJFN2L7vo4JLCZEfmqD4rm94GmD0nF5MOukGRQA3LAkwYr/rAuWGJOUSANHd3FBwedLRmPrvA9ATFZ7ic4su/2wtnJ973hHZJDv+Dwt3UpCeEOltg3UaC3jC8Dge+hePpsaKD6SjDRyPArz+y+YF8AJ4AbwAXgD/Q4C/AMSrsOHX8cbmAAAAAElFTkSuQmCC">
   <div class="sp-title">Archipel Industry</div>
   <div class="sp-spin"></div>
   <div class="sp-note">Chargement…</div>
@@ -9893,8 +9901,33 @@ const SAVE_VERSION = 31;
 // ce serait polluer l'i18n avec du vocabulaire d'outillage. Chaines inserees en ASCII pur (le
 // fichier melange UTF-8 litteral et echappements `\uXXXX` selon les blocs).
 // `SAVE_VERSION` INCHANGE (31).
-const GAME_BUILD = 427;
-const GAME_VERSION = 'Alpha 19.4';
+// 19.5 — LOT ICON-1 : ICONES PWA ET LOGO DE CHARGEMENT, tires de l'art Android.
+// UNE SEULE CAUSE POUR DEUX DEFAUTS : `makeIcon(size)` (generateur canvas du bloc BOOT) dessinait
+// une icone en cinq rectangles (cote, terre, gisement, usine, cheminee) et les `icon-*.png` de la
+// racine en avaient ete exportes — d'ou les aplats grossiers sur l'ecran d'accueil ; pendant ce
+// temps le splash affichait l'emoji usine, dont le rendu depend de la police du systeme. Or l'art
+// soigne EXISTAIT DEJA (`android/.../ic_launcher_foreground.png`, 512x512) sans alimenter aucun
+// canal web. Il devient la source unique des trois canaux (icones PWA, maskable, splash).
+// ⚠ LE LOGO DU SPLASH EST INLINE EN DATA URI, ET CE N'EST PAS UN RAFFINEMENT : seul `index.html`
+// entre dans `app/src/main/assets/` (android.yml l. 134), AUCUN PNG. Un `src="./icon-192.png"`
+// afficherait une image CASSEE sur l'ecran de chargement de l'application Android.
+// ⚠ `image-rendering:pixelated` est INDISPENSABLE sur `.sp-logo` : sans lui le navigateur lisse le
+// pixel art a l'affichage et l'ile devient floue.
+// ⚠ LE BUMP EST FONCTIONNEL ICI, pas seulement conventionnel : la CI reecrit
+// `var CACHE = 'archipel-<GAME_BUILD>'` dans `sw.js`. Sans bump, les joueurs deja installes
+// garderaient l'ancien cache, donc les ANCIENNES icones et l'ANCIEN splash.
+// La variante `icon-512-maskable.png` est CALCULEE, pas choisie : Android recadre en cercle ou
+// squircle, la zone sure est le disque central de 66 % du cote (rayon 169 px sur 512) ; l'ile de
+// l'art d'origine atteint un rayon de 200 px et son centre est decale — d'ou un recentrage puis une
+// reduction. Mesure de controle apres generation : rayon max 149 px, sous la limite de 169.
+// ⚠ `makeIcon` RESTE EN PLACE, et c'est du CODE MORT : `index.html` porte deja
+// `<link rel="manifest">` (l. 7), or l'injection du manifeste blob est gardee par
+// `if (!document.querySelector('link[rel="manifest"]'))` — garde TOUJOURS fausse, y compris dans
+// l'APK. Ni `makeIcon` ni le manifeste blob ne s'executent jamais. A retirer dans un lot dedie :
+// sans quoi le prochain qui regenere des icones repartira de ce generateur.
+// `SAVE_VERSION` INCHANGE (31).
+const GAME_BUILD = 428;
+const GAME_VERSION = 'Alpha 19.5';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9903,7 +9936,7 @@ const GAME_VERSION = 'Alpha 19.4';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Outil interne de capture d'ecran, reserve a la version de developpement. Rien ne change dans la partie.";
+const GAME_NOTES = "Nouvelle icone du jeu, reprise de l'illustration de l'ile, et ecran de chargement assorti.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
