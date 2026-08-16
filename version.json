@@ -1,8 +1,8 @@
 {
-  "build": 429,
-  "version": "Alpha 19.6",
+  "build": 430,
+  "version": "Alpha 19.7",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "La barre des ressources reste en place : le decor et le bandeau du tutoriel ne sautent plus · La carte des iles occupe toute la largeur tant que la sixieme reste a decouvrir."
+  "notes": "La production continue meme quand le jeu est ferme : le jeu le dit desormais, et rappelle le plafond de 27 heures environ · Le panneau Recherche ne devoile plus les recherches a venir."
 }
