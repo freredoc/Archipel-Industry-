@@ -149,6 +149,24 @@ Invariants CI, rejoués en simulant les `sed`/`grep` d'`android.yml` :
 | `SELF_UPDATE = true` dans `game-store` | 0 | 0 |
 | réécriture du cache `sw.js` | `archipel-428` | `archipel-428` |
 
+### CI RÉELLE — run 559, `workflow_dispatch` sur la BRANCHE
+
+Les simulations ci-dessus ont été confirmées par un **run réel** : `workflow_dispatch` sur
+`claude/playstore-preparation-g0w8vb` (tête `ede5906`) → **succès complet**.
+`Prepare game files (public + dev + magasin)`, les **3 paquets** (publique, dev, bundle magasin +
+APK de contrôle), `Assert store package`, `Assert appIds` et `Show signing certificate` passent
+tous — donc les 3 variantes se dérivent et se compilent avec le patch.
+
+⚠ **Les 2 étapes à effet de bord ont bien été SAUTÉES** (gate `refs/heads/main`) :
+`Publish to "apk-latest" release` et `Sync version.json` en **`skipped`**. Vérifié par leurs
+**conséquences observables**, pas seulement par le statut : après le run, `main` porte toujours
+`version.json` **build 427 / Alpha 19.4**, `const GAME_BUILD = 427` et
+`var CACHE = 'archipel-427'`. **Rien n'a été publié.**
+
+⚠ `Sync PWA (index.html + sw.js cache)` n'est PAS gatée et s'exécute : elle réécrit les fichiers
+**dans l'espace de travail du runner**, mais le commit/push vit dans les étapes gatées → aucun effet
+sur le dépôt depuis une branche.
+
 ---
 
 ## 6. Banc — `bench_icons.js`

@@ -57,7 +57,13 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
   `if (!document.querySelector('link[rel="manifest"]'))` → garde **toujours fausse**, le générateur
   canvas ne s'exécute JAMAIS. À retirer dans un lot dédié — sans quoi le prochain qui régénère des
   icônes repartira de ce générateur.
-  **Validé** : `node --check` 7/7 après le bump sur `game-public`/`game-dev`/`game-store` ; `sw.js`
+  **Validé — run CI 559, `workflow_dispatch` sur la BRANCHE : succès complet.** Les 3 paquets se
+  dérivent et se compilent (`Prepare game files`, publique/dev/bundle magasin, `Assert store package`,
+  `Assert appIds`, certificat). **Les 2 étapes à effet de bord SAUTÉES** (gate `refs/heads/main`),
+  vérifié par leurs CONSÉQUENCES : après le run, `main` portait toujours `version.json` **build 427**
+  et `var CACHE = 'archipel-427'` — rien de publié. ⚠ `Sync PWA` n'est PAS gatée et s'exécute, mais
+  elle n'écrit que dans l'espace de travail du runner (le commit/push vit dans les étapes gatées).
+  Contrôles locaux : `node --check` 7/7 après le bump sur `game-public`/`game-dev`/`game-store` ; `sw.js`
   compile, `manifest.json` JSON valide ; invariants CI rejoués (`ko-fi` 1 publique / 0 magasin) ;
   **banc 6/7 PASS**, **contre-test 3/7 sur la base non patchée** (I1/I2/I3 s'inversent — ce sont les
   assertions du lot ; I6/I7 passent des deux côtés à dessein, ce sont des gardes de non-régression) ;
