@@ -9866,8 +9866,35 @@ const SAVE_VERSION = 31;
 // banc servi en `file://` fait passer tous les tests d'eligibilite PAR LE MAUVAIS CHEMIN. Servir
 // en HTTP. Et `PWA_ELIGIBLE` est un `const` de portee lexicale : il n'est PAS sur `window`, il se
 // lit par identifiant nu (`window.PWA_ELIGIBLE` rend `undefined`).
-const GAME_BUILD = 426;
-const GAME_VERSION = 'Alpha 19.3';
+// 19.4 — LOT SHOT-1 : MODE CAPTURE, BUILD DEV UNIQUEMENT. Sert a produire les captures de la
+// fiche Google Play sans element parasite TOUT EN GARDANT le mode developpeur actif (construction
+// gratuite) pour composer les scenes. Masque cinq elements : le chrono `playclock` (il affiche
+// « 267:46:28 », qui se lit comme un compteur de debug), le bandeau `.status`, le bandeau
+// `.dev-banner` (« MODE DEV — construction gratuite » : motif de rejet de fiche a lui seul) et les
+// deux pastilles flottantes Logique / Souterrain.
+// ⚠ LE HUD DU HAUT ET LE BLOC ACTIONS NE SONT PAS TOUCHES, DELIBEREMENT. Mesure sur capture reelle
+// du S25 FE (1080x2340) : barres systeme 215 px + bloc ACTIONS 215 px = 430 px, soit ≈ les 420 px a
+// retirer pour tomber sur 1080x1920. Et le bloc ACTIONS disparait DE LUI-MEME des qu'aucun batiment
+// n'est selectionne — aucun code n'est necessaire pour cela.
+// ⚠ AUCUN MIROIR DANS `g.ui`, ET C'EST VOLONTAIRE : `shotMode` est un `useState` pur, sans
+// `scheduleSave`, sans champ persiste. Ce mode ne doit JAMAIS survivre a un rechargement ni finir
+// dans la save d'un joueur. NE PAS « harmoniser » avec le patron de `toggleDev`, qui ecrit
+// `g.ui.dev` parce que la gratuite de construction est lue par le MOTEUR, hors React.
+// ⚠ GARDE COMPOSEE `DEV_BUILD && !shotMode` sur le chrono : il etait garde par `DEV_BUILD` seul,
+// donc passer `DEV_BUILD` a `true` le rallumait par construction. Les cinq masquages restent
+// inaccessibles hors build dev (`toggleShotMode` sort tot sur `if (!DEV_BUILD) return;` et la ligne
+// d'option est elle-meme sous `DEV_BUILD`).
+// ⚠ CONSEQUENCE D'USAGE : les pastilles Logique et Souterrain etant masquees, il faut ARMER la
+// couche logique et DESCENDRE au souterrain AVANT d'activer le mode capture. On en sort par les
+// Options.
+// ⚠ « Mode capture » et sa description n'ont AUCUNE cle i18n : `I18N.t` rend alors la cle, donc le
+// francais s'affiche dans les quatre langues. Accepte — la ligne n'existe que sous `DEV_BUILD`,
+// jamais dans l'edition publique ni dans la variante magasin. NE PAS ajouter ces cles aux tables :
+// ce serait polluer l'i18n avec du vocabulaire d'outillage. Chaines inserees en ASCII pur (le
+// fichier melange UTF-8 litteral et echappements `\uXXXX` selon les blocs).
+// `SAVE_VERSION` INCHANGE (31).
+const GAME_BUILD = 427;
+const GAME_VERSION = 'Alpha 19.4';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9876,7 +9903,7 @@ const GAME_VERSION = 'Alpha 19.3';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Version web : une invitation a installer le jeu sur l'ecran d'accueil apparait apres le tutoriel. Rien ne change dans l'application Android.";
+const GAME_NOTES = "Outil interne de capture d'ecran, reserve a la version de developpement. Rien ne change dans la partie.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -20127,7 +20154,8 @@ function Toolbar({
   logicLayer,
   showOffIsland,
   onToggleOffIsland,
-  dev
+  dev,
+  shotMode
 }) {
   // Bâtiment dont la fiche détaillée est ouverte (appui long), ou null.
   const [detailId, setDetailId] = useState(null);
@@ -20306,7 +20334,7 @@ function Toolbar({
   const newInNet = hasNewIn(netGroupsEff, id => networkUnlocked(id, unlockedSet, currentIsland));
   return React.createElement("div", {
     className: "toolbar-wrap"
-  }, DEV_BUILD && React.createElement("button", {
+  }, DEV_BUILD && !shotMode && React.createElement("button", {
     className: "playclock" + (timeScale > 1 ? " playclock-fast" : ""),
     onClick: onToggleFast,
     title: I18N.t("Cliquer pour accélérer / ralentir le temps de jeu")
@@ -24858,6 +24886,8 @@ function OptionsModal({
   onSetTheme,
   onToggleFastUpgrade,
   onToggleDev,
+  shotMode,
+  onToggleShot,
   onToggleLevels,
   onToggleDeficitPct,
   onToggleDeficitSprite,
@@ -25071,7 +25101,7 @@ function OptionsModal({
   }, I18N.t("Exporter le journal")), toggleRow(I18N.t("Sons"), I18N.t("Effets sonores du jeu (pose, am\xE9lioration, alertes…)"), audioEnabled !== false, onToggleAudio), sliderRow(I18N.t("Volume"), I18N.t("Volume des effets sonores"), audioVolume == null ? 0.55 : audioVolume, 0, 1, 0.05, v => onSetAudioVolume && onSetAudioVolume(v), v => Math.round(v * 100) + '%'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onResetTips
-  }, uiIcon('astuce', "💡"), I18N.t(" Revoir les astuces")), DEV_BUILD && toggleRow(I18N.t("Mode d\xE9veloppeur"), I18N.t("Construction et am\xE9liorations gratuites"), dev, onToggleDev, 'dev'), React.createElement("button", {
+  }, uiIcon('astuce', "💡"), I18N.t(" Revoir les astuces")), DEV_BUILD && toggleRow(I18N.t("Mode d\xE9veloppeur"), I18N.t("Construction et am\xE9liorations gratuites"), dev, onToggleDev, 'dev'), DEV_BUILD && toggleRow(I18N.t("Mode capture"), I18N.t("Masque chrono, bandeaux et pastilles (captures magasin)"), shotMode, onToggleShot, 'shot'), React.createElement("button", {
     className: "slot-new opt-fullbtn",
     onClick: onOpenSaves
   }, uiIcon('sauvegarde', "💾"), I18N.t(" Emplacements de sauvegarde")), SUPPORT_URL ? React.createElement("div", {
@@ -25791,6 +25821,11 @@ function App() {
   // « bienvenue » PAR-DESSUS la modale de choix de mode (course au 1er lancement).
   needModeRef.current = needMode;
   const [dev, setDev] = useState(false);
+  // MODE CAPTURE (build dev uniquement, lot SHOT-1) : masque le chrono, le bandeau de statut,
+  // le bandeau MODE DEV et les deux pastilles flottantes, pour produire des captures de fiche
+  // magasin propres. Volontairement NON persiste (aucun scheduleSave, aucun champ g.ui) : il ne
+  // doit jamais survivre a un rechargement ni finir dans la save d'un joueur.
+  const [shotMode, setShotMode] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
   const [showLevels, setShowLevels] = useState(true);
   const [showDeficitPct, setShowDeficitPct] = useState(true);
@@ -29746,6 +29781,12 @@ function App() {
     setDev(g.ui.dev);
     showToast(g.ui.dev ? I18N.t('🛠 MODE DEV activé — construction gratuite') : I18N.t('Mode dev désactivé'), g.ui.dev ? 'var(--red)' : 'var(--ink-dim)');
   }
+  function toggleShotMode() {
+    if (!DEV_BUILD) return; // mode capture reserve au build dev, comme toggleDev
+    const on = !shotMode;
+    setShotMode(on);
+    showToast(on ? I18N.t('Mode capture active') : I18N.t('Mode capture desactive'), on ? 'var(--green)' : 'var(--ink-dim)');
+  }
   function toggleLevels() {
     const g = gameRef.current;
     g.ui.showLevels = g.ui.showLevels === false;
@@ -32502,7 +32543,7 @@ function App() {
       e.preventDefault();
       deselectAll();
     }
-  }), React.createElement("div", {
+  }), !shotMode && React.createElement("div", {
     className: "status"
   }, React.createElement("span", {
     // Le texte s'ellipse DANS ce span : la croix de sortie reste toujours visible \u00e0 droite
@@ -32517,7 +32558,7 @@ function App() {
       setNetOpen(false);
     },
     title: I18N.t("Quitter le mode construction")
-  }, "\u2715")), dev && React.createElement("div", {
+  }, "\u2715")), dev && !shotMode && React.createElement("div", {
     className: "dev-banner"
   }, I18N.t("\u26A0 MODE DEV \u2014 construction gratuite")), (() => {
     const sl = saturationLabel();
@@ -32667,12 +32708,13 @@ function App() {
     logicLayer: logicLayer,
     showOffIsland: showOffIsland,
     onToggleOffIsland: toggleOffIsland,
-    dev: game.ui && game.ui.dev
+    dev: game.ui && game.ui.dev,
+    shotMode: shotMode
   }),
   // Bouton COUCHE LOGIQUE : visible seulement quand la recherche correspondante est débloquée
   // (le nœud qui donne le câble/capteur/actionneur) — sinon la couche n'a aucun contenu. Masqué
   // aussi quand l'inventaire est ouvert (il passerait dessous/par-dessus le panneau).
-  !invOpen && isBuildingUnlocked(game, 'logic_wire') && React.createElement("button", {
+  !invOpen && !shotMode && isBuildingUnlocked(game, 'logic_wire') && React.createElement("button", {
     className: "logiclayer-btn" + (logicLayer ? ' active' : ''),
     onClick: toggleLogicLayer,
     title: logicLayer ? I18N.t("Masquer la couche logique") : I18N.t("Afficher la couche logique")
@@ -32682,7 +32724,7 @@ function App() {
     alt: ""
   }), React.createElement("span", {
     className: "ll-label"
-  }, I18N.t("Logique"))), !invOpen && game.islandUnlocked && game.islandUnlocked[7] && (game.currentIsland === 6 || game.currentIsland === 7) && React.createElement("button", {
+  }, I18N.t("Logique"))), !invOpen && !shotMode && game.islandUnlocked && game.islandUnlocked[7] && (game.currentIsland === 6 || game.currentIsland === 7) && React.createElement("button", {
     className: "underground-btn" + (game.currentIsland === 7 ? ' below' : ''),
     onClick: () => switchIsland(game.currentIsland === 6 ? 7 : 6),
     title: game.currentIsland === 6 ? I18N.t("Descendre au souterrain (") + islandLabel(7) + ")" : I18N.t("Remonter à la surface (") + islandLabel(6) + ")"
@@ -32736,6 +32778,8 @@ function App() {
     }
   }), optionsOpen && React.createElement(OptionsModal, {
     dev: dev,
+    shotMode: shotMode,
+    onToggleShot: toggleShotMode,
     numFormat: numFormat,
     numThreshold: numThreshold,
     onSetNumFormat: chooseNumFormat,
