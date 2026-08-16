@@ -19,7 +19,60 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 426`, `GAME_VERSION = 'Alpha 19.3'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 427`, `GAME_VERSION = 'Alpha 19.4'`, `SAVE_VERSION = 31`.**
+  Changement 19.4 (brief `BRIEFshot1modecapture`, **lot SHOT-1**, patcheur fourni pré-exécuté) :
+  **MODE CAPTURE, build dev uniquement** — masque le chrono `playclock`, le bandeau `.status`, le
+  bandeau `.dev-banner` et les 2 pastilles flottantes (Logique, Souterrain) pour produire les
+  captures de la fiche Play **sans perdre le mode développeur** (construction gratuite pour composer
+  les scènes). `SAVE_VERSION` INCHANGÉ. **12 ancres à `count == 1`**, `node --check` 7/7 sur les
+  3 variantes CI, aller-retour identique à l'octet, idempotence vérifiée, **delta +1 040 o EXACT**.
+  ⚠ **ÉCART DE BASE** : le brief visait **425**, la base réelle était **426** (le lot PWA-1 avait été
+  fusionné entre-temps) → **les 2 SHA-256 du brief ne peuvent pas correspondre**, c'est attendu ; ce
+  qui a été vérifié à la place, c'est que **les 12 ancres sortent toutes à 1 sur la base réelle**
+  (passage à blanc AVANT d'écrire) et que **le delta est celui annoncé**. Le lot PWA-1 n'a perturbé
+  aucune ancre.
+  (1) ⚠ **AUCUN MIROIR DANS `g.ui`, ET C'EST VOLONTAIRE** : `shotMode` est un `useState` PUR, sans
+  `scheduleSave`, sans champ persisté — il ne doit JAMAIS survivre à un rechargement ni finir dans la
+  save d'un joueur. **NE PAS « harmoniser » avec `toggleDev`**, qui écrit `g.ui.dev` parce que la
+  gratuité de construction est lue par le **MOTEUR, hors React**.
+  (2) ⚠ **GARDE COMPOSÉE `DEV_BUILD && !shotMode`** sur le chrono : il était gardé par `DEV_BUILD`
+  seul, donc passer `DEV_BUILD` à `true` le rallumait **par construction**. Les 5 masquages restent
+  inaccessibles hors build dev (`toggleShotMode` sort tôt sur `if (!DEV_BUILD) return;` et la ligne
+  d'option est elle-même sous `DEV_BUILD`).
+  (3) **HUD du haut et bloc ACTIONS NON touchés, délibérément** : mesure sur capture réelle du S25 FE
+  (1080×2340), barres système 215 px + bloc ACTIONS 215 px = 430 px ≈ les 420 px à retirer pour
+  tomber sur 1080×1920 — et **le bloc ACTIONS disparaît DE LUI-MÊME** dès qu'aucun bâtiment n'est
+  sélectionné, aucun code n'est nécessaire.
+  (4) ⚠ **CONSÉQUENCE D'USAGE** : les pastilles Logique et Souterrain étant masquées, il faut
+  **ARMER la couche logique et DESCENDRE au souterrain AVANT** d'activer le mode capture. On en sort
+  par les Options.
+  (5) ⚠ **AUCUNE clé i18n pour « Mode capture »** → `I18N.t` rend la clé, donc le français s'affiche
+  dans les 4 langues. **ACCEPTÉ, ne pas « corriger »** : la ligne n'existe que sous `DEV_BUILD`,
+  jamais en édition publique ni magasin — y ajouter des clés polluerait l'i18n avec du vocabulaire
+  d'outillage. Chaînes insérées en **ASCII pur** (le fichier mélange UTF-8 littéral et `\uXXXX`).
+  ⚠ **`shotMode` EXISTE dans `game-store.html` (14 occurrences) mais y est INATTEIGNABLE**
+  (`DEV_BUILD = false`) — même arbitrage que `SELF_UPDATE` : verrou plutôt qu'ablation.
+  **Validé** : `node --check` 7/7 après le bump, sur `game-public`/`game-dev`/`game-store` ; **banc
+  7/7 PASS (T1→T6 + contre-test), rejoué 2 fois sans flottement** ; **contre-test sur la base non
+  patchée : la ligne « Mode capture » n'existe pas, `grep -c shotMode` = 0** ; invariants CI rejoués
+  (`ko-fi` 1 publique / 0 magasin) ; **`DEV_BUILD = false` confirmé dans le diff final** (les copies
+  `= true` du banc vivent dans `/tmp`, jamais stagées).
+  ⚠ **DEUX PIÈGES DE BANC PAYÉS (banc à 2/7 avant correction, le patch était bon)** :
+  (a) **l'INVENTAIRE est déplié à la création (13.84)** et les 2 pastilles sont gardées par
+  `!invOpen` → tant qu'il est ouvert elles sont **absentes du DOM pour une raison étrangère au mode
+  capture**, donc la précondition de T3 n'était pas remplie et le test ne prouvait rien. **Replier
+  l'inventaire (`.inv-label-btn`) avant toute mesure.**
+  (b) ⚠ **« cliquer deux fois » à cause de `useGhostGuard` (13.50) est FAUX SUR UN INTERRUPTEUR** :
+  ça le bascule **deux fois** et le ramène à son état de départ (mesuré : toast « Mode capture
+  desactive » et interrupteur inactif). **Amorcer** le garde par un `pointerdown` dispatché DANS le
+  panneau, puis cliquer **UNE seule fois**, et **asserter l'état atteint** (helper qui réessaie).
+  ⚠ **3ᵉ piège** : repérer une ligne d'option par son texte via `closest('div').parentElement` matche
+  **tout le panneau** (le conteneur porte le texte de TOUTES les lignes) → `idx=0`, on clique la
+  mauvaise option. `toggleRow` pose `extraCls` sur le bouton → **cibler `.opt-toggle.shot` /
+  `.opt-toggle.dev` directement**.
+  ⚠ **NON COUVERT** : aucune capture réellement produite (le lot livre l'OUTIL) ; le calcul
+  « 215 + 215 ≈ 430 px » est repris du brief, non re-mesuré ici.
+- **État précédent : `GAME_BUILD = 426`, `GAME_VERSION = 'Alpha 19.3'`, `SAVE_VERSION = 31`.**
   Changement 19.3 (brief `BRIEFlotpwabandeauinstallation`, **lot PWA-1**, patcheur + banc fournis) :
   **un BANDEAU BAS NON MODAL invite à installer le jeu sur l'écran d'accueil — version WEB/PWA
   UNIQUEMENT, une seule fois, après le tutoriel.** `SAVE_VERSION` INCHANGÉ. Base EXACTE (425 / 19.2 /
