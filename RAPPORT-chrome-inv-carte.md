@@ -248,6 +248,40 @@ pas une régression, c'est le bruit connu du banc.
 
 ---
 
+## Incident CI après le merge — run 561 en échec, corrigé
+
+Le merge de la PR #402 a déclenché `android.yml` sur `main` : **le run 561 a échoué**, et la cause
+était **ce rapport-là de commentaire**, pas le code.
+
+**Diagnostic.** L'étape « Prepare game files » dérive la variante magasin en vidant `SUPPORT_URL`
+par `sed`, puis vérifie `[ "$(grep -c 'ko-fi' game-store.html)" = "0" ]`. Or le paragraphe de
+validation ajouté dans le commentaire cumulatif écrivait le nom du service de soutien **en clair** :
+la ligne de commentaire survit au `sed` (qui ne touche que la ligne `const SUPPORT_URL = …`), le
+compte vaut 1 au lieu de 0, la garde échoue. Le run s'est arrêté **avant toute étape de
+publication** — ni APK, ni `version.json`, ni synchro PWA. **Aucun joueur n'a reçu le build 429**,
+et `version.json` est resté à 428.
+
+**Correctif** : le nom est paraphrasé dans le commentaire (« lien de soutien »). Aucune ligne de
+code touchée.
+
+**Le numéro de build est CONSERVÉ à 429.** La règle « bumper par livraison » (mémo, builds 298→299)
+existe pour éviter que deux APK différents soient publiés sous le même numéro ; ici **zéro artefact
+n'a été publié** sous 429, la prochaine publication sera donc la première.
+
+**Ce piège s'était déjà refermé une fois** — lot ICON-1, où un emoji usine dans le commentaire
+cumulatif faisait passer un compte de 5 à 6. La leçon est désormais gravée dans le fichier
+lui-même : **les gardes de comptage de la CI se rejouent APRÈS avoir écrit ses propres
+commentaires**, et aucun motif surveillé par un `grep -c` non ancré ne doit apparaître en texte
+libre. Mon contrôle initial était juste, mais joué **trop tôt** — sur le fichier d'avant le
+paragraphe de validation.
+
+**Rejeu après correctif**, cette fois dans le bon ordre : les **7 gardes** de comptage du workflow
+passent (`ko-fi` 0 dans le magasin / 1 dans la publique, `const SELF_UPDATE = true;` 0 dans le
+magasin — motif **non ancré**, donc lui aussi sensible au texte libre —, les 4 gardes ancrées
+`DEV_BUILD` / `SELF_UPDATE`), `node --check` **7/7 sur les 3 variantes**, `GAME_BUILD` et
+`GAME_NOTES` extraits proprement par les `grep -oP` de la CI, et T1 rejoué : invariance 5/5,
+0 `pageerror`.
+
 ## Points restés en suspens
 
 - **T4 sur appareil** : à confirmer d'un coup d'œil sur le S25 FE — le liseré doit rester visible

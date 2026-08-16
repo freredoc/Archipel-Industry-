@@ -9971,10 +9971,20 @@ const SAVE_VERSION = 31;
 // AUCUNE transition CSS sur `left`/`top` pour animer l'elargissement : elle ne jouerait JAMAIS. Le
 // panneau Carte n'est pas monte a l'instant ou `visible(6)` bascule, et quand il est ouvert par le
 // renvoi des noeuds d'acces (lot 4b) il se monte deja en disposition large.
+// ⚠ LE BUILD 429 A CASSE LA CI, ET C'ETAIT CE COMMENTAIRE-CI : le paragraphe de validation
+// ci-dessous ecrivait le nom du service de soutien EN CLAIR. Or la CI derive la variante magasin
+// en VIDANT `SUPPORT_URL` par `sed`, puis verifie `grep -c '<le nom>' game-store.html == 0` — une
+// mention en COMMENTAIRE suffit a faire echouer la garde, et le run 561 s'est arrete a l'etape
+// « Prepare game files », avant toute publication (ni APK, ni `version.json`, ni PWA : aucun
+// joueur n'a recu 429, d'ou le NUMERO CONSERVE). Le mot est donc paraphrase ici.
+// C'est la DEUXIEME fois que ce piege se referme (lot ICON-1 : un emoji usine dans le commentaire
+// cumulatif faisait monter un compte de 5 a 6). REGLE : les gardes de comptage de la CI se
+// rejouent APRES avoir ecrit ses propres commentaires, jamais avant — et aucun motif surveille par
+// une garde (`grep -c` non ancre) ne doit apparaitre en texte libre.
 // VALIDE : 8/8 ancres a `count == 1`, delta +3 434 o EXACT, les 7 SHA-256 de bloc ET le SHA du
 // fichier complet CONFORMES au brief avant bump ; `node --check` 7/7 sur les 3 variantes CI
-// (`game-public` / `game-dev` / `game-store`), invariants CI rejoues (`ko-fi` 1 publique / 0
-// magasin). Banc Chromium : T1 les 5 grandeurs de chrome IDENTIQUES aux 3 releves (ouvert,
+// (`game-public` / `game-dev` / `game-store`), invariants CI rejoues (lien de soutien : 1 dans la
+// publique, 0 dans le magasin). Banc Chromium : T1 les 5 grandeurs de chrome IDENTIQUES aux 3 releves (ouvert,
 // replie, rouvert) ; T2 CONTRE-TEST sur la base 428 : elles bougent de 49 px EXACTEMENT dans les
 // deux sens (118/167, 652/603, 184/233) — sans lui, T1 serait un faux vert ; T3 1 seul
 // `.inv-label-btn` et 1 seul `.inv-prod-btn` inventaire ouvert, pour 2 `.inventory` (barre +
