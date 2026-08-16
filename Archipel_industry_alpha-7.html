@@ -3498,6 +3498,21 @@ for(var code in PWAI){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{};
  "de":{"kW soutenus":"dauerhafte kW","Surchauffe":"\u00dcberhitzung","\u2754 Aide & astuces":"\u2754 Hilfe & Tipps","\u2014 vide \u2014":"\u2014 leer \u2014","\u26A0 MODE DEV \u2014 construction gratuite":"\u26A0 DEV-MODUS \u2014 kostenloser Bau"}};
  for(var lg in ADD){ var L=I18N.locales[lg]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[lg];
   for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* i18n — LOT CONTENU : l'astuce
+   `hors_ligne` (4 langues pour title/body, 3 pour short) et les 2 cles `ui` creees par ce lot.
+   L'entree `fr` de `tips` est STRUCTURELLE : `I18N.tip()` part du corps FR DE LA TABLE puis
+   fusionne PAR INDEX. Sans elle, corps vide et texte francais dans les 4 langues.
+   Les cles `ui` sont IDENTIQUES aux litteraux passes a `I18N.t()` : elles sont emises par la
+   meme variable du patcher, elles ne peuvent pas diverger d'une apostrophe. */
+ var T={"fr": {"hors_ligne": {"title": "L'usine tourne sans vous", "body": ["Votre usine <b>continue de produire</b> quand le jeu est ferme. A votre retour, un recapitulatif vous montre ce qui a ete fabrique pendant votre absence.", "La production hors ligne est <b>plafonnee a environ 27 heures</b> : au-dela, elle n'est plus comptee. Revenir une fois par jour suffit a ne rien perdre.", "Le jeu fonctionne aussi <b>entierement hors connexion</b> : aucun reseau n'est necessaire pour jouer, et votre partie est enregistree sur l'appareil."]}}, "en": {"hors_ligne": {"title": "The factory runs without you", "body": ["Your factory <b>keeps producing</b> while the game is closed. When you come back, a summary shows what was made while you were away.", "Offline production is <b>capped at about 27 hours</b>: beyond that it is no longer counted. Coming back once a day is enough to lose nothing.", "The game also works <b>entirely offline</b>: no network is needed to play, and your save is stored on the device."], "short": "Your factory keeps producing while the game is closed. Come back to collect it: past about 27 hours it stops being counted."}}, "es": {"hors_ligne": {"title": "La f\u00e1brica funciona sin ti", "body": ["Tu f\u00e1brica <b>sigue produciendo</b> con el juego cerrado. A tu regreso, un resumen te muestra lo que se ha fabricado durante tu ausencia.", "La producci\u00f3n sin conexi\u00f3n est\u00e1 <b>limitada a unas 27 horas</b>: m\u00e1s all\u00e1, deja de contarse. Volver una vez al d\u00eda basta para no perder nada.", "El juego tambi\u00e9n funciona <b>totalmente sin conexi\u00f3n</b>: no necesitas red para jugar, y la partida se guarda en el dispositivo."], "short": "Tu f\u00e1brica sigue produciendo con el juego cerrado. Vuelve a recogerlo: pasadas unas 27 horas deja de contarse."}}, "de": {"hors_ligne": {"title": "Die Fabrik l\u00e4uft ohne dich", "body": ["Deine Fabrik <b>produziert weiter</b>, w\u00e4hrend das Spiel geschlossen ist. Bei deiner R\u00fcckkehr zeigt dir eine \u00dcbersicht, was in deiner Abwesenheit hergestellt wurde.", "Die Offline-Produktion ist auf <b>etwa 27 Stunden begrenzt</b>: dar\u00fcber hinaus wird sie nicht mehr gez\u00e4hlt. Einmal am Tag zur\u00fcckzukommen gen\u00fcgt, um nichts zu verlieren.", "Das Spiel funktioniert au\u00dferdem <b>vollst\u00e4ndig offline</b>: zum Spielen wird kein Netz ben\u00f6tigt, und dein Spielstand wird auf dem Ger\u00e4t gespeichert."], "short": "Deine Fabrik produziert auch bei geschlossenem Spiel weiter. Komm zur\u00fcck und hol sie ab: nach etwa 27 Stunden wird nicht mehr gez\u00e4hlt."}}};
+ for(var lg in T){ var L=I18N.locales[lg]; if(!L) continue; L.tips=L.tips||{}; var m=T[lg];
+  for(var t in m){ if(!L.tips[t]) L.tips[t]={}; var e=m[t];
+   if(!L.tips[t].title) L.tips[t].title=e.title;
+   if(!L.tips[t].body) L.tips[t].body=e.body;
+   if(e.short && !L.tips[t].short) L.tips[t].short=e.short; } }
+ var V={"en": {"\ud83c\udf19 Votre usine produit m\u00eame quand le jeu est ferm\u00e9. Revenez quand vous voulez : la production vous attend.": "\ud83c\udf19 Your factory produces even while the game is closed. Come back whenever you like: the production is waiting for you.", "???? \u2014 d'autres recherches au-del\u00e0": "???? \u2014 more research lies beyond"}, "es": {"\ud83c\udf19 Votre usine produit m\u00eame quand le jeu est ferm\u00e9. Revenez quand vous voulez : la production vous attend.": "\ud83c\udf19 Tu f\u00e1brica produce incluso con el juego cerrado. Vuelve cuando quieras: la producci\u00f3n te espera.", "???? \u2014 d'autres recherches au-del\u00e0": "???? \u2014 hay m\u00e1s investigaciones m\u00e1s all\u00e1"}, "de": {"\ud83c\udf19 Votre usine produit m\u00eame quand le jeu est ferm\u00e9. Revenez quand vous voulez : la production vous attend.": "\ud83c\udf19 Deine Fabrik produziert auch bei geschlossenem Spiel. Komm zur\u00fcck, wann du willst: die Produktion wartet auf dich.", "???? \u2014 d'autres recherches au-del\u00e0": "???? \u2014 dahinter warten weitere Forschungen"}};
+ for(var lg2 in V){ var L2=I18N.locales[lg2]; if(!L2) continue; L2.ui=L2.ui||{}; var m2=V[lg2];
+  for(var k2 in m2) if(!L2.ui[k2]) L2.ui[k2]=m2[k2]; } })();
 </script>
 <script>
 const {
@@ -10006,8 +10021,56 @@ const SAVE_VERSION = 31;
 // Second piege : l'inventaire est DEPLIE a la creation (13.84), le releve initial est donc l'etat
 // OUVERT, et le gap barre -> calque vaut la hauteur du bandeau du tutoriel (`--tuto-h`), pas 0.
 // `SAVE_VERSION` INCHANGE (31).
-const GAME_BUILD = 429;
-const GAME_VERSION = 'Alpha 19.6';
+// 19.7 — LOT CONTENU : le jeu ANNONCE enfin que l'usine tourne sans le joueur, et l'arbre de
+// recherche cesse de devoiler tout l'endgame. Aucun champ de partie cree, aucune migration.
+// (1) VOLET A — DEUX CHOSES DISTINCTES QUE PERSONNE NE DISAIT : que le jeu marche sans reseau, et
+// que la production CONTINUE pendant l'absence. La seconde ne s'apprenait qu'APRES coup, et
+// seulement si l'absence depassait 5 min (seuil du recap) : qui ferme le jeu sans le savoir n'a
+// aucune raison de revenir. Deux canaux desormais — l'astuce `hors_ligne` (fin de `GAME_TIPS`,
+// declenchee a la fin du tutoriel) et une phrase dans le recap de rattrapage, A SA PREMIERE
+// APPARITION SEULEMENT.
+// ⚠ LES DEUX CANAUX PARTAGENT LE MEME DRAPEAU, `game.tipsSeen.hors_ligne` : celui qui arrive le
+// premier eteint l'autre. Zero nouveau champ, zero serialisation, zero migration.
+// ⚠ LE PLAFOND ANNONCE EST CALCULE, PAS ARRONDI AU HASARD : `OFFLINE_MAX_TICKS` = 100 000 ticks
+// = 100 000 s = 27 h 47. On annonce « environ 27 heures » — arrondi PAR DEFAUT, jamais au-dessus
+// du reel : le joueur ne doit pas croire qu'il lui reste du temps qu'il n'a pas.
+// ⚠ `when` exige `g.tutorial.active === false` EXPLICITEMENT, jamais `!active` : pendant le
+// tutoriel la valeur est `true`, mais AVANT son initialisation `g.tutorial` peut etre ABSENT —
+// `!active` ouvrirait alors l'astuce des le premier tick, par-dessus le tutoriel.
+// ⚠ LA CAPTURE DU DRAPEAU EST POSEE AVANT `primeTipsSeen(g)`, ET C'EST L'ORDRE QUI COMPTE :
+// `primeTipsSeen` marque VUES toutes les astuces dont la condition est deja remplie, et il tourne
+// AVANT la construction du recap. Lire le drapeau apres lui rendrait TOUJOURS faux et la phrase ne
+// s'afficherait JAMAIS.
+// ⚠ QUATRE LANGUES POUR `body`, TROIS POUR `short`, ET CE N'EST PAS UN OUBLI : `I18N.tip(id)` part
+// de `LOCALES.fr.tips[id].body` puis fusionne PAR INDEX — sans entree `fr`, `fb` est vide, le corps
+// est vide et le texte reste francais DANS LES QUATRE LANGUES. `short` suit au contraire la logique
+// de `title` (repli sur la source) : une entree `fr` y serait un no-op divergent. Les 4 langues ont
+// le MEME nombre de paragraphes (3) — un § manquant retombe en francais AU MILIEU du texte, sans la
+// moindre erreur.
+// (2) VOLET B — L'arbre deroulait en clair, des sa premiere ouverture, les quinze noeuds suivants
+// jusqu'au Collisionneur P3, pendant que la carte traite l'ile 6 comme la surprise du jeu. Les
+// noeuds au-dela du seuil sont replies en UNE SEULE carte, nom / couts / deblocages compris.
+// ⚠ UNE carte et non quinze « ???? » alignees : LE NOMBRE DE CARTES EST LUI-MEME UN SPOILER, il
+// annoncerait la taille de ce qui reste.
+// ⚠ ECART VOULU AU BRIEF, DEMANDE PAR ETHAN : le masquage se fait en DEUX PALIERS et le noeud 28
+// est masque LUI AUSSI (le brief le laissait lisible). Il s'appelle « Acces Ile 6 » : le montrer
+// annonce l'existence de l'ile. Il se devoile a la confirmation du 25, puis 29..43 d'un bloc a la
+// confirmation du 28. Voir le commentaire de `masqueSeuil` pour la preuve de surete des DEUX
+// paliers — elle vient du GRAPHE des `prereq`, pas d'une supposition.
+// ⚠ FILTRAGE PAR `def.id`, PAS PAR RANG : `techNodesOrdered` fait couler les noeuds confirmes en
+// bas de liste, un filtre positionnel masquerait n'importe quoi.
+// ⚠ AUCUNE REGLE CSS CREEE : la carte repliee reutilise `.rp-node.st-locked` / `.rp-node-top` /
+// `.rp-badge` / `.rp-name`, et le recap `.offline-note`. Rien n'est ajoute en fin de feuille de
+// style — le bloc du lot C doit rester le dernier.
+// ⚠ ECART DE BASE : le brief visait 3 744 974 o, la base reelle en faisait 3 745 929 (+955 = le
+// correctif CI du build 429, qui vit dans le meme bloc 7). Ses 2 SHA de fichier ne pouvaient donc
+// pas correspondre. Verifie A LA PLACE, et c'est plus fort : le patcher rejoue sur la base
+// D'AVANT ce correctif rend EXACTEMENT les 3 SHA du brief (fichier complet, b06, b07) — le patch
+// applique ici est donc byte-identique a celui du redacteur, et `b06` concorde meme sur la base
+// reelle (le correctif ne touchait que b07).
+// `SAVE_VERSION` INCHANGE (31).
+const GAME_BUILD = 430;
+const GAME_VERSION = 'Alpha 19.7';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -10016,7 +10079,7 @@ const GAME_VERSION = 'Alpha 19.6';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "La barre des ressources reste en place : le decor et le bandeau du tutoriel ne sautent plus · La carte des iles occupe toute la largeur tant que la sixieme reste a decouvrir.";
+const GAME_NOTES = "La production continue meme quand le jeu est ferme : le jeu le dit desormais, et rappelle le plafond de 27 heures environ · Le panneau Recherche ne devoile plus les recherches a venir.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -18244,6 +18307,23 @@ const GAME_TIPS = [{
   title: 'Étendre le terrain',
   body: ['Le <b>remblai</b> transforme une tuile d\'eau côtière en terre constructible.', 'Comme la réparation, le coût augmente à chaque extension. À réserver aux emplacements vraiment stratégiques.'],
   when: g => isTerrainExtendUnlocked(g)
+}, {
+  // 19.7 — ANNONCE DE LA PRODUCTION HORS LIGNE. Le joueur ne l'apprenait qu'APRES coup, et
+  // seulement si son absence depassait 5 min (seuil du recap) : celui qui fermait le jeu sans
+  // savoir que l'usine continue n'avait aucune raison de revenir.
+  // ⚠ `when` exige `active === false` EXPLICITEMENT, pas `!active` : pendant le tutoriel la
+  // valeur est `true`, mais avant son initialisation `g.tutorial` peut etre absent — `!active`
+  // ouvrirait alors l'astuce des le premier tick, par-dessus le tutoriel.
+  // ⚠ `primeTipsSeen` marque VUES toutes les astuces dont la condition est deja remplie, au
+  // chargement ET apres un rattrapage. Une partie dont le tutoriel est DEJA fini au moment ou
+  // cette version arrive ne verra donc jamais le popup : l'astuce reste consultable dans l'Aide.
+  // C'est le comportement voulu (pas d'avalanche retroactive), et c'est le cas d'Ethan.
+  id: 'hors_ligne',
+  short: "Votre usine produit meme jeu ferme. Revenez recuperer la production : au-dela d'environ 27 heures, elle cesse d'etre comptee.",
+  icon: '🌙',
+  title: "L'usine tourne sans vous",
+  body: ["Votre usine <b>continue de produire</b> quand le jeu est ferme. A votre retour, un recapitulatif vous montre ce qui a ete fabrique pendant votre absence.", "La production hors ligne est <b>plafonnee a environ 27 heures</b> : au-dela, elle n'est plus comptee. Revenir une fois par jour suffit a ne rien perdre.", "Le jeu fonctionne aussi <b>entierement hors connexion</b> : aucun reseau n'est necessaire pour jouer, et votre partie est enregistree sur l'appareil."],
+  when: g => !!(g.tutorial && g.tutorial.active === false)
 }];
 // i18n — couche CONTENU (drop-in) : réécrit en place les noms de ressources/bâtiments/recherches +
 // tutoriel + astuces dans la langue active (système par défaut), AVANT tout rendu. Repli fr automatique.
@@ -22845,6 +22925,34 @@ function ResearchPanel({
   // 14.91 — portPool, pas game.port[currentIsland] : l'île 7 n'a pas de port propre (cf. techDeliver).
   // Même convention que le HUD, la barre d'outils et l'InfoPanel depuis 13.87.
   const port = portPool(game, currentIsland);
+  // 19.7 — L'arbre annoncait en clair tout l'endgame (jusqu'au Collisionneur P3) alors que la
+  // carte traite l'ile 6 comme la surprise du jeu. Les noeuds au-dela du 28 sont replies en UNE
+  // carte, nom / couts / deblocages compris, et se devoilent D'UN BLOC a la confirmation du 28.
+  // ⚠ Le noeud 28 lui-meme RESTE lisible : c'est l'objectif qui porte le joueur jusque-la.
+  // ⚠ Filtrage par `def.id`, PAS par rang : `techNodesOrdered` fait couler les noeuds confirmes
+  // en bas de liste, un filtre positionnel masquerait n'importe quoi.
+  // ⚠ UNE carte et non quinze « ???? » alignees : le nombre de cartes est lui-meme un spoiler,
+  // il annoncerait la taille de ce qui reste.
+  // ⚠ ECART VOULU AU BRIEF, DEMANDE PAR ETHAN : le noeud 28 est masque LUI AUSSI, et se
+  // devoile a la confirmation du 25. Le brief le laissait lisible (« c'est l'objectif qui porte
+  // le joueur jusque-la ») — mais il s'appelle « Acces Ile 6 » : le laisser visible ANNONCE
+  // l'existence de l'ile 6, que la carte traite justement comme la surprise du jeu
+  // (`ARCHI_CACHEE`). Le masquage se fait donc en DEUX paliers.
+  // ⚠ LA SURETE EST PROUVEE PAR LE GRAPHE, PAS SUPPOSEE, POUR LES DEUX PALIERS : `prereq[28] = 25`
+  // (verifie dans `TECH_NODES`, comme 26 et 27), donc tant que 25 n'est pas confirme le noeud 28
+  // est nECESSAIREMENT `locked` ; et 29..43 forment une chaine strictement lineaire remontant a 28
+  // (29←28, 30←29, 31←30, 32←31, 33←32, 34←32, 35←34, 36←35, 37←36, 38←37, 39←38, 40←39, 41←40,
+  // 42←41, 43←42). Aucun palier ne peut donc masquer un noeud `available` ou `condition_ok`, ni
+  // laisser la pastille de notification allumee sans cible atteignable.
+  // ⚠ 26 et 27 ont EUX AUSSI `prereq: 25` mais restent VISIBLES : leurs noms (« Mines V3 + Fours a
+  // Arc », « Antenne Amplificatrice ») ne devoilent rien de l'ile 6. On masque un SPOILER, pas un
+  // palier de progression.
+  const masqueSeuil = !isNodeConfirmed(game, 25) ? 27
+    : (!isNodeConfirmed(game, 28) ? 28 : null);
+  const masqueSuite = masqueSeuil !== null;
+  const listeRecherche = masqueSuite
+    ? techNodesOrdered(game).filter(d => d.id <= masqueSeuil)
+    : techNodesOrdered(game);
   const META = {
     confirmed: {
       icon: '✓',
@@ -22882,7 +22990,7 @@ function ResearchPanel({
     title: I18N.t("Fermer")
   }, "\xD7")), React.createElement("div", {
     className: "rp-list"
-  }, techNodesOrdered(game).map(def => {
+  }, listeRecherche.map(def => {
     const node = tt.nodes[def.id - 1];
     const meta = META[node.status] || META.locked;
     const reqs = (def.reqs || []).map(r => reqValue(game, r));
@@ -22974,7 +23082,16 @@ function ResearchPanel({
     }, "\u2192 ", isls.map(i => islandLabel(i)).concat(blds.map(b => BUILDINGS[b] && BUILDINGS[b].name || b)).join(' · ')), node.status === 'locked' && def.prereq != null && React.createElement("div", {
       className: "rp-lockhint"
     }, I18N.t("Requiert : "), (TECH_BY_ID[def.prereq] || {}).name));
-  }))));
+  }), masqueSuite && React.createElement("div", {
+    className: "rp-node st-locked",
+    key: "suite-masquee"
+  }, React.createElement("div", {
+    className: "rp-node-top"
+  }, React.createElement("span", {
+    className: "rp-badge"
+  }, "?"), React.createElement("span", {
+    className: "rp-name"
+  }, I18N.t("???? \u2014 d'autres recherches au-del\u00e0")))))));
 }
 // Champ numérique qui accepte la notation scientifique : le texte saisi reste libre
 // pendant la frappe (« 1e6 », « 2,43e8 »…) et n'est converti/validé qu'au blur ou Entrée.
@@ -25495,6 +25612,12 @@ function OfflineModal({
   }, React.createElement("div", {
     className: "offline-sub"
   }, I18N.t("Absence : "), React.createElement("b", null, report.timeLabel), gains.length ? I18N.t(" — production r\xE9cup\xE9r\xE9e :") : I18N.t(" — rien \xE0 produire.")),
+  // Premiere fois seulement : on DIT au joueur que l'usine tourne sans lui. `.offline-note`
+  // est reutilise tel quel (aucune regle CSS creee) ; il porte deja le liosere et la teinte
+  // des lignes d'explication du recap.
+  report.explain && React.createElement("div", {
+    className: "offline-note"
+  }, I18N.t("\ud83c\udf19 Votre usine produit m\u00eame quand le jeu est ferm\u00e9. Revenez quand vous voulez : la production vous attend.")),
   // 14.17 — On nomme le mode de calcul quand il n'est PAS la simulation complète : extrapolation
   // (option « calcul simplifié » ou filet anti-gel) ou rattrapage interrompu par « Passer ».
   report.capped && React.createElement("div", {
@@ -27342,6 +27465,8 @@ function App() {
     // Le cas est devenu courant depuis que `techTree.produced` est extrapolé : toute absence longue
     // peut franchir un seuil de recherche.
     setResearchPending(hasPendingResearch(g));
+    // ⚠ LIRE AVANT `primeTipsSeen`, qui va justement poser ce drapeau (voir ci-dessous).
+    const explainOffline = !(g.tipsSeen && g.tipsSeen.hors_ligne);
     primeTipsSeen(g);
     g.lastSave = Date.now();
     g.lastActiveTs = Date.now();
@@ -27379,6 +27504,9 @@ function App() {
         skipped: !!(how && how.skipped),
         capped: !!(how && how.capped),
         confirms: how && how.confirms || 0,
+        // Phrase pedagogique du recap : UNE SEULE FOIS, et jamais en doublon de l'astuce.
+        // Les deux canaux partagent le meme drapeau, donc celui qui arrive le premier eteint l'autre.
+        explain: explainOffline,
         creditedLabel
       });
     }
