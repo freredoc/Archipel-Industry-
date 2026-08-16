@@ -1,8 +1,8 @@
 {
-  "build": 428,
-  "version": "Alpha 19.5",
+  "build": 429,
+  "version": "Alpha 19.6",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Nouvelle icone du jeu, reprise de l'illustration de l'ile, et ecran de chargement assorti."
+  "notes": "La barre des ressources reste en place : le decor et le bandeau du tutoriel ne sautent plus · La carte des iles occupe toute la largeur tant que la sixieme reste a decouvrir."
 }

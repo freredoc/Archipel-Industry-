@@ -296,6 +296,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
      l'objectif, les compteurs et « Passer » étaient masqués — visible depuis 11.36 en
      ouvrant l'inventaire pendant le tutoriel, systématique depuis le dépliage d'office. */
   position:absolute;top:calc(100% + var(--tuto-h, 0px));left:0;right:0;z-index:40;
+  margin-top:0;
   max-height:65vh;overflow-y:auto;box-shadow:0 8px 20px rgba(0,0,0,.45);}
 .inv-break{flex-basis:100%;width:100%;height:0;margin:0;padding:0;}
 .inv-tier-sep{font-family:'Bebas Neue',sans-serif;font-size:.62rem;letter-spacing:.12em;
@@ -9926,8 +9927,87 @@ const SAVE_VERSION = 31;
 // l'APK. Ni `makeIcon` ni le manifeste blob ne s'executent jamais. A retirer dans un lot dedie :
 // sans quoi le prochain qui regenere des icones repartira de ce generateur.
 // `SAVE_VERSION` INCHANGE (31).
-const GAME_BUILD = 428;
-const GAME_VERSION = 'Alpha 19.5';
+// 19.6 — LOT CHROME : la barre d'inventaire ne quitte plus le flux, et la carte remplit la
+// largeur tant que l'ile 6 n'est pas visible. Aucun champ de partie touche.
+// (1) ⚠ UNE SEULE CAUSE POUR TROIS DEFAUTS SIGNALES SEPAREMENT (l'ile qui bascule quand on
+// ouvre puis referme l'inventaire, le bandeau du tutoriel qui bascule au meme instant, le lisere
+// sombre entre le HUD et la barre qui disparait) : `InvBar` rendait SOIT `.inventory.collapsed`
+// (dans le flux) SOIT `.inventory.open` (`position:absolute`, donc ZERO hauteur de layout), jamais
+// les deux. Ouvrir l'inventaire retirait donc a `.hud-stack` toute la hauteur de la barre —
+// 49 px MESURES au banc, pas estimes (contre-test T2). En cascade : la scene sous le HUD gagne
+// 49 px, le canvas est redimensionne et l'ile se recentre ; `TutorialBanner` est un FRERE de
+// `.hud-stack` et non un enfant, il remonte d'autant ; `--hud-h`, publiee par le `ResizeObserver`
+// pose sur `.hud-stack`, change, donc les 2 boutons flottants sautent ; et le lisere n'est rien
+// d'autre que le `margin-top:4px` de `.inventory` laissant voir le fond de `.hud-stack` — sans
+// barre dans le flux, ces 4 px tombent sur le canvas et le lisere disparait.
+// Correctif : la barre repliee est TOUJOURS rendue et sert de poignee ; le panneau ouvert devient
+// un CALQUE EN PLUS d'elle, jamais A LA PLACE.
+// ⚠ Les boutons INVENTAIRE / Production / Alertes / Surchauffe ne sont PLUS repetes dans le
+// panneau : ils vivent desormais dans la barre. Les y laisser les afficherait EN DOUBLE maintenant
+// que les deux elements coexistent — c'est exactement ce que mesure T3.
+// ⚠ `margin-top:0` sur `.inventory.open` est INDISPENSABLE, et pose EN PLACE dans la regle
+// existante : sans lui, le `margin-top:4px` herite de `.inventory` decale le calque sous
+// `top:100%` et laisse voir une bande de canvas entre la barre et le panneau. AUCUN bloc n'est
+// ajoute en fin de feuille de style — le bloc du lot C doit rester le dernier, lot B juste avant.
+// (2) CARTE PRE-ILE 6 : `ARCHI_POS` place l'ile 6 a x=81 % et `ARCHI_CACHEE` la masque tant qu'elle
+// n'est ni ouverte ni cible de reparation ; les iles 1 a 5 tenant entre 20 % et 54,5 %, elles
+// n'occupaient que 64 % de la largeur — soit environ une largeur d'ile de mer vide a droite
+// pendant presque toute la partie. Nouvelle table `ARCHI_POS_5` etalant les MEMES 5 iles, choisie
+// tant que `visible(6)` est faux, c'est-a-dire exactement a l'instant ou apparait le noeud
+// « mystere » : la carte s'elargit quand il y a enfin quelque chose a montrer a droite.
+// ⚠ LES BORNES SONT CALCULEES SUR UNE LARGEUR MESUREE, PAS CHOISIE : `.arch-ile` fait 104 px
+// FIXES et `.arch-node` est centre (`translate(-50%,-50%)`) alors que les positions sont en
+// pourcentage — une ile tient donc dans le cadre si et seulement si x >= 5200/W et
+// x <= 100 - 5200/W. A 320 px de viewport, `.arch-map` mesure 265 px (le panneau a ses propres
+// marges), soit une enveloppe 19,6 % .. 80,4 % : d'ou les bornes 20/80, qui laissent la meme marge
+// que l'ile 1 avait deja a x=20 %. Une premiere version a 18/82, calculee sur une largeur SUPPOSEE
+// de 300 px, faisait deborder trois sprites de 3 a 4 px a 320 px.
+// ⚠ L'ENUMERATION DES ILES RESTE SUR `ARCHI_POS` (table PLEINE) : la faire sur `POS` ferait
+// disparaitre l'ile 6 de la carte POUR TOUJOURS, `ARCHI_POS_5` n'ayant volontairement pas de cle 6.
+// Seules les LECTURES de coordonnees passent par `POS`.
+// ⚠ `arch-sout` garde `ARCHI_POS[6]` EN DUR : il n'est rendu que si `game.elevatorRepaired`, ce
+// qui implique l'ile 6 ouverte, donc la table pleine. Le router sur `POS` leverait un `TypeError`
+// sur `POS[6][0]` dans la branche a 5 iles — c'est ce que prouve T6.
+// AUCUNE transition CSS sur `left`/`top` pour animer l'elargissement : elle ne jouerait JAMAIS. Le
+// panneau Carte n'est pas monte a l'instant ou `visible(6)` bascule, et quand il est ouvert par le
+// renvoi des noeuds d'acces (lot 4b) il se monte deja en disposition large.
+// ⚠ LE BUILD 429 A CASSE LA CI, ET C'ETAIT CE COMMENTAIRE-CI : le paragraphe de validation
+// ci-dessous ecrivait le nom du service de soutien EN CLAIR. Or la CI derive la variante magasin
+// en VIDANT `SUPPORT_URL` par `sed`, puis verifie `grep -c '<le nom>' game-store.html == 0` — une
+// mention en COMMENTAIRE suffit a faire echouer la garde, et le run 561 s'est arrete a l'etape
+// « Prepare game files », avant toute publication (ni APK, ni `version.json`, ni PWA : aucun
+// joueur n'a recu 429, d'ou le NUMERO CONSERVE). Le mot est donc paraphrase ici.
+// C'est la DEUXIEME fois que ce piege se referme (lot ICON-1 : un emoji usine dans le commentaire
+// cumulatif faisait monter un compte de 5 a 6). REGLE : les gardes de comptage de la CI se
+// rejouent APRES avoir ecrit ses propres commentaires, jamais avant — et aucun motif surveille par
+// une garde (`grep -c` non ancre) ne doit apparaitre en texte libre.
+// VALIDE : 8/8 ancres a `count == 1`, delta +3 434 o EXACT, les 7 SHA-256 de bloc ET le SHA du
+// fichier complet CONFORMES au brief avant bump ; `node --check` 7/7 sur les 3 variantes CI
+// (`game-public` / `game-dev` / `game-store`), invariants CI rejoues (lien de soutien : 1 dans la
+// publique, 0 dans le magasin). Banc Chromium : T1 les 5 grandeurs de chrome IDENTIQUES aux 3 releves (ouvert,
+// replie, rouvert) ; T2 CONTRE-TEST sur la base 428 : elles bougent de 49 px EXACTEMENT dans les
+// deux sens (118/167, 652/603, 184/233) — sans lui, T1 serait un faux vert ; T3 1 seul
+// `.inv-label-btn` et 1 seul `.inv-prod-btn` inventaire ouvert, pour 2 `.inventory` (barre +
+// calque) contre 1 sur la base ; T5 carte a 412 px (W=351) marges 19/19 et occupation 89 %, et a
+// 320 px (W=265) marges 1,5/1,6 px, 0 debordement des deux cotes ; T6 6 noeuds aux positions
+// d'origine + 1 `arch-sout` a 81 %, 0 erreur ; T7 table PLEINE avec 5 sprites et 1 noeud cible ;
+// contre-test de bascule (5 iles, aucune cible) : 20/80/46/20/77 ; T8 20 s de jeu reel, 0
+// `tickError`, canvas peint a 100 %, 0 `pageerror`.
+// ⚠ T4 (le lisere) N'EST QU'A MOITIE COUVERT PAR LE BANC : la part mesurable l'est, et elle est
+// falsifiable — inventaire OUVERT, les 4 px au-dessus de la barre appartiennent a `.hud-stack`
+// (fond `rgba(126,138,162,.26)`) sur le patch, alors qu'ils tombent sur le CANVAS sur la base 428,
+// et `margin-top` du panneau vaut 0 px contre 4 px. Le coup d'oeil sur appareil reste a faire.
+// ⚠ ECART DE BANC ASSUME : le brief veut `puppeteer-core` + `@sparticuz/chromium`, ABSENTS de
+// l'image (on a `playwright-core` + Chromium 1194, et `playwright install` est proscrit). Banc
+// porte sur playwright-core, PILOTE SEUL, assertions reprises a l'identique.
+// ⚠ PIEGE DE BANC : le bouton INVENTAIRE est un INTERRUPTEUR. La consigne « cliquer deux fois a
+// cause de `useGhostGuard` » le basculerait DEUX fois et le ramenerait a son etat de depart —
+// amorcer le garde par un `pointerdown` dans le HUD, cliquer UNE fois, puis ASSERTER l'etat atteint.
+// Second piege : l'inventaire est DEPLIE a la creation (13.84), le releve initial est donc l'etat
+// OUVERT, et le gap barre -> calque vaut la hauteur du bandeau du tutoriel (`--tuto-h`), pas 0.
+// `SAVE_VERSION` INCHANGE (31).
+const GAME_BUILD = 429;
+const GAME_VERSION = 'Alpha 19.6';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9936,7 +10016,7 @@ const GAME_VERSION = 'Alpha 19.5';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Nouvelle icone du jeu, reprise de l'illustration de l'ile, et ecran de chargement assorti.";
+const GAME_NOTES = "La barre des ressources reste en place : le decor et le bandeau du tutoriel ne sautent plus · La carte des iles occupe toute la largeur tant que la sixieme reste a decouvrir.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -19811,14 +19891,28 @@ function Hud({
     }, uiIcon('chaleur', "🔥"), React.createElement("span", {
       className: "inv-count"
     }, heatCount));
+    // BARRE REPLIEE : TOUJOURS rendue, y compris inventaire OUVERT.
+    // ⚠ NE PAS la retirer du flux quand `invOpen` — c'etait la cause UNIQUE de trois defauts
+    // signales par le joueur. `.inventory.open` est en `position:absolute` et ne compte pas
+    // dans la hauteur de layout : rendre le panneau A LA PLACE de la barre faisait perdre a
+    // `.hud-stack` toute la hauteur de la barre, d'ou (1) la scene sous le HUD qui grandit
+    // d'autant, donc le canvas redimensionne et l'ile recentree — la « bascule » ; (2)
+    // `TutorialBanner`, qui est un FRERE de `.hud-stack` et non un enfant, qui remonte
+    // d'autant ; (3) le lisere sombre, qui n'est rien d'autre que le `margin-top:4px` de
+    // `.inventory` laissant voir le fond de `.hud-stack` : sans barre, ces 4 px tombaient
+    // sur le canvas et le lisere disparaissait.
+    // Le panneau ouvert est desormais un CALQUE EN PLUS de la barre, jamais A LA PLACE :
+    // `--hud-h` (publie par le ResizeObserver sur `.hud-stack`) ne bouge plus non plus, donc
+    // les 2 boutons flottants cessent de sauter.
+    const bar = React.createElement("div", {
+      className: "inventory collapsed"
+    }, React.createElement("button", {
+      className: "inv-label-btn" + (invOpen ? ' open' : ''),
+      onClick: onToggleInv,
+      title: invOpen ? I18N.t("Replier l'inventaire") : I18N.t("Afficher l'inventaire")
+    }, I18N.t("INVENTAIRE")), prodBtn, repairBtn, alertBtn, heatBtn);
     if (!invOpen) {
-      return React.createElement("div", {
-        className: "inventory collapsed"
-      }, React.createElement("button", {
-        className: "inv-label-btn",
-        onClick: onToggleInv,
-        title: I18N.t("Afficher l'inventaire")
-      }, I18N.t("INVENTAIRE")), prodBtn, repairBtn, alertBtn, heatBtn);
+      return bar;
     }
     let lastTier = null;
     const items = [];
@@ -19855,14 +19949,13 @@ function Hud({
         className: "iv" + (invTrends && invTrends[k] === 'up' ? ' up' : invTrends && invTrends[k] === 'down' ? ' down' : '')
       }, fmtPort(resources[k] || 0))));
     }
-    return React.createElement("div", {
+    // Le bouton INVENTAIRE et les boutons Production / Alertes / Surchauffe ne sont PLUS
+    // repetes ici : ils sont dans `bar`, qui reste visible au-dessus du calque. Les dupliquer
+    // afficherait deux fois chaque bouton maintenant que les deux elements coexistent.
+    return React.createElement(React.Fragment, null, bar, React.createElement("div", {
       className: "inventory open",
       title: I18N.t("Inventaire de l'\xEEle (port)")
-    }, React.createElement("button", {
-      className: "inv-label-btn open",
-      onClick: onToggleInv,
-      title: I18N.t("Replier l'inventaire")
-    }, I18N.t("INVENTAIRE")), prodBtn, repairBtn, alertBtn, heatBtn, inv.length === 0 ? React.createElement("span", {
+    }, inv.length === 0 ? React.createElement("span", {
       className: "inv-empty"
     }, I18N.t("\u2014 vide \u2014")) : items, React.createElement("span", {
       className: "inv-break",
@@ -19873,7 +19966,7 @@ function Hud({
       key: "calc",
       onClick: onOpenCalc,
       title: I18N.t("Calculateur de production : b\u00e2timents et \u00e9lectricit\u00e9 n\u00e9cessaires pour un d\u00e9bit cible")
-    }, uiIcon('calculateur', "\ud83e\uddee"), " ", I18N.t("Calculateur")));
+    }, uiIcon('calculateur', "\ud83e\uddee"), " ", I18N.t("Calculateur"))));
   })());
 }
 // Infos de r\u00e9paration (d\u00e9blocage de l'\u00eele suivante) \u2014 ouvert depuis le bouton \u00e0 gauche
@@ -22939,6 +23032,25 @@ function NumField({
 // (aspect-ratio 100/132), donc les angles se calculent ici sans mesurer le DOM.
 const ARCHI_RATIO = 1.32;
 const ARCHI_POS = { 1: [20, 24], 2: [54.5, 24], 3: [35, 50], 4: [20, 75], 5: [53, 74], 6: [81, 50] };
+// Disposition PRE-ILE 6. Les iles 1..5 n'occupent que x=20..54,5 % de `ARCHI_POS` : la
+// place de l'ile 6 (x=81 %) reste un TROU pendant presque toute la partie, soit environ
+// une largeur d'ile de mer vide a droite. Cette table etale les memes 5 iles sur toute la
+// largeur et est utilisee tant que l'ile 6 n'est pas VISIBLE (cachee ou pas encore cible
+// de reparation).
+// ⚠ ENVELOPPE CALCULEE SUR LARGEUR MESUREE, pas choisie : `.arch-ile` fait 104 px FIXES et
+// `.arch-node` est centre (`translate(-50%,-50%)`), donc une ile tient dans le cadre si et
+// seulement si x >= 5200/W et x <= 100 - 5200/W, W etant la largeur en px de `.arch-map`.
+// W a ete MESUREE au banc et NON supposee : viewport 320 px -> `.arch-map` fait 265 px (le
+// panneau a ses propres marges), soit une enveloppe 19,6 % .. 80,4 %. D'ou les bornes 20/80,
+// qui laissent 1 px de marge — EXACTEMENT la marge que l'ile 1 a deja aujourd'hui a x=20 %.
+// Ce lot ne degrade donc pas la tenue en largeur, il la reproduit. Une borne plus large
+// (18/82, essayee) fait DEBORDER trois sprites de 3 a 4 px a 320 px.
+// Les y sont INCHANGES (la colonne verticale est deja pleine) et l'homothetie en x est la
+// meme pour les 5 iles, donc la forme de l'archipel est conservee. Les iles 1 et 4 ne
+// bougent pas du tout (elles etaient deja a 20 %).
+// ⚠ PAS DE CLE 6 ICI, VOLONTAIREMENT : `arch-sout` lit `ARCHI_POS[6]` en dur et n'est rendu
+// que si `game.elevatorRepaired`, ce qui implique l'ile 6 ouverte, donc la table pleine.
+const ARCHI_POS_5 = { 1: [20, 24], 2: [80, 24], 3: [46, 50], 4: [20, 75], 5: [77, 74] };
 // L'île 6 est la SURPRISE du jeu : tant qu'elle n'est pas débloquée elle n'est pas dessinée
 // du tout. Une silhouette grisée annoncerait son existence — alors que les îles 2..5 sont
 // grisées justement pour que le joueur voie où il va.
@@ -22953,6 +23065,13 @@ function ArchipelMap({ game, flows, reveal, onGo, repairInfo, onRepair }) {
   // Elle y est rendue SANS son sprite (voir `mystere` plus bas), donc rien n'est devoile.
   const visible = id => ouverte(id) || !ARCHI_CACHEE[id]
     || (!!repairInfo && id === repairInfo.island);
+  // Table de positions EFFECTIVE. Le basculement suit exactement `visible(6)`, c'est-a-dire
+  // le meme instant que l'apparition du noeud « mystere » : la carte s'elargit au moment ou
+  // il y a enfin quelque chose a montrer a droite, et pas avant.
+  // ⚠ L'enumeration des iles ci-dessous reste sur `ARCHI_POS` (table PLEINE) : la faire sur
+  // `POS` ferait disparaitre l'ile 6 de la carte pour toujours, `ARCHI_POS_5` n'ayant pas de
+  // cle 6. Seules les LECTURES de coordonnees passent par `POS`.
+  const POS = visible(6) ? ARCHI_POS : ARCHI_POS_5;
   // Nombre de ressources par SENS, agrégé par liaison : `allTransitFlows` renvoie une
   // entrée par direction (3→4 et 4→3 sont deux entrées), la carte les réunit sur un trait.
   const parLien = {};
@@ -22965,7 +23084,7 @@ function ArchipelMap({ game, flows, reveal, onGo, repairInfo, onRepair }) {
   const liens = SHIP_LINKS.map(k => {
     const ab = k.split('-').map(Number), a = ab[0], b = ab[1];
     if (!visible(a) || !visible(b)) return null;
-    const pa = ARCHI_POS[a], pb = ARCHI_POS[b];
+    const pa = POS[a], pb = POS[b];
     if (!pa || !pb) return null;
     const dx = pb[0] - pa[0], dy = (pb[1] - pa[1]) * ARCHI_RATIO;
     const len = Math.sqrt(dx * dx + dy * dy);
@@ -22989,7 +23108,7 @@ function ArchipelMap({ game, flows, reveal, onGo, repairInfo, onRepair }) {
     }, actif ? rec.ab + '\u2192 \u00B7 ' + rec.ba + '\u2190' : ''));
   });
   const iles = Object.keys(ARCHI_POS).map(Number).filter(visible).map(id => {
-    const p = ARCHI_POS[id];
+    const p = POS[id];
     const off = !ouverte(id);
     // Lot 4b — CIBLE « MYSTERE » : une ile normalement CACHEE (ARCHI_CACHEE) qu'on ne montre
     // que parce qu'elle est la cible de reparation est dessinee SANS son sprite — pointille
