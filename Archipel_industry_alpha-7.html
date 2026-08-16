@@ -1262,6 +1262,34 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .toolbar-wrap{flex-shrink:0;display:flex;flex-direction:column;
   padding-bottom:env(safe-area-inset-bottom);
   padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
+/* Bandeau d'installation (web / PWA seulement — jamais dans un paquet Android, jamais une
+   fois installe). Non modal : il se pose AU-DESSUS de la barre d'outils, sans la recouvrir,
+   et reprend exactement les memes insets lateraux/bas que `.toolbar-wrap` — le rembourrage
+   vient du CSS et de lui seul (voir P4 dans MainActivity). */
+.pwa-bar{flex-shrink:0;display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  padding-left:calc(12px + env(safe-area-inset-left));
+  padding-right:calc(12px + env(safe-area-inset-right));
+  /* ECART AU BRIEF, MESURE : le bandeau est monte en DERNIER enfant de `.app`, donc SOUS la
+     barre d'outils et non au-dessus d'elle. C'est donc LUI qui touche le bas de l'ecran, et
+     c'est donc LUI qui doit reserver l'inset bas — sans cette ligne, sur un inset de 45 px CSS
+     (135 physiques a dpr 3, le releve du S25 FE en 3 boutons) 45 px du bandeau passent sous la
+     barre de navigation et la croix de fermeture devient INTOUCHABLE : exactement le defaut que
+     le lot P4 vient de fermer, reintroduit sur le bandeau. */
+  padding-bottom:calc(10px + env(safe-area-inset-bottom));
+  background:var(--panel);border-top:1px solid var(--line);
+  font-size:13px;color:var(--ink);}
+.pwa-bar-txt{flex:1;line-height:1.35;}
+.pwa-bar-act{flex-shrink:0;padding:7px 12px;border:1px solid var(--green);
+  border-radius:6px;background:transparent;color:var(--green);
+  font-family:inherit;font-size:13px;cursor:pointer;}
+.pwa-bar-x{flex-shrink:0;width:30px;height:30px;border:0;background:transparent;
+  color:var(--ink-faint);font-family:inherit;font-size:17px;cursor:pointer;}
+/* Et la barre d'outils cesse de reserver l'inset quand le bandeau la suit : sinon la bande est
+   reservee DEUX fois et le trou de 45 px se contente de remonter d'un cran. `:has()` (Chrome
+   105+, Safari 15.4+) ; un navigateur plus ancien retombe sur un espace mort de la hauteur de
+   l'inset entre la barre et le bandeau — degradation cosmetique, jamais fonctionnelle. */
+.toolbar-wrap:has(+ .pwa-bar){padding-bottom:0;}
 /* Ancre des 2 boutons flottants : SOUS le chrome (HUD + inventaire + bandeau tuto), et non a
    un `top` fige. `--hud-h` est publiee par Hud (hauteur MESUREE du .hud-stack), `--tuto-h` par
    TutorialBanner ; les deux en `offsetHeight`, donc NON zoomees — c'est l'unite qu'il faut, les
@@ -3377,6 +3405,27 @@ for(var code in G){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; va
 // 14.03 — foreuse pilotée (direction + démarrage manuel) et travaux souterrains étalés.
 (function(){ if(!window.I18N||!I18N.locales) return; var ADD={"en":{"Cible":"Target","occup\u00e9e":"occupied","Travaux":"Works","la mati\u00e8re descend par l'\u00e9l\u00e9vateur":"the material is coming down the elevator","\ud83d\udea7 Travaux d\u00e9j\u00e0 en cours sur ce b\u00e2timent":"\ud83d\udea7 Works already under way on this building","Nv.":"Lv."},"es":{"Cible":"Objetivo","occup\u00e9e":"ocupada","Travaux":"Obras","la mati\u00e8re descend par l'\u00e9l\u00e9vateur":"el material baja por el elevador","\ud83d\udea7 Travaux d\u00e9j\u00e0 en cours sur ce b\u00e2timent":"\ud83d\udea7 Ya hay obras en curso en este edificio","Nv.":"Nv."},"de":{"Cible":"Ziel","occup\u00e9e":"belegt","Travaux":"Bauarbeiten","la mati\u00e8re descend par l'\u00e9l\u00e9vateur":"das Material f\u00e4hrt mit dem Aufzug hinunter","\ud83d\udea7 Travaux d\u00e9j\u00e0 en cours sur ce b\u00e2timent":"\ud83d\udea7 An diesem Geb\u00e4ude laufen bereits Bauarbeiten","Nv.":"St."}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.17 */ var ADD={"en": {"Hélium 3": "Helium 3", "MANQUANT (tuyau ?)": "MISSING (pipe?)",    "Data Center EN PAUSE — déficit (intrants ou courant)": "Data Center PAUSED — deficit (inputs or power)", "Validations": "Validations", "Cadence": "Rate", "Récompense": "Reward", " manche/s": " round/s", "manche toutes les": "one round every",   "réseaux de l'île → débit ILLIMITÉ": "island networks → UNLIMITED throughput", "≈ Production APPROXIMÉE : le jeu a simulé un échantillon puis extrapolé le reste (absence trop longue pour tout simuler).": "≈ APPROXIMATED production: the game simulated a sample then extrapolated the rest (absence too long to simulate fully).", "⏭ Rattrapage interrompu (« Passer ») : la production restante a été abandonnée.": "⏭ Catch-up interrupted (\"Skip\"): the remaining production was discarded.",   "Confirmations par seconde qu'un comparateur correctement câblé rapporte : cadence × récompense. C'est ce que mesure le nœud de recherche du Collisionneur.": "Confirmations per second that a correctly wired comparator yields: rate × reward. That is what the Collider research node measures.", "Une manche = un tirage SIMULTANÉ des deux émetteurs. Le Data Center donne le tempo ; l'améliorer accélère le puzzle jusqu'à 1 manche/s, puis multiplie la récompense.": "One round = a SIMULTANEOUS draw from both emitters. The Data Center sets the tempo; upgrading it speeds up the puzzle to 1 round/s, then multiplies the reward.", "Au-delà d'1 manche par tick, le débit supplémentaire ne peut plus tirer de manches : il multiplie la valeur de chacune.": "Beyond 1 round per tick, the extra throughput can no longer draw rounds: it multiplies the value of each one.", "Le Data Center est TOUT OU RIEN : au moindre déficit d'intrant ou de courant il se met en pause et le puzzle s'arrête (aucune pénalité possible).": "The Data Center is ALL OR NOTHING: at the slightest input or power deficit it pauses and the puzzle stops (no penalty possible)."}, "es": {"Hélium 3": "Helio 3", "MANQUANT (tuyau ?)": "FALTA (¿tubería?)",    "Data Center EN PAUSE — déficit (intrants ou courant)": "Data Center EN PAUSA — déficit (entradas o corriente)", "Validations": "Validaciones", "Cadence": "Cadencia", "Récompense": "Recompensa", " manche/s": " ronda/s", "manche toutes les": "una ronda cada",   "réseaux de l'île → débit ILLIMITÉ": "redes de la isla → caudal ILIMITADO", "≈ Production APPROXIMÉE : le jeu a simulé un échantillon puis extrapolé le reste (absence trop longue pour tout simuler).": "≈ Producción APROXIMADA: el juego simuló una muestra y extrapoló el resto (ausencia demasiado larga para simularla entera).", "⏭ Rattrapage interrompu (« Passer ») : la production restante a été abandonnée.": "⏭ Recuperación interrumpida («Saltar»): la producción restante se descartó.",   "Confirmations par seconde qu'un comparateur correctement câblé rapporte : cadence × récompense. C'est ce que mesure le nœud de recherche du Collisionneur.": "Confirmaciones por segundo que da un comparador bien cableado: cadencia × recompensa. Es lo que mide el nodo de investigación del Colisionador.", "Une manche = un tirage SIMULTANÉ des deux émetteurs. Le Data Center donne le tempo ; l'améliorer accélère le puzzle jusqu'à 1 manche/s, puis multiplie la récompense.": "Una ronda = una tirada SIMULTÁNEA de los dos emisores. El Data Center marca el ritmo; mejorarlo acelera el puzle hasta 1 ronda/s y luego multiplica la recompensa.", "Au-delà d'1 manche par tick, le débit supplémentaire ne peut plus tirer de manches : il multiplie la valeur de chacune.": "Más allá de 1 ronda por tick, el caudal extra ya no puede sacar rondas: multiplica el valor de cada una.", "Le Data Center est TOUT OU RIEN : au moindre déficit d'intrant ou de courant il se met en pause et le puzzle s'arrête (aucune pénalité possible).": "El Data Center es TODO O NADA: al mínimo déficit de entrada o de corriente se pone en pausa y el puzle se detiene (ninguna penalización posible)."}, "de": {"Hélium 3": "Helium 3", "MANQUANT (tuyau ?)": "FEHLT (Rohr?)",    "Data Center EN PAUSE — déficit (intrants ou courant)": "Data Center PAUSIERT — Defizit (Eingänge oder Strom)", "Validations": "Validierungen", "Cadence": "Takt", "Récompense": "Belohnung", " manche/s": " Runde/s", "manche toutes les": "eine Runde alle",   "réseaux de l'île → débit ILLIMITÉ": "Netze der Insel → UNBEGRENZTER Durchsatz", "≈ Production APPROXIMÉE : le jeu a simulé un échantillon puis extrapolé le reste (absence trop longue pour tout simuler).": "≈ ANGENÄHERTE Produktion: Das Spiel hat eine Stichprobe simuliert und den Rest hochgerechnet (Abwesenheit zu lang für eine vollständige Simulation).", "⏭ Rattrapage interrompu (« Passer ») : la production restante a été abandonnée.": "⏭ Nachholen abgebrochen („Überspringen“): Die restliche Produktion wurde verworfen.",   "Confirmations par seconde qu'un comparateur correctement câblé rapporte : cadence × récompense. C'est ce que mesure le nœud de recherche du Collisionneur.": "Bestätigungen pro Sekunde, die ein korrekt verdrahteter Komparator einbringt: Takt × Belohnung. Genau das misst der Forschungsknoten des Colliders.", "Une manche = un tirage SIMULTANÉ des deux émetteurs. Le Data Center donne le tempo ; l'améliorer accélère le puzzle jusqu'à 1 manche/s, puis multiplie la récompense.": "Eine Runde = ein GLEICHZEITIGER Zug beider Sender. Das Data Center gibt das Tempo vor; ein Ausbau beschleunigt das Rätsel bis 1 Runde/s und vervielfacht danach die Belohnung.", "Au-delà d'1 manche par tick, le débit supplémentaire ne peut plus tirer de manches : il multiplie la valeur de chacune.": "Über 1 Runde pro Tick hinaus kann der zusätzliche Durchsatz keine Runden mehr ziehen: Er vervielfacht den Wert jeder einzelnen.", "Le Data Center est TOUT OU RIEN : au moindre déficit d'intrant ou de courant il se met en pause et le puzzle s'arrête (aucune pénalité possible).": "Das Data Center ist ALLES ODER NICHTS: Beim kleinsten Eingangs- oder Stromdefizit pausiert es und das Rätsel stoppt (keine Strafe möglich)."}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* PWA-1 — bandeau d'installation */
+var PWAI={
+"en":{
+ "Installe le jeu pour y jouer en plein \u00e9cran, m\u00eame hors connexion.":"Install the game to play full screen, even offline.",
+ "Installe le jeu : touche Partager, puis \u00ab Sur l'\u00e9cran d'accueil \u00bb.":"Install the game: tap Share, then \"Add to Home Screen\".",
+ "Installe le jeu depuis le menu de ton navigateur : \u00ab Ajouter \u00e0 l'\u00e9cran d'accueil \u00bb.":"Install the game from your browser menu: \"Add to Home screen\".",
+ "Installer":"Install"
+},
+"es":{
+ "Installe le jeu pour y jouer en plein \u00e9cran, m\u00eame hors connexion.":"Instala el juego para jugar a pantalla completa, incluso sin conexi\u00f3n.",
+ "Installe le jeu : touche Partager, puis \u00ab Sur l'\u00e9cran d'accueil \u00bb.":"Instala el juego: pulsa Compartir y luego \u00abA\u00f1adir a pantalla de inicio\u00bb.",
+ "Installe le jeu depuis le menu de ton navigateur : \u00ab Ajouter \u00e0 l'\u00e9cran d'accueil \u00bb.":"Instala el juego desde el men\u00fa de tu navegador: \u00abA\u00f1adir a pantalla de inicio\u00bb.",
+ "Installer":"Instalar"
+},
+"de":{
+ "Installe le jeu pour y jouer en plein \u00e9cran, m\u00eame hors connexion.":"Installiere das Spiel, um es im Vollbild zu spielen \u2014 auch offline.",
+ "Installe le jeu : touche Partager, puis \u00ab Sur l'\u00e9cran d'accueil \u00bb.":"Spiel installieren: auf Teilen tippen, dann \u201eZum Home-Bildschirm\u201c.",
+ "Installe le jeu depuis le menu de ton navigateur : \u00ab Ajouter \u00e0 l'\u00e9cran d'accueil \u00bb.":"Installiere das Spiel \u00fcber das Browsermen\u00fc: \u201eZum Startbildschirm hinzuf\u00fcgen\u201c.",
+ "Installer":"Installieren"
+}};
+for(var code in PWAI){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=PWAI[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.18 */ var ADD={"en": {  }, "es": {  }, "de": {  }}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.20 */ var ADD={"en": {"Illimité — toute l'île": "Unlimited — whole island", " — TOUTE L'ÎLE passe en débit illimité (y compris les tracés posés plus tard), paliers remboursés": " — THE WHOLE ISLAND switches to unlimited throughput (including runs built later); tiers refunded"}, "es": {"Illimité — toute l'île": "Ilimitado — toda la isla", " — TOUTE L'ÎLE passe en débit illimité (y compris les tracés posés plus tard), paliers remboursés": " — TODA LA ISLA pasa a caudal ilimitado (incluidos los trazados construidos después); niveles reembolsados"}, "de": {"Illimité — toute l'île": "Unbegrenzt — ganze Insel", " — TOUTE L'ÎLE passe en débit illimité (y compris les tracés posés plus tard), paliers remboursés": " — DIE GANZE INSEL wechselt auf unbegrenzten Durchsatz (auch später gebaute Trassen); Stufen erstattet"}}; for(var code in ADD){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[code]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* 14.24 */ var ADD={"en": {"Île 6 S": "Island 6 U", "Ordre de service": "Service order", "Construction & travaux": "Construction & works", "Sortants (dépôts au port)": "Outgoing (port deposits)", "Intrants (machines du souterrain)": "Inputs (underground machines)", "Faire remonter cette catégorie d'un rang": "Move this category up one rank", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Strict order: the 1st category is fully served before the next (order adjustable below)", "Réseau logique": "Logic network", "émetteur et vanne câblés ✓": "emitter and valve wired ✓", "non relié — câblez l'émetteur ET la vanne": "not connected — wire BOTH the emitter and the valve", "Palier atteint": "Tier goal reached",   "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Collider not connected to a logic network (emitter and valve must be wired)", "Réseau logique requis": "Logic network required",  "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Lay a logic cable touching BOTH the Collider's emitter (bottom-left) and valve (top-right)",  "Data Center en veille — séquence du Collisionneur non lancée": "Data Center idle — Collider sequence not launched", "Envoyer en priorité vers ": "Send first to ", "Descendre au souterrain (": "Go down to the underground (", "Remonter à la surface (": "Back up to the surface ("}, "es": {"Île 6 S": "Isla 6 S", "Ordre de service": "Orden de servicio", "Construction & travaux": "Construcción y obras", "Sortants (dépôts au port)": "Salientes (depósitos en el puerto)", "Intrants (machines du souterrain)": "Entradas (máquinas del subsuelo)", "Faire remonter cette catégorie d'un rang": "Subir esta categoría un puesto", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Orden estricto: la 1.ª categoría se sirve por completo antes que la siguiente (orden ajustable abajo)", "Réseau logique": "Red lógica", "émetteur et vanne câblés ✓": "emisor y válvula cableados ✓", "non relié — câblez l'émetteur ET la vanne": "sin conexión — cablea el emisor Y la válvula", "Palier atteint": "Nivel alcanzado",   "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Colisionador sin conexión a una red lógica (emisor y válvula deben estar cableados)", "Réseau logique requis": "Red lógica requerida",  "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Coloca un cable lógico que toque el emisor (abajo-izq.) Y la válvula (arriba-der.) del Colisionador",  "Data Center en veille — séquence du Collisionneur non lancée": "Centro de datos en espera — secuencia del Colisionador no lanzada", "Envoyer en priorité vers ": "Enviar primero a ", "Descendre au souterrain (": "Bajar al subsuelo (", "Remonter à la surface (": "Volver a la superficie ("}, "de": {"Île 6 S": "Insel 6 U", "Ordre de service": "Bedienreihenfolge", "Construction & travaux": "Bau & Arbeiten", "Sortants (dépôts au port)": "Ausgänge (Einlagerung im Hafen)", "Intrants (machines du souterrain)": "Eingänge (Maschinen im Untergrund)", "Faire remonter cette catégorie d'un rang": "Diese Kategorie einen Rang nach oben", "Ordre strict : la 1re catégorie est servie entièrement avant la suivante (ordre réglable ci-dessous)": "Strenge Reihenfolge: Die 1. Kategorie wird vollständig bedient, bevor die nächste folgt (Reihenfolge unten einstellbar)", "Réseau logique": "Logiknetz", "émetteur et vanne câblés ✓": "Sender und Ventil verkabelt ✓", "non relié — câblez l'émetteur ET la vanne": "nicht verbunden — verkable Sender UND Ventil", "Palier atteint": "Stufenziel erreicht",   "❌ Collisionneur non relié au réseau logique (émetteur et vanne doivent être câblés)": "❌ Kollider nicht mit einem Logiknetz verbunden (Sender und Ventil müssen verkabelt sein)", "Réseau logique requis": "Logiknetz erforderlich",  "Posez un câble logique touchant l'émetteur (bas-gauche) ET la vanne (haut-droite) du Collisionneur": "Verlege ein Logikkabel, das Sender (unten links) UND Ventil (oben rechts) des Kolliders berührt",  "Data Center en veille — séquence du Collisionneur non lancée": "Rechenzentrum im Leerlauf — Kollider-Sequenz nicht gestartet", "Envoyer en priorité vers ": "Zuerst senden an ", "Descendre au souterrain (": "Hinab in den Untergrund (", "Remonter à la surface (": "Zurück an die Oberfläche ("}}; for(var c in ADD){ var L=I18N.locales[c]; if(!L) continue; L.ui=L.ui||{}; var m=ADD[c]; for(var k in m) if(!L.ui[k]) L.ui[k]=m[k]; } })();
@@ -9789,8 +9838,36 @@ const SAVE_VERSION = 31;
 // application ordinaire de bloquer ce geste — seul le test sur appareil tranche, et le changement
 // se retire alors par un `revert` du seul commit 2.
 // `SAVE_VERSION` INCHANGE (31).
-const GAME_BUILD = 425;
-const GAME_VERSION = 'Alpha 19.2';
+// 19.3 — LOT PWA-1 : BANDEAU D'INSTALLATION, VERSION WEB / PWA UNIQUEMENT. Le jeu est une PWA
+// complete (manifest, service worker versionne par la CI, balises Apple) mais RIEN ne le disait au
+// joueur : `beforeinstallprompt` n'existait nulle part dans la source et aucune detection du mode
+// d'affichage n'etait faite. Sur iOS — seul canal restant depuis l'abandon de l'App Store — le
+// joueur restait dans un onglet Safari sans jamais savoir que le plein ecran hors-ligne existe.
+// Un bandeau BAS NON MODAL est ajoute, affiche une seule fois, apres le tutoriel.
+// ⚠ LA PORTE EST A L'EXECUTION, PAS A LA COMPILATION, ET C'EST DELIBERE : `game-public.html` part
+// A L'IDENTIQUE dans l'APK publique (assets/index.html) et sur GitHub Pages — aucune constante
+// (`DEV_BUILD`, `SELF_UPDATE`, `SUPPORT_URL`) ne les distingue. Une variante `game-web.html`
+// aurait exige un CINQUIEME fichier intermediaire et deux assertions CI de plus, rouvrant
+// exactement la dette « deux chemins pour un meme jeu » que le lot P4 vient de fermer cote insets.
+// Le discriminant est donc `window.ArchipelNative`, injecte par `addJavascriptInterface` dans
+// MainActivity INCONDITIONNELLEMENT (avant toute lecture de `SELF_UPDATE`) : present dans les
+// TROIS paquets Android, absent partout ailleurs. AUCUNE ligne de CI ne bouge.
+// ⚠ `SAVE_VERSION` NON CONCERNE (reste 31) : le refus vit dans `localStorage` sous
+// `archipel_pwa_hide`, c'est une preference D'APPAREIL et pas un etat de partie — aucun champ
+// ajoute au save, aucune migration.
+// `PWA_ELIGIBLE` est evalue UNE fois au chargement et rend faux si : paquet Android, deja
+// installe (`navigator.standalone` ou `display-mode: standalone`), protocole non http(s)
+// (= asset d'APK en `file://`), navigateur INTEGRE (Facebook/Instagram/Line/Twitter/TikTok, ou
+// « Sur l'ecran d'accueil » n'existe pas), ni iOS ni Android, ou refus deja memorise.
+// ⚠ CONFLIT AVEC `tut_fin` REGLE SANS SEQUENCEMENT : la fin du tutoriel ouvre deja l'astuce
+// `tut_fin` par `showTip`. Le rendu du bandeau exige `!activeTip` — il ATTEND simplement que le
+// popup soit referme. Rien n'est empile, `closeTip` n'est pas touche.
+// ⚠ PIEGE DE BANC, il rend six tests faussement verts : `PWA_ELIGIBLE` exige `http(s)`, donc un
+// banc servi en `file://` fait passer tous les tests d'eligibilite PAR LE MAUVAIS CHEMIN. Servir
+// en HTTP. Et `PWA_ELIGIBLE` est un `const` de portee lexicale : il n'est PAS sur `window`, il se
+// lit par identifiant nu (`window.PWA_ELIGIBLE` rend `undefined`).
+const GAME_BUILD = 426;
+const GAME_VERSION = 'Alpha 19.3';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9799,7 +9876,7 @@ const GAME_VERSION = 'Alpha 19.2';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Correctif Android : la barre d'actions du bas ne passe plus sous les boutons de navigation du telephone. Rien ne change dans la partie.";
+const GAME_NOTES = "Version web : une invitation a installer le jeu sur l'ecran d'accueil apparait apres le tutoriel. Rien ne change dans l'application Android.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -9839,6 +9916,51 @@ const SELF_UPDATE = true;
 // Garde de sortie du build magasin : ZÉRO occurrence de la chaîne du domaine dans l'artefact.
 // AUCUNE contrepartie en jeu — simple lien externe. `SAVE_VERSION` non concerné.
 const SUPPORT_URL = 'https://ko-fi.com/freredoc';
+// ── BANDEAU D'INSTALLATION (web / PWA) ───────────────────────────────────────
+// `game-public.html` part A L'IDENTIQUE dans l'APK publique (assets/index.html) et sur
+// GitHub Pages : AUCUNE constante de compilation ne distingue les deux. La porte est donc
+// posee A L'EXECUTION, et `window.ArchipelNative` est le discriminant fiable — la coquille
+// native l'injecte par addJavascriptInterface AVANT toute lecture de SELF_UPDATE, il est
+// donc present dans les TROIS paquets (publique, dev, magasin) et absent partout ailleurs.
+// Cle hors sauvegarde (localStorage) : le refus est propre A L'APPAREIL, pas a la partie.
+// -> aucun champ ajoute au save, `SAVE_VERSION` NON concerne.
+const PWA_DISMISS_KEY = 'archipel_pwa_hide';
+// Evenement Chrome/Android capture au plus tot : il n'est emis qu'une fois, bien avant que
+// le joueur ait fini le tutoriel. Sans cette capture il serait perdu et le bouton
+// « Installer » n'aurait plus rien a declencher. iOS/Safari ne l'emet JAMAIS — c'est
+// precisement pourquoi la variante iOS affiche des instructions au lieu d'un bouton.
+let pwaDeferredPrompt = null;
+try {
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    pwaDeferredPrompt = e;
+  });
+} catch (e) {}
+const PWA_IS_IOS = (() => {
+  try {
+    const ua = navigator.userAgent || '';
+    // iPadOS 13+ s'annonce comme un Mac : le test tactile le rattrape.
+    return /iPhone|iPad|iPod/i.test(ua) ||
+           (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  } catch (e) { return false; }
+})();
+// Evalue UNE fois au chargement. Toute condition ci-dessous qui echoue = bandeau muet.
+const PWA_ELIGIBLE = (() => {
+  try {
+    if (window.ArchipelNative) return false;                       // paquet Android
+    if (navigator.standalone === true) return false;               // iOS deja installe
+    if (window.matchMedia &&
+        window.matchMedia('(display-mode: standalone)').matches) return false;
+    if (String(location.protocol).indexOf('http') !== 0) return false;  // file:// = asset
+    const ua = navigator.userAgent || '';
+    // Navigateurs INTEGRES (Facebook, Instagram, Line, Twitter) : « Sur l'ecran d'accueil »
+    // n'y existe pas. Afficher la consigne y serait mensonger.
+    if (/FBAN|FBAV|FB_IAB|Instagram|Line\/|Twitter|TikTok/i.test(ua)) return false;
+    if (!PWA_IS_IOS && !/Android/i.test(ua)) return false;         // mobile uniquement
+    if (localStorage.getItem(PWA_DISMISS_KEY) === '1') return false;
+    return true;
+  } catch (e) { return false; }
+})();
 /* ============================================================================
    ARCHIPEL INDUSTRY — MODULE AUDIO (SFX)
    Synthèse procédurale Web Audio. Aucun fichier, aucun CDN, offline-first.
@@ -25615,6 +25737,14 @@ function App() {
     scheduleSave();
   };
   const [tutorialStep, setTutorialStep] = useState(-1);
+  // Bandeau d'installation : masquage pour CETTE session + memorisation sur l'appareil.
+  // Initialise a `false` et non a la lecture de localStorage : `PWA_ELIGIBLE` a deja lu la
+  // cle au chargement, un second test ici serait redondant et divergerait au premier oubli.
+  const [pwaHidden, setPwaHidden] = useState(false);
+  const dismissPwa = () => {
+    setPwaHidden(true);
+    try { localStorage.setItem(PWA_DISMISS_KEY, '1'); } catch (e) {}
+  };
   // Index de la cible du halo dans l'étape courante du tutoriel (cf. TUTORIAL_STEPS.targets).
   const [tutorialTarget, setTutorialTarget] = useState(0);
   // Guide dynamique (post-tutoriel) : objectif actif + cible du halo (cf. GUIDE_OBJECTIVES).
@@ -32752,7 +32882,51 @@ function App() {
       markDirty();
       scheduleSave();
     }
-  }));
+  }), PWA_ELIGIBLE && !pwaHidden && !activeTip && tutorialStep === -1 &&
+      gameRef.current && gameRef.current.tutorial &&
+      gameRef.current.tutorial.active === false &&
+      React.createElement(PWAInstallBanner, { onDismiss: dismissPwa }));
+}
+// Bandeau d'installation. Rendu UNIQUEMENT quand PWA_ELIGIBLE est vrai, le tutoriel fini
+// et aucune astuce ouverte — la condition `!activeTip` suffit a le faire attendre la
+// fermeture de `tut_fin`, sans toucher a closeTip : rien a empiler, rien a sequencer.
+function PWAInstallBanner({ onDismiss }) {
+  const [busy, setBusy] = React.useState(false);
+  const install = () => {
+    if (!pwaDeferredPrompt) return;
+    setBusy(true);
+    try {
+      pwaDeferredPrompt.prompt();
+      pwaDeferredPrompt.userChoice.then(r => {
+        pwaDeferredPrompt = null;
+        setBusy(false);
+        // Accepte : le bandeau ne doit plus jamais revenir. Refuse : on le laisse, le
+        // joueur peut changer d'avis — c'est la croix qui l'eteint definitivement.
+        if (r && r.outcome === 'accepted') onDismiss();
+      }).catch(() => setBusy(false));
+    } catch (e) { setBusy(false); }
+  };
+  // iOS n'expose aucune API d'installation : on decrit le geste. Android sans evenement
+  // capture (navigateur non compatible) tombe sur le meme texte generique.
+  const canPrompt = !PWA_IS_IOS && !!pwaDeferredPrompt;
+  const txt = PWA_IS_IOS
+    ? I18N.t("Installe le jeu : touche Partager, puis « Sur l'écran d'accueil ».")
+    : (canPrompt
+        ? I18N.t('Installe le jeu pour y jouer en plein écran, même hors connexion.')
+        : I18N.t("Installe le jeu depuis le menu de ton navigateur : « Ajouter à l'écran d'accueil »."));
+  return React.createElement("div", {
+    className: "pwa-bar"
+  }, React.createElement("span", {
+    className: "pwa-bar-txt"
+  }, txt), canPrompt && React.createElement("button", {
+    className: "pwa-bar-act",
+    disabled: busy,
+    onClick: install
+  }, I18N.t('Installer')), React.createElement("button", {
+    className: "pwa-bar-x",
+    "aria-label": I18N.t('Fermer'),
+    onClick: onDismiss
+  }, "\u2715"));
 }
 // Hook de test (inoffensif) : expose quelques helpers internes pour le smoke test jsdom.
 if (typeof window !== 'undefined') {

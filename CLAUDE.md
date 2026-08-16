@@ -19,7 +19,77 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 425`, `GAME_VERSION = 'Alpha 19.2'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 426`, `GAME_VERSION = 'Alpha 19.3'`, `SAVE_VERSION = 31`.**
+  Changement 19.3 (brief `BRIEFlotpwabandeauinstallation`, **lot PWA-1**, patcheur + banc fournis) :
+  **un BANDEAU BAS NON MODAL invite à installer le jeu sur l'écran d'accueil — version WEB/PWA
+  UNIQUEMENT, une seule fois, après le tutoriel.** `SAVE_VERSION` INCHANGÉ. Base EXACTE (425 / 19.2 /
+  3 713 985 o / `054a5c1a…`) ; **6 ancres, 10 fragments à `count == 1`**, `node --check` 7/7 **sur les
+  3 variantes CI**, aller-retour identique à l'octet, idempotence vérifiée.
+  (1) ⚠ **LA PORTE EST À L'EXÉCUTION, PAS À LA COMPILATION, ET C'EST LE CŒUR DU LOT** : `game-public.html`
+  part **À L'IDENTIQUE** dans l'APK publique (`assets/index.html`, l. 134) et sur GitHub Pages
+  (`index.html`, l. 320) — **aucune** constante (`DEV_BUILD`, `SELF_UPDATE`, `SUPPORT_URL`) ne les
+  distingue. Une variante `game-web.html` aurait exigé un **5ᵉ fichier intermédiaire** + 2 assertions CI,
+  rouvrant la dette « 2 chemins pour un même jeu » que P4 venait de fermer. Le discriminant est donc
+  **`window.ArchipelNative`**, injecté par `addJavascriptInterface` **INCONDITIONNELLEMENT** (avant toute
+  lecture de `SELF_UPDATE`) → présent dans les **3** paquets Android, absent partout ailleurs.
+  **AUCUNE ligne de CI ne bouge.** Le bandeau EXISTE donc dans les APK mais y est **inatteignable**
+  (verrou plutôt qu'ablation, un seul chemin de code).
+  (2) **`PWA_ELIGIBLE`** (évalué UNE fois au chargement) est faux si : paquet Android · déjà installé
+  (`navigator.standalone` ou `display-mode: standalone`) · protocole ≠ http(s) (= asset d'APK en
+  `file://`) · navigateur **INTÉGRÉ** (Facebook/Instagram/Line/Twitter/TikTok — « Sur l'écran d'accueil »
+  n'y existe pas) · ni iOS ni Android · refus déjà mémorisé. ⚠ **Le refus vit dans `localStorage`
+  (`archipel_pwa_hide`), PAS dans la save** : préférence d'APPAREIL → aucun champ ajouté, aucune migration.
+  ⚠ **iPadOS 13+ s'annonce comme un Mac** → `PWA_IS_IOS` le rattrape par `navigator.maxTouchPoints > 1`.
+  (3) **Conflit avec `tut_fin` réglé SANS séquencement** : la fin du tutoriel ouvre déjà `showTip('tut_fin')`.
+  Le rendu exige **`!activeTip`** → le bandeau ATTEND que le popup soit refermé. Rien n'est empilé,
+  **`closeTip` n'est pas touché**.
+  (4) ⚠ **ÉCART AU BRIEF, MESURÉ, ET C'EST LE POINT LE PLUS IMPORTANT — le brief croyait le bandeau
+  AU-DESSUS de la barre d'outils ; il est EN DESSOUS.** Relevé au DOM : `.pwa-bar` est le **DERNIER
+  enfant de `.app`** (`[hud-stack, tuto-banner, tut-halo, stage, toolbar-wrap, pwa-bar]`), donc l'élément
+  **le plus bas de l'écran** — et son CSS ne portait `env(safe-area-inset-bottom)` **NULLE PART**
+  (`padding-bottom` calculé = `10px` ; **1 seule** occurrence de `env(safe-area-inset-bottom)` dans tout
+  le fichier, celle de `.toolbar-wrap`). **Simulé à 45 px CSS** (= les 135 px physiques du relevé S25 FE
+  d'Ethan ÷ dpr 3) : **45 px du bandeau sur 74 (61 %) sous la barre de navigation**, et **la croix de
+  fermeture centrée à y=879 soit 9 px SOUS la barre → INTOUCHABLE** ; en prime la barre d'outils gonflait
+  de 79 à 124 px (inset réservé au mauvais endroit). **C'est le défaut de P3/P4 réintroduit sur le
+  bandeau.** Correctif CSS seul, dans l'esprit de P4 (« c'est le CSS qui réserve la bande, et lui seul ») :
+  `.pwa-bar{padding-bottom:calc(10px + env(safe-area-inset-bottom));}` **+**
+  `.toolbar-wrap:has(+ .pwa-bar){padding-bottom:0;}`. ⚠ **La 2ᵉ règle est INDISPENSABLE** : sans elle la
+  bande est réservée **DEUX fois** et le trou de 45 px remonte simplement d'un cran. Re-mesuré : barre
+  d'outils **79 px** (taille naturelle), croix à **y=834, bas 849 → au-dessus des 870**. ⚠ Limite assumée
+  de `:has()` (Chrome 105+/Safari 15.4+) : un navigateur plus ancien garde un espace mort — **cosmétique,
+  jamais fonctionnel**.
+  **Validé** : `node --check` **7/7 après le bump ET après le correctif**, sur `game-public` /
+  `game-dev` / `game-store` ; **banc 11/11 PASS, rejoué 3 fois sans flottement** ; **CONTRE-TEST 0/11 sur
+  la base non patchée** (la suite mesure donc quelque chose) ; les 9 invariants CI re-joués en simulant
+  les `sed`/`grep` d'`android.yml` (dont `ko-fi` = 1 publique / **0** magasin).
+  ⚠ **ÉCART DE PILOTE DE BANC, ASSUMÉ** : le banc du brief veut `puppeteer-core` + `@sparticuz/chromium`,
+  **absents de l'image** (on a `playwright-core` + Chromium 1194, et `playwright install` est proscrit).
+  Banc **porté sur playwright-core, PILOTE SEUL** — les 11 montages et assertions sont repris à
+  l'identique (`newContext({userAgent,…})` au lieu de `setUserAgent`, `addInitScript` au lieu
+  d'`evaluateOnNewDocument`, `'networkidle'` au lieu de `'networkidle0'`). ⚠ Playwright **isole
+  `localStorage` par contexte** (puppeteer le partageait entre pages de même origine) : la purge et le
+  drapeau `keepStore` restent NÉCESSAIRES pour T6/T7 (qui rechargent dans le MÊME contexte), redondants
+  ailleurs.
+  ⚠ **PIÈGES DE BANC (du brief, confirmés)** : (a) **servir en HTTP, JAMAIS en `file://`** —
+  `PWA_ELIGIBLE` exige `http(s)`, un banc en `file://` fait passer **six** tests par le mauvais chemin,
+  tous « verts » pour une raison fausse ; (b) **`PWA_ELIGIBLE` est un `const` de portée lexicale, il
+  n'est PAS sur `window`** → se lit par **identifiant nu** (`window.PWA_ELIGIBLE` rend `undefined`) ;
+  (c) forcer `g.tutorial.step = 999` **ne termine PAS le tutoriel du point de vue de React** : la boucle
+  `while` de `checkTutorial` ne tourne alors jamais, `changed` reste faux et **`setTutorialStep(-1)`
+  n'est jamais appelé** (`tutorial.active` passe pourtant à `false`) → **T6/T7 passent par un
+  RECHARGEMENT**. Les 2 chemins RÉELS (fin naturelle, `skipTutorial`) appellent bien `setTutorialStep` :
+  c'est un artefact du raccourci de banc, pas un défaut du patch ; (d) le navigateur de test est en
+  locale **EN** → T6 relève le texte anglais (preuve que l'i18n marche) ; T9 asserte la **PRÉSENCE de la
+  clé**, jamais `t(k) !== k` (« Installer » se traduit légitimement par lui-même en français).
+  ⚠ **NON COUVERT** : aucun test sur appareil (le §(4) est une **simulation** — la vraie valeur d'inset
+  vient de la WebView ; à confirmer **en 3 boutons**, la gestuelle validerait à vide) ; **le vrai
+  `beforeinstallprompt` n'est jamais émis en headless** → le chemin `canPrompt === true` (bouton natif
+  « Installer » d'Android) n'est **pas** testé, seuls iOS et générique le sont (mesuré `hasBtn:false`,
+  dégradation propre vers le texte générique) ; les 3 traductions non relues par un locuteur.
+  ⚠ **HORS PÉRIMÈTRE, non touché** : `manifest.json`, `sw.js`, la CI, `closeTip`, `checkTutorial`,
+  `SAVE_VERSION`.
+- **État précédent : `GAME_BUILD = 425`, `GAME_VERSION = 'Alpha 19.2'`, `SAVE_VERSION = 31`.**
   Changement 19.2 (brief `BRIEFp4statusbar`, **lot P4, 3 commits**) : **la variante B est RETENUE, la
   variante A SUPPRIMÉE, et la BARRE D'ÉTAT devient VISIBLE en jeu.** `SAVE_VERSION` INCHANGÉ,
   **aucun changement de jeu** — seuls `android/` et la CI bougent. Base 424 / 19.1.
