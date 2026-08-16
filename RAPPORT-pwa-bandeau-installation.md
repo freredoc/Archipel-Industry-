@@ -212,6 +212,31 @@ Vérifiés sur le fichier **livré**, puis en **rejouant localement les `sed`/`g
 Le nouveau code se situe **après** la ligne `SUPPORT_URL`, que le `sed` du magasin réécrit seule : la
 dérivation magasin reste intacte, et la variante magasin compile (7/7).
 
+### Vérification RÉELLE en CI — run 555
+
+La simulation locale ci-dessus a été confirmée par un **`workflow_dispatch` sur la branche**
+(run **555**, sha `4190392`, `Build Android APK`) : **succès complet**, 1 min 47.
+
+| Étape | Conclusion |
+|---|---|
+| 6 · `Prepare game files (public + dev + magasin)` | **success** — les gardes d'entrée/sortie et les compteurs `ko-fi` passent pour de vrai |
+| 8 · `Build PUBLIC APK` | success |
+| 9 · `Build DEV APK` | success |
+| 10 · `Build STORE bundle + APK de contrôle (Play)` | success |
+| 11 · `Assert store package` (paquet, targetSdk, permissions, debuggable) | success |
+| 12 · `Assert appIds` | success |
+| 13 · `Show signing certificate` | success |
+| 17 · `Publish to "apk-latest" release` | **SKIPPED** |
+| 18 · `Sync version.json from the game's GAME_BUILD` | **SKIPPED** |
+
+**Les deux étapes à effet de bord ont bien été sautées** (gate `refs/heads/main`) : `main` est resté
+sur `7ee6993`, `GAME_BUILD = 425`, `version.json` en build 425 — **rien n'a été publié**, vérifié
+après coup et pas seulement supposé.
+
+⚠ Ce run prouve que la chaîne construit, s'assemble et signe les **trois** paquets avec ce HTML, et
+que les dérivations `game-public`/`game-dev`/`game-store` restent conformes. **Il ne prouve rien du
+rendu à l'écran** — c'est l'objet du §8.
+
 ⚠ Le bandeau **existe** dans les trois paquets Android (le code n'est pas retiré), mais il y est
 **inatteignable** : `window.ArchipelNative` y est injecté inconditionnellement par
 `addJavascriptInterface`, donc `PWA_ELIGIBLE` vaut `false`. C'est l'arbitrage déjà inscrit ailleurs
