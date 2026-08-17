@@ -19,7 +19,108 @@ Mémo pour les sessions Claude Code. À lire au début de chaque session.
 - ⚠️ **Si on ne bumpe pas `GAME_BUILD`, le jeu n'affiche pas de notification de mise à jour.**
 - La CI régénère `version.json` (racine) depuis `GAME_BUILD`/`GAME_VERSION` après un build
   sur `main`.
-- **État au dernier passage : `GAME_BUILD = 428`, `GAME_VERSION = 'Alpha 19.5'`, `SAVE_VERSION = 31`.**
+- **État au dernier passage : `GAME_BUILD = 430`, `GAME_VERSION = 'Alpha 19.7'`, `SAVE_VERSION = 31`.**
+  Changement 19.7 (brief `BRIEFcontenuhorslignemasquage`, **lot CONTENU**, patcheur pré-exécuté) :
+  **le jeu ANNONCE que l'usine tourne sans le joueur, et l'arbre de recherche cesse de dévoiler tout
+  l'endgame.** `SAVE_VERSION` INCHANGÉ, **aucun champ de partie**. 8 ancres à `count == 1`,
+  `node --check` 7/7 sur les 3 variantes CI, **delta +8 432 o EXACT**.
+  (1) **Deux canaux, un seul drapeau** : astuce `hors_ligne` (fin de `GAME_TIPS`, déclenchée à la
+  fin du tutoriel) + phrase dans le récap de rattrapage, à sa PREMIÈRE apparition seulement. Les
+  deux lisent `game.tipsSeen.hors_ligne` → celui qui arrive le premier éteint l'autre. **Zéro champ
+  ajouté, zéro migration.** Plafond annoncé « environ 27 h » = `OFFLINE_MAX_TICKS` (100 000 ticks
+  = 27 h 47) arrondi **PAR DÉFAUT** — ne jamais annoncer au-dessus du réel.
+  ⚠ **`when` exige `g.tutorial.active === false` EXPLICITEMENT, jamais `!active`** : avant
+  l'initialisation du tutoriel `g.tutorial` peut être ABSENT → `!active` ouvrirait l'astuce au 1ᵉʳ
+  tick, par-dessus le tutoriel.
+  ⚠ **LA CAPTURE DU DRAPEAU EST POSÉE AVANT `primeTipsSeen(g)`, ET C'EST L'ORDRE QUI COMPTE** :
+  `primeTipsSeen` marque VUES les astuces dont la condition est déjà remplie, et il tourne AVANT la
+  construction du récap. Lire le drapeau après lui rendrait TOUJOURS faux → la phrase ne
+  s'afficherait JAMAIS. Corollaire assumé : **une partie déjà en cours ne verra jamais le popup**
+  (pas d'avalanche rétroactive) ; l'astuce reste dans l'Aide et le récap prend le relais.
+  ⚠ **4 LANGUES POUR `body`, 3 POUR `short`** : `I18N.tip(id)` part de `LOCALES.fr.tips[id].body`
+  puis fusionne PAR INDEX — **sans entrée `fr`, `fb` est vide et le texte reste français dans les
+  4 langues**. `short` suit la logique de `title` (repli sur la source) : une entrée `fr` y serait
+  un no-op divergent. Même nombre de § partout (3) — un § manquant retombe en français AU MILIEU.
+  (2) **Masquage de l'arbre** : au-delà du seuil, les nœuds sont repliés en **UNE carte**. ⚠ **Une,
+  pas quinze « ???? » : le NOMBRE de cartes est lui-même un spoiler.**
+  ⚠ **ÉCART AU BRIEF, DEMANDÉ PAR ETHAN — le nœud 28 est masqué LUI AUSSI** (le brief le laissait
+  lisible) : il s'appelle « Accès Île 6 », donc le montrer annonce l'existence de l'île que
+  `ARCHI_CACHEE` cache. **Deux paliers** : 25 non confirmé → 1..27 ; 25 confirmé → 1..28 ;
+  28 confirmé → tout (43). **Sûreté prouvée par le GRAPHE** : `prereq[28] = 25` et 29→43 forment une
+  chaîne linéaire remontant à 28 → aucun palier ne peut masquer un nœud `available`/`condition_ok`.
+  **26 et 27 ont le MÊME prérequis mais restent visibles** : leurs noms ne trahissent rien — on
+  masque un SPOILER, pas un palier.
+  ⚠ **Filtrage par `def.id`, JAMAIS par rang** : `techNodesOrdered` fait couler les confirmés en bas
+  (mesuré au contre-test : à 25 confirmés la dernière carte devient `25.`) → un filtre positionnel
+  masquerait n'importe quoi. **Aucune règle CSS créée** (réutilise `.rp-node.st-locked` et
+  `.offline-note`).
+  **Validé** : T1-T3 (53 astuces, 3 § en fr/en/de, `short` fr préservé par la garde `nonEmpty`), T4
+  (1 puis 0 `.offline-note`), T5/T6 (**28 / 29 / 43** cartes aux 3 états), T6bis (partie neuve :
+  statut 28 et 29→43 tous `locked`), **T7 contre-test base 429 : 43 cartes dans les 3
+  configurations** → l'écart vient du masquage et pas du tri, T8 (0 exception, canal **CDP
+  `Runtime.exceptionThrown`**), + **T-extra chemin joueur réel** (après « Passer », la file donne
+  `["La recherche", "L'usine tourne sans vous"]` ; sur la base, la 2ᵉ n'existe pas). T1-T8 et
+  T-extra rejoués 2 fois sans flottement.
+  ⚠ **PIÈGE D'EXTRACTION SIGNALÉ PAR LE BRIEF, DÉSAMORCÉ** : une boucle `node --check` sur un glob
+  peut annoncer « 7/7 » alors que le dossier n'en contient qu'UN (extraction interrompue → dossier
+  partiel). **Compter les fichiers AVANT de boucler et refuser de conclure si ≠ 7** ; l'extracteur
+  purge son dossier de sortie et échoue si le compte diffère.
+  ⚠ **ÉCART DE BASE** : le brief visait 3 744 974 o, la base réelle en faisait **3 745 929**
+  (+955 = le correctif CI du 429, même bloc 7) → ses SHA de fichier ne pouvaient pas correspondre.
+  Vérifié à la place, et c'est plus fort : **`b06` concorde avec le SHA du brief même sur la base
+  réelle**, et le patcher **rejoué sur la base d'avant le correctif rend EXACTEMENT les 3 SHA du
+  brief** → patch byte-identique à celui du rédacteur.
+  ⚠ **NON COUVERT** : rendu sur appareil (lisibilité de la carte `????`, tenue de la phrase du récap
+  en allemand, la plus longue).
+- **État précédent : `GAME_BUILD = 429`, `GAME_VERSION = 'Alpha 19.6'`, `SAVE_VERSION = 31`.**
+  Changement 19.6 (brief `BRIEFchromeinventairecarte`, **lot CHROME**, patcheur pré-exécuté) : **la
+  barre d'inventaire ne quitte plus le flux, et la carte remplit la largeur tant que l'île 6 n'est
+  pas visible.** `SAVE_VERSION` INCHANGÉ. 8 ancres à `count == 1`, **delta +3 434 o EXACT**, et —
+  cas rare — **les 7 SHA de bloc ET le SHA du fichier complet CONFORMES au brief** avant bump.
+  (1) ⚠ **UNE SEULE CAUSE POUR TROIS DÉFAUTS SIGNALÉS SÉPARÉMENT** (l'île qui bascule à l'ouverture
+  de l'inventaire, le bandeau du tutoriel qui bascule avec elle, le liseré sombre qui disparaît) :
+  `InvBar` rendait **SOIT** `.inventory.collapsed` (dans le flux) **SOIT** `.inventory.open`
+  (`position:absolute`, ZÉRO hauteur de layout), jamais les deux → ouvrir l'inventaire retirait à
+  `.hud-stack` toute la hauteur de la barre, **49 px MESURÉS** (contre-test T2). En cascade : la
+  scène gagne 49 px et le canvas est redimensionné (l'île se recentre) ; **`TutorialBanner` est un
+  FRÈRE de `.hud-stack`, pas un enfant** → il remonte d'autant ; `--hud-h` (publiée par le
+  `ResizeObserver`) change → les 2 boutons flottants sautent ; et le liseré n'est que le
+  `margin-top:4px` de `.inventory` laissant voir le fond de `.hud-stack` — sans barre dans le flux,
+  ces 4 px tombent sur le canvas. **Correctif : la barre repliée est TOUJOURS rendue et sert de
+  poignée ; le panneau ouvert est un CALQUE EN PLUS d'elle, jamais À LA PLACE.**
+  ⚠ Les boutons INVENTAIRE / Production / Alertes / Surchauffe **ne sont plus répétés** dans le
+  panneau (ils y seraient EN DOUBLE) ; `margin-top:0` posé **EN PLACE** dans `.inventory.open`
+  (sinon une bande de canvas s'intercale) — **aucun bloc ajouté en fin de feuille de style**.
+  ⚠ Le gap barre → calque **n'est pas nul** : il vaut la hauteur du bandeau du tutoriel
+  (`top: calc(100% + var(--tuto-h))`, comportement voulu depuis 13.84).
+  (2) **Carte pré-île 6** : `ARCHI_POS_5` étale les 5 îles tant que `visible(6)` est faux (les
+  îles 1-5 n'occupaient que **64 %** de la largeur). ⚠ **BORNES 20/80 CALCULÉES SUR UNE LARGEUR
+  MESURÉE** : `.arch-ile` fait **104 px FIXES** et `.arch-node` est centré, donc une île tient ssi
+  `x >= 5200/W` et `x <= 100 − 5200/W` ; à 320 px de viewport `.arch-map` mesure **265 px** →
+  enveloppe 19,6 %..80,4 %. Une version à 18/82, calculée sur une largeur SUPPOSÉE de 300 px,
+  faisait déborder 3 sprites.
+  ⚠ **L'ÉNUMÉRATION RESTE SUR `ARCHI_POS`** (table pleine) : la faire sur `POS` ferait disparaître
+  l'île 6 POUR TOUJOURS. ⚠ **`arch-sout` garde `ARCHI_POS[6]` EN DUR** (sinon `TypeError` sur
+  `POS[6][0]` dans la branche à 5 îles).
+  **Validé** : T1 les 5 grandeurs de chrome invariantes aux 3 relevés · T2 contre-test **49 px** ·
+  T3 (1 bouton de chaque, **2 `.inventory`** contre 1 sur la base) · T5 (412 px : 89 % d'occupation,
+  marges 19/19 ; **320 px : marges 1,5/1,6 px, 0 débordement**) · T6/T7 · T8. Suites rejouées 2 fois.
+  ⚠ **PIÈGE DE BANC** : **le bouton INVENTAIRE est un INTERRUPTEUR** — « cliquer deux fois à cause
+  de `useGhostGuard` » le ramène à son état de départ. Amorcer le garde par un `pointerdown`,
+  cliquer **UNE** fois, **asserter l'état atteint**. Et l'inventaire est **déplié à la création**.
+  ⚠ **LE BUILD 429 A CASSÉ LA CI (run 561), ET C'ÉTAIT MON COMMENTAIRE** : le paragraphe de
+  validation écrivait le nom du service de soutien EN CLAIR ; la CI vide `SUPPORT_URL` par `sed`
+  puis vérifie `grep -c '<nom>' game-store.html == 0` → **une mention en COMMENTAIRE suffit à faire
+  échouer la garde**. Le run s'est arrêté avant toute publication (ni APK, ni `version.json`, ni
+  PWA) → **numéro de build CONSERVÉ**, aucun joueur n'ayant reçu 429. **DEUXIÈME occurrence du même
+  piège** (lot ICON-1 : un emoji usine faisait passer un compte de 5 à 6). **RÈGLE : rejouer les
+  gardes de comptage de la CI APRÈS avoir écrit ses propres commentaires** — mon contrôle était
+  juste mais joué TROP TÔT — et ne jamais laisser un motif surveillé par un `grep -c` **non ancré**
+  (`ko-fi`, `const SELF_UPDATE = true;`) apparaître en texte libre.
+  ⚠ **NON COUVERT** : le liseré sur appareil (la part mesurable l'est : inventaire ouvert, les 4 px
+  au-dessus de la barre appartiennent à `.hud-stack` sur le patch, et tombent sur le **CANVAS** sur
+  la base).
+- **État précédent : `GAME_BUILD = 428`, `GAME_VERSION = 'Alpha 19.5'`, `SAVE_VERSION = 31`.**
   Changement 19.5 (brief `BRIEFloticonessplash`, **lot ICON-1**, patcheur + 4 PNG fournis) : **les
   icônes PWA et le logo de chargement reprennent l'ART ANDROID** (`ic_launcher_foreground.png`, l'île
   avec bâtiments/routes/jetée), qui n'alimentait AUCUN canal web. `SAVE_VERSION` INCHANGÉ, **aucun
