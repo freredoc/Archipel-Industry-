@@ -1,8 +1,8 @@
 {
-  "build": 431,
-  "version": "Alpha 19.8",
+  "build": 432,
+  "version": "Alpha 19.9",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Un lien vers le serveur Discord du jeu apparait dans les Options : bugs, suggestions et suivi du developpement."
+  "notes": "Le tableau du panneau Production redevient lisible sur telephone : le nom de la ressource passe sur sa propre ligne au lieu d etre coupe a deux caracteres."
 }
