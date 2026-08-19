@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Locale;
 
 /**
  * Coquille WebView : charge le jeu (asset HTML autonome) hors-ligne.
@@ -50,6 +51,10 @@ public class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 0xF11E;
     private WebView web;
     private BroadcastReceiver installReceiver;
+    // A2 — ID de la session PackageInstaller en cours, -1 hors installation. Ecrit par
+    // downloadAndInstall (thread de telechargement), lu par le recepteur (thread principal)
+    // : `volatile` pour que l'ecriture soit visible du lecteur.
+    private volatile int installSessionId = -1;
     // Import de sauvegarde : callback du <input type="file"> en attente du fichier choisi.
     private ValueCallback<Uri[]> filePathCallback;
 
@@ -254,8 +259,28 @@ public class MainActivity extends Activity {
 
     /** Écrit le contenu texte en .txt dans Téléchargements (MediaStore sur Android 10+,
      *  sinon dossier de l'app). Affiche un Toast indiquant l'emplacement. */
+    /** A4 — le pont est une FRONTIERE DE CONFIANCE : le nom vient du JS et doit etre assaini
+     *  ICI, pas seulement cote appelant. Le jeu produit deja des noms surs
+     *  (`archipel-<slot>.txt`, `archipel-journal-<build>.txt`, filtres en `[a-z0-9_-]`), donc
+     *  cette fonction ne change RIEN au comportement observable ; elle enleve la dependance a
+     *  la discipline de l'appelant. Sur API < 29 la branche fichier concatene le nom a un
+     *  repertoire : un `../` s'en echappait. On ne garde que le nom de base, un jeu de
+     *  caracteres restreint, et l'extension .txt. */
+    private static String safeDownloadName(String filename) {
+        String n = filename == null ? "" : filename.trim();
+        n = n.replace('\\', '/');
+        int slash = n.lastIndexOf('/');
+        if (slash >= 0) n = n.substring(slash + 1);      // basename seul : neutralise `../`
+        n = n.replaceAll("[^A-Za-z0-9._-]", "_");
+        while (n.startsWith(".")) n = n.substring(1);    // ecarte `..` et les fichiers caches
+        if (n.length() > 100) n = n.substring(0, 100);
+        if (n.isEmpty()) return "archipel-sauvegarde.txt";
+        if (!n.toLowerCase(Locale.US).endsWith(".txt")) n = n + ".txt";
+        return n;
+    }
+
     private void writeDownload(String filename, String content) {
-        String name = (filename == null || filename.isEmpty()) ? "archipel-sauvegarde.txt" : filename;
+        String name = safeDownloadName(filename);
         if (content == null) content = "";
         try {
             if (Build.VERSION.SDK_INT >= 29) {
@@ -364,6 +389,7 @@ public class MainActivity extends Activity {
             PackageInstaller.SessionParams params =
                     new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
             int sessionId = pi.createSession(params);
+            installSessionId = sessionId;   // A2 — ouvre la fenetre d'acceptation
             PackageInstaller.Session session = pi.openSession(sessionId);
             OutputStream sout = session.openWrite("archipel", 0, apk.length());
             FileInputStream fin = new FileInputStream(apk);
@@ -388,6 +414,17 @@ public class MainActivity extends Activity {
         installReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context ctx, Intent intent) {
+                // A2 — N'ACCEPTER QUE LE BROADCAST DE NOTRE PROPRE SESSION.
+                // `RECEIVER_NOT_EXPORTED` n'existe qu'a partir d'API 33 ; en dessous (minSdk 26)
+                // un recepteur enregistre dynamiquement est joignable par TOUTE application. Or
+                // la branche STATUS_PENDING_USER_ACTION fait `startActivity()` sur un
+                // `EXTRA_INTENT` fourni par le broadcast : une app tierce obtenait une
+                // REDIRECTION D'INTENT sous notre identite. On exige donc l'ID de la session
+                // que NOUS avons ouverte, et seulement pendant qu'elle est ouverte.
+                // EXTRA_SESSION_ID est TOUJOURS pose par PackageInstaller (contrat documente) :
+                // aucune dependance a la survie d'extras qu'on aurait glisses nous-memes.
+                int sid = intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -1);
+                if (installSessionId == -1 || sid != installSessionId) return;
                 int status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
                         PackageInstaller.STATUS_FAILURE);
                 if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
@@ -407,6 +444,9 @@ public class MainActivity extends Activity {
                             "Installation interrompue" + (msg != null ? " : " + msg : ""),
                             Toast.LENGTH_LONG).show();
                 }
+                // A2 — STATUS_PENDING_USER_ACTION n'est PAS terminal (l'ecran de confirmation
+                // suit) : on ne referme la fenetre que sur un statut terminal, succes compris.
+                if (status != PackageInstaller.STATUS_PENDING_USER_ACTION) installSessionId = -1;
             }
         };
         IntentFilter filter = new IntentFilter(INSTALL_ACTION);
