@@ -177,9 +177,18 @@ public class MainActivity extends Activity {
         if ("http".equals(scheme) || "https".equals(scheme)) {
             try {
                 startActivity(new Intent(Intent.ACTION_VIEW, uri));
-                return true;
             } catch (Exception ignored) {
+                // A1 — NE JAMAIS SE REPLIER SUR LA WEBVIEW. Un `return false` rend la main a
+                // la WebView, qui CHARGE alors l'URL externe ; or la WebView porte
+                // `addJavascriptInterface(new WebBridge(), "ArchipelNative")` — la page
+                // distante obtiendrait saveText/update. Le repli contredisait aussi le
+                // commentaire du pont (« les URLs externes ne sont JAMAIS chargées dans la
+                // WebView »). Appareil sans navigateur : on informe et on ne navigue pas.
+                Toast.makeText(MainActivity.this,
+                        "Aucune application ne peut ouvrir ce lien",
+                        Toast.LENGTH_LONG).show();
             }
+            return true;
         }
         return false;
     }
