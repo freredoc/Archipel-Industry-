@@ -10192,8 +10192,63 @@ const SAVE_VERSION = 31;
 // ⚠ HORS PERIMETRE, SIGNALE NON TRAITE : la meme colonne melange les formats (8504,32 · 3,5e5 ·
 // +1 024), ce qui gene le balayage vertical. Cosmetique a cote de la troncature, et toucher
 // `fmtRateSci` elargirait le diff bien au-dela d'un bloc CSS.
-const GAME_BUILD = 432;
-const GAME_VERSION = 'Alpha 19.9';
+// 20.0 — LOT SILENCIEUX. Quatre defaillances qui echouaient SANS BRUIT : une expose le pont
+// natif, trois publient ou tronquent en silence. AUCUNE ligne de jeu ne change — seuls
+// `MainActivity.java` et `android.yml` bougent, le fichier de jeu ne porte que son bump.
+// SAVE_VERSION INCHANGE (31). Les 2 SHA du brief sont CONFORMES avant bump (8c06e9af... /
+// b0afe004...), deltas +711 o et +1 187 o EXACTS -> patches byte-identiques au redacteur.
+// ⚠ LE BUMP EST FONCTIONNEL, PAS CONVENTIONNEL : A1 change le comportement de l'APK. Sans
+// nouveau numero, `version.json` reste identique et l'auto-mise a jour ne proposera JAMAIS
+// l'APK corrige aux editions publique et dev. Les notes restent honnetes : le joueur ne verra
+// rien de neuf a l'ecran, c'est voulu.
+// (1) A1 — `openExternally` REPLIAIT UNE URL EXTERNE DANS LA WEBVIEW. `shouldOverrideUrlLoading`
+// rend la main a la WebView quand il retourne false, et la WebView CHARGE alors l'URL ; or
+// `openExternally` retournait false si `startActivity(ACTION_VIEW)` levait (appareil sans
+// navigateur, navigateur desactive, profil restreint). La page distante se retrouvait dans une
+// WebView qui porte `addJavascriptInterface(new WebBridge(), "ArchipelNative")` et obtenait
+// `saveText` et `update`. Le commentaire du pont affirmait DEJA l'inverse (« les URLs externes
+// ne sont JAMAIS chargees dans la WebView ») : le code contredisait son propre commentaire.
+// Correctif : le `return true` sort du `try` et couvre le `catch` ; on informe par un toast au
+// lieu de naviguer. ⚠ Le `return false` qui subsiste est celui des schemas NON http (le
+// `file://` du jeu lui-meme) -> il reste dans la WebView, comportement inchange.
+// ⚠ URGENCE RELATIVE, mesuree : le paquet soumis au test ferme est le 430, ANTERIEUR au lien
+// Discord. Le facteur aggravant (un lien externe cliquable) n'existe qu'a partir du prochain
+// paquet magasin -> a faire AVANT la prochaine soumission, pas dans l'urgence.
+// (2) M1 — LA RELEASE POUVAIT ETRE DETRUITE ENTRE DEUX MERGES. Le groupe de concurrence par ref
+// empeche une BRANCHE d'annuler `main` (c'est tout ce que raisonnait le commentaire en place),
+// mais DEUX merges rapproches sur `main` partagent le meme groupe : le second annule le premier,
+// possiblement ENTRE le delete et le create de la release. Resultat : `apk-latest` absente et le
+// fichier de version en ligne pointant des 404 jusqu'a la fin du second run. Desormais
+// `cancel-in-progress` est faux sur `main` (les runs y font la queue), vrai sur branche.
+// (3) M2 — UN COMMENTAIRE POUVAIT FAIRE PUBLIER UN MAUVAIS NUMERO, EN SILENCE. Les 11 motifs
+// d'extraction de la CI n'etaient pas ancres et prenaient la PREMIERE occurrence du fichier,
+// commentaires compris — or ce bloc cumulatif grossit a chaque lot. CONTRE-EPREUVE EXECUTEE sur
+// le fichier reel, avec une ligne de commentaire portant un faux numero inseree juste avant la
+// vraie constante : le motif non ancre rend 999, le motif ancre rend 432. Les 11 lignes passent
+// donc en `^const`, et le `\\K` isole de l'etape PWA est normalise sur la forme des 10 autres.
+// C'est la classe de piege deja payee DEUX fois (run 561, lot ICON-1).
+// (4) M4 — LES NOTES DE VERSION ETAIENT TRONQUEES EN SILENCE sur un guillemet droit : la classe
+// `[^"]*` s'arrete au premier, sans erreur. La regle « jamais de guillemet droit » n'etait
+// verifiee par rien. Garde de fermeture ajoutee. ⚠ ELLE EST ENVELOPPEE DANS UN `if` QUI TESTE LA
+// PRESENCE DE LA CONSTANTE, et ce n'est pas de la prudence decorative : une garde
+// inconditionnelle casserait le repli documente sur le sujet de commit pour un fichier de jeu
+// ancien. Contre-epreuve sur 3 fichiers forges : note saine -> passe ; note avec guillemet ->
+// extraction tronquee A « une note avec un » ET garde qui BLOQUE ; constante absente -> garde
+// non applicable, repli intact.
+// **Valide** : T1 (contre-epreuve d'ancrage 999 vs 432) · T2 (les 3 cas de la garde) · T3 (0
+// motif non ancre restant, 11 ancres) · T4 (YAML analysable, concurrence resolue) · T8 (gardes
+// CI rejouees APRES redaction de ces commentaires) · node --check 7/7 sur les 3 variantes CI ·
+// delimiteurs Java equilibres hors chaines et commentaires, `Toast` importe une fois.
+// ⚠ NON COUVERT, ET A NE PAS PORTER AU VERT : T6 et T7 exigent un APPAREIL. T7 est le seul test
+// qui distingue « le lien s'ouvre » (vrai avant comme apres) de « le repli dans la WebView a
+// disparu » : il faut DESACTIVER le navigateur systeme, rouvrir le lien, et constater un toast
+// SANS navigation. Une inspection de code n'est pas une execution.
+// ⚠ HORS PERIMETRE, DELIBEREMENT : M3 (compteurs `grep -c` non ancres) est ecarte parce que sa
+// direction d'echec est l'INVERSE des autres — un motif surveille qui apparait ailleurs fait
+// echouer BRUYAMMENT le build, il ne laisse rien passer. C'est une gene, pas un risque, et ce
+// lot ne traite que le silencieux.
+const GAME_BUILD = 433;
+const GAME_VERSION = 'Alpha 20.0';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -10202,7 +10257,7 @@ const GAME_VERSION = 'Alpha 19.9';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Le tableau du panneau Production redevient lisible sur telephone : le nom de la ressource passe sur sa propre ligne au lieu d etre coupe a deux caracteres.";
+const GAME_NOTES = "Maintenance interne : robustesse de la coquille Android et de la chaine de publication. Aucun changement visible en jeu.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
