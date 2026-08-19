@@ -10247,8 +10247,51 @@ const SAVE_VERSION = 31;
 // direction d'echec est l'INVERSE des autres — un motif surveille qui apparait ailleurs fait
 // echouer BRUYAMMENT le build, il ne laisse rien passer. C'est une gene, pas un risque, et ce
 // lot ne traite que le silencieux.
-const GAME_BUILD = 433;
-const GAME_VERSION = 'Alpha 20.0';
+// 20.1 — LOT PONT. Les deux entrees du pont natif restees ouvertes apres le lot precedent.
+// AUCUNE ligne de jeu ne change (ni JS, ni CSS, ni `SAVE_VERSION`) — seul `MainActivity.java`
+// bouge, +2864 o. Le bump est FONCTIONNEL : sans lui le fichier de version reste identique et
+// l'APK corrige n'est jamais propose a un joueur deja installe.
+// (1) A2 — LE RECEPTEUR D'INSTALLATION ACCEPTAIT LE BROADCAST DE N'IMPORTE QUELLE APP.
+// `RECEIVER_NOT_EXPORTED` n'existe qu'a partir d'API 33 ; en dessous (minSdk 26) un recepteur
+// enregistre dynamiquement est joignable par TOUTE application installee. Or la branche
+// STATUS_PENDING_USER_ACTION fait `startActivity()` sur un `EXTRA_INTENT` FOURNI PAR LE
+// BROADCAST : une app tierce obtenait une REDIRECTION D'INTENT executee sous notre identite.
+// Desormais le recepteur exige l'ID de la session que NOUS avons ouverte (`installSessionId`,
+// pose juste apres `createSession`, remis a -1 sur tout statut TERMINAL) ; hors installation il
+// vaut -1 et tout est ignore. Portee reelle a ne pas surestimer : `registerInstallReceiver()`
+// n'est appele que sous `BuildConfig.SELF_UPDATE` — la variante magasin n'enregistre rien.
+// ⚠ POURQUOI `EXTRA_SESSION_ID` ET PAS UN NONCE ALEATOIRE : un nonce doit survivre au
+// remplissage de l'`IntentSender` par PackageInstaller ; `EXTRA_SESSION_ID` est POSE PAR
+// PackageInstaller lui-meme (contrat documente, present sur les DEUX chemins — confirmation
+// utilisateur et statut final). On ne depend donc d'aucun comportement non verifiable ici.
+// ⚠ RISQUE RESIDUEL ASSUME : un ID de session est un petit entier devinable — l'attaquant doit
+// le deviner ET emettre PENDANT une installation que l'utilisateur a lancee. La surface passe
+// de « permanente et triviale » a « etroite et conditionnelle ».
+// ⚠ `installSessionId` est ECRIT par le thread de telechargement et LU par le thread principal :
+// `volatile` est indispensable pour que l'ecriture soit visible du lecteur.
+// ⚠ LA FENETRE NE SE REFERME PAS SUR STATUS_PENDING_USER_ACTION (il n'est pas terminal : l'ecran
+// de confirmation suit, puis un second broadcast). La refermer la ferait rater.
+// (2) A4 — `saveText` ecrivait le nom propose SANS assainissement. Sur API < 29 la branche
+// fichier fait `new File(dir, name)` : un `../` s'en echappait. ⚠ REQUALIFICATION HONNETE : ce
+// n'est PLUS une vulnerabilite ATTEIGNABLE — le jeu ne produit que des noms surs, et depuis A1
+// aucune page externe ne peut plus etre chargee dans la WebView pour appeler le pont. Le
+// correctif tient a la STRUCTURE, pas a la menace : un pont est une frontiere de confiance, et
+// une frontiere qui delegue sa validation a l'appelant n'en est pas une. Comportement observable
+// INCHANGE (verifie : les 4 noms reellement produits par le jeu ressortent identiques).
+// **Valide** : T1 (javac calibre : 100 erreurs de part et d'autre, 14 familles IDENTIQUES,
+// 0 erreur de syntaxe ; le fichier sabote d'une accolade sort bien `illegal start of
+// expression`) · T2 (assainisseur copie VERBATIM et execute seul : 18/18) · T3 (5 occurrences
+// d'`installSessionId`) · T4 (les 3 paquets compiles par la CI, etapes a effet de bord sautees)
+// · T5 (gardes CI rejouees APRES redaction de ces commentaires) · node --check 7/7 sur les
+// 3 variantes CI · SHA du patcher conforme au brief, delta +2864 o EXACT.
+// ⚠ NON COUVERT, A NE PAS PORTER AU VERT : T6 (mise a jour in-app complete sur appareil) et
+// T7 (broadcast forge hors installation). T6 EST LE TEST QUI COMPTE — une garde qui rejetterait
+// nos PROPRES broadcasts rendrait l'auto-mise a jour MUETTE, exactement la classe de defaillance
+// que le lot precedent vient de fermer. S'y ajoute le T7 du lot 20.0, toujours du.
+// ⚠ HORS PERIMETRE : A3 (`update(url)` sans liste d'hotes autorises) demande une decision
+// produit, pas un correctif mecanique.
+const GAME_BUILD = 434;
+const GAME_VERSION = 'Alpha 20.1';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -10257,7 +10300,7 @@ const GAME_VERSION = 'Alpha 20.0';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Maintenance interne : robustesse de la coquille Android et de la chaine de publication. Aucun changement visible en jeu.";
+const GAME_NOTES = "Maintenance interne : durcissement du pont natif Android (recepteur d installation et nom de fichier exporte). Aucun changement visible en jeu.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
