@@ -38,7 +38,12 @@ concurrency:
   # `gh release create` de l'étape Publish, ce qui DÉTRUIRAIT la release. Chaque ref a donc sa
   # file : une branche ne peut plus interrompre main.
   group: android-apk-${{ github.ref }}
-  cancel-in-progress: true
+  # M1 — Le groupe par ref empeche une BRANCHE d'annuler `main`, mais DEUX merges
+  # rapproches sur `main` partagent le meme groupe : le second annulerait le premier,
+  # possiblement ENTRE `gh release delete` et `gh release create` de l'etape Publish
+  # — release `apk-latest` absente et `version.json` en ligne pointant des 404 jusqu'a
+  # la fin du second run. Sur `main` on ne coupe donc jamais : les runs font la queue.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   build:
@@ -128,8 +133,8 @@ jobs:
         working-directory: android
         run: |
           chmod +x ./gradlew
-          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
-          VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
+          BUILD=$(grep -oP "^const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
+          VERSION=$(grep -oP "^const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
           echo "versionCode=$BUILD versionName=$VERSION"
           cp ../game-public.html app/src/main/assets/index.html
           # ⚠ ASSERTION BLOQUANTE, symétrique de celle de la PWA : on vérifie l'édition SUR
@@ -146,8 +151,8 @@ jobs:
       - name: Build DEV APK (Archipel Ind. Dev)
         working-directory: android
         run: |
-          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
-          VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
+          BUILD=$(grep -oP "^const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
+          VERSION=$(grep -oP "^const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
           cp ../game-dev.html app/src/main/assets/index.html
           # Assertion miroir de celle de la publique : l'asset embarqué doit être l'édition DEV
           # (attrape une inversion de `cp` entre les deux builds).
@@ -172,8 +177,8 @@ jobs:
       - name: Build STORE bundle + APK de contrôle (Play)
         working-directory: android
         run: |
-          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
-          VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
+          BUILD=$(grep -oP "^const GAME_BUILD = \K[0-9]+" ../Archipel_industry_alpha-7.html | head -1)
+          VERSION=$(grep -oP "^const GAME_VERSION = '\K[^']+" ../Archipel_industry_alpha-7.html | head -1)
           cp ../game-store.html app/src/main/assets/index.html
           # ⚠ ASSERTIONS BLOQUANTES sur l'asset RÉELLEMENT embarqué, symétriques de celles de la
           # publique et de la dev : c'est le seul contrôle qui attrape une inversion de `cp`.
@@ -214,7 +219,7 @@ jobs:
           AAPT=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1)
           [ -n "$AAPT" ] || { echo "::error::aapt2 introuvable"; exit 1; }
           BADGE=$("$AAPT" dump badging ArchipelIndustryStore.apk)
-          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" Archipel_industry_alpha-7.html | head -1)
+          BUILD=$(grep -oP "^const GAME_BUILD = \K[0-9]+" Archipel_industry_alpha-7.html | head -1)
           # Trace intégrale de l'en-tête : c'est elle qui a montré qu'aapt2 36 n'émet plus la
           # ligne `sdkVersion:` sous ce nom. On garde le dump, il sert au prochain qui doute.
           echo "$BADGE" | head -12
@@ -307,7 +312,7 @@ jobs:
 
       - name: Sync PWA (index.html + sw.js cache)
         run: |
-          BUILD=$(grep -oP "const GAME_BUILD = \\K[0-9]+" Archipel_industry_alpha-7.html | head -1)
+          BUILD=$(grep -oP "^const GAME_BUILD = \K[0-9]+" Archipel_industry_alpha-7.html | head -1)
           # ⚠ La garde plus bas compare le sed à la MÊME variable : elle ne peut donc PAS
           # rattraper un BUILD faux. On valide donc la VALEUR ici — un entier non nul —, sinon
           # le cache du service worker partirait en `archipel-0` et ne se rafraîchirait jamais.
@@ -366,15 +371,23 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          BUILD=$(grep -oP "const GAME_BUILD = \K[0-9]+" Archipel_industry_alpha-7.html | head -1)
-          VERSION=$(grep -oP "const GAME_VERSION = '\K[^']+" Archipel_industry_alpha-7.html | head -1)
+          BUILD=$(grep -oP "^const GAME_BUILD = \K[0-9]+" Archipel_industry_alpha-7.html | head -1)
+          VERSION=$(grep -oP "^const GAME_VERSION = '\K[^']+" Archipel_industry_alpha-7.html | head -1)
           # 14.44 — Les notes viennent de GAME_NOTES, DANS le fichier de jeu, à côté de
           # l'étiquette qu'elles décrivent. Avant, c'était le sujet du dernier commit : après
           # une fusion de PR le joueur lisait « Merge pull request #NNN from … » sous
           # « Mise à jour disponible ». Repli sur le sujet de commit si la constante manque
           # (ancien fichier de jeu) ou est vide, pour ne jamais casser la publication.
-          NOTES=$(grep -oP "const GAME_NOTES = \"\K[^\"]*" Archipel_industry_alpha-7.html | head -1)
+          NOTES=$(grep -oP "^const GAME_NOTES = \"\K[^\"]*" Archipel_industry_alpha-7.html | head -1)
           NOTES="${NOTES:-$(git log -1 --pretty=%s)}"
+          # M4 — `[^"]*` s'arrete au premier guillemet droit SANS erreur : une note en
+          # contenant un serait publiee tronquee, en silence. La garde ne mord QUE si la
+          # constante existe : absente, le repli sur le sujet de commit ci-dessus reste
+          # la voie normale (fichier de jeu ancien) et ne doit pas casser la publication.
+          if grep -qP '^const GAME_NOTES = ' Archipel_industry_alpha-7.html; then
+            grep -qP '^const GAME_NOTES = "[^"]*";$' Archipel_industry_alpha-7.html \
+              || { echo "::error::GAME_NOTES ne se termine pas par \";\" sur sa ligne — guillemet droit dans le texte ? Les notes seraient tronquees en silence."; exit 1; }
+          fi
           echo "Notes: $NOTES"
           echo "Game build=$BUILD version=$VERSION"
           # `apk` = édition PUBLIQUE (canal par défaut, lu par tout build DEV_BUILD=false) ;
