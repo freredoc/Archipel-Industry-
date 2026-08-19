@@ -1,8 +1,8 @@
 {
-  "build": 433,
-  "version": "Alpha 20.0",
+  "build": 434,
+  "version": "Alpha 20.1",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Maintenance interne : robustesse de la coquille Android et de la chaine de publication. Aucun changement visible en jeu."
+  "notes": "Maintenance interne : durcissement du pont natif Android (recepteur d installation et nom de fichier exporte). Aucun changement visible en jeu."
 }
