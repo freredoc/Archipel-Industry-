@@ -251,6 +251,42 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .prod-row .pc-n{text-align:right;}
 .prod-row .pc-n.ok{color:#7fd98a;}.prod-row .pc-n.bad{color:#ff8079;}
 .prod-empty{color:var(--ink-dim);font-style:italic;font-size:.78rem;padding:8px 0;}
+/* Lot TABLE-PROD — tableau Production en colonne etroite (telephone portrait).
+   MESURE (viewport 360 px CSS, DPR 3, --ui-scale 1, panneau ouvert, getBoundingClientRect) :
+   .prod-row = 298,39 px ; les colonnes resolues valent 18,39 / 88 / 88 / 92 px + 3 gouttieres
+   de 4 px. Le nom ne recoit donc que 18,39 px, dont 16 pris par l'icone (flex:0 0 auto) : le
+   libelle tombe a ~2 caracteres et « li » designe indifferemment lingot fer, lingot cuivre ou
+   lingot or. Mesures des extremes dans la meme police : `mot.quantique` = 126,75 px, le nombre
+   le plus large `-5114,88` = 78 px, l'intitule `CONSO /S` = 68 px.
+   POURQUOI PAS UN SIMPLE ELARGISSEMENT : une ligne unique lisible demande
+   126,75 (libelle) + 22 (icone+gouttiere) + 3x80 (nombres) + 12 (gouttieres) = 400,75 px de
+   ligne, soit un viewport de 400,75 + 24 (padding body) + 16 (bordure) = 440,75 px, ~459 px
+   avec le 96vw du panneau. EN DESSOUS LA LIGNE UNIQUE EST ARITHMETIQUEMENT IMPOSSIBLE :
+   elargir le nom ne ferait que deplacer la troncature sur les nombres.
+   On passe donc le nom sur SA PROPRE ligne (298 px : le plus long libelle tient avec 149 px
+   de marge) et les trois nombres en dessous a 1fr = 96,80 px chacun (mesure ; le brief annonce 96,8 au
+   §3, le 93,46 de ce commentaire etait une coquille), soit PLUS que les
+   88/92 px actuels : aucune troncature de nombre n'est introduite.
+   COUT ASSUME : la ligne passe de 1 a 2 lignes de texte. `.prod-body` a deja overflow-y:auto
+   et `.prod-panel` un max-height:84vh — le tableau defile, rien ne deborde.
+   SEUIL 520 px, CALCULE ET VERIFIE AU BANC (pas arrondi a vue) : la ligne vaut 0,96*V - 40
+   (96vw du panneau, -16 de bordure, -24 de padding body). Pour que le texte du nom loge le plus
+   long libelle il faut colonne-nom >= 126,75 + 22 = 148,75, donc ligne >= 428,75, donc V >= 489
+   (497 mesure au banc, ou une barre de defilement classique retire ~8,6 px de plus). 520 laisse
+   ~23 px de marge sur cette borne au lieu de 3,6 px a 501 — la marge absorbe la variance de
+   barre de defilement entre WebView mobile (overlay, 0 px) et navigateur de bureau.
+   PLACE ICI, juste apres les regles de base du panneau, et NON en fin de feuille : les blocs
+   Lot B / Lot C de fin de feuille arbitrent par l'ORDRE a specificite egale, toute addition
+   apres eux les neutraliserait. Aucune autre regle du fichier ne cible .prod-row. */
+@media (max-width:520px){
+  .prod-row{grid-template-columns:1fr 1fr 1fr;
+    grid-template-areas:"res res res" "prd cns net";
+    row-gap:1px;padding:5px 0;}
+  .prod-row .pc-res{grid-area:res;}
+  .prod-row .pc-p{grid-area:prd;}
+  .prod-row .pc-c{grid-area:cns;}
+  .prod-row .pc-n{grid-area:net;}
+}
 /* Sprite Réparer (déblocage île suivante) à gauche d'INVENTAIRE : icône SEULE, affichée en
    permanence dès qu'une île suivante existe. Atténuée tant que la recherche d'accès n'est pas
    atteinte (locked) ; pastille de notification (notif-dot) quand la réparation devient possible. */
@@ -10108,8 +10144,56 @@ const SAVE_VERSION = 31;
 // http/https vers ACTION_VIEW, mais le lien de soutien est aujourd'hui le SEUL lien externe du
 // jeu ET il est vide en variante magasin -> ce chemin n'a peut-etre jamais ete emprunte en vrai.
 // A taper une fois dans l'APK dev.
-const GAME_BUILD = 431;
-const GAME_VERSION = 'Alpha 19.8';
+// 19.9 — LOT TABLE-PROD. Le tableau du panneau Production redevient lisible en portrait
+// telephone : sous 520 px le NOM passe sur SA PROPRE LIGNE et les 3 nombres se placent en
+// dessous a 1fr. CSS SEUL (un bloc @media de 6 accolades), aucun JS, aucun champ de partie,
+// SAVE_VERSION INCHANGE (31). Ancre unique `.prod-empty` a count == 1, delta +2 604 o EXACT.
+// ⚠ CAS RARE : le SHA du fichier ET celui du bloc <style> annonces par le brief sont CONFORMES
+// avant bump (311e4035... / 683c103b...) -> le patch applique est byte-identique a celui du
+// redacteur. Ils divergent APRES bump, c'est attendu (les constantes de version vivent ici).
+// (1) LE DEFAUT EST ARITHMETIQUE, PAS COSMETIQUE. `.prod-row` posait 3 colonnes chiffrees en px
+// FIXES (88/88/92) face a un nom en minmax(0,1fr) : le nom absorbe SEUL toute la penurie. Mesure
+// a 360 px (banc, panneau reellement ouvert) : colonne nom = 18,39 px, dont 16 pris par l'icone
+// -> le libelle tombe a ~2 caracteres et « li » designe indifferemment ling.fer, ling.cuivre ou
+// ling.or. CONTRE-EPREUVE sur la base : les 5 libelles sont TRONQUES (`mot.quantique` = 149 px
+// de contenu pour 18 px visibles) ; apres patch, 0 troncature aux 3 largeurs testees.
+// ⚠ ELARGIR LA COLONNE NE PEUT PAS MARCHER, ET C'EST DEMONTRE : une ligne unique lisible demande
+// 126,75 (plus long libelle) + 22 (icone + gouttiere) + 3x80 + 12 = 400,75 px de ligne, soit un
+// viewport >= 489 px. En dessous, elargir le nom ne fait que DEPLACER la troncature sur les
+// nombres. Les 360 px du telephone sont hors d'atteinte par construction, pas par reglage.
+// (2) SEUIL 520 px, CALCULE PUIS MESURE, jamais arrondi a vue. La ligne vaut 0,96*V - 40
+// (96vw du panneau, -16 de bordure, -24 de padding). Un premier jet du brief le placait a
+// 430 px : mesure, il laissait ~6 caracteres a 431 px, soit le bug d'origine simplement
+// DEPLACE. C'est le test T3 (a 521 px : place texte = 147,73 px >= 126,75) qui garde ce point.
+// ⚠ MARGE ASSUMEE : entre ~489 et 520 px la ligne unique tiendrait encore (mesure sur la base a
+// 520 px : 168,8 px de colonne nom, 0 troncature). Les deux lignes y sont donc un faux positif
+// VOULU — la marge absorbe la barre de defilement classique (~8,6 px) d'un navigateur de bureau,
+// absente du banc headless ou elle est en surimpression. NE PAS abaisser ce seuil sans
+// re-mesurer AVEC une barre de defilement classique.
+// (3) ⚠ PLACE JUSTE APRES `.prod-empty`, ET NON EN FIN DE FEUILLE : les blocs Lot B et Lot C de
+// fin de feuille arbitrent par l'ORDRE a specificite egale, toute addition apres eux les
+// neutraliserait EN SILENCE. Verifie : aucune autre regle du fichier ne cible `.prod-row`.
+// ⚠ `grid-area` n'agit que sur les enfants DIRECTS d'une grille : verifie au JSX AVANT
+// d'appliquer, les 4 cellules (`resCell` + 3 span) sont bien enfants directs de `.prod-row` —
+// sinon le bloc entier aurait ete inerte sans la moindre erreur.
+// COUT ASSUME : la ligne passe de 23 a 38 px (donnees) et de 16 a 30 px (en-tete). `.prod-body`
+// a deja overflow-y:auto et `.prod-panel` un max-height:84vh -> le tableau defile, rien ne
+// deborde ; c'est reversible en retirant le bloc.
+// **Valide** : T1 a 360 px (nom 298,39 px ; nombres 96,80 px, soit PLUS que les 88/92 px
+// d'avant — aucune troncature de nombre n'est introduite) · T2 a 520 px (encore deux lignes,
+// le seuil mord ou il est declare) · T3 a 521 px et T4 a 800 px STRICTEMENT IDENTIQUES a la
+// base (169,73/88/88/92 et 240/88/88/92, hauteur 16 px) · T5 0 pageerror sur les 4 viewports ·
+// 0 troncature sur 5 libelles forges, dont le plus long, aux 3 largeurs.
+// ⚠ PIEGE DE BANC : mesurer la largeur d'un libelle via `.prod-row .pc-res` vise l'EN-TETE
+// (.68rem) et rend 110,5 px au lieu des 126,75 px des lignes de donnees (.78rem) — le rapport
+// vaut exactement 0,78/0,68. Mesurer dans la police d'une VRAIE ligne. Et forger les lignes en
+// reassignant `islandFlowAgg` sur `window` (declaration de fonction d'un script classique) :
+// ecrire dans `game.netFlow` serait ecrase au tick suivant.
+// ⚠ HORS PERIMETRE, SIGNALE NON TRAITE : la meme colonne melange les formats (8504,32 · 3,5e5 ·
+// +1 024), ce qui gene le balayage vertical. Cosmetique a cote de la troncature, et toucher
+// `fmtRateSci` elargirait le diff bien au-dela d'un bloc CSS.
+const GAME_BUILD = 432;
+const GAME_VERSION = 'Alpha 19.9';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -10118,7 +10202,7 @@ const GAME_VERSION = 'Alpha 19.8';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Un lien vers le serveur Discord du jeu apparait dans les Options : bugs, suggestions et suivi du developpement.";
+const GAME_NOTES = "Le tableau du panneau Production redevient lisible sur telephone : le nom de la ressource passe sur sa propre ligne au lieu d etre coupe a deux caracteres.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
