@@ -13,6 +13,9 @@
 #     Archipel_industry_alpha-7.html  (source = édition PUBLIQUE)
 #        ├─→ game-public.html  → ArchipelIndustry.apk    (édition publique)
 #        │                     → index.html (PWA publique — assertion CI BLOQUANTE)
+#        │                     → game-store.html → .aab fr.archipel.industry.store
+#        │                        (variante MAGASIN depuis le build 425 : SELF_UPDATE = false,
+#        │                         pas de lien de soutien, 0 permission)
 #        └─→ game-dev.html     → ArchipelIndustryDev.apk (édition dev, DEV_BUILD = true)
 #
 #  `exclude` n'agit QUE sur la publication Pages, jamais sur Git.
@@ -33,6 +36,11 @@ exclude:
   - game-public.html
   - game-dev.html
   - game-tester.html
+  # `game-store.html` est produit A LA RACINE par l'etape magasin (`cp game-public.html
+  # game-store.html`) et manquait a cette liste : un run qui la laisse trainer la servirait
+  # comme seconde copie du jeu. Pas dangereuse (DEV_BUILD = false), mais elle divergerait
+  # d'`index.html` au fil des builds, ce qui est exactement le but de ce fichier d'empecher.
+  - game-store.html
 
   # Coquille Android et outillage : sans objet sur le web.
   - android/
