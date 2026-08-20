@@ -1732,38 +1732,12 @@ setTimeout(function(){var s=document.getElementById('splash');if(s&&!window.__sp
   // ── Police désormais EMBARQUÉE en @font-face base64 → aucune dépendance réseau. ──
   var FONTS_CSS  = '';
 
-  // ── Génère une icône PWA (motif île + usine) sans fichier externe ──
-  function makeIcon(size){
-    var c = document.createElement('canvas'); c.width = c.height = size;
-    var x = c.getContext('2d'); var u = size/16; // unité de grille
-    x.fillStyle = '#0d0d1a'; x.fillRect(0,0,size,size);
-    x.fillStyle = '#3A6A5A'; x.fillRect(2*u,3*u,12*u,10*u);        // côte
-    x.fillStyle = '#4A7A3A'; x.fillRect(3*u,4*u,10*u,8*u);         // terre
-    x.fillStyle = '#7A6040'; x.fillRect(5*u,5*u,3*u,3*u);          // gisement
-    x.fillStyle = '#f0d060';                                       // « usine »
-    x.fillRect(9*u,7*u,4*u,5*u); x.fillRect(8*u,9*u,2*u,3*u);
-    x.fillStyle = '#FF5722'; x.fillRect(10*u,5*u,1.4*u,2.4*u);     // cheminée
-    return c.toDataURL('image/png');
-  }
-
-  // ── Manifest minimal injecté via blob URL (supporté par les navigateurs) ──
-  try{
-    var icon192 = makeIcon(192), icon512 = makeIcon(512);
-    var manifest = {
-      name:'Archipel Industry', short_name:'Archipel', start_url:'.',
-      display:'standalone', orientation:'any',
-      background_color:'#0d0d1a', theme_color:'#0d0d1a',
-      icons:[
-        { src:icon192, sizes:'192x192', type:'image/png' },
-        { src:icon512, sizes:'512x512', type:'image/png' }
-      ]
-    };
-    var mBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
-    var link = document.createElement('link');
-    link.rel = 'manifest'; link.href = URL.createObjectURL(mBlob);
-    if (!document.querySelector('link[rel="manifest"]')) document.head.appendChild(link);
-  }catch(e){ /* manifest non critique pour le fonctionnement du jeu */ }
-
+  // ── 20.x — LOT MENAGE : le generateur d'icones canvas `makeIcon` et l'injection du manifeste
+  //    blob ont ete RETIRES ici. Le manifeste est un fichier statique (`<link rel="manifest">`
+  //    l. 7, `manifest.json` a la racine) et les icones sont des PNG derives de l'art Android
+  //    depuis le lot ICON-1. L'injection blob etait gardee par `if (!document.querySelector(
+  //    'link[rel="manifest"]'))`, garde TOUJOURS fausse — mais `makeIcon(192)` et `makeIcon(512)`
+  //    etaient appelees AVANT cette garde, donc executees a CHAQUE boot pour un resultat jete. ──
   // ── Service Worker inline (cache shell pour le mode hors ligne) ──
   // IMPORTANT / LIMITATION CONNUE :
   //   Chrome et Firefox REFUSENT d'enregistrer un Service Worker dont le
@@ -5017,37 +4991,6 @@ function cargoSprite() {
     alt: "",
     draggable: false
   }) : "🚢";
-}
-// 14.42 — Sprite TEINTÉ, avec cache. Le conduit V4 (illimité) n'a pas d'art « chauffe » dédié
-// (48 masques × 3 paliers = hors de question) : on teinte le sprite de base en 'source-atop'
-// dans un canvas hors écran, ce qui ne colore QUE les pixels du sprite (jamais la tuile en
-// dessous, contrairement à un fillRect direct sur le contexte principal).
-// Cache borné : une entrée par (clé de sprite, couleur, alpha) — l'appelant n'utilise que
-// 3 paliers, donc au pire 3 canvas par masque réellement affiché.
-const _tintCache = {};
-function drawSpriteTinted(ctx, fileKey, x, y, w, h, rgb, alpha) {
-  if (!SPRITES_ENABLED || !fileKey) return false;
-  const img = spriteImg(fileKey);            // spriteImg garantit déjà une image dessinable
-  if (!img || !img.width) return false;
-  const ck = fileKey + '|' + rgb + '|' + alpha;
-  let cv = _tintCache[ck];
-  if (!cv) {
-    cv = document.createElement('canvas');
-    cv.width = img.width;
-    cv.height = img.height;
-    const c2 = cv.getContext('2d');
-    if (!c2) return false;
-    c2.imageSmoothingEnabled = false;
-    c2.drawImage(img, 0, 0);
-    c2.globalCompositeOperation = 'source-atop';
-    c2.globalAlpha = alpha;
-    c2.fillStyle = rgb;
-    c2.fillRect(0, 0, cv.width, cv.height);
-    _tintCache[ck] = cv;
-  }
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(cv, x, y, w, h);
-  return true;
 }
 // 14.42 — Rampe de teinte du conduit ILLIMITÉ : ambre → orange → rouge. Volontairement
 // DIFFÉRENTE de l'art « chauffe » des V1-V3 (cuivre → rouge vif) : le signal ne dit pas
@@ -9972,11 +9915,14 @@ const SAVE_VERSION = 31;
 // squircle, la zone sure est le disque central de 66 % du cote (rayon 169 px sur 512) ; l'ile de
 // l'art d'origine atteint un rayon de 200 px et son centre est decale — d'ou un recentrage puis une
 // reduction. Mesure de controle apres generation : rayon max 149 px, sous la limite de 169.
-// ⚠ `makeIcon` RESTE EN PLACE, et c'est du CODE MORT : `index.html` porte deja
-// `<link rel="manifest">` (l. 7), or l'injection du manifeste blob est gardee par
-// `if (!document.querySelector('link[rel="manifest"]'))` — garde TOUJOURS fausse, y compris dans
-// l'APK. Ni `makeIcon` ni le manifeste blob ne s'executent jamais. A retirer dans un lot dedie :
-// sans quoi le prochain qui regenere des icones repartira de ce generateur.
+// ⚠ `makeIcon` A ETE RETIRE au lot MENAGE (voir la ligne 20.x plus bas). Le paragraphe ci-dessus
+// disait « ni `makeIcon` ni le manifeste blob ne s'executent jamais » : c'etait FAUX A MOITIE, et
+// c'est la raison d'etre du lot. Seul l'`appendChild` etait garde par
+// `if (!document.querySelector('link[rel=\"manifest\"]'))` — garde toujours fausse puisque
+// `index.html` porte le lien en dur l. 7. Mais `makeIcon(192)` et `makeIcon(512)` etaient appelees
+// AVANT la garde, sans condition : deux canvas dessines et convertis en data-URL a chaque
+// demarrage, pour un objet aussitot jete. Constater qu'un effet ne se produit pas ne dit pas que
+// le code qui y mene ne tourne pas.
 // `SAVE_VERSION` INCHANGE (31).
 // 19.6 — LOT CHROME : la barre d'inventaire ne quitte plus le flux, et la carte remplit la
 // largeur tant que l'ile 6 n'est pas visible. Aucun champ de partie touche.
@@ -10315,8 +10261,42 @@ const SAVE_VERSION = 31;
 // le jeu a quatre langues — un joueur allemand lit un groupement francais. Incoherence
 // PREEXISTANTE et bien plus large que ce lot (elle toucherait tous les nombres du jeu, et
 // demande de trancher si la locale suit l'i18n ou reste figee).
-const GAME_BUILD = 435;
-const GAME_VERSION = 'Alpha 20.2';
+// 20.3 — LOT MENAGE, deux volets. VOLET JEU : retrait de code mort, AUCUNE ligne de CSS ni de
+// Java touchee, `SAVE_VERSION` inchange. Delta du seul patch : **−5 211 o**.
+// (1) ⚠ J1 — `makeIcon` N'ETAIT PAS DU CODE MORT, IL TOURNAIT A CHAQUE DEMARRAGE, et c'est
+// TOUTE la raison d'etre du lot. Le commentaire du lot ICON-1 affirmait « ni `makeIcon` ni le
+// manifeste blob ne s'executent jamais » : FAUX A MOITIE. Seul l'`appendChild` etait garde par
+// `if (!document.querySelector('link[rel=\"manifest\"]'))` — garde effectivement toujours fausse.
+// Mais `makeIcon(192)` et `makeIcon(512)` etaient appelees AVANT la garde, SANS condition : deux
+// canvas dessines, deux encodages PNG en data-URL, un Blob de manifeste et une
+// `createObjectURL` JAMAIS revoquee, a chaque boot, pour un objet aussitot jete.
+// ⚠ MESURE, PAS DEDUCTION : `toDataURL` et `createObjectURL` instrumentes AVANT navigation →
+// base **2 appels** (`192x192`, `512x512`) + **1 blob** ; apres **0** et **0**.
+// ⚠ LECON A RETENIR : constater qu'un EFFET ne se produit pas ne dit pas que le CODE qui y mene
+// ne tourne pas. Troisieme commentaire menteur trouve en deux jours, apres `openExternally`
+// (20.1) et `fmtRate` (20.2) — le commentaire d'ICON-1 est RECTIFIE, pas efface.
+// (2) J2 — quatre fonctions SANS AUCUN APPELANT retirees avec le commentaire qui les decrit :
+// `drawSpriteTinted` (+ son cache `_tintCache`, lu par elle seule), `portPipePools`, `loadCargo`
+// (mort depuis le transit continu du 14.48), `islandTransitDir` (mort depuis le 11.29).
+// ⚠ CONTROLE DE DISPARITION SUBTIL : viser `"makeIcon"` tout court serait FAUX — le commentaire
+// rectifie le NOMME a dessein. On vise des motifs de DECLARATION et d'APPEL.
+// VOLET DEPOT, sans effet sur le jeu : `game-store.html` ajoute a l'exclusion Pages (il est
+// produit a la racine par la CI depuis le build 425 et serait servi comme 2e copie du jeu) ;
+// `android/README.md` etait faux sur TOUS ses chiffres (SDK 34 vs 36, AGP 8.5.2 vs 8.13.0,
+// 1 paquet vs 3, permissions) ; `.gitignore` racine cree.
+// ⚠ `node_modules/` y figure mais RESTE SUIVI : `.gitignore` n'agit pas sur un fichier deja
+// indexe. Le desindexer (171 fichiers, 18 Mo) est une decision d'Ethan, pas un effet de bord.
+// **Valide** : T1 `node --check` 7/7 sur les 3 variantes CI et accolades 961/961 · T2 BOOT REEL
+// en HTTP compare AVANT/APRES (8 enfants de body, canvas 1080x1464, HUD, barre d'outils, 1 lien
+// de manifeste vers le fichier statique, 0 pageerror — identiques) · T3 la contre-epreuve
+// ci-dessus · T4 les 7 motifs a 0 · T5 **le bloc 5 est INCHANGE au SHA** (le patch n'a pas
+// deborde) · T6/T7/T8 volet depot, dont la verification qu'AUCUN motif du `.gitignore` ne couvre
+// un fichier lu par la CI.
+// ⚠ RESTE DU, NON REMPLACE PAR CE LOT : les trois tests appareil (T7 du lot 20.0, T6 et T7 du
+// lot 20.1). Et A3 (liste d'hotes autorises) / A5 (APK en assembleDebug) sont des arbitrages
+// produit, pas des correctifs mecaniques.
+const GAME_BUILD = 436;
+const GAME_VERSION = 'Alpha 20.3';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -10325,7 +10305,7 @@ const GAME_VERSION = 'Alpha 20.2';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Panneau Production : les debits non entiers affichent enfin le separateur de milliers, comme les autres nombres de la meme colonne.";
+const GAME_NOTES = "Maintenance interne : retrait de code mort (un generateur d icones inutilise tournait a chaque demarrage). Aucun changement visible en jeu.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -18839,15 +18819,6 @@ const portSpeedMult = level => Math.pow(2, level || 0);
 const TRADE_LIQUIDS = ['petrole', 'acide', 'diesel', 'gaz_fossiles', 'helium4', 'methane'];
 const TRADE_RESOURCES = Object.keys(CARRIER_BY_RES).filter(r => CARRIER_BY_RES[r] === 'road' || TRADE_LIQUIDS.includes(r));
 const TRADE_RESOURCE_SET = new Set(TRADE_RESOURCES);
-function portPipePools(game, islandId) {
-  const nets = game.networks[islandId] || {};
-  const pools = [];
-  for (const nid in nets) {
-    const n = nets[nid];
-    if (n.type === 'pipe' && n.connected) pools.push(n.pool);
-  }
-  return pools;
-}
 // Les liquides tuyau reliés au port sont désormais stockés au PORT (comme une route, drainés
 // du pool chaque tick) → le commerce/transit lit directement le port pour TOUTES les ressources.
 function tradeAvail(game, islandId, res) {
@@ -19004,61 +18975,6 @@ function shippableQty(game, srcIsland, destIsland, res) {
   if (fwd <= 0) return 0;
   if (rawShippable(game, destIsland, srcIsland, res) > 0) return 0;
   return fwd;
-}
-function loadCargo(game, ship, srcIsland, destIsland) {
-  // L'interdiction d'export par ressource/destination est appliquée dans shippableQty.
-  const ps = game.portSpeed || {};
-  const lvl = Math.max(ps[srcIsland] || 0, ps[destIsland] || 0);
-  let room = shipBatchBase() * portSpeedMult(lvl);
-  for (const k in ship.cargo) room -= ship.cargo[k];
-  if (room <= 0) return;
-  const order = tradePriorityFor(game, srcIsland);
-  const got = {};
-  const draw = (res, qty) => {
-    if (qty <= 0) return;
-    const drawn = tradeDraw(game, srcIsland, res, qty);
-    if (drawn <= 0) return;
-    ship.cargo[res] = (ship.cargo[res] || 0) + drawn;
-    got[res] = (got[res] || 0) + drawn;
-    room -= drawn;
-  };
-  if (tradeModeFor(game, srcIsland) === 'proportional') {
-    // Mode proportionnel : la cale est répartie au prorata de la demande de chaque
-    // ressource (l'ordre ne sert qu'à départager les arrondis/restes).
-    const want = {};
-    let total = 0;
-    for (const res of order) {
-      const q = shippableQty(game, srcIsland, destIsland, res);
-      if (q > 0) {
-        want[res] = q;
-        total += q;
-      }
-    }
-    if (total <= 0) return;
-    if (total <= room) {
-      for (const res of order) if (want[res]) draw(res, want[res]);
-      return;
-    }
-    const scale = room / total;
-    for (const res of order) {
-      if (room <= 0) break;
-      if (!want[res]) continue;
-      draw(res, Math.min(want[res], Math.floor(want[res] * scale)));
-    }
-    // Restes (arrondis) distribués par ordre de priorité jusqu'à remplir la cale.
-    for (const res of order) {
-      if (room <= 0) break;
-      if (!want[res]) continue;
-      draw(res, Math.min(want[res] - (got[res] || 0), Math.floor(room)));
-    }
-    return;
-  }
-  // Mode priorité (défaut) : on remplit la cale de la ressource la plus prioritaire
-  // à la moins prioritaire.
-  for (const res of order) {
-    if (room <= 0) break;
-    draw(res, Math.min(shippableQty(game, srcIsland, destIsland, res), Math.floor(room)));
-  }
 }
 // Débit /s pour un NIVEAU de port donné : entier dès 1 u/s (comportement historique),
 // FRACTIONNAIRE en dessous — en Difficile le lot de base ÷10 (13.72) donne 0,1 u/s au
@@ -19868,23 +19784,6 @@ function activeHeatAlerts(game) {
   const sev = a => a.kind === 'damaged' ? 3 : a.kind === 'elevator' ? 2 : a.kind === 'conduit' ? 1 : 0;
   out.sort((a, b) => sev(b) - sev(a) || (b.frac || 0) - (a.frac || 0) || a.isl - b.isl);
   return out;
-}
-// Direction de transit par ressource pour une île : 'export' (flux net sortant) ou 'import'
-// (flux net entrant), d'après game.transitFlow. Sert à colorer l'inventaire ET le Port
-// (orange = on exporte, bleu = on importe).
-function islandTransitDir(game, isl) {
-  const tf = game && game.transitFlow || {};
-  const net = {};
-  for (const key in tf) {
-    const parts = key.split('_');
-    const a = +parts[0],
-      b = +parts[1];
-    const rec = tf[key] || {};
-    if (a === isl) for (const r in rec) net[r] = (net[r] || 0) + rec[r];else if (b === isl) for (const r in rec) net[r] = (net[r] || 0) - rec[r];
-  }
-  const dir = {};
-  for (const r in net) dir[r] = net[r] > 1e-6 ? 'export' : net[r] < -1e-6 ? 'import' : null;
-  return dir;
 }
 // Panneau récapitulatif des alertes (électriques + stock, toutes îles). Clic sur une ligne →
 // va à l'île + ouvre le panneau Énergie (déficit) ou Port (stock).
