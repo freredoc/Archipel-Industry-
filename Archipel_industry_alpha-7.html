@@ -10290,8 +10290,33 @@ const SAVE_VERSION = 31;
 // que le lot precedent vient de fermer. S'y ajoute le T7 du lot 20.0, toujours du.
 // ⚠ HORS PERIMETRE : A3 (`update(url)` sans liste d'hotes autorises) demande une decision
 // produit, pas un correctif mecanique.
-const GAME_BUILD = 434;
-const GAME_VERSION = 'Alpha 20.1';
+// 20.2 — LOT DEBITS. Le panneau Production ecrivait deux grandeurs voisines de deux facons
+// dans la MEME colonne : « 12 345 » (separe) et « 12345,6 » (pas separe), a un dixieme d'ecart.
+// `fmtRate` ne separait les milliers que sur la branche ENTIERE ; la branche decimale repartait
+// en `.toString()`. Les deux passent desormais par `toLocaleString('fr-FR')`, qui groupe ET pose
+// la virgule. UN SEUL appelant (`fmtRateSci`, qui sert 26 sites) : le correctif porte partout.
+// ⚠ CE N'EST PAS UNE PREFERENCE D'AFFICHAGE : le reglage de bascule scientifique du joueur n'y
+// change rien, l'ecart existait a n'importe quel seuil.
+// ⚠ CE QUI FAIT BASCULER CE LOT DU COSMETIQUE AU CORRECTIF : le commentaire du 14.6x annoncait
+// deja « les milliers sont SEPARES », sans reserve, alors que la moitie du code ne le faisait
+// pas. Meme dette qu'au build 428 avec `makeIcon` — un commentaire qui decrit un etat que le
+// code n'atteint pas. Le commentaire d'origine est CONSERVE et rectifie en dessous, pas
+// reecrit : le journal reste lisible.
+// ⚠ `maximumFractionDigits: 2` reproduit l'arrondi au centieme et `minimumFractionDigits` reste
+// a 0, donc les zeros finaux tombent comme avant (9 830,40 -> « 9 830,4 »). L'arrondi explicite
+// `Math.round(v * 100) / 100` est CONSERVE en amont : le confier a `toLocaleString` changerait
+// la regle sur les negatifs a demi, pour aucun gain.
+// **Valide** : test qui EXTRAIT `fmtSep` et `fmtRate` du fichier patche (pas une recopie) et
+// compare chaque sortie a l'ANCIENNE implementation — 19 lignes, 0 KO, dont la contre-epreuve
+// qui montre l'ecart d'avant (« 12345,6 » sans separateur) et 7 valeurs sous 1000 STRICTEMENT
+// identiques a avant. Banc a 360 px : les debits non entiers portent le separateur et la
+// geometrie du lot 19.9 ne bouge pas. node --check 7/7 sur les 3 variantes CI.
+// ⚠ POINT OUVERT, NON TRAITE : la locale « fr-FR » est EN DUR ici comme dans `fmtSep`, alors que
+// le jeu a quatre langues — un joueur allemand lit un groupement francais. Incoherence
+// PREEXISTANTE et bien plus large que ce lot (elle toucherait tous les nombres du jeu, et
+// demande de trancher si la locale suit l'i18n ou reste figee).
+const GAME_BUILD = 435;
+const GAME_VERSION = 'Alpha 20.2';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -10300,7 +10325,7 @@ const GAME_VERSION = 'Alpha 20.1';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Maintenance interne : durcissement du pont natif Android (recepteur d installation et nom de fichier exporte). Aucun changement visible en jeu.";
+const GAME_NOTES = "Panneau Production : les debits non entiers affichent enfin le separateur de milliers, comme les autres nombres de la meme colonne.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -11166,9 +11191,17 @@ function formatRecipe(rec, mult) {
 // 14.6x - Deux corrections : les milliers sont SEPARES (un debit de 12 345/s s'ecrivait « 12345 »
 // juste a cote d'un stock « 12 345 », dans le meme panneau), et la decimale est une VIRGULE comme
 // partout ailleurs dans le jeu (le `.toString()` rendait « 12.34 »).
+// 20.x - LA CORRECTION DU 14.6x N'ETAIT FAITE QU'A MOITIE, et le commentaire ci-dessus l'annoncait
+// pourtant sans reserve : seule la branche ENTIERE passait par `fmtSep`. Un debit NON entier
+// repartait en `.toString()`, donc SANS separateur - « 12 345 » et « 12345,6 » se retrouvaient
+// dans la MEME colonne du panneau Production a un dixieme d'ecart. Les deux branches passent
+// desormais par `toLocaleString('fr-FR')`, qui groupe ET pose la virgule. `maximumFractionDigits`
+// a 2 reproduit l'arrondi au centieme ; `minimumFractionDigits` restant a 0, les zeros finaux
+// tombent comme avec l'ancien `.toString()` (9 830,40 -> « 9 830,4 »). L'arrondi explicite est
+// CONSERVE en amont : le confier a toLocaleString changerait la regle sur les negatifs a demi.
 function fmtRate(v) {
   if (Math.abs(v - Math.round(v)) < 1e-9) return fmtSep(v);
-  return (Math.round(v * 100) / 100).toString().replace('.', ',');
+  return (Math.round(v * 100) / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
 }
 // Débit /s pour les panneaux Production/Réseaux : notation scientifique (1,5e5…) dès 1e5
 // pour compacter les gros débits ; décimales fines en dessous (comme fmtRate).
