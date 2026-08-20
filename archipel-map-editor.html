@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Archipel Industry — Éditeur de cartes</title>
+<style>
+  :root{
+    --sea:#1A3A5C; --land:#4A7A3A; --coast:#3A6A5A; --res:#7A6040;
+    --obs:#3A3060; --oil:#241813; --elev:#5A5560; --coll:#2b3540;
+    --bg:#0b1118; --panel:#111a23; --panel2:#0e161e; --line:#22323f;
+    --ink:#cfdae4; --dim:#7d90a1; --accent:#6fbf7a;
+    --r:4px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    display:flex; overflow:hidden;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  button,select,input,textarea{font:inherit;color:inherit}
+  button{background:#16222d;border:1px solid var(--line);border-radius:var(--r);padding:5px 8px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  button.on{border-color:var(--accent);color:var(--accent);background:#16241b}
+  input[type=number],select,textarea{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:4px 6px}
+
+  /* ── Colonne gauche : cartes ─────────────────────────────── */
+  #maps{
+    width:190px;min-width:190px;background:var(--panel);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;overflow-y:auto;padding:10px;gap:6px
+  }
+  h1{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+  .sub{font-size:10px;color:var(--dim);margin-bottom:4px}
+  .grp{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);
+       border-bottom:1px solid var(--line);padding-bottom:3px;margin-top:8px}
+  .map{display:flex;justify-content:space-between;align-items:center;gap:6px;
+       padding:5px 7px;background:var(--panel2);border:1px solid var(--line);
+       border-radius:var(--r);cursor:pointer}
+  .map:hover{border-color:var(--coast)}
+  .map.active{border-color:var(--accent);color:var(--accent);background:#16241b}
+  .map small{color:var(--dim);font-size:10px}
+  .map.active small{color:var(--accent)}
+
+  /* ── Centre : canvas ─────────────────────────────────────── */
+  #stage{flex:1;display:flex;flex-direction:column;min-width:0}
+  #bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+       padding:8px 10px;border-bottom:1px solid var(--line);background:var(--panel)}
+  #bar .name{font-weight:600;margin-right:auto}
+  #board{flex:1;display:flex;align-items:center;justify-content:center;padding:12px;min-height:0;overflow:auto}
+  canvas{touch-action:none;border:1px solid var(--line);border-radius:var(--r);image-rendering:pixelated}
+  #stats{padding:6px 10px;border-top:1px solid var(--line);color:var(--dim);
+         display:flex;flex-wrap:wrap;gap:12px;background:var(--panel)}
+  #stats b{color:var(--ink);font-weight:600}
+
+  /* ── Colonne droite : palette + E/S ──────────────────────── */
+  #side{width:230px;min-width:230px;background:var(--panel);border-left:1px solid var(--line);
+        display:flex;flex-direction:column;overflow-y:auto;padding:10px;gap:6px}
+  .tile{display:flex;align-items:center;gap:8px;padding:4px 7px;background:var(--panel2);
+        border:1px solid var(--line);border-radius:var(--r);cursor:pointer;width:100%;text-align:left}
+  .tile .sw{width:16px;height:16px;border-radius:2px;border:1px solid #0006;flex:0 0 auto}
+  .tile .cd{color:var(--dim);font-size:10px;margin-left:auto}
+  .tile.on .cd{color:var(--accent)}
+  .row{display:flex;gap:6px;align-items:center}
+  .row>*{flex:1}
+  textarea{width:100%;height:110px;resize:vertical;font-size:10px;white-space:pre;overflow:auto}
+  .hint{font-size:10px;color:var(--dim)}
+  .warn{font-size:10px;color:#e0a55c}
+  #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+         background:#16241b;border:1px solid var(--accent);color:var(--accent);
+         padding:7px 12px;border-radius:var(--r);opacity:0;pointer-events:none;transition:opacity .18s}
+  #toast.err{background:#2a1414;border-color:#e06c6c;color:#e0a0a0}
+  #toast.show{opacity:1}
+  @media (prefers-reduced-motion:reduce){#toast{transition:none}}
+  @media (max-width:900px){
+    body{flex-direction:column;overflow:auto}
+    #maps,#side{width:auto;min-width:0;border:0;border-bottom:1px solid var(--line)}
+    #maps{flex-direction:row;flex-wrap:wrap;align-items:center}
+    #maps h1,#maps .sub,#maps .grp{width:100%}
+    #board{padding:8px}
+  }
+</style>
+</head>
+<body>
+
+<aside id="maps">
+  <h1>Cartes du jeu</h1>
+  <div class="sub" id="srcinfo"></div>
+  <div id="maplist"></div>
+  <div class="grp">Nouvelle</div>
+  <div class="row"><input type="number" id="newRows" min="3" max="40" value="16" title="lignes">
+    <input type="number" id="newCols" min="3" max="40" value="16" title="colonnes"></div>
+  <button id="newMap">Créer une carte vierge</button>
+</aside>
+
+<main id="stage">
+  <div id="bar">
+    <span class="name" id="mapName">—</span>
+    <button id="undo" title="Ctrl+Z">Annuler</button>
+    <button id="coastBtn" class="on">Côtes auto</button>
+    <button id="padBtn">Marge mer</button>
+    <button id="gridBtn" class="on">Quadrillage</button>
+  </div>
+  <div id="board"><canvas id="cv"></canvas></div>
+  <div id="stats"></div>
+</main>
+
+<aside id="side">
+  <h1>Pinceau</h1>
+  <div id="palette"></div>
+  <div class="grp">Outil</div>
+  <div class="row">
+    <button id="tPen" class="on">Crayon</button>
+    <button id="tFill">Pot</button>
+  </div>
+  <button id="clearAll">Tout remplir de mer</button>
+
+  <div class="grp">Dimensions</div>
+  <div class="row"><input type="number" id="dimRows" min="3" max="40" title="lignes">
+    <input type="number" id="dimCols" min="3" max="40" title="colonnes"></div>
+  <button id="applyDim">Redimensionner</button>
+
+  <div class="grp">Exporter</div>
+  <div class="row">
+    <button id="expSrc">Format source</button>
+    <button id="expJson">JSON</button>
+  </div>
+  <button id="dlJson">Télécharger le JSON complet</button>
+  <textarea id="io" spellcheck="false" placeholder="Le texte exporté apparaît ici. Collez-y un JSON pour l'importer."></textarea>
+  <div class="row">
+    <button id="impText">Importer ce texte</button>
+    <button id="impFile">Fichier…</button>
+  </div>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+  <div class="hint">La marge de mer (8 tuiles) est ajoutée par le jeu au chargement : ne la dessinez pas.
+    Les côtes sont dérivées par le moteur (plaine touchant la mer) — le code <b>C</b> ne sert qu'à forcer une côte isolée.</div>
+</aside>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+const SRC = [{"set": "difficile", "id": 1, "rows": 12, "cols": 12, "grid": ["WWWWWWWWWWWW", "WWWWWTTTWWWW", "WWWTTTTTTTWW", "WWTTTTMMTTTW", "WWTTMMTTTTTW", "WWTTTTTTTOTW", "WWTOTTTTTTTW", "WWTTTTOTTTTW", "WWTTTTMMTTWW", "WWWTTTTMMTWW", "WWWWTTTTTWWW", "WWWWWWWWWWWW"], "portR": 10, "portC": 4}, {"set": "difficile", "id": 2, "rows": 9, "cols": 18, "grid": ["WWWWWWWWWWWWWWWWWW", "WWWWWTTTTTTTTTWWWW", "WWWTTTTTTTTTMTTTWW", "WWWTTMMMTTOTTMTTWW", "WWTTOTMTTTMMTMOTWW", "WWTTTTTTTTTTTTTTWW", "WWTTTTTTTTTTTTWWWW", "WWWWTTTWWWWTTTWWWW", "WWWWWWWWWWWWWWWWWW"], "portR": 7, "portC": 4}, {"set": "difficile", "id": 3, "rows": 14, "cols": 14, "grid": ["WWWWWWWWWWWWWW", "WWTTTTTTWWWWWW", "WTTPTMMTTWWWWW", "WTTTTOTTTTWWWW", "WWTTTTTPTTTWWW", "WWWWTPTTTTTTWW", "WWWWWWTTOTTTWW", "WWWWWWTTPTMTWW", "WWWWWWTTOTMTWW", "WWWWWWTTPTTTWW", "WWWWWWWTTPTTWW", "WWWWWWWTTTTTWW", "WWWWWWWWTTWWWW", "WWWWWWWWWWWWWW"], "portR": 12, "portC": 8}, {"set": "difficile", "id": 4, "rows": 16, "cols": 16, "grid": ["WWWWWWWWWWWWWWWW", "WWWWWTWTTTTTTWWW", "WWWWWTTTOMMTTWWW", "WWWWTTTTTTTTTWWW", "WWWTTTTTTTTWWWWW", "WWWTTOTTWWWWWWWW", "WWTTMTTTTWWWWWWW", "WWWTMTTTTWWWWWWW", "WWWTTMTTTWWWWWWW", "WWWTTTTOTTTTTTWW", "WWWWTTTTTTTTTTWW", "WWWWWTTTTTMMMTWW", "WWWWWWWWWWTTTWWW", "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW"], "portR": 12, "portC": 10}, {"set": "difficile", "id": 5, "rows": 16, "cols": 16, "grid": ["WWWWWWWWWWWWWWWW", "WWTTTTWWWWWWWWWW", "WTOMTTTTWWWWWWWW", "WTTMMMTTWWWWWWWW", "WTTTTOTTWWWWWWWW", "WTTOTTTTWWWWWWWW", "WTTTTTTTWWTWWWWW", "WTTTTTTTTTTTWWWW", "WWTTTWTTTTTTTWWW", "WWWWWWTTOTTTTWWW", "WWWWWWTTMMMTTWWW", "WWWWWWTTTTOTTWWW", "WWWWWWWTTTTTWWWW", "WWWWWWWWTTWWWWWW", "WWWWWWWWTWWWWWWW", "WWWWWWWWWWWWWWWW"], "portR": 13, "portC": 8}, {"set": "difficile", "id": 6, "rows": 16, "cols": 16, "grid": ["WWWWWWWWWWWWWWWW", "WWWWWCCCCWWWWWWW", "WWWWCTMMMCWWWWWW", "WWWWCTMMMTCWWWWW", "WWWWCTTTTCWWWWWW", "WWWWWCETCWWWWWWW", "WWWWWWCTCWWWWWWW", "WWWWWWCTCWCCCWWW", "WWWWWWCTPCOOCWWW", "WWWWWCOTTTCCWWWW", "WWWWWCTTOCWWWWWW", "WWWWWCPTCCWWWWWW", "WWWWWCTCWWWWWWWW", "WWWWWXCWWWWWWWWW", "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW"], "portR": 13, "portC": 5}, {"set": "difficile", "id": 7, "rows": 5, "cols": 9, "grid": ["WWWWWWWWW", "WWTTTWWWW", "WWTETTWWW", "WWTTTTWWW", "WWWTTWWWW"], "portR": null, "portC": null}, {"set": "normal", "id": 1, "rows": 16, "cols": 16, "grid": ["WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW", "WWWWWCCCCCCCWWWW", "WWWWCTMTTTTTCWWW", "WWWCTMMMTTTTTCWW", "WWWCTTTTTTTTTCWW", "WWCTTTTTTTOMMTCW", "WWCTTMTTTTTTMTCW", "WWCTMMTTTTTTMTCW", "WWCTMTTTOTTTTTCW", "WWCTTTTTTTMTTTCW", "WWCTTTTTTTMMTOCW", "WWWCTTTTTOMTTCWW", "WWWWXTTTTTTTCWWW", "WWWWWCCCCCCCWWWW", "WWWWWWWWWWWWWWWW"], "portR": 13, "portC": 4}, {"set": "normal", "id": 2, "rows": 13, "cols": 20, "grid": ["WWWWWWWWWWWWWWWWWWWW", "WWWWWWWWCCCCWWWWWWWW", "WWWWWCCCTTTTCCCCWWWW", "WWWWCTTTTTOTTTMTCWWW", "WWWCTMMMTTTTMMMTTCWW", "WWCTTMTTTTTTTTTTTCWW", "WWCTTTTTTMMMTTOTTTCW", "WWWCTTMTTTTTTTTTTTCW", "WWWCMMMTTOTTMTTTTOCW", "WWWCTTTTTTTMMMTTCCWW", "WWWWXTTTTTTTTTTCWWWW", "WWWWWCCCCCCCCCCWWWWW", "WWWWWWWWWWWWWWWWWWWW"], "portR": 10, "portC": 4}, {"set": "normal", "id": 3, "rows": 16, "cols": 16, "grid": ["WWWWWWWWWWWWWWWW", "WWCCCCCWWWWWWWWW", "WCTTTPTCCCCCCCWW", "WCTPTTTPTTTTTTCW", "WCTTTOTTTTTTMMCW", "WCTTPTTTTOTOTTCW", "WWCCTTTTTTTTTTCW", "WWWWCCTTTTTTTTCW", "WWWWWWXTTTTTTTCW", "WWWWWWWCTTMMMTCW", "WWWWWWWCTTTTTTCW", "WWWWWWWCTTTOTPCW", "WWWWWWWWCTPTTTCW", "WWWWWWWWCTTTTCWW", "WWWWWWWWWCCCCWWW", "WWWWWWWWWWWWWWWW"], "portR": 8, "portC": 6}, {"set": "normal", "id": 4, "rows": 16, "cols": 16, "grid": ["WWWWWWWWWWWWWWWW", "WWWWWCCCCWCCWWWW", "WWWWCCTTTCTTCCWW", "WWWCCTMMMOTMMCWW", "WWCTTMTTTTTTMCCW", "WWCTTTTTCCCCCWWW", "WWCOTTTCWWWWWWWW", "WWCTTTTCWWWWWWWW", "WWCTTTTTCWWWWWWW", "WWCTTTTTCWWWWWWW", "WWCTOTOTCWWWWWWW", "WWCTTTTTCCWWCWCW", "WWWXTTTTTTCCTCCW", "WWWWCCCTMMTMTTCW", "WWWWWWWCCCCCCCWW", "WWWWWWWWWWWWWWWW"], "portR": 12, "portC": 3}, {"set": "normal", "id": 5, "rows": 18, "cols": 18, "grid": ["WWWWWWWWWWWWWWWWWW", "WWWWCCCWWWWWWWWWWW", "WWCCTTTCCWWWWWWWWW", "WCTTMTTTCWWWWWWWWW", "WCTMMMTTTCWWWWWWWW", "WCTTTTTTTCWWWWWWWW", "WCMMTOTTTTCWWWWWWW", "WCMTTTTTTTTCWWWWWW", "WWCCCCCTTTTTCCWWWW", "WWWWWWWXCTTTTTCWWW", "WWWWWWWWWCTTOTTCCW", "WWWWWWWWWCTTTTTTCW", "WWWWWWWWWCTTTOTTCW", "WWWWWWWWWCTOTTTMCW", "WWWWWWWWWCTTTMMTCW", "WWWWWWWWWCMMTTTCWW", "WWWWWWWWWWCCCCCCWW", "WWWWWWWWWWWWWWWWWW"], "portR": 9, "portC": 7}, {"set": "normal", "id": 6, "rows": 16, "cols": 16, "grid": ["WWWWWWWWWWWWWWWW", "WWWWWCCCCWWWWWWW", "WWWWCTKKKCWWWWWW", "WWWWCTKKKCWWWWWW", "WWWWCTTTTCWWWWWW", "WWWWWCETCWWWWWWW", "WWWWWWCTCWWWWWWW", "WWWWWWCTCWCCCWWW", "WWWWWWCTOCMMCWWW", "WWWWWCMTTTCCWWWW", "WWWWWCTTMCWWWWWW", "WWWWWCOTCCWWWWWW", "WWWWWCTCWWWWWWWW", "WWWWWXCWWWWWWWWW", "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW"], "portR": 13, "portC": 5}, {"set": "normal", "id": 7, "rows": 5, "cols": 9, "grid": ["WWWWWWWWW", "WWTTTWWWW", "WWTETTWWW", "WWTTTTWWW", "WWWTTWWWW"], "portR": null, "portC": null}];
+const BUILD = 437;
+
+const TERRAIN = {
+  W:{n:'Mer',           c:'#1A3A5C'},
+  T:{n:'Plaine',        c:'#4A7A3A'},
+  C:{n:'Côte',          c:'#3A6A5A'},
+  M:{n:'Montagne',      c:'#7A6040'},
+  O:{n:'Accidenté',     c:'#3A3060'},
+  P:{n:'Pétrole',       c:'#241813'},
+  X:{n:'Port',          c:'#3A6A5A'},
+  E:{n:'Ascenseur',     c:'#5A5560'},
+  K:{n:'Collisionneur', c:'#2b3540'}
+};
+const SEA_PAD = 8;
+const ORDER = ['W','T','C','M','O','P','X','E','K'];
+
+const label = m => m.set==='custom' ? m.name
+  : (m.id===7 ? 'Île 6 S' : 'Île '+m.id);
+
+// ── état ───────────────────────────────────────────────────────
+const maps = SRC.map(m => ({...m, grid:m.grid.map(r=>r.split(''))}));
+let active = 0, brush = 'T', tool = 'pen';
+let showCoast = true, showPad = false, showGrid = true;
+const undoStack = [];
+
+const $ = id => document.getElementById(id);
+const cur = () => maps[active];
+
+function toast(msg, err){
+  const t = $('toast');
+  t.textContent = msg; t.className = 'show' + (err?' err':'');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.className='', 2200);
+}
+
+// ── liste des cartes ───────────────────────────────────────────
+function renderList(){
+  const box = $('maplist'); box.innerHTML = '';
+  const groups = [['difficile','Mode difficile'],['normal','Mode normal'],['custom','Perso']];
+  groups.forEach(([set,title])=>{
+    const items = maps.map((m,i)=>[m,i]).filter(([m])=>m.set===set);
+    if(!items.length) return;
+    const h = document.createElement('div'); h.className='grp'; h.textContent=title; box.appendChild(h);
+    items.forEach(([m,i])=>{
+      const b = document.createElement('div');
+      b.className = 'map' + (i===active?' active':'');
+      b.innerHTML = '<span></span><small>'+m.rows+'×'+m.cols+'</small>';
+      b.firstChild.textContent = label(m);
+      b.onclick = ()=>{ active=i; undoStack.length=0; syncDim(); renderList(); draw(); };
+      box.appendChild(b);
+    });
+  });
+  $('mapName').textContent = label(cur()) + '  ·  ' + cur().set;
+}
+
+// ── palette ────────────────────────────────────────────────────
+function renderPalette(){
+  const box = $('palette'); box.innerHTML='';
+  ORDER.forEach(code=>{
+    const t = TERRAIN[code];
+    const b = document.createElement('button');
+    b.className = 'tile' + (code===brush?' on':'');
+    b.innerHTML = '<span class="sw" style="background:'+t.c+'"></span><span></span><span class="cd">'+code+'</span>';
+    b.children[1].textContent = t.n;
+    b.onclick = ()=>{ brush=code; renderPalette(); };
+    box.appendChild(b);
+  });
+}
+
+// ── dérivation des côtes (identique à buildIslandTiles) ────────
+function derivedCoast(m){
+  const set = new Set();
+  for(let r=0;r<m.rows;r++) for(let c=0;c<m.cols;c++){
+    if(m.grid[r][c] !== 'T') continue;
+    for(const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
+      const nr=r+dr, nc=c+dc;
+      const ch = (nr<0||nc<0||nr>=m.rows||nc>=m.cols) ? 'W' : m.grid[nr][nc];
+      if(ch==='W'){ set.add(r+':'+c); break; }
+    }
+  }
+  return set;
+}
+
+// ── rendu ──────────────────────────────────────────────────────
+const cv = $('cv'), ctx = cv.getContext('2d');
+let cell = 24, pad = 0;
+
+function draw(){
+  const m = cur();
+  pad = showPad ? SEA_PAD : 0;
+  const cols = m.cols + pad*2, rows = m.rows + pad*2;
+  const box = $('board').getBoundingClientRect();
+  cell = Math.max(6, Math.floor(Math.min((box.width-26)/cols, (box.height-26)/rows)));
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = cols*cell*dpr; cv.height = rows*cell*dpr;
+  cv.style.width = cols*cell+'px'; cv.style.height = rows*cell+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  ctx.fillStyle = TERRAIN.W.c; ctx.fillRect(0,0,cols*cell,rows*cell);
+  const coast = showCoast ? derivedCoast(m) : new Set();
+
+  for(let r=0;r<m.rows;r++) for(let c=0;c<m.cols;c++){
+    const code = m.grid[r][c];
+    const x = (c+pad)*cell, y = (r+pad)*cell;
+    const isDerived = coast.has(r+':'+c);
+    ctx.fillStyle = isDerived ? TERRAIN.C.c : TERRAIN[code].c;
+    ctx.fillRect(x,y,cell,cell);
+    if(isDerived){                       // liseré : plaine promue en côte
+      ctx.fillStyle = TERRAIN.T.c;
+      ctx.fillRect(x+cell*0.22, y+cell*0.22, cell*0.56, cell*0.56);
+    }
+    if(code==='X' && cell>=12){
+      ctx.fillStyle='#e8c56a'; ctx.font=Math.floor(cell*0.7)+'px serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('⚓', x+cell/2, y+cell/2+1);
+    }
+    if(code==='E' && cell>=12){
+      ctx.strokeStyle='#c9c2d4'; ctx.lineWidth=1;
+      ctx.strokeRect(x+cell*0.28, y+cell*0.28, cell*0.44, cell*0.44);
+    }
+  }
+  if(showGrid && cell>=10){
+    ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.lineWidth=1;
+    for(let c=0;c<=cols;c++){ ctx.beginPath(); ctx.moveTo(c*cell+.5,0); ctx.lineTo(c*cell+.5,rows*cell); ctx.stroke(); }
+    for(let r=0;r<=rows;r++){ ctx.beginPath(); ctx.moveTo(0,r*cell+.5); ctx.lineTo(cols*cell,r*cell+.5); ctx.stroke(); }
+  }
+  if(pad){                                // cadre de l'île réelle
+    ctx.strokeStyle='rgba(111,191,122,.55)'; ctx.lineWidth=2;
+    ctx.strokeRect(pad*cell, pad*cell, m.cols*cell, m.rows*cell);
+  }
+  renderStats(coast);
+}
+
+function renderStats(coast){
+  const m = cur(), n = {};
+  for(const row of m.grid) for(const ch of row) n[ch]=(n[ch]||0)+1;
+  const parts = ORDER.filter(c=>n[c]).map(c=>[TERRAIN[c].n, n[c]]);
+  parts.push(['Côtes dérivées', coast ? coast.size : 0]);
+  parts.push(['Constructible', (n.T||0)+(n.C||0)+(n.M||0)+(n.X||0)]);
+  parts.push(['Port', m.portR!=null ? m.portR+','+m.portC : '—']);
+  const s = $('stats'); s.textContent='';
+  for(const [k,v] of parts){
+    const d = document.createElement('span');
+    d.append(k+' ');
+    const b = document.createElement('b'); b.textContent = v; d.append(b);
+    s.appendChild(d);
+  }
+}
+
+// ── édition ────────────────────────────────────────────────────
+function snapshot(){
+  const m = cur();
+  undoStack.push({i:active, grid:m.grid.map(r=>r.join('')), portR:m.portR, portC:m.portC});
+  if(undoStack.length>60) undoStack.shift();
+}
+$('undo').onclick = ()=>{
+  const s = undoStack.pop();
+  if(!s){ toast('Rien à annuler', true); return; }
+  active = s.i; const m = cur();
+  m.grid = s.grid.map(r=>r.split('')); m.portR=s.portR; m.portC=s.portC;
+  renderList(); draw();
+};
+addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey) && e.key==='z'){ e.preventDefault(); $('undo').click(); }});
+
+function paint(r,c){
+  const m = cur();
+  if(r<0||c<0||r>=m.rows||c>=m.cols) return false;
+  if(m.grid[r][c]===brush) return false;
+  if(brush==='X'){                        // un seul port par carte
+    for(let y=0;y<m.rows;y++) for(let x=0;x<m.cols;x++) if(m.grid[y][x]==='X') m.grid[y][x]='C';
+    m.portR=r; m.portC=c;
+  } else if(m.grid[r][c]==='X'){ m.portR=null; m.portC=null; }
+  m.grid[r][c]=brush;
+  return true;
+}
+function flood(r,c){
+  const m = cur(), from = m.grid[r][c];
+  if(from===brush || brush==='X') return paint(r,c);
+  const st=[[r,c]];
+  while(st.length){
+    const [y,x]=st.pop();
+    if(y<0||x<0||y>=m.rows||x>=m.cols||m.grid[y][x]!==from) continue;
+    m.grid[y][x]=brush;
+    st.push([y+1,x],[y-1,x],[y,x+1],[y,x-1]);
+  }
+  return true;
+}
+
+let painting=false, lastCell='';
+function cellAt(e){
+  const b = cv.getBoundingClientRect();
+  return [Math.floor((e.clientY-b.top)/cell)-pad, Math.floor((e.clientX-b.left)/cell)-pad];
+}
+cv.addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  cv.setPointerCapture(e.pointerId);
+  snapshot();
+  const [r,c]=cellAt(e); lastCell=r+':'+c;
+  const changed = tool==='fill'
+    ? (r>=0&&c>=0&&r<cur().rows&&c<cur().cols ? flood(r,c) : false)
+    : paint(r,c);
+  if(changed) draw(); else undoStack.pop();
+  painting = tool==='pen';
+});
+cv.addEventListener('pointermove', e=>{
+  if(!painting) return;
+  const [r,c]=cellAt(e); const k=r+':'+c;
+  if(k===lastCell) return; lastCell=k;
+  if(paint(r,c)) draw();
+});
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>
+  cv.addEventListener(ev, ()=>{ painting=false; lastCell=''; }));
+
+// ── barre / outils ─────────────────────────────────────────────
+const toggle = (btn, get, set) => btn.onclick = ()=>{ set(!get()); btn.classList.toggle('on'); draw(); };
+toggle($('coastBtn'), ()=>showCoast, v=>showCoast=v);
+toggle($('padBtn'),   ()=>showPad,   v=>showPad=v);
+toggle($('gridBtn'),  ()=>showGrid,  v=>showGrid=v);
+$('tPen').onclick = ()=>{ tool='pen';  $('tPen').classList.add('on'); $('tFill').classList.remove('on'); };
+$('tFill').onclick= ()=>{ tool='fill'; $('tFill').classList.add('on'); $('tPen').classList.remove('on'); };
+$('clearAll').onclick = ()=>{
+  snapshot(); const m=cur();
+  m.grid = m.grid.map(r=>r.map(()=> 'W')); m.portR=null; m.portC=null;
+  draw(); toast('Carte vidée');
+};
+
+function syncDim(){ $('dimRows').value=cur().rows; $('dimCols').value=cur().cols; }
+$('applyDim').onclick = ()=>{
+  const rows = Math.max(3,Math.min(40, +$('dimRows').value|0));
+  const cols = Math.max(3,Math.min(40, +$('dimCols').value|0));
+  snapshot(); const m=cur();
+  const g=[];
+  for(let r=0;r<rows;r++){ const row=[]; for(let c=0;c<cols;c++) row.push(m.grid[r]?.[c] ?? 'W'); g.push(row); }
+  m.grid=g; m.rows=rows; m.cols=cols;
+  if(m.portR!=null && (m.portR>=rows||m.portC>=cols)){ m.portR=null; m.portC=null; }
+  renderList(); draw(); toast(rows+'×'+cols);
+};
+
+$('newMap').onclick = ()=>{
+  const rows = Math.max(3,Math.min(40, +$('newRows').value|0));
+  const cols = Math.max(3,Math.min(40, +$('newCols').value|0));
+  const n = maps.filter(m=>m.set==='custom').length + 1;
+  maps.push({set:'custom', id:8, name:'Carte '+n, rows, cols,
+             grid:Array.from({length:rows},()=>Array(cols).fill('W')), portR:null, portC:null});
+  active = maps.length-1; undoStack.length=0;
+  syncDim(); renderList(); draw(); toast('Carte '+n+' créée — id 8 à l\u2019export');
+};
+
+// ── export / import ────────────────────────────────────────────
+const rowsOf = m => m.grid.map(r=>r.join(''));
+function srcLine(m){
+  const port = m.portR!=null ? ' portR: '+m.portR+', portC: '+m.portC+',' : '';
+  return '{ id: '+m.id+', rows: '+m.rows+', cols: '+m.cols+','+port+
+         ' grid: ['+rowsOf(m).map(r=>'"'+r+'"').join(', ')+'] },';
+}
+const toObj = m => ({set:m.set, id:m.id, name:m.name, rows:m.rows, cols:m.cols,
+                     portR:m.portR ?? null, portC:m.portC ?? null, grid:rowsOf(m)});
+
+$('expSrc').onclick = ()=>{ $('io').value = srcLine(cur()); toast('Ligne source prête à copier'); };
+$('expJson').onclick= ()=>{ $('io').value = JSON.stringify(toObj(cur()), null, 1); toast('JSON de la carte'); };
+$('dlJson').onclick = ()=>{
+  const blob = new Blob([JSON.stringify(maps.map(toObj), null, 1)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'archipel-cartes.json';
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  toast('archipel-cartes.json téléchargé');
+};
+
+function applyImport(text){
+  if(!text || !text.trim()){ toast('Rien à importer : le champ est vide', true); return; }
+  let data;
+  try { data = JSON.parse(text); }
+  catch(err){ toast('JSON illisible : '+err.message, true); return; }
+  const list = Array.isArray(data) ? data : [data];
+  const ok = [];
+  for(const raw of list){
+    const g = raw.grid;
+    if(!Array.isArray(g) || !g.length || typeof g[0]!=='string'){ toast('Entrée sans grille de chaînes', true); return; }
+    const rows = g.length, cols = g[0].length;
+    if(g.some(r=>r.length!==cols)){ toast('Lignes de longueurs inégales', true); return; }
+    ok.push({set: raw.set==='difficile'||raw.set==='normal' ? raw.set : 'custom',
+             id: raw.id ?? 8, name: raw.name || ('Import '+(ok.length+1)),
+             rows, cols, portR: raw.portR ?? null, portC: raw.portC ?? null,
+             grid: g.map(r=>r.split('').map(ch=>TERRAIN[ch]?ch:'W'))});
+  }
+  maps.push(...ok);
+  active = maps.length-1; undoStack.length=0;
+  syncDim(); renderList(); draw();
+  toast(ok.length+' carte'+(ok.length>1?'s':'')+' importée'+(ok.length>1?'s':''));
+}
+$('impText').onclick = ()=> applyImport($('io').value);
+$('impFile').onclick = ()=> $('fileIn').click();
+$('fileIn').onchange = e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ()=> applyImport(String(rd.result));
+  rd.onerror = ()=> toast('Lecture du fichier impossible', true);
+  rd.readAsText(f); e.target.value='';
+};
+
+// ── démarrage ──────────────────────────────────────────────────
+$('srcinfo').textContent = 'source build ' + BUILD;
+addEventListener('resize', draw);
+renderPalette(); syncDim(); renderList(); draw();
+</script>
+</body>
+</html>
