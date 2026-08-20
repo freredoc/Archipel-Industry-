@@ -1,8 +1,8 @@
 {
-  "build": 439,
-  "version": "Alpha 20.6",
+  "build": 440,
+  "version": "Alpha 20.7",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Sur la septieme ile : une bucheronneuse abat la foret, une carriere rustique se paie en bois, et le tout se relie au port. La clairiere devient constructible."
+  "notes": "La septieme ile se transforme : la charbonniere fait du charbon avec du bois, le foyer en tire du courant, la scierie debite des planches et la filerie file le carbone."
 }
