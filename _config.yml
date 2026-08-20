@@ -45,6 +45,12 @@ exclude:
   # Coquille Android et outillage : sans objet sur le web.
   - android/
   - .github/
+  # Lot S — SOURCES du monolithe. `src/index.src.html` est une page de jeu AMPUTEE de ses
+  # sprites (le marqueur d'injection n'est remplace qu'au build) : la servir donnerait une
+  # SECONDE URL de jeu, cassee, ce que ce fichier existe precisement pour empecher.
+  # `tools/` est de l'outillage, comme `android/`.
+  - src/
+  - tools/
 
 # Pas de thème, pas de plugins : le dépôt sert des fichiers statiques.
 # `index.html` n'a pas de front-matter → Jekyll le copie tel quel, sans
