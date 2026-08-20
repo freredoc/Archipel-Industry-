@@ -1,0 +1,24 @@
+# Sorties de construction et outillage local. NE COUVRE PAS `node_modules/`, qui est
+# actuellement SUIVI par git (171 fichiers, 18 Mo) : `.gitignore` n'agit pas sur un fichier
+# deja indexe. Le desindexer est une decision d'Ethan, pas un effet de bord de ce lot.
+node_modules/
+
+# Variantes intermediaires produites par la CI a la racine.
+game-public.html
+game-dev.html
+game-store.html
+game-tester.html
+
+# Systeme et editeurs.
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Android : sorties locales (le dossier android/ a deja son propre .gitignore).
+*.apk
+*.aab
+*.keystore
+*.jks
+local.properties

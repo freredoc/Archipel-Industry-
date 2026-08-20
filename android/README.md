@@ -18,7 +18,8 @@ Pour (re)lancer une construction manuellement : onglet **Actions** → *Build An
 
 ## Construire en local (facultatif)
 
-Nécessite le **SDK Android** (platform 34, build-tools 34.0.0) et un **JDK 17**.
+Nécessite le **SDK Android** (platform 36, build-tools 36.0.0) et un **JDK 17**
+— ce sont les versions que la CI installe (`android.yml`, étape SDK).
 
 ```bash
 # depuis la racine du dépôt : copier le jeu dans les assets de l'app
@@ -36,11 +37,12 @@ cd android
 
 | Élément        | Valeur                          |
 |----------------|---------------------------------|
-| Package        | `fr.archipel.industry`          |
+| Paquets        | `fr.archipel.industry` (publique), `.dev`, `.store` |
 | minSdk         | 26 (Android 8.0)                |
-| targetSdk / compileSdk | 34                      |
-| AGP / Gradle   | 8.5.2 / 8.7                     |
-| Permissions    | INTERNET (uniquement pour la vérif. de mise à jour) |
+| targetSdk / compileSdk | 36 (Android 16)         |
+| AGP / Gradle   | 8.13.0 / 8.13                   |
+| Permissions (publique, dev) | INTERNET + REQUEST_INSTALL_PACKAGES |
+| Permissions (magasin)       | **aucune** — assertion CI bloquante |
 | Orientation    | portrait                        |
 
 ## Version & mises à jour
@@ -57,6 +59,8 @@ téléchargement de l'APK s'affiche (ouvert dans le navigateur système).
 `main`. La CI reconstruit l'APK, met à jour la release `apk-latest`, et synchronise
 `version.json`.
 
-L'APK publié est un build **debug** (signé avec le keystore de debug), suffisant pour
-une installation perso par sideload. Pour une distribution sur le Play Store, il faudrait
-un build **release** signé avec votre propre keystore.
+Les APK publiés dans `apk-latest` (publique et dev) sont des builds **debug** (`assembleDebug`),
+suffisants pour une installation par sideload. ⚠ Point connu et NON tranché (A5 de l'audit du
+build 431) : un build debug porte `debuggable=true`, qui est donc diffusé. La variante
+**magasin** est distincte et n'est pas concernée : elle sort en `bundleRelease` (`.aab`,
+applicationId `fr.archipel.industry.store`) et passe par Play App Signing.
