@@ -1,8 +1,8 @@
 {
-  "build": 436,
-  "version": "Alpha 20.3",
+  "build": 437,
+  "version": "Alpha 20.4",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Maintenance interne : retrait de code mort (un generateur d icones inutilise tournait a chaque demarrage). Aucun changement visible en jeu."
+  "notes": "Maintenance interne : les images du jeu sortent du fichier principal vers une source dediee, reassemblee a la construction. Aucun changement visible en jeu."
 }
