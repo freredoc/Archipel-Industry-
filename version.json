@@ -1,8 +1,8 @@
 {
-  "build": 437,
-  "version": "Alpha 20.4",
+  "build": 438,
+  "version": "Alpha 20.5",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Maintenance interne : les images du jeu sortent du fichier principal vers une source dediee, reassemblee a la construction. Aucun changement visible en jeu."
+  "notes": "Une septieme ile apparait au bout du Collisionneur : foret, entrepot en ruine, et de quoi y poser la couche logique en arrivant."
 }
