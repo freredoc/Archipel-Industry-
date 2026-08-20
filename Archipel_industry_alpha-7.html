@@ -3608,6 +3608,21 @@ window.__SPRITE_DATA__["i8_falaise_e"]=window.__SPRITE_DATA__["i5_falaise_e"];
 window.__SPRITE_DATA__["i8_falaise_s"]=window.__SPRITE_DATA__["i5_falaise_s"];
 window.__SPRITE_DATA__["i8_falaise_s_ew"]=window.__SPRITE_DATA__["i5_falaise_s_ew"];
 window.__SPRITE_DATA__["i8_falaise_w"]=window.__SPRITE_DATA__["i5_falaise_w"];
+
+// ===== L2 — AMORCAGE DE L'ILE 7 (id interne 8) =====
+// 5 fichiers sur les 15 du pack « sprites-ile7-batiments-rustique ». Les 10 autres (scierie,
+// charbonniere, ferme, pont, presse a lamelle, filerie, raffinerie antique, elastomere, fibre
+// de carbone, polymere premium) sont HORS PERIMETRE du lot et NE SONT PAS injectes.
+// ⚠ Gabarit IDENTIQUE a `bat_foreuse_*` (verifie au pixel) : 32x48 en n/s, 48x32 en o/e — c'est
+//   ce qui permet a `DIR_ART_IDS` de servir les deux machines avec le meme debord d'une
+//   DEMI-CASE dans le sens vise. `DIR_LETTER = ['n','s','o','e']`, minuscules.
+// ⚠ Aucune bande d'animation n'est livree pour la bucheronneuse : elle est STATIQUE, et c'est
+//   sans consequence (`drawAnimFrame` rend false, `drawSprite` prend le relais).
+window.__SPRITE_DATA__["bat_bucheronneuse_n"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAwCAYAAABwrHhvAAAC6ElEQVR4nMWXz2vTYBjHvw69jMEuElkZow2hiAcPehEaHMwhRaS3gdQyhsik+xtKV8r+Bgebh1LSMdjNg4RRg5UWAh71IBK6MYbF4cGB1IOweMhSm7x5fyRN9Htq3x/P87zP53l/BPjPusIbsLKyarP6y+UNbG+/ZNo4OGhS/VzlBTA+2TBM+0mpCABYK62OxmQyMgCgoTUBAPvaHpaW7nEXBwhkAADamwW7uPuJcAwA+Xweuq572txAzr72ufa5A3Z2NCYCRVFgWRbTxvp6KTqCSq1KrDpMAG42aJqidbQ3C7ZhmMzVi4plh4lASsn2Yk5lGhfZBZ1el1oPVARSSraBvxUepIbWRLm8gU6vy8T04tYPFHdhBwVBRQCQFe93rqQXAABKeoHJ+vDXHWoftwgVRSHaKrXqyPlo3GUQW7U6MZ5VpNQA9rU96LrO3WKizi4PJ6KdisA98eISzR4XwdFRn2hbzKno9LoeDNbxCRZzauB4ViEzA2hoTWohZjLyqPCs4xNuwdJERSByjrtOWc559phODMO0eUUochcoikK9HbmrlFKyzVrh6dsG5h+sUfsbWpOZTeZBBDip410oUZ0DMbyIrvXf47d8n2mD9SISepC4CnoRjSOY6EXkXj5htTx3gfaAS5KQi8ZzDmw9vBHa0LuPg9DzKoffRr89Gbg5/TN0AFH0eTgTnIH52Wmcng9RfUpeGnGp3jI9/4mjWM1KqLdMqFkpsSCYAXS/nOH1q0coPH/zTwLw1MDy3AWePb6N7+cWrs86D5F6y4wVSb1l0msAAIwPfTgHpHOtJo0kEEGQaO2xB8BL96RIuLvAQUBX3EiEEUQdFzqAMOl10xllDjUAHoJxuRgmQRIZQVzzJkLgl8gOiRWBX+4OcX+LKDYEUe3EisCvICSJIvBLBEliCETtJorAL3/6AwOIE4FfalYiMuEJoD2YAgbDxAJwNMPuLt5N21G/EaLYJb4oonxkiCgpuxPrD6HAU51LMjBAAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["bat_bucheronneuse_s"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAwCAYAAABwrHhvAAAC+0lEQVR4nO2Xz2sTQRTHvwn1IoVeZKWhlGZZcvTipdBgJYYeRHorlBpKkVJJ/4YQayhevFssHsKyKcXcepAgcTElhQX/AZGYllItFi+95CJkPaSzZGd33mw2m3jxC4H9MfPed9/nzWYW+K9/rBg7UBKqPc7EVz/bMQCY6L+4u3R3LMkLH385xy4DRvP7WAwAk/4GZqZu4+K6g+LT+ZGlLlUs1/kEPyCdUlCqWEinlJGZIA00v13h6N1jLG9+GIsB1yrITnfx7Mk9/L5u4c6UBqBXsiiRlCoWvnYm/VcBAJhf2gDiANoARo/EF4GfRNcjNyAr97BIpKugh0CsqJEERhB23MAGBikvK2eYOUIDMgT9YhiGQRIaQVTzhkLAK8gKiRQBL7ZC2HEQRYYgbJxIEfDyQzJSBLyCIBkZgqBxR4qAF19+XwNRIuCVTimeSrgM1C/jwGVnoKDZ6W5vXmBNus5i/O21+3N2/TLu7FhWVtbJ74Vb7WP8UR+QKatVPcbHZfIg4J+mWtWdCaZp2au5NQDARm4dAHDRPkYyqQIAyoYOADg0DpDJzLsSiarkqYBI7MuJJWa6+FTGzKMN1zVmhH/aUAb29w0Swee3BTx8vkvG2NrKCfN4EPAq7BQ9T82r1WoJ77FqiES2r2la0g/WzdeHsiFkHLICq7k1LC6kcXpKvxuo+4sLabDGHcgAazrW4X4qGzry+W00TpokpsZJE0pCtf2akkRABS0bOrS5WQCANjdLsqbiSJtQ0zTPtcJO0UnujLsxsbtT8oynmlRo4NA4QK1WIyf7STT+5uXkuS5EQDVOGIniSRH4dfjiQhqNk6YLQ+vsXLhiqEYmDZQNXdhAyaTqNF7r7FzasCIJEQR5j7OksjclFY9MYpqWLWtCTdOkjar+eI/syyPfXCSCTGY+piRUm3pCmYGyoZPVFCKov1i2gV7pZH8oYZMDAf6OZTuifH4be3tvyBj9mxpe0mUo2xEB8N0RdRuvhNyHlpJQbfYzTcvuPx801l+3gmCytnbqqQAAAABJRU5ErkJggg==";
+window.__SPRITE_DATA__["bat_bucheronneuse_o"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAgCAYAAABU1PscAAACoElEQVR4nO2Yv2vbQBTHvwodDe1QFOIhOEJkKlm6GGwwGNOhBG+B4JpQQhtI924hSUX+hoamGYyRTSBbhg7FCAwyCLKGUoLrlFJSarpkyRh1aO96+nWWdCcv9WeS0N2793zf996dgRkz/m+UrAyrec3NyjYAjK9HCgDcy3KRgyfzmdjd+fiTPtMAent1992nB9yJ29uvcHj4ljvm9LRNd9W0v6T1cQI5+hQpIcty3PVmAwDwvLkR+N4y2wCAE7OLarUYsKPmNbe2cIfvN7fYfVYU9/kvRsfB59sclVBoAES/YY77IYEQg6yN2sIdCvM52JdjlJdVUd8BAPblODqAoyNTOPG2tpoK4N2Bs+OnqL/4IGqaEhmAmtfcOL96FC2zTQ2TADZXV/DrZoiH93UYHUdYTn4J0SRmNS+CZTkumxPW+QjAHIARyssqjI4jTU4AswNqXnMrpbKwwf7Axvh6pLASkk1gB0jSLi1pkZNIsgL85O4PbE8Ti5JMWjkZHcfzTvXKc6pltqEXFun78Os3bhAkWFKFokhTnfxVyNOJdV0PTNjZ3/U4DwB6YREts42DfSMwfjgcBhac5JAICvAn8USMHL9ej/y2uboycT6RRRxJhTYynoT88iHwZBRXQn7iSIoroaurUWBCpVRGf2AHcqBSKoeO9xeCpBJJOp7uAMCvLnGrEDuONLKk8CpUaCPrvnyExvsLrtEkHZr0AYA0smQkaXj/OqbluP4KkgZd11GtFqfbyADQRWWdhQgyzj6sjdBGxpI2CL/z7HFaFLY6cY/Ta2sbwsdpciObuoTYxQHxGxlB9m3MT2Dh3l7drb0580iBPJ+YXbBHbr/eWWRKiIUrIZlM62+VzGk8LrgygomyMydqeBK9H3KWkGVnhmx+A3XCf9P8IgWlAAAAAElFTkSuQmCC";
+window.__SPRITE_DATA__["bat_bucheronneuse_e"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAgCAYAAABU1PscAAACj0lEQVR4nO2Yz2vUQBTHvyk9yUIvkuIiZRtCDyJevCxsYGFZPIj0VpC6FJFaqX9DqW3ozbuF4mFZsstCbz14kBJYyELAf0CWmIrIisGDvfRoPJSJ05nJ76Qo7uc0mX2ZeS/vO29mFpgx4/9GIg25qvhlTuRNXSneKj3z9MPBg8Uy5sDO+++ljAswARjWp5KmqQSttbWNyExvb7/E4eGbyNFe3PmJ9v6JBDASat/6ha/nF9h9Us/nL4Xet/HxoiKUkGna/uPOOgDgaWeDe7dr9AAAQ2OAVqsulCAXQG2xAmviQVuRCwnAmnjCAMiaEznOQgIRfQRhBk7ePsTq5ru8vgfQARwdGbmLxdZWJ/CbC+DZo3v4ce7g5oIKvW/nlhMrIbmq+Em+ehhdo3clE/OsgfnBBTAHwIW2IkPv24XJidZ83nHImhBKqGhIBuSq4jcbWu7xRmMryAKXgTDJZJWT3rcB/Fm0y8tKqC1ZrED04h6NLchVxfemriSsQmFkqU6kCsU51TV6UGtLwbPz+UusvTd1JS4D1sSLdSgPqqpyfTt7u1ecBwC1toSu0cPBns7ZO44TtIVVKA4iiySS0vs2bi/cEP62+XoY+34UrVY9nYRYkkgqiYRY+RCiZJRZQnntz85crq/Z0DAaW9waaDY0oT1dCDJJiCWqQpGNjBC3MNPYCTNwuZGlI8mGR/aBqHHS7NCD53fR3nevdyMzTdunK0hWVFUNTqeJN7KksHIiFQu4rBpFn4VyVaEw6OokOk5nDYJ1HrjmsxAQfyNLwvFxL/w0WvRtLGry0m5kRRJ2I6Ohq9PQGIA+ctPvnb5a9cldmPDP/63CsX6/5hcRTFHjxDHHdpx+47oyUdQ4M/52fgNiz31cV+e1UAAAAABJRU5ErkJggg==";
+window.__SPRITE_DATA__["bat_carriere_rustique"]="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACQ0lEQVR4nGNkoBEQk1L6j0vu1bN7jDA2C60cwMDAwHCozQNDzK5qBwqfBZ9LKXbAgfNYxZHtZBSTUvq/LFUHLtm18w5DmbsKhiZSxaNmX0Hh21vbMBw8eoSBgYGBAWZf1OwrEAcYyHHAFYZo8DOsufERw0ByxUV+f2NQEOdhuM1txPDx8RkU9Rce/YA4AEM3FYGL5D+4A2AhgAwYGRggcbJrwyxauoOhtXsRQ3VpHJzvFpDG8OrZPUZ4Lnjx4gUDAwMDw737D2jmiGPHTzAoKSqgiDHBGBZ8exju3X+AoYCaQElRgWHLtl0oYvAQ2LHhFAODogrcEdQKiYbOeXA2LA34eLlhOkDAqYrhHdTSe/cfoGikFCBnc/TsibckNNEQo9jyMzdeMew7fQ+nPF4HfPj0hWIHMDAwMMy58I08B1ADqEhxMdx59o0hzM8GqzwTVlEiwIwpWQwxsRFkOwwGiA6BGVOyGI6cfMewZPEKBgYGBoa6lnUMr6BlB10cgG4hNsvRHUkMIDoKkC2sq6vA6UhSLCfJAcigqamDgYEBMx2QEyUU5QJc6YCUqCA5BJB9DbMcPUpIiQqSQwCbr5uaOlB8TUpUkOwAXIbDHEZqTqBaSQiPDhLLB7JLQkIOIRbgDYE7z3BXItQCGA6AtYgWzWhiYGBgYJgxawF9HYCtJZSRloDCJ8dRT548Y5CRkcLvgGvXbzE8efIMQxG1mmfYHAFvluOqr2EakQE2n5AKVm06wvDq2T1GuAMoNpEMgNxLHjAAAAPpCZs56AWIAAAAAElFTkSuQmCC";
 </script>
 <script>
 /* ===================================================================
@@ -4074,6 +4089,61 @@ for(var c8 in U8){ var L8=I18N.locales[c8]; if(!L8) continue; L8.ui=L8.ui||{}; v
   for(var k8 in m8) if(!L8.ui[k8]) L8.ui[k8]=m8[k8]; }
 for(var c9 in T8){ var L9=I18N.locales[c9]; if(!L9) continue; L9.tech=L9.tech||{}; var m9=T8[c9];
   for(var k9 in m9) if(!L9.tech[k9]) L9.tech[k9]=m9[k9]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* L2 — amorcage de l'ile 7 (id interne 8) */
+/* Trois couches : `res` (nom court de la ressource, reecrit dans RES_SHORT par applyToData),
+   `bld` (noms des deux batiments) et `ui` (libelles rendus par I18N.t). Fusion NON destructive.
+   ⚠ `res` et `bld` ont leurs QUATRE langues, fr comprise : applyToData reecrit depuis la table
+   des qu'une valeur est non vide, et une entree `fr` manquante ferait diverger la table de ses
+   voisines (toutes les ressources et tous les batiments y ont leur entree francaise).
+   ⚠ AUCUNE cle `label` dans `bld` : `applyToData` copie le label des qu'il n'est pas nul, une
+   entree vide VIDERAIT le libelle de repli vectoriel du batiment.
+   ⚠ `ui` n'a PAS de francais : le modele est gettext, la CLE EST le texte francais. */
+var R2={"fr":{"bois":"bois"},"en":{"bois":"wood"},"es":{"bois":"madera"},"de":{"bois":"Holz"}};
+var B2={
+"fr":{"bucheronneuse":{"name":"Bûcheronneuse"},"carriere_rustique":{"name":"Carrière Rustique"}},
+"en":{"bucheronneuse":{"name":"Logging Rig"},"carriere_rustique":{"name":"Rustic Quarry"}},
+"es":{"bucheronneuse":{"name":"Taladora"},"carriere_rustique":{"name":"Cantera Rústica"}},
+"de":{"bucheronneuse":{"name":"Holzfäller"},"carriere_rustique":{"name":"Rustikaler Steinbruch"}}};
+var W2={
+"en":{"❌ La bûcheronneuse ne coupe que la forêt":"❌ The logging rig only cuts forest",
+"🔒 Ces arbres sont déjà réservés par une autre bûcheronneuse":"🔒 Those trees are already claimed by another logging rig",
+"❌ Bûcheronneuse déjà en train de couper":"❌ Logging rig already cutting",
+"❌ Bûcheronneuse encore en construction":"❌ Logging rig still under construction",
+"❌ Aucune bûcheronneuse adjacente":"❌ No adjacent logging rig",
+"🪓 Coupe en cours (1 min)":"🪓 Cutting in progress (1 min)",
+"🪓 Arbres coupés — la clairière est constructible":"🪓 Trees felled — the clearing is buildable",
+"Couper la forêt":"Cut the forest","Couper de ce côté":"Cut on this side",
+"Pas de forêt de ce côté":"No forest on this side","Coupe":"Cutting",
+" bois/s · ":" wood/s · "," bois par tuile":" wood per tile",
+"La machine reste en place et se re-vise. Le bois part par la ROUTE : sans liaison au port, la coupe n'avance pas.":"The rig stays put and re-aims. Wood ships out by ROAD: with no link to the port, cutting does not progress."},
+"es":{"❌ La bûcheronneuse ne coupe que la forêt":"❌ La taladora solo corta bosque",
+"🔒 Ces arbres sont déjà réservés par une autre bûcheronneuse":"🔒 Estos árboles ya están reservados por otra taladora",
+"❌ Bûcheronneuse déjà en train de couper":"❌ La taladora ya está cortando",
+"❌ Bûcheronneuse encore en construction":"❌ Taladora aún en construcción",
+"❌ Aucune bûcheronneuse adjacente":"❌ Ninguna taladora adyacente",
+"🪓 Coupe en cours (1 min)":"🪓 Corte en curso (1 min)",
+"🪓 Arbres coupés — la clairière est constructible":"🪓 Árboles talados — el claro es edificable",
+"Couper la forêt":"Talar el bosque","Couper de ce côté":"Talar por este lado",
+"Pas de forêt de ce côté":"No hay bosque por este lado","Coupe":"Tala",
+" bois/s · ":" madera/s · "," bois par tuile":" madera por casilla",
+"La machine reste en place et se re-vise. Le bois part par la ROUTE : sans liaison au port, la coupe n'avance pas.":"La máquina permanece y vuelve a apuntar. La madera sale por CARRETERA: sin enlace al puerto, la tala no avanza."},
+"de":{"❌ La bûcheronneuse ne coupe que la forêt":"❌ Der Holzfäller schlägt nur Wald",
+"🔒 Ces arbres sont déjà réservés par une autre bûcheronneuse":"🔒 Diese Bäume sind bereits von einem anderen Holzfäller belegt",
+"❌ Bûcheronneuse déjà en train de couper":"❌ Holzfäller schlägt bereits",
+"❌ Bûcheronneuse encore en construction":"❌ Holzfäller noch im Bau",
+"❌ Aucune bûcheronneuse adjacente":"❌ Kein Holzfäller daneben",
+"🪓 Coupe en cours (1 min)":"🪓 Schlag läuft (1 Min.)",
+"🪓 Arbres coupés — la clairière est constructible":"🪓 Bäume gefällt — die Lichtung ist bebaubar",
+"Couper la forêt":"Wald schlagen","Couper de ce côté":"Auf dieser Seite schlagen",
+"Pas de forêt de ce côté":"Kein Wald auf dieser Seite","Coupe":"Schlag",
+" bois/s · ":" Holz/s · "," bois par tuile":" Holz pro Feld",
+"La machine reste en place et se re-vise. Le bois part par la ROUTE : sans liaison au port, la coupe n'avance pas.":"Die Maschine bleibt stehen und zielt neu. Das Holz geht über die STRASSE: ohne Hafenanbindung kommt der Schlag nicht voran."}};
+for(var cR in R2){ var LR=I18N.locales[cR]; if(!LR) continue; LR.res=LR.res||{}; var mR=R2[cR];
+  for(var kR in mR) if(!LR.res[kR]) LR.res[kR]=mR[kR]; }
+for(var cB in B2){ var LB=I18N.locales[cB]; if(!LB) continue; LB.bld=LB.bld||{}; var mB=B2[cB];
+  for(var kB in mB) if(!LB.bld[kB]) LB.bld[kB]=mB[kB]; }
+for(var cW in W2){ var LW=I18N.locales[cW]; if(!LW) continue; LW.ui=LW.ui||{}; var mW=W2[cW];
+  for(var kW in mW) if(!LW.ui[kW]) LW.ui[kW]=mW[kW]; } })();
 </script>
 <script>
 const {
@@ -4258,6 +4328,7 @@ const RES_SHORT = {
   silicium_raffine: 'si.raffiné',
   processeur: 'proc.',
   uranium: 'uranium',
+  bois: 'bois',
   yellow_cake: 'yellowcake',
   combustible_u235: 'comb.U235',
   eau_froide: 'eau froide',
@@ -4302,6 +4373,13 @@ const RES_TIER = {
   petrole: 't0',
   minerai_or: 't0',
   uranium: 't0',
+  // L2 — BOIS (ile 8). t0 : c'est une matiere PREMIERE, extraite telle quelle par la
+  // bucheronneuse, au meme titre que la pierre ou le minerai.
+  // ⚠ LA PLACE DANS CETTE TABLE EST LE RANG D'AFFICHAGE (RES_ORDER_RANK = ordre de
+  // declaration). En FIN de bloc t0, et pas a cote de `pierre` : l'ordre interne d'un tier
+  // suit la PROGRESSION (ile 1 -> ile 5), or le bois se rencontre au bout du Collisionneur,
+  // apres l'uranium. Le mettre en tete du tier le ferait passer pour une ressource de depart.
+  bois: 't0',
   lingot_fer: 't1',
   lingot_cuivre: 't1',
   ciment: 't1',
@@ -4409,6 +4487,12 @@ const CARRIER_BY_RES = {
   oxygene: 'pipe',
   azote: 'pipe',
   uranium: 'road',
+  // L2 — le bois circule par la ROUTE. `carrierOf` retombe deja sur 'road' par defaut, mais
+  // l'entree EXPLICITE est ce qui inscrit la ressource dans `TRADE_RESOURCES` (construit par
+  // `Object.keys(CARRIER_BY_RES)`) : sans elle, le bois serait a jamais hors du commerce
+  // maritime, y compris le jour ou l'ile 8 recevra sa liaison. Aucun effet visible en L2 :
+  // l'ile 8 n'a pas de liaison, et la liste du Port filtre en plus sur `unlockedResourceSet`.
+  bois: 'road',
   yellow_cake: 'road',
   combustible_u235: 'road',
   acier_irradie: 'road',
@@ -5025,9 +5109,18 @@ const BLD_SPRITE_OVERRIDE = {
 // `dir` (optionnel) : orientation DIRS4 [N, S, O, E] pour les bâtiments dont l'art existe en
 // 4 sens — la FOREUSE (pack v2.8) : `bat_foreuse_<n|s|o|e>`, sinon repli sur l'art unique.
 const DIR_LETTER = ['n', 's', 'o', 'e'];
+// Batiments dont l'art existe en 4 SENS : id -> prefixe de cle (`<prefixe>_<n|s|o|e>`).
+// L2 — table plutot qu'une chaine de `if` : la bucheronneuse rejoint la foreuse a l'identique
+// (32x48 en n/s, 48x32 en o/e), et le prochain art directionnel n'aura qu'une ligne a ajouter.
+// ⚠ Le site du DESSIN (`drawBuilding`, debord « 1 case 1/2 ») lit LA MEME table : les deux
+// doivent rester d'accord, sinon un sprite deborde sans que le rectangle suive.
+const DIR_ART_IDS = {
+  foreuse: 'bat_foreuse',
+  bucheronneuse: 'bat_bucheronneuse'
+};
 function buildingSpriteKey(id, upgrade, dir) {
-  if (id === 'foreuse' && dir != null && DIR_LETTER[dir]) {
-    const dk = 'bat_foreuse_' + DIR_LETTER[dir];
+  if (DIR_ART_IDS[id] && dir != null && DIR_LETTER[dir]) {
+    const dk = DIR_ART_IDS[id] + '_' + DIR_LETTER[dir];
     if (SPRITE_DATA[dk]) return dk;
   }
   if (BLD_SPRITE_OVERRIDE[id]) {
@@ -7139,6 +7232,66 @@ const BUILDINGS = {
       acier_irradie: 1000
     }
   },
+  // ===== ILE 7 (id interne 8) — amorcage, lot L2 ==============================================
+  // Bucheronneuse : calquee sur la foreuse (meme geste, meme art directionnel), avec un drapeau
+  // PROPRE (`feller`) et non `driller`.
+  // ⚠ REUTILISER `driller` L'AURAIT FAIT ENTRER DANS HUIT BRANCHES QUI NE LA CONCERNENT PAS :
+  // courant progressif indexe sur l'avancement, `drillStall` (pause de 30 s sans courant),
+  // sortie de pierre au tick, `drillLayer`/`drillPowerAt` (cercles autour de l'elevateur),
+  // reservation du mur, fiche a pave directionnel, indicateur de visee, et `isBedrock`.
+  bucheronneuse: {
+    name: 'Bûcheronneuse',
+    color: '#7A5A32',
+    label: 'BOIS',
+    kind: 'build',
+    // t0 comme la Carriere : le tier gouverne le surcout de palier (TIER_COST_MULT) et l'accent
+    // de la vignette, pas la place dans l'arbre. Le bois est une matiere t0, la machine aussi.
+    tier: 't0',
+    // Elle se pose sur une tuile NORMALE et vise la foret d'a cote — jamais sur la foret
+    // elle-meme (aucun batiment ne liste `forest`, cf. L1).
+    // ⚠ L'ile 8 n'a AUCUNE tuile `land` : ses 166 tuiles jouables sont toutes des COTES. C'est
+    // la passe `NO_COAST` qui ajoute `coast` a tout batiment listant `land` — d'ou `coast` ici,
+    // ecrit EXPLICITEMENT plutot que dependre d'une passe qui pourrait changer.
+    terrains: ['land', 'coast'],
+    exclusiveIsland: 8,
+    // D2 — UNE SEULE par ile. `maxPerIsland` existe deja et est scelle dans `tryPlace`, donc
+    // il tient AUSSI la voie « Copier » (qui ne fait qu'armer l'outil : la pose repasse par
+    // `tryPlace`). Le poser dans `selectTool` seul n'aurait rien scelle (lecon `exclusiveIsland`).
+    maxPerIsland: 1,
+    size: [1, 1],
+    // D1 — GRATUITE. Le kickstart de l'ile (L1) ne contient QUE des composants logiques et le
+    // bois ne vient que d'elle : lui donner un cout mettrait l'amorcage en impasse des qu'un
+    // joueur la demolit. 38 batiments ont deja `cost: {}`.
+    cost: {},
+    // Aucune conso : c'est une hache, pas une machine-outil. Le regime vaut donc toujours 1
+    // (pas d'intrant, `pwrF` = 1 quand `power` est nul) — seule la desserte ROUTE peut l'arreter.
+    power: 0,
+    feller: true,
+    noUpgrade: true
+  },
+  // Carriere Rustique : jumelle de `carriere`, payee en BOIS.
+  // ⚠ NE PAS REEMPLOYER `carriere` : elle coute 20 minerai de fer, impayable sur l'ile 8.
+  // ⚠ ET NE PAS L'AJOUTER A `NO_COAST` malgre le nom : cette table RETIRE `coast` des carrieres,
+  // or l'ile 8 n'a que des cotes — la carriere rustique y serait INPOSABLE PARTOUT.
+  carriere_rustique: {
+    name: 'Carrière Rustique',
+    color: '#C8A268',
+    label: 'PIER',
+    kind: 'build',
+    // t0 : aucun surcout de palier (TIER_COST_MULT n'a pas d'entree t0) -> 150 bois EXACTEMENT,
+    // le chiffre du brief est le chiffre paye.
+    tier: 't0',
+    terrains: ['land', 'resource', 'coast'],
+    exclusiveIsland: 8,
+    size: [1, 1],
+    cost: {
+      bois: 150
+    },
+    power: 0,
+    outputs: {
+      pierre: 1
+    }
+  },
   // Mine Fer V4 — palier V4 (entrée u30). Sigmoïde = celle du V3 ×2 (plancher 0,0625 → pic 0,5 kW de
   // base, soit ×2^upgrade ensuite) ; forfait de densification en alliage de tungstène.
   mine_fer_v4: {
@@ -8067,7 +8220,7 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'extraction',
   label: 'Extraction',
-  ids: ['mine_fer', 'mine_charbon', 'carriere', 'pompe_eau', 'pompe_eau_v2', 'pompe_eau_v3', 'mine_cuivre', 'puits_petrole', 'puits_petrole_v2', 'mine_fer_v2', 'mine_cuivre_v2', 'carriere_v2', 'mine_charbon_v2', 'mine_or', 'plateforme_petroliere', 'mine_uranium', 'mine_fer_v3', 'mine_cuivre_v3', 'carriere_v3', 'mine_charbon_v3', 'mine_or_v3', 'mine_uranium_v3', 'mine_fer_v4', 'mine_charbon_v4', 'carriere_v4', 'mine_cuivre_v4', 'mine_or_v4', 'mine_uranium_v4']
+  ids: ['mine_fer', 'mine_charbon', 'carriere', 'pompe_eau', 'pompe_eau_v2', 'pompe_eau_v3', 'mine_cuivre', 'puits_petrole', 'puits_petrole_v2', 'mine_fer_v2', 'mine_cuivre_v2', 'carriere_v2', 'mine_charbon_v2', 'mine_or', 'plateforme_petroliere', 'mine_uranium', 'mine_fer_v3', 'mine_cuivre_v3', 'carriere_v3', 'mine_charbon_v3', 'mine_or_v3', 'mine_uranium_v3', 'mine_fer_v4', 'mine_charbon_v4', 'carriere_v4', 'mine_cuivre_v4', 'mine_or_v4', 'mine_uranium_v4', 'bucheronneuse', 'carriere_rustique']
 }, {
   key: 'energy',
   label: 'Énergie',
@@ -10621,8 +10774,69 @@ const SAVE_VERSION = 31;
 // silhouettes coincident (0 ecart d'alpha) mais les couleurs sont recolorisees par ile
 // (`falaise_s` i1 vs i5 = 320 px sur 1024 differents ; `obstacle` et `coast_tri` = 1024/1024).
 // Deposer un jour de vrais `i8_falaise_*` apres ce bloc les remplace, sans toucher au code.
-const GAME_BUILD = 438;
-const GAME_VERSION = 'Alpha 20.5';
+// 20.6 — LOT L2 : AMORCAGE DE L'ILE 7 (id interne 8). Le joueur debarque, COUPE DU BOIS, pose
+// une CARRIERE RUSTIQUE et relie le tout au port. Rien d'autre : pas de scierie, pas de
+// charbonniere, pas de ferme, pas de culture, pas de peremption, pas de port sortant — aucune
+// recette de transformation n'est ecrite. `SAVE_VERSION` INCHANGE (31) : les deux champs ajoutes
+// (`fl` = coupe en cours, `fd` = sens) sont ADDITIFS, et la conversion de terrain n'en demande
+// aucun (cf. (4)).
+// ⚠ NOMENCLATURE : id interne 8, AFFICHE « Ile 7 ». Ne jamais ecrire « ile 8 » dans un texte joueur.
+// (1) TROIS FAITS QUI ONT REDUIT LE LOT, verifies en source avant d'ecrire :
+//   • les reseaux sont DEJA gratuits (`cost: {}`) et sans restriction d'ile -> AUCUN reseau neuf ;
+//   • `terrainMods` serialise DEJA toute tuile dont `terrain !== baseTerrain` -> le defrichage
+//     est persiste SANS un champ de plus, exactement comme un remblai ;
+//   • `maxPerIsland` EXISTE DEJA et est scelle dans `tryPlace` -> rien a inventer pour « une seule
+//     bucheronneuse par ile », et la voie « Copier » est couverte gratuitement (elle ne fait
+//     qu'armer l'outil ; la pose repasse par `tryPlace`).
+// (2) RESSOURCE `bois` (t0). ⚠ SA PLACE DANS `RES_TIER` EST SON RANG D'AFFICHAGE
+// (`RES_ORDER_RANK` = ordre de declaration) : posee en FIN de bloc t0, parce que l'ordre interne
+// d'un tier suit la PROGRESSION et que le bois se rencontre APRES l'uranium, au bout du
+// Collisionneur. Entree EXPLICITE dans `CARRIER_BY_RES` bien que 'road' soit deja le defaut de
+// `carrierOf` : c'est elle qui inscrit la ressource dans `TRADE_RESOURCES`.
+// ⚠ `INITIAL_RESOURCES` N'EST PAS TOUCHEE (stock de l'ile 1, ecrit a TROIS endroits).
+// (3) DEUX BATIMENTS. La BUCHERONNEUSE est GRATUITE (le kickstart de L1 ne contient que des
+// composants logiques et le bois ne vient que d'elle : un cout mettrait l'amorcage en impasse des
+// qu'un joueur la demolit), UNE SEULE par ile, et elle NE DISPARAIT PAS — a l'inverse de la
+// foreuse, consommee par son operation : l'ile compte 146 tuiles de foret, la consommer a chaque
+// arbre imposerait 146 reposes. En fin de coupe on EFFACE `felling`, on ne supprime rien.
+// ⚠ DRAPEAU PROPRE `feller`, PAS `driller` : reutiliser celui de la foreuse l'aurait fait entrer
+// dans HUIT branches qui ne la concernent pas (courant progressif, `drillStall`, sortie de pierre,
+// cercles `drillLayer`, reservation du mur, fiche a pave, indicateur de visee, `isBedrock`).
+// ⚠ PIEGE LE PLUS COUTEUX DU LOT, ET IL EST DANS LE NOM : `NO_COAST` RETIRE `coast` des
+// carrieres (`carriere`, `carriere_v2`). Or l'ile 8 n'a AUCUNE tuile `land` : ses 166 tuiles
+// jouables sont TOUTES des cotes. Calquer la Carriere Rustique a l'identique — donc l'ajouter a
+// `NO_COAST` — l'aurait rendue INPOSABLE PARTOUT sur la seule ile ou elle existe. Elle n'y est
+// pas, et `coast` est ecrit explicitement dans ses `terrains`.
+// (4) DEFRICHAGE — calque integral de `tryDrill`, six differences et rien d'autre : ile 8, cible
+// `forest`, 60 s, sortie de bois, la machine persiste, pas de socle.
+// ⚠ LE TAP SUR LA FORET N'ARRIVE PAS PAR `tryExtend` : elle sort sur `t.terrain !== 'water'`
+// AVANT de deleguer a `tryDrill`. Le seul chemin d'un tap sur une tuile de TERRE est `handleTap`,
+// atteint par `onPointerUp` quand `drag.mode === 'select'` — c'est-a-dire AUCUN outil arme, ou
+// « Copier » (`onPointerDown` mappe les deux sur 'select'). Les modes `place`/`upgrade`/`demolish`
+// ne l'atteignent pas, ET C'EST VOULU : taper la foret une route en main doit tenter de POSER la
+// route. ACTION DIRECTE et pas un panneau, contrairement au mur : `tryFell` porte un toast par cas
+// de refus, la ou un mur non percable n'ouvre RIEN et n'explique rien.
+// ⚠ LE BOIS PASSE PAR LE CHEMIN DE DEPOT NORMAL : la machine se donne AU TICK une sortie `bois`
+// (exactement comme la foreuse se donne sa `pierre`), donc le dépot suit `routeOut.road` et
+// `roadReachesPort`. Un depot direct dans `port[8]` aurait rendu la contrainte de raccordement
+// DECORATIVE. Corollaire gratuit : la file d'avancement est remplie APRES le `continue` de la
+// deconnexion, donc route coupee = la coupe n'avance meme pas.
+// ⚠ AUCUN `rebuildNetworks` en fin de coupe, contrairement a la foreuse — ce n'est pas un oubli :
+// elle en a besoin parce qu'elle DISPARAIT (sa tuile perd `networkId`/`netIds`). Ici rien ne
+// bouge, et une tuile de foret ne peut porter aucune infra (les reseaux ne listent pas `forest`).
+// (5) ART DIRECTIONNEL : le site qui choisit `bat_foreuse_<n|s|o|e>` (`buildingSpriteKey`) et
+// celui qui etend le rectangle de dessin d'une DEMI-CASE (`drawBuilding`, « 1 case 1/2 ») sont
+// generalises par UNE table `DIR_ART_IDS`, au lieu de deux `if` sur l'id. Les cles produites pour
+// la foreuse sont identiques a l'octet. ⚠ Les deux sites doivent rester d'accord : un sprite qui
+// deborde sans que le rectangle suive serait tronque.
+// ⚠ SEULS 5 DES 15 PNG DU PACK SONT INJECTES (les 4 sens + la carriere) : scierie, charbonniere,
+// ferme, pont et usines sont HORS PERIMETRE — les injecter serait du poids mort.
+// (6) TOOLBAR_GROUPS : l'absence d'un id n'y « masque » pas le batiment, elle le rend INPOSABLE
+// (le menu enumere les groupes, pas `BUILDINGS`). C'est ce que produit l'absence de
+// `logic_emetteur`/`logic_vanne` (`childOnly`) et de `port` (`fixed`) — trois batiments qu'on ne
+// pose jamais. Les deux nouveaux y sont donc, dans « Extraction ».
+const GAME_BUILD = 439;
+const GAME_VERSION = 'Alpha 20.6';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -10631,7 +10845,7 @@ const GAME_VERSION = 'Alpha 20.5';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Une septieme ile apparait au bout du Collisionneur : foret, entrepot en ruine, et de quoi y poser la couche logique en arrivant.";
+const GAME_NOTES = "Sur la septieme ile : une bucheronneuse abat la foret, une carriere rustique se paie en bois, et le tout se relie au port. La clairiere devient constructible.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -12129,6 +12343,16 @@ function extensionCost(n, scaleOv) {
 // DISPARAÎT en laissant une tuile de tunnel constructible. C'est l'équivalent souterrain de
 // l'extension de terrain en mer, en plus sophistiqué : on ne paie PAS de coût d'extension, le coût
 // EST la foreuse elle-même.
+// ===== BUCHERONNEUSE (ile 8) — LOT L2 =========================================================
+// Machine PERSISTANTE (a l'inverse de la foreuse, consommee par son operation) : elle coupe la
+// tuile de foret voisine en FELL_TIME secondes, en sort du bois pendant l'operation, puis efface
+// son `felling` et se re-vise. L'ile 8 compte 146 tuiles de foret : la faire disparaitre a chaque
+// arbre imposerait 146 reposes.
+const FELL_TIME = 60;  // 1 min par tuile de foret (a plein regime)
+// Debit pendant la coupe : 1 bois/s -> 60 bois par tuile. CALIBRE sur le seul debouche du lot,
+// la Carriere Rustique (150 bois) : 2,5 arbres, soit ~2 min 30 pour la premiere carriere. Les
+// 146 tuiles de l'ile en portent donc 8 760 au total, tres loin d'etre limitant.
+const FELL_RATE = 1;
 const DRILL_TIME = 300; // 5 min de creusement (à plein régime)
 // Pendant l'opération elle extrait de la pierre, évacuée par l'ÉLÉVATEUR comme n'importe quel
 // sortant : élévateur bridé → la foreuse elle-même ralentit (et sa conso monte d'autant moins vite).
@@ -14777,6 +15001,8 @@ function tickIsland(game, isl) {
   const accList = [];
   const nucList = [];
   const drillList = []; // foreuses (île 7) : avancement traité APRÈS le bridage de l'élévateur
+  // L2 — bûcheronneuses (île 8) : même patron, avancement traité dans la passe dédiée plus bas.
+  const fellList = [];
   // Production électrique ventilée par réseau câble (sous-réseau électrique distinct).
   const wireProd = {};
   // Sous-réseaux électriques « fusionnés » (option : puiser sur tous les câbles adjacents) :
@@ -15034,6 +15260,11 @@ function tickIsland(game, isl) {
     // FOREUSE (14.06) : 0 kW tant qu'aucun creusement n'est DÉMARRÉ, puis montée PROGRESSIVE de
     // 0 au maximum de sa couche sur les 5 min — la conso suit l'AVANCEMENT, donc si la foreuse est
     // ralentie (élévateur bridé) elle « monte très doucement » au lieu de s'arrêter.
+    // L2 — BÛCHERONNEUSE : pendant une coupe, elle se donne AU TICK une sortie `bois`, exactement
+    // comme la foreuse se donne sa `pierre`. C'est tout l'intérêt : le bois emprunte alors le
+    // chemin de dépôt NORMAL (routeOut.road → port), donc il est bloqué si la route n'atteint pas
+    // le port. Un dépôt direct dans `port[8]` rendrait la contrainte de raccordement décorative.
+    if (b.feller && bld.felling) effOutputs = { bois: FELL_RATE };
     if (b.driller) {
       basePower = 0;
       const dw = bld.drilling;
@@ -15330,6 +15561,12 @@ function tickIsland(game, isl) {
     // La FOREUSE avance dans une passe DÉDIÉE, après le bridage de l'élévateur (plus bas) : son
     // creusement suit le régime FINAL, élévateur compris.
     if (b.driller) drillList.push({ bld, r, c });
+    // L2 — La bûcheronneuse avance dans une passe dédiée, elle aussi APRÈS le calcul du régime.
+    // ⚠ CE POINT EST *APRÈS* le `continue` de la déconnexion (`if (!ok)`) : une bûcheronneuse dont
+    // la route n'atteint pas le port n'entre donc PAS dans la file → sa coupe ne progresse pas du
+    // tout, au lieu de progresser en jetant le bois. C'est ce qui rend le raccordement réellement
+    // contraignant, et c'est gratuit : on hérite du gabarit de la foreuse.
+    if (b.feller) fellList.push({ bld, r, c });
     // Plus AUCUN intrant → arrêt franc (on saute le bâtiment). On NE saute PAS sur un déficit
     // d'élec. (pwrF bas) : le bâtiment doit rester dans energyConsumers pour que la boucle énergie
     // compte sa demande et fasse converger pwrAvg (sinon oscillation/blocage). Sa production sera
@@ -15638,6 +15875,37 @@ function tickIsland(game, isl) {
     // tick (les routeIn/routeOut déjà résolus pointeraient dans le vide) → la boucle `frame` s'en
     // charge en consommant cette notification (rebuild + toast + redraw).
     (game.drillNotify || (game.drillNotify = [])).push({ isl, found });
+    activeChanged = true;
+    resChanged = true;
+  }
+  // ── BÛCHERONNEUSES : avancement de la coupe ───────────────────────────────────────────────
+  // Même position dans le tick que les foreuses (après le bridage de l'élévateur) : l'île 8 n'a
+  // pas d'élévateur, mais garder les deux passes côte à côte évite d'avoir à se demander, plus
+  // tard, laquelle voit quel régime.
+  for (const d of fellList) {
+    const bld = d.bld,
+      fw = bld.felling;
+    if (!fw) continue;
+    // Le régime vaut 1 en pratique (ni intrant ni conso), mais on le respecte : si un jour la
+    // machine reçoit un intrant, la coupe ralentira au lieu d'ignorer la pénurie.
+    const rg = bld.regime != null ? bld.regime : 1;
+    fw.rem -= rg;
+    fw.rate = rg;
+    if (fw.rem > 1e-6) continue;
+    // ── Coupe terminée ────────────────────────────────────────────────────────────────────
+    // La tuile de forêt devient une CLAIRIÈRE constructible. ⚠ Aucun drapeau à écrire : la
+    // conversion est persistée par `terrainMods`, qui sérialise toute tuile dont `terrain` diffère
+    // de `baseTerrain` — exactement comme un remblai. Un drapeau parallèle serait une 2ᵉ vérité.
+    const ft = tiles[fw.r] && tiles[fw.r][fw.c];
+    if (ft && !ft.building && ft.terrain === 'forest') ft.terrain = 'land';
+    // D3 — LA MACHINE PERSISTE : on efface l'opération, on ne supprime pas le bâtiment (l'île
+    // compte 146 tuiles de forêt ; la consommer à chaque arbre imposerait 146 reposes).
+    delete bld.felling;
+    // ⚠ PAS de `rebuildNetworks` ici, contrairement à la foreuse — et ce n'est pas un oubli :
+    // elle en a besoin parce que la FOREUSE DISPARAÎT (sa tuile perd `networkId`/`netIds`). Ici
+    // aucun bâtiment ne bouge, et une tuile de forêt ne peut porter aucune infra (les réseaux ne
+    // listent pas `forest`) : il n'existe donc aucun réseau à recalculer. Seul le dessin change.
+    (game.fellNotify || (game.fellNotify = [])).push({ isl });
     activeChanged = true;
     resChanged = true;
   }
@@ -18035,6 +18303,13 @@ const TECH_NODES = [{
     n: ISLAND8_CONFIRMS
   }],
   unlocks: {
+    // L2 — les deux batiments d'amorcage de l'ile. `BUILDING_NODE` est DERIVE de cette liste :
+    // les y inscrire suffit a les masquer du menu tant que le noeud 44 n'est pas confirme.
+    // ⚠ Il faut EN PLUS les inscrire dans `TOOLBAR_GROUPS` : le menu Batiment enumere les
+    // groupes, pas `BUILDINGS`. Un batiment absent de la table n'est PAS « masque », il est
+    // INPOSABLE (c'est ce que produit l'absence de `logic_emetteur`/`logic_vanne`, qui sont
+    // `childOnly`, et de `port`, qui est `fixed` — trois batiments qu'on ne pose jamais).
+    buildings: ['bucheronneuse', 'carriere_rustique'],
     islands: [8]
   }
 }];
@@ -21250,6 +21525,7 @@ function InfoPanel({
   onCancelExtend,
   onRepairElevator,
   onDrill,
+  onFell,
   onUpgradeElevator,
   onToggleCollider,
   onBuyResearch,
@@ -23113,6 +23389,45 @@ function InfoPanel({
     }, I18N.t(COOLER_DEF.modes[k].label)))), React.createElement("div", {
       className: "ip-nuc-irr-note"
     }, I18N.t("Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.")));
+  })(), b.feller && (() => {
+    // ── BÛCHERONNEUSE : pavé directionnel + état de la coupe ──────────────────────────────
+    // Contrairement à la foreuse, le pavé ne SÉLECTIONNE pas une face : il LANCE la coupe de ce
+    // côté-là (la machine n'a pas d'étape de visée séparée — le sens se déduit de la géométrie).
+    // Les faces sans forêt sont estompées et leur infobulle dit pourquoi.
+    const ftiles = game.islands[currentIsland] || [];
+    const fwk = bld.felling;
+    const fdir = bld.fellDir != null ? bld.fellDir : 0;
+    const ftgtOf = d => {
+      const dd = DIRS4[d];
+      if (!dd) return null;
+      const rr = info.r + dd[0],
+        cc = info.c + dd[1];
+      const tt = ftiles[rr] && ftiles[rr][cc];
+      if (!tt) return null;
+      return { r: rr, c: cc, t: tt, ok: !tt.building && tt.terrain === 'forest' };
+    };
+    return React.createElement("div", { className: "ip-fluxpri" },
+      React.createElement("div", { className: "ip-fluxpri-lbl" }, I18N.t("Couper la forêt")),
+      dirPad(fwk ? fdir : -1, d => {
+        const q = ftgtOf(d);
+        if (q && q.ok && onFell) onFell(q.r, q.c);
+      }, d => {
+        const q = ftgtOf(d);
+        return {
+          style: q && q.ok ? null : { opacity: 0.45 },
+          title: q && q.ok ? I18N.t('Couper de ce côté') : I18N.t('Pas de forêt de ce côté')
+        };
+      }),
+      React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Coupe")), React.createElement("span", { className: "val" },
+        FELL_TIME + I18N.t(" s · ") + fmtRateSci(FELL_RATE) + I18N.t(" bois/s · ") + fmtPort(FELL_TIME * FELL_RATE) + I18N.t(" bois par tuile"))),
+      // Opération en cours : progression + secondes restantes au régime courant.
+      fwk ? React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("En cours")), React.createElement("span", { className: "val", style: { color: 'var(--yellow)' } },
+        Math.round((1 - fwk.rem / (fwk.tot || FELL_TIME)) * 100) + '% · ' + ((fwk.rate || 0) > 1e-6 ? '~' + fmtDur(fwk.rem / fwk.rate) : I18N.t('à l\'arrêt')))) : null,
+      // ⚠ `lineHeight` EXPLICITE : `.ip-fluxpri-lbl` n'en définit aucun et la police vaut 9 px —
+      // sur un libellé qui passe à la ligne, les jambages mordent la ligne suivante (défaut mesuré
+      // au lot 15.9, jamais corrigé dans la classe).
+      React.createElement("div", { className: "ip-fluxpri-lbl", style: { lineHeight: 1.5 } },
+        I18N.t("La machine reste en place et se re-vise. Le bois part par la ROUTE : sans liaison au port, la coupe n'avance pas.")));
   })(), b.driller && (() => {
     // ── FOREUSE : choix de la DIRECTION puis démarrage MANUEL du forage (14.03) ──
     // Avant, le forage ne s'amorçait qu'en touchant la tuile voisine : impossible de viser depuis
@@ -26846,6 +27161,14 @@ function App() {
           // Creusement EN COURS (14.05/14.06) : mur visé + temps restant (+ pause « manque de
           // courant » en cours). La foreuse est consommée par l'opération → sans persistance, un
           // reload la perdrait ou l'offrirait. Champs additifs.
+          // L2 — COUPE EN COURS (île 8). ⚠ La sérialisation des placements est une LISTE
+          // BLANCHE : sans cette ligne et sa jumelle au chargement, un rechargement en pleine
+          // coupe la perdrait en silence. Champs ADDITIFS → `SAVE_VERSION` inchangé.
+          // La CONVERSION de terrain, elle, n'a rien à faire ici : `terrainMods` la prend déjà.
+          if (b.felling && (b.felling.rem || 0) > 1e-6) {
+            pl.fl = { r: b.felling.r, c: b.felling.c, rem: b.felling.rem, tot: b.felling.tot || FELL_TIME };
+          }
+          if (b.fellDir != null) pl.fd = b.fellDir;
           if (b.drilling && (b.drilling.rem || 0) > 1e-6) {
             pl.dg = {
               r: b.drilling.r,
@@ -27583,6 +27906,11 @@ function App() {
           if (p.dd != null) t.building.drillDir = +p.dd;
           if (p.ab != null) t.building.antBoost = +p.ab;
           // Creusement en cours : reprend exactement là où il s'était arrêté (foreuse déjà payée).
+          // L2 — la coupe reprend exactement là où elle s'était arrêtée.
+          if (p.fl && +p.fl.rem > 1e-6) {
+            t.building.felling = { r: +p.fl.r, c: +p.fl.c, rem: +p.fl.rem, tot: +p.fl.tot || FELL_TIME, rate: 0 };
+          }
+          if (p.fd != null) t.building.fellDir = +p.fd;
           if (p.dg && +p.dg.rem > 1e-6) {
             t.building.drilling = {
               r: +p.dg.r,
@@ -29891,6 +30219,67 @@ function App() {
     setInfo(null);
     return true;
   }
+  // DÉMARRE la coupe de la tuile de FORÊT (r, c) par la bûcheronneuse adjacente.
+  // Calque intégral de `tryDrill`, avec exactement six différences : île 8 au lieu de 7, cible
+  // `forest` au lieu de `water`, FELL_TIME au lieu de DRILL_TIME, sortie de bois au lieu de
+  // pierre, la machine PERSISTE au lieu de disparaître, et il n'y a pas d'équivalent du socle.
+  // Rien à payer : le coût, c'est le TEMPS (et la machine elle-même est gratuite, cf. D1).
+  function tryFell(r, c) {
+    const g = gameRef.current,
+      isl = g.currentIsland;
+    if (isl !== 8) return false;
+    const tiles = curTiles();
+    const t = tiles[r] && tiles[r][c];
+    if (!t || t.building) return false;
+    if (t.terrain !== 'forest') {
+      showToast(I18N.t('❌ La bûcheronneuse ne coupe que la forêt'), 'var(--red)');
+      return false;
+    }
+    // RÉSERVATION DE LA TUILE — une seule machine par arbre. Comme pour la foreuse, la
+    // réservation ne crée AUCUN champ : elle se LIT sur les machines (`felling.r/c`), donc
+    // démolir la bûcheronneuse libère la tuile sans le moindre traitement dédié.
+    for (let rr = 0; rr < tiles.length; rr++) {
+      for (let cc = 0; cc < tiles[rr].length; cc++) {
+        const ob = tiles[rr][cc] && tiles[rr][cc].building;
+        if (ob && ob.felling && ob.felling.r === r && ob.felling.c === c) {
+          showToast(I18N.t('🔒 Ces arbres sont déjà réservés par une autre bûcheronneuse'), 'var(--orange)');
+          return false;
+        }
+      }
+    }
+    // Une bûcheronneuse doit être posée sur une tuile adjacente (4-voisinage), construite et LIBRE.
+    let mach = null,
+      fellDir = 0,
+      busy = false,
+      building = false;
+    for (const [dr, dc] of DIRS4) {
+      const nt = tiles[r + dr] && tiles[r + dr][c + dc];
+      const nb = nt && nt.building ? nt.building : nt && nt.occupied && tiles[nt.occupied.r] && tiles[nt.occupied.r][nt.occupied.c].building;
+      if (nb && nb.id === 'bucheronneuse') {
+        if (nb.construction && (nb.construction.rem || 0) > 1e-6) { building = true; continue; }
+        if (nb.felling) { busy = true; continue; }
+        mach = nb;
+        // SENS DÉDUIT DE LA GÉOMÉTRIE, comme pour la foreuse : la machine est en (r+dr, c+dc) et
+        // l'arbre en (r, c), elle coupe donc dans la direction OPPOSÉE à (dr, dc).
+        // DIRS4 = [N, S, O, E] → machine au nord ⇒ elle vise le sud (1), etc.
+        fellDir = dr === -1 ? 1 : dr === 1 ? 0 : dc === -1 ? 3 : 2;
+        break;
+      }
+    }
+    if (!mach) {
+      showToast(busy ? I18N.t('❌ Bûcheronneuse déjà en train de couper') : building ? I18N.t('❌ Bûcheronneuse encore en construction') : I18N.t('❌ Aucune bûcheronneuse adjacente'), 'var(--red)');
+      return false;
+    }
+    mach.felling = { r, c, rem: FELL_TIME, tot: FELL_TIME, rate: 0 };
+    mach.fellDir = fellDir;
+    SFX.play('drillStart');
+    showToast(I18N.t('🪓 Coupe en cours (1 min)'), 'var(--yellow)');
+    bumpHud();
+    markDirty();
+    scheduleSave();
+    setInfo(null);
+    return true;
+  }
   function openNetwork(r, c) {
     const g = gameRef.current,
       isl = g.currentIsland;
@@ -30991,13 +31380,16 @@ function App() {
         // restent cadrés sur (x, y, W, H). Repli automatique si le sprite étendu manque : les
         // clés `bat_foreuse_<dir>` absentes du pack font retomber buildingSpriteKey sur
         // `bat_foreuse` (32×32), qui n'entre dans aucun des cas ci-dessous.
+        // L2 — GÉNÉRALISÉ à `DIR_ART_IDS` (la bûcheronneuse a le même gabarit : 32x48 en n/s,
+        // 48x32 en o/e). Les clés produites pour la foreuse sont IDENTIQUES à celles d'avant.
         let fx = x, fy = y, fw = W, fh = H;
-        if (id === 'foreuse') {
+        const dbase = DIR_ART_IDS[id];
+        if (dbase && sk) {
           const fhalf = tile / 2;
-          if (sk === 'bat_foreuse_n') { fy = y - fhalf; fh = H + fhalf; }
-          else if (sk === 'bat_foreuse_s') { fh = H + fhalf; }
-          else if (sk === 'bat_foreuse_o') { fx = x - fhalf; fw = W + fhalf; }
-          else if (sk === 'bat_foreuse_e') { fw = W + fhalf; }
+          if (sk === dbase + '_n') { fy = y - fhalf; fh = H + fhalf; }
+          else if (sk === dbase + '_s') { fh = H + fhalf; }
+          else if (sk === dbase + '_o') { fx = x - fhalf; fw = W + fhalf; }
+          else if (sk === dbase + '_e') { fw = W + fhalf; }
         }
         let drew = false;
         if (!inactive && !disconnected && !throttled) drew = drawAnimFrame(ctx, sk, fx, fy, fw, fh);
@@ -31814,7 +32206,7 @@ function App() {
         drawSprite(ctx, logicSpriteKey, x, y, tile, tile);
         if (isLogicDev && t.building.logicOut) _animPlayed = true;
       } else {
-        drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime, t.building.inFac, t.building.pwrAvg, t.building.construction, t.building.drillDir);
+        drawBuilding(ctx, x, y, tile, bid, t.building.active === false, t.building.disc === true, t.building.upgrade || 0, sz.w, sz.h, t.building.discReason, t.building.regime, t.building.inFac, t.building.pwrAvg, t.building.construction, t.building.drillDir != null ? t.building.drillDir : t.building.fellDir);
         // Amélioration/densification souterraine en cours : le bâtiment est dessiné NORMALEMENT
         // (il continue de tourner à son niveau actuel) et porte une barre de travaux violette.
         {
@@ -31827,6 +32219,39 @@ function App() {
         // 14.05 — FOREUSE : on doit VOIR le sens de la foreuse (retour testeur). Flèche vers la face
         // visée (`drillDir`), ambre au repos, jaune vif pendant un forage, + barre de progression
         // du forage en cours (l'opération dure DRILL_TIME s et n'avance qu'avec du courant).
+        // L2 — BÛCHERONNEUSE : même traitement que la foreuse. La flèche vectorielle n'est qu'un
+        // REPLI (l'art orienté du pack la rend inutile) ; la barre de progression, elle, sert
+        // toujours. Vert bois, pour ne pas la confondre avec le jaune du forage.
+        if (bdef && bdef.feller && tile >= 14) {
+          const fdir2 = t.building.fellDir != null ? t.building.fellDir : 0;
+          const fdd = DIRS4[fdir2];
+          const fwk2 = t.building.felling;
+          const hasFellArt = SPRITES_ENABLED && !!SPRITE_DATA['bat_bucheronneuse_' + (DIR_LETTER[fdir2] || 'n')];
+          if (fdd && fwk2 && !hasFellArt) {
+            const cx = x + sz.w * tile / 2,
+              cy = y + sz.h * tile / 2,
+              ex = cx + fdd[1] * tile * 0.36,
+              ey = cy + fdd[0] * tile * 0.36,
+              a = Math.atan2(fdd[0], fdd[1]),
+              s = tile * 0.17;
+            ctx.save();
+            ctx.fillStyle = '#7CCB5A';
+            ctx.strokeStyle = 'rgba(0,0,0,.7)';
+            ctx.lineWidth = Math.max(1, tile * 0.03);
+            ctx.beginPath();
+            ctx.moveTo(ex + Math.cos(a) * s, ey + Math.sin(a) * s);
+            ctx.lineTo(ex + Math.cos(a + 2.5) * s, ey + Math.sin(a + 2.5) * s);
+            ctx.lineTo(ex + Math.cos(a - 2.5) * s, ey + Math.sin(a - 2.5) * s);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+          }
+          if (fwk2 && (fwk2.rem || 0) > 1e-6) {
+            drawWorkBar(ctx, x, y, sz.w * tile, sz.h * tile, tile, fwk2, '#7CCB5A');
+            _animPlayed = true;
+          }
+        }
         if (bdef && bdef.driller && tile >= 14) {
           const ddir = t.building.drillDir != null ? t.building.drillDir : 0;
           const dd = DIRS4[ddir];
@@ -32571,6 +32996,23 @@ function App() {
       // Terrain actions: obstacle -> repair, eligible water -> extension.
       // Only when no build tool is active (a tap to act on terrain, not to place).
       const toolActive = gameRef.current.ui.tool != null && gameRef.current.ui.tool !== COPY;
+      // L2 — DÉFRICHAGE (île 8) : taper une tuile de forêt lance la coupe par la bûcheronneuse
+      // adjacente. ACTION DIRECTE, et pas l'ouverture d'un panneau comme pour le mur du souterrain.
+      // ⚠ POURQUOI ICI, ET POURQUOI PAS `tryExtend` : `tryExtend` sort sur `t.terrain !== 'water'`
+      // AVANT de déléguer à `tryDrill` — une tuile de forêt n'y arrive donc jamais. Le seul chemin
+      // d'un tap sur une tuile de TERRE est `handleTap`, appelé par `onPointerUp` quand
+      // `drag.mode === 'select'`, c'est-à-dire quand AUCUN outil n'est armé ou que c'est « Copier »
+      // (`onPointerDown` : `tool === null || tool === COPY` → 'select'). Les trois autres modes
+      // (`place`/`upgrade`/`demolish`) n'atteignent pas `handleTap` — et c'est ce qu'on veut :
+      // taper la forêt avec une route en main doit tenter de POSER la route (et la refuser, la
+      // forêt n'étant pas dans ses terrains), pas couper un arbre.
+      // ⚠ Et pas un panneau, contrairement au mur : un mur non perçable n'ouvre RIEN et le joueur
+      // n'apprend rien ; ici `tryFell` porte un toast par cas de refus (pas la bonne tuile, tuile
+      // déjà réservée, aucune machine, machine occupée, machine en construction).
+      if (!toolActive && t && t.terrain === 'forest') {
+        tryFell(tr, tc);
+        return;
+      }
       if (!toolActive && t && (t.terrain === 'obstacle' || t.terrain === 'water' || t.terrain === 'elevator' || t.terrain === 'collider' || isFilledTile(t))) {
         const g = gameRef.current;
         const tiles = curTiles();
@@ -32985,6 +33427,17 @@ function App() {
         }
         // 14.05 — Fin d'un FORAGE (île 7) : le tick a changé le terrain, on fait ici ce qui ne peut
         // pas se faire au milieu d'un tick (reconstruction des réseaux) + le toast de résultat.
+        // L2 — fin de coupe : toast + redessin. Consommé DANS la frame et pas dans le tick, comme
+        // `drillNotify` : le tick ne doit toucher ni React ni les réseaux.
+        if (g.fellNotify && g.fellNotify.length) {
+          g.fellNotify.shift();
+          // Chute + éboulis : le son de la foreuse convient tel quel (impact grave + débris).
+          // Aucun son neuf n'est ajouté — le catalogue est hors périmètre du lot.
+          SFX.play('drillDone');
+          markDirty();
+          scheduleSave();
+          showToast(I18N.t('🪓 Arbres coupés — la clairière est constructible'), 'var(--green)');
+        }
         if (g.drillNotify && g.drillNotify.length) {
           const ev = g.drillNotify.shift();
           // 14.40 — Les deux toasts étaient MUETS. Poche (10 % des murs) = arpège ; mur = éboulis.
@@ -33508,6 +33961,7 @@ function App() {
     onCancelExtend: (r, c) => tryCancelExtend(r, c),
     onRepairElevator: (r, c) => tryRepairElevator(r, c),
     onDrill: (r, c) => tryDrill(r, c),
+    onFell: (r, c) => tryFell(r, c),
     onDrillDir: setDrillDir,
     onUpgradeElevator: () => tryUpgradeElevator(),
     onToggleCollider: () => toggleCollider(),
