@@ -2542,6 +2542,21 @@ for(var code in PWAI){ var L=I18N.locales[code]; if(!L) continue; L.ui=L.ui||{};
  var V={"en": {"\ud83c\udf19 Votre usine produit m\u00eame quand le jeu est ferm\u00e9. Revenez quand vous voulez : la production vous attend.": "\ud83c\udf19 Your factory produces even while the game is closed. Come back whenever you like: the production is waiting for you.", "???? \u2014 d'autres recherches au-del\u00e0": "???? \u2014 more research lies beyond"}, "es": {"\ud83c\udf19 Votre usine produit m\u00eame quand le jeu est ferm\u00e9. Revenez quand vous voulez : la production vous attend.": "\ud83c\udf19 Tu f\u00e1brica produce incluso con el juego cerrado. Vuelve cuando quieras: la producci\u00f3n te espera.", "???? \u2014 d'autres recherches au-del\u00e0": "???? \u2014 hay m\u00e1s investigaciones m\u00e1s all\u00e1"}, "de": {"\ud83c\udf19 Votre usine produit m\u00eame quand le jeu est ferm\u00e9. Revenez quand vous voulez : la production vous attend.": "\ud83c\udf19 Deine Fabrik produziert auch bei geschlossenem Spiel. Komm zur\u00fcck, wann du willst: die Produktion wartet auf dich.", "???? \u2014 d'autres recherches au-del\u00e0": "???? \u2014 dahinter warten weitere Forschungen"}};
  for(var lg2 in V){ var L2=I18N.locales[lg2]; if(!L2) continue; L2.ui=L2.ui||{}; var m2=V[lg2];
   for(var k2 in m2) if(!L2.ui[k2]) L2.ui[k2]=m2[k2]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* L1 — ile 7 (id interne 8) */
+/* Deux couches : `ui` (libelles rendus par I18N.t) et `tech` (nom du noeud 44, reecrit dans
+   BUILDINGS/TECH_NODES par I18N.applyToData — sans entree `tech`, le nom inline francais
+   resterait dans les 4 langues). Fusion NON destructive (`if(!L.x[k])`), donc rejouable.
+   ⚠ Pas d'entree `ui` en francais : le modele est gettext, la CLE EST le texte francais —
+   c'est deja le cas de sa voisine « Ile 6 S ». La table `tech`, elle, a bien ses 4 langues. */
+var U8={
+"en":{"Île 7":"Island 7","Accès Île 7":"Island 7 access"},
+"es":{"Île 7":"Isla 7","Accès Île 7":"Acceso Isla 7"},
+"de":{"Île 7":"Insel 7","Accès Île 7":"Zugang Insel 7"}};
+var T8={"fr":{"44":"Accès Île 7"},"en":{"44":"Island 7 Access"},"es":{"44":"Acceso Isla 7"},"de":{"44":"Zugang Insel 7"}};
+for(var c8 in U8){ var L8=I18N.locales[c8]; if(!L8) continue; L8.ui=L8.ui||{}; var m8=U8[c8];
+  for(var k8 in m8) if(!L8.ui[k8]) L8.ui[k8]=m8[k8]; }
+for(var c9 in T8){ var L9=I18N.locales[c9]; if(!L9) continue; L9.tech=L9.tech||{}; var m9=T8[c9];
+  for(var k9 in m9) if(!L9.tech[k9]) L9.tech[k9]=m9[k9]; } })();
 </script>
 <script>
 const {
@@ -2628,6 +2643,12 @@ const NORMAL_ISLANDS = [
 { id: 5, rows: 18, cols: 18, portR: 9, portC: 7, grid: ["WWWWWWWWWWWWWWWWWW", "WWWWCCCWWWWWWWWWWW", "WWCCTTTCCWWWWWWWWW", "WCTTMTTTCWWWWWWWWW", "WCTMMMTTTCWWWWWWWW", "WCTTTTTTTCWWWWWWWW", "WCMMTOTTTTCWWWWWWW", "WCMTTTTTTTTCWWWWWW", "WWCCCCCTTTTTCCWWWW", "WWWWWWWXCTTTTTCWWW", "WWWWWWWWWCTTOTTCCW", "WWWWWWWWWCTTTTTTCW", "WWWWWWWWWCTTTOTTCW", "WWWWWWWWWCTOTTTMCW", "WWWWWWWWWCTTTMMTCW", "WWWWWWWWWCMMTTTCWW", "WWWWWWWWWWCCCCCCWW", "WWWWWWWWWWWWWWWWWW"] },
 { id: 6, rows: 16, cols: 16, portR: 13, portC: 5, grid: ["WWWWWWWWWWWWWWWW", "WWWWWCCCCWWWWWWW", "WWWWCTKKKCWWWWWW", "WWWWCTKKKCWWWWWW", "WWWWCTTTTCWWWWWW", "WWWWWCETCWWWWWWW", "WWWWWWCTCWWWWWWW", "WWWWWWCTCWCCCWWW", "WWWWWWCTOCMMCWWW", "WWWWWCMTTTCCWWWW", "WWWWWCTTMCWWWWWW", "WWWWWCOTCCWWWWWW", "WWWWWCTCWWWWWWWW", "WWWWWXCWWWWWWWWW", "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW"] },
 { id: 7, rows: 5, cols: 9, grid: ["WWWWWWWWW", "WWTTTWWWW", "WWTETTWWW", "WWTTTTWWW", "WWWTTWWWW"] },
+// L1 — ILE 7 (id interne 8), affichee « Ile 7 » : `islandLabel(8)`. NE JAMAIS ecrire « ile 8 »
+// dans un texte vu par le joueur — l'ile 7 INTERNE est le souterrain, libelle « Ile 6 S ».
+// Glyphes : W eau · C cote · F foret · X port (r13 c5). Aucun `T` : toutes les tuiles
+// jouables sont des COTES, donc constructibles (la passe `NO_COAST` ajoute `coast` a tout
+// batiment qui liste `land`). Aucun `M`, aucun `O` : ni gisement ni terrain accidente.
+{ id: 8, rows: 32, cols: 32, portR: 13, portC: 5, grid: ["WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW", "WWWWWCCCCWWWWWWWWWWWWWWWWWWWWWWW", "WWWWCFFFFCWWWWWWWWWWWWWWWWWWWWWW", "WWWWCFFFFCWWWWWWWWWWWWWWWWWWWWWW", "WWWWCFFFFCWWWWWWWWWWWWCCCWWWWWWW", "WWWWWCFFCWWWWWWWWWWWWCFFFCWWWWWW", "WWWWWWCFCWWWWWWWCWWWCFFFFCWWWWWW", "WWWWWWCFCWCCCWWCFCWWCFFFFCWWWWWW", "WWWWWWCFFCFFCWWCFCWWCFFFFCWWWWWW", "WWWWWCFFFFCCWWWCCCWWCFFFCWWWWWCW", "WWWWWCFFFCWWWWWWWWWWCFFCWWWWWCCW", "WWWWWCFFCCWWWWWWWWWWCCCWWWWWCCWW", "WWWWWCFCWWWWWWWWWWWWWWWWWWWCFCWW", "WWWWWXCWWWWWWWWWWWWWWWWWWWWCFCWW", "WWWWWWWWWWWWWWWCCCWWWWWWWWWCCWWW", "WWWWWWWWWWWWCCCFFCWWWWWWWWWCWWWW", "WWWWWCCWWWWCFFFFFCWWWWWWWWWCWWWW", "WWWWCCWWWWCFFFFFFCWWWWWWWWWWWWWW", "WWWWCCWWWCFFFFFFFCWWWWWWWWWWCWWW", "WWWWWWWWWCFFFFFFCWWWCCCCWWWCCWWW", "WWWWWWWWWCFFCCFCWWWWCFFFCWCFCWWW", "WWWWWWWWCCFCWWCWWWWWCFFFFCFFCWWW", "WWWWWWWWWWCCWWWWWWWCFFFFFFFCWWWW", "WWWCCWWWWWWWWWWWWWWWCFFFFFFFCWWW", "WWWCCWWWWWWWWWWWWWWWCFFFFFFFFCCW", "WWCFFCWWWWWWWWWWWWWWCFFFFFFFFFCW", "WWCFFFCWWWWWWWCWWWWWWCFFCCFFFFCW", "WWWCFFFCWWWWWWCCWWWWWCCCWWCFFFCW", "WWWCCFFFCWWWWWCCWWWWWCWWWWCCCFCW", "WWWWWCCCCWWWWWCCWWWWWWWWWWWWWCWW", "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"] },
 ];
 const ISLAND_TERRAINS = [];
 function charToTerrain(c) {
@@ -2640,7 +2661,15 @@ function charToTerrain(c) {
     P: 'oil',
     X: 'coast',
     E: 'elevator',
-    K: 'collider'
+    K: 'collider',
+    // L1 — ILE 7 (id interne 8). Terrain en ANGLAIS comme ses sept voisins (`water`, `land`,
+    // `resource`, `obstacle`, `coast`, `oil`, `elevator`, `collider`) : la cle de sprite du
+    // terrain est DERIVEE du nom (`'tile_i' + isl + '_' + t.terrain`), un nom francais isole
+    // serait une bizarrerie permanente. Le PNG livre `tile_i8_foret` est donc renomme
+    // `tile_i8_forest` a l'injection.
+    // ⚠ Aucun batiment ne liste `forest` dans ses `terrains` -> la foret vierge est
+    // INCONSTRUCTIBLE, comme `obstacle`. C'est le defrichage du lot L2 qui la convertira.
+    F: 'forest'
   }[c] ?? 'water';
 }
 function buildIslandTiles(def) {
@@ -3358,6 +3387,52 @@ function tunnelBorderPieces(tiles, def, r, c) {
   }
   return edges.map(e => 'i7_bord_' + e); // 3+ côtés : empile les bords cardinaux
 }
+// L1 — ILE 8 : liserés de LISIÈRE de forêt. Même arbre de décision que `tunnelBorderPieces`
+// (le pack a été dessiné contre lui, à la pièce près), prédicat « le voisin est-il de la
+// FORÊT ? » au lieu de « est-ce de la roche ? ». La pièce se pose du côté CLAIRIÈRE, JAMAIS
+// sur la forêt : c'est la couronne qui prolonge celle de la tuile voisine.
+// ⚠ Préfixe DÉRIVÉ de l'île (`i<isl>_bord_`) et non figé : le site de dessin est gardé par la
+// présence de la clé, donc une future île forestière n'aura aucune ligne à ajouter ici.
+// ⚠ `coin` (forêt en diagonale SEULE) / `ext` (forêt sur 2 côtés adjacents) : le pack signale
+// que cette paire avait été livrée INVERSÉE au chantier du souterrain — ici on reprend l'usage
+// du code, que le pack déclare avoir suivi. À juger AU RENDU, pas au nom.
+function forestBorderPieces(tiles, def, r, c, isl) {
+  const P = 'i' + isl + '_bord_';
+  const isF = (rr, cc) => !(rr < 0 || cc < 0 || rr >= def.rows || cc >= def.cols) && tiles[rr][cc].terrain === 'forest';
+  if (isF(r, c) || coastIsWater(tiles, def, r, c)) return []; // ni sur la forêt, ni sur l'eau
+  const F = (dr, dc) => isF(r + dr, c + dc);
+  const N = F(-1, 0),
+    E = F(0, 1),
+    S = F(1, 0),
+    W = F(0, -1);
+  const NE = F(-1, 1),
+    SE = F(1, 1),
+    SW = F(1, -1),
+    NW = F(-1, -1);
+  const edges = [];
+  if (N) edges.push('n');
+  if (E) edges.push('e');
+  if (S) edges.push('s');
+  if (W) edges.push('w');
+  const n = edges.length;
+  if (n === 0) {
+    const d = [];
+    if (NE) d.push('ne');
+    if (SE) d.push('se');
+    if (SW) d.push('sw');
+    if (NW) d.push('nw');
+    return d.map(s => P + 'coin_' + s); // angle rentrant (forêt en diagonale seule)
+  }
+  if (n === 1) return [P + edges[0]];
+  if (n === 2) {
+    const k = edges.slice().sort().join(',');
+    const ext = { 'e,n': 'ne', 'e,s': 'se', 's,w': 'sw', 'n,w': 'nw' };
+    if (ext[k]) return [P + 'ext_' + ext[k]]; // angle sortant (forêt sur 2 côtés adjacents)
+    if (k === 'n,s') return [P + 'chenal_n', P + 'chenal_s']; // chenal vertical
+    if (k === 'e,w') return [P + 'chenal_e', P + 'chenal_w']; // chenal horizontal
+  }
+  return edges.map(e => P + e); // 3+ côtés : empile les bords cardinaux
+}
 // Network id prefix mapping (game infra id -> sprite type prefix).
 const NET_PREFIX = {
   road: 'route',
@@ -3581,6 +3656,10 @@ function uiIcon(name, fallback, cls) {
 // chose que le souterrain sans repasser par cette fonction.
 // N'affecte QUE le texte affiché : les usages internes (isl === 7, clés d'état…) sont inchangés.
 function islandLabel(id) {
+  // ⚠ L'id INTERNE 8 s'affiche « Île 7 » : l'id 7 est le souterrain (« Île 6 S »), le joueur
+  // n'a donc jamais vu d'« Île 7 ». Passer par I18N.t comme ses voisines — `I18N.t('Île ') + id`
+  // rendrait « Île 8 », qui est exactement le libellé à ne jamais afficher.
+  if (id === 8) return I18N.t('Île 7');
   return id === 7 ? I18N.t('Île 6 S') : I18N.t('Île ') + id;
 }
 // Petite icône d'île (sprite ile_N) pour l'UI (onglets transit/production) ; repli null si absent.
@@ -3795,7 +3874,10 @@ const TERRAIN_COLORS = {
   coast: '#3A6A5A',
   oil: '#241813',
   elevator: '#5A5560',
-  collider: '#2b3540'
+  collider: '#2b3540',
+  // L1 — repli COULEUR de la foret (ile 8) : sert si `tile_i8_forest` manque ou n'est pas
+  // encore decode. Sombre et sature, pour se distinguer du vert de `land` (#4A7A3A).
+  forest: '#1E3A18'
 };
 const BUILDINGS = {
   road: {
@@ -6739,6 +6821,18 @@ function applyGameMode(mode) {
     }
   } else {
     for (const d of ISLAND_TERRAINS_BASE) ISLAND_TERRAINS.push(padIslandDef(d));
+    // L1 — REPLI EXPLICITE, PAS UN ACCIDENT : une ile qui n'existe qu'en `normal` (l'ile 8)
+    // emprunte SA GRILLE `normal` en mode `difficile`. La rendre indisponible selon le mode
+    // serait un piege de sauvegarde — le seuil du Collisionneur est atteignable dans les deux
+    // modes, et une ile qui disparait au chargement ferait perdre ce qui y a ete construit.
+    // Derive de la DONNEE (tout id de NORMAL_ISLANDS absent de ISLAND_TERRAINS_BASE), donc
+    // aucune liste a maintenir : la prochaine ile n'aura rien a ajouter ici.
+    for (const d of NORMAL_ISLANDS) {
+      if (ISLAND_TERRAINS_BASE.some(b => b.id === d.id)) continue;
+      ISLAND_TERRAINS.push(padIslandDef({ id: d.id, cols: d.cols, rows: d.rows, grid: d.grid }));
+      const base = d.portR != null && d.portC != null ? { r: d.portR, c: d.portC } : PORTS_BASE[d.id];
+      if (base) PORTS[d.id] = { r: base.r + P, c: base.c + P };
+    }
     for (const k in PORTS_BASE) PORTS[k] = {
       r: PORTS_BASE[k].r + P,
       c: PORTS_BASE[k].c + P
@@ -8938,8 +9032,80 @@ const SAVE_VERSION = 31;
 // reel, canvas peint, 0 pageerror · T6 garde-fou (1 octet modifie -> refus, fichier INTACT, puis
 // `--force` passe) · T7 idempotence a l'octet · T8 `node --check` 7/7 sur le fichier GENERE ·
 // T9 exactement 7 blocs `<script>`.
-const GAME_BUILD = 437;
-const GAME_VERSION = 'Alpha 20.4';
+// 20.5 — LOT L1 : SOCLE DE L'ILE 7 (id interne 8). L'ile EXISTE, elle est ATTEIGNABLE, on peut
+// y aborder et y poser un reseau. Elle est VIDE : aucun batiment, aucune ressource neuve, aucune
+// culture — le bois, la bucheronneuse et le defrichage sont le lot L2. `SAVE_VERSION` INCHANGE
+// (31) : aucun champ de partie ajoute, l'ile est entierement derivee de `ISLAND_TERRAINS`.
+// ⚠ NOMENCLATURE : id interne 8, AFFICHE « Ile 7 ». L'id 7 est le SOUTERRAIN (« Ile 6 S »), le
+// joueur n'a donc jamais vu d'« Ile 7 ». Ne jamais ecrire « ile 8 » dans un texte de joueur.
+// ⚠ LES 42 `=== 7` DU FICHIER NE SONT PAS DES BORNES : ils designent tous le souterrain (pas de
+// port, pas de gisement a la generation, tampon jetable). AUCUN n'a ete touche — les generaliser
+// casserait l'ile 6 S.
+// (1) TERRAIN `forest`, en ANGLAIS comme ses sept voisins : la cle de sprite du terrain est
+// DERIVEE du nom (`'tile_i' + isl + '_' + t.terrain`), un terrain francais isole serait une
+// bizarrerie permanente ; le PNG livre `tile_i8_foret` est renomme A L'INJECTION.
+// ⚠ ET LE PIEGE EST PLUS PROFOND QUE LE NOM DU FICHIER, C'EST LE POINT LE PLUS IMPORTANT DU LOT :
+// cette cle derivee (`tk`) n'est qu'un REPLI. La cle reellement dessinee (`baseKey`) sort de
+// `coastIsCoast()`, et `coastIsLand` signifie « pas de l'eau » — une tuile de foret y compte donc
+// comme de la TERRE. `tile_i8_coast`/`_land` resolvant toujours, `tk` n'aurait JAMAIS ete atteint
+// et la foret se serait affichee en herbe, SANS la moindre erreur. D'ou la branche explicite.
+// Sites enumerant les terrains, tous audites : `charToTerrain` (+F), `chTerr` du moteur
+// d'illustration des astuces (+F, par coherence — aucune scene ne l'utilise en L1),
+// `TERRAIN_COLORS` (+ repli couleur), `COAST_FEATURE_OVERLAY` (INCHANGE : la foret est une TUILE
+// DE BASE, pas un overlay), `tryRepair` et la voie « accidente » du tap (INCHANGES : la foret
+// vierge n'est pas reparable, c'est le defrichage du lot L2 qui la convertira). Aucun batiment ne
+// liste `forest` -> elle est INCONSTRUCTIBLE, comme `obstacle`.
+// (2) GRILLE 32x32 (712 eau · 166 cote dont la tuile de port · 146 foret), port r13 c5. AUCUN `T` :
+// toutes les tuiles jouables sont des COTES — donc constructibles, la passe `NO_COAST` ajoutant
+// `coast` a tout batiment qui liste `land`. Aucune tuile de foret ne touche l'eau (verifie) : les
+// lisieres tombent donc toujours sur de la cote.
+// ⚠ MODE `difficile` : il n'existe pas de grille pour l'ile 8 et il n'y en aura pas. Elle emprunte
+// donc la grille `normal` — repli EXPLICITE, derive de la donnee (tout id de `NORMAL_ISLANDS`
+// absent de `ISLAND_TERRAINS_BASE`), jamais une liste a maintenir. La rendre indisponible selon le
+// mode serait un piege de sauvegarde : le seuil du Collisionneur est atteignable dans les deux.
+// (3) LISIERE DE FORET : `forestBorderPieces`, calque de `tunnelBorderPieces` (le pack a ete
+// dessine contre lui), predicat « voisin = foret » ; la piece se pose du cote CLAIRIERE, jamais
+// sur la foret. Prefixe DERIVE de l'ile et site garde par PRESENCE DE CLE : une future ile
+// forestiere n'aura aucune ligne a ajouter. ⚠ Le triangle de transition littorale est SUPPRIME sur
+// la foret — c'est un degrade terre -> SABLE, il barrerait la canopee.
+// (4) NOEUD 44 « Acces Ile 7 », calque du 43 : `mode: 'auto'` + `colliderConfirm` de 1 280 000
+// (10 000 x 2^7). ⚠ LE SEUIL N'EST PAS DANS `COLLIDER_GOALS` : cette table est indexee par PALIER
+// (1..3) et pilote `colliderGoalLocked` ; une 4e entree nommerait un palier inexistant et
+// `COLLIDER_FLAVORS[4]` etant absent, l'emission de codes casserait. C'est une CONDITION de
+// recherche, doublee d'une ligne d'affichage dans la fiche du Collisionneur.
+// ⚠ SEUIL ATTEIGNABLE, PROUVE SUR LE GRAPHE : au palier 3, le noeud 43 confirme,
+// `colliderGoalLocked` sort false (`COLLIDER_REPAIR_NODES[3]` est undefined) et
+// `colliderAutoAvailable` devient vrai — la machine tourne sans plafond.
+// ⚠ AUCUNE entree dans `ISLAND_ACCESS_NODE`, ni `8:` ni `9:` : cette table decrit la chaine
+// MARITIME et sert AUSSI a `portCasse(isl)` via `[isl + 1]`. Y poser `8: 44` mettrait le port du
+// SOUTERRAIN « en ruine » et ferait apparaitre, depuis l'ile 6 S, une cible de reparation pour une
+// ile absente de la carte. D'ou le cas EXPLICITE dans `portCasse` : l'entrepot de l'ile 8 reste en
+// ruine pendant tout ce lot (son noeud de port arrive au lot L5), et c'est purement visuel.
+// (5) ONGLET MASQUE : l'ile 8 entre dans `ARCHI_CACHEE`. Sans cela, `IslandSelector` — qui enumere
+// `ISLAND_TERRAINS` — afficherait un onglet « Ile 7 » VERROUILLE des la partie neuve, dans une
+// bande que le lot 18.9 a justement degagee en retirant celui de l'ile 6 pour la meme raison.
+// Effet sur la carte de l'archipel : NUL, l'ile 8 n'ayant pas d'entree `ARCHI_POS`.
+// (6) KICKSTART : 250 piece_precision · 150 cable_supraconducteur · 50 processeur · 250 piece_meca
+// — CALCULES depuis les couts relus en source (5 capteurs + 5 actionneurs + 50 cables logiques),
+// de quoi poser la couche logique en arrivant et rien d'autre. Idempotent par la garde
+// `!wasUnlocked` d'`applyUnlocks`, qui n'est traversee que par une validation de recherche : un
+// rechargement ne recredite rien (verifie).
+// ⚠ BORNE DE `freedScopeLabel` LAISSEE A 7, C'EST UN CHOIX : elle ne borne pas le transit (le
+// brief la nomme ainsi) mais liste les iles ou un batiment LIBERE devient constructible. Y ajouter
+// l'ile 8 serait exact, mais la ligne s'affiche sur la carte du noeud 43 — on annoncerait une
+// portee que le joueur ne peut pas encore atteindre. Aucun effet mecanique : `canPlace`/`tryPlace`
+// lisent `forbiddenIslands` en direct et laissent DEJA passer l'ile 8.
+// ⚠ SPRITES : 74 fichiers du pack + 3 icones injectes dans `src/sprites-inline.js` (le monolithe
+// est GENERE par `tools/build.js`, on n'y ecrit jamais). Le champ et les 38 cultures sont
+// DORMANTS — lot L2 ; leurs bandes `_breeze` entrent dans `ANIM_DATA` SANS `ANIM_META`, donc
+// `ANIM_BY_SK` les ignore (`if (!meta) continue`) et elles ne peuvent pas s'associer par erreur.
+// ⚠ LES 11 FALAISES SONT DES ALIAS VERS L'ILE 5, ET C'EST UN REPLI, PAS UNE DEDUPLICATION : le
+// pack annonce ces tuiles « byte-identiques sur les six iles » — MESURE AU PIXEL, c'est FAUX. Les
+// silhouettes coincident (0 ecart d'alpha) mais les couleurs sont recolorisees par ile
+// (`falaise_s` i1 vs i5 = 320 px sur 1024 differents ; `obstacle` et `coast_tri` = 1024/1024).
+// Deposer un jour de vrais `i8_falaise_*` apres ce bloc les remplace, sans toucher au code.
+const GAME_BUILD = 438;
+const GAME_VERSION = 'Alpha 20.5';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -8948,7 +9114,7 @@ const GAME_VERSION = 'Alpha 20.4';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Maintenance interne : les images du jeu sortent du fichier principal vers une source dediee, reassemblee a la construction. Aucun changement visible en jeu.";
+const GAME_NOTES = "Une septieme ile apparait au bout du Collisionneur : foret, entrepot en ruine, et de quoi y poser la couche logique en arrivant.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -10057,7 +10223,12 @@ function researchPointsSpent(game) {
 // stade — le seuil, le contenu et les tuiles sont hors lot. Ce helper existe pour que le futur
 // déverrouillage ait un point d'accroche unique et déjà testé (J11 : « juste un branchement »).
 function island8Unlocked(game) {
-  return false; // seuil non fixé — cf. lot ultérieur (researchPointsSpent est le candidat prévu)
+  // L1 — le crochet inerte devient un vrai test. Source de vérité UNIQUE : le nœud 44 confirmé,
+  // c'est-à-dire exactement ce qui pose `islandUnlocked[8]` via `applyUnlocks`.
+  // ⚠ APPELANTS AUDITÉS AVANT DE CHANGER LA SÉMANTIQUE : la fonction n'était appelée par AUCUN
+  // site de jeu (seule `window.__heat` l'exposait, pour les tests). La faire passer de « toujours
+  // faux » à « vrai après le nœud 44 » ne peut donc rien renverser ailleurs.
+  return isNodeConfirmed(game, 44);
 }
 function researchPointsAvailable(game) {
   return Math.max(0, researchPointsEarned(game) - researchPointsSpent(game));
@@ -11758,6 +11929,17 @@ function colliderBoost(game) {
 }
 // §6 Confirmations requises par palier (valident les nœuds de recherche).
 const COLLIDER_GOALS = { 1: 100, 2: 1000, 3: 10000 };
+// L1 — Seuil de confirmations qui ouvre l'ILE 8 (affichee « Ile 7 »), noeud 44 : 10 000 x 2^7.
+// ⚠ VOLONTAIREMENT HORS DE `COLLIDER_GOALS` : cette table est indexee par PALIER (1..3) et
+// pilote `colliderGoalLocked` / `colliderAutoAvailable` ; une 4e entree y nommerait un palier
+// qui n'existe pas, et `COLLIDER_FLAVORS[4]` etant absent, l'emission de codes casserait.
+// C'est une CONDITION DE RECHERCHE (`reqs: colliderConfirm`) doublee d'une ligne d'affichage,
+// pas un palier de machine.
+// ⚠ ATTEIGNABLE, VERIFIE SUR LE GRAPHE ET PAS SUPPOSE : au palier 3, une fois le noeud 43
+// confirme, `colliderGoalLocked` sort false (`COLLIDER_REPAIR_NODES[3]` est undefined -> il n'y
+// a plus de reparation suivante a exiger) et `colliderAutoAvailable` devient vrai. La machine
+// tourne donc sans plafond et les confirmations s'accumulent jusqu'a ce seuil.
+const ISLAND8_CONFIRMS = 1280000;
 // §5 Data Center : débit de base 0,0625 particule/tick, ×2 par niveau ; au-delà de 4/s le niveau
 // suivant multiplie la RÉCOMPENSE (pas le nb de calculs) — sinon la charge de calcul explose.
 const DC_BASE_RATE = 0.0625;
@@ -16318,6 +16500,26 @@ const TECH_NODES = [{
   unlocks: {
     buildings: ['stabilisateur_quantique', 'antenne_v2', 'mine_fer_v4', 'mine_charbon_v4', 'mine_cuivre_v4', 'carriere_v4', 'mine_or_v4', 'mine_uranium_v4', 'mine_tungstene_v4']
   }
+}, {
+  // L1 — ACCES A L'ILE 7 (id interne 8). Calque du noeud 43 : `mode: 'auto'` + une condition
+  // `colliderConfirm`, validee d'un clic une fois le compteur atteint. Rien d'invente.
+  // ⚠ PAS d'entree dans `ISLAND_ACCESS_NODE` : cette table decrit la chaine MARITIME (cle =
+  // ile a ouvrir, valeur = noeud de LIVRAISON paye par le port de l'ile precedente) et sert
+  // AUSSI a `portCasse(isl)` via `ISLAND_ACCESS_NODE[isl + 1]`. Y poser `8: 44` casserait
+  // l'ile 7 SOUTERRAINE (son port passerait « en ruine ») et ferait apparaitre, depuis le
+  // souterrain, une cible de reparation pour une ile absente de la carte. L'ile 8 s'ouvre par
+  // la RECHERCHE, pas par une reparation de port.
+  id: 44,
+  name: 'Accès Île 7',
+  prereq: 43,
+  mode: 'auto',
+  reqs: [{
+    t: 'colliderConfirm',
+    n: ISLAND8_CONFIRMS
+  }],
+  unlocks: {
+    islands: [8]
+  }
 }];
 // Application du facteur (cf. RESEARCH_DELIVERY_FACTOR) : les quantités de la table sont écrites
 // aux valeurs de BASE, la mise à l'échelle se fait ICI, une seule fois, au chargement du module.
@@ -16393,12 +16595,29 @@ const ISLAND_KICKSTART_6 = {
   ciment: 1500,
   polymere: 150
 };
+// Ile 8 (affichee « Ile 7 »), L1 — de quoi POSER LA COUCHE LOGIQUE en arrivant, rien d'autre :
+// l'ile est vide, ses ressources propres appartiennent au lot L2. Quantites CALCULEES depuis les
+// couts relus en source (capteur : 25 piece_precision + 10 cable_supra + 10 processeur ;
+// actionneur : 25 piece_precision + 10 cable_supra + 50 piece_meca ; cable logique : 1 cable
+// supra) pour 5 capteurs + 5 actionneurs + 50 cables :
+//   piece_precision      25x5 + 25x5                = 250
+//   cable_supraconducteur 10x5 + 10x5 + 1x50        = 150
+//   processeur            10x5                      =  50
+//   piece_meca            50x5                      = 250
+// ⚠ AUCUN bois ni pierre : ils appartiennent au lot L2.
+const ISLAND_KICKSTART_8 = {
+  piece_precision: 250,
+  cable_supraconducteur: 150,
+  processeur: 50,
+  piece_meca: 250
+};
 const ISLAND_KICKSTART = {
   2: ISLAND_KICKSTART_BASE,
   3: ISLAND_KICKSTART_3,
   4: ISLAND_KICKSTART_4,
   5: ISLAND_KICKSTART_5,
-  6: ISLAND_KICKSTART_6
+  6: ISLAND_KICKSTART_6,
+  8: ISLAND_KICKSTART_8
 };
 function applyUnlocks(game, def) {
   const u = def.unlocks || {};
@@ -16465,6 +16684,15 @@ function freedScopeLabel(id) {
   const forb = b && b.forbiddenIslands;
   if (!forb || !forb.length) return I18N.t('toutes les îles');
   const ok = [];
+  // L1 — ⚠ BORNE LAISSEE A 7, C'EST UN CHOIX. Cette boucle n'a rien d'une borne de transit :
+  // elle nomme les iles ou un batiment LIBERE de son exclusivite devient constructible, et un
+  // seul batiment produit reellement une liste (le Separateur Cryogenique, `forbiddenIslands:
+  // [1..5]` + `exclusiveUntilNode: 43`). Y ajouter l'ile 8 serait FACTUELLEMENT exact — elle
+  // n'est pas interdite et ses tuiles de cote sont constructibles — mais la ligne s'affiche sur
+  // la carte du noeud 43, alors que l'ile 8 exige 1 280 000 confirmations de plus : on
+  // annoncerait une portee que le joueur ne peut pas utiliser. Aucun effet mecanique — `canPlace`
+  // et `tryPlace` lisent `forbiddenIslands` en direct et laissent DEJA passer l'ile 8.
+  // A rouvrir au lot qui donnera sa liaison maritime a l'ile 8.
   for (let i = 1; i <= 7; i++) if (forb.indexOf(i) < 0) ok.push(islandLabel(i));
   return ok.join(' · ');
 }
@@ -17500,6 +17728,12 @@ const ISLAND_ACCESS_NODE = {
 // fonctionnellement rendrait le tuto INFAISABLE. C'est l'infrastructure maritime qui est en ruine,
 // pas le raccordement terrestre.
 function portCasse(game, isl) {
+  // L1 — ILE 8 : cas EXPLICITE. La regle generale lit `ISLAND_ACCESS_NODE[isl + 1]`, donc la
+  // cle 9 — qui nommerait une ile inexistante ; un lecteur futur y verrait un bug, et la table
+  // decrit la chaine maritime, a laquelle l'ile 8 n'appartient pas encore. Son entrepot reste
+  // donc EN RUINE pendant tout ce lot : le noeud de port de l'ile 8 arrive au lot L5.
+  // ⚠ PUREMENT VISUEL, comme pour les six autres (l'etat n'a aucun effet mecanique).
+  if (+isl === 8) return true;
   const nd = ISLAND_ACCESS_NODE[(+isl) + 1];
   return nd != null && !isNodeConfirmed(game, nd);
 }
@@ -19725,6 +19959,13 @@ function InfoPanel({
     if (co.halt === 'power') row('nop', I18N.t('Électricité'), I18N.t('insuffisante — machine ARRÊTÉE, les 10 min de démarrage sont perdues'), 'var(--red)');
     // 15.x — Passé P3, « conf / 10 000 » était un non-sens (objectif dépassé par construction) :
     // la progression vers le PROCHAIN POINT vit désormais dans l'onglet Recherches.
+    // L1 — ACCES A L'ILE 7 : ligne d'affichage SEPAREE (le seuil ne vit pas dans COLLIDER_GOALS,
+    // cf. ISLAND8_CONFIRMS). Affichee une fois P3 debloque (`tabbed` = noeud 43 confirme, le
+    // meme instant ou le noeud 44 devient lisible dans l'arbre) et retiree des qu'il est
+    // confirme : la progression n'a plus d'objet.
+    if (tabbed && !isNodeConfirmed(game, 44)) {
+      row('i8', I18N.t('Accès Île 7'), fmtPort(conf) + ' / ' + fmtPort(ISLAND8_CONFIRMS), conf >= ISLAND8_CONFIRMS ? 'var(--green)' : null);
+    }
     row('cf', I18N.t('Confirmations'), fmtPort(conf) + (goal && !tabbed ? ' / ' + fmtPort(goal) : ''), tabbed || (conf >= goal && goal) ? 'var(--green)' : null);
     // 14.24 — Les deux conditions de lancement, visibles en permanence : le joueur sait AVANT
     // d'atteindre l'état « prêt » ce qui lui manque (réseau logique câblé, recherche du palier).
@@ -21982,7 +22223,13 @@ const ARCHI_POS_5 = { 1: [20, 24], 2: [80, 24], 3: [46, 50], 4: [20, 75], 5: [77
 // L'île 6 est la SURPRISE du jeu : tant qu'elle n'est pas débloquée elle n'est pas dessinée
 // du tout. Une silhouette grisée annoncerait son existence — alors que les îles 2..5 sont
 // grisées justement pour que le joueur voie où il va.
-const ARCHI_CACHEE = { 6: true };
+// L1 — L'ILE 8 Y ENTRE AUSSI, ET C'EST UN CORRECTIF, PAS UN ORNEMENT : `IslandSelector` enumere
+// `ISLAND_TERRAINS` et filtre sur cette table. Sans l'entree 8, un onglet « Ile 7 » VERROUILLE et
+// inatteignable apparaitrait des la partie neuve, dans une bande que le lot 18.9 a justement
+// degagee en retirant celui de l'ile 6 pour la meme raison. Effet sur la CARTE : nul — l'ile 8
+// n'a pas d'entree `ARCHI_POS` (aucune liaison maritime en L1), l'enumeration des iles ne la
+// voit donc jamais.
+const ARCHI_CACHEE = { 6: true, 8: true };
 
 function ArchipelMap({ game, flows, reveal, onGo, repairInfo, onRepair }) {
   const unlocked = game.islandUnlocked || {};
@@ -23261,7 +23508,7 @@ function NetworkPanel({
   /* ---- AUTOTILING (porté fidèlement du moteur terrain du jeu) -------------- */
   const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
   function chTerr(c) {
-    return { W: 'water', T: 'land', M: 'resource', O: 'obstacle', C: 'coast', P: 'oil', X: 'coast' }[c] || 'water';
+    return { W: 'water', T: 'land', M: 'resource', O: 'obstacle', C: 'coast', P: 'oil', X: 'coast', F: 'forest' }[c] || 'water';
   }
   function buildTiles(def) {
     const t = Array.from({ length: def.rows }, (_, r) =>
@@ -29641,7 +29888,13 @@ function App() {
         // comblee que le joueur finit par entourer de terre serait redessinee en 'land' et le
         // remblai disparaitrait. Une cle par ile suffit donc, la ou l'adjacence en aurait demande 12.
         // Ile 7 exclue : la branche isTun passe avant (cf. A1).
-        const baseKey = isTun ? (ring7 ? 'tile_i7_land_clair' : 'tile_i7_land') : isFilledTile(t) ? 'tile_i' + isl + '_remblai' : 'tile_i' + isl + '_' + (coastIsCoast(tiles, def, r, c) ? 'coast' : 'land');
+        // L1 — ⚠ LA FORET A BESOIN DE SA PROPRE BRANCHE, ET LE PIEGE EST PLUS PROFOND QUE LE
+        // NOM DU FICHIER : la cle de base ne sort PAS de `t.terrain` mais de `coastIsCoast()`,
+        // et `coastIsLand` = « pas de l'eau » — une tuile de foret y compte donc comme de la
+        // terre. Sans cette branche, `tile_i8_coast`/`_land` resolvent TOUJOURS et la cle
+        // derivee du terrain (`tk`, quelques lignes plus bas) n'est JAMAIS atteinte : elle
+        // n'est qu'un repli. La foret se serait affichee en herbe, sans la moindre erreur.
+        const baseKey = isTun ? (ring7 ? 'tile_i7_land_clair' : 'tile_i7_land') : isFilledTile(t) ? 'tile_i' + isl + '_remblai' : t.terrain === 'forest' ? 'tile_i' + isl + '_forest' : 'tile_i' + isl + '_' + (coastIsCoast(tiles, def, r, c) ? 'coast' : 'land');
         if (!drawTileAnim(ctx, baseKey, x, y, tile, r, c) && !drawSprite(ctx, baseKey, x, y, tile, tile)) {
           const tk = 'tile_i' + isl + '_' + t.terrain;
           if (!drawSprite(ctx, tk, x, y, tile, tile)) {
@@ -29650,7 +29903,11 @@ function App() {
           }
         }
         // Pas de triangle de transition « littoral » sous terre (île 7).
-        const tri = isTun ? null : coastTransitionTri(tiles, def, r, c);
+        // ⚠ PAS DE TRIANGLE DE TRANSITION SUR LA FORET : `coastTransitionTri` ne sort que sur
+        // une tuile de terre INTERIEURE, or une tuile de foret en est une (elle ne touche pas
+        // l'eau sur cette grille) et deux cotes cote-a-cote suffisent a la declencher. Le
+        // triangle est un degrade terre -> SABLE : peint sur la canopee, il la barrerait.
+        const tri = isTun || t.terrain === 'forest' ? null : coastTransitionTri(tiles, def, r, c);
         if (tri) {
           const trk = 'tile_i' + isl + '_coast_tri_' + tri;
           if (!drawAnimFrame(ctx, trk, x, y, tile, tile)) drawSprite(ctx, trk, x, y, tile, tile);
@@ -29684,6 +29941,14 @@ function App() {
         if (isl === 7) {
           const bd = tunnelBorderPieces(tiles, def, r, c);
           for (let i = 0; i < bd.length; i++) drawSprite(ctx, bd[i], x, y, tile, tile);
+        }
+        // L1 — LISIERE de foret, posee sur la tuile de CLAIRIERE, cote foret. Garde par
+        // PRESENCE DE CLE (jamais une liste d'iles en dur, regle du lot 14.90) : l'ile 7 est
+        // deja sortie par `isTun`, et toute ile future livree avec ses pieces `iN_bord_*` en
+        // beneficie sans une ligne de code.
+        if (!isTun && SPRITE_DATA['i' + isl + '_bord_n']) {
+          const fb = forestBorderPieces(tiles, def, r, c, isl);
+          for (let i = 0; i < fb.length; i++) drawSprite(ctx, fb[i], x, y, tile, tile);
         }
       } else {
         // Sprites désactivés : rendu d'origine (clé de terrain directe, repli couleur + grille).
