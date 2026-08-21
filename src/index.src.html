@@ -350,6 +350,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
 .res-pop-row.conso .rv{color:#ff7a72;}
 .res-pop-row.export .rv{color:#ffae42;}
 .res-pop-row.import .rv{color:#5bc0ff;}
+.res-pop-row.rot .rv{color:#c98a3a;}
 .res-pop-row.net{border-top:1px solid var(--line);margin-top:3px;padding-top:4px;}
 .res-pop-row.net .rv.pos{color:#5fd08a;}
 .res-pop-row.net .rv.neg{color:#ff7a72;}
@@ -1149,6 +1150,7 @@ canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:crosshai
 .ip-nuc-sel{margin:6px 0 2px;padding-top:6px;border-top:1px solid var(--line);}
 .ip-nuc-sel-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.74rem;color:var(--ink-dim);display:block;margin-bottom:4px;}
 .ip-nuc-mats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;}
+.ip-nuc-mats.c2{grid-template-columns:1fr 1fr;}
 .ip-nuc-mat{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:5px 6px;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;}
 .ip-nuc-mat.on{background:#7E57C2;color:#fff;border-color:#7E57C2;}
 .ip-nuc-mat:hover{border-color:#7E57C2;}
@@ -2557,6 +2559,94 @@ for(var c8 in U8){ var L8=I18N.locales[c8]; if(!L8) continue; L8.ui=L8.ui||{}; v
   for(var k8 in m8) if(!L8.ui[k8]) L8.ui[k8]=m8[k8]; }
 for(var c9 in T8){ var L9=I18N.locales[c9]; if(!L9) continue; L9.tech=L9.tech||{}; var m9=T8[c9];
   for(var k9 in m9) if(!L9.tech[k9]) L9.tech[k9]=m9[k9]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* L3 — ferme, cultures et perissabilite */
+/* Quatre couches, meme forme que le bloc L4 juste en dessous : `res`, `bld`, `tech`, `ui`.
+   Fusion NON destructive (`if(!L.x[k])`), donc rejouable.
+   ⚠ `res`, `bld` et `tech` ONT LEURS QUATRE LANGUES, fr comprise : `applyToData` reecrit depuis
+   la table des qu'une valeur est non vide, et une entree `fr` manquante ferait diverger ces
+   lignes de toutes leurs voisines.
+   ⚠ `ui` n'a PAS de francais : le modele est gettext, LA CLE EST LE TEXTE FRANCAIS.
+   ⚠ AUCUNE cle `label` dans `bld` (elle VIDERAIT le libelle de repli vectoriel).
+   ⚠ Non traduits VOLONTAIREMENT : " s" et " s · " (suffixe de seconde, identique dans les
+   quatre langues) — les laisser en repli fr est exact, pas un oubli. */
+var R3={
+"fr":{"biomasse":"biomasse","latex":"latex"},
+"en":{"biomasse":"biomass","latex":"latex"},
+"es":{"biomasse":"biomasa","latex":"l\u00e1tex"},
+"de":{"biomasse":"Biomasse","latex":"Latex"}};
+var B3={
+"fr":{"ferme":{"name":"Ferme"}},
+"en":{"ferme":{"name":"Farm"}},
+"es":{"ferme":{"name":"Granja"}},
+"de":{"ferme":{"name":"Bauernhof"}}};
+var T3={
+"fr":{"47":"Agriculture"},
+"en":{"47":"Agriculture"},
+"es":{"47":"Agricultura"},
+"de":{"47":"Landwirtschaft"}};
+var U3={
+"en":{
+"Culture":"Crop","Cycle":"Cycle","Installation":"Establishment","D\u00e9croissance":"Decay",
+"zone vide":"empty zone","En attente d'\u00e9vacuation":"Awaiting shipment",
+"Zone de la ferme":"Farm zone","\u270e Modifier la zone":"\u270e Edit the zone",
+" clairi\u00e8res \u00b7 ":" clearings \u00b7 "," en salve toutes les ":" in a burst every ",
+" par tuile, toutes les ":" per tile, every "," \u00b7 installation ":" \u00b7 establishment ",
+" \u00b7 retouchez la ferme pour sortir":" \u00b7 touch the farm again to exit",
+" \u2014 touchez les clairi\u00e8res \u00b7 ":" \u2014 touch the clearings \u00b7 ",
+" bois en salve \u00e0 la fin de la coupe":" wood in a burst when the cut ends",
+"Aucune r\u00e9colte \u00b7 am\u00e9liore les cultures 4-adjacentes":"No harvest \u00b7 improves the 4 adjacent crops",
+"aucune culture choisie \u2014 la zone ne produit rien":"no crop selected \u2014 the zone produces nothing",
+"aucune r\u00e9colte \u00b7 +25 % aux cultures 4-adjacentes (plafond +50 % par tuile)":"no harvest \u00b7 +25% to the 4 adjacent crops (capped at +50% per tile)",
+"For\u00eat cultiv\u00e9e":"Managed Forest","Taillis":"Coppice","H\u00e9v\u00e9a":"Rubber Tree","L\u00e9gumineuse":"Legume",
+"\u274c La zone n'accepte que des clairi\u00e8res":"\u274c The zone only accepts clearings",
+"\u274c Clairi\u00e8re d\u00e9j\u00e0 cultiv\u00e9e par une autre ferme":"\u274c Clearing already farmed by another farm",
+"\u274c Zone au maximum \u2014 am\u00e9liorez la ferme":"\u274c Zone at maximum \u2014 upgrade the farm",
+"La zone se peuple de clairi\u00e8res, jamais de for\u00eat. Chaque tuile co\u00fbte du courant : c'est le courant qui borne l'expansion, pas le temps de cycle. Sans courant, le cycle GELE \u2014 il ne repart jamais de z\u00e9ro. La r\u00e9colte part par la ROUTE : sans liaison au port, la salve attend.":"The zone is filled with clearings, never with forest. Every tile costs power: power is what bounds the expansion, not the cycle time. Without power the cycle FREEZES \u2014 it never restarts from zero. The harvest leaves by ROAD: with no link to the port, the burst waits.",
+"Cette ressource se d\u00e9grade : elle perd une fraction fixe de son stock \u00e0 chaque seconde. La transformer arr\u00eate l'h\u00e9morragie.":"This resource decays: it loses a fixed fraction of its stock every second. Processing it stops the bleeding."},
+"es":{
+"Culture":"Cultivo","Cycle":"Ciclo","Installation":"Establecimiento","D\u00e9croissance":"Descomposici\u00f3n",
+"zone vide":"zona vac\u00eda","En attente d'\u00e9vacuation":"En espera de evacuaci\u00f3n",
+"Zone de la ferme":"Zona de la granja","\u270e Modifier la zone":"\u270e Editar la zona",
+" clairi\u00e8res \u00b7 ":" claros \u00b7 "," en salve toutes les ":" en r\u00e1faga cada ",
+" par tuile, toutes les ":" por casilla, cada "," \u00b7 installation ":" \u00b7 establecimiento ",
+" \u00b7 retouchez la ferme pour sortir":" \u00b7 toca la granja de nuevo para salir",
+" \u2014 touchez les clairi\u00e8res \u00b7 ":" \u2014 toca los claros \u00b7 ",
+" bois en salve \u00e0 la fin de la coupe":" madera en r\u00e1faga al final del corte",
+"Aucune r\u00e9colte \u00b7 am\u00e9liore les cultures 4-adjacentes":"Sin cosecha \u00b7 mejora los cultivos 4-adyacentes",
+"aucune culture choisie \u2014 la zone ne produit rien":"ning\u00fan cultivo elegido \u2014 la zona no produce nada",
+"aucune r\u00e9colte \u00b7 +25 % aux cultures 4-adjacentes (plafond +50 % par tuile)":"sin cosecha \u00b7 +25 % a los cultivos 4-adyacentes (tope +50 % por casilla)",
+"For\u00eat cultiv\u00e9e":"Bosque cultivado","Taillis":"Monte bajo","H\u00e9v\u00e9a":"Hevea","L\u00e9gumineuse":"Leguminosa",
+"\u274c La zone n'accepte que des clairi\u00e8res":"\u274c La zona solo acepta claros",
+"\u274c Clairi\u00e8re d\u00e9j\u00e0 cultiv\u00e9e par une autre ferme":"\u274c Claro ya cultivado por otra granja",
+"\u274c Zone au maximum \u2014 am\u00e9liorez la ferme":"\u274c Zona al m\u00e1ximo \u2014 mejora la granja",
+"La zone se peuple de clairi\u00e8res, jamais de for\u00eat. Chaque tuile co\u00fbte du courant : c'est le courant qui borne l'expansion, pas le temps de cycle. Sans courant, le cycle GELE \u2014 il ne repart jamais de z\u00e9ro. La r\u00e9colte part par la ROUTE : sans liaison au port, la salve attend.":"La zona se puebla de claros, nunca de bosque. Cada casilla cuesta corriente: es la corriente la que limita la expansi\u00f3n, no el tiempo de ciclo. Sin corriente el ciclo SE CONGELA \u2014 nunca vuelve a empezar de cero. La cosecha sale por CARRETERA: sin enlace al puerto, la r\u00e1faga espera.",
+"Cette ressource se d\u00e9grade : elle perd une fraction fixe de son stock \u00e0 chaque seconde. La transformer arr\u00eate l'h\u00e9morragie.":"Este recurso se degrada: pierde una fracci\u00f3n fija de su reserva cada segundo. Transformarlo detiene la hemorragia."},
+"de":{
+"Culture":"Kultur","Cycle":"Zyklus","Installation":"Anwachsen","D\u00e9croissance":"Verfall",
+"zone vide":"leere Zone","En attente d'\u00e9vacuation":"Wartet auf Abtransport",
+"Zone de la ferme":"Hofzone","\u270e Modifier la zone":"\u270e Zone bearbeiten",
+" clairi\u00e8res \u00b7 ":" Lichtungen \u00b7 "," en salve toutes les ":" im Schub alle ",
+" par tuile, toutes les ":" pro Feld, alle "," \u00b7 installation ":" \u00b7 Anwachsen ",
+" \u00b7 retouchez la ferme pour sortir":" \u00b7 Hof erneut antippen zum Beenden",
+" \u2014 touchez les clairi\u00e8res \u00b7 ":" \u2014 Lichtungen antippen \u00b7 ",
+" bois en salve \u00e0 la fin de la coupe":" Holz im Schub am Ende des Schlags",
+"Aucune r\u00e9colte \u00b7 am\u00e9liore les cultures 4-adjacentes":"Keine Ernte \u00b7 verbessert die 4 angrenzenden Kulturen",
+"aucune culture choisie \u2014 la zone ne produit rien":"keine Kultur gew\u00e4hlt \u2014 die Zone erzeugt nichts",
+"aucune r\u00e9colte \u00b7 +25 % aux cultures 4-adjacentes (plafond +50 % par tuile)":"keine Ernte \u00b7 +25 % f\u00fcr die 4 angrenzenden Kulturen (max. +50 % pro Feld)",
+"For\u00eat cultiv\u00e9e":"Nutzwald","Taillis":"Niederwald","H\u00e9v\u00e9a":"Kautschukbaum","L\u00e9gumineuse":"H\u00fclsenfrucht",
+"\u274c La zone n'accepte que des clairi\u00e8res":"\u274c Die Zone nimmt nur Lichtungen auf",
+"\u274c Clairi\u00e8re d\u00e9j\u00e0 cultiv\u00e9e par une autre ferme":"\u274c Lichtung wird bereits von einem anderen Hof bewirtschaftet",
+"\u274c Zone au maximum \u2014 am\u00e9liorez la ferme":"\u274c Zone am Maximum \u2014 Hof verbessern",
+"La zone se peuple de clairi\u00e8res, jamais de for\u00eat. Chaque tuile co\u00fbte du courant : c'est le courant qui borne l'expansion, pas le temps de cycle. Sans courant, le cycle GELE \u2014 il ne repart jamais de z\u00e9ro. La r\u00e9colte part par la ROUTE : sans liaison au port, la salve attend.":"Die Zone f\u00fcllt sich mit Lichtungen, nie mit Wald. Jedes Feld kostet Strom: der Strom begrenzt die Ausdehnung, nicht die Zykluszeit. Ohne Strom FRIERT der Zyklus ein \u2014 er beginnt nie wieder bei null. Die Ernte geht \u00fcber die STRASSE: ohne Anbindung an den Hafen wartet der Schub.",
+"Cette ressource se d\u00e9grade : elle perd une fraction fixe de son stock \u00e0 chaque seconde. La transformer arr\u00eate l'h\u00e9morragie.":"Diese Ressource verdirbt: sie verliert jede Sekunde einen festen Anteil ihres Bestands. Sie zu verarbeiten stoppt den Verlust."}};
+for(var c3 in R3){ var L3a=I18N.locales[c3]; if(!L3a) continue; L3a.res=L3a.res||{}; var m3=R3[c3];
+  for(var k3 in m3) if(!L3a.res[k3]) L3a.res[k3]=m3[k3]; }
+for(var d3 in B3){ var L3b=I18N.locales[d3]; if(!L3b) continue; L3b.bld=L3b.bld||{}; var n3=B3[d3];
+  for(var j3 in n3) if(!L3b.bld[j3]) L3b.bld[j3]=n3[j3]; }
+for(var e3 in T3){ var L3c=I18N.locales[e3]; if(!L3c) continue; L3c.tech=L3c.tech||{}; var o3=T3[e3];
+  for(var i3 in o3) if(!L3c.tech[i3]) L3c.tech[i3]=o3[i3]; }
+for(var f3 in U3){ var L3d=I18N.locales[f3]; if(!L3d) continue; L3d.ui=L3d.ui||{}; var q3=U3[f3];
+  for(var h3 in q3) if(!L3d.ui[h3]) L3d.ui[h3]=q3[h3]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* L4 — transformation de l'ile 7 (id interne 8) */
 /* Quatre couches : `res` (nom court, reecrit dans RES_SHORT par applyToData), `bld` (les quatre
    batiments), `tech` (les noms des noeuds 45 et 46) et `ui` (le label du groupe de menu).
@@ -2835,6 +2925,8 @@ const RES_SHORT = {
   processeur: 'proc.',
   uranium: 'uranium',
   bois: 'bois',
+  biomasse: 'biomasse',
+  latex: 'latex',
   yellow_cake: 'yellowcake',
   planche: 'planche',
   combustible_u235: 'comb.U235',
@@ -2888,6 +2980,13 @@ const RES_TIER = {
   // suit la PROGRESSION (ile 1 -> ile 5), or le bois se rencontre au bout du Collisionneur,
   // apres l'uranium. Le mettre en tete du tier le ferait passer pour une ressource de depart.
   bois: 't0',
+  // L3 — BIOMASSE et LATEX (ile 8). t0 : deux RECOLTES brutes, au meme rang que le bois qui
+  // les precede. ⚠ Elles sont PERISSABLES (RES_LAMBDA) — la seule famille du jeu dont le stock
+  // decroit. Leurs debouches n'existent pas encore (chaudiere, elastomere) : elles pourrissent,
+  // et c'est la lecon du lot.
+  // ⚠ LA PLACE DANS CETTE TABLE EST LE RANG D'AFFICHAGE (RES_ORDER_RANK = ordre de declaration).
+  biomasse: 't0',
+  latex: 't0',
   lingot_fer: 't1',
   lingot_cuivre: 't1',
   ciment: 't1',
@@ -3010,6 +3109,10 @@ const CARRIER_BY_RES = {
   // maritime, y compris le jour ou l'ile 8 recevra sa liaison. Aucun effet visible en L2 :
   // l'ile 8 n'a pas de liaison, et la liste du Port filtre en plus sur `unlockedResourceSet`.
   bois: 'road',
+  // L3 — les deux recoltes circulent par la ROUTE. L'entree EXPLICITE n'est pas decorative :
+  // c'est elle qui inscrit la ressource dans `TRADE_RESOURCES` (`Object.keys(CARRIER_BY_RES)`).
+  biomasse: 'road',
+  latex: 'road',
   yellow_cake: 'road',
   // L4 — planche et fil de carbone circulent par la ROUTE. Comme pour le bois (L2), l'entree
   // EXPLICITE n'est pas decorative : c'est elle qui inscrit la ressource dans `TRADE_RESOURCES`
@@ -5820,6 +5923,35 @@ const BUILDINGS = {
       pierre: 1
     }
   },
+  // ── L3 : la FERME de l'ile 7 (id interne 8) ────────────────────────────────────────────
+  // Un seul batiment, quatre cultures, une ZONE de clairieres. Trois choix a ne pas defaire :
+  // ⚠ (a) `noTierMult` — sans lui, `TIER_COST_MULT` DOUBLERAIT le cout t1 (600 planches au lieu
+  //     de 300). Le chiffre de la table doit etre le chiffre PAYE ; c'est la lecon du lot L4,
+  //     et le precedent est `separateur_air` (13.59). Verifie a l'unite pres au banc.
+  // ⚠ (b) AUCUN `outputs` STATIQUE. La ferme ne produit RIEN au tick : elle accumule et livre en
+  //     SALVE (dette `bld.due`), payee par le chemin de depot normal. Un `outputs` statique la
+  //     ferait produire en continu — exactement ce que R2 retire a la bucheronneuse.
+  // ⚠ (c) `power: 0` DANS LA DEF, mais la conso REELLE vaut `FARM_KW_PER_TILE x n` : elle est
+  //     posee au tick (la def ne connait pas la taille de la zone). Le champ reste a 0 pour que
+  //     tout lecteur statique (fiche, calculateur) ne mente pas sur une valeur qui n'existe pas.
+  ferme: {
+    name: 'Ferme',
+    color: '#6E8B3D',
+    label: 'FERM',
+    kind: 'build',
+    tier: 't1',
+    noTierMult: true,
+    terrains: ['land', 'coast'],
+    exclusiveIsland: 8,
+    needRoad: true,
+    size: [1, 1],
+    cost: {
+      planche: 300,
+      pierre: 200
+    },
+    power: 0,
+    farm: true
+  },
   // ── L4 : la transformation de l'ile 7 (id interne 8) ───────────────────────────────────
   // ⚠ LES QUATRE PARTAGENT TROIS CONTRAINTES, ET AUCUNE N'EST DECORATIVE :
   //  (a) `coast` dans les terrains : l'ile 8 n'a AUCUNE tuile `land` (mesure : water 1992,
@@ -5877,13 +6009,17 @@ const BUILDINGS = {
   //    evite au lot L2.
   // ⚠ `power: 0` : c'est un PRODUCTEUR (convention du jeu — l'eolienne, la centrale a charbon et
   //    la geothermie sont toutes a `power: 0` avec `outputs.energie_kw`).
+  // L3 / R1 — « Charbonniere partout » : le FOYER accepte desormais la CLAIRIERE en plus de la
+  // cote. Un joueur qui defriche pour se faire de la place peut y poser son foyer ; la
+  // charbonniere avait deja les deux. Lecture EXPLICITE de la decision : « toute tuile de l'ile
+  // 8 », pas « toutes les iles » — le foyer reste `exclusiveIsland: 8`.
   foyer_charbon: {
     name: 'Foyer à Charbon',
     color: '#455A64',
     label: 'FOYR',
     kind: 'build',
     tier: 't0',
-    terrains: ['coast'],
+    terrains: ['land', 'coast'],  // R1 : clairiere comprise
     exclusiveIsland: 8,
     needRoad: true,
     size: [1, 1],
@@ -6921,7 +7057,8 @@ const TOOLBAR_GROUPS = [{
   // elle, est STABLE et sert aux filtres `NETWORK_GROUPS`/`BUILD_GROUPS`.
   key: 'bois',
   label: 'Bois et carbone',
-  ids: ['charbonniere', 'scierie', 'filerie_carbone']
+  // ⚠ L'ABSENCE D'UN ID DANS `TOOLBAR_GROUPS` NE LE MASQUE PAS : ELLE LE REND INPOSABLE.
+  ids: ['charbonniere', 'scierie', 'filerie_carbone', 'ferme']
 }, {
   key: 'logicblock',
   label: 'Bloc logique',
@@ -9553,8 +9690,56 @@ const SAVE_VERSION = 31;
 // pas d'art dans le pack : `BLD_SPRITE_OVERRIDE` lui donne une liste de candidats dont le repli
 // est l'art de la centrale a charbon. REPLI ASSUME, a remplacer des qu'un PNG est livre.
 // ⚠ RIEN D'AGRICOLE : pas de ferme, pas de culture, pas de peremption, pas de port sortant.
-const GAME_BUILD = 440;
-const GAME_VERSION = 'Alpha 20.7';
+// 20.8 — LOT L3 : LA FERME, LES CULTURES ET LA PERISSABILITE (ile 7, id interne 8).
+// (1) LAMBDA. `RES_LAMBDA` (biomasse 0,002/tick, latex 0,003) est une propriete de la RESSOURCE,
+// pas de l'ile : chaque tick, apres tous les depots et prelevements, S <- S x (1 - lambda). Passe
+// unique, tout a la fin de `tickIsland` — il n'existe aucun autre site qui soit APRES tout ce qui
+// ecrit dans un port. Le stock N'EST PAS ARRONDI (lambda travaille en flottant, seul l'affichage
+// arrondit) : arrondir a chaque tick rendrait les petits stocks soit immortels, soit mortels d'un
+// coup. SEULES LES RECOLTES BRUTES POURRISSENT — le bois excepte, c'est ce qui rend la
+// transformation desirable au-dela de sa valeur.
+// (2) LE SITE DANGEREUX EST LE RATTRAPAGE HORS-LIGNE, ET IL EST PARTAGE PAR LES HUIT ILES. Il
+// extrapole LINEAIREMENT le debit mesure sur un echauffon — ce qui est faux par construction sous
+// lambda : le stock ne croit pas, il CONVERGE. Forme fermee posee a la place :
+//     S(R) = mu^R x S + Sinf x (1 - mu^R),  mu = 1 - lambda,  Sinf = B x mu / lambda
+// ⚠ ELLE DEGENERE EN LA DROITE QUAND LAMBDA -> 0 (mu^R -> 1 et (1-mu^R)/lambda -> R) : ce n'est
+// pas une seconde formule, c'est la meme. Le garde `lambda > 0` laisse donc les iles 1 a 7 sur la
+// ligne d'origine, A L'OCTET (test Z12), et ce n'est pas une esperance : la branche lambda = 0 est
+// le code d'avant, expression par expression.
+// ⚠ `B` est mesure sur la SECONDE MOITIE de l'echauffon, jamais sur l'echauffon entier : la
+// premiere moitie porte les transitoires (installation d'un hevea = 360 s, premier cycle d'une
+// ferme, dette en attente de reseau), et un transitoire extrapole sur 99 000 ticks est un mensonge.
+// Mesure : ecart 2 a 8 % contre 43 % a 8 602 % pour la droite. Trois autres estimateurs mesures et
+// ECARTES (fenetre entiere 28 %, Aitken sur les moyennes 10,6 %, moyenne du stock 28 %).
+// (3) LA FERME est UNE def pour QUATRE cultures : le choix est un reglage d'INSTANCE (`bld.cult`),
+// comme le fluide du Refroidisseur. Zone en couples ABSOLUS (`bld.zone`), index derive JAMAIS
+// serialise, invalide dans `rebuildNetworks` (le seul point de passage de toute pose, demolition
+// et chargement — sans quoi il garderait la reference d'une ferme demolie).
+// ⚠ `P` NE DEPEND PAS DE `n`, ET C'EST ARITHMETIQUE : si la periode croissait avec la surface, le
+// debit `q x n / P(n)` serait PLAT et les salves plus hautes perdraient davantage a lambda —
+// agrandir deviendrait une double peine. La conso croit lineairement : LE FREIN A L'EXPANSION EST
+// L'ELECTRICITE, JAMAIS LE TEMPS DE CYCLE.
+// (4) R2 — LA BUCHERONNEUSE LIVRE EN SALVE (`FELL_YIELD` = 60 d'un coup, `FELL_RATE` disparait).
+// La salve NE CONTOURNE PAS LE RESEAU ET N'EST JAMAIS PERDUE EN SILENCE : elle est posee en DETTE
+// (`bld.due`, serialisee) et payee au tick suivant par le chemin de depot NORMAL, a hauteur du
+// facteur de reseau. Route coupee -> la dette attend, elle ne s'evapore pas. La ferme emprunte
+// EXACTEMENT le meme chemin.
+// ⚠ CLE DE SERIALISATION `dq`, PAS `du` : `pl.du` est DEJA pris par `dmgUp` (14.26).
+// (5) R1 — le FOYER A CHARBON passe de ['coast'] a ['land','coast'] : charbonniere partout.
+// (6) NOEUD 47 « Agriculture », prereq 46, livraison de 200 planche SUR PLACE. ⚠ TANT QUE LAMBDA
+// EXISTE, AUCUNE LIVRAISON DE NOEUD NE PORTE SUR UN PERISSABLE : exiger 200 biomasse serait exiger
+// de remplir un seau perce, et le joueur ne saurait pas pourquoi il n'y arrive pas.
+// (7) SPRITES : `bat_ferme` seul est injecte — `champ/` (16) et `cultures/` (19 + 19 bandes)
+// avaient ete pre-injectes par L1. ⚠ AUCUN `Object.assign(ANIM_META, …)` N'EST AJOUTE : les bandes
+// vivent dans `__ANIM_DATA__` sans meta et sont cablees par `TILE_ANIM_BY_KEY`, que `drawTileAnim`
+// lit deja par CLE STATIQUE avec le dephasage `(t + r + c)` — la bourrasque diagonale voulue, sans
+// un seul mecanisme neuf. Le piege du build 434 est desamorce par construction.
+// (8) `SAVE_VERSION` INCHANGE (31) : les cinq champs ajoutes (`zn`, `cu`, `cr`, `hv`, `dq`) sont
+// ADDITIFS et absents = defaut.
+// ⚠ HORS PERIMETRE, NON TOUCHE : la sigillaire, l'elastomere, le catalyseur, le port sortant, le
+// bonus multiplicateur, l'engrais. Aucune recette de raffinage n'est ecrite.
+const GAME_BUILD = 441;
+const GAME_VERSION = 'Alpha 20.8';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9563,7 +9748,7 @@ const GAME_VERSION = 'Alpha 20.7';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "La septieme ile se transforme : la charbonniere fait du charbon avec du bois, le foyer en tire du courant, la scierie debite des planches et la filerie file le carbone.";
+const GAME_NOTES = "La septieme ile cultive : la ferme travaille une zone de clairieres et recolte en salve · quatre cultures (foret, taillis, hevea, legumineuse) · la biomasse et le latex se degradent avec le temps, les transformer arrete l'hemorragie · la bucheronneuse livre desormais sa coupe d'un seul coup.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -11066,11 +11251,171 @@ function extensionCost(n, scaleOv) {
 // tuile de foret voisine en FELL_TIME secondes, en sort du bois pendant l'operation, puis efface
 // son `felling` et se re-vise. L'ile 8 compte 146 tuiles de foret : la faire disparaitre a chaque
 // arbre imposerait 146 reposes.
+// ===== L3 — PERISSABILITE, FERME ET CULTURES (ile 8) ==========================================
+// LAMBDA : decroissance par tick d'un stock PORTUAIRE, propriete de la RESSOURCE (pas de l'ile).
+// A chaque tick, apres tous les depots et tous les prelevements : S <- S x (1 - lambda).
+// ⚠ SEULES LES RECOLTES BRUTES POURRISSENT. Tout ce qui est transforme est a lambda = 0 : c'est
+// ce qui rend la transformation desirable au-dela de sa valeur — transformer, c'est arreter
+// l'hemorragie. Le BOIS fait exception parmi les recoltes (lambda = 0 des la coupe), et c'est
+// voulu : c'est la culture qu'on mene sans jamais reguler.
+// ⚠ TOUTE ENTREE AJOUTEE ICI CHANGE LE RATTRAPAGE HORS-LIGNE (cf. `catchUpLambda`) : une
+// ressource a lambda > 0 quitte l'extrapolation lineaire pour la forme fermee. Les iles 1 a 7
+// n'ont aucune ressource a lambda > 0, donc leur rattrapage reste IDENTIQUE A L'OCTET.
+const RES_LAMBDA = {
+  biomasse: 0.002,
+  latex: 0.003
+};
+// Une ressource a-t-elle une decroissance ? (helper unique : jamais de `RES_LAMBDA[k] > 0`
+// recopie sur les sites d'appel — un oubli y serait invisible)
+function resLambda(k) { const l = RES_LAMBDA[k]; return l > 0 ? l : 0; }
+// FERME — la zone est le seul levier de debit, et son frein est l'ELECTRICITE.
+// ⚠ `P` NE DEPEND PAS DE `n`, ET C'EST ARITHMETIQUE : si la periode croissait avec la surface,
+// le debit `q x n / P(n)` serait PLAT et les salves plus hautes perdraient davantage a lambda —
+// agrandir deviendrait une double peine. La conso, elle, croit lineairement : c'est le courant
+// qui borne l'expansion, jamais le temps de cycle.
+const FARM_KW_PER_TILE = 2;
+const FARM_ZONE_BASE = 4;      // tuiles autorisees au niveau 0
+const FARM_ZONE_PER_LVL = 2;   // + par niveau (seul effet de l'amelioration)
+function farmZoneMax(bld) { return FARM_ZONE_BASE + FARM_ZONE_PER_LVL * ((bld && bld.upgrade) || 0); }
+// Rendu de la DETTE d'un batiment a salve (bucheronneuse ou ferme). Chaine vide = rien en attente.
+// C'est la seule fenetre du joueur sur `bld.due` : sans elle, une salve bloquee par un reseau coupe
+// serait invisible, et il croirait la machine muette.
+function fmtDue(bld) {
+  const d = bld && bld.due;
+  if (!d) return '';
+  const out = [];
+  for (const k in d) if (d[k] > 1e-9) out.push(fmtPort(d[k]) + ' ' + (RES_SHORT[k] || k));
+  return out.join(' \u00b7 ');
+}
+// LEGUMINEUSE : elle ne recolte rien, elle ameliore ses VOISINES.
+const FARM_LEGUME_BONUS = 0.25;  // par tuile de legumineuse 4-adjacente
+const FARM_LEGUME_CAP = 0.5;     // plafond PAR TUILE BENEFICIAIRE
+// LES QUATRE CULTURES. `P` en secondes (= ticks), `q` par tuile et par salve.
+// ⚠ TOUTES CES VALEURS SONT DU REGLAGE : les changer ne demande que de re-verifier l'invariant
+// d'equilibrage (rapport L3 §4). Les trois TYPES DE POUSSE :
+//   `coupee`     — recoltee puis replantee : la tuile repart a la souche et repousse en `stages`
+//                  stades sur la duree du cycle.
+//   `perenne`    — INSTALLATION LONGUE (`install` secondes) avant la premiere recolte ; l'arbre
+//                  ne repart ensuite JAMAIS de zero, seuls la saignee et le godet changent.
+//   `permanente` — aucune recolte : elle pousse, puis reste. Son seul effet est sur ses voisines.
+const FARM_CULTURES = {
+  foret:   { res: 'bois',     P: 60,  q: 180, type: 'coupee',     stages: 4, art: 'foret',   fin: 'foret_souche' },
+  taillis: { res: 'biomasse', P: 30,  q: 45,  type: 'coupee',     stages: 4, art: 'taillis', fin: 'taillis_chaume' },
+  hevea:   { res: 'latex',    P: 120, q: 120, type: 'perenne',    stages: 3, art: 'hevea',   install: 360 },
+  // `grow` n'est PAS une periode de production : la legumineuse ne recolte rien. C'est la duree
+  // de sa POUSSE, et elle ne sert qu'a choisir le stade dessine. Une fois poussee, elle reste.
+  legum:   { res: null,       P: 0,   q: 0,   type: 'permanente', stages: 4, art: 'legum', grow: 240 }
+};
+const FARM_CULT_KEYS = ['foret', 'taillis', 'hevea', 'legum'];
+const FARM_CULT_LABEL = { foret: 'Forêt cultivée', taillis: 'Taillis', hevea: 'Hévéa', legum: 'Légumineuse' };
+// Les 19 cles de stade, derivees des defs (jamais une liste recopiee : ajouter une culture ne
+// doit demander qu'une ligne dans FARM_CULTURES).
+const FARM_ART_KEYS = (() => {
+  const out = [];
+  for (const k of FARM_CULT_KEYS) {
+    const d = FARM_CULTURES[k];
+    if (d.install) { for (let i = 1; i < d.stages + 1; i++) out.push('overlay_cult_' + d.art + '_' + i); out.push('overlay_cult_' + d.art + '_4_vide', 'overlay_cult_' + d.art + '_4_plein'); }
+    else { for (let i = 1; i <= d.stages; i++) out.push('overlay_cult_' + d.art + '_' + i); if (d.fin) out.push('overlay_cult_' + d.art + '_' + d.fin.split('_').pop()); }
+  }
+  return out;
+})();
+// ⚠ ANIMATION SANS UN SEUL MECANISME NEUF, ET SANS UNE SEULE ENTREE `ANIM_META`.
+// `drawTileAnim` lit deja `TILE_ANIM_BY_KEY` par CLE STATIQUE et dephase par `(t + r + c)` : c'est
+// EXACTEMENT la bourrasque diagonale que le pack decrit. Les bandes vivent dans `__ANIM_DATA__`
+// SANS meta, donc `ANIM_BY_SK` fait `if (!meta) continue` et ne peut pas les associer par erreur a
+// une autre cle. Le piege du build 434 (`Object.assign(ANIM_META, …)` tombant avant la `const`,
+// page blanche invisible a `node --check`) est donc desamorce par construction : il n'y a pas
+// d'`Object.assign`. fps 3, comme les tuiles « brise » — 6 a 10 serait de l'agitation sur une plante.
+for (const k of FARM_ART_KEYS) TILE_ANIM_BY_KEY[k] = { cle: k + '_breeze', frames: 4, fw: 32, fh: 32, fps: 3 };
+// Cle de sprite du stade a dessiner sur une tuile de zone. `null` = rien a peindre (pas de
+// culture choisie). Le stade se DEDUIT de l'avancement — aucun etat de plus a serialiser.
+function farmStageKey(bld) {
+  const d = FARM_CULTURES[bld && bld.cult];
+  if (!d) return null;
+  const pre = 'overlay_cult_' + d.art + '_';
+  // PERENNE : installation d'abord (stades 1..n), puis l'arbre alterne vide/plein — il ne repart
+  // JAMAIS de zero, seuls la saignee et le godet changent.
+  if (d.install) {
+    const inst = bld.hevInst != null ? bld.hevInst : d.install;
+    if (inst > 1e-6) return pre + Math.min(d.stages, 1 + Math.floor((1 - inst / d.install) * d.stages));
+    const rem = bld.cycRem != null ? bld.cycRem : d.P;
+    return pre + (1 - rem / d.P >= 0.5 ? '4_plein' : '4_vide');
+  }
+  // PERMANENTE : elle pousse une fois, puis reste au dernier stade.
+  if (!d.res) {
+    const g = d.grow || 1;
+    const rem = bld.cycRem != null ? bld.cycRem : g;
+    return pre + Math.min(d.stages, 1 + Math.floor((1 - rem / g) * d.stages));
+  }
+  // COUPEE : `stages + 1` etats sur le cycle — la souche juste apres la salve, puis les stades
+  // 1..n. Le DERNIER porte le signal de recolte (epis dores, cimes pleines) : il doit donc etre
+  // celui qui precede la salve, pas celui qui la suit.
+  const P = d.P || 1;
+  const rem = bld.cycRem != null ? bld.cycRem : P;
+  const si = Math.min(d.stages, Math.floor((1 - rem / P) * (d.stages + 1)));
+  return si <= 0 ? pre + d.fin.split('_').pop() : pre + si;
+}
+// INDEX DE ZONE — `cult["r,c"] = cle de culture`, `own["r,c"] = la ferme proprietaire`.
+// ⚠ TRANSITOIRE, JAMAIS SERIALISE. La verite est `bld.zone` (couples ABSOLUS) ; cet index n'est
+// qu'une vue, reconstruite a la demande. Le serialiser creerait une seconde verite a maintenir
+// cohérente a chaque pose, demolition, chargement et changement de culture.
+function rebuildFarmIndex(game, isl) {
+  const t = game.islands && game.islands[isl];
+  const idx = { cult: {}, own: {} };
+  if (t) for (let r = 0; r < t.length; r++) {
+    const row = t[r];
+    if (!row) continue;
+    for (let c = 0; c < row.length; c++) {
+      const b = row[c] && row[c].building;
+      const bd = b && BUILDINGS[b.id];
+      if (!bd || !bd.farm || !b.zone) continue;
+      for (let i = 0; i < b.zone.length; i++) {
+        const k = b.zone[i][0] + ',' + b.zone[i][1];
+        idx.own[k] = b;
+        idx.cult[k] = b.cult || null;
+      }
+    }
+  }
+  (game.farmIdx || (game.farmIdx = {}))[isl] = idx;
+  return idx;
+}
+function farmIndex(game, isl) {
+  const m = game.farmIdx && game.farmIdx[isl];
+  return m || rebuildFarmIndex(game, isl);
+}
+function farmInvalidate(game, isl) { if (game.farmIdx) delete game.farmIdx[isl]; }
+// La ferme proprietaire d'une clairiere, ou null. Seul point de lecture du dessin : le masque du
+// champ et le stade en sortent tous les deux, donc ils ne peuvent pas diverger.
+function farmCell(game, isl, r, c) {
+  const o = farmIndex(game, isl).own[r + ',' + c];
+  return o || null;
+}
+// SALVE d'une ferme : `q` par tuile, majore de FARM_LEGUME_BONUS par legumineuse 4-adjacente,
+// PLAFONNE PAR TUILE BENEFICIAIRE (une tuile entouree de quatre legumineuses gagne +50 %, pas
+// +100 %). Le bonus traverse les frontieres de zone : la culture est un reglage de FERME, donc
+// une ferme en legumineuse ameliore les tuiles de la ferme d'a cote.
+function farmBurst(game, isl, bld) {
+  const cu = FARM_CULTURES[bld && bld.cult];
+  if (!cu || !cu.res || !bld.zone || !bld.zone.length) return 0;
+  const idx = farmIndex(game, isl);
+  const D = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  let tot = 0;
+  for (let i = 0; i < bld.zone.length; i++) {
+    const r = bld.zone[i][0], c = bld.zone[i][1];
+    let nb = 0;
+    for (let d = 0; d < 4; d++) if (idx.cult[r + D[d][0] + ',' + (c + D[d][1])] === 'legum') nb++;
+    tot += cu.q * (1 + Math.min(FARM_LEGUME_CAP, FARM_LEGUME_BONUS * nb));
+  }
+  return tot;
+}
 const FELL_TIME = 60;  // 1 min par tuile de foret (a plein regime)
-// Debit pendant la coupe : 1 bois/s -> 60 bois par tuile. CALIBRE sur le seul debouche du lot,
-// la Carriere Rustique (150 bois) : 2,5 arbres, soit ~2 min 30 pour la premiere carriere. Les
-// 146 tuiles de l'ile en portent donc 8 760 au total, tres loin d'etre limitant.
-const FELL_RATE = 1;
+// L3 / R2 — LA COUPE LIVRE EN SALVE, PLUS AU TICK. Le debit continu de 1 bois/s disparait : a la
+// FIN de la coupe la machine livre `FELL_YIELD` d'un coup. Le total par tuile est INCHANGE (60),
+// seule la forme change — et c'est ce qui rend la bucheronneuse comparable a la ferme.
+// ⚠ LA SALVE NE CONTOURNE PAS LE RESEAU ET N'EST JAMAIS PERDUE EN SILENCE : elle est posee en
+// DETTE (`bld.due`), payee au tick suivant par le chemin de depot NORMAL, a hauteur du facteur
+// de reseau. Route coupee -> la dette attend, elle ne s'evapore pas.
+const FELL_YIELD = 60;
 const DRILL_TIME = 300; // 5 min de creusement (à plein régime)
 // Pendant l'opération elle extrait de la pierre, évacuée par l'ÉLÉVATEUR comme n'importe quel
 // sortant : élévateur bridé → la foreuse elle-même ralentit (et sa conso monte d'autant moins vite).
@@ -11309,6 +11654,10 @@ function rebuildNetworks(game, islandId) {
   const def = defById(islandId);
   const tiles = game.islands[islandId];
   if (!def || !tiles) return;
+  // L3 — l'index de zone des fermes suit le MEME cycle de vie que les reseaux : toute pose,
+  // demolition ou chargement passe ici. Sans cette ligne, il garderait la reference d'une ferme
+  // demolie et le dessin peindrait un champ fantome sur ses anciennes clairieres.
+  farmInvalidate(game, islandId);
   const oldNets = game.networks[islandId] || {};
   const newNets = {};
   const oldToNew = {};
@@ -13721,6 +14070,10 @@ function tickIsland(game, isl) {
   const drillList = []; // foreuses (île 7) : avancement traité APRÈS le bridage de l'élévateur
   // L2 — bûcheronneuses (île 8) : même patron, avancement traité dans la passe dédiée plus bas.
   const fellList = [];
+  // L3 — fermes (île 8) : même patron encore. Le remplissage se fait TARD dans la boucle
+  // bâtiment, après le `continue` des bâtiments déconnectés : c'est ce qui GÈLE le cycle quand
+  // la route est coupée, sans une ligne de code dédiée.
+  const farmList = [];
   // Production électrique ventilée par réseau câble (sous-réseau électrique distinct).
   const wireProd = {};
   // Sous-réseaux électriques « fusionnés » (option : puiser sur tous les câbles adjacents) :
@@ -13982,7 +14335,21 @@ function tickIsland(game, isl) {
     // comme la foreuse se donne sa `pierre`. C'est tout l'intérêt : le bois emprunte alors le
     // chemin de dépôt NORMAL (routeOut.road → port), donc il est bloqué si la route n'atteint pas
     // le port. Un dépôt direct dans `port[8]` rendrait la contrainte de raccordement décorative.
-    if (b.feller && bld.felling) effOutputs = { bois: FELL_RATE };
+    // L3 / R2 — LA SORTIE CONTINUE DISPARAIT, MAIS PAS L'ENTREE `effOutputs`. Une quantite NULLE
+    // suffit a garder la machine dans tout le chemin normal : routage vers le port, calcul de
+    // `disc`/`discReason`, regime. La retirer ferait sortir la bucheronneuse par le `continue`
+    // « rien a produire ni a consommer » — et avec elle l'invariant « reseau coupe -> coupe
+    // gelee », qui ne tient QUE parce que la machine reste dans la boucle.
+    if (b.feller && bld.felling) effOutputs = { bois: 0 };
+    // L3 — LA FERME : conso REELLE = FARM_KW_PER_TILE x tuiles de zone (la def porte 0, elle ne
+    // connait pas la zone). Sortie nominale NULLE, meme raison que ci-dessus : la ferme livre en
+    // salve, pas au tick, mais doit rester routee et gelable.
+    if (b.farm) {
+      const zn = (bld.zone && bld.zone.length) || 0;
+      basePower = FARM_KW_PER_TILE * zn;
+      const cuF = FARM_CULTURES[bld.cult];
+      if (cuF && cuF.res) { effOutputs = {}; effOutputs[cuF.res] = 0; }
+    }
     if (b.driller) {
       basePower = 0;
       const dw = bld.drilling;
@@ -14050,6 +14417,36 @@ function tickIsland(game, isl) {
     const antPE = debuffed ? antProdEffect(prodFac) : null;
     const outMul = mult * (buffed ? antSpeedMul(speedFac) : antPE ? antPE.outMul : 1);
     const inMul = mult * (buffed ? antSpeedMul(speedFac) : antPE ? antPE.inMul : 1);
+    // ── L3 — SALVE : LA DETTE EST INJECTEE ICI, ET DIVISEE PAR `outMul` ──────────────────────
+    // `bld.due` porte ce que la machine a produit d'un coup (fin de coupe, fin de cycle) et
+    // n'a pas encore pu deposer. On la verse dans `effOutputs` pour qu'elle emprunte le chemin
+    // de depot NORMAL — meme reseau, meme facteur de saturation, meme regime.
+    // ⚠ DIVISION PAR `outMul` (= `mult` x facteur d'antenne), ET SUREMENT PAS PAR `mult` SEUL :
+    // `outByType` remultiplie par `outMul` juste en dessous. Diviser par `mult` seul laisserait
+    // le facteur d'antenne multiplier une quantite DEJA GAGNEE — une ferme boostee rembourserait
+    // 1,1 fois sa dette, c'est-a-dire creerait de la matiere. La salve est un ACQUIS, pas un
+    // debit : ni le niveau (dont le seul effet est la taille de la zone), ni l'antenne ne la
+    // changent. Apres division, `outByType.road[k]` vaut EXACTEMENT `due[k]`.
+    // ⚠ `_dueInj` MEMORISE CE QUI VIENT D'ETRE INJECTE, et c'est le coeur du correctif : les
+    // passes bucheronneuse et ferme tournent APRES cette boucle, donc une dette creee au tick N
+    // n'est PAS dans `effOutputs` du tick N. Sans cette photographie, la boucle de depot
+    // l'eteindrait sans jamais l'avoir deposee — la salve s'evaporerait en silence, exactement
+    // ce que R2 interdit. Mesure du banc : 720 bois attendus, 0 depose. Transitoire (prefixe `_`,
+    // absent de la liste blanche de serialisation).
+    // ⚠ On ne mute JAMAIS `b.outputs` (objet de def PARTAGE) : `effOutputs` est ici toujours un
+    // objet frais, cree juste au-dessus pour la bucheronneuse et la ferme.
+    if (b.feller || b.farm) {
+      const inj = {};
+      if (bld.due) {
+        if (!effOutputs) effOutputs = {};
+        const dv = outMul || 1;
+        for (const k in bld.due) if (bld.due[k] > 1e-9) {
+          effOutputs[k] = (effOutputs[k] || 0) + bld.due[k] / dv;
+          inj[k] = bld.due[k];
+        }
+      }
+      bld._dueInj = inj;
+    }
     // Rien à produire ni à consommer → bâtiment sans effet ce tick, on passe. EXCEPTION : une
     // foreuse EN PAUSE de courant (arrêt de 30 s) n'a ni sortie ni conso mais doit quand même être
     // traitée, sinon son compte à rebours de reprise ne s'écoulerait jamais.
@@ -14285,6 +14682,7 @@ function tickIsland(game, isl) {
     // tout, au lieu de progresser en jetant le bois. C'est ce qui rend le raccordement réellement
     // contraignant, et c'est gratuit : on hérite du gabarit de la foreuse.
     if (b.feller) fellList.push({ bld, r, c });
+    if (b.farm) farmList.push({ bld, r, c });
     // Plus AUCUN intrant → arrêt franc (on saute le bâtiment). On NE saute PAS sur un déficit
     // d'élec. (pwrF bas) : le bâtiment doit rester dans energyConsumers pour que la boucle énergie
     // compte sa demande et fasse converger pwrAvg (sinon oscillation/blocage). Sa production sera
@@ -14616,6 +15014,12 @@ function tickIsland(game, isl) {
     // de `baseTerrain` — exactement comme un remblai. Un drapeau parallèle serait une 2ᵉ vérité.
     const ft = tiles[fw.r] && tiles[fw.r][fw.c];
     if (ft && !ft.building && ft.terrain === 'forest') ft.terrain = 'land';
+    // L3 / R2 — LA SALVE. `FELL_YIELD` d'un coup, posee en DETTE et non deposee ici : le depot
+    // direct dans `port` contournerait le reseau et rendrait la contrainte de raccordement
+    // decorative. La dette est payee au tick suivant par le chemin normal, a hauteur du facteur
+    // de reseau — route coupee, elle ATTEND ; demolition, elle part avec la machine (ni bois ni
+    // perte silencieuse : le joueur voit la machine disparaitre).
+    (bld.due || (bld.due = {})).bois = (bld.due.bois || 0) + FELL_YIELD;
     // D3 — LA MACHINE PERSISTE : on efface l'opération, on ne supprime pas le bâtiment (l'île
     // compte 146 tuiles de forêt ; la consommer à chaque arbre imposerait 146 reposes).
     delete bld.felling;
@@ -14626,6 +15030,39 @@ function tickIsland(game, isl) {
     (game.fellNotify || (game.fellNotify = [])).push({ isl });
     activeChanged = true;
     resChanged = true;
+  }
+  // ── FERMES : avancement du cycle et SALVE ─────────────────────────────────────────────────
+  // Même position dans le tick que les bûcheronneuses, et pour la même raison : `farmList` n'a
+  // été rempli que par les fermes qui ont franchi tous les `continue` de la boucle bâtiment.
+  // Une ferme déconnectée ou sans courant n'y est pas → son cycle ne progresse pas d'un iota,
+  // et `rem` est CONSERVÉ (il ne repart jamais de zéro).
+  for (const d of farmList) {
+    const bld = d.bld;
+    const cu = FARM_CULTURES[bld.cult];
+    if (!cu) continue;
+    const rg = bld.regime != null ? bld.regime : 1;
+    // HÉVÉA — installation longue : l'arbre s'installe avant de rien donner. Elle avance au
+    // régime, comme le cycle : une plantation sans courant ne s'installe pas non plus.
+    if (cu.install) {
+      if (bld.hevInst == null) bld.hevInst = cu.install;
+      if (bld.hevInst > 1e-6) { bld.hevInst = Math.max(0, bld.hevInst - rg); continue; }
+    }
+    // LÉGUMINEUSE (permanente) : aucune récolte, un simple compteur de pousse pour le dessin.
+    if (!cu.P || !cu.res) {
+      if (cu.grow) { if (bld.cycRem == null) bld.cycRem = cu.grow; bld.cycRem = Math.max(0, bld.cycRem - rg); }
+      continue;
+    }
+    const n = (bld.zone && bld.zone.length) || 0;
+    if (!n) { bld.cycRem = cu.P; continue; }
+    if (bld.cycRem == null) bld.cycRem = cu.P;
+    bld.cycRem -= rg;
+    if (bld.cycRem > 1e-6) continue;
+    bld.cycRem = cu.P;
+    const amt = farmBurst(game, isl, bld);
+    if (amt > 0) {
+      (bld.due || (bld.due = {}))[cu.res] = (bld.due[cu.res] || 0) + amt;
+      resChanged = true;
+    }
   }
   const facOf = (route, ty, pri) => {
     const nid = route[ty];
@@ -14661,6 +15098,29 @@ function tickIsland(game, isl) {
         const amt = fc * a.outByType.road[k];
         port[k] = (port[k] || 0) + amt;
         if (prod) prod[k] = (prod[k] || 0) + amt;
+      }
+      // L3 — LA DETTE EST ÉTEINTE À HAUTEUR DE `fc`, LE MÊME FACTEUR QUI VIENT DE SERVIR AU DÉPÔT.
+      // `fc` vaut 1 sur un réseau sain → la salve est soldée en un tick ; il vaut 0,5 sur un
+      // réseau saturé → la moitié est versée, l'autre RESTE DUE. Rien ne s'évapore, rien n'est
+      // versé deux fois.
+      // ⚠ ON N'ÉTEINT QUE CE QUI A ÉTÉ RÉELLEMENT INJECTÉ DANS `effOutputs` (`_dueInj`), et
+      // JAMAIS la dette courante : une salve créée par la passe ferme/bûcheronneuse — qui tourne
+      // APRÈS la boucle bâtiment — n'a pas été déposée ce tick-ci. L'éteindre ici la ferait
+      // disparaître sans jamais atteindre le port. Elle attend donc un tick, puis suit le chemin
+      // normal. C'est la latence d'un tick que le banc mesure (Z3, Z13) : salve au tick P,
+      // dépôt au tick P+1.
+      // Le `Math.min` borne le versement à ce qui reste dû (la dette a pu être rognée entre
+      // l'injection et ici) : on ne rend jamais plus que ce qui est déposé.
+      const du = a.bld && a.bld.due;
+      if (du) {
+        const inj = a.bld._dueInj || {};
+        let reste = false;
+        for (const k in du) {
+          const paye = fc * (inj[k] || 0);
+          du[k] -= paye > du[k] ? du[k] : paye;
+          if (du[k] > 1e-9) reste = true;else delete du[k];
+        }
+        if (!reste) delete a.bld.due;
       }
     }
     if (a.outByType.pipe) {
@@ -15308,6 +15768,34 @@ function tickIsland(game, isl) {
     demandMax,
     demandVar
   };
+  // ── L3 — DÉCROISSANCE DES PÉRISSABLES ─────────────────────────────────────────────────────
+  // ⚠ PLACÉE TOUT À LA FIN DU TICK D'ÎLE, et c'est le seul endroit défendable : il n'existe
+  // AUCUN site unique où « les stocks portuaires vivent leur tick ». Ils sont écrits par une
+  // dizaine d'endroits — dépôts des `actives`, centrale nucléaire, tour aéroréfrigérante,
+  // Collisionneur, purge `VENTED_RES`… Une passe dédiée, une fois par île et par tick, APRÈS
+  // que tout a été déposé et prélevé, est la seule définition qui ne dépende pas de l'ordre
+  // interne de la boucle.
+  // ⚠ `tickShips` (transit maritime) tourne APRÈS `onTick` : un dépôt de transit subit donc la
+  // décroissance au tick SUIVANT. Sans conséquence pratique — l'île 8 n'a aucune liaison — mais
+  // il fallait le dire plutôt que le découvrir.
+  // ⚠ LE STOCK N'EST PAS ARRONDI. λ travaille en flottant, seul l'affichage arrondit
+  // (`fmtPort`/`fmtRate`, aucun format parallèle créé — le brief nommait `fmtSep`, qui n'existe
+  // pas dans cette base : le formateur à séparateur de milliers y est `fmtInt`, dont `fmtPort`
+  // n'est que le seuil scientifique). Arrondir à chaque tick rendrait les
+  // petits stocks soit IMMORTELS (arrondi au supérieur : 1 × 0,998 → 1 pour toujours) soit
+  // mortels d'un coup (arrondi à l'inférieur). Le seuil 1e-9 ne sert qu'à ne pas laisser traîner
+  // une poussière dénormale au lieu d'un zéro franc.
+  // ⚠ `_lamLoss` n'existe QUE pendant l'échauffon d'un rattrapage hors-ligne : c'est lui qui
+  // permet de retrouver l'apport BRUT (le delta net, lui, mélange apport et décroissance).
+  const lamLoss = game._lamLoss ? (game._lamLoss[isl] || (game._lamLoss[isl] = {})) : null;
+  for (const k in RES_LAMBDA) {
+    const cur = port[k];
+    if (!(cur > 0)) continue;
+    const nx = cur * (1 - RES_LAMBDA[k]);
+    port[k] = nx > 1e-9 ? nx : 0;
+    if (lamLoss) lamLoss[k] = (lamLoss[k] || 0) + (cur - port[k]);
+    resChanged = true;
+  }
   return {
     resChanged,
     activeChanged,
@@ -17069,6 +17557,24 @@ const TECH_NODES = [{
   unlocks: {
     buildings: ['scierie', 'filerie_carbone']
   }
+}, {
+  // L3 — AGRICULTURE. La livraison porte sur la PLANCHE, imputrescible.
+  // ⚠ REGLE ETABLIE PAR CE LOT : tant que lambda existe, AUCUNE livraison de noeud ne porte sur
+  // un perissable. La condition d'un noeud `delivery` est un STOCK AU MEME INSTANT ; sur un stock
+  // qui decroit, exiger 200 unites d'un coup devient un mur qui monte tout seul avec la duree de
+  // la partie. La planche donne au passage un second debouche a la scierie du lot L4.
+  id: 47,
+  name: 'Agriculture',
+  prereq: 46,
+  mode: 'delivery',
+  reqs: [],
+  island: 8,
+  delivery: {
+    planche: 200
+  },
+  unlocks: {
+    buildings: ['ferme']
+  }
 }];
 // Application du facteur (cf. RESEARCH_DELIVERY_FACTOR) : les quantités de la table sont écrites
 // aux valeurs de BASE, la mise à l'échelle se fait ICI, une seule fois, au chargement du module.
@@ -17307,6 +17813,14 @@ function unlockedResourceSet(game) {
   // (mix/nucOutKey), pas via `outputs` → sans cet ajout ils n'apparaissent jamais dans
   // la config Transit du Port d'une île qui n'en a pas en stock (import impossible).
   if (isBuildingUnlocked(game, 'centrale_nucleaire')) for (const k of NUC_MAT_KEYS) s.add(nucOutKey(k));
+  // L3 — MEME CAS POUR LA FERME : elle n'a aucun `outputs` statique (sa recolte depend de la
+  // culture choisie, injectee au tick). Sans cette ligne, `biomasse` et `latex` resteraient
+  // invisibles a l'inventaire tant qu'aucun stock n'existe — et le joueur ne saurait meme pas
+  // que la culture qu'il vient de choisir produit quelque chose.
+  if (isBuildingUnlocked(game, 'ferme')) for (const fk of FARM_CULT_KEYS) {
+    const fr = FARM_CULTURES[fk].res;
+    if (fr) s.add(fr);
+  }
   return s;
 }
 function isTechFlagConfirmed(game, flag) {
@@ -20283,6 +20797,8 @@ function InfoPanel({
   onRepairElevator,
   onDrill,
   onFell,
+  onSetCult,
+  onFarmEdit,
   onUpgradeElevator,
   onToggleCollider,
   onBuyResearch,
@@ -22146,12 +22662,68 @@ function InfoPanel({
     }, I18N.t(COOLER_DEF.modes[k].label)))), React.createElement("div", {
       className: "ip-nuc-irr-note"
     }, I18N.t("Un fluide plus noble absorbe davantage pour un débit plus faible. Sans fluide, le refroidisseur fonctionne quand même — mal. La consommation électrique ne change pas.")));
+  })(), b.farm && (() => {
+    // ── FERME : sélecteur de culture, zone de clairières, état du cycle ───────────────
+    // Une SEULE def de bâtiment pour quatre cultures : le choix est un réglage d'INSTANCE
+    // (`bld.cult`), exactement comme le fluide du Refroidisseur ou le mode du four à arc.
+    const cuK = bld.cult || null;
+    const cu = FARM_CULTURES[cuK] || null;
+    const zn = (bld.zone && bld.zone.length) || 0;
+    const zmax = farmZoneMax(bld);
+    // Salve EFFECTIVE : `q × tuiles`, bonus légumineuse compris. On appelle le MÊME helper que le
+    // moteur — recopier la formule ici créerait deux vérités qui divergeraient au premier réglage.
+    const burst = cu && cu.res ? farmBurst(game, currentIsland, bld) : 0;
+    const inst = cu && cu.install ? (bld.hevInst != null ? bld.hevInst : cu.install) : 0;
+    const rem = cu && cu.P ? (bld.cycRem != null ? bld.cycRem : cu.P) : 0;
+    const dueTxt = fmtDue(bld);
+    const row = (k, lab, val, col) => React.createElement("div", { className: "ip-row", key: k },
+      React.createElement("span", { className: "lbl" }, I18N.t(lab)),
+      React.createElement("span", { className: "val", style: col ? { color: col } : null }, val));
+    // Infobulle d'un bouton de culture : ce qu'elle rend, au rythme qu'elle rend.
+    const cuTxt = k => {
+      const d = FARM_CULTURES[k];
+      if (!d) return '';
+      if (!d.res) return I18N.t("Aucune récolte · améliore les cultures 4-adjacentes");
+      return fmtPort(d.q) + ' ' + (RES_SHORT[d.res] || d.res) + I18N.t(" par tuile, toutes les ") + d.P + I18N.t(" s")
+        + (d.install ? I18N.t(" · installation ") + fmtDur(d.install) : '');
+    };
+    const kids = [
+      React.createElement("div", { className: "ip-nuc-irr-hd", key: 'h' }, I18N.t("Culture")),
+      React.createElement("div", { className: "ip-nuc-irr-io", key: 'io' },
+        !cu ? I18N.t("aucune culture choisie — la zone ne produit rien")
+          : (!cu.res ? I18N.t("aucune récolte · +25 % aux cultures 4-adjacentes (plafond +50 % par tuile)")
+            : ("+ " + fmtPort(burst) + " " + (RES_SHORT[cu.res] || cu.res) + I18N.t(" en salve toutes les ") + cu.P + I18N.t(" s")))),
+      React.createElement("div", { className: "ip-nuc-mats c2", key: 'sel' },
+        FARM_CULT_KEYS.map(k => React.createElement("button", {
+          key: k,
+          className: 'ip-nuc-mat' + (cuK === k ? ' on' : ''),
+          title: cuTxt(k),
+          onClick: () => onSetCult && onSetCult(info.r, info.c, k)
+        }, I18N.t(FARM_CULT_LABEL[k])))),
+      row('z', "Zone", zn + ' / ' + zmax + I18N.t(" clairières · ") + fmtPower(FARM_KW_PER_TILE * zn), zn >= zmax ? 'var(--orange)' : null)
+    ];
+    // Éditeur : il FERME la fiche (elle recouvre justement les clairières à toucher) et bascule le
+    // bandeau d'état en mode zone. On en sort en retouchant la ferme, ou par la croix du bandeau.
+    kids.push(React.createElement("button", {
+      key: 'zb', className: 'ip-up',
+      onClick: () => onFarmEdit && onFarmEdit(info.r, info.c)
+    }, I18N.t("✎ Modifier la zone")));
+    if (cu && inst > 1e-6) {
+      kids.push(row('i', "Installation", Math.round((1 - inst / cu.install) * 100) + '% · ' + fmtDur(inst), 'var(--yellow)'));
+    } else if (cu && cu.res && cu.P) {
+      kids.push(row('c', "Cycle", zn ? (Math.round((1 - rem / cu.P) * 100) + '% · ' + fmtDur(rem)) : I18N.t("zone vide"), zn ? 'var(--yellow)' : 'var(--orange)'));
+    }
+    if (dueTxt) kids.push(row('d', "En attente d'évacuation", dueTxt, 'var(--orange)'));
+    kids.push(React.createElement("div", { className: "ip-nuc-irr-note", key: 'n' },
+      I18N.t("La zone se peuple de clairières, jamais de forêt. Chaque tuile coûte du courant : c'est le courant qui borne l'expansion, pas le temps de cycle. Sans courant, le cycle GELE — il ne repart jamais de zéro. La récolte part par la ROUTE : sans liaison au port, la salve attend.")));
+    return React.createElement("div", { className: "ip-nuc-irr" }, kids);
   })(), b.feller && (() => {
     // ── BÛCHERONNEUSE : pavé directionnel + état de la coupe ──────────────────────────────
     // Contrairement à la foreuse, le pavé ne SÉLECTIONNE pas une face : il LANCE la coupe de ce
     // côté-là (la machine n'a pas d'étape de visée séparée — le sens se déduit de la géométrie).
     // Les faces sans forêt sont estompées et leur infobulle dit pourquoi.
     const ftiles = game.islands[currentIsland] || [];
+    const dueTxt = fmtDue(bld);
     const fwk = bld.felling;
     const fdir = bld.fellDir != null ? bld.fellDir : 0;
     const ftgtOf = d => {
@@ -22176,7 +22748,9 @@ function InfoPanel({
         };
       }),
       React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("Coupe")), React.createElement("span", { className: "val" },
-        FELL_TIME + I18N.t(" s · ") + fmtRateSci(FELL_RATE) + I18N.t(" bois/s · ") + fmtPort(FELL_TIME * FELL_RATE) + I18N.t(" bois par tuile"))),
+        FELL_TIME + I18N.t(" s · ") + fmtPort(FELL_YIELD) + I18N.t(" bois en salve à la fin de la coupe"))),
+      // Dette non encore évacuée : la salve attend le réseau, elle ne s'évapore pas (R2).
+      dueTxt ? React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("En attente d'évacuation")), React.createElement("span", { className: "val", style: { color: 'var(--orange)' } }, dueTxt)) : null,
       // Opération en cours : progression + secondes restantes au régime courant.
       fwk ? React.createElement("div", { className: "ip-row" }, React.createElement("span", { className: "lbl" }, I18N.t("En cours")), React.createElement("span", { className: "val", style: { color: 'var(--yellow)' } },
         Math.round((1 - fwk.rem / (fwk.tot || FELL_TIME)) * 100) + '% · ' + ((fwk.rate || 0) > 1e-6 ? '~' + fmtDur(fwk.rem / fwk.rate) : I18N.t('à l\'arrêt')))) : null,
@@ -23626,8 +24200,13 @@ function ResPopover({
     const rr = (_tf[key] || {})[res] || 0;
     if (+parts[0] === currentIsland) exp += rr;else if (+parts[1] === currentIsland) imp += rr;
   }
-  // Bilan net RÉEL du stock : production − consommation − export (part) + import (reçu).
-  const net = prod - conso - exp + imp;
+  // L3 — DÉCROISSANCE. Un périssable perd `stock × λ` par tick : sans cette ligne, le popover
+  // annoncerait un bilan POSITIF sur un stock qui stagne — la situation exacte où le joueur
+  // conclut à un bug. La perte se calcule sur le stock courant, elle n'a besoin d'aucune mesure.
+  const _lam = resLambda(res);
+  const rot = _lam > 0 ? ((game.port[currentIsland] || {})[res] || 0) * _lam : 0;
+  // Bilan net RÉEL du stock : production − consommation − export (part) + import (reçu) − rot.
+  const net = prod - conso - exp + imp - rot;
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "research-backdrop",
     style: {
@@ -23672,7 +24251,14 @@ function ResPopover({
     className: "rl"
   }, I18N.t("Import")), React.createElement("span", {
     className: "rv"
-  }, "\u2190 ", fmtRateSci(imp), I18N.t(" /s"))), React.createElement("div", {
+  }, "\u2190 ", fmtRateSci(imp), I18N.t(" /s"))), _lam > 0 && React.createElement("div", {
+    className: "res-pop-row rot"
+  }, React.createElement("span", {
+    className: "rl",
+    title: I18N.t("Cette ressource se dégrade : elle perd une fraction fixe de son stock à chaque seconde. La transformer arrête l'hémorragie.")
+  }, I18N.t("Décroissance")), React.createElement("span", {
+    className: "rv"
+  }, "\u2212", fmtRateSci(rot), I18N.t(" /s"), " (", (_lam * 100).toFixed(1).replace('.', ','), "%)")), React.createElement("div", {
     className: "res-pop-row net"
   }, React.createElement("span", {
     className: "rl"
@@ -25735,6 +26321,10 @@ function App() {
   // `portOpen` est déclaré par `const` juste au-dessus. Remonter cette ligne la ferait
   // tomber dans la zone morte temporelle → page blanche. `node --check` ne le voit PAS.
   panelsRef.current.portOpen = portOpen;
+  // L3 — éditeur de zone de la ferme : {r, c, isl} de la ferme en cours d'édition, ou null.
+  const [farmEdit, setFarmEdit] = useState(null);
+  const farmEditRef = useRef(null);
+  farmEditRef.current = farmEdit;
   const [repairOpen, setRepairOpen] = useState(false);
   const [slotOpen, setSlotOpen] = useState(false);
   const [energyOpen, setEnergyOpen] = useState(false);
@@ -25926,6 +26516,22 @@ function App() {
             pl.fl = { r: b.felling.r, c: b.felling.c, rem: b.felling.rem, tot: b.felling.tot || FELL_TIME };
           }
           if (b.fellDir != null) pl.fd = b.fellDir;
+          // ── L3 — FERME et SALVES. Cinq CHAMPS ADDITIFS, sur le modele de `pl.fl`/`pl.fd` du
+          // lot L2 : `SAVE_VERSION` reste a 31. Une sauvegarde anterieure se charge sans
+          // migration (les cles sont absentes, les defauts s'appliquent) ; une sauvegarde de ce
+          // lot ouverte par un build anterieur ignore simplement les cles inconnues.
+          // ⚠ `zone` est serialisee en COUPLES ABSOLUS. L'index derive (`game.farmIdx`) n'est
+          // JAMAIS ecrit : il se reconstruit au chargement. Deux verites pour la meme donnee,
+          // c'est la garantie qu'elles divergeront.
+          if (b.zone && b.zone.length) pl.zn = b.zone.map(z => [z[0], z[1]]);
+          if (b.cult) pl.cu = b.cult;
+          if (b.cycRem != null) pl.cr = b.cycRem;
+          if (b.hevInst != null) pl.hv = b.hevInst;
+          // ⚠ LA DETTE SE SERIALISE. Sans elle, une salve produite juste avant la fermeture du
+          // jeu serait perdue en silence — exactement ce que R2 interdit.
+          // ⚠ CLE `dq`, PAS `du` : `pl.du` est DEJA pris par `dmgUp` (14.26, anti-exploit de
+          // reparation). Y ecrire un objet ferait lire NaN a la relecture du niveau gele.
+          if (b.due) { let any = false; for (const dk in b.due) if (b.due[dk] > 1e-9) any = true; if (any) pl.dq = b.due; }
           if (b.drilling && (b.drilling.rem || 0) > 1e-6) {
             pl.dg = {
               r: b.drilling.r,
@@ -26668,6 +27274,23 @@ function App() {
             t.building.felling = { r: +p.fl.r, c: +p.fl.c, rem: +p.fl.rem, tot: +p.fl.tot || FELL_TIME, rate: 0 };
           }
           if (p.fd != null) t.building.fellDir = +p.fd;
+          // L3 — ferme : zone (couples absolus), culture, phase du cycle, installation, dette.
+          // ⚠ On FILTRE la zone a la lecture : une tuile qui n'est plus une clairiere (batiment
+          // pose dessus depuis, terrain change) sort de la zone au lieu de la faire mentir.
+          if (Array.isArray(p.zn)) {
+            const zz = [];
+            for (const z of p.zn) if (Array.isArray(z) && z.length === 2) zz.push([+z[0], +z[1]]);
+            if (zz.length) t.building.zone = zz;
+          }
+          if (p.cu && FARM_CULTURES[p.cu]) t.building.cult = p.cu;
+          if (p.cr != null) t.building.cycRem = +p.cr;
+          if (p.hv != null) t.building.hevInst = +p.hv;
+          if (p.dq && typeof p.dq === 'object') {
+            const du = {};
+            let any = false;
+            for (const dk in p.dq) if (+p.dq[dk] > 1e-9) { du[dk] = +p.dq[dk]; any = true; }
+            if (any) t.building.due = du;
+          }
           if (p.dg && +p.dg.rem > 1e-6) {
             t.building.drilling = {
               r: +p.dg.r,
@@ -27241,6 +27864,18 @@ function App() {
     const simplify = ticks > WARM; // reste-t-il quelque chose à extrapoler ?
     const portSnap = snapshotPort(g);
     const cntSnap = snapshotCounters(g);
+    // ── L3 — MESURE DU RÉGIME POUR LES PÉRISSABLES ────────────────────────────────────────
+    // On mesure l'apport net sur la SECONDE MOITIÉ de l'échauffon, jamais sur l'échauffon
+    // entier : la première moitié porte les transitoires (installation d'un hévéa = 360 s,
+    // premier cycle d'une ferme, dette d'une bûcheronneuse en attente de réseau), et un
+    // transitoire extrapolé sur 99 000 ticks est un mensonge.
+    // `_lamLoss` accumule la perte RÉELLE due à λ, île par île et ressource par ressource.
+    // C'est ce qui permet de retrouver l'apport BRUT : le delta net, lui, mélange apport et
+    // décroissance, et l'inverser demanderait de diviser par (1 − μⁿ) — fragile quand λ est
+    // petit. Ici : Σ apports = Δstock + Σ pertes. Exact, sans division fragile.
+    const MID = Math.floor(WARM / 2);
+    let portSnapMid = null;
+    g._lamLoss = null;
     let done = 0;
     const approximated = simplify;
     const startedAt = performance.now();
@@ -27284,6 +27919,12 @@ function App() {
           try { if (typeof console !== 'undefined') console.error('Archipel catch-up error :', err); } catch (_) {}
         }
         done++;
+        // Point milieu : on photographie les stocks et on (RE)MET À ZÉRO le comptage de perte.
+        // Tout ce qui est mesuré ensuite appartient au régime établi.
+        if (done === MID && simplify) {
+          portSnapMid = snapshotPort(g);
+          g._lamLoss = {};
+        }
       }
       g._catchUpTs = performance.now();
       // « Passer » : on arrête la simulation et on entre dans le jeu avec ce qui est calculé
@@ -27304,7 +27945,50 @@ function App() {
           if (!portSnap[isl]) continue;
           const p = g.port[isl];
           const b0 = portSnap[isl] || {};
+          const bm = (portSnapMid && portSnapMid[isl]) || null;
+          const ll = (g._lamLoss && g._lamLoss[isl]) || null;
+          const nMid = WARM - MID;
           for (const k in p) {
+            // ── PÉRISSABLE : la droite est FAUSSE PAR CONSTRUCTION ────────────────────────
+            // Sous λ, le stock ne croît pas linéairement, il converge. Le tick fait
+            //     S ← (S + B) · μ      avec μ = 1 − λ
+            // donc, pour un apport moyen B constant sur R ticks :
+            //     S(R) = μᴿ·S₀ + B·μ·(1 − μᴿ)/λ = μᴿ·S₀ + S∞·(1 − μᴿ),  S∞ = B·μ/λ
+            // — une INTERPOLATION GÉOMÉTRIQUE entre le stock courant et le point fixe.
+            // ⚠ ELLE DÉGÉNÈRE EN LA DROITE QUAND λ → 0 : μᴿ → 1 et (1 − μᴿ)/λ → R, donc
+            // S(R) → S₀ + B·R. C'est la même formule, pas une seconde. Le `lam > 0` ci-dessous
+            // n'est donc pas un correctif d'équilibrage : c'est un GARDE DE NON-RÉGRESSION,
+            // qui laisse les îles 1 à 7 sur la ligne d'origine, à l'octet.
+            const lam = RES_LAMBDA[k];
+            if (lam > 0) {
+              const mu = 1 - lam;
+              const S = p[k] || 0;
+              // Apport net moyen mesuré sur la seconde moitié : Σ apports = Δstock + Σ pertes.
+              // GARDE DE NON-EXTRAPOLATION : sans seconde moitié exploitable (échauffon d'un
+              // seul tick, instantané manquant), on n'invente aucun régime — on applique la
+              // seule chose qui soit certaine, la décroissance du stock déjà là.
+              // ⚠ CE QUE VAUT CET ESTIMATEUR, MESURÉ (banc Z8, référence tick à tick INDÉPENDANTE
+              // du jeu) : écart au niveau d'équilibre réel de 2 à 8 % selon la période de salve,
+              // contre 43 % à 8 602 % pour la droite qu'il remplace. Le résidu est une
+              // QUANTIFICATION DE COMPTAGE — la fenêtre de 500 ticks ne contient pas un nombre
+              // entier de périodes, donc elle compte une salve de trop ou de moins ; l'erreur vaut
+              // au plus P/n et sa moyenne sur la phase est NULLE. Trois autres estimateurs ont été
+              // mesurés et écartés : fenêtre entière (28 %, ruinée par l'installation d'un hévéa),
+              // Aitken sur les moyennes (10,6 %, même cause), moyenne du stock (28 %, biaisée tant
+              // que la convergence n'est pas finie).
+              const B = (bm && nMid > 0) ? (((S - (bm[k] || 0)) + ((ll && ll[k]) || 0)) / nMid) : 0;
+              const Sinf = B * mu / lam;
+              const pw = Math.pow(mu, remaining);
+              let v = pw * S + Sinf * (1 - pw);
+              // GARDE ANALYTIQUE : la suite est monotone entre S et S∞ — elle ne peut ni
+              // dépasser le point fixe, ni repartir en arrière. Le clamp rend toute dérive
+              // numérique inoffensive, et borne à zéro un point fixe négatif (consommateur net :
+              // le stock se vide, il ne devient pas une dette).
+              const lo = Math.max(0, Math.min(S, Sinf));
+              const hi = Math.max(S, Sinf);
+              p[k] = v < lo ? lo : v > hi ? hi : v;
+              continue;
+            }
             const rate = ((p[k] || 0) - (b0[k] || 0)) / sampleTicks;
             if (rate > 0) p[k] = (p[k] || 0) + rate * remaining;else if (rate < 0) p[k] = Math.max(0, (p[k] || 0) + rate * remaining);
           }
@@ -27328,7 +28012,10 @@ function App() {
       // Diagnostic du dernier rattrapage (transitoire, non sauvegardé) : combien de ticks ont été
       // RÉELLEMENT simulés avant l'éventuelle extrapolation, et sur quelle fenêtre le débit a été
       // mesuré (désormais l'échauffon entier, donc sampleFrom = 0).
-      g._catchUpStats = { ticks, warm: WARM, simulated: done, sampleFrom: 0, approx: approximated, skipped, capped };
+      // `_lamLoss` n'a de sens que pendant l'échauffon : le laisser armé ferait accumuler un
+      // compteur mort à chaque tick de jeu normal, sur les huit îles.
+      g._lamLoss = null;
+      g._catchUpStats = { ticks, warm: WARM, simulated: done, sampleFrom: 0, approx: approximated, skipped, capped, mid: MID };
       // 15.x — Le nombre de confirmations gagnées part au récap. La donnée existait déjà :
       // `cntSnap` a photographié les compteurs AVANT le premier tick, il ne restait qu'à faire la
       // différence. Borné à zéro : un compteur ne recule pas, mais un état hérité pourrait mentir.
@@ -29162,6 +29849,7 @@ function App() {
     // Re-toucher un bâtiment/réseau déjà sélectionné ne le désélectionne PAS
     // (évitait de « quitter » la construction par un second clic). Seuls les outils
     // d'action (copier/démolir/améliorer) se désactivent en les re-touchant.
+    setFarmEdit(null);   // L3 — armer un outil sort de l'éditeur de zone
     const toggles = id === COPY || id === DEMOLISH || id === UPGRADE;
     const next = id === cur && toggles ? null : id;
     SFX.play(next === null ? 'deselect' : 'selectBuilding');
@@ -29241,6 +29929,7 @@ function App() {
     // 14.40 — L'île 7 se rejoint par la CAGE, pas en bateau → treuil des deux côtés du trajet.
     SFX.play(id === 7 || g.currentIsland === 7 ? 'elevator' : 'islandTransition');
     onIslandChange(g, id);
+    setFarmEdit(null);   // L3 — la zone qu'on éditait n'est plus à l'écran
     setResPop(null);
     setNetwork(null);
     setInfo(null);
@@ -29593,6 +30282,77 @@ function App() {
     // mais l'action reste atteignable par une save forgée ou un rappel d'état).
     if (sel === 'helium_liquide' && !isBuildingUnlocked(gameRef.current, 'cryostat')) return;
     (t.building.cool = t.building.cool || coolerDefaultState()).sel = sel;
+    SFX.play('click');
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  // ── L3 — FERME : culture et zone (reglages d'INSTANCE, comme le fluide du Refroidisseur) ──
+  function setCult(r, c, k) {
+    const t = curTiles()[r] && curTiles()[r][c];
+    const b = t && t.building;
+    if (!b || !(BUILDINGS[b.id] || {}).farm || !FARM_CULTURES[k] || b.cult === k) return;
+    // Changer de culture REMET le cycle et l'installation à zéro : on n'hérite pas de
+    // l'avancement d'une autre plante. C'est le prix d'un changement d'avis, et il est voulu.
+    b.cult = k;
+    b.cycRem = null;
+    b.hevInst = null;
+    farmInvalidate(gameRef.current, gameRef.current.currentIsland);
+    SFX.play('click');
+    bumpHud();
+    markDirty();
+    scheduleSave();
+  }
+  function toggleFarmEdit(r, c) {
+    const g0 = gameRef.current;
+    const t = curTiles()[r] && curTiles()[r][c];
+    const b = t && t.building;
+    if (!b || !(BUILDINGS[b.id] || {}).farm) return;
+    SFX.play('click');
+    const fe = farmEditRef.current;
+    if (fe && fe.r === r && fe.c === c) { setFarmEdit(null); return; }
+    // On FERME la fiche : elle recouvre justement les clairières qu'il faut toucher. Et on
+    // désarme l'outil courant, sinon le tap suivant poserait un bâtiment au lieu d'éditer.
+    if (g0.ui.tool != null) { g0.ui.tool = null; setToolState(null); }
+    setBuildOpen(false);
+    setNetOpen(false);
+    setFarmEdit({ r, c, isl: g0.currentIsland });
+    setInfo(null);
+    setNetwork(null);
+  }
+  // Bascule l'appartenance d'une clairière à la zone d'une ferme. TOUT refus est motivé par un
+  // toast : un tap sans effet et sans explication se lit comme un bug.
+  function toggleFarmZone(fr, fc, r, c) {
+    const g0 = gameRef.current;
+    const tiles = curTiles();
+    const ft = tiles[fr] && tiles[fr][fc];
+    const fb = ft && ft.building;
+    if (!fb || !(BUILDINGS[fb.id] || {}).farm) { setFarmEdit(null); return; }
+    const zone = fb.zone || (fb.zone = []);
+    let at = -1;
+    for (let i = 0; i < zone.length; i++) if (zone[i][0] === r && zone[i][1] === c) { at = i; break; }
+    if (at >= 0) {
+      zone.splice(at, 1);
+    } else {
+      const t = tiles[r] && tiles[r][c];
+      if (!t) return;
+      // La zone n'accepte QUE des clairières libres : ni forêt, ni côte, ni eau, ni tuile bâtie.
+      if (t.terrain !== 'land') {
+        showToast(I18N.t('❌ La zone n\'accepte que des clairières'), 'var(--red)'); SFX.play('invalid'); return;
+      }
+      if (t.building || t.occupied) {
+        showToast(I18N.t('❌ Tuile occupée'), 'var(--red)'); SFX.play('invalid'); return;
+      }
+      const ow = farmIndex(g0, g0.currentIsland).own[r + ',' + c];
+      if (ow && ow !== fb) {
+        showToast(I18N.t('❌ Clairière déjà cultivée par une autre ferme'), 'var(--red)'); SFX.play('invalid'); return;
+      }
+      if (zone.length >= farmZoneMax(fb)) {
+        showToast(I18N.t('❌ Zone au maximum — améliorez la ferme'), 'var(--orange)'); SFX.play('invalid'); return;
+      }
+      zone.push([r, c]);
+    }
+    farmInvalidate(g0, g0.currentIsland);
     SFX.play('click');
     bumpHud();
     markDirty();
@@ -30615,6 +31375,25 @@ function App() {
         if (!isTun && SPRITE_DATA['i' + isl + '_bord_n']) {
           const fb = forestBorderPieces(tiles, def, r, c, isl);
           for (let i = 0; i < fb.length; i++) drawSprite(ctx, fb[i], x, y, tile, tile);
+        }
+        // L3 — CHAMP + CULTURE. Le champ EST l'affichage de la zone : aucun trace d'interface
+        // par-dessus, aucune couche a activer. Masque 4 bits sur la convention DES RESEAUX
+        // (`NET_MASK_SUFFIX`, N=1 E=2 S=4 O=8) — les pieces `champ_*` la suivent au nom pres, et
+        // leur berge claire ne parait donc que du cote NON cultive.
+        // ⚠ Le masque se calcule sur l'INDEX DE ZONE, pas sur le voisinage de terrain : deux
+        // fermes mitoyennes forment une seule parcelle continue, ce qui est la lecture voulue.
+        const fzc = farmCell(g, isl, r, c);
+        if (fzc) {
+          let fmk = 0;
+          if (farmCell(g, isl, r - 1, c)) fmk |= 1;
+          if (farmCell(g, isl, r, c + 1)) fmk |= 2;
+          if (farmCell(g, isl, r + 1, c)) fmk |= 4;
+          if (farmCell(g, isl, r, c - 1)) fmk |= 8;
+          drawSprite(ctx, 'champ_' + NET_MASK_SUFFIX[fmk], x, y, tile, tile);
+          const ck = farmStageKey(fzc);
+          // Bande de brise si elle est decodee, sprite statique sinon : le repli est le meme que
+          // pour les tuiles « brise » des six autres iles.
+          if (ck && !drawTileAnim(ctx, ck, x, y, tile, r, c)) drawSprite(ctx, ck, x, y, tile, tile);
         }
       } else {
         // Sprites désactivés : rendu d'origine (clé de terrain directe, repli couleur + grille).
@@ -31707,6 +32486,26 @@ function App() {
     let tr = tile.r,
       tc = tile.c;
     let t = curTiles()[tr][tc];
+    // ── L3 — ÉDITEUR DE ZONE DE LA FERME ────────────────────────────────────────────────
+    // Tant qu'il est armé, un tap bascule l'appartenance d'une clairière au lieu d'ouvrir une
+    // fiche. Retoucher la ferme elle-même en SORT (et laisse le tap ouvrir sa fiche) : sans
+    // cette porte, la ferme répondrait « tuile occupée » et le joueur serait coincé.
+    {
+      const fe = farmEditRef.current;
+      if (fe) {
+        const gF = gameRef.current;
+        const ftF = curTiles()[fe.r] && curTiles()[fe.r][fe.c];
+        const fbF = ftF && ftF.building;
+        if (gF.currentIsland !== fe.isl || !fbF || !(BUILDINGS[fbF.id] || {}).farm) {
+          setFarmEdit(null);
+        } else if (tr === fe.r && tc === fe.c) {
+          setFarmEdit(null);
+        } else {
+          toggleFarmZone(fe.r, fe.c, tr, tc);
+          return;
+        }
+      }
+    }
     // Couche logique + mode Sélection : toucher un dispositif logique le fait TOURNER (cycle de
     // direction de son output/facing — la flèche du sprite suit). Prioritaire sur l'ouverture de fiche.
     {
@@ -32408,6 +33207,14 @@ function App() {
     return `il y a ${m}min`;
   }
   function statusHint() {
+    // L3 — l'éditeur de zone passe AVANT tout : c'est lui qui gouverne le tap.
+    if (farmEdit) {
+      const ft = curTiles()[farmEdit.r] && curTiles()[farmEdit.r][farmEdit.c];
+      const fb = ft && ft.building;
+      const zn = (fb && fb.zone && fb.zone.length) || 0;
+      return React.createElement("span", null, React.createElement("b", null, I18N.t("Zone de la ferme")),
+        I18N.t(" — touchez les clairières · ") + zn + ' / ' + (fb ? farmZoneMax(fb) : 0) + I18N.t(" · retouchez la ferme pour sortir"));
+    }
     if (tool === null) {
       if (buildOpen) return I18N.t('Menu construction — choisissez un bâtiment, ou « Quitter » pour fermer');
       if (netOpen) return I18N.t('Menu réseau — choisissez une infrastructure, ou « Quitter » pour fermer');
@@ -32646,13 +33453,14 @@ function App() {
     // Le texte s'ellipse DANS ce span : la croix de sortie reste toujours visible \u00e0 droite
     // (avant, l'overflow du bandeau entier rognait le bouton d\u00e8s que le hint \u00e9tait long).
     className: "status-hint"
-  }, statusHint()), (tool !== null || buildOpen || netOpen) && React.createElement("button", {
+  }, statusHint()), (tool !== null || buildOpen || netOpen || farmEdit) && React.createElement("button", {
     className: "status-quit",
     onClick: () => {
       SFX.play('deselect');
       deselectAll();
       setBuildOpen(false);
       setNetOpen(false);
+      setFarmEdit(null);
     },
     title: I18N.t("Quitter le mode construction")
   }, "\u2715")), dev && !shotMode && React.createElement("div", {
@@ -32719,6 +33527,8 @@ function App() {
     onRepairElevator: (r, c) => tryRepairElevator(r, c),
     onDrill: (r, c) => tryDrill(r, c),
     onFell: (r, c) => tryFell(r, c),
+    onSetCult: (r, c, k) => setCult(r, c, k),
+    onFarmEdit: (r, c) => toggleFarmEdit(r, c),
     onDrillDir: setDrillDir,
     onUpgradeElevator: () => tryUpgradeElevator(),
     onToggleCollider: () => toggleCollider(),
