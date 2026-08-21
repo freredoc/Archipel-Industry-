@@ -1,8 +1,8 @@
 {
-  "build": 442,
-  "version": "Alpha 20.9",
+  "build": 443,
+  "version": "Alpha 21.0",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Correctifs de la septieme ile : la route se raccorde enfin visuellement a la bucheronneuse et a la ferme · bucheronneuse, carriere rustique et foyer a charbon rejoignent la categorie Bois et carbone · les batiments du continent ne sont plus posables la-bas · on arrive desormais face au port, plus au milieu de la foret."
+  "notes": "Progression de la septieme ile : la recherche se deroule desormais dans l'ordre scierie, ferme, charbonniere, foyer puis filerie · les cultures s'ouvrent une a une, la foret d'abord · la ferme part d'une seule clairiere et en gagne une par niveau · scierie, filerie et ferme ne consomment plus de courant, le temps du playtest."
 }
