@@ -2580,8 +2580,8 @@ var B3={
 "es":{"ferme":{"name":"Granja"}},
 "de":{"ferme":{"name":"Bauernhof"}}};
 var T3={
-"fr":{"47":"Agriculture"},
-"en":{"47":"Agriculture"},
+"fr":{},
+"en":{},
 "es":{"47":"Agricultura"},
 "de":{"47":"Landwirtschaft"}};
 var U3={
@@ -2667,10 +2667,10 @@ var B4={
 "es":{"charbonniere":{"name":"Carbonera"},"foyer_charbon":{"name":"Hogar de Carbón"},"scierie":{"name":"Aserradero"},"filerie_carbone":{"name":"Hilandería de Carbono"}},
 "de":{"charbonniere":{"name":"Köhlerei"},"foyer_charbon":{"name":"Kohlefeuer"},"scierie":{"name":"Sägewerk"},"filerie_carbone":{"name":"Karbonspinnerei"}}};
 var T4={
-"fr":{"45":"Feu et Charbon","46":"Scierie et Filerie"},
-"en":{"45":"Fire and Charcoal","46":"Sawmill and Spinnery"},
-"es":{"45":"Fuego y Carbón","46":"Aserradero e Hilandería"},
-"de":{"45":"Feuer und Kohle","46":"Sägewerk und Spinnerei"}};
+"fr":{"45":"Scierie","46":"Agriculture","47":"Charbonnière","48":"Foyer à Charbon","49":"Filerie de Carbone"},
+"en":{"45":"Sawmill","46":"Agriculture","47":"Charcoal Kiln","48":"Coal Hearth","49":"Carbon Spinnery"},
+"es":{"45":"Aserradero","46":"Agricultura","47":"Carbonera","48":"Hogar de Carbón","49":"Hilandería de Carbono"},
+"de":{"45":"Sägewerk","46":"Landwirtschaft","47":"Kohlenmeiler","48":"Kohlefeuer","49":"Kohlenstoff-Spinnerei"}};
 /* ⚠ `ui` n'a PAS de francais : le modele est gettext, la CLE EST le texte francais — c'est deja
    le cas de ses onze voisins (« Infrastructure », « Tungstene », « Quantique »…). */
 var U4={
@@ -6058,7 +6058,10 @@ const BUILDINGS = {
       bois: 200,
       pierre: 200
     },
-    power: 64,
+    // PLAYTEST — 64 -> 0. L'ile n'a aucune source de courant avant le foyer (noeud 48) : la
+    // scierie doit tourner a la main pendant tout le premier arc, sinon le noeud 47 (100
+    // planches) est INATTEIGNABLE et la progression se bloque sur elle-meme.
+    power: 0,
     inputs: {
       bois: 2
     },
@@ -6084,7 +6087,9 @@ const BUILDINGS = {
       planche: 150,
       pierre: 200
     },
-    power: 256,
+    // PLAYTEST — 256 -> 0, comme la scierie. A retablir : la filerie est le bâtiment qui doit
+    // JUSTIFIER le foyer a charbon une fois l'equilibrage repris.
+    power: 0,
     inputs: {
       charbon: 4
     },
@@ -9784,8 +9789,50 @@ const SAVE_VERSION = 31;
 // vise le centre GEOMETRIQUE, qui sur l'ile 8 tombe en pleine foret. ⚠ APRES `layout()`, qui vient
 // de recalculer `cam.baseX`/`cam.tile` ; ⚠ garde sur `portPosFor` -> l'ile 6 SOUTERRAINE (id 7)
 // est absente de `PORTS` et garde son centrage sur la grille.
-const GAME_BUILD = 442;
-const GAME_VERSION = 'Alpha 20.9';
+// 21.0 — LOT PROGRESSION ILE 7. Reordonne la chaine 45..49, ouvre les cultures une a une, ramene
+// la ferme a UNE clairiere, et met l'ile a 0 kW le temps du playtest. AUCUN systeme neuf.
+// (P4) L'ORDRE ETAIT UNE IMPASSE, ET C'EST LA RAISON D'ETRE DU LOT. La chaine livrait charbon
+// AVANT scierie : le noeud qui exige 100 planches ne pouvait donc etre paye qu'apres la scierie,
+// elle-meme debloquee plus tard — et la scierie tirait 64 kW alors que le foyer a charbon est la
+// SEULE source de courant de l'ile. La progression se bloquait sur elle-meme. Nouvel ordre :
+// 45 Scierie (100 bois) / 46 Agriculture (100 planches) / 47 Charbonniere (100 planches) /
+// 48 Foyer a Charbon (100 charbon) / 49 Filerie de Carbone (200 charbon).
+// (P1) ⚠ 0 kW TEMPORAIRE, PAS UN EQUILIBRAGE : scierie 64->0, filerie 256->0, FARM_KW_PER_TILE
+// 2->0. A RETABLIR apres playtest — et c'est SEULEMENT a ce moment-la que l'ordre charbon-avant-
+// scierie redeviendrait obligatoire.
+//   ⚠ CONSEQUENCE MESUREE, PAS SUPPOSEE : `isEnergyConsumer` vaut `(power||0)>0 || sigmoid ||
+//   randomP`, et la branche `wire` de `buildingConnectsCarrier` porte la MEME condition. A 0 kW
+//   scierie et filerie cessent d'etre des consommateurs -> elles quittent le panneau Energie et
+//   le CABLE ne dessine plus de branche vers elles.
+//   ⚠ SECOND ORDRE, NON DIT PAR LE BRIEF ET SIGNALE ICI : `wire` est dans `BRIDGE_CARRIERS`, donc
+//   elles cessent AUSSI de PONTER le cable — un cable qui les traversait est coupe en deux. Meme
+//   classe de defaut que la fonderie d'or perdant son acide (14.19) ou la centrifugeuse (13.25).
+//   Sans effet avant le noeud 48 (l'ile n'a aucun cable avant le foyer), visible apres.
+// (P2) Zone de la ferme : 4 + 2/niveau -> 1 + 1/niveau. Une clairiere au niveau 0.
+//   ⚠ Corollaire assume : a UNE clairiere la LEGUMINEUSE n'a aucune voisine 4-adjacente, donc son
+//   bonus de +25 % par voisine ne mord pas avant le niveau 3. Decision d'Ethan, pas un oubli.
+// (P3) ⚠ LA TABLE `FARM_CULT_KEYS` N'EST PAS FILTREE, ET IL NE FAUT PAS LA FILTRER : `FARM_ART_KEYS`
+//   en DERIVE les 19 cles de sprite et les 19 bandes d'animation (IIFE au chargement du module) —
+//   un filtre ici viderait l'art. Le verrou est le predicat `farmCultUnlocked`, applique aux DEUX
+//   sites qui exposent une culture au joueur : le selecteur de la fiche ET `unlockedResourceSet`
+//   (sans quoi l'inventaire annoncerait `biomasse` et `latex` avant qu'on puisse les semer).
+//   ⚠ AUCUN EFFET RETROACTIF : une ferme portant deja `cult: 'hevea'` continue de tourner. Le
+//   predicat garde l'OUVERTURE d'une culture, pas l'execution d'un cycle en cours.
+//   ⚠ ZONE MORTE TEMPORELLE VERIFIEE, PAS SUPPOSEE : `farmCultUnlocked` est pose l. ~11356 et lit
+//   `isNodeConfirmed`, un `const` declare l. ~12821 — 1 466 lignes PLUS BAS. C'est sans danger
+//   parce que c'est une DECLARATION DE FONCTION (hoistee) dont le corps n'est evalue qu'a
+//   l'appel, et que ses deux appelants sont des chemins de RENDU. Ne pas transformer en `const`
+//   ni appeler au chargement du module : ce serait la page blanche du 14.95.
+// (P5) ⚠ `I18N.applyToData` REECRIT `TECH_NODES[].name` DEPUIS LES TABLES `tech`, INDEXEES PAR ID.
+//   Renommer le nom INLINE ne se voit NULLE PART. Les quatre langues sont ecrites, francais
+//   compris. L'ancienne entree « Agriculture » du noeud 47 est VIDEE : la fusion est non
+//   destructive (`if(!L.tech[k])`), donc la premiere ecrite gagnerait et nommerait la
+//   CHARBONNIERE « Agriculture ».
+// ⚠ AUCUNE MIGRATION, ET C'EST VERIFIE AU FICHIER : `loadSave` reconstruit `techTree.nodes` par
+//   `TECH_NODES.map` avec un lookup `savedStatus[n.id]` (defaut `locked`). Ajouter deux noeuds est
+//   donc gratuit — `SAVE_VERSION` NE BOUGE PAS. Aucun code ne lit `TECH_NODES.length` (grep).
+const GAME_BUILD = 443;
+const GAME_VERSION = 'Alpha 21.0';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9794,7 +9841,7 @@ const GAME_VERSION = 'Alpha 20.9';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Correctifs de la septieme ile : la route se raccorde enfin visuellement a la bucheronneuse et a la ferme · bucheronneuse, carriere rustique et foyer a charbon rejoignent la categorie Bois et carbone · les batiments du continent ne sont plus posables la-bas · on arrive desormais face au port, plus au milieu de la foret.";
+const GAME_NOTES = "Progression de la septieme ile : la recherche se deroule desormais dans l'ordre scierie, ferme, charbonniere, foyer puis filerie · les cultures s'ouvrent une a une, la foret d'abord · la ferme part d'une seule clairiere et en gagne une par niveau · scierie, filerie et ferme ne consomment plus de courant, le temps du playtest.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -11319,9 +11366,9 @@ function resLambda(k) { const l = RES_LAMBDA[k]; return l > 0 ? l : 0; }
 // le debit `q x n / P(n)` serait PLAT et les salves plus hautes perdraient davantage a lambda —
 // agrandir deviendrait une double peine. La conso, elle, croit lineairement : c'est le courant
 // qui borne l'expansion, jamais le temps de cycle.
-const FARM_KW_PER_TILE = 2;
-const FARM_ZONE_BASE = 4;      // tuiles autorisees au niveau 0
-const FARM_ZONE_PER_LVL = 2;   // + par niveau (seul effet de l'amelioration)
+const FARM_KW_PER_TILE = 0;   // PLAYTEST — 2 -> 0 (voir scierie/filerie)
+const FARM_ZONE_BASE = 1;      // PLAYTEST — 4 -> 1 : UNE clairiere au niveau 0
+const FARM_ZONE_PER_LVL = 1;   // PLAYTEST — 2 -> 1 : une case de plus PAR NIVEAU
 function farmZoneMax(bld) { return FARM_ZONE_BASE + FARM_ZONE_PER_LVL * ((bld && bld.upgrade) || 0); }
 // Rendu de la DETTE d'un batiment a salve (bucheronneuse ou ferme). Chaine vide = rien en attente.
 // C'est la seule fenetre du joueur sur `bld.due` : sans elle, une salve bloquee par un reseau coupe
@@ -11353,6 +11400,18 @@ const FARM_CULTURES = {
   legum:   { res: null,       P: 0,   q: 0,   type: 'permanente', stages: 4, art: 'legum', grow: 240 }
 };
 const FARM_CULT_KEYS = ['foret', 'taillis', 'hevea', 'legum'];
+// PROGRESSION — LES CULTURES S'OUVRENT UNE A UNE. La ferme arrive au noeud 47 avec la FORET
+// SEULE ; les trois autres suivent la chaine charbon. Table id -> noeud, `null` = ouverte des
+// que la ferme l'est.
+// ⚠ DERIVE, PAS DUPLIQUE : `farmCultUnlocked` est le SEUL predicat, applique au selecteur ET a
+//   l'inventaire. Ne PAS filtrer `FARM_CULT_KEYS` lui-meme (cf. FARM_ART_KEYS ci-dessous).
+// ⚠ AUCUN EFFET RETROACTIF : une ferme qui porte deja `cult: 'hevea'` continue de tourner. Le
+//   predicat garde l'OUVERTURE d'une culture, pas l'execution d'un cycle en cours.
+const FARM_CULT_NODE = { foret: null, taillis: 48, hevea: 49, legum: 49 };
+function farmCultUnlocked(game, k) {
+  const nd = FARM_CULT_NODE[k];
+  return nd == null ? true : isNodeConfirmed(game, nd);
+}
 const FARM_CULT_LABEL = { foret: 'Forêt cultivée', taillis: 'Taillis', hevea: 'Hévéa', legum: 'Légumineuse' };
 // Les 19 cles de stade, derivees des defs (jamais une liste recopiee : ajouter une culture ne
 // doit demander qu'une ligne dans FARM_CULTURES).
@@ -17574,34 +17633,34 @@ const TECH_NODES = [{
   //    mais cet etat est PUREMENT VISUEL — aucun code mecanique ne le lit. Le depot et le debit
   //    passent donc normalement. Prouve par test (X6), pas suppose.
   id: 45,
-  name: 'Feu et Charbon',
+  name: 'Scierie',
   prereq: 44,
   mode: 'delivery',
   reqs: [],
   island: 8,
   delivery: {
-    bois: 500
+    bois: 100
   },
   unlocks: {
     // ⚠ `BUILDING_NODE` est DERIVE de cette liste, mais l'inscription dans `TOOLBAR_GROUPS` est
     //    INDISPENSABLE EN PLUS : le menu Batiment enumere les groupes, pas `BUILDINGS`. Un
     //    batiment absent de la table n'est pas « masque », il est INPOSABLE.
-    buildings: ['charbonniere', 'foyer_charbon']
+    buildings: ['scierie']
   }
 }, {
   // L4 — SCIERIE ET FILERIE. Meme calque. Livraison en CHARBON : elle ne peut donc etre payee
   // qu'une fois la charbonniere du noeud 45 posee et reliee — la chaine se paie elle-meme.
   id: 46,
-  name: 'Scierie et Filerie',
+  name: 'Agriculture',
   prereq: 45,
   mode: 'delivery',
   reqs: [],
   island: 8,
   delivery: {
-    charbon: 300
+    planche: 100
   },
   unlocks: {
-    buildings: ['scierie', 'filerie_carbone']
+    buildings: ['ferme']
   }
 }, {
   // L3 — AGRICULTURE. La livraison porte sur la PLANCHE, imputrescible.
@@ -17610,16 +17669,43 @@ const TECH_NODES = [{
   // qui decroit, exiger 200 unites d'un coup devient un mur qui monte tout seul avec la duree de
   // la partie. La planche donne au passage un second debouche a la scierie du lot L4.
   id: 47,
-  name: 'Agriculture',
+  name: 'Charbonnière',
   prereq: 46,
   mode: 'delivery',
   reqs: [],
   island: 8,
   delivery: {
-    planche: 200
+    planche: 100
   },
   unlocks: {
-    buildings: ['ferme']
+    buildings: ['charbonniere']
+  }
+}, {
+  id: 48,
+  name: 'Foyer à Charbon',
+  prereq: 47,
+  mode: 'delivery',
+  reqs: [],
+  island: 8,
+  delivery: {
+    charbon: 100
+  },
+  // Le taillis arrive AVEC le feu : la biomasse est un combustible, pas encore un intrant.
+  unlocks: {
+    buildings: ['foyer_charbon']
+  }
+}, {
+  id: 49,
+  name: 'Filerie de Carbone',
+  prereq: 48,
+  mode: 'delivery',
+  reqs: [],
+  island: 8,
+  unlocks: {
+    buildings: ['filerie_carbone']
+  },
+  delivery: {
+    charbon: 200
   }
 }];
 // Application du facteur (cf. RESEARCH_DELIVERY_FACTOR) : les quantités de la table sont écrites
@@ -17889,6 +17975,9 @@ function unlockedResourceSet(game) {
   // invisibles a l'inventaire tant qu'aucun stock n'existe — et le joueur ne saurait meme pas
   // que la culture qu'il vient de choisir produit quelque chose.
   if (isBuildingUnlocked(game, 'ferme')) for (const fk of FARM_CULT_KEYS) {
+    // PROGRESSION — l'inventaire suit le MEME verrou que le selecteur : sans cette ligne il
+    // annoncerait `biomasse` et `latex` alors que le joueur ne peut pas encore les semer.
+    if (!farmCultUnlocked(game, fk)) continue;
     const fr = FARM_CULTURES[fk].res;
     if (fr) s.add(fr);
   }
@@ -22765,7 +22854,7 @@ function InfoPanel({
           : (!cu.res ? I18N.t("aucune récolte · +25 % aux cultures 4-adjacentes (plafond +50 % par tuile)")
             : ("+ " + fmtPort(burst) + " " + (RES_SHORT[cu.res] || cu.res) + I18N.t(" en salve toutes les ") + cu.P + I18N.t(" s")))),
       React.createElement("div", { className: "ip-nuc-mats c2", key: 'sel' },
-        FARM_CULT_KEYS.map(k => React.createElement("button", {
+        FARM_CULT_KEYS.filter(k => farmCultUnlocked(game, k)).map(k => React.createElement("button", {
           key: k,
           className: 'ip-nuc-mat' + (cuK === k ? ' on' : ''),
           title: cuTxt(k),
