@@ -4239,6 +4239,12 @@ for(var e4 in T4){ var L4c=I18N.locales[e4]; if(!L4c) continue; L4c.tech=L4c.tec
   for(var i4 in o4) if(!L4c.tech[i4]) L4c.tech[i4]=o4[i4]; }
 for(var f4 in U4){ var L4d=I18N.locales[f4]; if(!L4d) continue; L4d.ui=L4d.ui||{}; var q4=U4[f4];
   for(var h4 in q4) if(!L4d.ui[h4]) L4d.ui[h4]=q4[h4]; } })();
+(function(){ if(!window.I18N||!I18N.locales) return; /* CORRECTIFS — liste blanche ile 7 */
+var W9={"en":{" ne se construit pas sur ":" cannot be built on "},
+"es":{" ne se construit pas sur ":" no se puede construir en "},
+"de":{" ne se construit pas sur ":" ist nicht baubar auf "}};
+for(var c9 in W9){ var L9=I18N.locales[c9]; if(!L9) continue; L9.ui=L9.ui||{}; var m9=W9[c9];
+  for(var k9 in m9) if(!L9.ui[k9]) L9.ui[k9]=m9[k9]; } })();
 (function(){ if(!window.I18N||!I18N.locales) return; /* L2 — amorcage de l'ile 7 (id interne 8) */
 /* Trois couches : `res` (nom court de la ressource, reecrit dans RES_SHORT par applyToData),
    `bld` (noms des deux batiments) et `ui` (libelles rendus par I18N.t). Fusion NON destructive.
@@ -5545,7 +5551,7 @@ function buildingConnectsCarrier(buildingId, carrier) {
         for (const k in b.outputs || {}) if (k !== 'energie_kw' && carrierOf(k) === 'wire') return true;
         return false;
       })();
-    } else if (b.driller && carrier === 'road') {
+    } else if ((b.driller || b.feller || b.farm) && carrier === 'road') {
       // FOREUSE : sa sortie (pierre, débit selon le cercle) est INJECTÉE AU TICK, elle n'est pas déclarée
       // dans la def → sans ce cas, la route ne dessinait aucune branche vers elle et la foreuse
       // semblait « non connectée » alors qu'elle évacuait bien sa pierre (retour testeur).
@@ -8568,11 +8574,11 @@ const TOOLBAR_GROUPS = [{
 }, {
   key: 'extraction',
   label: 'Extraction',
-  ids: ['mine_fer', 'mine_charbon', 'carriere', 'pompe_eau', 'pompe_eau_v2', 'pompe_eau_v3', 'mine_cuivre', 'puits_petrole', 'puits_petrole_v2', 'mine_fer_v2', 'mine_cuivre_v2', 'carriere_v2', 'mine_charbon_v2', 'mine_or', 'plateforme_petroliere', 'mine_uranium', 'mine_fer_v3', 'mine_cuivre_v3', 'carriere_v3', 'mine_charbon_v3', 'mine_or_v3', 'mine_uranium_v3', 'mine_fer_v4', 'mine_charbon_v4', 'carriere_v4', 'mine_cuivre_v4', 'mine_or_v4', 'mine_uranium_v4', 'bucheronneuse', 'carriere_rustique']
+  ids: ['mine_fer', 'mine_charbon', 'carriere', 'pompe_eau', 'pompe_eau_v2', 'pompe_eau_v3', 'mine_cuivre', 'puits_petrole', 'puits_petrole_v2', 'mine_fer_v2', 'mine_cuivre_v2', 'carriere_v2', 'mine_charbon_v2', 'mine_or', 'plateforme_petroliere', 'mine_uranium', 'mine_fer_v3', 'mine_cuivre_v3', 'carriere_v3', 'mine_charbon_v3', 'mine_or_v3', 'mine_uranium_v3', 'mine_fer_v4', 'mine_charbon_v4', 'carriere_v4', 'mine_cuivre_v4', 'mine_or_v4', 'mine_uranium_v4']
 }, {
   key: 'energy',
   label: 'Énergie',
-  ids: ['eolienne', 'centrale_charbon', 'centrale_charbon_v2', 'centrale_diesel', 'centrale_diesel_v2', 'eolienne_offshore', 'centrale_gaz', 'geothermie', 'accumulateur', 'accumulateur_v2', 'foyer_charbon']
+  ids: ['eolienne', 'centrale_charbon', 'centrale_charbon_v2', 'centrale_diesel', 'centrale_diesel_v2', 'eolienne_offshore', 'centrale_gaz', 'geothermie', 'accumulateur', 'accumulateur_v2']
 }, {
   key: 'cement',
   label: 'Ciment & béton',
@@ -8612,7 +8618,7 @@ const TOOLBAR_GROUPS = [{
   key: 'bois',
   label: 'Bois et carbone',
   // ⚠ L'ABSENCE D'UN ID DANS `TOOLBAR_GROUPS` NE LE MASQUE PAS : ELLE LE REND INPOSABLE.
-  ids: ['charbonniere', 'scierie', 'filerie_carbone', 'ferme']
+  ids: ['bucheronneuse', 'carriere_rustique', 'charbonniere', 'foyer_charbon', 'scierie', 'filerie_carbone', 'ferme']
 }, {
   key: 'logicblock',
   label: 'Bloc logique',
@@ -11292,8 +11298,48 @@ const SAVE_VERSION = 31;
 // ADDITIFS et absents = defaut.
 // ⚠ HORS PERIMETRE, NON TOUCHE : la sigillaire, l'elastomere, le catalyseur, le port sortant, le
 // bonus multiplicateur, l'engrais. Aucune recette de raffinage n'est ecrite.
-const GAME_BUILD = 441;
-const GAME_VERSION = 'Alpha 20.8';
+// ── 20.9 — LOT CORRECTIFS ILE 7 (5 defauts remontes par les tests appareil du build 441) ────
+// AUCUN changement de mecanique, AUCUN equilibrage, AUCUN sprite. Patcheur pre-compile fourni :
+// 9 substitutions a ancre unique, appliquees a `src/index.src.html` (le monolithe ne s'edite pas)
+// puis rebati — le monolithe obtenu est BYTE-IDENTIQUE a celui du redacteur (SHA du brief
+// retrouve avant bump), ce qui prouve du meme coup que la redirection vers la source est fidele.
+// (R1) `buildingConnectsCarrier` : la BUCHERONNEUSE et la FERME n'ont aucun `inputs`/`outputs`
+// declare — leur sortie est injectee au tick via `bld.due`. La route ne dessinait donc aucune
+// branche vers elles : le sprite les montrait « non raccordees » alors que le depot passait bien
+// par le reseau. Meme precedent que la foreuse, condition simplement etendue.
+// ⚠ SIGNALE, NON CORRIGE : la FERME a le MEME defaut sur le CABLE. Elle consomme reellement
+//   (2 kW/tuile, calcule au tick) mais sa def porte `power: 0` sans sigmoide -> la branche `wire`
+//   rend faux. Le corriger changerait AUSSI le PONTAGE (`wire` est dans `BRIDGE_CARRIERS`) :
+//   deux reseaux cable separes par une ferme fusionneraient. C'est une modification de MECANIQUE,
+//   hors du perimetre de ce lot — a arbitrer.
+// (R2) `TOOLBAR_GROUPS` : bucheronneuse + carriere rustique quittent `extraction`, foyer a charbon
+// quitte `energy`, les trois rejoignent `bois` (4 -> 7 ids ; `extraction` 30 -> 28). La `key`
+// `bois` est CONSERVEE (elle sert aux filtres NETWORK_GROUPS/BUILD_GROUPS) et le libelle reste
+// « Bois et carbone » — le renommer coute 4 entrees de langue et n'a pas ete demande.
+// (R3) LISTE BLANCHE DE L'ILE 8. Sur 121 batiments, 105 de type `build` n'avaient AUCUNE
+// restriction d'ile. On INVERSE la regle (`islandBuildAllowed`) plutot que d'ecrire 105 entrees de
+// `forbiddenIslands` : une liste noire devrait etre maintenue a chaque ajout, et un oubli y est
+// SILENCIEUX. Regle DERIVEE, pas enumeree — passent l'infra et les jonctions (`kind !== 'build'`),
+// ce que la recherche de l'ile libere (`exclusiveIsland === 8`) et les elements LOGIQUES (le
+// kickstart de l'ile en livre 5+5 : les interdire mettrait l'amorcage en impasse).
+// ⚠ (R3f) `isLogicId` PLUTOT QU'UNE COPIE A LA MAIN. La version d'origine enumerait cinq flags
+//   logiques et OUBLIAIT `logicJunction` : la JONCTION LOGIQUE devenait inposable sur l'ile —
+//   alors que le test T3 du brief l'attend explicitement dans la liste autorisee (le patcheur
+//   contredisait donc sa propre suite). On appelle le predicat canonique, qui teste les SEPT.
+// ⚠ (R3e) LA PORTE QUI MANQUAIT, ET C'EST LE POINT LE PLUS IMPORTANT DU LOT. Le brief posait la
+//   garde dans `canPlace` et `selectTool` en affirmant que « la pose repasse par `canPlace` ».
+//   MESURE : `tryPlace` n'appelle JAMAIS `canPlace`, et `canPlace` n'a que DEUX appelants, tous
+//   deux dans le DESSIN (halo du tutoriel, teinte du fantome de survol) — elle ne decide que
+//   d'une COULEUR. La seule vraie porte etait `selectTool`, or la voie COPIER ecrit `ui.tool` EN
+//   DIRECT sans y passer : copier un batiment continental deja pose sur l'ile — le cas meme que ce
+//   lot corrige — le reposait sans controle. Troisieme garde ajoutee DANS `tryPlace`, point de
+//   passage unique de la pose. Reproduit et contre-epreuve au banc (T7).
+// (R4) `switchIsland` centre desormais sur le PORT (`centerOnTile(portPosFor(id))`) : `centerCam`
+// vise le centre GEOMETRIQUE, qui sur l'ile 8 tombe en pleine foret. ⚠ APRES `layout()`, qui vient
+// de recalculer `cam.baseX`/`cam.tile` ; ⚠ garde sur `portPosFor` -> l'ile 6 SOUTERRAINE (id 7)
+// est absente de `PORTS` et garde son centrage sur la grille.
+const GAME_BUILD = 442;
+const GAME_VERSION = 'Alpha 20.9';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -11302,7 +11348,7 @@ const GAME_VERSION = 'Alpha 20.8';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "La septieme ile cultive : la ferme travaille une zone de clairieres et recolte en salve · quatre cultures (foret, taillis, hevea, legumineuse) · la biomasse et le latex se degradent avec le temps, les transformer arrete l'hemorragie · la bucheronneuse livre desormais sa coupe d'un seul coup.";
+const GAME_NOTES = "Correctifs de la septieme ile : la route se raccorde enfin visuellement a la bucheronneuse et a la ferme · bucheronneuse, carriere rustique et foyer a charbon rejoignent la categorie Bois et carbone · les batiments du continent ne sont plus posables la-bas · on arrive desormais face au port, plus au milieu de la foret.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -19354,6 +19400,31 @@ const exclusiveIslandFor = (game, id) => {
   const n = game && game.techTree && game.techTree.nodes && game.techTree.nodes[b.exclusiveUntilNode - 1];
   return n && n.status === 'confirmed' ? null : b.exclusiveIsland;
 };
+// CORRECTIFS — LISTE BLANCHE DE L'ILE 8 (affichee « Ile 7 »). Sur 121 batiments, 105 de type
+// `build` n'avaient AUCUNE restriction d'ile : tous posables la-bas. On INVERSE la regle plutot
+// que d'ecrire 105 entrees de `forbiddenIslands` — une liste noire aurait a etre maintenue a
+// chaque batiment ajoute, et un oubli est silencieux.
+// ⚠ REGLE DERIVEE, PAS UNE LISTE : est autorise ce qui n'est pas un batiment industriel
+//   (`kind !== 'build'` -> infra, jonctions, port), ce que la RECHERCHE de l'ile libere
+//   (`exclusiveIsland === 8`), et les elements LOGIQUES (le kickstart de l'ile en livre 5+5,
+//   les y interdire mettrait l'amorcage en impasse). Un futur batiment d'ile 8 est donc
+//   autorise sans toucher a cette fonction.
+// ⚠ `childOnly` (logic_emetteur / logic_vanne) n'a pas besoin d'etre traite : ces deux-la ne
+//   se posent jamais directement.
+const ISLAND_WHITELISTED = 8;
+function islandBuildAllowed(id, isl) {
+  if (isl !== ISLAND_WHITELISTED) return true;
+  const b = BUILDINGS[id];
+  if (!b) return true;
+  if (b.kind !== 'build') return true;
+  if (b.exclusiveIsland === ISLAND_WHITELISTED) return true;
+  // ⚠ R3f — `isLogicId` PLUTOT QU'UNE COPIE A LA MAIN. La version d'origine enumerait
+  //   `logicSource || logicSink || logicGate || logicMultiSource || logicValve` et OUBLIAIT
+  //   `logicJunction` (et `logic`) : la JONCTION LOGIQUE devenait inposable sur l'ile — alors
+  //   que le test T3 du brief l'attend explicitement dans la liste autorisee. Le predicat
+  //   canonique teste les SEPT flags ; l'appeler evite qu'un futur flag logique soit oublie ici.
+  return isLogicId(id);
+}
 // Ressources « débloquées » = produites par au moins un bâtiment débloqué par la recherche.
 // Sert à n'afficher dans le port (commerce + liaisons) que les ressources accessibles.
 function unlockedResourceSet(game) {
@@ -30164,6 +30235,7 @@ function App() {
     }
     if (t.building || t.occupied) return false;
     if (b.forbiddenIslands && b.forbiddenIslands.indexOf(gameRef.current.currentIsland) !== -1) return false;
+    if (!islandBuildAllowed(id, gameRef.current.currentIsland)) return false;
     const {
       h,
       w
@@ -30327,6 +30399,20 @@ function App() {
     if (t.building || t.occupied) return false;
     if (b.forbiddenIslands && b.forbiddenIslands.indexOf(gameRef.current.currentIsland) !== -1) {
       if (verbose) { showToast(`❌ ${b.name} : ${I18N.t('non constructible sur cette île')}`, 'var(--red)'); SFX.play('invalid'); }
+      return false;
+    }
+    // CORRECTIFS — R3e : LA PORTE QUI MANQUAIT. Le lot posait la liste blanche dans `canPlace`
+    // et dans `selectTool`. MESURE : `tryPlace` n'appelle JAMAIS `canPlace`, et `canPlace` n'a que
+    // DEUX appelants, tous deux dans le DESSIN (halo du tutoriel l. ~31118, teinte du fantome de
+    // survol l. ~31141) — elle ne decide donc que d'une COULEUR. La seule vraie porte etait
+    // `selectTool`, or la voie COPIER ecrit `gameRef.current.ui.tool` EN DIRECT (elle ne teste que
+    // `exclusiveIslandFor`) : copier un batiment continental deja pose sur l'ile — le cas meme que
+    // ce lot corrige, donc frequent dans toute partie anterieure — le reposait sans aucun controle.
+    // ⚠ ICI et pas ailleurs : `tryPlace` est le point de passage UNIQUE de la pose (2 appelants,
+    //   les deux dans `onPointerUp`). Meme message que `selectTool` : on ne cree pas un 2e texte
+    //   pour la meme regle, et la cle i18n est celle deja livree par R3d.
+    if (!islandBuildAllowed(id, gameRef.current.currentIsland)) {
+      if (verbose) { showToast(`❌ ${b.name}${I18N.t(" ne se construit pas sur ")}${islandLabel(gameRef.current.currentIsland)}`, 'var(--red)'); SFX.play('invalid'); }
       return false;
     }
     const {
@@ -31394,6 +31480,11 @@ function App() {
     // 14.31 — Bâtiment d'une AUTRE île (affiché en gris depuis le menu) : la fiche détail reste
     // consultable (c'est tout l'intérêt), mais on refuse de le prendre comme OUTIL. Même message
     // que le mode Copier — on ne crée pas un second texte pour la même règle.
+    if (id && BUILDINGS[id] && !islandBuildAllowed(id, gameRef.current.currentIsland)) {
+      showToast(`❌ ${BUILDINGS[id].name}${I18N.t(" ne se construit pas sur ")}${islandLabel(gameRef.current.currentIsland)}`, 'var(--red)');
+      SFX.play('invalid');
+      return;
+    }
     const cbEx = id && exclusiveIslandFor(gameRef.current, id);
     if (cbEx != null && cbEx !== gameRef.current.currentIsland) {
       showToast(`❌ ${BUILDINGS[id].name}${I18N.t(" ne se construit que sur ")}${islandLabel(cbEx)}`, 'var(--red)');
@@ -31497,6 +31588,15 @@ function App() {
     g.cam.zoom = 1;
     layout();
     centerCam();
+    // CORRECTIFS — ARRIVEE CENTREE SUR LE PORT. `centerCam` vise le centre GEOMETRIQUE de la
+    // grille ; sur l'ile 8, dont les 166 tuiles jouables sont des cotes autour d'un massif
+    // forestier, ce centre tombe en pleine foret, loin du port et de tout ce qui est posable.
+    // ⚠ APRES `layout()` : `centerOnTile` lit `cam.baseX`/`cam.tile`, que `layout` vient de
+    // recalculer pour la nouvelle ile. Avant, il centrerait sur la geometrie de l'ancienne.
+    // ⚠ Garde sur `p` : l'ile 7 SOUTERRAINE est absente de `PORTS` (`portPosFor` -> null), on
+    // y garde le centrage sur la grille.
+    const pCenter = portPosFor(id);
+    if (pCenter) centerOnTile(pCenter.r, pCenter.c);
     setInfo(null);
     setUpgrade(null);
     setPortOpen(false);

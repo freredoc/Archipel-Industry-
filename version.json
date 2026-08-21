@@ -1,8 +1,8 @@
 {
-  "build": 441,
-  "version": "Alpha 20.8",
+  "build": 442,
+  "version": "Alpha 20.9",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "La septieme ile cultive : la ferme travaille une zone de clairieres et recolte en salve · quatre cultures (foret, taillis, hevea, legumineuse) · la biomasse et le latex se degradent avec le temps, les transformer arrete l'hemorragie · la bucheronneuse livre desormais sa coupe d'un seul coup."
+  "notes": "Correctifs de la septieme ile : la route se raccorde enfin visuellement a la bucheronneuse et a la ferme · bucheronneuse, carriere rustique et foyer a charbon rejoignent la categorie Bois et carbone · les batiments du continent ne sont plus posables la-bas · on arrive desormais face au port, plus au milieu de la foret."
 }
