@@ -4204,6 +4204,8 @@ var U3={
 "\u274c Zone au maximum \u2014 am\u00e9liorez la ferme":"\u274c Zone at maximum \u2014 upgrade the farm",
 "\u274c Retirer ce champ couperait la zone":"\u274c Removing this field would split the zone",
 "\u274c Les champs doivent se toucher et rejoindre la ferme":"\u274c Fields must touch each other and reach the farm",
+"verrouill\u00e9e":"locked","aucune r\u00e9colte":"no harvest",
+"D\u00e9bloqu\u00e9e plus loin dans la Recherche":"Unlocked later in Research",
 "La zone se peuple de clairi\u00e8res, jamais de for\u00eat. Chaque tuile co\u00fbte du courant : c'est le courant qui borne l'expansion, pas le temps de cycle. Sans courant, le cycle GELE \u2014 il ne repart jamais de z\u00e9ro. La r\u00e9colte part par la ROUTE : sans liaison au port, la salve attend.":"The zone is filled with clearings, never with forest. Every tile costs power: power is what bounds the expansion, not the cycle time. Without power the cycle FREEZES \u2014 it never restarts from zero. The harvest leaves by ROAD: with no link to the port, the burst waits.",
 "Cette ressource se d\u00e9grade : elle perd une fraction fixe de son stock \u00e0 chaque seconde. La transformer arr\u00eate l'h\u00e9morragie.":"This resource decays: it loses a fixed fraction of its stock every second. Processing it stops the bleeding."},
 "es":{
@@ -4224,6 +4226,8 @@ var U3={
 "\u274c Zone au maximum \u2014 am\u00e9liorez la ferme":"\u274c Zona al m\u00e1ximo \u2014 mejora la granja",
 "\u274c Retirer ce champ couperait la zone":"\u274c Quitar este campo cortar\u00eda la zona",
 "\u274c Les champs doivent se toucher et rejoindre la ferme":"\u274c Los campos deben tocarse y llegar a la granja",
+"verrouill\u00e9e":"bloqueado","aucune r\u00e9colte":"sin cosecha",
+"D\u00e9bloqu\u00e9e plus loin dans la Recherche":"Se desbloquea m\u00e1s adelante en la Investigaci\u00f3n",
 "La zone se peuple de clairi\u00e8res, jamais de for\u00eat. Chaque tuile co\u00fbte du courant : c'est le courant qui borne l'expansion, pas le temps de cycle. Sans courant, le cycle GELE \u2014 il ne repart jamais de z\u00e9ro. La r\u00e9colte part par la ROUTE : sans liaison au port, la salve attend.":"La zona se puebla de claros, nunca de bosque. Cada casilla cuesta corriente: es la corriente la que limita la expansi\u00f3n, no el tiempo de ciclo. Sin corriente el ciclo SE CONGELA \u2014 nunca vuelve a empezar de cero. La cosecha sale por CARRETERA: sin enlace al puerto, la r\u00e1faga espera.",
 "Cette ressource se d\u00e9grade : elle perd une fraction fixe de son stock \u00e0 chaque seconde. La transformer arr\u00eate l'h\u00e9morragie.":"Este recurso se degrada: pierde una fracci\u00f3n fija de su reserva cada segundo. Transformarlo detiene la hemorragia."},
 "de":{
@@ -4244,6 +4248,8 @@ var U3={
 "\u274c Zone au maximum \u2014 am\u00e9liorez la ferme":"\u274c Zone am Maximum \u2014 Hof verbessern",
 "\u274c Retirer ce champ couperait la zone":"\u274c Dieses Feld zu entfernen w\u00fcrde die Zone trennen",
 "\u274c Les champs doivent se toucher et rejoindre la ferme":"\u274c Felder m\u00fcssen aneinandergrenzen und den Hof erreichen",
+"verrouill\u00e9e":"gesperrt","aucune r\u00e9colte":"keine Ernte",
+"D\u00e9bloqu\u00e9e plus loin dans la Recherche":"Wird sp\u00e4ter in der Forschung freigeschaltet",
 "La zone se peuple de clairi\u00e8res, jamais de for\u00eat. Chaque tuile co\u00fbte du courant : c'est le courant qui borne l'expansion, pas le temps de cycle. Sans courant, le cycle GELE \u2014 il ne repart jamais de z\u00e9ro. La r\u00e9colte part par la ROUTE : sans liaison au port, la salve attend.":"Die Zone f\u00fcllt sich mit Lichtungen, nie mit Wald. Jedes Feld kostet Strom: der Strom begrenzt die Ausdehnung, nicht die Zykluszeit. Ohne Strom FRIERT der Zyklus ein \u2014 er beginnt nie wieder bei null. Die Ernte geht \u00fcber die STRASSE: ohne Anbindung an den Hafen wartet der Schub.",
 "Cette ressource se d\u00e9grade : elle perd une fraction fixe de son stock \u00e0 chaque seconde. La transformer arr\u00eate l'h\u00e9morragie.":"Diese Ressource verdirbt: sie verliert jede Sekunde einen festen Anteil ihres Bestands. Sie zu verarbeiten stoppt den Verlust."}};
 for(var c3 in R3){ var L3a=I18N.locales[c3]; if(!L3a) continue; L3a.res=L3a.res||{}; var m3=R3[c3];
@@ -4274,10 +4280,10 @@ var B4={
 "es":{"charbonniere":{"name":"Carbonera"},"foyer_charbon":{"name":"Hogar de Carbón"},"scierie":{"name":"Aserradero"},"filerie_carbone":{"name":"Hilandería de Carbono"}},
 "de":{"charbonniere":{"name":"Köhlerei"},"foyer_charbon":{"name":"Kohlefeuer"},"scierie":{"name":"Sägewerk"},"filerie_carbone":{"name":"Karbonspinnerei"}}};
 var T4={
-"fr":{"45":"Scierie","46":"Agriculture","47":"Charbonnière","48":"Foyer à Charbon","49":"Filerie de Carbone"},
-"en":{"45":"Sawmill","46":"Agriculture","47":"Charcoal Kiln","48":"Coal Hearth","49":"Carbon Spinnery"},
-"es":{"45":"Aserradero","46":"Agricultura","47":"Carbonera","48":"Hogar de Carbón","49":"Hilandería de Carbono"},
-"de":{"45":"Sägewerk","46":"Landwirtschaft","47":"Kohlenmeiler","48":"Kohlefeuer","49":"Kohlenstoff-Spinnerei"}};
+"fr":{"45":"Scierie","46":"Agriculture","47":"Charbonnière","48":"Foyer et Filerie"},
+"en":{"45":"Sawmill","46":"Agriculture","47":"Charcoal Kiln","48":"Hearth and Spinnery"},
+"es":{"45":"Aserradero","46":"Agricultura","47":"Carbonera","48":"Hogar e Hilandería"},
+"de":{"45":"Sägewerk","46":"Landwirtschaft","47":"Kohlenmeiler","48":"Feuer und Spinnerei"}};
 /* ⚠ `ui` n'a PAS de francais : le modele est gettext, la CLE EST le texte francais — c'est deja
    le cas de ses onze voisins (« Infrastructure », « Tungstene », « Quantique »…). */
 var U4={
@@ -11549,8 +11555,61 @@ const SAVE_VERSION = 31;
 //   lui-meme selon la ligne.
 // ⚠ HORS PERIMETRE, NON TOUCHE : le panneau de la ferme (pave, boutons de culture estompes, halo
 //   de zone), la fusion des noeuds 48/49, `SAVE_VERSION`, la mecanique de la legumineuse.
-const GAME_BUILD = 445;
-const GAME_VERSION = 'Alpha 21.2';
+// 21.3 — LOT PANNEAU FERME. Le pave gris s'en va, les QUATRE cultures s'affichent en permanence
+// (verrouillees estompees et inertes, quantite et periode LISIBLES SANS SURVOL), la zone se
+// contourne d'un halo pulse pendant l'edition, et les noeuds 48/49 fusionnent. AUCUNE migration :
+// `SAVE_VERSION` NE BOUGE PAS.
+// (U1) Le pave decrivait un mecanisme FAUX depuis deux lots — « c'est le courant qui borne
+//   l'expansion » alors que la ferme tire 0 kW, et « le cycle » AU SINGULIER alors que le lot 21.2
+//   vient d'en donner un par champ. Le retirer vaut mieux que le reecrire : l'information utile
+//   descend dans les boutons, la ou le joueur la lit au moment de choisir.
+//   ⚠ La cle i18n du paragraphe RESTE dans les tables, orpheline et sans effet — la retirer des
+//   quatre langues serait du risque pour zero gain (precedent 13.83).
+//   ⚠ ET LE NOM DE SA CLASSE CSS N'EST PAS ECRIT ICI, VOLONTAIREMENT : le critere du brief est
+//   un `grep -c` de cette classe (8 -> 7). Le citer en commentaire annulerait la baisse et
+//   rendrait le controle faux — c'est le piege paye deux fois (emoji du lot ICON-1, nom du
+//   service de soutien du 429, qui avait casse la CI).
+// (U2) ⚠ CE LOT ANNULE LE `.filter()` POSE AU LOT PROGRESSION, et c'est le coeur du lot : filtrer
+//   CACHAIT LA SUITE DU JEU. Motif de la BUCHERONNEUSE (`opacity: 0.45` + `disabled`), pas celui
+//   du Refroidisseur, qui lui filtre ses modes. `disabled` plutot qu'un toast : `showToast` n'est
+//   pas dans la portee de ce composant, et un bouton desactive ne peut pas mentir.
+//   ⚠ STYLES EN LIGNE, AUCUNE REGLE CSS AJOUTEE : la feuille a un invariant d'ordre (bloc du lot C
+//   DERNIER, lot B juste avant) — y toucher pour deux libelles serait un risque sans contrepartie.
+//   ⚠ i18n : les TROIS chaines neuves du detail (« verrouillee », « aucune recolte », l'infobulle)
+//   n'avaient AUCUNE cle. Mesure en locale EN avant correctif : le bouton rendait « Coppice |
+//   verrouillee » — du francais A L'INTERIEUR d'un bouton anglais. Les 3 x 3 traductions sont
+//   posees dans le bloc L3, a cote des toasts de zone du lot precedent.
+// (U3) Le halo est pose JUSTE APRES `drawTutorialHalo`, et c'est ce site QUI COMPTE : il est deja
+//   rattache au canal de redessin d'AMBIANCE (~10 FPS). Ailleurs, la boucle bridee figerait le
+//   contour des que rien ne bouge et il ne pulserait pas.
+//   ⚠ IL TRACE LE CONTOUR DU POLYGONE, PAS QUATRE CARRES : seules les aretes SANS voisine dans la
+//   zone sont dessinees, donc deux champs colles se lisent comme un bloc — exactement ce que la
+//   regle de contiguite du lot 21.2 rend lisible. La ferme est cerclee en POINTILLE : elle n'est
+//   pas un champ, mais la zone doit la rejoindre.
+// (U4) ⚠ LE COUPLAGE QUI TUE LE LOT SI ON L'OUBLIE : `FARM_CULT_NODE` accrochait hevea et
+//   legumineuse au noeud 49. Le supprimer sans les deplacer laisserait DEUX CULTURES VERROUILLEES
+//   POUR TOUJOURS, sur un noeud qui n'existe plus, estompees par `farmCultUnlocked` sans jamais
+//   s'ouvrir. Elles passent au 48.
+//   ⚠ RETIRER UN NOEUD EST SANS MIGRATION : `loadSave` reconstruit `techTree.nodes` depuis
+//   `TECH_NODES` avec un lookup PAR ID (defaut `locked`), un statut orphelin est simplement
+//   ignore. Et `BUILDING_NODE` etant DERIVE des `unlocks`, `filerie_carbone` pointe le 48 tout
+//   seul : une partie qui avait deja confirme le 48 garde la filerie AVEC lui.
+//   ⚠ L'INDEXATION POSITIONNELLE RESTE VALIDE : `unlockedBuildingSet` lit `nodes[n.id - 1]`, ce
+//   qui n'est sur que tant que les ids sont CONTIGUS 1..N. On retire le DERNIER, la chaine reste
+//   contigue 1..48. Retirer un noeud du MILIEU casserait tout, en silence.
+//   ⚠ Les noms vivent dans les TABLES `tech` (`I18N.applyToData` reecrit `name` PAR ID), mais
+//   l'inline est ALIGNE ici quand meme : laisser « Foyer a Charbon » face a une table qui dit
+//   « Foyer et Filerie » fabriquerait une copie credible qui ment — le piege exact du lot A' 14.97.
+// ⚠ CONSEQUENCE D'EQUILIBRAGE NON ENONCEE PAR LE BRIEF, MESUREE ET SIGNALEE, NON CORRIGEE : la
+//   fusion fait disparaitre le `delivery` du noeud 49 (200 charbon). Le cout TOTAL pour ouvrir le
+//   foyer ET la filerie tombe donc de 300 a 100 charbon, en une seule livraison au lieu de deux.
+//   C'est un arbitrage de progression, pas un defaut de patch : a trancher au playtest.
+// ⚠ HORS PERIMETRE, NON TOUCHE : le libelle « + N en salve toutes les P s » en tete de fiche (il
+//   somme encore TOUTE la zone alors que les champs sont decales depuis 21.2 — juste au total par
+//   tournee, mais il ne decrit plus un evenement unique), le 0 kW de la ferme, les 100 planches
+//   des noeuds 46 et 47, `SAVE_VERSION`.
+const GAME_BUILD = 446;
+const GAME_VERSION = 'Alpha 21.3';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -11559,7 +11618,7 @@ const GAME_VERSION = 'Alpha 21.2';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Les champs de la ferme vieillissent chacun de leur cote : une clairiere ajoutee en cours de route repart a zero au lieu d'encaisser la recolte des autres · la zone doit rester d'un seul tenant et rejoindre la ferme · la carriere rustique ne se pose plus sur le sable · la coupe rend 100 bois au lieu de 60.";
+const GAME_NOTES = "La fiche de la ferme montre desormais les quatre cultures en permanence : celles qui restent a decouvrir sont estompees, et chaque bouton affiche sa recolte et sa periode sans avoir a survoler quoi que ce soit · le contour de la zone se dessine et pulse pendant qu'on la modifie · le pave d'explication perime disparait · le foyer et la filerie arrivent ensemble, avec les trois dernieres cultures.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -13125,7 +13184,7 @@ const FARM_CULT_KEYS = ['foret', 'taillis', 'hevea', 'legum'];
 //   l'inventaire. Ne PAS filtrer `FARM_CULT_KEYS` lui-meme (cf. FARM_ART_KEYS ci-dessous).
 // ⚠ AUCUN EFFET RETROACTIF : une ferme qui porte deja `cult: 'hevea'` continue de tourner. Le
 //   predicat garde l'OUVERTURE d'une culture, pas l'execution d'un cycle en cours.
-const FARM_CULT_NODE = { foret: null, taillis: 48, hevea: 49, legum: 49 };
+const FARM_CULT_NODE = { foret: null, taillis: 48, hevea: 48, legum: 48 };
 function farmCultUnlocked(game, k) {
   const nd = FARM_CULT_NODE[k];
   return nd == null ? true : isNodeConfirmed(game, nd);
@@ -19431,7 +19490,7 @@ const TECH_NODES = [{
   }
 }, {
   id: 48,
-  name: 'Foyer à Charbon',
+  name: 'Foyer et Filerie',
   prereq: 47,
   mode: 'delivery',
   reqs: [],
@@ -19439,22 +19498,11 @@ const TECH_NODES = [{
   delivery: {
     charbon: 100
   },
-  // Le taillis arrive AVEC le feu : la biomasse est un combustible, pas encore un intrant.
+  // FUSION 48+49 : le foyer et la filerie arrivent ensemble, et avec eux les trois cultures
+  // restantes. ⚠ Retirer le noeud 49 est SANS MIGRATION : `techTree.nodes` est reconstruit depuis
+  // `TECH_NODES` au chargement avec un lookup PAR ID, un statut orphelin est simplement ignore.
   unlocks: {
-    buildings: ['foyer_charbon']
-  }
-}, {
-  id: 49,
-  name: 'Filerie de Carbone',
-  prereq: 48,
-  mode: 'delivery',
-  reqs: [],
-  island: 8,
-  unlocks: {
-    buildings: ['filerie_carbone']
-  },
-  delivery: {
-    charbon: 200
+    buildings: ['foyer_charbon', 'filerie_carbone']
   }
 }];
 // Application du facteur (cf. RESEARCH_DELIVERY_FACTOR) : les quantités de la table sont écrites
@@ -24603,12 +24651,25 @@ function InfoPanel({
           : (!cu.res ? I18N.t("aucune récolte · +25 % aux cultures 4-adjacentes (plafond +50 % par tuile)")
             : ("+ " + fmtPort(burst) + " " + (RES_SHORT[cu.res] || cu.res) + I18N.t(" en salve toutes les ") + cu.P + I18N.t(" s")))),
       React.createElement("div", { className: "ip-nuc-mats c2", key: 'sel' },
-        FARM_CULT_KEYS.filter(k => farmCultUnlocked(game, k)).map(k => React.createElement("button", {
-          key: k,
-          className: 'ip-nuc-mat' + (cuK === k ? ' on' : ''),
-          title: cuTxt(k),
-          onClick: () => onSetCult && onSetCult(info.r, info.c, k)
-        }, I18N.t(FARM_CULT_LABEL[k])))),
+        FARM_CULT_KEYS.map(k => {
+          const ok = farmCultUnlocked(game, k);
+          const d = FARM_CULTURES[k];
+          // Detail LISIBLE SANS SURVOL : sur telephone l'infobulle `title` n'apparait jamais.
+          // C'est la raison du passage a deux lignes — le contenu, lui, existait deja.
+          const det = !ok ? I18N.t("verrouillée")
+            : (!d.res ? I18N.t("aucune récolte")
+              : fmtPort(d.q) + ' ' + (RES_SHORT[d.res] || d.res) + I18N.t(" · ") + d.P + I18N.t(" s"));
+          return React.createElement("button", {
+            key: k,
+            className: 'ip-nuc-mat' + (cuK === k ? ' on' : ''),
+            style: ok ? null : { opacity: 0.45 },
+            disabled: !ok,
+            title: ok ? cuTxt(k) : I18N.t("Débloquée plus loin dans la Recherche"),
+            onClick: () => { if (ok && onSetCult) onSetCult(info.r, info.c, k); }
+          },
+            React.createElement("div", { key: 'n', style: { lineHeight: 1.1 } }, I18N.t(FARM_CULT_LABEL[k])),
+            React.createElement("div", { key: 'd', style: { fontSize: '.72em', opacity: .75, lineHeight: 1.1 } }, det));
+        })),
       row('z', "Zone", zn + ' / ' + zmax + I18N.t(" clairières · ") + fmtPower(FARM_KW_PER_TILE * zn), zn >= zmax ? 'var(--orange)' : null)
     ];
     // Éditeur : il FERME la fiche (elle recouvre justement les clairières à toucher) et bascule le
@@ -24623,8 +24684,6 @@ function InfoPanel({
       kids.push(row('c', "Cycle", zn ? (Math.round((1 - rem / cu.P) * 100) + '% · ' + fmtDur(rem)) : I18N.t("zone vide"), zn ? 'var(--yellow)' : 'var(--orange)'));
     }
     if (dueTxt) kids.push(row('d', "En attente d'évacuation", dueTxt, 'var(--orange)'));
-    kids.push(React.createElement("div", { className: "ip-nuc-irr-note", key: 'n' },
-      I18N.t("La zone se peuple de clairières, jamais de forêt. Chaque tuile coûte du courant : c'est le courant qui borne l'expansion, pas le temps de cycle. Sans courant, le cycle GELE — il ne repart jamais de zéro. La récolte part par la ROUTE : sans liaison au port, la salve attend.")));
     return React.createElement("div", { className: "ip-nuc-irr" }, kids);
   })(), b.feller && (() => {
     // ── BÛCHERONNEUSE : pavé directionnel + état de la coupe ──────────────────────────────
@@ -32947,6 +33006,42 @@ function App() {
   // ⚠ La garde « tutoriel actif + île 1 » ne vaut QUE pour le tutoriel : le guide opère
   // après le tuto et sur TOUTES les îles (brief B §7/§11 — sinon panne silencieuse île 2+).
   // Ne balaie que la fenêtre visible (r0..r1, c0..c1, bornes passées par draw()) → coût négligeable.
+  // Contour de la zone pendant l'edition. Rien n'est dessine hors de ce mode.
+  function drawFarmZoneHalo(ctx, ox, oy, tile) {
+    const fe = farmEditRef.current;
+    if (!fe) return;
+    const g = gameRef.current;
+    if (g.currentIsland !== fe.isl) return;
+    const tiles = curTiles();
+    const ft = tiles[fe.r] && tiles[fe.r][fe.c];
+    const fb = ft && ft.building;
+    if (!fb || !(BUILDINGS[fb.id] || {}).farm) return;
+    const zone = fb.zone || [];
+    const inZ = {};
+    for (let i = 0; i < zone.length; i++) inZ[zone[i][0] + ',' + zone[i][1]] = 1;
+    const pulse = 0.45 + 0.35 * Math.sin(Date.now() / 190);
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'square';
+    ctx.fillStyle = 'rgba(110,139,61,' + (pulse * 0.22).toFixed(3) + ')';
+    ctx.strokeStyle = 'rgba(160,210,90,' + pulse.toFixed(3) + ')';
+    for (let i = 0; i < zone.length; i++) {
+      const r = zone[i][0], c = zone[i][1];
+      const x = ox + c * tile, y = oy + r * tile;
+      ctx.fillRect(x, y, tile, tile);
+      ctx.beginPath();
+      if (!inZ[(r - 1) + ',' + c]) { ctx.moveTo(x, y); ctx.lineTo(x + tile, y); }
+      if (!inZ[(r + 1) + ',' + c]) { ctx.moveTo(x, y + tile); ctx.lineTo(x + tile, y + tile); }
+      if (!inZ[r + ',' + (c - 1)]) { ctx.moveTo(x, y); ctx.lineTo(x, y + tile); }
+      if (!inZ[r + ',' + (c + 1)]) { ctx.moveTo(x + tile, y); ctx.lineTo(x + tile, y + tile); }
+      ctx.stroke();
+    }
+    // La ferme elle-meme, en pointille : elle n'est pas un champ, mais la zone doit la rejoindre.
+    ctx.setLineDash([5, 4]);
+    ctx.strokeRect(ox + fe.c * tile + 1.5, oy + fe.r * tile + 1.5, tile - 3, tile - 3);
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
   function drawTutorialHalo(ctx, ox, oy, tile, r0, r1, c0, c1) {
     const g = gameRef.current;
     const tutOn = g.tutorial && g.tutorial.active;
@@ -34122,6 +34217,7 @@ function App() {
     drawHover(ctx, ox, oy, tile);
     drawNetworkDebug(ctx, ox, oy, tile);
     drawTutorialHalo(ctx, ox, oy, tile, r0, r1, c0, c1);
+    drawFarmZoneHalo(ctx, ox, oy, tile);
     // 1er rendu effectif du jeu → on retire le splash de chargement (l'écran n'est plus noir).
     if (!window.__splashGone) {
       window.__splashGone = true;
