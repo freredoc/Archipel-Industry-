@@ -1,8 +1,8 @@
 {
-  "build": 445,
-  "version": "Alpha 21.2",
+  "build": 446,
+  "version": "Alpha 21.3",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "Les champs de la ferme vieillissent chacun de leur cote : une clairiere ajoutee en cours de route repart a zero au lieu d'encaisser la recolte des autres · la zone doit rester d'un seul tenant et rejoindre la ferme · la carriere rustique ne se pose plus sur le sable · la coupe rend 100 bois au lieu de 60."
+  "notes": "La fiche de la ferme montre desormais les quatre cultures en permanence : celles qui restent a decouvrir sont estompees, et chaque bouton affiche sa recolte et sa periode sans avoir a survoler quoi que ce soit · le contour de la zone se dessine et pulse pendant qu'on la modifie · le pave d'explication perime disparait · le foyer et la filerie arrivent ensemble, avec les trois dernieres cultures."
 }
