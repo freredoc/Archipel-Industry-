@@ -3318,6 +3318,34 @@ function drawAnimFrame(ctx, sk, x, y, w, h, sub) {
 // (t + r + c) % 4 → bourrasque diagonale ; les 2px de bord identiques garantissent un tiling sans
 // couture quelle que soit la frame de chaque tuile. Compteur `t` lent (fps du manifest, ~3).
 const TILE_ANIM_BY_KEY = {
+  tile_i8_land: {
+    cle: 'tile_i8_land_breeze',
+    frames: 4,
+    fw: 32,
+    fh: 32,
+    fps: 3
+  },
+  tile_i8_water: {
+    cle: 'tile_i8_water_breeze',
+    frames: 4,
+    fw: 32,
+    fh: 32,
+    fps: 3
+  },
+  tile_i8_coast: {
+    cle: 'tile_i8_coast_breeze',
+    frames: 4,
+    fw: 32,
+    fh: 32,
+    fps: 3
+  },
+  tile_i8_forest: {
+    cle: 'tile_i8_forest_breeze',
+    frames: 4,
+    fw: 32,
+    fh: 32,
+    fps: 3
+  },
   tile_i1_land: {
     cle: 'tile_i1_land_breeze',
     frames: 4,
@@ -9831,8 +9859,45 @@ const SAVE_VERSION = 31;
 // ⚠ AUCUNE MIGRATION, ET C'EST VERIFIE AU FICHIER : `loadSave` reconstruit `techTree.nodes` par
 //   `TECH_NODES.map` avec un lookup `savedStatus[n.id]` (defaut `locked`). Ajouter deux noeuds est
 //   donc gratuit — `SAVE_VERSION` NE BOUGE PAS. Aucun code ne lit `TECH_NODES.length` (grep).
-const GAME_BUILD = 443;
-const GAME_VERSION = 'Alpha 21.0';
+// 21.1 — LOT ART ILE 7. 26 images deposees, 4 lignes de code. AUCUNE mecanique touchee : le lot
+// est de la DONNEE, plus le seul cablage sans lequel une partie de cette donnee serait inerte.
+// ⚠ (A1) LES FALAISES SONT UN REMPLACEMENT D'ALIAS, PAS UN AJOUT, ET C'EST L'ORDRE QUI L'OPERE.
+//   Le lot L1 avait pose 11 `i8_falaise_*` en ALIAS vers l'ile 5
+//   (`__SPRITE_DATA__["i8_falaise_s"]=__SPRITE_DATA__["i5_falaise_s"];`) en annoncant lui-meme :
+//   « deposer un jour de vrais i8_falaise_* APRES ce bloc les remplace, sans toucher au code ».
+//   Le bloc est donc ancre sur la DERNIERE ligne d'alias et ecrit JUSTE APRES. Le deplacer plus
+//   haut le rendrait INOPERANT — l'alias reecrirait par-dessus. Corollaire pour les tests : la
+//   ligne d'alias RESTE dans le fichier, un `grep` ne prouve donc rien ; seule une lecture a
+//   l'execution repond (c'est T5).
+// ⚠ (A2) SANS CES 4 LIGNES, LES 4 BANDES DE BRISE SONT INERTES ET RIEN NE LE SIGNALE.
+//   `drawTileAnim` lit `TILE_ANIM_BY_KEY`, indexe par CLE DE TUILE STATIQUE ; l'ile 8 n'y avait
+//   AUCUNE entree. Injecter les PNG seuls ne ferait strictement rien.
+//   ⚠ `tile_i8_forest` est la PREMIERE brise de FORET du jeu : les iles 1 a 7 n'ont que
+//   land / water / coast. La table est litterale, il n'y a rien a deriver.
+//   ⚠ AUCUNE entree `ANIM_META` pour ces quatre bandes, VOLONTAIREMENT : elles passent par
+//   `TILE_ANIM_BY_KEY`, pas par `ANIM_BY_SK` (qui fait `if (!meta) continue`). Une entree
+//   `ANIM_META` les associerait par erreur a un sprite de BATIMENT homonyme.
+// ⚠ 10 DES 26 IMAGES NE DEMANDENT AUCUN CODE, parce que leurs cles sont DERIVEES et non listees :
+//   `'tile_i' + isl + '_coast_tri_' + tri` au site de dessin littoral · `itemSpriteKey(res)` fait
+//   `'item_' + res` et retombe sur `null` si la cle manque · `buildingSpriteKey` cherche
+//   `'bat_' + id` en tete de ses candidats. Deposer l'image SUFFIT.
+// ── AJOUT AU PERIMETRE DU BRIEF, DEMANDE PAR ETHAN : LA BUCHERONNEUSE NEUTRE.
+//   Le brief classait `bat_bucheronneuse` hors perimetre avec un motif explicite — « Le pack ne
+//   fournit pas ce PNG ». Le motif est TOMBE : le pack le livre (32x32, 651 o). C'est la 26e image.
+//   Elle ferme DEUX defauts d'un coup, et AUCUN CODE n'est necessaire :
+//   (1) `DIR_ART_IDS.bucheronneuse` ne produit `bat_bucheronneuse_<n|s|o|e>` QUE si `dir != null` ;
+//       les CINQ sites qui appellent `buildingSpriteKey` SANS direction (vignette du menu, fiche,
+//       panneau d'amelioration) rendaient donc `null` — d'ou la vignette vide.
+//   (2) `fellDir` n'est pose qu'au PREMIER abattage (`mach.fellDir = fellDir`) : une bucheronneuse
+//       posee mais jamais utilisee recevait `undefined` et se dessinait en RECTANGLE DE COULEUR.
+//   ⚠ 32x32 ET C'EST VOULU : le debord « 1 case 1/2 » de `drawBuilding` ne teste que les quatre
+//   cles `_n`/`_s`/`_o`/`_e` ; la neutre n'entre dans aucun cas et reste cadree 1x1. Le
+//   commentaire du debord anticipait deja exactement ce repli.
+// ⚠ HORS PERIMETRE, NON TOUCHE : les variantes `basalte`/`calcaire`/`gres_rouge` du pack (seul
+//   `retenu/` est injecte, conformement a son nom), le panneau de la ferme, les champs contigus,
+//   la carriere hors cote, la coupe a 100, la fusion 48/49.
+const GAME_BUILD = 444;
+const GAME_VERSION = 'Alpha 21.1';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -9841,7 +9906,7 @@ const GAME_VERSION = 'Alpha 21.0';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "Progression de la septieme ile : la recherche se deroule desormais dans l'ordre scierie, ferme, charbonniere, foyer puis filerie · les cultures s'ouvrent une a une, la foret d'abord · la ferme part d'une seule clairiere et en gagne une par niveau · scierie, filerie et ferme ne consomment plus de courant, le temps du playtest.";
+const GAME_NOTES = "La septieme ile prend ses couleurs : de vraies falaises a la place de celles empruntees a l'ile 5 · l'herbe, la mer, le sable et la canopee scintillent · les angles du littoral se raccordent enfin · le bois, la planche, la biomasse, le latex et le fil de carbone ont leur icone · le foyer a charbon et la bucheronneuse au repos ont leur sprite.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
