@@ -1,8 +1,8 @@
 {
-  "build": 444,
-  "version": "Alpha 21.1",
+  "build": 445,
+  "version": "Alpha 21.2",
   "url": "https://github.com/freredoc/Archipel-Industry-/releases/tag/apk-latest",
   "apk": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustry.apk",
   "apkDev": "https://github.com/freredoc/Archipel-Industry-/releases/download/apk-latest/ArchipelIndustryDev.apk",
-  "notes": "La septieme ile prend ses couleurs : de vraies falaises a la place de celles empruntees a l'ile 5 · l'herbe, la mer, le sable et la canopee scintillent · les angles du littoral se raccordent enfin · le bois, la planche, la biomasse, le latex et le fil de carbone ont leur icone · le foyer a charbon et la bucheronneuse au repos ont leur sprite."
+  "notes": "Les champs de la ferme vieillissent chacun de leur cote : une clairiere ajoutee en cours de route repart a zero au lieu d'encaisser la recolte des autres · la zone doit rester d'un seul tenant et rejoindre la ferme · la carriere rustique ne se pose plus sur le sable · la coupe rend 100 bois au lieu de 60."
 }

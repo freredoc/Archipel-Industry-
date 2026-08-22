@@ -4202,6 +4202,8 @@ var U3={
 "\u274c La zone n'accepte que des clairi\u00e8res":"\u274c The zone only accepts clearings",
 "\u274c Clairi\u00e8re d\u00e9j\u00e0 cultiv\u00e9e par une autre ferme":"\u274c Clearing already farmed by another farm",
 "\u274c Zone au maximum \u2014 am\u00e9liorez la ferme":"\u274c Zone at maximum \u2014 upgrade the farm",
+"\u274c Retirer ce champ couperait la zone":"\u274c Removing this field would split the zone",
+"\u274c Les champs doivent se toucher et rejoindre la ferme":"\u274c Fields must touch each other and reach the farm",
 "La zone se peuple de clairi\u00e8res, jamais de for\u00eat. Chaque tuile co\u00fbte du courant : c'est le courant qui borne l'expansion, pas le temps de cycle. Sans courant, le cycle GELE \u2014 il ne repart jamais de z\u00e9ro. La r\u00e9colte part par la ROUTE : sans liaison au port, la salve attend.":"The zone is filled with clearings, never with forest. Every tile costs power: power is what bounds the expansion, not the cycle time. Without power the cycle FREEZES \u2014 it never restarts from zero. The harvest leaves by ROAD: with no link to the port, the burst waits.",
 "Cette ressource se d\u00e9grade : elle perd une fraction fixe de son stock \u00e0 chaque seconde. La transformer arr\u00eate l'h\u00e9morragie.":"This resource decays: it loses a fixed fraction of its stock every second. Processing it stops the bleeding."},
 "es":{
@@ -4220,6 +4222,8 @@ var U3={
 "\u274c La zone n'accepte que des clairi\u00e8res":"\u274c La zona solo acepta claros",
 "\u274c Clairi\u00e8re d\u00e9j\u00e0 cultiv\u00e9e par une autre ferme":"\u274c Claro ya cultivado por otra granja",
 "\u274c Zone au maximum \u2014 am\u00e9liorez la ferme":"\u274c Zona al m\u00e1ximo \u2014 mejora la granja",
+"\u274c Retirer ce champ couperait la zone":"\u274c Quitar este campo cortar\u00eda la zona",
+"\u274c Les champs doivent se toucher et rejoindre la ferme":"\u274c Los campos deben tocarse y llegar a la granja",
 "La zone se peuple de clairi\u00e8res, jamais de for\u00eat. Chaque tuile co\u00fbte du courant : c'est le courant qui borne l'expansion, pas le temps de cycle. Sans courant, le cycle GELE \u2014 il ne repart jamais de z\u00e9ro. La r\u00e9colte part par la ROUTE : sans liaison au port, la salve attend.":"La zona se puebla de claros, nunca de bosque. Cada casilla cuesta corriente: es la corriente la que limita la expansi\u00f3n, no el tiempo de ciclo. Sin corriente el ciclo SE CONGELA \u2014 nunca vuelve a empezar de cero. La cosecha sale por CARRETERA: sin enlace al puerto, la r\u00e1faga espera.",
 "Cette ressource se d\u00e9grade : elle perd une fraction fixe de son stock \u00e0 chaque seconde. La transformer arr\u00eate l'h\u00e9morragie.":"Este recurso se degrada: pierde una fracci\u00f3n fija de su reserva cada segundo. Transformarlo detiene la hemorragia."},
 "de":{
@@ -4238,6 +4242,8 @@ var U3={
 "\u274c La zone n'accepte que des clairi\u00e8res":"\u274c Die Zone nimmt nur Lichtungen auf",
 "\u274c Clairi\u00e8re d\u00e9j\u00e0 cultiv\u00e9e par une autre ferme":"\u274c Lichtung wird bereits von einem anderen Hof bewirtschaftet",
 "\u274c Zone au maximum \u2014 am\u00e9liorez la ferme":"\u274c Zone am Maximum \u2014 Hof verbessern",
+"\u274c Retirer ce champ couperait la zone":"\u274c Dieses Feld zu entfernen w\u00fcrde die Zone trennen",
+"\u274c Les champs doivent se toucher et rejoindre la ferme":"\u274c Felder m\u00fcssen aneinandergrenzen und den Hof erreichen",
 "La zone se peuple de clairi\u00e8res, jamais de for\u00eat. Chaque tuile co\u00fbte du courant : c'est le courant qui borne l'expansion, pas le temps de cycle. Sans courant, le cycle GELE \u2014 il ne repart jamais de z\u00e9ro. La r\u00e9colte part par la ROUTE : sans liaison au port, la salve attend.":"Die Zone f\u00fcllt sich mit Lichtungen, nie mit Wald. Jedes Feld kostet Strom: der Strom begrenzt die Ausdehnung, nicht die Zykluszeit. Ohne Strom FRIERT der Zyklus ein \u2014 er beginnt nie wieder bei null. Die Ernte geht \u00fcber die STRASSE: ohne Anbindung an den Hafen wartet der Schub.",
 "Cette ressource se d\u00e9grade : elle perd une fraction fixe de son stock \u00e0 chaque seconde. La transformer arr\u00eate l'h\u00e9morragie.":"Diese Ressource verdirbt: sie verliert jede Sekunde einen festen Anteil ihres Bestands. Sie zu verarbeiten stoppt den Verlust."}};
 for(var c3 in R3){ var L3a=I18N.locales[c3]; if(!L3a) continue; L3a.res=L3a.res||{}; var m3=R3[c3];
@@ -8596,7 +8602,10 @@ const BUILDINGS = {
 // EXCEPT the quarries (carrière). Mines (resource-only) and offshore (water-only) keep their nature.
 const NO_COAST = {
   carriere: true,
-  carriere_v2: true
+  carriere_v2: true,
+  // La carriere rustique est une carriere : elle entaille la roche, pas le sable. Sans cette
+  // entree, la boucle ci-dessous lui rendrait le littoral quoi que dise sa def.
+  carriere_rustique: true
 };
 for (const id in BUILDINGS) {
   const b = BUILDINGS[id];
@@ -11497,8 +11506,51 @@ const SAVE_VERSION = 31;
 // ⚠ HORS PERIMETRE, NON TOUCHE : les variantes `basalte`/`calcaire`/`gres_rouge` du pack (seul
 //   `retenu/` est injecte, conformement a son nom), le panneau de la ferme, les champs contigus,
 //   la carriere hors cote, la coupe a 100, la fusion 48/49.
-const GAME_BUILD = 444;
-const GAME_VERSION = 'Alpha 21.1';
+// 21.2 — LOT MECANIQUE FERME. Les champs deviennent INDEPENDANTS, la zone reste d'un seul tenant,
+// la carriere rustique quitte le littoral et la coupe rend 100. AUCUN systeme neuf, AUCUNE
+// migration : `SAVE_VERSION` NE BOUGE PAS.
+// (F0) ⚠ LE CHARGEUR D'ABORD, ET CE N'EST PAS UN ORDRE DE CONFORT. Il exigeait `z.length === 2`
+//   EXACTEMENT. Elargir le tuple sans elargir d'abord ce test aurait JETE toutes les clairieres au
+//   rechargement, sans la moindre erreur — le joueur aurait cru a une perte de partie. Le test
+//   passe a `>= 2`, la 3e valeur est facultative.
+//   ⚠ MESURE, ET ELLE CORRIGE LE BRIEF : celui-ci annonce qu'une sauvegarde a tuples mixtes rend
+//   une ZONE VIDE sur le build 444. Faux — le couple nu y SURVIT, seul le triplet est jete (zone
+//   d'un element, mesure). La vraie demonstration est la sauvegarde que le build PATCHE ecrit :
+//   apres un tick tous les tuples sont a 3 valeurs, et 444 rend alors une zone reellement VIDE.
+//   C'est ce cas-la qui rend F0 indispensable, pas celui du brief.
+// (F3) L'EXPLOIT MEURT ICI. `farmBurst` lisait `bld.zone.length` A L'INSTANT DE LA SALVE et
+//   `cycRem` etait UN compteur pour toute la ferme : on faisait pousser avec une clairiere, on
+//   ajoutait les autres a 99 %, et on encaissait `q x toutes les tuiles`. Chaque champ porte
+//   desormais son reste, et un champ ajoute en cours de route repart a `cu.P` PLEIN.
+//   ⚠ MESURE EN MOTEUR REEL, pas au raisonnement : ferme reliee au port, 1 clairiere, 3 ajoutees
+//   a 55/60 -> temoin 444 : 720 bois. Patch : 180. Le brief declarait ce test non automatisable
+//   (« une ferme forcee en memoire n'entre jamais dans farmList ») : elle y entre des qu'elle est
+//   RELIEE AU PORT, et depuis le lot progression elle tire 0 kW, donc la route SUFFIT.
+// (F3-bis) ⚠ DEFAUT D'AFFICHAGE INTRODUIT PAR F3, MESURE ET CORRIGE ICI. `farmStageKey` ne prenait
+//   que `bld` et lisait `bld.cycRem`, devenu « le champ le plus avance » : les quatre champs se
+//   dessinaient au stade du plus mur — un champ tout juste replante s'affichait pret a recolter et
+//   ne rendait rien, soit exactement la confusion que F3 cherche a supprimer. Mesure : deux champs
+//   decales de 30 s, 10 releves faux sur 20. `farmTileRem` lit le compteur DE LA TUILE ; `r`/`c`
+//   sont FACULTATIFS, donc tout appelant qui ne les passe pas garde le comportement d'avant.
+//   ⚠ L'INSTALLATION de l'hevea (`hevInst`) reste PAR FERME : c'est la plantation qui s'installe.
+//   ⚠ La LEGUMINEUSE garde aussi son compteur de ferme : F3 ne touche pas sa branche (elle sort
+//   avant, sur `!cu.P || !cu.res`).
+// (F4) La zone doit se toucher et rejoindre la ferme. ⚠ LE RETRAIT COMPARE L'AVANT ET L'APRES, il
+//   n'exige pas une zone parfaite au depart : une zone deja en morceaux reste modifiable.
+// (F5) ⚠ EDITER `terrains` NE SUFFIT PAS, ET C'EST LE PIEGE DU LOT : deux passes normalisent le
+//   champ apres coup — la premiere AJOUTE `coast` a tout batiment listant `land`, la seconde le
+//   RETIRE des seules entrees de `NO_COAST`. La def disait bien `['land','resource']` et le jeu
+//   lisait `['land','resource','coast']`. La carriere rustique rejoint donc `NO_COAST`, dont le
+//   commentaire annonce deja « EXCEPT the quarries ». Mesure : scierie GARDE son littoral.
+// (F6) `FELL_YIELD` 60 -> 100. ⚠ Le commentaire juste au-dessus de la constante affirmait « le
+//   total par tuile est INCHANGE (60) » : il est corrige, pas laisse en place.
+// ⚠ i18n : les deux toasts de F4 ont recu leurs 3 traductions. Leurs trois voisins de la MEME
+//   fonction en avaient, eux — les laisser en repli francais aurait fait diverger un panneau avec
+//   lui-meme selon la ligne.
+// ⚠ HORS PERIMETRE, NON TOUCHE : le panneau de la ferme (pave, boutons de culture estompes, halo
+//   de zone), la fusion des noeuds 48/49, `SAVE_VERSION`, la mecanique de la legumineuse.
+const GAME_BUILD = 445;
+const GAME_VERSION = 'Alpha 21.2';
 // 14.44 — NOTES DE VERSION LISIBLES. `version.json` tirait son champ `notes` du SUJET DU
 // DERNIER COMMIT (workflow android.yml). Après une fusion de PR, le joueur lisait donc
 // « Merge pull request #310 from freredoc/claude/new-session-nzvw49 » sous « Mise à jour
@@ -11507,7 +11559,7 @@ const GAME_VERSION = 'Alpha 21.1';
 // version sans la voir, et le texte ne dépend plus du style de fusion (merge / squash / rebase).
 // Format : items séparés par ' · ' — le panneau Options en fait une ligne chacun.
 // La CI lit cette constante et retombe sur le sujet de commit si elle est vide.
-const GAME_NOTES = "La septieme ile prend ses couleurs : de vraies falaises a la place de celles empruntees a l'ile 5 · l'herbe, la mer, le sable et la canopee scintillent · les angles du littoral se raccordent enfin · le bois, la planche, la biomasse, le latex et le fil de carbone ont leur icone · le foyer a charbon et la bucheronneuse au repos ont leur sprite.";
+const GAME_NOTES = "Les champs de la ferme vieillissent chacun de leur cote : une clairiere ajoutee en cours de route repart a zero au lieu d'encaisser la recolte des autres · la zone doit rester d'un seul tenant et rejoindre la ferme · la carriere rustique ne se pose plus sur le sable · la coupe rend 100 bois au lieu de 60.";
 // ⚠ `TESTER_BUILD` A ÉTÉ SUPPRIMÉ (14.55). Une fois le Mode développeur passé sous `DEV_BUILD`,
 // il ne gatait plus AUCUNE différence de jeu — seulement le canal de mise à jour et le suffixe
 // d'étiquette. L'édition testeur et l'édition publique étaient devenues identiques : on garde
@@ -13100,7 +13152,25 @@ const FARM_ART_KEYS = (() => {
 for (const k of FARM_ART_KEYS) TILE_ANIM_BY_KEY[k] = { cle: k + '_breeze', frames: 4, fw: 32, fh: 32, fps: 3 };
 // Cle de sprite du stade a dessiner sur une tuile de zone. `null` = rien a peindre (pas de
 // culture choisie). Le stade se DEDUIT de l'avancement — aucun etat de plus a serialiser.
-function farmStageKey(bld) {
+// Reste de cycle D'UNE TUILE de zone. `def` sert de repli quand le champ n'a pas encore tourne.
+// ⚠ DEPUIS F3 LE COMPTEUR EST PAR CHAMP (`z[2]`), PLUS PAR FERME. `bld.cycRem` ne vaut plus que
+// « la prochaine recolte » — le champ LE PLUS AVANCE. S'en servir pour DESSINER peindrait les
+// quatre champs au stade de celui-la : un champ tout juste replante s'afficherait mur, et ne
+// rendrait rien. Mesure : deux champs decales de 30 s -> la MOITIE des releves annoncent un
+// stade que le champ n'a pas. On lit donc le compteur DE LA TUILE.
+function farmTileRem(bld, r, c, def) {
+  const z = bld && bld.zone;
+  if (z && r != null) {
+    for (let i = 0; i < z.length; i++) {
+      if (z[i][0] === r && z[i][1] === c) return z[i][2] != null ? z[i][2] : def;
+    }
+  }
+  return bld && bld.cycRem != null ? bld.cycRem : def;
+}
+// ⚠ `r`/`c` SONT FACULTATIFS : sans eux la fonction retombe sur `bld.cycRem`, donc tout appelant
+// qui ne les passe pas garde EXACTEMENT le comportement d'avant. Il n'y en a qu'un aujourd'hui
+// (le dessin de la tuile), et il les passe.
+function farmStageKey(bld, r, c) {
   const d = FARM_CULTURES[bld && bld.cult];
   if (!d) return null;
   const pre = 'overlay_cult_' + d.art + '_';
@@ -13109,7 +13179,9 @@ function farmStageKey(bld) {
   if (d.install) {
     const inst = bld.hevInst != null ? bld.hevInst : d.install;
     if (inst > 1e-6) return pre + Math.min(d.stages, 1 + Math.floor((1 - inst / d.install) * d.stages));
-    const rem = bld.cycRem != null ? bld.cycRem : d.P;
+    // ⚠ L'INSTALLATION (`hevInst`) RESTE PAR FERME : c'est la plantation qui s'installe, pas la
+    // tuile. Seul le CYCLE de saignee, qui a bascule par champ en F3, est lu par tuile.
+    const rem = farmTileRem(bld, r, c, d.P);
     return pre + (1 - rem / d.P >= 0.5 ? '4_plein' : '4_vide');
   }
   // PERMANENTE : elle pousse une fois, puis reste au dernier stade.
@@ -13122,7 +13194,7 @@ function farmStageKey(bld) {
   // 1..n. Le DERNIER porte le signal de recolte (epis dores, cimes pleines) : il doit donc etre
   // celui qui precede la salve, pas celui qui la suit.
   const P = d.P || 1;
-  const rem = bld.cycRem != null ? bld.cycRem : P;
+  const rem = farmTileRem(bld, r, c, P);
   const si = Math.min(d.stages, Math.floor((1 - rem / P) * (d.stages + 1)));
   return si <= 0 ? pre + d.fin.split('_').pop() : pre + si;
 }
@@ -13165,28 +13237,32 @@ function farmCell(game, isl, r, c) {
 // PLAFONNE PAR TUILE BENEFICIAIRE (une tuile entouree de quatre legumineuses gagne +50 %, pas
 // +100 %). Le bonus traverse les frontieres de zone : la culture est un reglage de FERME, donc
 // une ferme en legumineuse ameliore les tuiles de la ferme d'a cote.
+function farmTileBurst(game, isl, bld, r, c) {
+  const cu = FARM_CULTURES[bld && bld.cult];
+  if (!cu || !cu.res) return 0;
+  const idx = farmIndex(game, isl);
+  const D = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+  let nb = 0;
+  for (let d = 0; d < 4; d++) if (idx.cult[r + D[d][0] + ',' + (c + D[d][1])] === 'legum') nb++;
+  return cu.q * (1 + Math.min(FARM_LEGUME_CAP, FARM_LEGUME_BONUS * nb));
+}
 function farmBurst(game, isl, bld) {
   const cu = FARM_CULTURES[bld && bld.cult];
   if (!cu || !cu.res || !bld.zone || !bld.zone.length) return 0;
-  const idx = farmIndex(game, isl);
-  const D = [[-1, 0], [1, 0], [0, -1], [0, 1]];
   let tot = 0;
-  for (let i = 0; i < bld.zone.length; i++) {
-    const r = bld.zone[i][0], c = bld.zone[i][1];
-    let nb = 0;
-    for (let d = 0; d < 4; d++) if (idx.cult[r + D[d][0] + ',' + (c + D[d][1])] === 'legum') nb++;
-    tot += cu.q * (1 + Math.min(FARM_LEGUME_CAP, FARM_LEGUME_BONUS * nb));
-  }
+  for (let i = 0; i < bld.zone.length; i++) tot += farmTileBurst(game, isl, bld, bld.zone[i][0], bld.zone[i][1]);
   return tot;
 }
 const FELL_TIME = 60;  // 1 min par tuile de foret (a plein regime)
 // L3 / R2 — LA COUPE LIVRE EN SALVE, PLUS AU TICK. Le debit continu de 1 bois/s disparait : a la
-// FIN de la coupe la machine livre `FELL_YIELD` d'un coup. Le total par tuile est INCHANGE (60),
-// seule la forme change — et c'est ce qui rend la bucheronneuse comparable a la ferme.
+// FIN de la coupe la machine livre `FELL_YIELD` d'un coup.
+// ⚠ CE COMMENTAIRE DISAIT « le total par tuile est INCHANGE (60) » : F6 l'a rendu FAUX, il est
+// donc corrige ici plutot que laisse en place. La coupe rend 100 depuis le lot mecanique ferme ;
+// la duree (`FELL_TIME`) ne bouge pas, c'est le RENDEMENT qui monte.
 // ⚠ LA SALVE NE CONTOURNE PAS LE RESEAU ET N'EST JAMAIS PERDUE EN SILENCE : elle est posee en
 // DETTE (`bld.due`), payee au tick suivant par le chemin de depot NORMAL, a hauteur du facteur
 // de reseau. Route coupee -> la dette attend, elle ne s'evapore pas.
-const FELL_YIELD = 60;
+const FELL_YIELD = 100;
 const DRILL_TIME = 300; // 5 min de creusement (à plein régime)
 // Pendant l'opération elle extrait de la pierre, évacuée par l'ÉLÉVATEUR comme n'importe quel
 // sortant : élévateur bridé → la foreuse elle-même ralentit (et sa conso monte d'autant moins vite).
@@ -16825,11 +16901,18 @@ function tickIsland(game, isl) {
     }
     const n = (bld.zone && bld.zone.length) || 0;
     if (!n) { bld.cycRem = cu.P; continue; }
-    if (bld.cycRem == null) bld.cycRem = cu.P;
-    bld.cycRem -= rg;
-    if (bld.cycRem > 1e-6) continue;
-    bld.cycRem = cu.P;
-    const amt = farmBurst(game, isl, bld);
+    let amt = 0, soonest = cu.P;
+    for (let i = 0; i < n; i++) {
+      const z = bld.zone[i];
+      if (z[2] == null) z[2] = cu.P;
+      z[2] -= rg;
+      if (z[2] <= 1e-6) {
+        z[2] = cu.P;
+        amt += farmTileBurst(game, isl, bld, z[0], z[1]);
+      }
+      if (z[2] < soonest) soonest = z[2];
+    }
+    bld.cycRem = soonest;
     if (amt > 0) {
       (bld.due || (bld.due = {}))[cu.res] = (bld.due[cu.res] || 0) + amt;
       resChanged = true;
@@ -28349,7 +28432,7 @@ function App() {
           // ⚠ `zone` est serialisee en COUPLES ABSOLUS. L'index derive (`game.farmIdx`) n'est
           // JAMAIS ecrit : il se reconstruit au chargement. Deux verites pour la meme donnee,
           // c'est la garantie qu'elles divergeront.
-          if (b.zone && b.zone.length) pl.zn = b.zone.map(z => [z[0], z[1]]);
+          if (b.zone && b.zone.length) pl.zn = b.zone.map(z => z[2] == null ? [z[0], z[1]] : [z[0], z[1], z[2]]);
           if (b.cult) pl.cu = b.cult;
           if (b.cycRem != null) pl.cr = b.cycRem;
           if (b.hevInst != null) pl.hv = b.hevInst;
@@ -29105,7 +29188,14 @@ function App() {
           // pose dessus depuis, terrain change) sort de la zone au lieu de la faire mentir.
           if (Array.isArray(p.zn)) {
             const zz = [];
-            for (const z of p.zn) if (Array.isArray(z) && z.length === 2) zz.push([+z[0], +z[1]]);
+            // F0 — LE TUPLE DE CLAIRIERE PORTE MAINTENANT SON PROPRE COMPTEUR : [r, c, rem].
+            // ⚠ `z.length === 2` EXACTEMENT aurait jete toutes les tuiles du nouveau format.
+            //   Le test est passe a `>= 2` et la 3e valeur est optionnelle : une sauvegarde
+            //   d'avant ce lot repart avec `rem` absent, que le tick initialise a `cu.P`.
+            for (const z of p.zn) {
+              if (!Array.isArray(z) || z.length < 2) continue;
+              zz.push(z.length > 2 && z[2] != null ? [+z[0], +z[1], +z[2]] : [+z[0], +z[1]]);
+            }
             if (zz.length) t.building.zone = zz;
           }
           if (p.cu && FARM_CULTURES[p.cu]) t.building.cult = p.cu;
@@ -32177,6 +32267,22 @@ function App() {
   }
   // Bascule l'appartenance d'une clairière à la zone d'une ferme. TOUT refus est motivé par un
   // toast : un tap sans effet et sans explication se lit comme un bug.
+  // Tuiles de la zone joignables depuis la ferme par 4-adjacence (la ferme est 1x1).
+  function farmZoneReach(fr, fc, zone) {
+    const inZone = {};
+    for (let i = 0; i < zone.length; i++) inZone[zone[i][0] + ',' + zone[i][1]] = 1;
+    const seen = {}, stack = [[fr, fc]], D = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    while (stack.length) {
+      const p = stack.pop();
+      for (let d = 0; d < 4; d++) {
+        const rr = p[0] + D[d][0], cc = p[1] + D[d][1], k = rr + ',' + cc;
+        if (!inZone[k] || seen[k]) continue;
+        seen[k] = 1;
+        stack.push([rr, cc]);
+      }
+    }
+    return seen;
+  }
   function toggleFarmZone(fr, fc, r, c) {
     const g0 = gameRef.current;
     const tiles = curTiles();
@@ -32187,6 +32293,13 @@ function App() {
     let at = -1;
     for (let i = 0; i < zone.length; i++) if (zone[i][0] === r && zone[i][1] === c) { at = i; break; }
     if (at >= 0) {
+      const before = farmZoneReach(fr, fc, zone);
+      const after = farmZoneReach(fr, fc, zone.filter((z, i) => i !== at));
+      let coupe = 0;
+      for (const k in before) if (k !== r + ',' + c && !after[k]) coupe++;
+      if (coupe) {
+        showToast(I18N.t('❌ Retirer ce champ couperait la zone'), 'var(--red)'); SFX.play('invalid'); return;
+      }
       zone.splice(at, 1);
     } else {
       const t = tiles[r] && tiles[r][c];
@@ -32204,6 +32317,11 @@ function App() {
       }
       if (zone.length >= farmZoneMax(fb)) {
         showToast(I18N.t('❌ Zone au maximum — améliorez la ferme'), 'var(--orange)'); SFX.play('invalid'); return;
+      }
+      // ⚠ TESTE SUR LA ZONE AUGMENTEE DE LA CANDIDATE : la tuile doit se retrouver joignable
+      //   depuis la ferme. Une zone vide accepte donc la premiere tuile si elle touche la ferme.
+      if (!farmZoneReach(fr, fc, zone.concat([[r, c]]))[r + ',' + c]) {
+        showToast(I18N.t('❌ Les champs doivent se toucher et rejoindre la ferme'), 'var(--red)'); SFX.play('invalid'); return;
       }
       zone.push([r, c]);
     }
@@ -33245,7 +33363,7 @@ function App() {
           if (farmCell(g, isl, r + 1, c)) fmk |= 4;
           if (farmCell(g, isl, r, c - 1)) fmk |= 8;
           drawSprite(ctx, 'champ_' + NET_MASK_SUFFIX[fmk], x, y, tile, tile);
-          const ck = farmStageKey(fzc);
+          const ck = farmStageKey(fzc, r, c);
           // Bande de brise si elle est decodee, sprite statique sinon : le repli est le meme que
           // pour les tuiles « brise » des six autres iles.
           if (ck && !drawTileAnim(ctx, ck, x, y, tile, r, c)) drawSprite(ctx, ck, x, y, tile, tile);
